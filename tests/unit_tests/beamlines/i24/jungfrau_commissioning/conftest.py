@@ -1,3 +1,4 @@
+import threading
 import time
 from collections.abc import Callable
 from unittest.mock import MagicMock
@@ -43,13 +44,20 @@ def fake_vgonio(completed_status) -> VGonio:
 
 
 @pytest.fixture
-def fake_jungfrau() -> JungfrauM1:
+def fake_jungfrau(completed_status) -> JungfrauM1:
     JF: JungfrauM1 = i24.jungfrau(fake_with_ophyd_sim=True)
 
     def set_acquire_side_effect(val):
         JF.acquire_rbv.sim_put(1)  # type: ignore
-        time.sleep(1)
-        JF.acquire_rbv.sim_put(0)  # type: ignore
+        JF.writing_rbv.sim_put(1)  # type: ignore
+
+        def go_low():
+            time.sleep(1)
+            JF.acquire_rbv.sim_put(0)  # type: ignore
+            time.sleep(0.5)
+            JF.writing_rbv.sim_put(0)  # type: ignore
+
+        threading.Thread(target=go_low, daemon=True).start()
         return completed_status
 
     JF.acquire_start.set = MagicMock(side_effect=set_acquire_side_effect)
