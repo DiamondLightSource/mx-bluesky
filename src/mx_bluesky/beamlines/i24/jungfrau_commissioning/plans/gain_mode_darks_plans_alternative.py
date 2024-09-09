@@ -3,19 +3,21 @@ from enum import Enum
 from pathlib import Path
 
 from bluesky.plan_stubs import abs_set, rd, sleep
-from dodal.devices.i24.jungfrau import JungfrauM1
-from dodal.devices.i24.vgonio import VGonio
+from dodal.devices.i24.i24_vgonio import VGonio
 from dodal.devices.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.jungfrau_plans import (
     setup_detector,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import (
-    arm_zebra,
     setup_zebra_for_darks,
 )
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
+    JungfrauM1,
+)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import run_number
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import arm_zebra
 
 
 class GainMode(str, Enum):
@@ -25,7 +27,7 @@ class GainMode(str, Enum):
 
 
 def date_time_string():
-    return datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%s")
+    return datetime.now().strftime("%Y-%m-%d-%H-%M-%s")
 
 
 def set_gain_mode(
@@ -34,7 +36,7 @@ def set_gain_mode(
     LOGGER.info(f"Setting gain mode {gain_mode.value}")
     yield from abs_set(jungfrau.gain_mode, gain_mode.value, wait=wait)
     if check_for_errors:
-        err: str = rd(jungfrau.error_rbv)
+        err: str = yield from rd(jungfrau.error_rbv)  # type: ignore
         LOGGER.warn(f"JF reporting error: {err}")
 
 

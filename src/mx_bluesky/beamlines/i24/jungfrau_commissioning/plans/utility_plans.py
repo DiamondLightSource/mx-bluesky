@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
-from dodal.devices.i24.read_only_attenuator import (
+from dodal.devices.i24.i24_vgonio import VGonio
+
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
     ReadOnlyEnergyAndAttenuator,
     SetAttenuator,
 )
-from dodal.devices.i24.vgonio import VGonio
-
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 
 

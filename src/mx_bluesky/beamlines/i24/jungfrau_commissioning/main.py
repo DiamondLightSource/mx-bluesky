@@ -14,7 +14,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans import (
     zebra_plans,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import (
     text_colors as col,
 )
 

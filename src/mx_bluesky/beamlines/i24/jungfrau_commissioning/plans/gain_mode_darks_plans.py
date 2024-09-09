@@ -3,15 +3,17 @@ from enum import Enum
 from pathlib import Path
 
 from bluesky.plan_stubs import abs_set, rd, sleep
-from dodal.devices.i24.jungfrau import JungfrauM1
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.jungfrau_plans import (
     check_and_clear_errors,
     do_manual_acquisition,
     set_software_trigger,
 )
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
+    JungfrauM1,
+)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import run_number
 
 
 class GainMode(str, Enum):

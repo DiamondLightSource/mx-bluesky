@@ -3,10 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from dodal.devices.i24.jungfrau import JungfrauM1, TriggerMode
 
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import date_time_string
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
+    JungfrauM1,
+    TriggerMode,
+)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import date_time_string
 
 DIRECTORY = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/"
 

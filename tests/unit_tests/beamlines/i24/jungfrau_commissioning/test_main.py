@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.__main__ import hlp
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.main import hlp
 
 
 @patch("builtins.print")

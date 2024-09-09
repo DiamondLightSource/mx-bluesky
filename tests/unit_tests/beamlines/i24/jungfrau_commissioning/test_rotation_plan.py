@@ -1,25 +1,27 @@
+from collections.abc import Callable
 from unittest.mock import MagicMock, patch
 
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.vgonio import VGonio
+from dodal.devices.i24.i24_vgonio import VGonio
 from dodal.devices.zebra import RotationDirection, Zebra
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans import (
+    JfDevices,
     cleanup_plan,
     get_rotation_scan_plan,
     move_to_start_w_buffer,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import arm_zebra
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
     RotationScanParameters,
 )
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import arm_zebra
 
 
 @patch(
     "jungfrau_commissioning.plans.rotation_scan_plans.NexusFileHandlerCallback",
 )
 def test_rotation_scan_get_plan(
-    nexus_callback: MagicMock, fake_create_devices_function
+    nexus_callback: MagicMock, fake_create_devices_function: Callable[..., JfDevices]
 ):
     minimal_params = RotationScanParameters.from_file("example_params.json")
     with patch(
@@ -34,12 +36,12 @@ def test_rotation_scan_get_plan(
 @patch(
     "bluesky.plan_stubs.wait",
 )
-def test_cleanup_plan(bps_wait, fake_devices, RE: RunEngine):
+async def test_cleanup_plan(bps_wait, fake_devices: JfDevices, RE: RunEngine):
     zebra: Zebra = fake_devices["zebra"]
     RE(arm_zebra(zebra))
-    assert zebra.pc.armed.get() == 1
+    assert await zebra.pc.arm.armed.get_value() == 1
     RE(cleanup_plan(zebra))
-    assert zebra.pc.armed.get() == 0
+    assert await zebra.pc.arm.armed.get_value() == 0
 
 
 @patch(
@@ -49,7 +51,10 @@ def test_cleanup_plan(bps_wait, fake_devices, RE: RunEngine):
     "jungfrau_commissioning.plans.rotation_scan_plans.NexusFileHandlerCallback",
 )
 def test_move_to_start(
-    nexus_callback: MagicMock, bps_wait: MagicMock, fake_devices, RE: RunEngine
+    nexus_callback: MagicMock,
+    bps_wait: MagicMock,
+    fake_devices: JfDevices,
+    RE: RunEngine,
 ):
     params = RotationScanParameters.from_file("example_params.json")
     gonio: VGonio = fake_devices["gonio"]
@@ -74,7 +79,7 @@ def test_move_to_start(
 def test_rotation_scan_do_plan(
     nexus_callback: MagicMock,
     bps_wait: MagicMock,
-    fake_create_devices_function,
+    fake_create_devices_function: Callable[..., JfDevices],
     RE: RunEngine,
 ):
     minimal_params = RotationScanParameters.from_file("example_params.json")

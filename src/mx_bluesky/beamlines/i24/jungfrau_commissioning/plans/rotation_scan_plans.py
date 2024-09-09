@@ -31,7 +31,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.utility_plans import 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import (
     setup_zebra_for_rotation,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24, run_number
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
     JungfrauM1,
     ReadOnlyEnergyAndAttenuator,
@@ -41,7 +41,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
     RotationScanParameters,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import run_number
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     arm_zebra,
     disarm_zebra,

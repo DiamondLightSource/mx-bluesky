@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from dodal.devices.i24.i24_vgonio import VGonio
-from ophyd.device import Device
 from ophyd.status import Status
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans import (
@@ -94,5 +93,5 @@ def fake_devices(
 
 
 @pytest.fixture
-def fake_create_devices_function(fake_devices) -> Callable[..., dict[str, Device]]:
+def fake_create_devices_function(fake_devices) -> Callable[..., JfDevices]:
     return lambda: fake_devices
