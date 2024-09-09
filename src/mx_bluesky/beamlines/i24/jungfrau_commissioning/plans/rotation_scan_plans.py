@@ -29,8 +29,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.utility_plans import 
     set_transmission,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import (
-    arm_zebra,
-    disarm_zebra,
     setup_zebra_for_rotation,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
@@ -44,6 +42,10 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
     RotationScanParameters,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.utils import run_number
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
+    arm_zebra,
+    disarm_zebra,
+)
 
 
 class JfDevices(TypedDict):

@@ -1,0 +1,13 @@
+{
+    "rotation_axis": "omega",
+    "scan_width_deg": 360.0,
+    "image_width_deg": 0.1,
+    "omega_start_deg": 0.0,
+    "exposure_time_s": 0.01,
+    "acquire_time_s":  0.001,
+    "rotation_direction": "POSITIVE",
+    "offset_deg": 1.0,
+    "shutter_opening_time_s": 0.6,
+    "storage_directory": "/tmp/jungfrau_data/",
+    "nexus_filename": "scan"
+}

@@ -8,7 +8,7 @@ from dodal.devices.i24.i24_vgonio import VGonio
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.zebra import Zebra
 from dodal.log import set_beamline
-from dodal.utils import get_beamline_name, skip_device
+from dodal.utils import skip_device
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
     JungfrauM1,
@@ -16,7 +16,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devi
     SetAttenuator,
 )
 
-BL = get_beamline_name("s24")
 set_beamline(BL)
 set_utils_beamline(BL)
 

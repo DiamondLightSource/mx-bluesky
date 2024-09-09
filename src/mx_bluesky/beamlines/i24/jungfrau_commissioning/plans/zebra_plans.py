@@ -2,13 +2,13 @@ import bluesky.plan_stubs as bps
 from dodal.devices.zebra import (
     DISCONNECT,
     OR1,
-    PC_GATE_SOURCE_POSITION,
     PC_PULSE,
-    PC_PULSE_SOURCE_POSITION,
     TTL_DETECTOR,
     TTL_XSPRESS3,
+    EncEnum,
     I24Axes,
     RotationDirection,
+    TrigSource,
     Zebra,
 )
 
@@ -17,35 +17,9 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 TTL_SHUTTER = 4
 
 
-def arm_zebra(zebra: Zebra, timeout: float = 3):
-    """Send a demand to arm the Zebra, wait timeout seconds before failing"""
-    yield from bps.abs_set(zebra.pc.arm_demand, 1)
-    armed = yield from bps.rd(zebra.pc.armed)
-    time = 0.0
-    while not armed and time < timeout:
-        armed = yield from bps.rd(zebra.pc.armed)
-        time += 0.1
-        yield from bps.sleep(0.1)
-    if not armed:
-        raise TimeoutError("Zebra failed to arm!")
-
-
-def disarm_zebra(zebra: Zebra, timeout: float = 3):
-    """Send a demand to disarm the Zebra, wait timeout seconds before failing"""
-    yield from bps.abs_set(zebra.pc.disarm_demand, 1)
-    armed = yield from bps.rd(zebra.pc.armed)
-    time = 0.0
-    while armed and time < timeout:
-        armed = yield from bps.rd(zebra.pc.armed)
-        time += 0.1
-        yield from bps.sleep(0.1)
-    if armed:
-        raise TimeoutError("Zebra failed to disarm!")
-
-
 def setup_zebra_for_rotation(
     zebra: Zebra,
-    axis: I24Axes = I24Axes.OMEGA,
+    axis: EncEnum = I24Axes.OMEGA,
     start_angle: float = 0,
     scan_width: float = 360,
     direction: RotationDirection = RotationDirection.POSITIVE,
@@ -79,18 +53,18 @@ def setup_zebra_for_rotation(
 
     LOGGER.info("ZEBRA SETUP: START")
     LOGGER.info("ZEBRA SETUP: Enable PC")
-    yield from bps.abs_set(zebra.pc.gate_source, PC_GATE_SOURCE_POSITION, group=group)
-    yield from bps.abs_set(zebra.pc.pulse_source, 1, group=group)
+    yield from bps.abs_set(zebra.pc.gate_source, TrigSource.POSITION, group=group)
+    yield from bps.abs_set(zebra.pc.pulse_source, TrigSource.TIME, group=group)
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     # set rotation direction
-    yield from bps.abs_set(
-        zebra.pc.dir, ("Negative" if direction.value < 0 else "Positive"), group=group
-    )
+    yield from bps.abs_set(zebra.pc.dir, direction.value, group=group)
     # Set gate start, adjust for shutter opening time if necessary
     LOGGER.info(f"ZEBRA SETUP: shutter_opening_deg = {shutter_opening_deg}")
     LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
-    shutter_adjusted_start_angle = start_angle - (shutter_opening_deg * direction.value)
+    shutter_adjusted_start_angle = start_angle - (
+        shutter_opening_deg * direction.multiplier
+    )
     LOGGER.info(f"ZEBRA SETUP: {shutter_adjusted_start_angle=} for gate start")
     yield from bps.abs_set(
         zebra.pc.gate_start,
@@ -115,7 +89,7 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)
@@ -133,7 +107,7 @@ def set_zebra_shutter_to_manual(
 
 def setup_zebra_for_darks(
     zebra: Zebra,
-    axis: I24Axes = I24Axes.OMEGA,
+    axis: EncEnum = I24Axes.OMEGA,
     group: str = "setup_zebra_for_darks",
     wait: bool = False,
 ):
@@ -142,8 +116,8 @@ def setup_zebra_for_darks(
     """
     LOGGER.info("ZEBRA SETUP: START")
     LOGGER.info("ZEBRA SETUP: Enable PC")
-    yield from bps.abs_set(zebra.pc.gate_source, PC_GATE_SOURCE_POSITION, group=group)
-    yield from bps.abs_set(zebra.pc.pulse_source, PC_PULSE_SOURCE_POSITION, group=group)
+    yield from bps.abs_set(zebra.pc.gate_source, TrigSource.POSITION, group=group)
+    yield from bps.abs_set(zebra.pc.pulse_source, TrigSource.POSITION, group=group)
     # must be on for triggers to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     yield from bps.abs_set(zebra.pc.gate_start, 0.5, group=group)
@@ -159,7 +133,7 @@ def setup_zebra_for_darks(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)
