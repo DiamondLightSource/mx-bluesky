@@ -16,6 +16,16 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devi
     ReadOnlyEnergyAndAttenuator,
     SetAttenuator,
 )
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
+    RotationScanParameters,
+)
+
+
+@pytest.fixture
+def params():
+    return RotationScanParameters.from_file(
+        "tests/unit_tests/beamlines/i24/jungfrau_commissioning/test_data/example_params.json"
+    )
 
 
 @pytest.fixture

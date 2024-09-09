@@ -273,7 +273,7 @@ def get_rotation_scan_plan(params: RotationScanParameters):
     params.storage_directory = directory.as_posix()
     # save the params for the run with the data
     with open((directory / "experiment_params.json").as_posix(), "w") as f:
-        f.write(params.json(indent=2))
+        f.write(params.model_dump_json(indent=2))
 
     metadata_writer = JsonMetadataWriter()
 
@@ -285,7 +285,7 @@ def get_rotation_scan_plan(params: RotationScanParameters):
         @bpp.run_decorator(
             md={
                 "subplan_name": "rotation_scan_with_cleanup",
-                "rotation_scan_params": params.json(),
+                "rotation_scan_params": params.model_dump_json(),
             }
         )
         @bpp.finalize_decorator(lambda: cleanup_plan(devices["zebra"]))

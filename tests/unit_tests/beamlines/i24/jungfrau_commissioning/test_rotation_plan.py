@@ -18,17 +18,18 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import arm
 
 
 @patch(
-    "jungfrau_commissioning.plans.rotation_scan_plans.NexusFileHandlerCallback",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
 def test_rotation_scan_get_plan(
-    nexus_callback: MagicMock, fake_create_devices_function: Callable[..., JfDevices]
+    nexus_callback: MagicMock,
+    fake_create_devices_function: Callable[..., JfDevices],
+    params: RotationScanParameters,
 ):
-    minimal_params = RotationScanParameters.from_file("example_params.json")
     with patch(
-        "jungfrau_commissioning.plans.rotation_scan_plans.create_rotation_scan_devices",
+        "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.create_rotation_scan_devices",
         fake_create_devices_function,
     ):
-        plan = get_rotation_scan_plan(minimal_params)
+        plan = get_rotation_scan_plan(params)
     assert plan is not None
     nexus_callback.assert_called_once()
 
@@ -39,24 +40,24 @@ def test_rotation_scan_get_plan(
 async def test_cleanup_plan(bps_wait, fake_devices: JfDevices, RE: RunEngine):
     zebra: Zebra = fake_devices["zebra"]
     RE(arm_zebra(zebra))
-    assert await zebra.pc.arm.armed.get_value() == 1
+    assert (await zebra.pc.arm.armed.get_value()).value == 1
     RE(cleanup_plan(zebra))
-    assert await zebra.pc.arm.armed.get_value() == 0
+    assert (await zebra.pc.arm.armed.get_value()).value == 0
 
 
 @patch(
     "bluesky.plan_stubs.wait",
 )
 @patch(
-    "jungfrau_commissioning.plans.rotation_scan_plans.NexusFileHandlerCallback",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
 def test_move_to_start(
     nexus_callback: MagicMock,
     bps_wait: MagicMock,
     fake_devices: JfDevices,
     RE: RunEngine,
+    params: RotationScanParameters,
 ):
-    params = RotationScanParameters.from_file("example_params.json")
     gonio: VGonio = fake_devices["gonio"]
     RE(
         move_to_start_w_buffer(
@@ -74,20 +75,20 @@ def test_move_to_start(
     "bluesky.plan_stubs.wait",
 )
 @patch(
-    "jungfrau_commissioning.plans.rotation_scan_plans.NexusFileHandlerCallback",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
 def test_rotation_scan_do_plan(
     nexus_callback: MagicMock,
     bps_wait: MagicMock,
     fake_create_devices_function: Callable[..., JfDevices],
     RE: RunEngine,
+    params: RotationScanParameters,
 ):
-    minimal_params = RotationScanParameters.from_file("example_params.json")
     with patch(
-        "jungfrau_commissioning.plans.rotation_scan_plans.create_rotation_scan_devices",
+        "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.create_rotation_scan_devices",
         fake_create_devices_function,
     ):
-        plan = get_rotation_scan_plan(minimal_params)
+        plan = get_rotation_scan_plan(params)
 
     RE(plan)
     devices = fake_create_devices_function()

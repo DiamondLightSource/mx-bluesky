@@ -16,9 +16,9 @@ class RotationScanParameters(BaseModel):
     exposure_time_s: float = 0.01
     acquire_time_s: float = 10.0
     offset_deg: float = 10.0
-    x: float | None = None
-    y: float | None = None
-    z: float | None = None
+    x_start_um: float | None = None
+    y_start_um: float | None = None
+    z_start_um: float | None = None
     rotation_direction: RotationDirection = RotationDirection.NEGATIVE
     shutter_opening_time_s: float = 0.6
     storage_directory: str = "/tmp/jungfrau_data/"
