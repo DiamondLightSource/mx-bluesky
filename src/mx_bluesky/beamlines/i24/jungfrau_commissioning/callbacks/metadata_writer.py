@@ -31,7 +31,7 @@ class JsonMetadataWriter(CallbackBase):
     flux: float | None = None
     transmission: float | None = None
 
-    def start(self, doc: dict):
+    def start(self, doc: dict):  # type: ignore
         if doc.get("subplan_name") == "rotation_scan_with_cleanup":
             LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
@@ -41,10 +41,10 @@ class JsonMetadataWriter(CallbackBase):
             self.parameters = RotationScanParameters(**json.loads(json_params))
             self.run_start_uid = doc.get("uid")
 
-    def descriptor(self, doc: dict):
+    def descriptor(self, doc: dict):  # type: ignore
         self.descriptors[doc["uid"]] = doc
 
-    def event(self, doc: dict):
+    def event(self, doc: dict):  # type: ignore
         LOGGER.info("Nexus handler received event document.")
         event_descriptor = self.descriptors[doc["descriptor"]]
 
@@ -74,7 +74,7 @@ class JsonMetadataWriter(CallbackBase):
                 f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}."  # noqa
             )
 
-    def stop(self, doc: dict):
+    def stop(self, doc: dict):  # type: ignore
         if (
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid

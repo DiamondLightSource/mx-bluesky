@@ -51,9 +51,9 @@ def test_rotation_scan_get_plan(
 async def test_cleanup_plan(bps_wait, fake_devices: JfDevices, RE: RunEngine):
     zebra: Zebra = fake_devices["zebra"]
     RE(arm_zebra(zebra))
-    assert (await zebra.pc.arm.armed.get_value()).value == 1
+    assert (await zebra.pc.arm.armed.get_value()).value == 1  # type: ignore
     RE(cleanup_plan(zebra))
-    assert (await zebra.pc.arm.armed.get_value()).value == 0
+    assert (await zebra.pc.arm.armed.get_value()).value == 0  # type: ignore
 
 
 @patch(

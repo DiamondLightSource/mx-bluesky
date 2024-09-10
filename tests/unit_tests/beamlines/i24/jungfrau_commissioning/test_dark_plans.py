@@ -43,4 +43,4 @@ def test_do_dark_acq(
     jungfrau: JungfrauM1 = fake_devices["jungfrau"]
 
     RE(do_manual_acquisition(jungfrau, 0.001, 0.001, 1000))
-    jungfrau.acquire_start.set.assert_called()
+    jungfrau.acquire_start.set.assert_called()  # type: ignore
