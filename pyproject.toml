@@ -97,6 +97,8 @@ hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main_
 hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
 hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
 redis_to_murko = "mx_bluesky.beamlines.i04.redis_to_murko_forwarder:main"
+jungfrau-commissioning = "mx_bluesky.beamlines.i24.jungfrau_commissioning.main:main"
+
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/mx-bluesky"
@@ -122,7 +124,7 @@ markers = [
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
     "system_test: marks tests as a system test",
-    "requires: marks a test as having an external dependency such as a service or hardware"
+    "requires: marks a test as having an external dependency such as a service or hardware",
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10

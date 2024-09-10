@@ -1,4 +1,5 @@
 import inspect
+import pathlib
 from collections.abc import Callable
 from inspect import getmembers, isgeneratorfunction, signature
 
@@ -105,7 +106,8 @@ def hlp(arg: Callable | None = None):
 
 
 setup: Config = Config()
-setup.InteractiveShellApp.exec_files = ["setup_ipython.py"]
+main_dir = pathlib.Path(__file__).parent.resolve()
+setup.InteractiveShellApp.exec_files = [str(main_dir / "setup_ipython.py")]
 
 
 def main():
