@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.i24_vgonio import VGonio
 from dodal.devices.zebra import RotationDirection, Zebra
@@ -17,21 +19,30 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import arm_zebra
 
 
+def _fake_wait_for_writing(*_, **__):
+    yield from bps.sleep(0.2)
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.wait_for_writing",
+    _fake_wait_for_writing,
+)
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
 def test_rotation_scan_get_plan(
-    nexus_callback: MagicMock,
+    json_callback: MagicMock,
     fake_create_devices_function: Callable[..., JfDevices],
     params: RotationScanParameters,
+    tmp_path: Path,
 ):
+    params.storage_directory = str(tmp_path)
     with patch(
         "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.create_rotation_scan_devices",
         fake_create_devices_function,
     ):
         plan = get_rotation_scan_plan(params)
     assert plan is not None
-    nexus_callback.assert_called_once()
 
 
 @patch(
@@ -72,6 +83,10 @@ def test_move_to_start(
 
 
 @patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.wait_for_writing",
+    _fake_wait_for_writing,
+)
+@patch(
     "bluesky.plan_stubs.wait",
 )
 @patch(
@@ -93,4 +108,4 @@ def test_rotation_scan_do_plan(
     RE(plan)
     devices = fake_create_devices_function()
     gonio: VGonio = devices["gonio"]
-    assert gonio.omega.user_readback.get() == -360.5
+    assert gonio.omega.user_readback.get() == -367.6

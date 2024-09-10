@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
     RotationScanParameters,
@@ -21,11 +22,12 @@ def test_params_load_from_file(params):
 
 
 def test_params_validation():
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValidationError) as exc:
         params = RotationScanParameters.from_file(  # noqa
             "tests/unit_tests/beamlines/i24/jungfrau_commissioning/test_data/bad_params_acq_time_too_short.json"
         )
+
     assert (
-        exc.value.errors()[0]["msg"]
-        == "Acquisition time must not be shorter than exposure time!"
+        "Acquisition time must not be shorter than exposure time!"
+        in exc.value.errors()[0]["msg"]
     )

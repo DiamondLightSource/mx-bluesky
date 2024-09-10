@@ -23,7 +23,7 @@ def setup_zebra_for_rotation(
     start_angle: float = 0,
     scan_width: float = 360,
     direction: RotationDirection = RotationDirection.POSITIVE,
-    shutter_opening_deg: float = 0.5,
+    shutter_opening_deg: float = 10,
     group: str = "setup_zebra_for_rotation",
     wait: bool = False,
     shutter_opening_s: float = 0.3,

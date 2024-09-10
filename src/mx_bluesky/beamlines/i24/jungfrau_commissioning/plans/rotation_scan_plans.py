@@ -39,6 +39,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devi
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
+    EXPERIMENT_PARAM_DUMP_FILENAME,
     RotationScanParameters,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -164,7 +165,7 @@ def rotation_scan_plan(
     )
     yield from set_gain_mode(jungfrau, GainMode.dynamic)
     yield from bps.abs_set(jungfrau.file_directory, directory.as_posix(), wait=True)
-    yield from bps.abs_set(jungfrau.file_name, params.nexus_filename, wait=True)
+    yield from bps.abs_set(jungfrau.file_name, params.data_filename, wait=True)
     LOGGER.info("Setting Acquire to arm detector")
     yield from bps.abs_set(jungfrau.acquire_start, 1)
     yield from bps.sleep(2)
@@ -262,17 +263,17 @@ def get_rotation_scan_plan(params: RotationScanParameters):
     params = deepcopy(
         params
     )  # stop us from accidentally resusing this and nesting directories
-    params.nexus_filename += (
+    params.data_filename += (
         f"_scan_{int(params.scan_width_deg)}deg_{transmission:.3f}transmission"
     )
     directory_path = Path(params.storage_directory)
     directory = (
-        directory_path / f"{run_number(directory_path):05d}_{params.nexus_filename}"
+        directory_path / f"{run_number(directory_path):05d}_{params.data_filename}"
     )
     os.makedirs(directory.as_posix())
     params.storage_directory = directory.as_posix()
     # save the params for the run with the data
-    with open((directory / "experiment_params.json").as_posix(), "w") as f:
+    with open((directory / EXPERIMENT_PARAM_DUMP_FILENAME).as_posix(), "w") as f:
         f.write(params.model_dump_json(indent=2))
 
     metadata_writer = JsonMetadataWriter()

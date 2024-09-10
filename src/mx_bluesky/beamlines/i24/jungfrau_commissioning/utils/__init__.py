@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 
@@ -19,7 +20,7 @@ def date_time_string():
     return datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 
-def run_number(directory):
+def run_number(directory: Path):
     with open(directory / "run_number.txt") as f:
         run_number = int(f.read())
         LOGGER.info(f"current run number: {run_number+1}")

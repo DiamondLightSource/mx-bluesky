@@ -7,6 +7,7 @@ from bluesky.callbacks import CallbackBase
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
+    READING_DUMP_FILENAME,
     RotationScanParameters,
 )
 
@@ -51,12 +52,15 @@ class JsonMetadataWriter(CallbackBase):
             assert self.parameters is not None
             data: dict | None = doc.get("data")
             assert data is not None
-            self.parameters.x = data.get("vgonio_x")
-            self.parameters.y = data.get("vgonio_yh")
-            self.parameters.z = data.get("vgonio_z")
-            LOGGER.info(
-                f"Nexus handler received x, y, z: {self.parameters.x ,self.parameters.y ,self.parameters.z}."  # noqa
+            self.parameters.x_start_um = data.get("vgonio_x")
+            self.parameters.y_start_um = data.get("vgonio_yh")
+            self.parameters.z_start_um = data.get("vgonio_z")
+            pos = (
+                self.parameters.x_start_um,
+                self.parameters.y_start_um,
+                self.parameters.z_start_um,
             )
+            LOGGER.info(f"Nexus handler received x, y, z: {pos}.")
         if event_descriptor.get("name") == "beam params":
             assert self.parameters is not None
             data = doc.get("data")
@@ -76,7 +80,7 @@ class JsonMetadataWriter(CallbackBase):
             and doc.get("run_start") == self.run_start_uid
         ):
             with open(
-                Path(self.parameters.storage_directory) / "collection_info.json", "w"
+                Path(self.parameters.storage_directory) / READING_DUMP_FILENAME, "w"
             ) as f:
                 f.write(
                     json.dumps(
@@ -85,9 +89,9 @@ class JsonMetadataWriter(CallbackBase):
                             "flux_xbpm2": self.flux_xbpm2,
                             "flux_xbpm3": self.flux_xbpm3,
                             "wavelength": self.wavelength,
-                            "x": self.parameters.x,
-                            "y": self.parameters.y,
-                            "z": self.parameters.z,
+                            "x": self.parameters.x_start_um,
+                            "y": self.parameters.y_start_um,
+                            "z": self.parameters.z_start_um,
                         }
                     )
                 )
