@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -10,10 +11,11 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, model_validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
+from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
 from mx_bluesky.hyperion.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -31,19 +33,38 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 class GridCommon(
     DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
 ):
+    use_panda: bool
+    use_gpu: bool
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
-    use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
-    use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     use_cpu_and_gpu_zocalo: bool = Field(default=CONST.I03.USE_CPU_AND_GPU_ZOCALO)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
     selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
+
+    # @model_validator(mode="wrap")
+    # @classmethod
+    # def set_default_feature_flags(cls, values, handler) -> Any:
+    #     if "use_panda" not in values:
+    #         values["use_panda"] = cls.features.best_effort().use_panda_for_gridscan
+    #     if "use_gpu" not in values:
+    #         values["use_gpu"] = cls.features.best_effort().use_gpu_for_gridscan
+    #     return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_feature_flags(cls, values) -> Any:
+        cls.features = FeatureFlags()
+        if "use_panda" not in values:
+            values["use_panda"] = cls.features.best_effort().use_panda_for_gridscan
+        if "use_gpu" not in values:
+            values["use_gpu"] = cls.features.best_effort().use_gpu_for_gridscan
+        return values
 
     @property
     def detector_params(self):
