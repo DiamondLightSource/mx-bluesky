@@ -26,7 +26,8 @@ Documentation is split into four categories, and each is also accessible from li
 
             how-to/environment-setup
             how-to/run-a-collection
-            how-to/pmac-docs
+            how-to/stage-pmac-moves
+            how-to/commission-a-jungfrau
 
         +++
 
