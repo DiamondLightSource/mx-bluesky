@@ -47,15 +47,6 @@ class GridCommon(
     )
     selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
 
-    # @model_validator(mode="wrap")
-    # @classmethod
-    # def set_default_feature_flags(cls, values, handler) -> Any:
-    #     if "use_panda" not in values:
-    #         values["use_panda"] = cls.features.best_effort().use_panda_for_gridscan
-    #     if "use_gpu" not in values:
-    #         values["use_gpu"] = cls.features.best_effort().use_gpu_for_gridscan
-    #     return values
-
     @model_validator(mode="before")
     @classmethod
     def set_default_feature_flags(cls, values) -> Any:
