@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import SupportsInt, TypeVar
+from typing import Literal, SupportsInt, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -224,6 +224,17 @@ class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 class WithOavCentring(BaseModel):
     oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
+
+
+class TopNByMaxCountSelection(BaseModel):
+    name: Literal["top_n_by_max_count"] = "top_n_by_max_count"
+    n: int
+
+
+class WithCentreSelection(BaseModel):
+    select_centres: TopNByMaxCountSelection | None = Field(
+        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    )
 
 
 class OptionalXyzStarts(BaseModel):

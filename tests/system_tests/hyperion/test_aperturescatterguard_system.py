@@ -10,6 +10,10 @@ from dodal.devices.aperturescatterguard import (
 )
 from ophyd_async.core import DeviceCollector
 
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
+    set_aperture_for_bbox_size,
+)
+
 
 @pytest.fixture
 def ap_sg():
@@ -28,9 +32,6 @@ def ap_sg():
 def test_aperture_change_callback(ap_sg: ApertureScatterguard):
     from bluesky.run_engine import RunEngine
 
-    from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-        set_aperture_for_bbox_size,
-    )
     from mx_bluesky.hyperion.external_interaction.callbacks.aperture_change_callback import (
         ApertureChangeCallback,
     )

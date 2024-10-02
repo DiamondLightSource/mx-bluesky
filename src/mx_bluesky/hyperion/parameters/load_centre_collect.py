@@ -4,6 +4,7 @@ from pydantic import BaseModel, model_validator
 
 from mx_bluesky.hyperion.parameters.components import (
     HyperionParameters,
+    WithCentreSelection,
     WithSample,
     WithVisit,
 )
@@ -21,7 +22,7 @@ def construct_from_values(parent_context: dict, key: str, t: type[T]) -> T:
     return t(**values)
 
 
-class LoadCentreCollect(HyperionParameters, WithVisit, WithSample):
+class LoadCentreCollect(HyperionParameters, WithVisit, WithSample, WithCentreSelection):
     """Experiment parameters to perform the combined robot load,
     pin-tip centre and rotation scan operations."""
 
