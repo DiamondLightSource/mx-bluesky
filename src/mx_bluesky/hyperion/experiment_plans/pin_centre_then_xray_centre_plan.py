@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -10,6 +11,12 @@ from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_chi_omega
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
+)
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
+    change_aperture_then_centre,
+)
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyscanEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -53,13 +60,12 @@ def create_parameters_for_grid_detection(
     return grid_detect_and_xray_centre
 
 
-def pin_centre_then_xray_centre_plan(
+def pin_centre_then_flyscan_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    """Plan that perfoms a pin tip centre followed by an xray centre to completely
-    centre the sample"""
+    """Plan that performs a pin tip centre followed by a flyscan to determine the centres of interest"""
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
@@ -68,7 +74,7 @@ def pin_centre_then_xray_centre_plan(
         pin_tip_detection=composite.pin_tip_detection,
     )
 
-    def _pin_centre_then_xray_centre_plan():
+    def _pin_centre_then_flyscan_plan():
         yield from setup_beamline_for_OAV(
             composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
@@ -96,7 +102,7 @@ def pin_centre_then_xray_centre_plan(
             oav_params,
         )
 
-    yield from ispyb_activation_wrapper(_pin_centre_then_xray_centre_plan(), parameters)
+    yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
 
 
 def pin_tip_centre_then_xray_centre(
@@ -105,15 +111,27 @@ def pin_tip_centre_then_xray_centre(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
+    # TODO listen for flyscan results and then centre
 
     eiger: EigerDetector = composite.eiger
 
     eiger.set_detector_parameters(parameters.detector_params)
 
-    return start_preparing_data_collection_then_do_plan(
-        eiger,
-        composite.detector_motion,
-        parameters.detector_params.detector_distance,
-        pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
-        group=CONST.WAIT.GRID_READY_FOR_DC,
-    )
+    flyscan_event_handler = FlyscanEventHandler()
+
+    @bpp.subs_decorator(flyscan_event_handler)
+    def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
+        yield from start_preparing_data_collection_then_do_plan(
+            eiger,
+            composite.detector_motion,
+            parameters.detector_params.detector_distance,
+            pin_centre_then_flyscan_plan(composite, parameters, oav_config_file),
+            group=CONST.WAIT.GRID_READY_FOR_DC,
+        )
+
+    yield from pin_centre_flyscan_then_fetch_results()
+    flyscan_results = flyscan_event_handler.flyscan_results
+    assert (
+        flyscan_results
+    ), "Flyscan result event not received or no crystal found and exception not raised"
+    yield from change_aperture_then_centre(flyscan_results[0], composite)

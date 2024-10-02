@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
 from typing import Protocol
@@ -9,10 +9,10 @@ from typing import Protocol
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
+from dls_bluesky_core.core import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
-    ApertureValue,
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -29,7 +29,7 @@ from dodal.devices.fast_grid_scan import (
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -38,6 +38,7 @@ from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
+    XrcResult,
     ZocaloResults,
     get_full_processing_results,
 )
@@ -45,7 +46,6 @@ from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -64,6 +64,10 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
+    change_aperture_then_centre,
+)
+from mx_bluesky.hyperion.experiment_plans.common.flyscan_result import FlyscanResult
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
@@ -109,26 +113,27 @@ class FlyScanXRayCentreComposite:
         return self.smargon
 
 
+class FlyscanEventHandler:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.flyscan_results: Sequence[FlyscanResult] | None = None
+
+    def __call__(self, name, doc):
+        if name == "start" and "flyscan_results" in doc:
+            self.flyscan_results = [
+                FlyscanResult(**result_dict) for result_dict in doc["flyscan_results"]
+            ]
+
+
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
 
 
-def flyscan_xray_centre(
-    composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+def flyscan(
+    composite: FlyScanXRayCentreComposite, parameters: ThreeDGridScan
 ) -> MsgGenerator:
-    """Create the plan to run the grid scan based on provided parameters.
-
-    The ispyb handler should be added to the whole gridscan as we want to capture errors
-    at any point in it.
-
-    Args:
-        parameters (ThreeDGridScan): The parameters to run the scan.
-
-    Returns:
-        Generator: The plan for the gridscan
-    """
+    """Perform a flyscan and determine the centres of interest"""
     parameters.features.update_self_from_server()
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = CONST.ZOCALO_ENV
@@ -152,25 +157,59 @@ def flyscan_xray_centre(
         composite.attenuator,
         parameters.transmission_frac,
     )
-    def run_gridscan_and_move_and_tidy(
+    def run_gridscan_and_fetch_and_tidy(
         fgs_composite: FlyScanXRayCentreComposite,
         params: ThreeDGridScan,
         feature_controlled: _FeatureControlled,
-    ):
-        yield from run_gridscan_and_move(fgs_composite, params, feature_controlled)
+    ) -> MsgGenerator:
+        yield from run_gridscan_and_fetch_results(
+            fgs_composite, params, feature_controlled
+        )
 
-    return run_gridscan_and_move_and_tidy(composite, parameters, feature_controlled)
+    yield from run_gridscan_and_fetch_and_tidy(
+        composite, parameters, feature_controlled
+    )
+
+
+def flyscan_xray_centre(
+    composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+) -> MsgGenerator:
+    """Create the plan to run the grid scan based on provided parameters.
+
+    The ispyb handler should be added to the whole gridscan as we want to capture errors
+    at any point in it.
+
+    Args:
+        parameters (ThreeDGridScan): The parameters to run the scan.
+
+    Returns:
+        Generator: The plan for the gridscan
+    """
+    flyscan_event_handler = FlyscanEventHandler()
+
+    @bpp.subs_decorator(flyscan_event_handler)
+    def flyscan_and_fetch_results() -> MsgGenerator:
+        yield from flyscan(composite, parameters)
+
+    yield from flyscan_and_fetch_results()
+
+    flyscan_results = flyscan_event_handler.flyscan_results
+    assert (
+        flyscan_results
+    ), "Flyscan result event not received or no crystal found and exception not raised"
+    yield from change_aperture_then_centre(flyscan_results[0], composite, parameters)
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
-def run_gridscan_and_move(
+def run_gridscan_and_fetch_results(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
     feature_controlled: _FeatureControlled,
 ) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
-    and moves to the centre of mass determined by zocalo"""
+    and fires an event with the centres of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
     initial_xyz = np.array(
@@ -198,37 +237,16 @@ def run_gridscan_and_move(
             )
             LOGGER.info("Zocalo triggered and read, interpreting results.")
             xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
-            LOGGER.info(f"Got xray centring results: {xrc_results}")
+            LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
             if xrc_results:
-                best_result = xrc_results[0]
-                xrc_centre_grid_coords = best_result["centre_of_mass"]
-                xray_centre = parameters.FGS_params.grid_position_to_motor_position(
-                    np.array(xrc_centre_grid_coords)
-                )
-                with TRACER.start_span("change_aperture"):
-                    bbox_size = np.abs(
-                        np.array(best_result["bounding_box"][1])
-                        - np.array(best_result["bounding_box"][0])
-                    )
-                    yield from set_aperture_for_bbox_size(
-                        fgs_composite.aperture_scatterguard, bbox_size
-                    )
+                flyscan_results = [
+                    _xrc_result_to_flyscan_result(xr, parameters) for xr in xrc_results
+                ]
             else:
                 LOGGER.warning("No X-ray centre received")
                 raise CrystalNotFoundException()
+            yield from _fire_flyscan_result_event(flyscan_results)
 
-        # once we have the results, go to the appropriate position
-        LOGGER.info("Moving to centre of mass.")
-        with TRACER.start_span("move_to_result"):
-            x, y, z = xray_centre
-            yield from move_x_y_z(fgs_composite.sample_motors, x, y, z, wait=True)
-
-        if parameters.FGS_params.set_stub_offsets:
-            LOGGER.info("Recentring smargon co-ordinate system to this point.")
-            yield from bps.mv(
-                fgs_composite.sample_motors.stub_offsets,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-                StubPosition.CURRENT_AS_CENTER,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-            )
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
@@ -237,6 +255,34 @@ def run_gridscan_and_move(
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here
         yield from bps.wait()
+
+
+def _xrc_result_to_flyscan_result(
+    xrc_result: XrcResult, parameters: ThreeDGridScan
+) -> FlyscanResult:
+    fgs_params = parameters.FGS_params
+    xray_centre = fgs_params.grid_position_to_motor_position(
+        xrc_result["centre_of_mass"]
+    )
+    return FlyscanResult(
+        centre_of_mass_mm=xray_centre,
+        bounding_box_mm=(
+            fgs_params.grid_position_to_motor_position(xrc_result["bounding_box"][0]),
+            fgs_params.grid_position_to_motor_position(xrc_result["bounding_box"][1]),
+        ),
+        max_count=xrc_result["max_count"],
+        total_count=xrc_result["total_count"],
+    )
+
+
+@bpp.set_run_key_decorator(CONST.PLAN.FLYSCAN_RESULTS)
+def _fire_flyscan_result_event(results: Sequence[FlyscanResult]):
+    def empty_plan():
+        return iter([])
+
+    yield from bpp.run_wrapper(
+        empty_plan(), md={"flyscan_results": [dataclasses.asdict(r) for r in results]}
+    )
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
@@ -312,31 +358,6 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
-
-
-def set_aperture_for_bbox_size(
-    aperture_device: ApertureScatterguard,
-    bbox_size: list[int] | np.ndarray,
-):
-    # bbox_size is [x,y,z], for i03 we only care about x
-    new_selected_aperture = (
-        ApertureValue.MEDIUM if bbox_size[0] < 2 else ApertureValue.LARGE
-    )
-    LOGGER.info(
-        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
-    )
-
-    @bpp.set_run_key_decorator("change_aperture")
-    @bpp.run_decorator(
-        md={
-            "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.value,
-        }
-    )
-    def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture)
-
-    yield from set_aperture()
 
 
 @dataclasses.dataclass

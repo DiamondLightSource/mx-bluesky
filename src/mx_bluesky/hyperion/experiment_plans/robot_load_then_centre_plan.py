@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 from typing import cast
 
+import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
@@ -36,11 +37,17 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
 )
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
+    change_aperture_then_centre,
+)
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyscanEventHandler,
+)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    pin_centre_then_xray_centre_plan,
+    pin_centre_then_flyscan_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -88,6 +95,10 @@ class RobotLoadThenCentreComposite:
     webcam: Webcam
     lower_gonio: XYZPositioner
 
+    @property
+    def sample_motors(self):
+        return self.smargon
+
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
     from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -95,18 +106,18 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
     return device_composite_from_context(context, RobotLoadThenCentreComposite)
 
 
-def centring_plan_from_robot_load_params(
+def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    yield from pin_centre_then_xray_centre_plan(
+    yield from pin_centre_then_flyscan_plan(
         cast(GridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params(),
     )
 
 
-def robot_load_then_centre_plan(
+def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
@@ -116,13 +127,36 @@ def robot_load_then_centre_plan(
         params.robot_load_params(),
     )
 
-    yield from centring_plan_from_robot_load_params(composite, params, oav_config_file)
+    yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
 
 
 def robot_load_then_centre(
     composite: RobotLoadThenCentreComposite,
     parameters: RobotLoadThenCentre,
 ) -> MsgGenerator:
+    """Perform pin-tip detection followed by a flyscan to determine centres of interest.
+    Performs a robot load if necessary. Centre on the best diffracting centre.
+    """
+
+    flyscan_event_handler = FlyscanEventHandler()
+
+    @bpp.subs_decorator(flyscan_event_handler)
+    def robot_load_then_flyscan_and_fetch_results():
+        yield from robot_load_then_flyscan(composite, parameters)
+
+    yield from robot_load_then_flyscan_and_fetch_results()
+    flyscan_results = flyscan_event_handler.flyscan_results
+    if flyscan_results is not None:
+        yield from change_aperture_then_centre(flyscan_results[0], composite)
+    # else no chi change, no need to recentre.
+
+
+def robot_load_then_flyscan(
+    composite: RobotLoadThenCentreComposite,
+    parameters: RobotLoadThenCentre,
+) -> MsgGenerator:
+    """Perform pin-tip detection followed by a flyscan to determine centres of interest.
+    Performs a robot load if necessary."""
     eiger: EigerDetector = composite.eiger
 
     # TODO: get these from one source of truth #254
@@ -138,13 +172,13 @@ def robot_load_then_centre(
     doing_chi_change = parameters.chi_start_deg is not None
 
     if doing_sample_load:
-        plan = robot_load_then_centre_plan(
+        plan = _robot_load_then_flyscan_plan(
             composite,
             parameters,
         )
         LOGGER.info("Pin not loaded, loading and centring")
     elif doing_chi_change:
-        plan = centring_plan_from_robot_load_params(composite, parameters)
+        plan = _flyscan_plan_from_robot_load_params(composite, parameters)
         LOGGER.info("Pin already loaded but chi changed so centring")
     else:
         LOGGER.info("Pin already loaded and chi not changed so doing nothing")

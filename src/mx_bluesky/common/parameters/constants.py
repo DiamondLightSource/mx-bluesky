@@ -19,6 +19,7 @@ class DocDescriptorNames:
     HARDWARE_READ_PRE = "read_hardware_for_callbacks_pre_collection"
     HARDWARE_READ_DURING = "read_hardware_for_callbacks_during_collection"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
+    FLYSCAN_RESULTS = "flyscan_results_obtained"
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class PlanNameConstants:
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
+    FLYSCAN_RESULTS = "flyscan_results"
 
 
 @dataclass(frozen=True)

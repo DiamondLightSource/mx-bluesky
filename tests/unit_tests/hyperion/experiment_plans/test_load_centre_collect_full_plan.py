@@ -3,12 +3,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
 import pytest
+from bluesky import Msg
 from bluesky.protocols import Location
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
+from pydantic import ValidationError
 
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -24,11 +28,18 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
+from .conftest import (
+    FLYSCAN_RESULT_HIGH,
+    FLYSCAN_RESULT_LOW,
+    FLYSCAN_RESULT_MED,
+    sim_fire_event_on_open_run,
+)
 
 
 def find_a_pin(pin_tip_detection):
@@ -110,6 +121,14 @@ def load_centre_collect_params():
 
 
 @pytest.fixture
+def load_centre_collect_with_top_n_params():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+    )
+    return LoadCentreCollect(**params)
+
+
+@pytest.fixture
 def grid_detection_callback_with_detected_grid():
     with patch(
         "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
@@ -158,18 +177,27 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
-    return_value=iter([]),
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    return_value=iter(
+        [
+            Msg(
+                "open_run",
+                flyscan_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                run=CONST.PLAN.FLYSCAN_RESULTS,
+            ),
+            Msg("close_run"),
+        ]
+    ),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
-    return_value=iter([]),
+    return_value=iter([Msg(command="robot_load_and_change_energy")]),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
-    return_value=iter([]),
+    return_value=iter([Msg(command="multi_rotation_scan")]),
 )
-def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
+def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
     mock_rotation_scan: MagicMock,
     mock_full_robot_load_plan: MagicMock,
     mock_pin_centre_then_xray_centre_plan: MagicMock,
@@ -178,13 +206,42 @@ def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine,
 ):
-    sim_run_engine.simulate_plan(
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full_plan(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
 
-    mock_full_robot_load_plan.assert_called_once()
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-x"
+        and msg.args[0] == 0.1,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-y"
+        and msg.args[0] == 0.2,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-z"
+        and msg.args[0] == 0.3,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "multi_rotation_scan"
+    )
+
     robot_load_energy_change_composite = mock_full_robot_load_plan.mock_calls[0].args[0]
     robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
@@ -255,3 +312,127 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
         )
 
     mock_rotation_scan.assert_not_called()
+
+
+def test_can_deserialize_top_n_by_max_count_params(
+    load_centre_collect_with_top_n_params,
+):
+    assert (
+        load_centre_collect_with_top_n_params.select_centres.name
+        == "top_n_by_max_count"
+    )
+    assert load_centre_collect_with_top_n_params.select_centres.n == 5
+
+
+def test_bad_selection_method_is_rejected():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+    )
+    params["select_centres"]["name"] = "inject_bad_code_here"
+    with pytest.raises(
+        ValidationError,
+        match=(
+            "Input tag 'inject_bad_code_here' found using 'name' does not match any "
+            "of the expected tags"
+        ),
+    ):
+        LoadCentreCollect(**params)
+
+
+def test_default_select_centres_is_top_n_by_max_count_n_is_1(
+    load_centre_collect_params,
+):
+    assert load_centre_collect_params.select_centres.name == "top_n_by_max_count"
+    assert load_centre_collect_params.select_centres.n == 1
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    new=MagicMock(
+        return_value=iter(
+            [
+                Msg(
+                    "open_run",
+                    flyscan_results=[
+                        dataclasses.asdict(r)
+                        for r in [
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_HIGH,
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_LOW,
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_HIGH,
+                        ]
+                    ],
+                    run=CONST.PLAN.FLYSCAN_RESULTS,
+                ),
+                Msg("close_run"),
+            ]
+        )
+    ),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
+    new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    new=MagicMock(
+        side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")])
+    ),
+)
+def test_load_centre_collect_full_plan_multiple_centres(
+    sim_run_engine: RunEngineSimulator,
+    load_centre_collect_with_top_n_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    composite: LoadCentreCollectComposite,
+):
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full_plan(
+            composite,
+            load_centre_collect_with_top_n_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "robot_load_and_change_energy"
+    )
+    assert sum(1 for msg in msgs if msg.command == "robot_load_and_change_energy") == 1
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
+    )
+    for expected_hit in [
+        FLYSCAN_RESULT_HIGH,
+        FLYSCAN_RESULT_HIGH,
+        FLYSCAN_RESULT_MED,
+        FLYSCAN_RESULT_MED,
+        FLYSCAN_RESULT_MED,
+    ]:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "smargon-x"
+            and msg.args[0] == expected_hit.centre_of_mass_mm[0],
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "smargon-y"
+            and msg.args[0] == expected_hit.centre_of_mass_mm[1],
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "smargon-z"
+            and msg.args[0] == expected_hit.centre_of_mass_mm[2],
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "multi_rotation_scan"
+        )
