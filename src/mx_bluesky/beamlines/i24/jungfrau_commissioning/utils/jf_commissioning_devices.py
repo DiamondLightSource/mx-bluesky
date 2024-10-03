@@ -26,6 +26,14 @@ class JungfrauM1(Device):
     file_directory = Cpt(EpicsSignal, "FileDirectory", string=True)
     file_name = Cpt(EpicsSignal, "FileName", string=True)
 
+    pedestal_mode = Cpt(EpicsSignal, "PedestalMode")
+    pedestal_frames = Cpt(EpicsSignal, "PedestalFrames")
+    pedestal_loops = Cpt(EpicsSignal, "PedestalLoops")
+
+    burst_mode = Cpt(EpicsSignal, "BurstMode")
+    power_state = Cpt(EpicsSignal, "PowerState")
+
+
 
 class ReadOnlyEnergyAndAttenuator(Device):
     transmission = Cpt(EpicsSignalRO, "-OP-ATTN-01:MATCH")
@@ -36,6 +44,7 @@ class ReadOnlyEnergyAndAttenuator(Device):
     flux_xbpm3 = Cpt(EpicsSignalRO, "-EA-FLUX-01:XBPM-03")
     shutter = Cpt(EpicsSignalRO, "-PS-SHTR-01:CON")
     slow_shutter = Cpt(EpicsSignalRO, "-EA-SHTR-02:M32")
+    detector_distance = Cpt(EpicsSignalRO, "-EA-DET-01:Z.RBV")
 
 
 class SetAttenuator(Device):

@@ -55,6 +55,7 @@ def read_beam_parameters(ro_energ_atten: ReadOnlyEnergyAndAttenuator):
     yield from bps.read(ro_energ_atten.intensity)
     yield from bps.read(ro_energ_atten.flux_xbpm2)
     yield from bps.read(ro_energ_atten.flux_xbpm3)
+    yield from bps.read(ro_energ_atten.detector_distance)
     yield from bps.save()
 
 

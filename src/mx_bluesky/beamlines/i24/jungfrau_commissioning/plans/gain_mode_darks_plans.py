@@ -8,12 +8,15 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.jungfrau_plans import
     check_and_clear_errors,
     do_manual_acquisition,
     set_software_trigger,
+    wait_for_writing,
+    setup_detector
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
     JungfrauM1,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
 
 
 class GainMode(str, Enum):
@@ -63,6 +66,8 @@ def do_darks(
     )
     os.makedirs(directory_prefix, exist_ok=True)
 
+    LOGGER.info(f"Writing data to {directory_prefix}")
+
     timeout_factor = max(10, timeout_factor * 0.001 / acq_time_s)
 
     # TODO CHECK IF FILES EXIST
@@ -105,3 +110,60 @@ def do_darks(
     yield from set_gain_mode(
         jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
     )
+
+
+def do_pedestal_darks(    
+    jungfrau: JungfrauM1,
+    directory: str = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/",
+    check_for_errors=True,
+    exp_time_s=0.001,
+    acq_time_s=0.001,
+    focred_gain_ratio=10,
+    num_images=1000,
+    timeout_factor=6,
+    pedestal_frames=20,
+    pedestal_loops=200):
+
+    directory_prefix = (
+        Path(directory)
+        / f"{run_number(Path(directory)):05d}_darks_{acq_time_s}s_per_frame_pedestal"
+    )
+    os.makedirs(directory_prefix, exist_ok=True)
+
+    LOGGER.info(f"Writing data to {directory_prefix}")
+
+    yield from set_software_trigger(jungfrau)
+
+    yield from setup_detector(jungfrau, exp_time_s, acq_time_s, pedestal_frames*pedestal_loops*2)
+
+    yield from set_gain_mode(
+        jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
+    )
+    yield from abs_set(jungfrau.file_directory, directory_prefix.as_posix(), wait=True)
+    yield from abs_set(jungfrau.file_name, "Pedestal", wait=True)
+
+    yield from abs_set(jungfrau.pedestal_frames, pedestal_frames, wait=True)
+    yield from abs_set(jungfrau.pedestal_loops, pedestal_loops, wait=True)
+
+    yield from abs_set(jungfrau.pedestal_mode, 1, wait=True)
+
+    yield from abs_set(jungfrau.acquire_start, 1, wait=True)
+    yield from wait_for_writing(jungfrau, 1000)
+
+
+    # yield from do_manual_acquisition(
+    #     jungfrau, exp_time_s, fg_acq_time, num_images, timeout_factor
+    # )
+
+    yield from sleep(0.3)
+
+    yield from abs_set(jungfrau.pedestal_mode, 0, wait=True)
+
+
+def take_darks():
+    """"Take darks in pedestal and old style, at 1kHz and 2kHz"""
+    jf = i24.jungfrau()
+    for time in [0.001, 0.0005]:
+        LOGGER.info(f"Taking data at exposure time = {time}")
+        yield from do_pedestal_darks(jf, exp_time_s=time, acq_time_s=time)
+        yield from do_darks(jf, exp_time_s=time, acq_time_s=time)

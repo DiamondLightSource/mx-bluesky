@@ -9,6 +9,8 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devi
     JungfrauM1,
     TriggerMode,
 )
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
+import os
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 
 DIRECTORY = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/"
@@ -98,6 +100,33 @@ def do_manual_acq_with_new_filename(
     )
 
 
+def do_burst_mode(
+    jungfrau: JungfrauM1,
+    name: str,
+    exp_time_s: float,
+    acq_time_s: float,
+    n_frames: int,
+    directory: str = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/",
+    timeout_times: float = 5,
+):
+    directory_prefix = (
+        Path(directory)
+        / f"{run_number(Path(directory)):05d}_burst_{n_frames}_frames_{acq_time_s}s_per_frame"
+    )
+    os.makedirs(directory_prefix, exist_ok=True)
+    LOGGER.info(
+        f"Using directory {directory_prefix.as_posix()}, setting directory and filename on detector..."
+    )
+    yield from bps.abs_set(jungfrau.file_name, name, wait=True)
+    yield from bps.abs_set(jungfrau.file_directory, directory_prefix.as_posix(), wait=True)
+    yield from bps.abs_set(jungfrau.burst_mode, 1)
+    yield from bps.sleep(0.2)
+    yield from do_manual_acquisition(
+        jungfrau, exp_time_s, acq_time_s, n_frames, timeout_times
+    )
+    yield from bps.abs_set(jungfrau.burst_mode, 0)
+
+
 def setup_detector(
     jungfrau: JungfrauM1,
     exposure_time_s: float,
@@ -118,11 +147,11 @@ def setup_detector(
         acquire_time_s,
         group=group,
     )
-    yield from bps.abs_set(
-        jungfrau.frame_count,
-        n_images,
-        group=group,
-    )
+    # yield from bps.abs_set(
+    #     jungfrau.frame_count,
+    #     n_images,
+    #     group=group,
+    # )
     if wait:
         yield from bps.wait(group)
 

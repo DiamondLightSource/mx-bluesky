@@ -7,6 +7,7 @@ from typing import TypedDict
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky.run_engine import RunEngine
 from dodal.devices.i24.i24_vgonio import VGonio
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
@@ -59,12 +60,24 @@ class JfDevices(TypedDict):
 def create_rotation_scan_devices() -> JfDevices:
     """Ensures necessary devices have been instantiated and returns a dict with
     references to them"""
+    RE = RunEngine()
+    LOGGER.info("Making jungfrau")
+    jf = i24.jungfrau()
+    LOGGER.info("Making gonio")
+    gonio = i24.vgonio()
+    LOGGER.info("Making zebra")
+    zebra = i24.zebra()
+    LOGGER.info("Making beam_params")
+    beam_params = i24.beam_params()
+    LOGGER.info("Making attenuator")
+    attenuator = i24.attenuator()
+
     return {
-        "jungfrau": i24.jungfrau(),
-        "gonio": i24.vgonio(),
-        "zebra": i24.zebra(),
-        "beam_params": i24.beam_params(),
-        "attenuator": i24.attenuator(),
+        "jungfrau": jf,
+        "gonio": gonio,
+        "zebra": zebra,
+        "beam_params": beam_params,
+        "attenuator": attenuator,
     }
 
 
@@ -266,6 +279,7 @@ def get_rotation_scan_plan(params: RotationScanParameters):
     params.data_filename += (
         f"_scan_{int(params.scan_width_deg)}deg_{transmission:.3f}transmission"
     )
+    LOGGER.info(f"Running with params {params}")
     directory_path = Path(params.storage_directory)
     directory = (
         directory_path / f"{run_number(directory_path):05d}_{params.data_filename}"

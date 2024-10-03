@@ -26,6 +26,7 @@ class RotationScanParameters(BaseModel):
     shutter_opening_time_s: float = 0.6
     storage_directory: str = "/tmp/jungfrau_data/"
     data_filename: str = "scan"
+    # energy_kev: float | None = None
 
     @classmethod
     def from_file(cls, filename: str):

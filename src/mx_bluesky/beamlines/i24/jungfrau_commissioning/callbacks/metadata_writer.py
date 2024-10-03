@@ -70,8 +70,10 @@ class JsonMetadataWriter(CallbackBase):
             self.flux_xbpm2 = data.get("beam_params_flux_xbpm2")
             self.flux_xbpm3 = data.get("beam_params_flux_xbpm3")
             self.wavelength = data.get("beam_params_wavelength")
+            self.energy_kev = data.get("beam_params_energy")
+            self.detector_distance = data.get("beam_params_det_distance")
             LOGGER.info(
-                f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}."  # noqa
+                f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance}."  # noqa
             )
 
     def stop(self, doc: dict):  # type: ignore
@@ -92,6 +94,8 @@ class JsonMetadataWriter(CallbackBase):
                             "x": self.parameters.x_start_um,
                             "y": self.parameters.y_start_um,
                             "z": self.parameters.z_start_um,
+                            "detector_distance": self.detector_distance,
+                            "energy_kev": self.energy_kev,
                         }
                     )
                 )

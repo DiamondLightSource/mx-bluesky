@@ -4,7 +4,7 @@
 
 - The deployment used live both times lives in: `/dls_sw/i24/software/bluesky/jungfrau`
 - .venv in `./jungfrau_commissioning`
-- executable `jungfrau_commissioning` loads an iPython terminal
+- executable `jungfrau_commissioning` loads an iPython terminal with some more instructions
 - don't install stuff pls - this environment has dependencies which no longer exist like `python-artemis`
 - changing the code is fine
 - if you mess up the environment the dependencies can be found in current_deps.txt
