@@ -9,7 +9,8 @@ LOGGER = logging.getLogger("jungfrau_commissioning")
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.parent = dodal_logger
 
-logging_directory = "/tmp/jungfrau_commissioning_logs_ffv81422"
+# NOTE: This needed to be changed if someone else uses it because permissions.
+logging_directory = "/tmp/jungfrau_commissioning_logs_"
 
 
 def set_up_logging_handlers(dev_mode: bool = True):

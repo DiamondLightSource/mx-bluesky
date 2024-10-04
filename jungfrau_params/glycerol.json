@@ -1,10 +1,10 @@
 {
     "rotation_axis": "omega",
     "scan_width_deg": 10.0,
-    "image_width_deg": 0.002,
+    "image_width_deg": 0.005,
     "omega_start_deg": 0.0,
-    "exposure_time_s": 0.0005,
-    "acquire_time_s": 0.0005,
+    "exposure_time_s": 0.001,
+    "acquire_time_s": 0.001,
     "rotation_direction": "Negative",
     "offset_deg": 10.0,
     "shutter_opening_time_s": 0.3,

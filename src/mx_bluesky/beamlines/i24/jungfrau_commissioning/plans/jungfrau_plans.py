@@ -147,11 +147,12 @@ def setup_detector(
         acquire_time_s,
         group=group,
     )
-    # yield from bps.abs_set(
-    #     jungfrau.frame_count,
-    #     n_images,
-    #     group=group,
-    # )
+    # NOTE: This needed to be commented out for burst mode
+    yield from bps.abs_set(
+        jungfrau.frame_count,
+        n_images,
+        group=group,
+    )
     if wait:
         yield from bps.wait(group)
 

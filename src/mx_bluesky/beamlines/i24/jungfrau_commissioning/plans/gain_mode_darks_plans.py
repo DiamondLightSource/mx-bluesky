@@ -150,11 +150,6 @@ def do_pedestal_darks(
     yield from abs_set(jungfrau.acquire_start, 1, wait=True)
     yield from wait_for_writing(jungfrau, 1000)
 
-
-    # yield from do_manual_acquisition(
-    #     jungfrau, exp_time_s, fg_acq_time, num_images, timeout_factor
-    # )
-
     yield from sleep(0.3)
 
     yield from abs_set(jungfrau.pedestal_mode, 0, wait=True)
@@ -166,4 +161,4 @@ def take_darks():
     for time in [0.001, 0.0005]:
         LOGGER.info(f"Taking data at exposure time = {time}")
         yield from do_pedestal_darks(jf, exp_time_s=time, acq_time_s=time)
-        yield from do_darks(jf, exp_time_s=time, acq_time_s=time)
+        yield from do_darks(jf, exp_time_s=time, acq_time_s=time, focred_gain_ratio=10)
