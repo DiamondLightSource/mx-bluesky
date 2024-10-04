@@ -2,9 +2,9 @@ import dataclasses
 from unittest.mock import MagicMock, patch
 
 import pytest
-from bluesky import Msg
 from bluesky.protocols import Location
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection

@@ -66,10 +66,10 @@ def load_centre_collect_full_plan(
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
     selection_params = params.select_centres
-    selection_func = getattr(flyscan_result, selection_params.name)
+    selection_func = getattr(flyscan_result, selection_params.name)  # type: ignore
     assert callable(selection_func)
-    selection_args = selection_params.model_dump(exclude={"name"})
-    hits = selection_func(flyscan_event_handler.flyscan_results, **selection_args)
+    selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
+    hits = selection_func(flyscan_event_handler.flyscan_results, **selection_args)  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
 
     for hit in hits:
