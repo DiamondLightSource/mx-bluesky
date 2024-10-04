@@ -1,4 +1,5 @@
 import dataclasses
+from collections.abc import Sequence
 
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import subs_decorator
@@ -69,7 +70,9 @@ def load_centre_collect_full_plan(
     selection_func = getattr(flyscan_result, selection_params.name)  # type: ignore
     assert callable(selection_func)
     selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
-    hits = selection_func(flyscan_event_handler.flyscan_results, **selection_args)  # type: ignore
+    hits: Sequence[flyscan_result.FlyscanResult] = selection_func(
+        flyscan_event_handler.flyscan_results, **selection_args
+    )  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
 
     for hit in hits:
