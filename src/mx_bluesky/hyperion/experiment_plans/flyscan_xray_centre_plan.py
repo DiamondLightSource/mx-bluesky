@@ -262,13 +262,17 @@ def _xrc_result_to_flyscan_result(
 ) -> FlyscanResult:
     fgs_params = parameters.FGS_params
     xray_centre = fgs_params.grid_position_to_motor_position(
-        xrc_result["centre_of_mass"]
+        np.array(xrc_result["centre_of_mass"])
     )
     return FlyscanResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
-            fgs_params.grid_position_to_motor_position(xrc_result["bounding_box"][0]),
-            fgs_params.grid_position_to_motor_position(xrc_result["bounding_box"][1]),
+            fgs_params.grid_position_to_motor_position(
+                np.array(xrc_result["bounding_box"][0])
+            ),
+            fgs_params.grid_position_to_motor_position(
+                np.array(xrc_result["bounding_box"][1])
+            ),
         ),
         max_count=xrc_result["max_count"],
         total_count=xrc_result["total_count"],
