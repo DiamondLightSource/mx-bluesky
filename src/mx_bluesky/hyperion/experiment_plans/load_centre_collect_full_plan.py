@@ -7,9 +7,6 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
 import mx_bluesky.hyperion.experiment_plans.common.flyscan_result as flyscan_result
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
-    change_aperture_then_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyscanEventHandler,
 )
@@ -75,9 +72,17 @@ def load_centre_collect_full_plan(
     )  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
 
+    multi_rotation = params.multi_rotation_scan
+    rotation_template = multi_rotation.rotation_scans.copy()
+
+    multi_rotation.rotation_scans.clear()
+
     for hit in hits:
-        LOGGER.info(f"Performing rotations for {hit}")
-        yield from change_aperture_then_centre(hit, composite)
-        yield from multi_rotation_scan(
-            composite, params.multi_rotation_scan, oav_params
-        )
+        for rot in rotation_template:
+            combination = rot.model_copy()
+            combination.x_start_um, combination.y_start_um, combination.z_start_um = (
+                axis * 1000 for axis in hit.centre_of_mass_mm
+            )
+            multi_rotation.rotation_scans.append(combination)
+
+    yield from multi_rotation_scan(composite, multi_rotation, oav_params)
