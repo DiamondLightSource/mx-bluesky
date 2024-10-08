@@ -17,11 +17,12 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     multi_rotation_scan,
+    MultiRotationScan
 )
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
-
+from blueapi.core import MsgGenerator
 
 @dataclasses.dataclass
 class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
@@ -37,11 +38,11 @@ def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
     return device_composite_from_context(context, LoadCentreCollectComposite)
 
 
-def load_centre_collect_full_plan(
+def load_centre_collect_full(
     composite: LoadCentreCollectComposite,
     params: LoadCentreCollect,
     oav_params: OAVParameters | None = None,
-):
+) -> MsgGenerator:
     """Attempt a complete data collection experiment, consisting of the following:
     * Load the sample if necessary
     * Move to the specified goniometer start angles
@@ -84,5 +85,8 @@ def load_centre_collect_full_plan(
                 axis * 1000 for axis in hit.centre_of_mass_mm
             )
             multi_rotation.rotation_scans.append(combination)
+    multi_rotation = MultiRotationScan.model_validate(multi_rotation)
+
+    LOGGER.info(f"Calling ")
 
     yield from multi_rotation_scan(composite, multi_rotation, oav_params)
