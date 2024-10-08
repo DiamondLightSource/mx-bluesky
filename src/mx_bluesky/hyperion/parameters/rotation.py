@@ -157,7 +157,30 @@ class MultiRotationScan(RotationExperiment, SplitScan):
 
     @property
     def detector_params(self):
-        return self._detector_params(self.rotation_scans[0].omega_start_deg)
+        self.det_dist_to_beam_converter_path = (
+            self.det_dist_to_beam_converter_path
+            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+        )
+        optional_args = {}
+        if self.run_number:
+            optional_args["run_number"] = self.run_number
+        assert self.detector_distance_mm is not None
+        os.makedirs(self.storage_directory, exist_ok=True)
+        return DetectorParams(
+            detector_size_constants=I03Constants.DETECTOR,
+            expected_energy_ev=self.demand_energy_ev,
+            exposure_time=self.exposure_time_s,
+            directory=self.storage_directory,
+            prefix=self.file_name,
+            detector_distance=self.detector_distance_mm,
+            omega_start=self.rotation_scans[0].omega_start_deg,
+            omega_increment=self.rotation_increment_deg,
+            num_images_per_trigger=self._num_images_per_scan()[0],
+            num_triggers=len(self._num_images_per_scan()),
+            use_roi_mode=False,
+            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            **optional_args,
+        )
 
     @property
     def ispyb_params(self):  # pyright: ignore
