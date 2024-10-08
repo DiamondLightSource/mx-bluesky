@@ -16,9 +16,9 @@ from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 T = TypeVar("T", bound=BaseModel)
 
 
-def construct_from_values(parent_context: dict, key: str, t: type[T]) -> T:
-    values = dict(parent_context)
-    values |= values[key]
+def construct_from_values(parent_context: dict, child_dict: dict, t: type[T]) -> T:
+    values = {k: v for k, v in parent_context.items() if not isinstance(v, dict)}
+    values |= child_dict
     return t(**values)
 
 
@@ -42,10 +42,12 @@ class LoadCentreCollect(MxBlueskyParameters, WithVisit, WithSample, WithCentreSe
             disallowed_keys == set()
         ), f"Unexpected fields found in LoadCentreCollect {disallowed_keys}"
 
-        values["robot_load_then_centre"] = construct_from_values(
-            values, "robot_load_then_centre", RobotLoadThenCentre
+        new_robot_load_then_centre_params = construct_from_values(
+            values, values["robot_load_then_centre"], RobotLoadThenCentre
         )
-        values["multi_rotation_scan"] = construct_from_values(
-            values, "multi_rotation_scan", MultiRotationScan
+        new_multi_rotation_scan_params = construct_from_values(
+            values, values["multi_rotation_scan"], MultiRotationScan
         )
+        values["multi_rotation_scan"] = new_multi_rotation_scan_params
+        values["robot_load_then_centre"] = new_robot_load_then_centre_params
         return values

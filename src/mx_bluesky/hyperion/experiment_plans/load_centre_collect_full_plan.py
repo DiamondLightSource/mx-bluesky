@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Sequence
 
-from blueapi.core import BlueskyContext
+from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.preprocessors import subs_decorator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -15,14 +15,14 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_flyscan,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    MultiRotationScan,
     RotationScanComposite,
     multi_rotation_scan,
-    MultiRotationScan
 )
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
-from blueapi.core import MsgGenerator
+
 
 @dataclasses.dataclass
 class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
@@ -87,6 +87,6 @@ def load_centre_collect_full(
             multi_rotation.rotation_scans.append(combination)
     multi_rotation = MultiRotationScan.model_validate(multi_rotation)
 
-    LOGGER.info(f"Calling ")
+    LOGGER.info("Calling ")
 
     yield from multi_rotation_scan(composite, multi_rotation, oav_params)

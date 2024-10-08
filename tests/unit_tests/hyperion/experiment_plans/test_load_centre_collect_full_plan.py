@@ -1,4 +1,5 @@
 import dataclasses
+from collections.abc import Sequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
@@ -19,7 +20,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
-    load_centre_collect_full_plan,
+    load_centre_collect_full,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -30,7 +31,10 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import (
+    MultiRotationScan,
+    RotationScanPerSweep,
+)
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
 from .conftest import (
@@ -208,7 +212,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     msgs = sim_run_engine.simulate_plan(
-        load_centre_collect_full_plan(
+        load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
@@ -251,6 +255,19 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
     assert isinstance(rotation_scan_composite, RotationScanComposite)
     assert isinstance(rotation_scan_params, MultiRotationScan)
+    # XXX sample test file xyz conflicts with detected xyz
+    expected_rotation_scans = [
+        {
+            "omega_start_deg": 0,
+            "chi_start_deg": 23.85,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+    ]
+    _compare_rotation_scans(
+        expected_rotation_scans, rotation_scan_params.rotation_scans
+    )
 
 
 @patch(
@@ -261,7 +278,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     new=MagicMock(),
 )
-def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
+def test_load_centre_collect_ful_skips_collect_if_pin_tip_not_found(
     mock_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -276,7 +293,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
             )
         )
@@ -305,7 +322,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
 
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
             )
         )
@@ -376,11 +393,10 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
-    new=MagicMock(
-        side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")])
-    ),
+    side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
 )
 def test_load_centre_collect_full_plan_multiple_centres(
+    mock_multi_rotation_scan: MagicMock,
     sim_run_engine: RunEngineSimulator,
     load_centre_collect_with_top_n_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -389,7 +405,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     msgs = sim_run_engine.simulate_plan(
-        load_centre_collect_full_plan(
+        load_centre_collect_full(
             composite,
             load_centre_collect_with_top_n_params,
             oav_parameters_for_rotation,
@@ -403,35 +419,98 @@ def test_load_centre_collect_full_plan_multiple_centres(
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
     )
-    # for expected_hit in [
-    #     FLYSCAN_RESULT_HIGH,
-    #     FLYSCAN_RESULT_HIGH,
-    #     FLYSCAN_RESULT_MED,
-    #     FLYSCAN_RESULT_MED,
-    #     FLYSCAN_RESULT_MED,
-    # ]:
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM,
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-x"
-    #     and msg.args[0] == expected_hit.centre_of_mass_mm[0],
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-y"
-    #     and msg.args[0] == expected_hit.centre_of_mass_mm[1],
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-z"
-    #     and msg.args[0] == expected_hit.centre_of_mass_mm[2],
-    # )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "multi_rotation_scan"
     )
+    expected_rotation_scans = [
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 0,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 30,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 0,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 30,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 0,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 30,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 0,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 30,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 0,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+        {
+            "omega_start_deg": 10,
+            "chi_start_deg": 30,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        },
+    ]
+    rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
+    assert isinstance(rotation_scan_params, MultiRotationScan)
+    _compare_rotation_scans(
+        expected_rotation_scans, rotation_scan_params.rotation_scans
+    )
+    assert rotation_scan_params.transmission_frac == 0.05
+
+
+def _compare_rotation_scans(
+    expected_rotation_scans: Sequence[dict],
+    actual_rotation_scans: Sequence[RotationScanPerSweep],
+):
+    for expected, rotation_scan in zip(
+        expected_rotation_scans, actual_rotation_scans, strict=False
+    ):
+        assert rotation_scan.omega_start_deg == expected["omega_start_deg"]
+        assert rotation_scan.chi_start_deg == expected["chi_start_deg"]
+        assert rotation_scan.x_start_um == expected["x_start_um"]
+        assert rotation_scan.y_start_um == expected["y_start_um"]
+        assert rotation_scan.z_start_um == expected["z_start_um"]

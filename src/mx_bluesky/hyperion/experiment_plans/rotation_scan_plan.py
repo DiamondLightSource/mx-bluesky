@@ -409,6 +409,11 @@ def multi_rotation_scan(
         }
     )
     @bpp.stage_decorator([eiger])
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.xbpm_feedback,
+        composite.attenuator,
+        parameters.transmission_frac,
+    )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
