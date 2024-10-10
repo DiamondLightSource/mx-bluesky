@@ -40,7 +40,7 @@ def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
 
 def load_centre_collect_full(
     composite: LoadCentreCollectComposite,
-    params: LoadCentreCollect,
+    parameters: LoadCentreCollect,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     """Attempt a complete data collection experiment, consisting of the following:
@@ -57,14 +57,14 @@ def load_centre_collect_full(
 
     @subs_decorator(flyscan_event_handler)
     def fetch_results_from_robot_load_then_flyscan():
-        yield from robot_load_then_flyscan(composite, params.robot_load_then_centre)
+        yield from robot_load_then_flyscan(composite, parameters.robot_load_then_centre)
 
     yield from fetch_results_from_robot_load_then_flyscan()
     assert (
         flyscan_event_handler.flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
-    selection_params = params.select_centres
+    selection_params = parameters.select_centres
     selection_func = getattr(flyscan_result, selection_params.name)  # type: ignore
     assert callable(selection_func)
     selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
@@ -73,7 +73,7 @@ def load_centre_collect_full(
     )  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
 
-    multi_rotation = params.multi_rotation_scan
+    multi_rotation = parameters.multi_rotation_scan
     rotation_template = multi_rotation.rotation_scans.copy()
 
     multi_rotation.rotation_scans.clear()
@@ -86,7 +86,5 @@ def load_centre_collect_full(
             )
             multi_rotation.rotation_scans.append(combination)
     multi_rotation = MultiRotationScan.model_validate(multi_rotation)
-
-    LOGGER.info("Calling ")
 
     yield from multi_rotation_scan(composite, multi_rotation, oav_params)
