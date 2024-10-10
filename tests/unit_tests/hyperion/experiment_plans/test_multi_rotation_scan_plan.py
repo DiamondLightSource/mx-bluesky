@@ -56,6 +56,12 @@ def test_multi_rotation_scan_params():
         assert scan.nexus_vds_start_img == params.scan_indices[i]
         assert params.scan_indices
 
+    detector_params = params.detector_params
+    # MX-bluesky 563 assumptions are made about DetectorParams which aren't true for this test file
+    assert detector_params.num_images_per_trigger == 1800
+    assert detector_params.num_triggers == 3
+    assert detector_params.omega_start == 0
+
 
 async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     fake_create_rotation_devices: RotationScanComposite,

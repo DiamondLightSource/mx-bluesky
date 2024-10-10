@@ -54,11 +54,11 @@ def mock_pin_centre_then_flyscan_plan(_, __):
     MagicMock(return_value=iter([])),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_centre",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,
 )
 def test_robot_load_then_centre_centres_on_the_first_flyscan_result(
-    mock_change_aperture_then_centre: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
@@ -67,8 +67,11 @@ def test_robot_load_then_centre_centres_on_the_first_flyscan_result(
 
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
 
-    mock_change_aperture_then_centre.assert_called_once()
-    assert mock_change_aperture_then_centre.mock_calls[0].args[0] == FLYSCAN_RESULT_MED
+    mock_change_aperture_then_move_to_xtal.assert_called_once()
+    assert (
+        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
+        == FLYSCAN_RESULT_MED
+    )
 
 
 @patch(
@@ -295,8 +298,8 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
     ),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_centre",
-    MagicMock(return_value=iter([Msg("change_aperture_then_centre")])),
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
+    MagicMock(return_value=iter([Msg("change_aperture_then_move_to_xtal")])),
 )
 def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_then_eiger_staged_and_centring_run(
     robot_load_composite: RobotLoadThenCentreComposite,
@@ -334,7 +337,7 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
     )
 
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "change_aperture_then_centre"
+        messages, lambda msg: msg.command == "change_aperture_then_move_to_xtal"
     )
 
 
@@ -354,8 +357,8 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
     ),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_centre",
-    MagicMock(return_value=iter([Msg("change_aperture_then_centre")])),
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
+    MagicMock(return_value=iter([Msg("change_aperture_then_move_to_xtal")])),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
@@ -395,7 +398,7 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
         lambda msg: msg.command == "centre_plan",
     )
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "change_aperture_then_centre"
+        messages, lambda msg: msg.command == "change_aperture_then_move_to_xtal"
     )
 
 

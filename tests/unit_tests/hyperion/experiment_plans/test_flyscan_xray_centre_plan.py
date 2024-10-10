@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.common.flyscan_result import FlyscanResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
     FlyScanXRayCentreComposite,
@@ -358,10 +358,9 @@ class TestFlyscanXrayCentrePlan:
         RE(plan())
 
         actual = [
-            FlyscanResult(**result_dict)
-            for result_dict in (await wait_for(event_doc, 1))
+            XRCResult(**result_dict) for result_dict in (await wait_for(event_doc, 1))
         ]
-        expected = FlyscanResult(
+        expected = XRCResult(
             centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
             bounding_box_mm=(np.array([0.2, 0.2, 0.2]), np.array([0.8, 0.8, 0.7])),
             max_count=105062,
@@ -381,7 +380,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @pytest.mark.skip(
@@ -460,7 +459,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch(
@@ -502,7 +501,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     async def test_when_gridscan_finished_then_dev_shm_disabled(
@@ -550,7 +549,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     def test_when_gridscan_succeeds_ispyb_comment_appended_to(
@@ -644,7 +643,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     def test_when_gridscan_finds_no_xtal_ispyb_comment_appended_to(
@@ -689,7 +688,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan.move_x_y_z",
+        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     def test_when_gridscan_finds_no_xtal_exception_is_raised(
