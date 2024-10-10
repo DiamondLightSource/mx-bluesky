@@ -937,7 +937,7 @@ def pin_tip_edge_data():
     tip_y_px = 200
     microns_per_pixel = 2.87  # from zoom levels .xml
     grid_width_px = int(400 / microns_per_pixel)
-    target_grid_height_px = 70
+    target_grid_height_px = 140
     top_edge_data = ([0] * tip_x_px) + (
         [(tip_y_px - target_grid_height_px // 2)] * grid_width_px
     )

@@ -220,6 +220,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
     )
+    # TODO re-enable tests see mx-bluesky 561
     # msgs = assert_message_and_return_remaining(
     #     msgs, lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM
     # )

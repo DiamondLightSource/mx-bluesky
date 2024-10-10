@@ -13,7 +13,7 @@ from ophyd_async.core import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
-    load_centre_collect_full_plan,
+    load_centre_collect_full,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -121,7 +121,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
-    "numberofimages": 120,
+    "numberofimages": 180,
 }
 
 GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
@@ -130,7 +130,7 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
     "omegastart": 90,
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
-    "numberofimages": 90,
+    "numberofimages": 180,
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
@@ -179,7 +179,7 @@ def test_execute_load_centre_collect_full_plan(
     RE.subscribe(ispyb_rotation_cb)
     RE.subscribe(robot_load_cb)
     RE(
-        load_centre_collect_full_plan(
+        load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
             oav_parameters_for_rotation,
@@ -217,16 +217,16 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 4 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,152], "
-        "bottom right (px): [844,251]. Aperture: ApertureValue.SMALL. ",
+        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [100,130], "
+        "bottom right (px): [844,278]. Aperture: ApertureValue.SMALL. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 3 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [844,239]. Aperture: ApertureValue.SMALL. ",
+        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [100,130], "
+        "bottom right (px): [844,278]. Aperture: ApertureValue.SMALL. ",
     )
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -250,5 +250,5 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (675, 737, -381) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (675, 719, -409) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
     )
