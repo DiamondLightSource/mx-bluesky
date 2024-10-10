@@ -264,6 +264,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
             "x_start_um": 400,
             "y_start_um": 500,
             "z_start_um": 600,
+            "nexus_vds_start_img": 0,
         },
     ]
     _compare_rotation_scans(
@@ -495,6 +496,9 @@ def test_load_centre_collect_full_plan_multiple_centres(
             "z_start_um": 600,
         },
     ]
+    for i in range(0, len(expected_rotation_scans)):
+        expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
+
     rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
     assert isinstance(rotation_scan_params, MultiRotationScan)
     _compare_rotation_scans(
@@ -515,3 +519,4 @@ def _compare_rotation_scans(
         assert rotation_scan.x_start_um == expected["x_start_um"]
         assert rotation_scan.y_start_um == expected["y_start_um"]
         assert rotation_scan.z_start_um == expected["z_start_um"]
+        assert rotation_scan.nexus_vds_start_img == expected["nexus_vds_start_img"]
