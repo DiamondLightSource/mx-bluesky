@@ -229,7 +229,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_centre",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,
 )
 @patch(
@@ -244,7 +244,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     mock_flyscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
-    mock_change_aperture_then_centre: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
@@ -257,8 +257,11 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
             test_config_files["oav_config_json"],
         )
     )
-    mock_change_aperture_then_centre.assert_called_once()
-    assert mock_change_aperture_then_centre.mock_calls[0].args[0] == FLYSCAN_RESULT_MED
+    mock_change_aperture_then_move_to_xtal.assert_called_once()
+    assert (
+        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
+        == FLYSCAN_RESULT_MED
+    )
 
 
 @patch(

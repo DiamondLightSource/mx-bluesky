@@ -12,8 +12,8 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_ch
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
-    change_aperture_then_centre,
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyscanEventHandler,
@@ -111,8 +111,6 @@ def pin_tip_centre_then_xray_centre(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    # TODO listen for flyscan results and then centre
-
     eiger: EigerDetector = composite.eiger
 
     eiger.set_detector_parameters(parameters.detector_params)
@@ -134,4 +132,4 @@ def pin_tip_centre_then_xray_centre(
     assert (
         flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
-    yield from change_aperture_then_centre(flyscan_results[0], composite)
+    yield from change_aperture_then_move_to_xtal(flyscan_results[0], composite)

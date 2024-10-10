@@ -6,7 +6,7 @@ from bluesky.preprocessors import subs_decorator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
-import mx_bluesky.hyperion.experiment_plans.common.flyscan_result as flyscan_result
+import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyscanEventHandler,
 )
@@ -68,7 +68,7 @@ def load_centre_collect_full(
     selection_func = getattr(flyscan_result, selection_params.name)  # type: ignore
     assert callable(selection_func)
     selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
-    hits: Sequence[flyscan_result.FlyscanResult] = selection_func(
+    hits: Sequence[flyscan_result.XRCResult] = selection_func(
         flyscan_event_handler.flyscan_results, **selection_args
     )  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")

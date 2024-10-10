@@ -64,10 +64,10 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
-    change_aperture_then_centre,
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.flyscan_result import FlyscanResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
@@ -116,12 +116,12 @@ class FlyScanXRayCentreComposite:
 class FlyscanEventHandler:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.flyscan_results: Sequence[FlyscanResult] | None = None
+        self.flyscan_results: Sequence[XRCResult] | None = None
 
     def __call__(self, name, doc):
         if name == "start" and "flyscan_results" in doc:
             self.flyscan_results = [
-                FlyscanResult(**result_dict) for result_dict in doc["flyscan_results"]
+                XRCResult(**result_dict) for result_dict in doc["flyscan_results"]
             ]
 
 
@@ -198,7 +198,9 @@ def flyscan_xray_centre(
     assert (
         flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
-    yield from change_aperture_then_centre(flyscan_results[0], composite, parameters)
+    yield from change_aperture_then_move_to_xtal(
+        flyscan_results[0], composite, parameters
+    )
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
@@ -259,12 +261,12 @@ def run_gridscan_and_fetch_results(
 
 def _xrc_result_to_flyscan_result(
     xrc_result: XrcResult, parameters: ThreeDGridScan
-) -> FlyscanResult:
+) -> XRCResult:
     fgs_params = parameters.FGS_params
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )
-    return FlyscanResult(
+    return XRCResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
             fgs_params.grid_position_to_motor_position(
@@ -280,7 +282,7 @@ def _xrc_result_to_flyscan_result(
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.FLYSCAN_RESULTS)
-def _fire_flyscan_result_event(results: Sequence[FlyscanResult]):
+def _fire_flyscan_result_event(results: Sequence[XRCResult]):
     def empty_plan():
         return iter([])
 

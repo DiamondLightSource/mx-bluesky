@@ -5,7 +5,7 @@ from tests.unit_tests.hyperion.experiment_plans.conftest import (
     FLYSCAN_RESULT_MED,
 )
 
-from mx_bluesky.hyperion.experiment_plans.common.flyscan_result import (
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import (
     top_n_by_max_count,
 )
 

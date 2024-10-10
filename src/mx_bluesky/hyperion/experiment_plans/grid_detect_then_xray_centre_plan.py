@@ -36,8 +36,8 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
-    change_aperture_then_centre,
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyscanEventHandler,
@@ -227,6 +227,6 @@ def grid_detect_then_xray_centre(
         flyscan_event_handler.flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
-    yield from change_aperture_then_centre(
+    yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.flyscan_results[0], composite
     )

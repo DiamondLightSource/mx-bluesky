@@ -10,7 +10,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from ophyd_async.core import DeviceCollector
 
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     set_aperture_for_bbox_size,
 )
 

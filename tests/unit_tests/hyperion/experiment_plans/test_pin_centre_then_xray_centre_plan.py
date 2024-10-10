@@ -46,11 +46,11 @@ def test_pin_centre_then_xray_centre_params():
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.change_aperture_then_centre",
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,
 )
 def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result(
-    mock_change_aperture_then_centre: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
@@ -70,8 +70,11 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
 
     mock_detect_and_do_gridscan.assert_called_once()
     mock_pin_tip_centre.assert_called_once()
-    mock_change_aperture_then_centre.assert_called_once()
-    assert mock_change_aperture_then_centre.mock_calls[0].args[0] == FLYSCAN_RESULT_MED
+    mock_change_aperture_then_move_to_xtal.assert_called_once()
+    assert (
+        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
+        == FLYSCAN_RESULT_MED
+    )
 
 
 def test_when_create_parameters_for_grid_detection_then_parameters_created(

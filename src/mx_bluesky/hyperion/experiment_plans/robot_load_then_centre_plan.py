@@ -37,8 +37,8 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
 )
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_centre_plan import (
-    change_aperture_then_centre,
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyscanEventHandler,
@@ -147,7 +147,7 @@ def robot_load_then_centre(
     yield from robot_load_then_flyscan_and_fetch_results()
     flyscan_results = flyscan_event_handler.flyscan_results
     if flyscan_results is not None:
-        yield from change_aperture_then_centre(flyscan_results[0], composite)
+        yield from change_aperture_then_move_to_xtal(flyscan_results[0], composite)
     # else no chi change, no need to recentre.
 
 
