@@ -20,6 +20,7 @@ from mx_bluesky.hyperion.log import LOGGER
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
 TICKS_PER_MS = 1000  # Panda sequencer prescaler will be set to us
+PULSE_WIDTH_US = 50
 
 
 class Enabled(Enum):
@@ -75,8 +76,6 @@ def _get_seq_table(
     num_pulses = parameters.x_steps
 
     delay_between_pulses = time_between_steps_ms * TICKS_PER_MS
-
-    PULSE_WIDTH_US = 1
 
     assert delay_between_pulses > PULSE_WIDTH_US
 

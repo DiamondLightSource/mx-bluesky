@@ -22,10 +22,10 @@ def thaw_and_stream_to_redis(
     oav: OAV = inject("oav"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
-    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
+    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     sample_id = yield from bps.rd(robot.sample_id)
 
-    yield from bps.abs_set(oav.zoom_controller.level, "1.0x", wait=True)
+    yield from bps.abs_set(oav.zoom_controller.level, "1.0x", wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.abs_set(oav_to_redis_forwarder.sample_id, sample_id)
 
     @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))

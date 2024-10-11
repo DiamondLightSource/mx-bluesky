@@ -65,7 +65,7 @@ def get_detector_type(detector_stage: DetectorMotion) -> Generator[Msg, None, De
 
 def _move_detector_stage(detector_stage: DetectorMotion, target: float) -> MsgGenerator:
     logger.info(f"Moving detector stage to target position: {target}.")
-    yield from bps.mv(detector_stage.y, target)
+    yield from bps.mv(detector_stage.y, target)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 # Workaround in case the PV value has been set to the detector name
