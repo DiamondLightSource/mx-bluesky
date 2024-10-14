@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from time import time
-from typing import Callable, Optional
 
 import bluesky.plan_stubs as bps
 from dodal.devices.eiger import EigerDetector
@@ -17,7 +17,7 @@ def do_fgs(
     grid_scan_device: FastGridScanCommon,
     detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
     synchrotron: Synchrotron,
-    during_collection_plans: Optional[Callable] = None,
+    during_collection_plans: Callable | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
         Optionally run other plans kickoff and between kickoff and completion. A bluesky run MUST be open before this plan is
