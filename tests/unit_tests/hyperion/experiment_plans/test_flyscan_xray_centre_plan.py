@@ -1100,17 +1100,15 @@ class TestFlyscanXrayCentrePlan:
 
         RE.subscribe(ispyb_cb)
 
-        def test_plan():
-            yield from bps.open_run()
-            yield from kickoff_and_complete_gridscan(
+        RE(
+            kickoff_and_complete_gridscan(
                 fake_fgs_composite.zebra_fast_grid_scan,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
                 scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
                 scan_start_indices=[0, x_steps * y_steps],
             )
-
-        RE(test_plan())
+        )
         mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
         expected_start_infos = [

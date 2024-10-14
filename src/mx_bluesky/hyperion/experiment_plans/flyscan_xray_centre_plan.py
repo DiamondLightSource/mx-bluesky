@@ -307,6 +307,15 @@ def kickoff_and_complete_gridscan(
     scan_start_indices: list[int],
     do_during_run: Callable[[], MsgGenerator] | None = None,
 ):
+    def during_collection_plans() -> MsgGenerator:
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        if do_during_run:
+            LOGGER.info(f"Running {do_during_run} during FGS")
+            yield from do_during_run()
+
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
     @bpp.run_decorator(
@@ -320,18 +329,15 @@ def kickoff_and_complete_gridscan(
         except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         else_plan=lambda: (yield from bps.unstage(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
-    def during_collection_plans() -> MsgGenerator:
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        if do_during_run:
-            LOGGER.info(f"Running {do_during_run} during FGS")
-            yield from do_during_run()
+    def do_fgs_in_run():
+        yield from do_fgs(
+            gridscan,
+            eiger,
+            synchrotron,
+            during_collection_plans=during_collection_plans(),
+        )
 
-    yield from do_fgs(
-        gridscan, eiger, synchrotron, during_collection_plans=during_collection_plans()
-    )
+    yield from do_fgs_in_run()
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):

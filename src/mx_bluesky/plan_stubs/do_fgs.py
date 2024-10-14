@@ -30,6 +30,8 @@ def do_fgs(
         during_collection_plans (Optional, MsgGenerator): Generic plan called in between kickoff but and completion, eg waiting on zocalo.
     """
 
+    # TODO assert that run is open
+
     expected_images = yield from bps.rd(grid_scan_device.expected_images)
     exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     LOGGER.info("waiting for topup if necessary...")
