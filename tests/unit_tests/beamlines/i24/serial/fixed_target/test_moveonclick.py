@@ -9,6 +9,7 @@ from ophyd_async.core import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _calculate_zoom_calibrator,
+    _get_beam_centre,
     _move_on_mouse_click_plan,
     onMouse,
     update_ui,
@@ -78,6 +79,16 @@ def test_onMouse_runs_plan_on_click(fake_move_plan: MagicMock, pmac: PMAC, RE):
     fake_oav: OAV = MagicMock(spec=OAV)
     onMouse(cv.EVENT_LBUTTONUP, 0, 0, "", param=[RE, pmac, fake_oav])
     fake_move_plan.assert_called_once()
+
+
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.rd")
+def test_get_beam_centre(fake_read: MagicMock, RE):
+    fake_read.side_effect = [fake_generator(10), fake_generator(2)]
+    fake_oav: OAV = MagicMock(spec=OAV)
+    fake_oav.beam_centre_i = fake_oav.beam_centre_j = MagicMock()
+    res = RE(_get_beam_centre(fake_oav)).plan_result
+
+    assert res == (10, 2)
 
 
 @pytest.mark.parametrize(
