@@ -61,7 +61,8 @@ def _setup_oav(
 ):
     yield from setup_general_oav_params(composite.oav, oav_parameters)
     yield from bps.abs_set(
-        composite.oav.snapshot.directory, str(parameters.snapshot_directory)
+        composite.oav.snapshot.directory,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        str(parameters.snapshot_directory),
     )
 
 
@@ -72,10 +73,12 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     time_now = datetime.now()
     filename = f"{time_now.strftime('%H%M%S')}_oav_snapshot_{omega:.0f}"
     yield from bps.abs_set(
-        composite.oav.snapshot.filename, filename, group=OAV_SNAPSHOT_SETUP_SHOT
+        composite.oav.snapshot.filename,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        filename,
+        group=OAV_SNAPSHOT_SETUP_SHOT,
     )
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
-    yield from bps.trigger(composite.oav.snapshot, wait=True)
+    yield from bps.trigger(composite.oav.snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-    yield from bps.read(composite.oav.snapshot)
+    yield from bps.read(composite.oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.save()
