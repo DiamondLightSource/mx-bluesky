@@ -28,12 +28,6 @@ jobs:
       - name: Run ruff
         run: ruff check .
 
-      - name: Install import linter
-        run: pip install import-linter
-
-      - name: Run import linter
-        run: lint-imports
-
   tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest

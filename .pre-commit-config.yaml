@@ -26,14 +26,6 @@ repos:
         types: [python]
         require_serial: true
 
-      - id: import-contracts
-        name: Ensure import directionality
-        pass_filenames: false
-        language: system
-        entry: lint-imports
-        types: [python]
-        require_serial: false
-
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.4.1

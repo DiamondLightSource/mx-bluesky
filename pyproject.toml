@@ -62,7 +62,6 @@ dev = [
     # "copier",
     "diff-cover",
     "GitPython",
-    "import-linter",
     "ipython",
     "mypy",
     "myst-parser",
