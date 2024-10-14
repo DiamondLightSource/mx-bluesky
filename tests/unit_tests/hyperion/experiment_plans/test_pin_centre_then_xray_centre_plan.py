@@ -25,7 +25,10 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ....conftest import raw_params_from_file
-from ....system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
+from ....system_tests.hyperion.external_interaction.conftest import (
+    TEST_RESULT_LARGE,
+    simulate_xrc_result,
+)
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
@@ -158,9 +161,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         lambda msg_: {"values": {"value": SynchrotronMode.SHUTDOWN}},
         "synchrotron-synchrotron_mode",
     )
-    sim_run_engine.add_read_handler_for(
-        simple_beamline.zocalo.results, TEST_RESULT_LARGE
-    )
+    simulate_xrc_result(sim_run_engine, simple_beamline.zocalo, TEST_RESULT_LARGE)
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
         sim_run_engine.add_handler(

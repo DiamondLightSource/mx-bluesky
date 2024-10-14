@@ -68,6 +68,9 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
@@ -190,7 +193,7 @@ def flyscan_xray_centre(
 
     @bpp.subs_decorator(flyscan_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
-        yield from flyscan(composite, parameters)
+        yield from ispyb_activation_wrapper(flyscan(composite, parameters), parameters)
 
     yield from flyscan_and_fetch_results()
 
@@ -199,7 +202,10 @@ def flyscan_xray_centre(
         flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
     yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0], composite, parameters
+        flyscan_results[0],
+        composite.smargon,
+        composite.aperture_scatterguard,
+        parameters,
     )
 
 

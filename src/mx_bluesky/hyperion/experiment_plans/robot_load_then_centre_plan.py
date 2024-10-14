@@ -147,7 +147,9 @@ def robot_load_then_centre(
     yield from robot_load_then_flyscan_and_fetch_results()
     flyscan_results = flyscan_event_handler.flyscan_results
     if flyscan_results is not None:
-        yield from change_aperture_then_move_to_xtal(flyscan_results[0], composite)
+        yield from change_aperture_then_move_to_xtal(
+            flyscan_results[0], composite.smargon, composite.aperture_scatterguard
+        )
     # else no chi change, no need to recentre.
 
 

@@ -1,6 +1,3 @@
-from abc import abstractmethod
-from typing import Protocol
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy
@@ -14,18 +11,10 @@ from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from mx_bluesky.hyperion.tracing import TRACER
 
 
-class CentringComposite(Protocol):
-    aperture_scatterguard: ApertureScatterguard
-
-    @property
-    @abstractmethod
-    def sample_motors(self) -> Smargon:
-        pass
-
-
 def change_aperture_then_move_to_xtal(
     best_hit: XRCResult,
-    composite: CentringComposite,
+    smargon: Smargon,
+    aperture_scatterguard: ApertureScatterguard,
     parameters: ThreeDGridScan | None = None,
 ):
     """For the given flyscan result,
@@ -38,7 +27,7 @@ def change_aperture_then_move_to_xtal(
         )
         with TRACER.start_span("change_aperture"):
             yield from _set_aperture_for_bbox_mm(
-                composite.aperture_scatterguard, bounding_box_size
+                aperture_scatterguard, bounding_box_size
             )
     else:
         LOGGER.warning("No bounding box size received")
@@ -47,14 +36,12 @@ def change_aperture_then_move_to_xtal(
     LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         x, y, z = best_hit.centre_of_mass_mm
-        yield from move_x_y_z(composite.sample_motors, x, y, z, wait=True)
+        yield from move_x_y_z(smargon, x, y, z, wait=True)
 
     # TODO support for setting stub offsets in multipin mx-bluesky 552
     if parameters and parameters.FGS_params.set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
-        yield from bps.mv(
-            composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-        )
+        yield from bps.mv(smargon.stub_offsets, StubPosition.CURRENT_AS_CENTER)
 
 
 def _set_aperture_for_bbox_mm(

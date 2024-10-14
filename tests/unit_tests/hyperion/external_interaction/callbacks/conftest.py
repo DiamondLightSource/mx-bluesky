@@ -17,6 +17,9 @@ from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 from .....conftest import default_raw_params, raw_params_from_file
+from .....system_tests.hyperion.external_interaction.conftest import (
+    generate_xrc_result_event,
+)
 from ...conftest import OavGridSnapshotTestEvents
 
 

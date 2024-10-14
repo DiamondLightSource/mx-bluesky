@@ -228,5 +228,7 @@ def grid_detect_then_xray_centre(
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
     yield from change_aperture_then_move_to_xtal(
-        flyscan_event_handler.flyscan_results[0], composite
+        flyscan_event_handler.flyscan_results[0],
+        composite.smargon,
+        composite.aperture_scatterguard,
     )

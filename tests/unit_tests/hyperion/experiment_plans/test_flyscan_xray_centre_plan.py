@@ -79,6 +79,7 @@ from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
+    simulate_xrc_result,
 )
 from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
@@ -198,12 +199,7 @@ class TestFlyscanXrayCentrePlan:
                 error = AssertionError("Test Exception")
                 mock_set.return_value = FailedStatus(error)
 
-                RE(
-                    ispyb_activation_wrapper(
-                        flyscan_xray_centre(fake_fgs_composite, test_fgs_params),
-                        test_fgs_params,
-                    )
-                )
+                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         assert exc.value.args[0] is error
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
@@ -480,17 +476,12 @@ class TestFlyscanXrayCentrePlan:
         RE, (_, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
             yield from flyscan_xray_centre(
                 fgs_composite_with_panda_pcap,
                 test_fgs_params_panda_zebra,
             )
 
-        RE(
-            ispyb_activation_wrapper(
-                wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
-            )
-        )
+        RE(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
         move_xyz.assert_called_once()
 
@@ -819,12 +810,7 @@ class TestFlyscanXrayCentrePlan:
             ),
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
-            RE(
-                ispyb_activation_wrapper(
-                    flyscan_xray_centre(fake_fgs_composite, test_fgs_params),
-                    test_fgs_params,
-                )
-            )
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
@@ -856,8 +842,8 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
-        sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.zocalo.results, TEST_RESULT_LARGE
+        simulate_xrc_result(
+            sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(
