@@ -130,11 +130,6 @@ def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_pa
     grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
     assert not grid_scan.detector_params.enable_dev_shm
 
-    minimal_3d_gridscan_params["use_gpu"] = True
-    grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
-    assert grid_scan.detector_params.enable_dev_shm
-
-    minimal_3d_gridscan_params["use_gpu"] = False
-    minimal_3d_gridscan_params["use_cpu_and_gpu_zocalo"] = True
+    minimal_3d_gridscan_params["compare_cpu_and_gpu_results"] = True
     grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
     assert grid_scan.detector_params.enable_dev_shm

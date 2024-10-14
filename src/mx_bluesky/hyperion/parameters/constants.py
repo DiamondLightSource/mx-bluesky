@@ -113,9 +113,8 @@ class I03Constants:
     OAV_CENTRING_FILE = _test_oav_file if TEST_MODE else _live_oav_file
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
-    USE_GPU_FOR_GRIDSCAN_ANALYSIS = False
     THAWING_TIME = 20
-    USE_CPU_AND_GPU_ZOCALO = False
+    COMPARE_CPU_AND_GPU_ZOCALO = False
 
 
 @dataclass(frozen=True)

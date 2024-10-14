@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator, subs_decorator
@@ -5,7 +7,7 @@ from dls_bluesky_core.core import MsgGenerator
 from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
 from dodal.common import inject
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder
+from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import Thawer, ThawerStates
@@ -22,11 +24,17 @@ def thaw_and_stream_to_redis(
     oav: OAV = inject("oav"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
-    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
+    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     sample_id = yield from bps.rd(robot.sample_id)
+    zoom_level_before_thawing = yield from bps.rd(oav.zoom_controller.level)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
-    yield from bps.abs_set(oav.zoom_controller.level, "1.0x", wait=True)
+    yield from bps.abs_set(oav.zoom_controller.level, "1.0x", wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.abs_set(oav_to_redis_forwarder.sample_id, sample_id)
+
+    def switch_forwarder_to_ROI() -> MsgGenerator:
+        yield from bps.complete(oav_to_redis_forwarder)
+        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
     @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))
     @run_decorator(
@@ -40,13 +48,28 @@ def thaw_and_stream_to_redis(
         }
     )
     def _thaw_and_stream_to_redis():
+        yield from bps.mv(
+            oav_to_redis_forwarder.sample_id,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+            sample_id,
+            oav_to_redis_forwarder.selected_source,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+            Source.FULL_SCREEN,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        )
+
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
         yield from bps.monitor(smargon.omega.user_readback, name="smargon")
         yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-        yield from thaw(time_to_thaw, rotation, thawer, smargon)
+        yield from thaw(
+            time_to_thaw, rotation, thawer, smargon, switch_forwarder_to_ROI
+        )
         yield from bps.complete(oav_to_redis_forwarder)
 
-    yield from _thaw_and_stream_to_redis()
+    def cleanup():
+        yield from bps.mv(oav.zoom_controller.level, zoom_level_before_thawing)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+
+    yield from bpp.contingency_wrapper(
+        _thaw_and_stream_to_redis(),
+        final_plan=cleanup,
+    )
 
 
 def thaw(
@@ -54,6 +77,7 @@ def thaw(
     rotation: float = 360,
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
+    plan_between_rotations: Callable[[], MsgGenerator] | None = None,
 ) -> MsgGenerator:
     """Rotates the sample and thaws it at the same time.
 
@@ -64,6 +88,8 @@ def thaw(
         thawer (Thawer, optional): The thawing device. Defaults to inject("thawer").
         smargon (Smargon, optional): The smargon used to rotate.
                                      Defaults to inject("smargon")
+        plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
+                                    of the smargon. Defaults to no plan.
     """
     inital_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
@@ -72,6 +98,8 @@ def thaw(
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, ThawerStates.ON, wait=True)
         yield from bps.rel_set(smargon.omega, rotation, wait=True)
+        if plan_between_rotations:
+            yield from plan_between_rotations()
         yield from bps.rel_set(smargon.omega, -rotation, wait=True)
 
     def cleanup():

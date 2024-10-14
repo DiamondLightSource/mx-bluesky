@@ -97,7 +97,7 @@ def move_pin_into_view(
                 f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
                 f"moving to {move_within_limits} instead"
             )
-        yield from bps.mv(smargon.x, move_within_limits)
+        yield from bps.mv(smargon.x, move_within_limits)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
         # Some time for the view to settle after the move
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
@@ -154,7 +154,7 @@ def pin_tip_centre_plan(
     tip = yield from move_pin_into_view(pin_tip_detect, smargon)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(smargon.omega, 90)
+    yield from bps.mvr(smargon.omega, 90)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     # need to wait for the OAV image to update
     # See #673 for improvements

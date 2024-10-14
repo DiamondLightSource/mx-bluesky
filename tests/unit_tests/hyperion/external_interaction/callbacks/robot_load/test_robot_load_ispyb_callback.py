@@ -126,7 +126,7 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
     def my_plan():
         yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
         yield from bps.read(robot.barcode)
-        yield from bps.read(oav.snapshot)
+        yield from bps.read(oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.read(webcam)
         yield from bps.save()
 

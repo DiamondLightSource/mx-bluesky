@@ -22,8 +22,6 @@ def caget(pv):
             a = Popen(["caget", pv], stdout=PIPE, stderr=PIPE)
             a_stdout, a_stderr = a.communicate()
             val = a_stdout.split()[1].decode("ascii")
-            # val = evaluate(val)
-            # val = val.decode('ascii')
         except Exception:
             print("Exception in ca_py3.py caget, maybe this PV doesnt exist:", pv)
             pass

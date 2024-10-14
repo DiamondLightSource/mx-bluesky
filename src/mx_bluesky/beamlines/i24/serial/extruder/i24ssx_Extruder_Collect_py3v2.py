@@ -137,7 +137,7 @@ def enter_hutch(
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
     setup_logging()
-    yield from bps.mv(detector_stage.z, SAFE_DET_Z)
+    yield from bps.mv(detector_stage.z, SAFE_DET_Z)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     logger.debug("Detector moved.")
 
 

@@ -6,13 +6,15 @@ import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.devices.zebra import (
     AUTO_SHUTTER_GATE,
-    AUTO_SHUTTER_INPUT,
+    AUTO_SHUTTER_INPUT_1,
+    AUTO_SHUTTER_INPUT_2,
     DISCONNECT,
     IN1_TTL,
     IN3_TTL,
     IN4_TTL,
     PC_GATE,
     PC_PULSE,
+    SOFT_IN1,
     TTL_DETECTOR,
     TTL_PANDA,
     TTL_XSPRESS3,
@@ -55,7 +57,7 @@ def bluesky_retry(func: Callable):
 
 
 def arm_zebra(zebra: Zebra):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 def tidy_up_zebra_after_rotation_scan(
@@ -64,7 +66,7 @@ def tidy_up_zebra_after_rotation_scan(
     group="tidy_up_zebra_after_rotation",
     wait=True,
 ):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.abs_set(
         zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
     )
@@ -73,13 +75,43 @@ def tidy_up_zebra_after_rotation_scan(
 
 
 def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"):
-    """Set the input that the shutter uses when set to auto.
+    """Set the signal that controls the shutter. We use the second input to the
+    Zebra's AND2 gate for this input. ZebraShutter control mode must be in auto for this input to take control
 
     For more details see the ZebraShutter device."""
     auto_shutter_control = zebra.logic_gates.and_gates[AUTO_SHUTTER_GATE]
     yield from bps.abs_set(
-        auto_shutter_control.sources[AUTO_SHUTTER_INPUT], input, group
+        auto_shutter_control.sources[AUTO_SHUTTER_INPUT_2], input, group
     )
+
+
+def configure_zebra_and_shutter_for_auto_shutter(
+    zebra: Zebra, zebra_shutter: ZebraShutter, input: int, group="use_automatic_shutter"
+):
+    """Set the shutter to auto mode, and configure the zebra to trigger the shutter on
+    an input source. For the input, use one of the source constants in zebra.py
+
+    When the shutter is in auto/manual, logic in EPICS sets the Zebra's
+    SOFT_IN1 to low/high respectively. The Zebra's AND2 gate should be used to control the shutter while in auto mode.
+    To do this, we need (AND2 = SOFT_IN1 AND input), where input is the zebra signal we want to control the shutter when in auto mode.
+    """
+    # See https://github.com/DiamondLightSource/dodal/issues/813 for better typing here.
+
+    # Set shutter to auto mode
+    yield from bps.abs_set(
+        zebra_shutter.control_mode, ZebraShutterControl.AUTO, group=group
+    )
+
+    # Set first input of AND2 gate to SOFT_IN1, which is high when shutter is in auto mode
+    # Note the Zebra should ALWAYS be setup this way. See https://github.com/DiamondLightSource/mx-bluesky/issues/551
+    yield from bps.abs_set(
+        zebra.logic_gates.and_gates[AUTO_SHUTTER_GATE].sources[AUTO_SHUTTER_INPUT_1],
+        SOFT_IN1,
+        group=group,
+    )
+
+    # Set the second input of AND2 gate to the requested zebra input source
+    yield from set_shutter_auto_input(zebra, input, group=group)
 
 
 @bluesky_retry
@@ -137,11 +169,10 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.pc.pulse_start, abs(shutter_opening_s), group=group)
     # Set gate position to be angle of interest
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
-    # Trigger the shutter with the gate
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.AUTO, group=group
+    # Set shutter to automatic and to trigger via PC_GATE
+    yield from configure_zebra_and_shutter_for_auto_shutter(
+        zebra, zebra_shutter, PC_GATE, group=group
     )
-    yield from set_shutter_auto_input(zebra, PC_GATE, group=group)
     # Trigger the detector with a pulse
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
@@ -159,11 +190,12 @@ def setup_zebra_for_gridscan(
     group="setup_zebra_for_gridscan",
     wait=True,
 ):
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.AUTO, group=group
+    # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
+    yield from configure_zebra_and_shutter_for_auto_shutter(
+        zebra, zebra_shutter, IN4_TTL, group=group
     )
-    yield from set_shutter_auto_input(zebra, IN4_TTL, group=group)
+
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
     yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
 
@@ -198,11 +230,10 @@ def setup_zebra_for_panda_flyscan(
     # Forwards eiger trigger signal from panda
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group)
 
-    # Forwards signal from PPMAC to fast shutter. High while panda PLC is running
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.AUTO, group=group
+    # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
+    yield from configure_zebra_and_shutter_for_auto_shutter(
+        zebra, zebra_shutter, IN4_TTL, group=group
     )
-    yield from set_shutter_auto_input(zebra, IN4_TTL, group=group)
 
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
 
