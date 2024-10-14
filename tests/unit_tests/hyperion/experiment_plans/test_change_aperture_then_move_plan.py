@@ -1,11 +1,10 @@
 import numpy
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.smargon import StubPosition
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    CentringComposite,
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
@@ -25,23 +24,19 @@ def simple_flyscan_hit():
     )
 
 
-@pytest.fixture
-def centring_composite(fake_fgs_composite) -> CentringComposite:
-    return fake_fgs_composite
-
-
 @pytest.mark.parametrize("set_stub_offsets", [True, False])
 def test_change_aperture_then_move_to_xtal_happy_path(
     sim_run_engine: RunEngineSimulator,
     simple_flyscan_hit: XRCResult,
-    centring_composite: CentringComposite,
+    smargon: Smargon,
+    aperture_scatterguard: ApertureScatterguard,
     test_fgs_params: ThreeDGridScan,
     set_stub_offsets: bool,
 ):
     test_fgs_params.features.set_stub_offsets = set_stub_offsets
     msgs = sim_run_engine.simulate_plan(
         change_aperture_then_move_to_xtal(
-            simple_flyscan_hit, centring_composite, test_fgs_params
+            simple_flyscan_hit, smargon, aperture_scatterguard, test_fgs_params
         )
     )
 

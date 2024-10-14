@@ -132,4 +132,6 @@ def pin_tip_centre_then_xray_centre(
     assert (
         flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
-    yield from change_aperture_then_move_to_xtal(flyscan_results[0], composite)
+    yield from change_aperture_then_move_to_xtal(
+        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
+    )
