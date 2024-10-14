@@ -35,8 +35,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import IspybIds
-from mx_bluesky.hyperion.parameters.constants import CONST, DocDescriptorNames
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.parameters.constants import DocDescriptorNames
 
 from .conftest import fake_read
 

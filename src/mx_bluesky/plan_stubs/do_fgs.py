@@ -20,7 +20,7 @@ def do_fgs(
     during_collection_plans: Callable | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
-        Optionally run other plans kickoff and between kickoff and completion. A bluesky run MUST be open before this plan is
+        Optionally run other plans between kickoff and completion. A bluesky run MUST be open before this plan is
         called
 
     Args:
@@ -32,7 +32,7 @@ def do_fgs(
     """
 
     expected_images = yield from bps.rd(grid_scan_device.expected_images)
-    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)
+    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     LOGGER.info("waiting for topup if necessary...")
     yield from check_topup_and_wait_if_necessary(
         synchrotron,

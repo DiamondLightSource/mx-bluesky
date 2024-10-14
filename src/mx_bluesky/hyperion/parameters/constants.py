@@ -5,6 +5,8 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
+from mx_bluesky.parameters.constants import DocDescriptorNames
+
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
 
@@ -43,18 +45,6 @@ class PlanGroupCheckpointConstants:
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
-
-
-@dataclass(frozen=True)
-class DocDescriptorNames:
-    # Robot load event descriptor
-    ROBOT_LOAD = "robot_load"
-    # For callbacks to use
-    OAV_ROTATION_SNAPSHOT_TRIGGERED = "rotation_snapshot_triggered"
-    OAV_GRID_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
-    HARDWARE_READ_PRE = "read_hardware_for_callbacks_pre_collection"
-    HARDWARE_READ_DURING = "read_hardware_for_callbacks_during_collection"
-    ZOCALO_HW_READ = "zocalo_read_hardware_plan"
 
 
 @dataclass(frozen=True)
