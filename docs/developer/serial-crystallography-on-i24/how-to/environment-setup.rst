@@ -25,7 +25,7 @@ shell commands pointing to the correct scripts/edm locations.
 
 .. code:: bash
 
-   ./path/to/mx-bluesky/deploy/deploy_edm_for_ssx.sh
+   ./path/to/mx-bluesky/utility_scripts/deploy/deploy_edm_for_ssx.sh
 
 Setting the current visit directory
 ===================================
@@ -37,7 +37,7 @@ point to the current visit and then running the command:
 
 .. code:: bash
 
-   ./path/to/mx-bluesky/src/mx_bluesky/i24/serial/set_visit_directory.sh
+   ./path/to/mx-bluesky/src/mx_bluesky/beamlines/i24/serial/set_visit_directory.sh
 
 Note that the default experiment type for the script setting the
 directory will be ``fixed-target``. In case of an extruder collection,
@@ -46,4 +46,4 @@ the command line.
 
 .. code:: bash
 
-   ./path/to/mx-bluesky/src/mx_bluesky/i24/serial/set_visit_directory.sh extruder
+   ./path/to/mx-bluesky/src/mx_bluesky/beamlines/i24/serial/set_visit_directory.sh extruder

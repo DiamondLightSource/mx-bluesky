@@ -1,0 +1,138 @@
+4 0 1
+beginScreenProperties
+major 4
+minor 0
+release 1
+x 1205
+y 579
+w 450
+h 180
+font "arial-medium-r-18.0"
+ctlFont "arial-medium-r-18.0"
+btnFont "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 3
+textColor index 14
+ctlFgColor1 index 14
+ctlFgColor2 index 0
+ctlBgColor1 index 0
+ctlBgColor2 index 14
+topShadowColor index 0
+botShadowColor index 14
+title "Detector stage "
+endScreenProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 251
+y 139
+w 160
+h 21
+controlPv "BL24I-EA-DET-01:Y"
+font "arial-medium-r-18.0"
+fgColor index 16
+bgColor index 10
+autoHeight
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 28
+y 139
+w 193
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Detector stage position"
+}
+autoSize
+endObjectProperties
+
+# (Menu Mux PV)
+object menuMuxPVClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 35
+y 59
+w 160
+h 42
+fgColour index 14
+bgColour index 4
+topShadowColour index 1
+botShadowColour index 8
+controlPv "ME14E-MO-IOC-01:GP101"
+font "arial-medium-r-18.0"
+numItems 2
+symbolTag {
+  0 "Eiger"
+  1 "Pilatus"
+}
+symbol0 {
+  0 "E9M"
+  1 "P6M"
+}
+PV0 {
+  0 "eiger"
+  1 "pilatus"
+}
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 251
+y 59
+w 160
+h 42
+fgColor index 14
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+buttonLabel "Move Stage"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run setup_detector_stage '\{\"expt_type\":\"Serial Fixed\",\"detector_stage\":\"detector_motion\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 150
+y 10
+w 135
+h 21
+font "arial-bold-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Detector Stage"
+}
+autoSize
+endObjectProperties

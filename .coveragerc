@@ -1,0 +1,18 @@
+[run]
+omit = 
+    */test_*
+    **/conftest.py
+data_file = /tmp/hyperion.coverage
+
+[report]
+exclude_also = 
+    if TYPE_CHECKING:
+    def __repr__
+    raise NotImplementedError
+    @(abc\.)?abstractmethod
+
+[paths]
+# Tests are run from installed location, map back to the src directory
+source =
+    src
+    **/site-packages/

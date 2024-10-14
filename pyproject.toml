@@ -7,36 +7,62 @@ name = "mx-bluesky"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 description = "Bluesky tools for MX Beamlines at DLS"
 dependencies = [
-    "bluesky",
-    "ophyd",
-    "pyepics",
+    #
+    # If a constraint is not set here or if the dependency is pinned to a hash
+    # it will be auto-pinned to the latest release version by the pre-release workflow   
+    #
+    "annotated_types",
     "caproto",
+    "fastapi[all]",
+    "flask-restful",
+    "ispyb",
     "jupyterlab",
     "matplotlib",
-    "requests",
-    "opencv-python",
+    "nexgen",
+    "numpy",
+    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui. 
+    "opentelemetry-distro",
+    "opentelemetry-exporter-otlp",
     "pydantic",
+    "pyepics",
+    "pyzmq",
+    "requests",
+    "scanspec",
+    "scipy",
     "semver",
-    "fastapi[all]",
-    "dls-dodal==1.30.0",
-    "blueapi==0.4.4",
+    "matplotlib",
+    #
+    # These dependencies may be issued as pre-release versions and should have a pin constraint
+    # as by default pip-install will not upgrade to a pre-release.
+    # 
+    "blueapi >= 0.5.0",
+    "daq-config-server >= 0.1.1",
+    "ophyd == 1.9.0",
+    "ophyd-async >= 0.3a5",
+    "bluesky >= 1.13.0a4",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git",
 ]
+
+
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
     "black",
-    "copier",
+    "build",
+    # Commented out due to dependency version conflict with pydantic 1.x
+    # "copier",
+    "diff-cover",
     "GitPython",
+    "ipython",
     "mypy",
     "myst-parser",
     "pipdeptree",
@@ -50,16 +76,22 @@ dev = [
     "ruff",
     "sphinx-autobuild",
     "sphinx-copybutton",
+    "sphinxcontrib-plantuml",
     "sphinx-design",
     "tox-direct",
+    "tox",
     "types-mock",
     "types-requests",
 ]
 
 [project.scripts]
 mx-bluesky = "mx_bluesky.__main__:main"
-run_extruder = "mx_bluesky.i24.serial.run_serial:run_extruder"
-run_fixed_target = "mx_bluesky.i24.serial.run_serial:run_fixed_target"
+run_extruder = "mx_bluesky.beamlines.i24.serial.run_serial:run_extruder"
+run_fixed_target = "mx_bluesky.beamlines.i24.serial.run_serial:run_fixed_target"
+hyperion = "mx_bluesky.hyperion.__main__:main"
+hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
+hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
+hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/mx-bluesky"
@@ -78,17 +110,37 @@ reportMissingImports = false # Ignore missing stubs in imported modules
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
+markers = [
+    "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
+    "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
+    "skip_log_setup: marks tests so that loggers are not setup before the test.",
+    "skip_in_pycharm: marks test as not working in pycharm testrunner",
+]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    # Ignore deprecation warning from zocalo
+    # Ignore incorrect errors from bluesky (remove when https://github.com/bluesky/bluesky/issues/1797 is released)
     "ignore:((.|\n)*)was never iterated.*:RuntimeWarning",
+    # Ignore deprecation warning from sqlalchemy
+    "ignore::sqlalchemy.exc.MovedIn20Warning",
+    # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
+    "ignore::DeprecationWarning:wheel",
+    # Ophyd status objects in tests
+    "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
+    # Ignore nondeterministic closing of log, RE, etc. before test end
+    "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
+    "ignore:(.*)unclosed <socket(.*):ResourceWarning",
+    "ignore:(.*)unclosed event loop(.*):ResourceWarning",
+    # Ignore pydantic 2 issues from blueapi, see https://github.com/DiamondLightSource/blueapi/issues/622
+    "ignore::DeprecationWarning:blueapi",
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
+    "ignore:.*pkg_resources.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
-testpaths = "docs src tests"
+testpaths = "docs src tests/unit_tests"
 
 [tool.coverage.run]
 data_file = "/tmp/mx_bluesky.coverage"
@@ -142,4 +194,7 @@ lint.extend-ignore = [
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001"]
+"tests/**/*" = ["SLF001", "B023"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]

@@ -1,0 +1,1742 @@
+4 0 1
+beginScreenProperties
+major 4
+minor 0
+release 1
+x 830
+y 200
+w 900
+h 700
+font "arial-medium-r-18.0"
+ctlFont "arial-medium-r-18.0"
+btnFont "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 7
+textColor index 14
+ctlFgColor1 index 14
+ctlFgColor2 index 0
+ctlBgColor1 index 0
+ctlBgColor2 index 14
+topShadowColor index 9
+botShadowColor index 9
+title "Laser interface"
+endScreenProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2044
+y 447
+w 5
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "I"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2002
+y 449
+w 13
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "H"
+}
+autoSize
+endObjectProperties
+
+# (Text w. Reg. Exp.)
+object activeXRegTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 1250
+y 477
+w 2
+h 0
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 6
+y 333
+w 271
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Excite And Visit Again:"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 21
+y 430
+w 128
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "X-ray exposure"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 22
+y 467
+w 276
+h 42
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Based on requested dwell times"
+  "the delay times will be calculated"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 128
+y 518
+w 122
+h 37
+fgColor index 14
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run pumpprobe_calc"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 152
+y 524
+w 79
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Calculate"
+}
+autoSize
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 155
+y 428
+w 75
+h 25
+controlPv "ME14E-MO-CHIP-01:expTime"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 422
+y 398
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP104"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 334
+y 400
+w 71
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeat1"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 334
+y 433
+w 72
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeat2"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 501
+y 400
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 501
+y 433
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 334
+y 465
+w 71
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeat3"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 334
+y 498
+w 71
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeat5"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 501
+y 465
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 501
+y 498
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 334
+y 529
+w 82
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeat10"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 501
+y 529
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 548
+y 398
+w 49
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Notes"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 557
+y 423
+w 308
+h 108
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "The repeat is the number of pairs"
+  "of lines in a repeat"
+  "Currently X-ray shutter always open"
+  "Timings assume apertures 125 um apart"
+  "Mapping lite will be used"
+  "Repeat3 misses some chip rows"
+}
+autoSize
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 542
+y 428
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 542
+y 462
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 542
+y 480
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 542
+y 499
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 422
+y 431
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP105"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 422
+y 464
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP106"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 422
+y 495
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP107"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 422
+y 526
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP108"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 19
+y 374
+w 122
+h 42
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser dwell at "
+  "each aperture"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 156
+y 382
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP103"
+font "helvetica-medium-r-18.0"
+fgColor index 25
+bgColor index 3
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 542
+y 517
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 648
+y 611
+w 75
+h 35
+fgColor index 14
+bgColor index 22
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser1off\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 654
+y 620
+w 63
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "CLOSE"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 573
+y 611
+w 65
+h 35
+fgColor index 14
+bgColor index 17
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser1on\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 580
+y 620
+w 51
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "OPEN"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 433
+y 618
+w 124
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser 1 control"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 11
+y 594
+w 189
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Pre-illumination"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 283
+y 333
+w 68
+h 27
+font "arial-bold-i-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "EAVA"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 435
+y 661
+w 125
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser 2 control"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 141
+y 637
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP109"
+font "helvetica-medium-r-18.0"
+fgColor index 25
+bgColor index 3
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 21
+y 639
+w 112
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser 2 dwell"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 412
+y 571
+w 179
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Shutter control"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 232
+y 634
+w 142
+h 36
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Wait time in s at"
+  "centre of city block"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 313
+y 365
+w 207
+h 191
+lineColor index 14
+fillColor index 0
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 647
+y 654
+w 75
+h 35
+fgColor index 14
+bgColor index 22
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser2off\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 653
+y 663
+w 63
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "CLOSE"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 572
+y 654
+w 65
+h 35
+fgColor index 14
+bgColor index 17
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser2on\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 579
+y 663
+w 51
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "OPEN"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 214
+y 594
+w 90
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 38
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP109"
+visMin "0.00001"
+visMax "999"
+value {
+  "ACTIVE"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 347
+y 368
+w 150
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Calculated delays"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 238
+y 383
+w 9
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 11
+y 56
+w 206
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Fast Pump Probe"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 20
+y 127
+w 98
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser Dwell"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 144
+y 124
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP103"
+font "helvetica-medium-r-18.0"
+fgColor index 25
+bgColor index 3
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 226
+y 125
+w 9
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 273
+y 71
+w 135
+h 36
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Short 1: "
+  "pulse before XRD"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 206
+y 8
+w 428
+h 32
+font "arial-bold-r-28.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Laser Excitation Control Centre"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 54
+y 661
+w 46
+h 18
+font "arial-bold-r-16.0"
+fgColor index 34
+bgColor index 0
+useDisplayBg
+value {
+  "BNC3"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 55
+y 187
+w 45
+h 18
+font "arial-bold-r-16.0"
+fgColor index 34
+bgColor index 0
+useDisplayBg
+value {
+  "BNC2"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 827
+y 657
+w 48
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "BNC3"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 824
+y 617
+w 49
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "BNC2"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 734
+y 610
+w 75
+h 35
+fgColor index 14
+bgColor index 30
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser1burn\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 746
+y 618
+w 51
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "BURN"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 735
+y 654
+w 75
+h 35
+fgColor index 14
+bgColor index 30
+topShadowColor index 0
+botShadowColor index 14
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run laser_control '\{\"laser_setting\":\"laser2burn\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 745
+y 660
+w 51
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "BURN"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 20
+y 158
+w 100
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Laser Delay"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 226
+y 156
+w 9
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 144
+y 155
+w 75
+h 25
+controlPv "ME14E-MO-IOC-01:GP110"
+font "helvetica-medium-r-18.0"
+fgColor index 25
+bgColor index 3
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 484
+y 71
+w 134
+h 36
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Short 2: "
+  "pulse during XRD"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 276
+y 255
+w 123
+h 36
+font "arial-medium-r-16.0"
+fontAlign "center"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "X-ray shutter is "
+  "open throughout"
+}
+autoSize
+endObjectProperties
+
+# (PNG Image)
+object activePngClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 275
+y 111
+w 175
+h 139
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short1-laser.png"
+endObjectProperties
+
+# (PNG Image)
+object activePngClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 486
+y 111
+w 172
+h 139
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short2-laser.png"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 487
+y 254
+w 170
+h 54
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Ensure:"
+  "laser delay+ dwell "
+  "< total X-ray exposure"
+}
+autoSize
+endObjectProperties
+
+# (Menu Mux)
+object menuMuxClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 164
+y 220
+w 96
+h 28
+fgColor index 14
+bgColor index 3
+topShadowColor index 1
+botShadowColor index 8
+controlPv "ME14E-MO-IOC-01:GP111"
+font "arial-medium-r-18.0"
+numItems 2
+symbolTag {
+  0 "False"
+  1 "True"
+}
+symbol0 {
+  0 "NN"
+  1 "ML"
+}
+value0 {
+  0 "none"
+  1 "True"
+}
+endObjectProperties
+
+# (PNG Image)
+object activePngClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 695
+y 111
+w 175
+h 139
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short1-laser.png"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 690
+y 71
+w 173
+h 36
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Medium 1: "
+  "pulse long before XRD"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 13
+y 226
+w 135
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Checker Pattern"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 696
+y 277
+w 192
+h 54
+font "arial-medium-r-16.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "X-ray shutter closes"
+  "every position."
+  "User for delay >= 100ms"
+}
+autoSize
+endObjectProperties
+
+# (Lines)
+object activeLineClass
+beginObjectProperties
+major 4
+minor 0
+release 1
+x 696
+y 131
+w 160
+h 69
+lineColor index 38
+fillColor index 0
+lineWidth 2
+lineStyle "dash"
+numPoints 7
+xPoints {
+  0 696
+  1 703
+  2 777
+  3 791
+  4 813
+  5 829
+  6 856
+}
+yPoints {
+  0 133
+  1 200
+  2 200
+  3 131
+  4 131
+  5 199
+  6 199
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 817
+y 123
+w 41
+h 13
+font "arial-medium-r-12.0"
+fgColor index 38
+bgColor index 0
+useDisplayBg
+value {
+  "SHTR1"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 696
+y 256
+w 40
+h 21
+font "arial-bold-i-18.0"
+fgColor index 13
+bgColor index 0
+useDisplayBg
+value {
+  "Beta"
+}
+autoSize
+endObjectProperties

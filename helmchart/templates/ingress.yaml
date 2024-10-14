@@ -1,0 +1,23 @@
+{{- if not .Values.hyperion.dev }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hyperion-ingress
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - {{ .Values.hyperion.externalHostname }}
+  rules:
+  - host: {{ .Values.hyperion.externalHostname }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hyperion-svc # this must match the name of the service you want to target
+            port:
+              number: {{ .Values.hyperion.containerPort }}
+  {{- end }}
+  

@@ -1,0 +1,2666 @@
+4 0 1
+beginScreenProperties
+major 4
+minor 0
+release 1
+x 1062
+y 369
+w 650
+h 400
+font "arial-medium-r-18.0"
+ctlFont "arial-medium-r-18.0"
+btnFont "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 7
+textColor index 14
+ctlFgColor1 index 14
+ctlFgColor2 index 0
+ctlBgColor1 index 0
+ctlBgColor2 index 14
+topShadowColor index 9
+botShadowColor index 9
+title "Mapping Lite"
+endScreenProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 128
+y 92
+w 131
+h 37
+fgColor index 0
+bgColor index 23
+topShadowColor index 1
+botShadowColor index 11
+font "helvetica-medium-r-14.0"
+buttonLabel "Load Map File"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_lite_map"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2044
+y 447
+w 5
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "I"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2002
+y 449
+w 13
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "H"
+}
+autoSize
+endObjectProperties
+
+# (Text w. Reg. Exp.)
+object activeXRegTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 1250
+y 477
+w 2
+h 0
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+autoSize
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP65"
+pressValue "1"
+releaseValue "0"
+onLabel "55"
+offLabel "55"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP65"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP66"
+pressValue "1"
+releaseValue "0"
+onLabel "56"
+offLabel "56"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP66"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP67"
+pressValue "1"
+releaseValue "0"
+onLabel "57"
+offLabel "57"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP67"
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 40
+y 290
+w 194
+h 40
+fgColor index 0
+bgColor index 23
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+buttonLabel "Save Screen Map"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run save_screen_map"
+}
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 12
+y 337
+w 244
+h 53
+fgColor index 13
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+buttonLabel "Upload Parameters"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run upload_parameters '\{\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP46"
+pressValue "1"
+releaseValue "0"
+onLabel "36"
+offLabel "36"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP46"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP45"
+pressValue "1"
+releaseValue "0"
+onLabel "35"
+offLabel "35"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP45"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP44"
+pressValue "1"
+releaseValue "0"
+onLabel "34"
+offLabel "34"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP44"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP47"
+pressValue "1"
+releaseValue "0"
+onLabel "37"
+offLabel "37"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP47"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP48"
+pressValue "1"
+releaseValue "0"
+onLabel "38"
+offLabel "38"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP48"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP49"
+pressValue "1"
+releaseValue "0"
+onLabel "39"
+offLabel "39"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP49"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP63"
+pressValue "1"
+releaseValue "0"
+onLabel "53"
+offLabel "53"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP63"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP62"
+pressValue "1"
+releaseValue "0"
+onLabel "52"
+offLabel "52"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP62"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP64"
+pressValue "1"
+releaseValue "0"
+onLabel "54"
+offLabel "54"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP64"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP11"
+pressValue "1"
+releaseValue "0"
+onLabel "01"
+offLabel "01"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP11"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP12"
+pressValue "1"
+releaseValue "0"
+onLabel "02"
+offLabel "02"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP12"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP13"
+pressValue "1"
+releaseValue "0"
+onLabel "03"
+offLabel "03"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP13"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP28"
+pressValue "1"
+releaseValue "0"
+onLabel "18"
+offLabel "18"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP28"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP27"
+pressValue "1"
+releaseValue "0"
+onLabel "17"
+offLabel "17"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP27"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP26"
+pressValue "1"
+releaseValue "0"
+onLabel "16"
+offLabel "16"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP26"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP30"
+pressValue "1"
+releaseValue "0"
+onLabel "20"
+offLabel "20"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP30"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP31"
+pressValue "1"
+releaseValue "0"
+onLabel "21"
+offLabel "21"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP31"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP29"
+pressValue "1"
+releaseValue "0"
+onLabel "19"
+offLabel "19"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP29"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP68"
+pressValue "1"
+releaseValue "0"
+onLabel "58"
+offLabel "58"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP68"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP69"
+pressValue "1"
+releaseValue "0"
+onLabel "59"
+offLabel "59"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP69"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP70"
+pressValue "1"
+releaseValue "0"
+onLabel "60"
+offLabel "60"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP70"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP43"
+pressValue "1"
+releaseValue "0"
+onLabel "33"
+offLabel "33"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP43"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP42"
+pressValue "1"
+releaseValue "0"
+onLabel "32"
+offLabel "32"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP42"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP41"
+pressValue "1"
+releaseValue "0"
+onLabel "31"
+offLabel "31"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP41"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 465
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP50"
+pressValue "1"
+releaseValue "0"
+onLabel "40"
+offLabel "40"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP50"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP51"
+pressValue "1"
+releaseValue "0"
+onLabel "41"
+offLabel "41"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP51"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP52"
+pressValue "1"
+releaseValue "0"
+onLabel "42"
+offLabel "42"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP52"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP60"
+pressValue "1"
+releaseValue "0"
+onLabel "50"
+offLabel "50"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP60"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP59"
+pressValue "1"
+releaseValue "0"
+onLabel "49"
+offLabel "49"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP59"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 553
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP61"
+pressValue "1"
+releaseValue "0"
+onLabel "51"
+offLabel "51"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP61"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP14"
+pressValue "1"
+releaseValue "0"
+onLabel "04"
+offLabel "04"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP14"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP15"
+pressValue "1"
+releaseValue "0"
+onLabel "05"
+offLabel "05"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP15"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP16"
+pressValue "1"
+releaseValue "0"
+onLabel "06"
+offLabel "06"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP16"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP25"
+pressValue "1"
+releaseValue "0"
+onLabel "15"
+offLabel "15"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP25"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP24"
+pressValue "1"
+releaseValue "0"
+onLabel "14"
+offLabel "14"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP24"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP23"
+pressValue "1"
+releaseValue "0"
+onLabel "13"
+offLabel "13"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP23"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP33"
+pressValue "1"
+releaseValue "0"
+onLabel "23"
+offLabel "23"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP33"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP34"
+pressValue "1"
+releaseValue "0"
+onLabel "24"
+offLabel "24"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP34"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 377
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP32"
+pressValue "1"
+releaseValue "0"
+onLabel "22"
+offLabel "22"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP32"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP71"
+pressValue "1"
+releaseValue "0"
+onLabel "61"
+offLabel "61"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP71"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP72"
+pressValue "1"
+releaseValue "0"
+onLabel "62"
+offLabel "62"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP72"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP73"
+pressValue "1"
+releaseValue "0"
+onLabel "63"
+offLabel "63"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP73"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 598
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP74"
+pressValue "1"
+releaseValue "0"
+onLabel "64"
+offLabel "64"
+toggle
+3d
+font "arial-medium-r-18.0"
+visMin "1"
+visMax "0"
+colorPv "ME14E-MO-IOC-01:GP74"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP40"
+pressValue "1"
+releaseValue "0"
+onLabel "30"
+offLabel "30"
+toggle
+3d
+font "arial-medium-r-18.0"
+visMin "1"
+visMax "0"
+colorPv "ME14E-MO-IOC-01:GP40"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP39"
+pressValue "1"
+releaseValue "0"
+onLabel "29"
+offLabel "29"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP39"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP38"
+pressValue "1"
+releaseValue "0"
+onLabel "28"
+offLabel "28"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP38"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP53"
+pressValue "1"
+releaseValue "0"
+onLabel "43"
+offLabel "43"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP53"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP54"
+pressValue "1"
+releaseValue "0"
+onLabel "44"
+offLabel "44"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP54"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 174
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP55"
+pressValue "1"
+releaseValue "0"
+onLabel "45"
+offLabel "45"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP55"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 88
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP57"
+pressValue "1"
+releaseValue "0"
+onLabel "47"
+offLabel "47"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP57"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 45
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP58"
+pressValue "1"
+releaseValue "0"
+onLabel "48"
+offLabel "48"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP58"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 304
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP17"
+pressValue "1"
+releaseValue "0"
+onLabel "07"
+offLabel "07"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP17"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 288
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP18"
+pressValue "1"
+releaseValue "0"
+onLabel "08"
+offLabel "08"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP18"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP19"
+pressValue "1"
+releaseValue "0"
+onLabel "09"
+offLabel "09"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP19"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 217
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP22"
+pressValue "1"
+releaseValue "0"
+onLabel "12"
+offLabel "12"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP22"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP21"
+pressValue "1"
+releaseValue "0"
+onLabel "11"
+offLabel "11"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP21"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 333
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP20"
+pressValue "1"
+releaseValue "0"
+onLabel "10"
+offLabel "10"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP20"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 303
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP36"
+pressValue "1"
+releaseValue "0"
+onLabel "26"
+offLabel "26"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP36"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 260
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP37"
+pressValue "1"
+releaseValue "0"
+onLabel "27"
+offLabel "27"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP37"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 421
+y 347
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP35"
+pressValue "1"
+releaseValue "0"
+onLabel "25"
+offLabel "25"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP35"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 299
+y 10
+w 14
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "1"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 341
+y 10
+w 14
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "2"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 388
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "3"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 430
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "4"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 475
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "5"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 517
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "6"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 564
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "7"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 606
+y 10
+w 13
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "8"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 51
+w 16
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "A"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 92
+w 17
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "B"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 136
+w 17
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "C"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 177
+w 18
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "D"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 348
+w 18
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "H"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 307
+w 19
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "G"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 263
+w 15
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "F"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 267
+y 222
+w 16
+h 27
+font "arial-medium-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "E"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 7
+y 96
+w 117
+h 30
+controlPv "ME14E-MO-IOC-01:GP5"
+font "arial-medium-r-18.0"
+fontAlign "right"
+fgColor index 25
+bgColor index 6
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 136
+y 164
+w 73
+h 35
+fgColor index 14
+bgColor index 5
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"clear\"\}'"
+}
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 56
+y 165
+w 74
+h 35
+fgColor index 14
+bgColor index 20
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"x88\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 143
+y 168
+w 50
+h 23
+font "arial-medium-r-20.0"
+fgColor index 0
+bgColor index 0
+useDisplayBg
+value {
+  "All off"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 64
+y 169
+w 51
+h 23
+font "arial-medium-r-20.0"
+fgColor index 0
+bgColor index 0
+useDisplayBg
+value {
+  "All on"
+}
+autoSize
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 508
+y 131
+w 40
+h 40
+fgColor index 14
+onColor index 84
+offColor index 84
+topShadowColor index 9
+botShadowColor index 9
+controlPv "ME14E-MO-IOC-01:GP56"
+pressValue "1"
+releaseValue "0"
+onLabel "46"
+offLabel "46"
+toggle
+3d
+font "arial-medium-r-18.0"
+colorPv "ME14E-MO-IOC-01:GP56"
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 75
+y 216
+w 59
+h 59
+fgColor index 14
+bgColor index 5
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"x66\"\}'"
+}
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 82
+y 224
+w 44
+h 44
+lineColor index 20
+fill
+fillColor index 20
+lineWidth 0
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 88
+y 235
+w 29
+h 21
+font "helvetica-bold-r-18.0"
+fontAlign "center"
+fgColor index 0
+bgColor index 0
+useDisplayBg
+value {
+  "6x6"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 9
+y 215
+w 59
+h 59
+fgColor index 14
+bgColor index 5
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"x44\"\}'"
+}
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 21
+y 226
+w 34
+h 36
+lineColor index 20
+fill
+fillColor index 20
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 25
+y 235
+w 24
+h 16
+font "arial-bold-r-14.0"
+fontAlign "center"
+fgColor index 0
+bgColor index 0
+useDisplayBg
+value {
+  "4x4"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 288
+y 43
+w 360
+h 351
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 21
+y 40
+w 214
+h 48
+fgColor index 14
+bgColor index 48
+topShadowColor index 1
+botShadowColor index 9
+font "helvetica-medium-r-18.0"
+buttonLabel "Define Chip In PMAC"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run define_current_chip '\{\"chipid\":\"oxford\",\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 42
+y 5
+w 176
+h 32
+font "arial-bold-r-28.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Mapping Lite"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 287
+y 43
+w 361
+h 350
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 294
+y 161
+w 306
+h 81
+font "helvetica-bold-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+value {
+  "Chip type MUST be set to "
+  "Oxford "
+  "for gui to be active"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 294
+y 161
+w 306
+h 81
+font "helvetica-bold-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+value {
+  "Chip type MUST be set to "
+  "Oxford "
+  "for gui to be active"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 288
+y 43
+w 360
+h 351
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 294
+y 161
+w 306
+h 81
+font "helvetica-bold-r-24.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "3"
+visMax "4"
+value {
+  "Chip type MUST be set to "
+  "Oxford "
+  "for gui to be active"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 140
+y 233
+w 59
+h 42
+fgColor index 14
+bgColor index 5
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"half1\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 93
+y 135
+w 75
+h 23
+font "arial-bold-r-20.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Presets"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 144
+y 237
+w 28
+h 34
+lineColor index 20
+fill
+fillColor index 20
+lineWidth 0
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 160
+y 212
+w 76
+h 21
+font "helvetica-medium-r-18.0"
+fontAlign "center"
+fgColor index 0
+bgColor index 0
+useDisplayBg
+value {
+  "Half Chip"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 202
+y 233
+w 59
+h 42
+fgColor index 14
+bgColor index 5
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run load_stock_map '\{\"map_choice\":\"half2\"\}'"
+}
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 227
+y 237
+w 28
+h 34
+lineColor index 20
+fill
+fillColor index 20
+lineWidth 0
+endObjectProperties

@@ -44,6 +44,24 @@ extensions = [
     "sphinx_copybutton",
     # For the card element
     "sphinx_design",
+    # For markdown
+    "myst_parser",
+]
+
+myst_enable_extensions = [
+    "amsmath",
+    "attrs_inline",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
 ]
 
 # If true, Sphinx will warn about all references where the target cannot
@@ -83,7 +101,7 @@ graphviz_output_format = "svg"
 default_role = "any"
 
 # The suffix of source filenames.
-source_suffix = [".rst", ".md"]
+source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
 
 # The master toctree document.
 master_doc = "index"

@@ -1,0 +1,832 @@
+4 0 1
+beginScreenProperties
+major 4
+minor 0
+release 1
+x 1203
+y 544
+w 550
+h 380
+font "arial-medium-r-18.0"
+ctlFont "arial-medium-r-18.0"
+btnFont "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 7
+textColor index 14
+ctlFgColor1 index 14
+ctlFgColor2 index 0
+ctlBgColor1 index 0
+ctlBgColor2 index 14
+topShadowColor index 9
+botShadowColor index 9
+title "Mapping Lite"
+endScreenProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2044
+y 447
+w 5
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "I"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 2002
+y 449
+w 13
+h 21
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "H"
+}
+autoSize
+endObjectProperties
+
+# (Text w. Reg. Exp.)
+object activeXRegTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 1250
+y 477
+w 2
+h 0
+font "arial-medium-r-18.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 143
+y 82
+w 110
+h 30
+controlPv "ME14E-MO-IOC-01:GP6"
+font "arial-medium-r-18.0"
+fontAlign "right"
+fgColor index 25
+bgColor index 6
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 41
+y 8
+w 153
+h 27
+font "arial-bold-r-24.0"
+fontAlign "center"
+fgColor index 12
+bgColor index 0
+useDisplayBg
+value {
+  "Custom Chip"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 4
+y 86
+w 124
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "N windows in x"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 4
+y 130
+w 124
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "N windows in y"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 144
+y 126
+w 110
+h 30
+controlPv "ME14E-MO-IOC-01:GP7"
+font "arial-medium-r-18.0"
+fontAlign "right"
+fgColor index 25
+bgColor index 6
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Lines)
+object activeLineClass
+beginObjectProperties
+major 4
+minor 0
+release 1
+x 380
+y 129
+w 115
+h 59
+lineColor index 17
+fillColor index 0
+lineWidth 4
+numPoints 9
+xPoints {
+  0 380
+  1 494
+  2 495
+  3 380
+  4 380
+  5 495
+  6 495
+  7 495
+  8 495
+}
+yPoints {
+  0 130
+  1 129
+  2 159
+  3 159
+  4 188
+  5 188
+  6 188
+  7 188
+  8 188
+}
+endObjectProperties
+
+# (Lines)
+object activeLineClass
+beginObjectProperties
+major 4
+minor 0
+release 1
+x 486
+y 176
+w 26
+h 24
+lineColor index 17
+fill
+fillColor index 17
+numPoints 3
+xPoints {
+  0 486
+  1 512
+  2 486
+}
+yPoints {
+  0 176
+  1 186
+  2 200
+}
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 409
+y 119
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 484
+y 119
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 447
+y 119
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 371
+y 149
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 409
+y 148
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 447
+y 148
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 484
+y 148
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 445
+y 178
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 407
+y 178
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 369
+y 179
+w 20
+h 20
+lineColor index 17
+fill
+fillColor index 17
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 421
+y 87
+w 22
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Nx"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 336
+y 145
+w 22
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Ny"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 145
+y 171
+w 110
+h 30
+controlPv "ME14E-MO-IOC-01:GP8"
+font "arial-medium-r-18.0"
+fontAlign "right"
+fgColor index 25
+bgColor index 6
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 39
+y 175
+w 90
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Step size x"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 261
+y 174
+w 32
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "mm"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 50
+y 305
+w 252
+h 63
+font "arial-medium-i-18.0"
+fgColor index 35
+bgColor index 0
+useDisplayBg
+value {
+  "Step size is in mm"
+  "Ny must be even (for now)"
+  "Map type should be set to none"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 6
+y 281
+w 49
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Notes"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 326
+y 71
+w 196
+h 144
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "0"
+visMax "2"
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 325
+y 71
+w 197
+h 143
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "0"
+visMax "2"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 349
+y 112
+w 147
+h 105
+font "helvetica-bold-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "0"
+visMax "2"
+value {
+  "Chip type MUST "
+  "be set to "
+  "Custom"
+  "for gui to "
+  "be active"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 27
+y 246
+w 277
+h 35
+fgColor index 14
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "caput ME14E-MO-CHIP-01:PMAC_STRING \\#1hmz\\#2hmz\\#3hmz"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 41
+y 252
+w 226
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Set current position as start"
+}
+autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 26
+y 37
+w 230
+h 37
+fgColor index 14
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run cs_reset '\{\"pmac\":\"pmac\"\}'"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 39
+y 45
+w 204
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Clear coordinate system"
+}
+autoSize
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 324
+y 164
+w 197
+h 143
+lineColor index 7
+fill
+fillColor index 7
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "0"
+visMax "2"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 351
+y 112
+w 142
+h 105
+font "helvetica-bold-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+visPv "ME14E-MO-IOC-01:GP1"
+visMin "0"
+visMax "2"
+value {
+  "Chip type MUST"
+  "be set to"
+  "Custom"
+  "for gui to"
+  "be active"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 262
+y 212
+w 32
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "mm"
+}
+autoSize
+endObjectProperties
+
+# (Text Control)
+object activeXTextDspClass
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 146
+y 209
+w 110
+h 25
+controlPv "ME14E-MO-IOC-01:GP99"
+font "arial-medium-r-18.0"
+fontAlign "right"
+fgColor index 25
+bgColor index 6
+editable
+autoHeight
+motifWidget
+limitsFromDb
+nullColor index 0
+useKp
+file
+useHexPrefix
+newPos
+inputFocusUpdates
+objType "controls"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 40
+y 211
+w 90
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Step size y"
+}
+autoSize
+endObjectProperties

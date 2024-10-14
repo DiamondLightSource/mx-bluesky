@@ -47,7 +47,7 @@ in a couple of different ways.
 
    .. code:: python
 
-      yield from bps.mv(pmac.x, 0, pmac.y, 1)https://github.com/DiamondLightSource/mx-bluesky/wiki/Serial-Crystallography-on-I24#cs_reset-custom-chips
+      yield from bps.mv(pmac.x, 0, pmac.y, 1)
 
 Notes on the coordinate system for a fixed-target collection
 ============================================================

@@ -18,6 +18,18 @@ Documentation is split general and topic-specific sections. Each section is spli
 
         General information for working on mx-bluesky
 
+    .. grid-item-card:: :material-outlined:`precision_manufacturing;3em`
+
+        .. toctree::
+            :caption: Hyperion
+            :maxdepth: 1
+
+            hyperion/index
+
+        +++
+
+        Documentation relating to hyperion
+
     .. grid-item-card:: :material-regular:`apps;3em`
 
         .. toctree::
@@ -30,7 +42,7 @@ Documentation is split general and topic-specific sections. Each section is spli
 
         Documentation relating to serial crystallography on I24
 
-    .. grid-item-card:: :material-regular:`apps;3em`
+    .. grid-item-card:: :material-outlined:`preview;3em`
 
         .. toctree::
             :caption: Murko Integration

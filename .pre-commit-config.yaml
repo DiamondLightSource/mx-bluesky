@@ -3,7 +3,10 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=500"]
       - id: check-yaml
+        args: ["--allow-multiple-documents"]
+        exclude: ^helmchart/
       - id: check-merge-conflict
       - id: end-of-file-fixer
 
@@ -29,5 +32,5 @@ repos:
     hooks:
       - id: mypy
         files: 'src/.*\.py$'
-        additional_dependencies: [types-requests, types-redis]
+        additional_dependencies: [types-requests, types-redis, pydantic]
         args: ["--ignore-missing-imports", "--no-strict-optional"]

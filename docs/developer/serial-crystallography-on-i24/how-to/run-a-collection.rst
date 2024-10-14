@@ -12,7 +12,7 @@ A couple of entry points have been set up so that:
 
 Before opening the experiment specific edm, each of these entry points
 will start a ``BlueAPI`` server. The configuration used by ``BlueAPI``
-is saved in ``src/mx_bluesky/i24/serial/blueapi_config.yaml``.
+is saved in ``src/mx_bluesky/beamlines/i24/serial/blueapi_config.yaml``.
 
 Detector choice
 ===============
@@ -54,7 +54,9 @@ into a single sub-directory but split into multiple smaller collections.
 
 For a pump-probe experiment, select ``True`` on the dropdown menu in
 ``Data Collection Setup`` and then set the laser dwell and delay times
-in the ``Pump Probe`` panel. **WARNING** This setting requires an
+in the ``Pump Probe`` panel. 
+
+**WARNING** This setting requires a
 hardware change, as there are only 4 outputs on the zebra and they are
 all in use. When using the Eiger the Pilatus trigger cable should be
 used to trigger the light source. When using the pilatus the eiger
@@ -75,7 +77,7 @@ set up the coordinate system.
 
 Before this step remember to reset the scale and skew factors as well as
 the motor directions as needed. Current values are saved in
-``src/mx_bluesky/i24/serial/parameters/fixed_target`` in the
+``src/mx_bluesky/beamlines/i24/serial/parameters/fixed_target`` in the
 ``cs_maker.json`` and ``motor_direction.txt`` files.
 
 1. From the main edm screen open the ``viewer`` and ``moveonclick``.
@@ -146,17 +148,15 @@ set the laser dwell and delay times accordingly.
 For more details on the pump probe settings see `Dynamics and fixed
 targets <https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets>`__
 
-III - **Save the parameters**
 
-**This step cannot be skipped!**
-
-Once all of the previous steps have been completed - and before running
-a collection - all parameters have to be saved using the
-``Set parameters`` button so that they can be applied to the collection.
-A copy parameter file will be saved along with the chip map (if
-applicable) in the data directory at collection time.
-
-IV - **Run a collection**
+III - **Run a collection**
 
 Once all parameters have been set, press ``Start`` to run the
 collection. A stream log will show what is going on in the terminal.
+
+
+**NOTE** As of version ``1.0.0``, the ``Set parameters`` button has been removed and
+the parameters will now be read from the edm and applied to the collection directly
+once the ``Start`` button is pressed. For previous versions however, the button must
+still be pressed before starting the collection. A copy of the parameter file and chip
+map (if applicable) will still be saved in the data directory at collection time.

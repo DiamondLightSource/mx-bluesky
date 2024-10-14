@@ -1,0 +1,13 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
+name: Move issue to in progress when assigned
+on:
+  issues:
+    types:
+      - assigned
+jobs:
+  move_to_in_progress:
+    uses: ./.github/workflows/get_project_data_and_move_column.yml
+    with:
+      column_name: In Progress
+      issue_id: ${{ github.event.issue.node_id }}
+    secrets: inherit
