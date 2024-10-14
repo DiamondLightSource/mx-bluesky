@@ -57,7 +57,7 @@ def bluesky_retry(func: Callable):
 
 
 def arm_zebra(zebra: Zebra):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 def tidy_up_zebra_after_rotation_scan(
@@ -66,7 +66,7 @@ def tidy_up_zebra_after_rotation_scan(
     group="tidy_up_zebra_after_rotation",
     wait=True,
 ):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.abs_set(
         zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
     )

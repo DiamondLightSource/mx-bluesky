@@ -24,15 +24,16 @@ def thaw_and_stream_to_redis(
     oav: OAV = inject("oav"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
-    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
+    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     sample_id = yield from bps.rd(robot.sample_id)
-    zoom_level_before_thawing = yield from bps.rd(oav.zoom_controller.level)
+    zoom_level_before_thawing = yield from bps.rd(oav.zoom_controller.level)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
-    yield from bps.mv(oav.zoom_controller.level, "1.0x")
+    yield from bps.abs_set(oav.zoom_controller.level, "1.0x", wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.abs_set(oav_to_redis_forwarder.sample_id, sample_id)
 
     def switch_forwarder_to_ROI() -> MsgGenerator:
         yield from bps.complete(oav_to_redis_forwarder)
-        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI)
+        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
     @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))
@@ -48,10 +49,10 @@ def thaw_and_stream_to_redis(
     )
     def _thaw_and_stream_to_redis():
         yield from bps.mv(
-            oav_to_redis_forwarder.sample_id,
+            oav_to_redis_forwarder.sample_id,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
             sample_id,
-            oav_to_redis_forwarder.selected_source,
-            Source.FULL_SCREEN,
+            oav_to_redis_forwarder.selected_source,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+            Source.FULL_SCREEN,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         )
 
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
@@ -63,7 +64,7 @@ def thaw_and_stream_to_redis(
         yield from bps.complete(oav_to_redis_forwarder)
 
     def cleanup():
-        yield from bps.mv(oav.zoom_controller.level, zoom_level_before_thawing)
+        yield from bps.mv(oav.zoom_controller.level, zoom_level_before_thawing)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     yield from bpp.contingency_wrapper(
         _thaw_and_stream_to_redis(),

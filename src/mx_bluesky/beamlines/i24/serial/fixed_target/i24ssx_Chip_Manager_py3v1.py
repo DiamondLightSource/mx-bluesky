@@ -624,11 +624,11 @@ def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
     chip_move = CHIP_MOVES[chip_type]
 
     if place == Fiducials.origin:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid1:
-        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid2:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log.log_on_entry
@@ -658,7 +658,7 @@ def moveto_preset(
     elif place == "collect_position":
         logger.info("collect position")
         caput(pv.me14e_filter, 20)
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.abs_set(
             beamstop.pos_select, BeamstopPositions.DATA_COLLECTION, group=place
         )
@@ -667,7 +667,7 @@ def moveto_preset(
 
     elif place == "microdrop_position":
         logger.info("microdrop align position")
-        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log.log_on_entry
@@ -698,7 +698,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         logger.info("Laser 1  on")
         logger.info(f"Burn time is {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
-        yield from bps.sleep(led_burn_time)
+        yield from bps.sleep(float(led_burn_time))
         logger.info("Laser 1 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_OFF, wait=True)
 
@@ -707,7 +707,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         logger.info("Laser 2 on")
         logger.info(f"burntime {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_ON, wait=True)
-        yield from bps.sleep(led_burn_time)
+        yield from bps.sleep(float(led_burn_time))
         logger.info("Laser 2 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_OFF, wait=True)
 

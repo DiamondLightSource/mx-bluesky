@@ -42,7 +42,7 @@ def move_detector_stage_to_position_plan(
     logger.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
-    yield from bps.mv(detector_stage.z, detector_distance)
+    yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 def modechange(action):

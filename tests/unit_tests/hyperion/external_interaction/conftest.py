@@ -55,7 +55,7 @@ def get_test_plan(callback_name):
     @bpp.run_decorator(md={"activate_callbacks": [callback_name]})
     def test_plan():
         yield from bps.create()
-        yield from bps.read(s)
+        yield from bps.read(s)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.save()
 
     return test_plan, s
