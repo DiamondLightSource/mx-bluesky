@@ -6,7 +6,6 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -20,7 +19,7 @@ def read_hardware_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    robot: BartRobot,
+    dcm: DCM,
     smargon: Smargon,
 ):
     LOGGER.info("Reading status of beamline for callbacks, pre collection.")
@@ -34,6 +33,7 @@ def read_hardware_pre_collection(
     yield from bps.read(smargon.x)
     yield from bps.read(smargon.y)
     yield from bps.read(smargon.z)
+    yield from bps.read(dcm.energy_in_kev)
     yield from bps.save()
 
 
