@@ -33,8 +33,6 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 class GridCommon(
     DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
 ):
-    use_panda: bool
-    use_gpu: bool
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
@@ -50,11 +48,11 @@ class GridCommon(
     @model_validator(mode="before")
     @classmethod
     def set_default_feature_flags(cls, values) -> Any:
-        cls.features = FeatureFlags()
-        if "use_panda" not in values:
-            values["use_panda"] = cls.features.best_effort().use_panda_for_gridscan
-        if "use_gpu" not in values:
-            values["use_gpu"] = cls.features.best_effort().use_gpu_for_gridscan
+        cls.features = FeatureFlags().best_effort()
+        if "use_panda" in values:
+            cls.features.use_panda_for_gridscan = values["use_panda"]
+        if "use_gpu" in values:
+            cls.features.use_gpu_for_gridscan = values["use_gpu"]
         return values
 
     @property
