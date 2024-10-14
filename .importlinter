@@ -1,0 +1,25 @@
+[importlinter]
+root_package = mx_bluesky
+
+[importlinter:contract:common]
+name=Common does not import from apps
+type=forbidden
+source_modules=
+    mx_bluesky.common
+forbidden_modules=
+    mx_bluesky.beamlines
+    mx_bluesky.hyperion
+
+[importlinter:contract:beamlines]
+name=Beamlines do not import from each other
+type=independence
+modules=
+    mx_bluesky.beamlines.*
+
+[importlinter:contract:hyperion]
+name=Beamlines do not import from hyperion
+type=forbidden
+source_modules=
+    mx_bluesky.beamlines.*
+forbidden_modules=
+    mx_bluesky.hyperion
