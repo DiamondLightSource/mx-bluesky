@@ -57,7 +57,7 @@ def test_logging_config_with_filehandler(mock_default, mock_dir, dummy_logger):
     # dodal handlers mocked out
     log.config("dummy.log", delayed=True, dev_mode=True)
     assert len(dummy_logger.handlers) == 2
-    # assert len(dummy_logger.parent.handlers) == 3
+    mock_default.assert_called_once()
     assert mock_dir.call_count == 1
     assert dummy_logger.handlers[1].level == logging.DEBUG
     # Clear FileHandler to avoid other tests failing if it is kept open
