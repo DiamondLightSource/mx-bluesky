@@ -78,6 +78,13 @@ def _get_logging_file_path() -> Path:
     return logging_path
 
 
+def _integrate_bluesky_logs(parent_logger: logging.Logger):
+    # Integrate only bluesky and ophyd_async logger
+    for log in [bluesky_logger, ophyd_async_logger]:
+        log.parent = dodal_logger
+        log.setLevel(logging.DEBUG)
+
+
 def default_logging_setup(dev_mode: bool = False):
     """ Default log setup for i24 serial.
 
@@ -91,10 +98,7 @@ def default_logging_setup(dev_mode: bool = False):
         dodal_logger, logging_path, "dodal.log", ERROR_LOG_BUFFER_LINES
     )
     set_up_graylog_handler(dodal_logger, *get_graylog_configuration(dev_mode, None))
-    # Integrate only bluesky and ophyd_async logger
-    for log in [bluesky_logger, ophyd_async_logger]:
-        log.parent = dodal_logger
-        log.setLevel(logging.DEBUG)
+    _integrate_bluesky_logs(dodal_logger)
 
 
 def config(

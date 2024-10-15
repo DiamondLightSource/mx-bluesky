@@ -45,10 +45,12 @@ def test_basic_logging_config(dummy_logger):
     assert dummy_logger.handlers[0].level == logging.INFO
 
 
-def test_default_logging_setup_removes_dodal_stream():
+@patch("mx_bluesky.beamlines.i24.serial.log._integrate_bluesky_logs")
+def test_default_logging_setup_removes_dodal_stream(mock_integrate_logs):
     with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
         log.default_logging_setup(dev_mode=True)
         assert mock_dodal_logger.addHandler.call_count == 3
+        mock_integrate_logs.assert_called_once_with(mock_dodal_logger)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.log.Path.mkdir")
