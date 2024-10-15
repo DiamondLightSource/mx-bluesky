@@ -45,11 +45,9 @@ def test_basic_logging_config(dummy_logger):
     assert dummy_logger.handlers[0].level == logging.DEBUG
 
 
-@patch("mx_bluesky.beamlines.i24.serial.log.integrate_bluesky_and_ophyd_logging")
-def test_default_logging_setup_removes_dodal_stream(mock_blusky_ophyd_logs):
+def test_default_logging_setup_removes_dodal_stream():
     with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
         log.default_logging_setup(dev_mode=True)
-        mock_blusky_ophyd_logs.assert_called_once()
         assert mock_dodal_logger.addHandler.call_count == 3
 
 

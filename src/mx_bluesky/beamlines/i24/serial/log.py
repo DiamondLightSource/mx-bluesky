@@ -4,10 +4,11 @@ import logging.config
 from os import environ
 from pathlib import Path
 
+from bluesky.log import logger as bluesky_logger
 from dodal.log import (
     ERROR_LOG_BUFFER_LINES,
     get_graylog_configuration,
-    integrate_bluesky_and_ophyd_logging,
+    ophyd_async_logger,
     set_up_DEBUG_memory_handler,
     set_up_graylog_handler,
     set_up_INFO_file_handler,
@@ -103,7 +104,10 @@ def default_logging_setup(dev_mode: bool = False):
         dodal_logger, logging_path, "dodal.log", ERROR_LOG_BUFFER_LINES
     )
     set_up_graylog_handler(dodal_logger, *get_graylog_configuration(dev_mode, None))
-    integrate_bluesky_and_ophyd_logging(dodal_logger)
+    # Integrate only bluesky and ophyd_async logger
+    for log in [bluesky_logger, ophyd_async_logger]:
+        log.parent = dodal_logger
+        log.setLevel(logging.DEBUG)
 
 
 def config(
