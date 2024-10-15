@@ -232,7 +232,7 @@ class TopNByMaxCountSelection(BaseModel):
 
 
 class WithCentreSelection(BaseModel):
-    select_centres: TopNByMaxCountSelection | None = Field(
+    select_centres: TopNByMaxCountSelection = Field(
         discriminator="name", default=TopNByMaxCountSelection(n=1)
     )
 
