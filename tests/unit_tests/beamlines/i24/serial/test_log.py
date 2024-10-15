@@ -42,7 +42,7 @@ def test_logging_file_path_on_beamline(mock_dir, mock_environ, mock_visit):
 def test_basic_logging_config(dummy_logger):
     assert dummy_logger.hasHandlers() is True
     assert len(dummy_logger.handlers) == 1
-    assert dummy_logger.handlers[0].level == logging.DEBUG
+    assert dummy_logger.handlers[0].level == logging.INFO
 
 
 def test_default_logging_setup_removes_dodal_stream():

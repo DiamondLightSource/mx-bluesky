@@ -18,13 +18,6 @@ from dodal.log import LOGGER as dodal_logger
 VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
 
 
-class OphydDebugFilter(logging.Filter):  # NOTE yet to be fully tested
-    """Do not send ophyd debug log messages to stream handler."""
-
-    def filter(self, record):
-        return "ophyd" not in record.getMessage().lower()
-
-
 # Logging set up
 logger = logging.getLogger("I24ssx")
 logger.addHandler(logging.NullHandler())
@@ -33,11 +26,6 @@ logger.parent = dodal_logger
 logging_config = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {
-        "ophyd_filter": {
-            "()": OphydDebugFilter,
-        }
-    },
     "formatters": {
         "default": {
             "class": "logging.Formatter",
@@ -46,10 +34,9 @@ logging_config = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "default",
-            "filters": ["ophyd_filter"],
             "stream": "ext://sys.stdout",
         }
     },
