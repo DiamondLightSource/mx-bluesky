@@ -81,7 +81,7 @@ def _get_logging_file_path() -> Path:
 def _integrate_bluesky_logs(parent_logger: logging.Logger):
     # Integrate only bluesky and ophyd_async logger
     for log in [bluesky_logger, ophyd_async_logger]:
-        log.parent = dodal_logger
+        log.parent = parent_logger
         log.setLevel(logging.DEBUG)
 
 
