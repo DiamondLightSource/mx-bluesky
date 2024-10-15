@@ -44,6 +44,7 @@ from dodal.devices.zocalo.zocalo_results import (
 from ophyd_async.fastcs.panda import HDFPanda
 from scanspec.core import AxesPoints, Axis
 
+from mx_bluesky.common.plan_stubs.do_fgs import do_fgs
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -68,7 +69,6 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from mx_bluesky.hyperion.tracing import TRACER
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
-from mx_bluesky.plan_stubs.do_fgs import do_fgs
 
 
 class SmargonSpeedException(Exception):

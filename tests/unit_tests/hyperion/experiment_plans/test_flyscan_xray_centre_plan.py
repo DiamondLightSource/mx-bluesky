@@ -574,7 +574,7 @@ class TestFlyscanXrayCentrePlan:
         assert "Crystal 1: Strength 999999" in append_zocalo_call
 
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
     )
     def test_waits_for_motion_program(
         self,
@@ -839,7 +839,7 @@ class TestFlyscanXrayCentrePlan:
         spec_set=True,
     )
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
@@ -963,7 +963,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_fgs_arms_eiger_without_grid_detect(
@@ -1002,7 +1002,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_fails_with_exception_then_detector_disarmed_and_correct_exception_returned(
@@ -1064,7 +1064,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_kickoff_and_complete_gridscan_triggers_zocalo(
@@ -1130,7 +1130,7 @@ class TestFlyscanXrayCentrePlan:
         assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
 
     @patch(
-        "mx_bluesky.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary",
         new=MagicMock(side_effect=lambda *_, **__: iter([Msg("check_topup")])),
     )
     def test_read_hardware_during_collection_occurs_after_eiger_arm(

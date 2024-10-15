@@ -8,7 +8,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.log import LOGGER
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.device_setup_plans.read_hardware_for_setup import (
+from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
 
@@ -21,7 +21,7 @@ def do_fgs(
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
         Optionally run other plans between kickoff and completion. A bluesky run MUST be open before this plan is
-        called
+        ran
 
     Args:
         grid_scan_device (GridScanDevice): Device which can trigger a fast grid scan and wait for completion
@@ -29,8 +29,6 @@ def do_fgs(
         synchrotron (Synchrotron): Synchrotron device
         during_collection_plans (Optional, MsgGenerator): Generic plan called in between kickoff but and completion, eg waiting on zocalo.
     """
-
-    # TODO assert that run is open
 
     expected_images = yield from bps.rd(grid_scan_device.expected_images)
     exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809

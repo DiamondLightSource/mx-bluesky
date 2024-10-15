@@ -14,7 +14,7 @@ from event_model import RunStart
 from ophyd.sim import make_fake_device
 from ophyd_async.core import DeviceCollector, set_mock_value
 
-from mx_bluesky.device_setup_plans.read_hardware_for_setup import (
+from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
