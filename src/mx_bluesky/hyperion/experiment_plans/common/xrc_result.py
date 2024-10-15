@@ -29,3 +29,9 @@ class XRCResult:
 def top_n_by_max_count(unfiltered: Sequence[XRCResult], n: int) -> Sequence[XRCResult]:
     sorted_hits = sorted(unfiltered, key=lambda result: result.max_count, reverse=True)
     return sorted_hits[:n]
+
+
+def resolve_selection_fn(name: str):
+    if name == "TopNByMaxCount":
+        return top_n_by_max_count
+    raise ValueError(f"Invalid selection function {name}")

@@ -17,7 +17,7 @@
     "use_panda": false
   },
   "select_centres": {
-    "name": "top_n_by_max_count",
+    "name": "TopNByMaxCount",
     "n": 5
   },
   "multi_rotation_scan": {
