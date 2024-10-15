@@ -56,10 +56,10 @@ def setup_pin_tip_detection_params(
 
 
 def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
-    yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
-    yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
-    yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
-    yield from set_using_group(oav.cam.gain, parameters.gain)
+    yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from set_using_group(oav.cam.acquire_time, parameters.exposure)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from set_using_group(oav.cam.gain, parameters.gain)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
@@ -68,7 +68,7 @@ def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
         )
 
     yield from bps.abs_set(
-        oav.zoom_controller,
+        oav.zoom_controller,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         zoom_level_str,
         wait=True,
     )

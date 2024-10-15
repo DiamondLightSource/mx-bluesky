@@ -30,7 +30,7 @@ def test_when_set_up_oav_then_only_waits_on_oav_to_finish(
     my_waiting_device.set = MagicMock(return_value=Status())
 
     def my_plan():
-        yield from bps.abs_set(my_waiting_device, 10, wait=False)
+        yield from bps.abs_set(my_waiting_device, 10, wait=False)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from pre_centring_setup_oav(oav, mock_parameters, ophyd_pin_tip_detection)
 
     RE = RunEngine()

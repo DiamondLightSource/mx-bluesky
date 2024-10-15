@@ -204,6 +204,6 @@ def grid_detect_then_xray_centre(
         eiger,
         composite.detector_motion,
         parameters.detector_params.detector_distance,
-        plan_to_perform,
+        plan_to_perform,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809 and MsgGenerator should allow for return values
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )

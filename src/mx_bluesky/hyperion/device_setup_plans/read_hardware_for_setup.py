@@ -29,8 +29,8 @@ def read_hardware_pre_collection(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
     yield from bps.read(synchrotron.synchrotron_mode)
-    yield from bps.read(s4_slit_gaps.xgap)
-    yield from bps.read(s4_slit_gaps.ygap)
+    yield from bps.read(s4_slit_gaps.xgap)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(s4_slit_gaps.ygap)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(smargon.x)
     yield from bps.read(smargon.y)
     yield from bps.read(smargon.z)
@@ -48,13 +48,13 @@ def read_hardware_during_collection(
     yield from bps.create(name=CONST.DESCRIPTORS.HARDWARE_READ_DURING)
     yield from bps.read(aperture_scatterguard)
     yield from bps.read(attenuator.actual_transmission)
-    yield from bps.read(flux.flux_reading)
+    yield from bps.read(flux.flux_reading)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(dcm.energy_in_kev)
-    yield from bps.read(detector.bit_depth)
+    yield from bps.read(detector.bit_depth)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.save()
 
 
 def read_hardware_for_zocalo(detector: EigerDetector):
     yield from bps.create(name=CONST.DESCRIPTORS.ZOCALO_HW_READ)
-    yield from bps.read(detector.odin.file_writer.id)
+    yield from bps.read(detector.odin.file_writer.id)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.save()
