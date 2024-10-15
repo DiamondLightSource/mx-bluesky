@@ -199,3 +199,23 @@ lint.extend-ignore = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "mx_bluesky"
+
+[[tool.importlinter.contracts]]
+name = "Common does not import from apps"
+type = "forbidden"
+source_modules = "mx_bluesky.common"
+forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from each other"
+type = "independence"
+modules = "mx_bluesky.beamlines.*"
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from hyperion"
+type = "forbidden"
+source_modules = "mx_bluesky.beamlines.*"
+forbidden_modules = "mx_bluesky.hyperion"
