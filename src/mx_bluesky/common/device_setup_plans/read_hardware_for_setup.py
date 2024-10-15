@@ -1,7 +1,7 @@
 import bluesky.plan_stubs as bps
 from dodal.devices.eiger import EigerDetector
 
-from mx_bluesky.parameters.constants import MxConstants
+from mx_bluesky.common.parameters.constants import MxConstants
 
 
 def read_hardware_for_zocalo(detector: EigerDetector):

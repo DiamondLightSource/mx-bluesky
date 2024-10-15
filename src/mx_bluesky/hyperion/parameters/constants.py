@@ -5,7 +5,7 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
-from mx_bluesky.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
