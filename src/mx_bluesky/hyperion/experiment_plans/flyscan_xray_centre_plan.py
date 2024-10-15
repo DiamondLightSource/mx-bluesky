@@ -307,7 +307,7 @@ def kickoff_and_complete_gridscan(
     scan_start_indices: list[int],
     do_during_run: Callable[[], MsgGenerator] | None = None,
 ):
-    def during_collection_plans() -> MsgGenerator:
+    def during_collection_plan() -> MsgGenerator:
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
@@ -329,15 +329,15 @@ def kickoff_and_complete_gridscan(
         except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         else_plan=lambda: (yield from bps.unstage(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
-    def do_fgs_in_run():
+    def do_fgs_and_wait_for_zocalo_and_read_hardware():
         yield from do_fgs(
             gridscan,
             eiger,
             synchrotron,
-            during_collection_plans=during_collection_plans(),
+            during_collection_plan=during_collection_plan(),
         )
 
-    yield from do_fgs_in_run()
+    yield from do_fgs_and_wait_for_zocalo_and_read_hardware()
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
