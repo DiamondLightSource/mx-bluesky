@@ -14,7 +14,7 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    _fire_flyscan_result_event,
+    _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -60,7 +60,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     test_config_files,
 ):
     mock_detect_and_do_gridscan.side_effect = (
-        lambda _, __, ___: _fire_flyscan_result_event(
+        lambda _, __, ___: _fire_xray_centre_result_event(
             [FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW]
         )
     )

@@ -7,13 +7,13 @@ from dodal.devices.smargon import Smargon, StubPosition
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 
 
 @pytest.fixture
 def simple_flyscan_hit():
-    return XRCResult(
+    return XRayCentreResult(
         centre_of_mass_mm=numpy.array([0.1, 0.2, 0.3]),
         bounding_box_mm=(
             numpy.array([0.09, 0.19, 0.29]),
@@ -27,7 +27,7 @@ def simple_flyscan_hit():
 @pytest.mark.parametrize("set_stub_offsets", [True, False])
 def test_change_aperture_then_move_to_xtal_happy_path(
     sim_run_engine: RunEngineSimulator,
-    simple_flyscan_hit: XRCResult,
+    simple_flyscan_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     test_fgs_params: ThreeDGridScan,

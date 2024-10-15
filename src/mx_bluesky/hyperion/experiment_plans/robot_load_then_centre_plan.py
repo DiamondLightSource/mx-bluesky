@@ -41,7 +41,7 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyscanEventHandler,
+    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -138,14 +138,14 @@ def robot_load_then_centre(
     Performs a robot load if necessary. Centre on the best diffracting centre.
     """
 
-    flyscan_event_handler = FlyscanEventHandler()
+    flyscan_event_handler = XRayCentreEventHandler()
 
     @bpp.subs_decorator(flyscan_event_handler)
     def robot_load_then_flyscan_and_fetch_results():
         yield from robot_load_then_flyscan(composite, parameters)
 
     yield from robot_load_then_flyscan_and_fetch_results()
-    flyscan_results = flyscan_event_handler.flyscan_results
+    flyscan_results = flyscan_event_handler.xray_centre_results
     if flyscan_results is not None:
         yield from change_aperture_then_move_to_xtal(
             flyscan_results[0], composite.smargon, composite.aperture_scatterguard

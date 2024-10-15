@@ -31,14 +31,14 @@ from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
     FlyScanXRayCentreComposite,
     SmargonSpeedException,
     _get_feature_controlled,
-    flyscan,
     flyscan_xray_centre,
+    flyscan_xray_centre_no_move,
     kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_fetch_results,
@@ -340,8 +340,8 @@ class TestFlyscanXrayCentrePlan:
 
         class FlyscanEventHandler(DocumentRouter):
             def start(self, doc):
-                if "flyscan_results" in doc:
-                    event_doc.set_result(doc["flyscan_results"])
+                if "xray_centre_results" in doc:
+                    event_doc.set_result(doc["xray_centre_results"])
 
         RE.subscribe(FlyscanEventHandler())
         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE)
@@ -356,9 +356,10 @@ class TestFlyscanXrayCentrePlan:
         RE(plan())
 
         actual = [
-            XRCResult(**result_dict) for result_dict in (await wait_for(event_doc, 1))
+            XRayCentreResult(**result_dict)
+            for result_dict in (await wait_for(event_doc, 1))
         ]
-        expected = XRCResult(
+        expected = XRayCentreResult(
             centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
             bounding_box_mm=(np.array([0.2, 0.2, 0.2]), np.array([0.8, 0.8, 0.7])),
             max_count=105062,
@@ -847,7 +848,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         msgs = sim_run_engine.simulate_plan(
-            flyscan(fgs_composite_with_panda_pcap, fgs_params_use_panda)
+            flyscan_xray_centre_no_move(
+                fgs_composite_with_panda_pcap, fgs_params_use_panda
+            )
         )
 
         mock_set_panda_directory.assert_called_with(

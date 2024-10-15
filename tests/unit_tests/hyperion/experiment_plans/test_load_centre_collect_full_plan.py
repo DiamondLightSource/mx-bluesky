@@ -185,7 +185,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
         [
             Msg(
                 "open_run",
-                flyscan_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
                 run=CONST.PLAN.FLYSCAN_RESULTS,
             ),
             Msg("close_run"),
@@ -218,7 +218,8 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     )
 
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
+        msgs,
+        lambda msg: msg.command == "open_run" and "xray_centre_results" in msg.kwargs,
     )
     # TODO re-enable tests see mx-bluesky 561
     # msgs = assert_message_and_return_remaining(
@@ -368,7 +369,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
             [
                 Msg(
                     "open_run",
-                    flyscan_results=[
+                    xray_centre_results=[
                         dataclasses.asdict(r)
                         for r in [
                             FLYSCAN_RESULT_MED,
@@ -416,7 +417,8 @@ def test_load_centre_collect_full_plan_multiple_centres(
     )
     assert sum(1 for msg in msgs if msg.command == "robot_load_and_change_energy") == 1
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "open_run" and "flyscan_results" in msg.kwargs
+        msgs,
+        lambda msg: msg.command == "open_run" and "xray_centre_results" in msg.kwargs,
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "multi_rotation_scan"

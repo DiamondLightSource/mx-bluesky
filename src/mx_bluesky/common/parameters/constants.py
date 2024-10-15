@@ -48,7 +48,7 @@ class PlanNameConstants:
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
-    FLYSCAN_RESULTS = "flyscan_results"
+    FLYSCAN_RESULTS = "xray_centre_results"
 
 
 @dataclass(frozen=True)

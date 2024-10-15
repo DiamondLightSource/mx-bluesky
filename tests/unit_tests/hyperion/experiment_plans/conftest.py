@@ -21,7 +21,7 @@ from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -41,19 +41,19 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 
-FLYSCAN_RESULT_HIGH = XRCResult(
+FLYSCAN_RESULT_HIGH = XRayCentreResult(
     centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
     bounding_box_mm=(np.array([0.09, 0.19, 0.29]), np.array([0.11, 0.21, 0.31])),
     max_count=30,
     total_count=100,
 )
-FLYSCAN_RESULT_MED = XRCResult(
+FLYSCAN_RESULT_MED = XRayCentreResult(
     centre_of_mass_mm=np.array([0.4, 0.5, 0.6]),
     bounding_box_mm=(np.array([0.09, 0.19, 0.29]), np.array([0.11, 0.21, 0.31])),
     max_count=20,
     total_count=120,
 )
-FLYSCAN_RESULT_LOW = XRCResult(
+FLYSCAN_RESULT_LOW = XRayCentreResult(
     centre_of_mass_mm=np.array([0.7, 0.8, 0.9]),
     bounding_box_mm=(np.array([0.09, 0.19, 0.29]), np.array([0.11, 0.21, 0.31])),
     max_count=10,

@@ -16,7 +16,7 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyscanEventHandler,
+    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -115,7 +115,7 @@ def pin_tip_centre_then_xray_centre(
 
     eiger.set_detector_parameters(parameters.detector_params)
 
-    flyscan_event_handler = FlyscanEventHandler()
+    flyscan_event_handler = XRayCentreEventHandler()
 
     @bpp.subs_decorator(flyscan_event_handler)
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
@@ -128,7 +128,7 @@ def pin_tip_centre_then_xray_centre(
         )
 
     yield from pin_centre_flyscan_then_fetch_results()
-    flyscan_results = flyscan_event_handler.flyscan_results
+    flyscan_results = flyscan_event_handler.xray_centre_results
     assert (
         flyscan_results
     ), "Flyscan result event not received or no crystal found and exception not raised"

@@ -7,7 +7,7 @@ import numpy as np
 
 
 @dataclasses.dataclass
-class XRCResult:
+class XRayCentreResult:
     """Represents information about a hit from an X-ray centring."""
 
     centre_of_mass_mm: np.ndarray
@@ -17,7 +17,7 @@ class XRCResult:
 
     def __eq__(self, o):
         return (
-            isinstance(o, XRCResult)
+            isinstance(o, XRayCentreResult)
             and o.max_count == self.max_count
             and o.total_count == self.total_count
             and all(o.centre_of_mass_mm == self.centre_of_mass_mm)
@@ -26,7 +26,9 @@ class XRCResult:
         )
 
 
-def top_n_by_max_count(unfiltered: Sequence[XRCResult], n: int) -> Sequence[XRCResult]:
+def top_n_by_max_count(
+    unfiltered: Sequence[XRayCentreResult], n: int
+) -> Sequence[XRayCentreResult]:
     sorted_hits = sorted(unfiltered, key=lambda result: result.max_count, reverse=True)
     return sorted_hits[:n]
 

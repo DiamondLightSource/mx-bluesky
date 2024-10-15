@@ -10,6 +10,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
+from bluesky.callbacks import CallbackBase
 from dls_bluesky_core.core import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
@@ -67,7 +68,7 @@ from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -116,15 +117,16 @@ class FlyScanXRayCentreComposite:
         return self.smargon
 
 
-class FlyscanEventHandler:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.flyscan_results: Sequence[XRCResult] | None = None
+class XRayCentreEventHandler(CallbackBase):
+    def __init__(self):
+        super().__init__()
+        self.xray_centre_results: Sequence[XRayCentreResult] | None = None
 
-    def __call__(self, name, doc):
-        if name == "start" and "flyscan_results" in doc:
-            self.flyscan_results = [
-                XRCResult(**result_dict) for result_dict in doc["flyscan_results"]
+    def start(self, doc):
+        if "xray_centre_results" in doc:
+            self.xray_centre_results = [
+                XRayCentreResult(**result_dict)
+                for result_dict in doc["xray_centre_results"]
             ]
 
 
@@ -133,7 +135,7 @@ def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
 
 
-def flyscan(
+def flyscan_xray_centre_no_move(
     composite: FlyScanXRayCentreComposite, parameters: ThreeDGridScan
 ) -> MsgGenerator:
     """Perform a flyscan and determine the centres of interest"""
@@ -189,20 +191,22 @@ def flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    flyscan_event_handler = FlyscanEventHandler()
+    xrc_event_handler = XRayCentreEventHandler()
 
-    @bpp.subs_decorator(flyscan_event_handler)
+    @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
-        yield from ispyb_activation_wrapper(flyscan(composite, parameters), parameters)
+        yield from ispyb_activation_wrapper(
+            flyscan_xray_centre_no_move(composite, parameters), parameters
+        )
 
     yield from flyscan_and_fetch_results()
 
-    flyscan_results = flyscan_event_handler.flyscan_results
+    xray_centre_results = xrc_event_handler.xray_centre_results
     assert (
-        flyscan_results
+        xray_centre_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
     yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0],
+        xray_centre_results[0],
         composite.smargon,
         composite.aperture_scatterguard,
         parameters,
@@ -248,12 +252,13 @@ def run_gridscan_and_fetch_results(
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
             if xrc_results:
                 flyscan_results = [
-                    _xrc_result_to_flyscan_result(xr, parameters) for xr in xrc_results
+                    _xrc_result_to_xray_centre_result(xr, parameters)
+                    for xr in xrc_results
                 ]
             else:
                 LOGGER.warning("No X-ray centre received")
                 raise CrystalNotFoundException()
-            yield from _fire_flyscan_result_event(flyscan_results)
+            yield from _fire_xray_centre_result_event(flyscan_results)
 
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
@@ -265,14 +270,14 @@ def run_gridscan_and_fetch_results(
         yield from bps.wait()
 
 
-def _xrc_result_to_flyscan_result(
+def _xrc_result_to_xray_centre_result(
     xrc_result: XrcResult, parameters: ThreeDGridScan
-) -> XRCResult:
+) -> XRayCentreResult:
     fgs_params = parameters.FGS_params
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )
-    return XRCResult(
+    return XRayCentreResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
             fgs_params.grid_position_to_motor_position(
@@ -288,12 +293,13 @@ def _xrc_result_to_flyscan_result(
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.FLYSCAN_RESULTS)
-def _fire_flyscan_result_event(results: Sequence[XRCResult]):
+def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
     def empty_plan():
         return iter([])
 
     yield from bpp.run_wrapper(
-        empty_plan(), md={"flyscan_results": [dataclasses.asdict(r) for r in results]}
+        empty_plan(),
+        md={"xray_centre_results": [dataclasses.asdict(r) for r in results]},
     )
 
 

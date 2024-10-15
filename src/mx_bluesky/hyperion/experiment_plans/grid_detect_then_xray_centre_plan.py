@@ -40,11 +40,11 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyscanEventHandler,
-    flyscan,
+    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
+    XRayCentreEventHandler,
+    flyscan_xray_centre_no_move,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
@@ -159,7 +159,7 @@ def detect_grid_and_do_gridscan(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    yield from flyscan(
+    yield from flyscan_xray_centre_no_move(
         FlyScanXRayCentreComposite(
             aperture_scatterguard=composite.aperture_scatterguard,
             attenuator=composite.attenuator,
@@ -202,7 +202,7 @@ def grid_detect_then_xray_centre(
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
-    flyscan_event_handler = FlyscanEventHandler()
+    flyscan_event_handler = XRayCentreEventHandler()
 
     @subs_decorator(flyscan_event_handler)
     def plan_to_perform():
@@ -224,11 +224,11 @@ def grid_detect_then_xray_centre(
     )
 
     assert (
-        flyscan_event_handler.flyscan_results
+        flyscan_event_handler.xray_centre_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
     yield from change_aperture_then_move_to_xtal(
-        flyscan_event_handler.flyscan_results[0],
+        flyscan_event_handler.xray_centre_results[0],
         composite.smargon,
         composite.aperture_scatterguard,
     )
