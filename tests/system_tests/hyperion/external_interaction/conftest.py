@@ -249,9 +249,7 @@ def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
     async def mock_zocalo_complete():
         await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 1234, "dcgid": 123})
 
-    with (
-        patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete),
-    ):
+    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
         yield zocalo
 
 

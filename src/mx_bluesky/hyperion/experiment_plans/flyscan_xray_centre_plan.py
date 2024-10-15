@@ -43,6 +43,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_full_processing_results,
 )
+from event_model import RunStart
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
@@ -122,12 +123,13 @@ class XRayCentreEventHandler(CallbackBase):
         super().__init__()
         self.xray_centre_results: Sequence[XRayCentreResult] | None = None
 
-    def start(self, doc):
+    def start(self, doc: RunStart) -> RunStart | None:
         if "xray_centre_results" in doc:
             self.xray_centre_results = [
                 XRayCentreResult(**result_dict)
-                for result_dict in doc["xray_centre_results"]
+                for result_dict in doc["xray_centre_results"]  # type: ignore
             ]
+        return doc
 
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
