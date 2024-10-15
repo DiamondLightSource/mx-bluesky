@@ -8,7 +8,7 @@ from dodal.devices.smargon import Smargon
 
 import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyscanEventHandler,
+    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -53,7 +53,7 @@ def load_centre_collect_full(
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
 
-    flyscan_event_handler = FlyscanEventHandler()
+    flyscan_event_handler = XRayCentreEventHandler()
 
     @subs_decorator(flyscan_event_handler)
     def fetch_results_from_robot_load_then_flyscan():
@@ -61,14 +61,14 @@ def load_centre_collect_full(
 
     yield from fetch_results_from_robot_load_then_flyscan()
     assert (
-        flyscan_event_handler.flyscan_results
+        flyscan_event_handler.xray_centre_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
     selection_params = parameters.select_centres
     selection_func = flyscan_result.resolve_selection_fn(selection_params.name)
     selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
-    hits: Sequence[flyscan_result.XRCResult] = selection_func(
-        flyscan_event_handler.flyscan_results, **selection_args
+    hits: Sequence[flyscan_result.XRayCentreResult] = selection_func(
+        flyscan_event_handler.xray_centre_results, **selection_args
     )  # type: ignore
     LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
 

@@ -5,14 +5,14 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRCResult
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from mx_bluesky.hyperion.tracing import TRACER
 
 
 def change_aperture_then_move_to_xtal(
-    best_hit: XRCResult,
+    best_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     parameters: ThreeDGridScan | None = None,

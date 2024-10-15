@@ -8,7 +8,7 @@ from bluesky.utils import Msg
 from dodal.devices.robot import SampleLocation
 
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    _fire_flyscan_result_event,
+    _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -42,7 +42,7 @@ def robot_load_then_centre_params_no_energy(robot_load_then_centre_params):
 
 
 def mock_pin_centre_then_flyscan_plan(_, __):
-    yield from _fire_flyscan_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
+    yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
 @patch(
@@ -241,7 +241,7 @@ def mock_current_sample(sim_run_engine: RunEngineSimulator, sample: SampleLocati
                 Msg(
                     "open_run",
                     run=CONST.PLAN.FLYSCAN_RESULTS,
-                    flyscan_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
                 ),
             ]
         )
@@ -291,7 +291,7 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
                 Msg(
                     "open_run",
                     run=CONST.PLAN.FLYSCAN_RESULTS,
-                    flyscan_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
                 ),
             ]
         )
@@ -350,7 +350,7 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
                 Msg(
                     "open_run",
                     run=CONST.PLAN.FLYSCAN_RESULTS,
-                    flyscan_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
                 ),
             ]
         )
