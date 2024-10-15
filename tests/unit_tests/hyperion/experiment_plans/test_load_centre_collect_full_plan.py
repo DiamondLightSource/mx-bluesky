@@ -335,10 +335,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
 def test_can_deserialize_top_n_by_max_count_params(
     load_centre_collect_with_top_n_params,
 ):
-    assert (
-        load_centre_collect_with_top_n_params.select_centres.name
-        == "top_n_by_max_count"
-    )
+    assert load_centre_collect_with_top_n_params.select_centres.name == "TopNByMaxCount"
     assert load_centre_collect_with_top_n_params.select_centres.n == 5
 
 
@@ -360,7 +357,7 @@ def test_bad_selection_method_is_rejected():
 def test_default_select_centres_is_top_n_by_max_count_n_is_1(
     load_centre_collect_params,
 ):
-    assert load_centre_collect_params.select_centres.name == "top_n_by_max_count"
+    assert load_centre_collect_params.select_centres.name == "TopNByMaxCount"
     assert load_centre_collect_params.select_centres.n == 1
 
 

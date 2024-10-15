@@ -194,7 +194,7 @@ class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 
 class TopNByMaxCountSelection(BaseModel):
-    name: Literal["top_n_by_max_count"] = "top_n_by_max_count"
+    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"
     n: int
 
 
