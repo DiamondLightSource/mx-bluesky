@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -43,6 +43,19 @@ def test_basic_logging_config(dummy_logger):
     assert dummy_logger.hasHandlers() is True
     assert len(dummy_logger.handlers) == 1
     assert dummy_logger.handlers[0].level == logging.INFO
+
+
+def test_integrate_bluesky_logs():
+    mock_dodal_logger = MagicMock()
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.log.bluesky_logger") as mock_bluesky_log,
+        patch(
+            "mx_bluesky.beamlines.i24.serial.log.ophyd_async_logger"
+        ) as mock_ophyd_log,
+    ):
+        log._integrate_bluesky_logs(mock_dodal_logger)
+        assert mock_bluesky_log.parent == mock_dodal_logger
+        assert mock_ophyd_log.parent == mock_dodal_logger
 
 
 @patch("mx_bluesky.beamlines.i24.serial.log._integrate_bluesky_logs")
