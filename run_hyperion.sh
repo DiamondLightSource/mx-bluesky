@@ -102,18 +102,18 @@ if [[ $START == 1 ]]; then
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
-    if [ -z "$HYPERION_LOG_DIR" ]; then
+    if [ -z "$LOG_DIR" ]; then
         if [ $IN_DEV == true ]; then
-            HYPERION_LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
+            LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
         else
-            HYPERION_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
+            LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
         fi
     fi
-    echo "$(date) Logging to $HYPERION_LOG_DIR"
-    export HYPERION_LOG_DIR
-    mkdir -p $HYPERION_LOG_DIR
-    start_log_path=$HYPERION_LOG_DIR/start_log.log
-    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.log
+    echo "$(date) Logging to $LOG_DIR"
+    export LOG_DIR
+    mkdir -p $LOG_DIR
+    start_log_path=$LOG_DIR/start_log.log
+    callback_start_log_path=$LOG_DIR/callback_start_log.log
 
     source .venv/bin/activate
 

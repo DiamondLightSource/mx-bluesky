@@ -48,7 +48,7 @@ def test_no_env_variable_sets_correct_file_handler(
 @pytest.mark.skip_log_setup
 @patch("dodal.log.Path.mkdir", autospec=True)
 @patch.dict(
-    os.environ, {"HYPERION_LOG_DIR": "./dls_sw/s03/logs/bluesky"}
+    os.environ, {"LOG_DIR": "./dls_sw/s03/logs/bluesky"}
 )  # Note we use a relative path here so it works in CI
 def test_set_env_variable_sets_correct_file_handler(
     mock_dir,
