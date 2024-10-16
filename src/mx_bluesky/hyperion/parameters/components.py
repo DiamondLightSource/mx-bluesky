@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 from abc import abstractmethod
 from collections.abc import Sequence
-from enum import StrEnum
 from pathlib import Path
 from typing import SupportsInt, TypeVar
 
@@ -14,16 +12,17 @@ from dodal.devices.detector import (
 )
 from pydantic import (
     BaseModel,
-    ConfigDict,
     Field,
-    field_serializer,
-    field_validator,
     model_validator,
 )
 from scanspec.core import AxesPoints
 from semver import Version
 
-from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
+from mx_bluesky.common.parameters.components import (
+    BaseParameters,
+    IspybExperimentType,
+    XyzAxis,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 T = TypeVar("T")
@@ -40,96 +39,8 @@ class ParameterVersion(Version):
 PARAMETER_VERSION = ParameterVersion.parse("5.1.0")
 
 
-class RotationAxis(StrEnum):
-    OMEGA = "omega"
-    PHI = "phi"
-    CHI = "chi"
-    KAPPA = "kappa"
-
-
-class XyzAxis(StrEnum):
-    X = "sam_x"
-    Y = "sam_y"
-    Z = "sam_z"
-
-
-class IspybExperimentType(StrEnum):
-    # Enum values from ispyb column data type
-    SAD = "SAD"  # at or slightly above the peak
-    SAD_INVERSE_BEAM = "SAD - Inverse Beam"
-    OSC = "OSC"  # "native" (in the absence of a heavy atom)
-    COLLECT_MULTIWEDGE = (
-        "Collect - Multiwedge"  # "poorly determined" ~ EDNA complex strategy???
-    )
-    MAD = "MAD"
-    HELICAL = "Helical"
-    MULTI_POSITIONAL = "Multi-positional"
-    MESH = "Mesh"
-    BURN = "Burn"
-    MAD_INVERSE_BEAM = "MAD - Inverse Beam"
-    CHARACTERIZATION = "Characterization"
-    DEHYDRATION = "Dehydration"
-    TOMO = "tomo"
-    EXPERIMENT = "experiment"
-    EM = "EM"
-    PDF = "PDF"
-    PDF_BRAGG = "PDF+Bragg"
-    BRAGG = "Bragg"
-    SINGLE_PARTICLE = "single particle"
-    SERIAL_FIXED = "Serial Fixed"
-    SERIAL_JET = "Serial Jet"
-    STANDARD = "Standard"  # Routine structure determination experiment
-    TIME_RESOLVED = "Time Resolved"  # Investigate the change of a system over time
-    DLS_ANVIL_HP = "Diamond Anvil High Pressure"  # HP sample environment pressure cell
-    CUSTOM = "Custom"  # Special or non-standard data collection
-    XRF_MAP = "XRF map"
-    ENERGY_SCAN = "Energy scan"
-    XRF_SPECTRUM = "XRF spectrum"
-    XRF_MAP_XAS = "XRF map xas"
-    MESH_3D = "Mesh3D"
-    SCREENING = "Screening"
-    STILL = "Still"
-    SSX_CHIP = "SSX-Chip"
-    SSX_JET = "SSX-Jet"
-
-    # Aliases for historic hyperion experiment type mapping
-    ROTATION = "SAD"
-    GRIDSCAN_2D = "mesh"
-    GRIDSCAN_3D = "Mesh3D"
-
-
-class HyperionParameters(BaseModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        extra="allow",
-    )
-
-    def __hash__(self) -> int:
-        return self.json().__hash__()
-
-    features: FeatureFlags = Field(default=FeatureFlags())
-    parameter_model_version: ParameterVersion
-
-    @field_serializer("parameter_model_version")
-    def serialize_parameter_version(self, version: ParameterVersion):
-        return str(version)
-
-    @field_validator("parameter_model_version", mode="before")
-    @classmethod
-    def _validate_version(cls, version_str: str):
-        version = ParameterVersion.parse(version_str)
-        assert (
-            version >= ParameterVersion(major=PARAMETER_VERSION.major)
-        ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert (
-            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
-        ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
-        return version
-
-    @classmethod
-    def from_json(cls, input: str | None):
-        assert input is not None
-        return cls(**json.loads(input))
+# TODO probably just delete this class
+class HyperionParameters(BaseParameters): ...
 
 
 class WithSnapshot(BaseModel):

@@ -11,13 +11,13 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
 from pydantic import BaseModel
 
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionGroupInfo,
     DataCollectionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
+from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_session_id_from_visit,
 )

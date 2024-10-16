@@ -15,7 +15,7 @@ from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
 from numpy.typing import DTypeLike
 from scanspec.core import AxesPoints
 
-from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
+from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_detector_parameters,
     create_goniometer_axes,
     get_start_and_predicted_end_time,
