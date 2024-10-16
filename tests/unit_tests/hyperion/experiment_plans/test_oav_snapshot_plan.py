@@ -11,13 +11,13 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
 from mx_bluesky.hyperion.parameters.components import WithSnapshot
-from mx_bluesky.hyperion.parameters.constants import DocDescriptorNames
 
 from ....conftest import raw_params_from_file
 

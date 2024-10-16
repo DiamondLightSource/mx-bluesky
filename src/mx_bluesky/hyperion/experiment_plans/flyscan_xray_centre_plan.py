@@ -4,7 +4,6 @@ import dataclasses
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
-from time import time
 from typing import Protocol
 
 import bluesky.plan_stubs as bps
@@ -42,14 +41,13 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_processing_result,
 )
-from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.panda import HDFPanda
 from scanspec.core import AxesPoints, Axis
 
+from mx_bluesky.common.plan_stubs.do_fgs import do_fgs
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
-    read_hardware_for_zocalo,
     read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
@@ -309,6 +307,15 @@ def kickoff_and_complete_gridscan(
     scan_start_indices: list[int],
     do_during_run: Callable[[], MsgGenerator] | None = None,
 ):
+    def during_collection_plan() -> MsgGenerator:
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        if do_during_run:
+            LOGGER.info(f"Running {do_during_run} during FGS")
+            yield from do_during_run()
+
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
     @bpp.run_decorator(
@@ -322,38 +329,15 @@ def kickoff_and_complete_gridscan(
         except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         else_plan=lambda: (yield from bps.unstage(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
-    def do_fgs():
-        # Check topup gate
-        expected_images = yield from bps.rd(gridscan.expected_images)
-        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        LOGGER.info("waiting for topup if necessary...")
-        yield from check_topup_and_wait_if_necessary(
+    def do_fgs_and_wait_for_zocalo_and_read_hardware():
+        yield from do_fgs(
+            gridscan,
+            eiger,
             synchrotron,
-            expected_images * exposure_sec_per_image,
-            30.0,
-        )
-        yield from read_hardware_for_zocalo(eiger)
-        LOGGER.info("Wait for all moves with no assigned group")
-        yield from bps.wait()
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(gridscan, wait=True)
-        gridscan_start_time = time()
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        if do_during_run:
-            LOGGER.info(f"Running {do_during_run} during FGS")
-            yield from do_during_run()
-        LOGGER.info("completing FGS")
-        yield from bps.complete(gridscan, wait=True)
-
-        # Remove this logging statement once metrics have been added
-        LOGGER.info(
-            f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
+            during_collection_plan=during_collection_plan(),
         )
 
-    yield from do_fgs()
+    yield from do_fgs_and_wait_for_zocalo_and_read_hardware()
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
