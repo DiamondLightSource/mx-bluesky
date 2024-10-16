@@ -1,6 +1,7 @@
 import os
 from logging import FileHandler
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -198,3 +199,41 @@ def test_log_writes_debug_file_on_error(clear_and_mock_loggers):
     assert "debug_message_1" in messages
     assert "debug_message_2" in messages
     assert "error happens" in messages
+
+
+@patch("mx_bluesky.common.utils.log.Path.mkdir")
+def test_get_logging_dir_uses_env_var(mock_mkdir: MagicMock):
+    def mock_get_log_dir(variable: str):
+        if variable == "LOG_DIR":
+            return "test_dir"
+        else:
+            return "other_dir"
+
+    with patch(
+        "mx_bluesky.common.utils.log.environ.get",
+        side_effect=lambda var: mock_get_log_dir(var),
+    ):
+        assert log._get_logging_dir() == Path("test_dir")
+        mock_mkdir.assert_called_once()
+
+
+@patch("mx_bluesky.common.utils.log.Path.mkdir")
+def test_get_logging_dir_uses_beamline_if_no_dir_env_var(mock_mkdir: MagicMock):
+    def mock_get_log_dir(variable: str):
+        if variable == "LOG_DIR":
+            return None
+        elif variable == "BEAMLINE":
+            return "test"
+
+    with patch(
+        "mx_bluesky.common.utils.log.environ.get",
+        side_effect=lambda var: mock_get_log_dir(var),
+    ):
+        assert log._get_logging_dir() == Path("/dls_sw/test/logs/bluesky/")
+        mock_mkdir.assert_called_once()
+
+
+@patch("mx_bluesky.common.utils.log.Path.mkdir")
+def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock):
+    assert log._get_logging_dir() == Path("/tmp/logs/bluesky")
+    mock_mkdir.assert_called_once()
