@@ -65,6 +65,11 @@ def setup_logging():
     log.config(logfile)
 
 
+def _create_directory_for_eiger_collection(filepath: str):
+    logger.debug(f"Creating the directory for the collection in {filepath}.")
+    Path(filepath).mkdir(parents=True)
+
+
 def flush_print(text):
     sys.stdout.write(str(text))
     sys.stdout.flush()
@@ -269,23 +274,8 @@ def main_extruder_plan(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        logger.warning(
-            """TEMPORARY HACK!
-            Running a Single image pilatus data collection to create directory."""
-        )  # See https://github.com/DiamondLightSource/mx_bluesky/issues/45
-        num_shots = 1
-        sup.pilatus(
-            "quickshot-internaltrig",
-            [filepath, parameters.filename, num_shots, parameters.exposure_time_s],
-        )
-        logger.debug("Sleep 2s waiting for pilatus to arm")
-        sleep(2.5)
-        caput(pv.pilat_acquire, "0")  # Disarm pilatus
-        sleep(0.5)
-        caput(pv.pilat_acquire, "1")  # Arm pilatus
-        logger.debug("Pilatus data collection DONE")
-        sup.pilatus("return to normal", None)
-        logger.info("Pilatus back to normal. Single image pilatus data collection DONE")
+        # STILL TO BE TESTED!!!
+        _create_directory_for_eiger_collection(filepath)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
         logger.info(f"Eiger quickshot setup: filepath {filepath}")

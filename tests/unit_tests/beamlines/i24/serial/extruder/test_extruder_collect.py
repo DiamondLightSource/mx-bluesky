@@ -139,7 +139,11 @@ async def test_laser_check(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._create_directory_for_eiger_collection"
+)
 def test_run_extruder_quickshot_with_eiger(
+    fake_mkdir,
     fake_read,
     fake_log_setup,
     mock_quickshot_plan,
@@ -180,9 +184,9 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
-    # Check temporary piilatus hack is in there
-    assert fake_sup.pilatus.call_count == 2
     mock_quickshot_plan.assert_called_once()
+    assert fake_mkdir.call_count == 1
+    fake_mkdir.assert_called_with(dummy_params.collection_directory.as_posix())
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")
