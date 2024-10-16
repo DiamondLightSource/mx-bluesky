@@ -8,6 +8,7 @@ from ophyd_async.core import get_mock_put
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
     TTL_PILATUS,
+    _create_directory_for_eiger_collection,
     collection_aborted_plan,
     collection_complete_plan,
     enter_hutch,
@@ -80,6 +81,12 @@ def test_initialise_extruder(
     RE(initialise_extruder(detector_stage))
     assert fake_caput.call_count == 10
     assert fake_caget.call_count == 1
+
+
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path")
+def test_create_directory_for_eiger_collection(fake_path):
+    _create_directory_for_eiger_collection("")
+    fake_path.assert_called_once()
 
 
 @patch(
