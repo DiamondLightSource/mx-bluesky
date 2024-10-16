@@ -90,6 +90,8 @@ from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationS
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
+TEST_GRAYLOG_PORT = 5555
+
 
 def raw_params_from_file(filename):
     with open(filename) as f:
@@ -134,7 +136,7 @@ def pytest_runtest_setup(item):
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
-                do_default_logging_setup(dev_mode=True)
+                do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
