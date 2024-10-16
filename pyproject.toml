@@ -14,7 +14,7 @@ description = "Bluesky tools for MX Beamlines at DLS"
 dependencies = [
     #
     # If a constraint is not set here or if the dependency is pinned to a hash
-    # it will be auto-pinned to the latest release version by the pre-release workflow   
+    # it will be auto-pinned to the latest release version by the pre-release workflow
     #
     "annotated_types",
     "caproto",
@@ -25,7 +25,7 @@ dependencies = [
     "matplotlib",
     "nexgen",
     "numpy",
-    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui. 
+    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
@@ -39,13 +39,13 @@ dependencies = [
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
-    # 
+    #
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.3a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@b28d2018665ce9f6e7a32023c0115b2f1dfd5f23",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -62,6 +62,7 @@ dev = [
     # "copier",
     "diff-cover",
     "GitPython",
+    "import-linter",
     "ipython",
     "mypy",
     "myst-parser",
@@ -192,3 +193,23 @@ lint.extend-ignore = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "mx_bluesky"
+
+[[tool.importlinter.contracts]]
+name = "Common does not import from apps"
+type = "forbidden"
+source_modules = "mx_bluesky.common"
+forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from each other"
+type = "independence"
+modules = "mx_bluesky.beamlines.*"
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from hyperion"
+type = "forbidden"
+source_modules = "mx_bluesky.beamlines.*"
+forbidden_modules = "mx_bluesky.hyperion"
