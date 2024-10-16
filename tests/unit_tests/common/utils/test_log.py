@@ -9,17 +9,20 @@ from bluesky import preprocessors as bpp
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
-from mx_bluesky.hyperion import log
+import mx_bluesky.common.utils.log as log
+import mx_bluesky.hyperion.log as hyperion_log
 from mx_bluesky.hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
 
 from ....conftest import clear_log_handlers
 
+TEST_GRAYLOG_PORT = 5555
+
 
 @pytest.fixture(scope="function")
 def clear_and_mock_loggers():
-    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*hyperion_log.ALL_LOGGERS, dodal_logger])
     mock_open_with_tell = MagicMock()
     mock_open_with_tell.tell.return_value = 0
     with (
@@ -30,19 +33,19 @@ def clear_and_mock_loggers():
         graylog_emit.reset_mock()
         filehandler_emit.reset_mock()
         yield filehandler_emit, graylog_emit
-    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*hyperion_log.ALL_LOGGERS, dodal_logger])
 
 
 @pytest.mark.skip_log_setup
 def test_no_env_variable_sets_correct_file_handler(
     clear_and_mock_loggers,
 ) -> None:
-    log.do_default_logging_setup(dev_mode=True)
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
     file_handlers: FileHandler = next(
         filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
     )
 
-    assert file_handlers.baseFilename.endswith("/tmp/dev/hyperion.log")
+    assert file_handlers.baseFilename.endswith("/tmp/logs/bluesky/hyperion.log")
 
 
 @pytest.mark.skip_log_setup
@@ -54,7 +57,7 @@ def test_set_env_variable_sets_correct_file_handler(
     mock_dir,
     clear_and_mock_loggers,
 ) -> None:
-    log.do_default_logging_setup(dev_mode=True)
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     file_handlers: FileHandler = next(
         filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
@@ -68,11 +71,11 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     clear_and_mock_loggers,
 ):
     _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
-    log.do_default_logging_setup(dev_mode=True)
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     log.set_dcgid_tag(100)
 
-    logger = log.LOGGER
+    logger = hyperion_log.LOGGER
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
 
@@ -85,11 +88,11 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
 @pytest.mark.skip_log_setup
 def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
     _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
-    log.do_default_logging_setup(dev_mode=True)
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     RE.subscribe(LogUidTaggingCallback())
     test_run_uid = None
-    logger = log.LOGGER
+    logger = hyperion_log.LOGGER
 
     @bpp.run_decorator()
     def test_plan():
@@ -124,8 +127,8 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     clear_and_mock_loggers,
 ):
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
-    log.do_default_logging_setup(dev_mode=True)
-    logger = log.LOGGER
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
+    logger = hyperion_log.LOGGER
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
 
@@ -149,11 +152,11 @@ def test_callback_loggers_log_to_own_files(
     clear_and_mock_loggers,
 ):
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
-    log.do_default_logging_setup(dev_mode=True)
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
-    hyperion_logger = log.LOGGER
-    ispyb_logger = log.ISPYB_LOGGER
-    nexus_logger = log.NEXUS_LOGGER
+    hyperion_logger = hyperion_log.LOGGER
+    ispyb_logger = hyperion_log.ISPYB_LOGGER
+    nexus_logger = hyperion_log.NEXUS_LOGGER
     for logger in [ispyb_logger, nexus_logger]:
         set_up_all_logging_handlers(
             logger, log._get_logging_dir(), logger.name, True, 10000
@@ -185,11 +188,11 @@ def test_callback_loggers_log_to_own_files(
 @pytest.mark.skip_log_setup
 def test_log_writes_debug_file_on_error(clear_and_mock_loggers):
     mock_filehandler_emit, _ = clear_and_mock_loggers
-    log.do_default_logging_setup(dev_mode=True)
-    log.LOGGER.debug("debug_message_1")
-    log.LOGGER.debug("debug_message_2")
+    log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
+    hyperion_log.LOGGER.debug("debug_message_1")
+    hyperion_log.LOGGER.debug("debug_message_2")
     mock_filehandler_emit.assert_not_called()
-    log.LOGGER.error("error happens")
+    hyperion_log.LOGGER.error("error happens")
     assert len(mock_filehandler_emit.mock_calls) == 4
     messages = [call.args[0].message for call in mock_filehandler_emit.mock_calls]
     assert "debug_message_1" in messages

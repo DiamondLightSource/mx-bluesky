@@ -12,27 +12,12 @@ from dodal.log import (
 )
 from dodal.log import LOGGER as dodal_logger
 
-from mx_bluesky.hyperion.parameters.constants import CONST
-
-# TODO Hyperion needs to be 'beamline'
-LOGGER = logging.getLogger("Hyperion")
-
-
-LOGGER.setLevel("DEBUG")
-LOGGER.parent = dodal_logger
 __logger_handlers: DodalLogHandlers | None = None
-
-ISPYB_LOGGER = logging.getLogger("Hyperion ISPyB and Zocalo callbacks")
-ISPYB_LOGGER.setLevel(logging.DEBUG)
-
-NEXUS_LOGGER = logging.getLogger("Hyperion NeXus callbacks")
-NEXUS_LOGGER.setLevel(logging.DEBUG)
-
-ALL_LOGGERS = [LOGGER, ISPYB_LOGGER, NEXUS_LOGGER]
 
 
 class ExperimentMetadataTagFilter(logging.Filter):
-    """When an instance of this custom filter is added to a logging handler, dc_group_id and run_id will be included in that handlers' log messages."""
+    """When an instance of this custom filter is added to a logging handler, dc_group_id
+    and run_id will be tagged in that handlers' log messages."""
 
     dc_group_id: str | None = None
     run_uid: str | None = None
@@ -60,8 +45,10 @@ def set_uid_tag(uid):
     tag_filter.run_uid = uid
 
 
-def do_default_logging_setup(file_name: str, dev_mode: bool = False):
-    """Configures dodal logger so that separate debug and info log files are created, info logs are sent to Graylog, info logs are streamed to sys.sterr, logs from ophyd and bluesky and ophyd-async are included."""
+def do_default_logging_setup(file_name: str, graylog_port: int, dev_mode: bool = False):
+    """Configures dodal logger so that separate debug and info log files are created,
+    info logs are sent to Graylog, info logs are streamed to sys.sterr, and logs from ophyd
+    and bluesky and ophyd-async are included."""
 
     handlers = set_up_all_logging_handlers(
         dodal_logger,
@@ -69,7 +56,7 @@ def do_default_logging_setup(file_name: str, dev_mode: bool = False):
         file_name,
         dev_mode,
         ERROR_LOG_BUFFER_LINES,
-        CONST.GRAYLOG_PORT,
+        graylog_port,
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger)
     handlers["graylog_handler"].addFilter(tag_filter)
@@ -118,5 +105,5 @@ def _get_logging_dir() -> Path:
             if beamline
             else Path("/tmp/logs/bluesky")
         )
-    Path.mkdir(logging_path, exist_ok=True)
+    Path.mkdir(logging_path, exist_ok=True, parents=True)
     return logging_path

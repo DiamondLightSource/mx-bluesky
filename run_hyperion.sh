@@ -99,8 +99,6 @@ if [[ $START == 1 ]]; then
     module unload controls_dev
     module load dials
 
-    RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
-    cd ${RELATIVE_SCRIPT_DIR}
 
     if [ -z "$LOG_DIR" ]; then
         if [ $IN_DEV == true ]; then
