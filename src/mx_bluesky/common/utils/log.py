@@ -82,7 +82,6 @@ def flush_debug_handler() -> str:
     return handler.target.baseFilename
 
 
-# TODO test this
 def _get_logging_dir() -> Path:
     """Get the path to write the mx_bluesky log files to.
 
