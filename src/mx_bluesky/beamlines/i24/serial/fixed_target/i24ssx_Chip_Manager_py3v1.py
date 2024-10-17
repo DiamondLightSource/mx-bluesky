@@ -15,7 +15,7 @@ from time import sleep
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions

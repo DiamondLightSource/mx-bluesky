@@ -3,7 +3,7 @@ from functools import wraps
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.devices.zebra import (
     AUTO_SHUTTER_GATE,
     AUTO_SHUTTER_INPUT_1,
