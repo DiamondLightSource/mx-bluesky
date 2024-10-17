@@ -60,38 +60,6 @@ def _fake_grid_detection(
     yield from bps.save()
 
 
-@pytest.fixture
-def grid_detect_devices(
-    aperture_scatterguard: i03.ApertureScatterguard,
-    backlight: i03.Backlight,
-    detector_motion: i03.DetectorMotion,
-    smargon: Smargon,
-):
-    return GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=MagicMock(),
-        backlight=backlight,
-        detector_motion=detector_motion,
-        eiger=MagicMock(),
-        zebra_fast_grid_scan=MagicMock(),
-        flux=MagicMock(),
-        oav=MagicMock(),
-        pin_tip_detection=MagicMock(),
-        smargon=smargon,
-        synchrotron=MagicMock(),
-        s4_slit_gaps=MagicMock(),
-        undulator=MagicMock(),
-        xbpm_feedback=MagicMock(),
-        zebra=MagicMock(),
-        zocalo=MagicMock(),
-        panda=MagicMock(),
-        panda_fast_grid_scan=MagicMock(),
-        dcm=MagicMock(),
-        robot=MagicMock(),
-        sample_shutter=MagicMock(),
-    )
-
-
 def test_full_grid_scan(
     test_fgs_params: ThreeDGridScan, test_config_files: dict[str, str]
 ):
