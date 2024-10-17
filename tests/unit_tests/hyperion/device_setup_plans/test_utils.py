@@ -87,7 +87,11 @@ def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_ret
             )
         )
     assert e.value.args[0] is status
-
     mock_eiger.async_stage.assert_called_once()
+
+    def wait_for_set():
+        yield from bps.wait(group="ready_for_data_collection")
+
+    RE(wait_for_set())
     get_mock_put(detector_motion.z.user_setpoint).assert_called_once()
     mock_eiger.disarm_detector.assert_called_once()
