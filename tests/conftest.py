@@ -14,6 +14,7 @@ import bluesky.plan_stubs as bps
 import numpy
 import numpy as np
 import pytest
+from bluesky.protocols import Movable, Status
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg

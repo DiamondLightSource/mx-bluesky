@@ -204,11 +204,13 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     patch_murko_callback: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
+    robot: BartRobot,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
     RE: RunEngine,
 ):
     patch_murko_instance = patch_murko_callback.return_value
+    from bluesky.protocols import Locatable
     RE(
         thaw_and_stream_to_redis(
             10,
@@ -216,7 +218,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
             thawer=thawer,
             smargon=smargon,
             oav=oav,
-            robot=MagicMock(),
+            robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
     )
@@ -239,6 +241,7 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
     patch_murko_call: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
+    robot: BartRobot,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
     RE: RunEngine,
@@ -250,7 +253,7 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
             thawer=thawer,
             smargon=smargon,
             oav=oav,
-            robot=MagicMock(),
+            robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
     )

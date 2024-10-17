@@ -4,15 +4,20 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureValue
+
+from dodal.devices.aperturescatterguard import ApertureValue, ApertureScatterguard
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import GridDetectThenXRayCentreComposite
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -66,6 +71,38 @@ BASIC_POST_SETUP_DOC = {
     "flux_flux_reading": 10,
     "dcm-energy_in_kev": 11.105,
 }
+
+
+@pytest.fixture
+def grid_detect_devices(
+    aperture_scatterguard: ApertureScatterguard,
+    backlight: Backlight,
+    detector_motion: DetectorMotion,
+    smargon: Smargon,
+) -> GridDetectThenXRayCentreComposite:
+    return GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=MagicMock(),
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=MagicMock(),
+        zebra_fast_grid_scan=MagicMock(),
+        flux=MagicMock(),
+        oav=MagicMock(),
+        pin_tip_detection=MagicMock(),
+        smargon=smargon,
+        synchrotron=MagicMock(),
+        s4_slit_gaps=MagicMock(),
+        undulator=MagicMock(),
+        xbpm_feedback=MagicMock(),
+        zebra=MagicMock(),
+        zocalo=MagicMock(),
+        panda=MagicMock(),
+        panda_fast_grid_scan=MagicMock(),
+        dcm=MagicMock(),
+        robot=MagicMock(),
+        sample_shutter=MagicMock(),
+    )
 
 
 @pytest.fixture
@@ -187,7 +224,7 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files, dcm):
+def simple_beamline(detector_motion, eiger, oav, smargon, synchrotron, test_config_files, dcm):
     magic_mock = MagicMock(autospec=True)
 
     with DeviceCollector(mock=True):
@@ -199,6 +236,7 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     magic_mock.detector_motion = detector_motion
     magic_mock.dcm = dcm
     magic_mock.synchrotron = synchrotron
+    magic_mock.eiger = eiger
     oav.zoom_controller.frst.set("7.5x")
     oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]

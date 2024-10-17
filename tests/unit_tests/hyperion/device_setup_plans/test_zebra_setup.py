@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from bluesky import plan_stubs as bps
+from bluesky.protocols import Movable
 from dodal.beamlines import i03
 from dodal.devices.zebra import (
     AUTO_SHUTTER_GATE,
@@ -94,7 +95,7 @@ class MyException(Exception):
 
 
 def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
-    mock_device = MagicMock()
+    mock_device = MagicMock(spec=Movable)
 
     @bluesky_retry
     def my_plan(value):
@@ -108,7 +109,7 @@ def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
 
 
 def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE, done_status):
-    mock_device = MagicMock()
+    mock_device = MagicMock(spec=Movable)
 
     @bluesky_retry
     def my_plan(value):
