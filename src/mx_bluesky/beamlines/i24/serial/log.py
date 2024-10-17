@@ -4,21 +4,18 @@ import logging.config
 from os import environ
 from pathlib import Path
 
+from bluesky.log import logger as bluesky_logger
 from dodal.log import (
     ERROR_LOG_BUFFER_LINES,
-    integrate_bluesky_and_ophyd_logging,
-    set_up_all_logging_handlers,
+    get_graylog_configuration,
+    ophyd_async_logger,
+    set_up_DEBUG_memory_handler,
+    set_up_graylog_handler,
+    set_up_INFO_file_handler,
 )
 from dodal.log import LOGGER as dodal_logger
 
 VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
-
-
-class OphydDebugFilter(logging.Filter):  # NOTE yet to be fully tested
-    """Do not send ophyd debug log messages to stream handler."""
-
-    def filter(self, record):
-        return "ophyd" not in record.getMessage().lower()
 
 
 # Logging set up
@@ -29,11 +26,6 @@ logger.parent = dodal_logger
 logging_config = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {
-        "ophyd_filter": {
-            "()": OphydDebugFilter,
-        }
-    },
     "formatters": {
         "default": {
             "class": "logging.Formatter",
@@ -42,10 +34,9 @@ logging_config = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "default",
-            "filters": ["ophyd_filter"],
             "stream": "ext://sys.stdout",
         }
     },
@@ -53,7 +44,7 @@ logging_config = {
         "I24ssx": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": True,
+            "propagate": False,
         }
     },
 }
@@ -87,24 +78,27 @@ def _get_logging_file_path() -> Path:
     return logging_path
 
 
+def _integrate_bluesky_logs(parent_logger: logging.Logger):
+    # Integrate only bluesky and ophyd_async logger
+    for log in [bluesky_logger, ophyd_async_logger]:
+        log.parent = parent_logger
+        log.setLevel(logging.DEBUG)
+
+
 def default_logging_setup(dev_mode: bool = False):
     """ Default log setup for i24 serial.
 
-    - Set up handlers for parent logger (from dodal)
-    - integrate bluesky and ophyd loggers
-    - Remove dodal stream handler to avoid double messages (for now, use only the \
-        i24ssx default stream to keep the output expected by the scientists.)
+    - Set up handlers for parent logger (from dodal): INFO file, DEBUG \
+        memory and graylog.
+    - integrate bluesky and ophyd loggers.
     """
-    handlers = set_up_all_logging_handlers(  # noqa: F841
-        dodal_logger,
-        _get_logging_file_path(),
-        "dodal.log",
-        dev_mode,
-        ERROR_LOG_BUFFER_LINES,
+    logging_path = _get_logging_file_path()
+    set_up_INFO_file_handler(dodal_logger, logging_path, "dodal.log")
+    set_up_DEBUG_memory_handler(
+        dodal_logger, logging_path, "dodal.log", ERROR_LOG_BUFFER_LINES
     )
-    integrate_bluesky_and_ophyd_logging(dodal_logger)
-    # Remove dodal StreamHandler to avoid duplication of messages above debug
-    dodal_logger.removeHandler(dodal_logger.handlers[0])
+    set_up_graylog_handler(dodal_logger, *get_graylog_configuration(dev_mode, None))
+    _integrate_bluesky_logs(dodal_logger)
 
 
 def config(
