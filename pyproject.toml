@@ -29,6 +29,7 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
+    "pydantic-extra-types",
     "pyepics",
     "pyzmq",
     "requests",
