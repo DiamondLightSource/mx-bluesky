@@ -4,8 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
-
-from dodal.devices.aperturescatterguard import ApertureValue, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
@@ -17,7 +16,9 @@ from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import GridDetectThenXRayCentreComposite
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -224,7 +225,9 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, eiger, oav, smargon, synchrotron, test_config_files, dcm):
+def simple_beamline(
+    detector_motion, eiger, oav, smargon, synchrotron, test_config_files, dcm
+):
     magic_mock = MagicMock(autospec=True)
 
     with DeviceCollector(mock=True):

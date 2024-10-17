@@ -4,13 +4,15 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import GridDetectThenXRayCentreComposite
 
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_xray_centre_plan,
@@ -58,7 +60,9 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     RE = RunEngine()
     RE(
         pin_centre_then_xray_centre_plan(
-            grid_detect_devices, test_pin_centre_then_xray_centre_params, test_config_files
+            grid_detect_devices,
+            test_pin_centre_then_xray_centre_params,
+            test_config_files,
         )
     )
 

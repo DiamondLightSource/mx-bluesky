@@ -1,5 +1,4 @@
 from datetime import datetime
-from ophyd_async.fastcs.panda import HDFPanda
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -9,7 +8,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
-from ophyd_async.fastcs.panda import SeqTable, SeqTrigger
+from ophyd_async.fastcs.panda import HDFPanda, SeqTable, SeqTrigger
 
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
@@ -28,7 +27,7 @@ def run_simulating_setup_panda_functions(
     plan: str,
     panda: HDFPanda,
     sim_run_engine: RunEngineSimulator,
-    mock_load_device=MagicMock
+    mock_load_device=MagicMock,
 ):
     num_of_sets = 0
     num_of_waits = 0
@@ -184,8 +183,7 @@ def test_setup_panda_correctly_configures_table(
         )
 
 
-def test_wait_between_setting_table_and_arming_panda(RE: RunEngine,
-                                                     panda):
+def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
     bps_wait_done = False
 
     def handle_wait(*args, **kwargs):

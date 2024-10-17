@@ -210,7 +210,6 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     RE: RunEngine,
 ):
     patch_murko_instance = patch_murko_callback.return_value
-    from bluesky.protocols import Locatable
     RE(
         thaw_and_stream_to_redis(
             10,

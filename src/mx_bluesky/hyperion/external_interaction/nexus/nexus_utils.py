@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -93,7 +93,7 @@ def create_goniometer_axes(
 
 def get_start_and_predicted_end_time(time_expected: float) -> tuple[str, str]:
     time_format = r"%Y-%m-%dT%H:%M:%SZ"
-    start = datetime.fromtimestamp(time.time(), tz=timezone.utc)
+    start = datetime.fromtimestamp(time.time(), tz=UTC)
     end_est = start + timedelta(seconds=time_expected)
     return start.strftime(time_format), end_est.strftime(time_format)
 
