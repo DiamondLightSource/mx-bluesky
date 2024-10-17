@@ -120,3 +120,14 @@ def test_selected_aperture_uses_default():
     raw_params["selected_aperture"] = None
     params = RotationScan(**raw_params)
     assert params.selected_aperture == ApertureValue.LARGE
+
+
+def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert test_params.use_panda is False
+    assert test_params.use_gpu is False
+    minimal_3d_gridscan_params["use_panda"] = True
+    minimal_3d_gridscan_params["use_gpu"] = True
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert test_params.use_gpu
+    assert test_params.use_panda

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -10,10 +11,11 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, model_validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
+from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
 from mx_bluesky.hyperion.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -44,6 +46,16 @@ class GridCommon(
         default=IspybExperimentType.GRIDSCAN_3D
     )
     selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_feature_flags(cls, values) -> Any:
+        cls.features = FeatureFlags().best_effort()
+        if "use_panda" in values:
+            cls.features.use_panda_for_gridscan = values["use_panda"]
+        if "use_gpu" in values:
+            cls.features.use_gpu_for_gridscan = values["use_gpu"]
+        return values
 
     @property
     def detector_params(self):

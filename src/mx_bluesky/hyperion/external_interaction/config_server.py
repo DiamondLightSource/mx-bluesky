@@ -17,9 +17,9 @@ def config_server() -> ConfigServer:
 class FeatureFlags(BaseModel):
     # The default value will be used as the fallback when doing a best-effort fetch
     # from the service
-    use_panda_for_gridscan: bool = False
-    use_gpu_for_gridscan: bool = False
-    set_stub_offsets: bool = False
+    use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
+    use_gpu_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
+    set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
 
     @classmethod
     def _get_flags(cls):

@@ -116,6 +116,7 @@ class I03Constants:
     USE_GPU_FOR_GRIDSCAN_ANALYSIS = False
     THAWING_TIME = 20
     USE_CPU_AND_GPU_ZOCALO = False
+    SET_STUB_OFFSETS = False
 
 
 @dataclass(frozen=True)
