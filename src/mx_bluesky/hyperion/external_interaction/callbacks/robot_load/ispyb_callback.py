@@ -6,7 +6,6 @@ from event_model.documents import EventDescriptor
 
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
-    get_visit_string_from_path,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -37,10 +36,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.debug(f"ISPyB robot load callback received: {doc}")
             self.run_uid = doc.get("uid")
             assert isinstance(metadata := doc.get("metadata"), dict)
-            assert isinstance(
-                visit := get_visit_string_from_path(metadata["visit_path"]), str
+            proposal, session = get_proposal_and_session_from_visit_string(
+                metadata["visit"]
             )
-            proposal, session = get_proposal_and_session_from_visit_string(visit)
             self.action_id = self.expeye.start_load(
                 proposal,
                 session,

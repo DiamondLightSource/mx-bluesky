@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import re
-
 from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
@@ -11,7 +9,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     I03_EIGER_DETECTOR,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
-    VISIT_PATH_REGEX,
     get_current_time_string,
 )
 from mx_bluesky.hyperion.parameters.components import DiffractionExperimentWithSample
@@ -63,8 +60,3 @@ def get_proposal_and_session_from_visit_string(visit_string: str) -> tuple[str, 
     visit_parts = visit_string.split("-")
     assert len(visit_parts) == 2, f"Unexpected visit string {visit_string}"
     return visit_parts[0], int(visit_parts[1])
-
-
-def get_visit_string_from_path(path: str | None) -> str | None:
-    match = re.search(VISIT_PATH_REGEX, path) if path else None
-    return str(match.group(1)) if match else None

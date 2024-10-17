@@ -7,12 +7,14 @@ import mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
+    load_centre_collect_full_plan,
     pin_centre_then_xray_centre_plan,
     robot_load_then_centre_plan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     CallbacksFactory,
     create_gridscan_callbacks,
+    create_load_centre_collect_callbacks,
     create_robot_load_and_centre_callbacks,
     create_rotation_callbacks,
 )
@@ -22,6 +24,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     RobotLoadThenCentre,
     ThreeDGridScan,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 
@@ -42,6 +45,7 @@ class ExperimentRegistryEntry(TypedDict):
         | MultiRotationScan
         | PinTipCentreThenXrayCentre
         | RobotLoadThenCentre
+        | LoadCentreCollect
     ]
     callbacks_factory: CallbacksFactory
 
@@ -76,6 +80,11 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": rotation_scan_plan.create_devices,
         "param_type": MultiRotationScan,
         "callbacks_factory": create_rotation_callbacks,
+    },
+    "load_centre_collect_full_plan": {
+        "setup": load_centre_collect_full_plan.create_devices,
+        "param_type": LoadCentreCollect,
+        "callbacks_factory": create_load_centre_collect_callbacks,
     },
 }
 

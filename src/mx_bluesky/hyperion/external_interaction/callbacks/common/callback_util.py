@@ -44,3 +44,21 @@ def create_rotation_callbacks() -> (
     tuple[RotationNexusFileCallback, RotationISPyBCallback]
 ):
     return (RotationNexusFileCallback(), RotationISPyBCallback(emit=ZocaloCallback()))
+
+
+def create_load_centre_collect_callbacks() -> (
+    tuple[
+        GridscanNexusFileCallback,
+        GridscanISPyBCallback,
+        RobotLoadISPyBCallback,
+        RotationNexusFileCallback,
+        RotationISPyBCallback,
+    ]
+):
+    return (
+        GridscanNexusFileCallback(),
+        GridscanISPyBCallback(emit=ZocaloCallback()),
+        RobotLoadISPyBCallback(),
+        RotationNexusFileCallback(),
+        RotationISPyBCallback(emit=ZocaloCallback()),
+    )

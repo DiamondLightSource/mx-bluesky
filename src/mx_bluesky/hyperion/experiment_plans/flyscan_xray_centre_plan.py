@@ -77,6 +77,12 @@ class SmargonSpeedException(Exception):
     pass
 
 
+class CrystalNotFoundException(WarningException):
+    """Raised if grid detection completed normally but no crystal was found."""
+
+    pass
+
+
 @dataclasses.dataclass
 class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
@@ -190,47 +196,51 @@ def run_gridscan_and_move(
 
     LOGGER.info("Grid scan finished, getting results.")
 
-    with TRACER.start_span("wait_for_zocalo"):
-        yield from bps.trigger_and_read(
-            [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
-        )
-        LOGGER.info("Zocalo triggered and read, interpreting results.")
-        xray_centre, bbox_size = yield from get_processing_result(fgs_composite.zocalo)
-        LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
-        if xray_centre is not None:
-            xray_centre = parameters.FGS_params.grid_position_to_motor_position(
-                xray_centre
+    try:
+        with TRACER.start_span("wait_for_zocalo"):
+            yield from bps.trigger_and_read(
+                [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
             )
-        else:
-            xray_centre = initial_xyz
-            LOGGER.warning("No X-ray centre received")
-        if bbox_size is not None:
-            with TRACER.start_span("change_aperture"):
-                yield from set_aperture_for_bbox_size(
-                    fgs_composite.aperture_scatterguard, bbox_size
+            LOGGER.info("Zocalo triggered and read, interpreting results.")
+            xray_centre, bbox_size = yield from get_processing_result(
+                fgs_composite.zocalo
+            )
+            LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
+            if xray_centre is not None:
+                xray_centre = parameters.FGS_params.grid_position_to_motor_position(
+                    xray_centre
                 )
-        else:
-            LOGGER.warning("No bounding box size received")
+            else:
+                LOGGER.warning("No X-ray centre received")
+                raise CrystalNotFoundException()
+            if bbox_size is not None:
+                with TRACER.start_span("change_aperture"):
+                    yield from set_aperture_for_bbox_size(
+                        fgs_composite.aperture_scatterguard, bbox_size
+                    )
+            else:
+                LOGGER.warning("No bounding box size received")
 
-    # once we have the results, go to the appropriate position
-    LOGGER.info("Moving to centre of mass.")
-    with TRACER.start_span("move_to_result"):
-        x, y, z = xray_centre
-        yield from move_x_y_z(fgs_composite.sample_motors, x, y, z, wait=True)
+        # once we have the results, go to the appropriate position
+        LOGGER.info("Moving to centre of mass.")
+        with TRACER.start_span("move_to_result"):
+            x, y, z = xray_centre
+            yield from move_x_y_z(fgs_composite.sample_motors, x, y, z, wait=True)
 
-    if parameters.FGS_params.set_stub_offsets:
-        LOGGER.info("Recentring smargon co-ordinate system to this point.")
-        yield from bps.mv(
-            fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-        )
+        if parameters.FGS_params.set_stub_offsets:
+            LOGGER.info("Recentring smargon co-ordinate system to this point.")
+            yield from bps.mv(
+                fgs_composite.sample_motors.stub_offsets,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+                StubPosition.CURRENT_AS_CENTER,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+            )
+    finally:
+        # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
+        LOGGER.info("Turning off Eiger dev/shm streaming")
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
-    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
-    LOGGER.info("Turning off Eiger dev/shm streaming")
-    yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)
-
-    # Wait on everything before returning to GDA (particularly apertures), can be removed
-    # when we do not return to GDA here
-    yield from bps.wait()
+        # Wait on everything before returning to GDA (particularly apertures), can be removed
+        # when we do not return to GDA here
+        yield from bps.wait()
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
@@ -257,7 +267,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
-            fgs_composite.robot,
+            fgs_composite.dcm,
             fgs_composite.smargon,
         )
 
@@ -278,7 +288,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)
+    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -309,13 +319,13 @@ def kickoff_and_complete_gridscan(
         }
     )
     @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(eiger)),
-        else_plan=lambda: (yield from bps.unstage(eiger)),
+        except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        else_plan=lambda: (yield from bps.unstage(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
     def do_fgs():
         # Check topup gate
         expected_images = yield from bps.rd(gridscan.expected_images)
-        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
+        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         LOGGER.info("waiting for topup if necessary...")
         yield from check_topup_and_wait_if_necessary(
             synchrotron,
@@ -506,8 +516,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
-        time_between_x_steps_ms,
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
 
     directory_provider_root = Path(parameters.storage_directory)

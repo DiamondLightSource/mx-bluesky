@@ -1,7 +1,7 @@
 name: i03-hyperion
 services:
   hyperion-common:
-    image: localhost/hyperion
+    image: localhost/mx-bluesky
     pull_policy: never
     expose:
       - "5005"

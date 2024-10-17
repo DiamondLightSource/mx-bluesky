@@ -20,10 +20,12 @@ from mx_bluesky.hyperion.parameters.components import (
     OptionalGonioAngleStarts,
     SplitScan,
     WithOavCentring,
+    WithOptionalEnergyChange,
     WithScan,
     XyzStarts,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
 class GridCommon(
@@ -85,6 +87,10 @@ class PinTipCentreThenXrayCentre(GridCommon):
 class RobotLoadThenCentre(GridCommon):
     thawing_time: float = Field(default=CONST.I03.THAWING_TIME)
 
+    def robot_load_params(self):
+        my_params = self.model_dump()
+        return RobotLoadAndEnergyChange(**my_params)
+
     def pin_centre_then_xray_centre_params(self):
         my_params = self.model_dump()
         del my_params["thawing_time"]
@@ -99,11 +105,10 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan):
     ...
 
 
-class ThreeDGridScan(SpecifiedGridScan, SplitScan):
+class ThreeDGridScan(SpecifiedGridScan, SplitScan, WithOptionalEnergyChange):
     """Parameters representing a so-called 3D grid scan, which consists of doing a
     gridscan in X and Y, followed by one in X and Z."""
 
-    demand_energy_ev: float | None = Field(default=None)
     grid1_omega_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)  # type: ignore
     grid2_omega_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
     x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)

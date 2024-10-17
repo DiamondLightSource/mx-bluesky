@@ -31,7 +31,7 @@ RUN git restore .
 
 # Regenerate _version.py with the correct version - this should run quickly since we already have our dependencies
 RUN rm src/mx_bluesky/_version.py
-RUN pip install --no-cache-dir --no-compile -e .
+RUN pip install --no-cache-dir --no-compile --no-deps -e .
 
 ENTRYPOINT /app/hyperion/utility_scripts/docker/entrypoint.sh
 

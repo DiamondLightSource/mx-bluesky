@@ -84,7 +84,6 @@ def test_robot_load_then_centre_params():
     }
     params["detector_distance_mm"] = 200
     test_params = RobotLoadThenCentre(**params)
-    assert test_params.visit_directory
     assert test_params.detector_params
 
 

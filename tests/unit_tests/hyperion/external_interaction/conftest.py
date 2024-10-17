@@ -1,4 +1,3 @@
-import glob
 import os
 from collections.abc import Callable, Sequence
 from copy import deepcopy
@@ -55,7 +54,7 @@ def get_test_plan(callback_name):
     @bpp.run_decorator(md={"activate_callbacks": [callback_name]})
     def test_plan():
         yield from bps.create()
-        yield from bps.read(s)
+        yield from bps.read(s)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.save()
 
     return test_plan, s
@@ -206,15 +205,7 @@ def dummy_rotation_params():
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID
-
-    def clear_files():
-        files = glob.glob(f"{dummy_params.storage_directory}*")
-        for f in files:
-            os.remove(f)
-
-    clear_files()
-    yield dummy_params
-    clear_files()
+    return dummy_params
 
 
 TEST_SAMPLE_ID = 364758

@@ -1,23 +1,15 @@
 from __future__ import annotations
 
 import os
-import re
 from collections.abc import Callable, Sequence
 from copy import deepcopy
-from decimal import Decimal
 from typing import Any, Literal
-from unittest.mock import MagicMock, patch
 
-import numpy
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
 
-from mx_bluesky.hyperion.experiment_plans import oav_grid_detection_plan
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -57,9 +49,12 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     ThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
-from ....conftest import fake_read
+from ...conftest import (
+    DATA_COLLECTION_COLUMN_MAP,
+    compare_actual_and_expected,
+    compare_comment,
+)
 from .conftest import raw_params_from_file
 
 EXPECTED_DATACOLLECTION_FOR_ROTATION = {
@@ -67,120 +62,10 @@ EXPECTED_DATACOLLECTION_FOR_ROTATION = {
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.023,
-    "undulatorGap1": 1.12,
+    "undulatorGap1": 1.11,
     "synchrotronMode": SynchrotronMode.USER.value,
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
-}
-
-# Map all the case-sensitive column names from their normalised versions
-DATA_COLLECTION_COLUMN_MAP = {
-    s.lower(): s
-    for s in [
-        "dataCollectionId",
-        "BLSAMPLEID",
-        "SESSIONID",
-        "experimenttype",
-        "dataCollectionNumber",
-        "startTime",
-        "endTime",
-        "runStatus",
-        "axisStart",
-        "axisEnd",
-        "axisRange",
-        "overlap",
-        "numberOfImages",
-        "startImageNumber",
-        "numberOfPasses",
-        "exposureTime",
-        "imageDirectory",
-        "imagePrefix",
-        "imageSuffix",
-        "imageContainerSubPath",
-        "fileTemplate",
-        "wavelength",
-        "resolution",
-        "detectorDistance",
-        "xBeam",
-        "yBeam",
-        "comments",
-        "printableForReport",
-        "CRYSTALCLASS",
-        "slitGapVertical",
-        "slitGapHorizontal",
-        "transmission",
-        "synchrotronMode",
-        "xtalSnapshotFullPath1",
-        "xtalSnapshotFullPath2",
-        "xtalSnapshotFullPath3",
-        "xtalSnapshotFullPath4",
-        "rotationAxis",
-        "phiStart",
-        "kappaStart",
-        "omegaStart",
-        "chiStart",
-        "resolutionAtCorner",
-        "detector2Theta",
-        "DETECTORMODE",
-        "undulatorGap1",
-        "undulatorGap2",
-        "undulatorGap3",
-        "beamSizeAtSampleX",
-        "beamSizeAtSampleY",
-        "centeringMethod",
-        "averageTemperature",
-        "ACTUALSAMPLEBARCODE",
-        "ACTUALSAMPLESLOTINCONTAINER",
-        "ACTUALCONTAINERBARCODE",
-        "ACTUALCONTAINERSLOTINSC",
-        "actualCenteringPosition",
-        "beamShape",
-        "dataCollectionGroupId",
-        "POSITIONID",
-        "detectorId",
-        "FOCALSPOTSIZEATSAMPLEX",
-        "POLARISATION",
-        "FOCALSPOTSIZEATSAMPLEY",
-        "APERTUREID",
-        "screeningOrigId",
-        "flux",
-        "strategySubWedgeOrigId",
-        "blSubSampleId",
-        "processedDataFile",
-        "datFullPath",
-        "magnification",
-        "totalAbsorbedDose",
-        "binning",
-        "particleDiameter",
-        "boxSize",
-        "minResolution",
-        "minDefocus",
-        "maxDefocus",
-        "defocusStepSize",
-        "amountAstigmatism",
-        "extractSize",
-        "bgRadius",
-        "voltage",
-        "objAperture",
-        "c1aperture",
-        "c2aperture",
-        "c3aperture",
-        "c1lens",
-        "c2lens",
-        "c3lens",
-        "startPositionId",
-        "endPositionId",
-        "flux",
-        "bestWilsonPlotPath",
-        "totalExposedDose",
-        "nominalMagnification",
-        "nominalDefocus",
-        "imageSizeX",
-        "imageSizeY",
-        "pixelSizeOnImage",
-        "phasePlate",
-        "dataCollectionPlanId",
-    ]
 }
 
 GRID_INFO_COLUMN_MAP = {
@@ -236,133 +121,6 @@ def grid_detect_then_xray_centre_parameters():
         "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
     return GridScanWithEdgeDetect(**json_dict)
-
-
-# noinspection PyUnreachableCode
-@pytest.fixture
-def grid_detect_then_xray_centre_composite(
-    fast_grid_scan,
-    backlight,
-    smargon,
-    undulator,
-    synchrotron,
-    s4_slit_gaps,
-    attenuator,
-    xbpm_feedback,
-    detector_motion,
-    zocalo,
-    aperture_scatterguard,
-    zebra,
-    eiger,
-    robot,
-    oav: OAV,
-    dcm,
-    flux,
-    ophyd_pin_tip_detection,
-    sample_shutter,
-    done_status,
-):
-    composite = GridDetectThenXRayCentreComposite(
-        zebra_fast_grid_scan=fast_grid_scan,
-        pin_tip_detection=ophyd_pin_tip_detection,
-        backlight=backlight,
-        panda_fast_grid_scan=None,  # type: ignore
-        smargon=smargon,
-        undulator=undulator,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        attenuator=attenuator,
-        xbpm_feedback=xbpm_feedback,
-        detector_motion=detector_motion,
-        zocalo=zocalo,
-        aperture_scatterguard=aperture_scatterguard,
-        zebra=zebra,
-        eiger=eiger,
-        panda=None,  # type: ignore
-        robot=robot,
-        oav=oav,
-        dcm=dcm,
-        flux=flux,
-        sample_shutter=sample_shutter,
-    )
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.cam.array_size.array_size_x.sim_put(1024)  # type: ignore
-    oav.cam.array_size.array_size_y.sim_put(768)  # type: ignore
-    oav.grid_snapshot.x_size.sim_put(1024)  # type: ignore
-    oav.grid_snapshot.y_size.sim_put(768)  # type: ignore
-    oav.grid_snapshot.top_left_x.set(50)
-    oav.grid_snapshot.top_left_y.set(100)
-    oav.grid_snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
-    set_mock_value(undulator.current_gap, 1.11)
-
-    unpatched_method = oav.parameters.load_microns_per_pixel
-
-    unpatched_snapshot_trigger = oav.grid_snapshot.trigger
-
-    def mock_snapshot_trigger():
-        oav.grid_snapshot.last_path_full_overlay.set("test_1_y")
-        oav.grid_snapshot.last_path_outer.set("test_2_y")
-        oav.grid_snapshot.last_saved_path.set("test_3_y")
-        return unpatched_snapshot_trigger()
-
-    def patch_lmpp(zoom, xsize, ysize):
-        unpatched_method(zoom, 1024, 768)
-
-    def mock_pin_tip_detect(_):
-        tip_x_px = 100
-        tip_y_px = 200
-        microns_per_pixel = 2.87  # from zoom levels .xml
-        grid_width_px = int(400 / microns_per_pixel)
-        target_grid_height_px = 70
-        top_edge_data = ([0] * tip_x_px) + (
-            [(tip_y_px - target_grid_height_px // 2)] * grid_width_px
-        )
-        bottom_edge_data = [0] * tip_x_px + [
-            (tip_y_px + target_grid_height_px // 2)
-        ] * grid_width_px
-        set_mock_value(
-            ophyd_pin_tip_detection.triggered_top_edge,
-            numpy.array(top_edge_data, dtype=numpy.uint32),
-        )
-
-        set_mock_value(
-            ophyd_pin_tip_detection.triggered_bottom_edge,
-            numpy.array(bottom_edge_data, dtype=numpy.uint32),
-        )
-        set_mock_value(
-            zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
-        )
-
-        yield from []
-        return tip_x_px, tip_y_px
-
-    @AsyncStatus.wrap
-    async def mock_complete_status():
-        pass
-
-    with (
-        patch.object(eiger, "wait_on_arming_if_started"),
-        # xsize, ysize will always be wrong since computed as 0 before we get here
-        # patch up load_microns_per_pixel connect to receive non-zero values
-        patch.object(
-            oav.parameters,
-            "load_microns_per_pixel",
-            new=MagicMock(side_effect=patch_lmpp),
-        ),
-        patch.object(
-            oav_grid_detection_plan,
-            "wait_for_tip_to_be_found",
-            side_effect=mock_pin_tip_detect,
-        ),
-        patch("dodal.devices.areadetector.plugins.MJPG.requests.get"),
-        patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
-        patch.object(oav.grid_snapshot, "post_processing"),
-        patch.object(oav.grid_snapshot, "trigger", side_effect=mock_snapshot_trigger),
-        patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
-        patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
-        patch.object(zocalo, "trigger", return_value=NullStatus()),
-    ):
-        yield composite
 
 
 def scan_xy_data_info_for_update(
@@ -426,57 +184,6 @@ def scan_data_infos_for_update_3d(
         data_collection_grid_info=(data_collection_grid_info),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
-
-
-@pytest.fixture
-def composite_for_rotation_scan(fake_create_rotation_devices: RotationScanComposite):
-    energy_ev = convert_angstrom_to_eV(0.71)
-    set_mock_value(
-        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
-        energy_ev / 1000,  # pyright: ignore
-    )
-    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
-    set_mock_value(
-        fake_create_rotation_devices.synchrotron.synchrotron_mode,
-        SynchrotronMode.USER,
-    )
-    set_mock_value(
-        fake_create_rotation_devices.synchrotron.top_up_start_countdown,  # pyright: ignore
-        -1,
-    )
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
-        0.123
-    )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
-        0.234
-    )
-    it_snapshot_filenames = iter(
-        [
-            "/tmp/snapshot1.png",
-            "/tmp/snapshot2.png",
-            "/tmp/snapshot3.png",
-            "/tmp/snapshot4.png",
-        ]
-    )
-
-    with (
-        patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),
-        patch.object(
-            fake_create_rotation_devices.oav.snapshot.last_saved_path, "get"
-        ) as mock_last_saved_path,
-        patch("bluesky.plan_stubs.wait"),
-    ):
-
-        @AsyncStatus.wrap
-        async def apply_snapshot_filename():
-            mock_last_saved_path.return_value = next(it_snapshot_filenames)
-
-        with patch.object(
-            fake_create_rotation_devices.oav.snapshot,
-            "trigger",
-            side_effect=apply_snapshot_filename,
-        ):
-            yield fake_create_rotation_devices
 
 
 @pytest.fixture
@@ -755,7 +462,6 @@ def test_ispyb_deposition_in_rotation_plan(
     RE: RunEngine,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
-    fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
@@ -812,33 +518,3 @@ def generate_scan_data_infos(
     else:
         scan_data_infos = [xy_scan_data_info]
     return scan_data_infos
-
-
-def compare_actual_and_expected(
-    id, expected_values, fetch_datacollection_attribute, column_map: dict | None = None
-):
-    results = "\n"
-    for k, v in expected_values.items():
-        actual = fetch_datacollection_attribute(
-            id, column_map[k.lower()] if column_map else k
-        )
-        if isinstance(actual, Decimal):
-            actual = float(actual)
-        if isinstance(v, float):
-            actual_v = actual == pytest.approx(v)
-        else:
-            actual_v = actual == v
-        if not actual_v:
-            results += f"expected {k} {v} == {actual}\n"
-    assert results == "\n", results
-
-
-def compare_comment(
-    fetch_datacollection_attribute, data_collection_id, expected_comment
-):
-    actual_comment = fetch_datacollection_attribute(
-        data_collection_id, DATA_COLLECTION_COLUMN_MAP["comments"]
-    )
-    match = re.search(" Zocalo processing took", actual_comment)
-    truncated_comment = actual_comment[: match.start()] if match else actual_comment
-    assert truncated_comment == expected_comment

@@ -124,6 +124,10 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
+    sim_run_engine.add_read_handler_for(
+        simple_beamline.zocalo.centres_of_mass, [10, 10, 10]
+    )
+
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             simple_beamline,

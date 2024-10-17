@@ -8,7 +8,9 @@ package Mixins {
     class WithSample
     class WithScan
     class WithOavCentring
+    class WithOptionalEnergyChange
     class WithSnapshot
+    class WithVisit
     class OptionalXyzStarts
     class XyzStarts
     class OptionalGonioAngleStarts
@@ -22,49 +24,51 @@ package Experiments {
     class DiffractionExperimentWithSample
     class GridCommon
     class GridScanWithEdgeDetect
+    class LoadCentreCollect
     class PinTipCentreThenXrayCentre
     class RotationScan
     class MultiRotationScan
+    class RobotLoadAndEnergyChange
     class RobotLoadThenCentre
     class SpecifiedGridScan
     class ThreeDGridScan
 }
 
 class HyperionParameters
-note bottom: Base class for all experiment parameter models
-
-class TemporaryIspybExtras
-note bottom: To be removed
-
+note top: Base class for all experiment parameter models
 
 BaseModel <|-- HyperionParameters
 BaseModel <|-- SplitScan
 BaseModel <|-- OptionalGonioAngleStarts
 BaseModel <|-- OptionalXyzStarts
-BaseModel <|-- TemporaryIspybExtras
 BaseModel <|-- WithOavCentring
+BaseModel <|-- WithOptionalEnergyChange
 BaseModel <|-- WithSnapshot
 BaseModel <|-- WithSample
 BaseModel <|-- WithScan
+BaseModel <|-- WithVisit
 BaseModel <|-- XyzStarts
 
-RotationScan *-- TemporaryIspybExtras
-MultiRotationScan *-- TemporaryIspybExtras
 OptionalGonioAngleStarts <|-- RotationScanPerSweep
 OptionalXyzStarts  <|-- RotationScanPerSweep
 DiffractionExperimentWithSample <|-- RotationExperiment
 HyperionParameters <|-- DiffractionExperiment
 WithSnapshot <|-- DiffractionExperiment
+WithOptionalEnergyChange <|-- DiffractionExperiment
+WithVisit <|-- DiffractionExperiment
 DiffractionExperiment <|-- DiffractionExperimentWithSample
 WithSample <|-- DiffractionExperimentWithSample
 DiffractionExperimentWithSample <|-- GridCommon
 GridCommon <|-- GridScanWithEdgeDetect
 GridCommon <|-- PinTipCentreThenXrayCentre
 GridCommon <|-- RobotLoadThenCentre
+RobotLoadThenCentre *-- RobotLoadAndEnergyChange
+RobotLoadThenCentre *-- PinTipCentreThenXrayCentre
 GridCommon <|-- SpecifiedGridScan
 WithScan <|-- SpecifiedGridScan
 SpecifiedGridScan <|-- ThreeDGridScan
 SplitScan <|-- ThreeDGridScan
+WithOptionalEnergyChange <|-- ThreeDGridScan
 WithOavCentring <|-- GridCommon
 WithScan <|-- RotationScan
 RotationScanPerSweep <|-- RotationScan
@@ -75,4 +79,8 @@ SplitScan <|-- MultiRotationScan
 XyzStarts <|-- SpecifiedGridScan
 OptionalGonioAngleStarts <|-- GridCommon
 OptionalGonioAngleStarts <|-- RotationScan
+HyperionParameters <|-- RobotLoadAndEnergyChange
+WithSample <|-- RobotLoadAndEnergyChange
+WithSnapshot <|-- RobotLoadAndEnergyChange
+WithOptionalEnergyChange <|-- RobotLoadAndEnergyChange
 @enduml

@@ -57,7 +57,46 @@ spec:
             path: "{{ .Values.hyperion.dataDir }}"
       containers:
       - name: hyperion
-        image: {{ .Values.hyperion.imageRepository}}/hyperion:{{ .Values.hyperion.appVersion }}
+        image: {{ .Values.hyperion.imageRepository}}/mx-bluesky:{{ .Values.hyperion.appVersion }}
+        securityContext:
+          capabilities:
+            # Required for hostNetwork 
+            drop:
+              - AUDIT_WRITE
+              - CHOWN
+              - DAC_OVERRIDE
+              - FOWNER
+              - FSETID
+              - KILL
+              - MKNOD
+              - NET_BIND_SERVICE
+              - NET_RAW
+              - SETFCAP
+              - SETGID
+              - SETPCAP
+              - SETUID
+              - SYS_CHROOT
+              - AUDIT_CONTROL
+              - BLOCK_SUSPEND
+              - DAC_READ_SEARCH
+              - IPC_LOCK
+              - IPC_OWNER
+              - LEASE
+              - LINUX_IMMUTABLE
+              - MAC_ADMIN
+              - MAC_OVERRIDE
+              - SYS_ADMIN
+              - SYS_BOOT
+              - SYS_MODULE
+              - SYS_NICE
+              - SYS_PACCT
+              - SYS_MODULE
+              - SYS_PTRACE
+              - SYS_RESOURCE
+              - SYS_TIME
+              - SYS_TTY_CONFIG
+              - SYSLOG
+              - WAKE_ALARM            
         resources:
           limits:
             cpu: "1"
@@ -111,3 +150,4 @@ spec:
             name: logs
           - mountPath: "/dls/{{ .Values.hyperion.beamline }}/data"
             name: data
+      hostNetwork: true

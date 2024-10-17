@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import json
 from abc import abstractmethod
 from collections.abc import Sequence
@@ -142,24 +141,32 @@ class WithSnapshot(BaseModel):
         return bool(self.snapshot_omegas_deg)
 
 
-class DiffractionExperiment(HyperionParameters, WithSnapshot):
-    """For all experiments which use beam"""
+class WithOptionalEnergyChange(BaseModel):
+    demand_energy_ev: float | None = Field(default=None, gt=0)
 
+
+class WithVisit(BaseModel):
     visit: str = Field(min_length=1)
-    file_name: str
-    exposure_time_s: float = Field(gt=0)
-    comment: str = Field(default="")
+    zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
     beamline: str = Field(default=CONST.I03.BEAMLINE, pattern=r"BL\d{2}[BIJS]")
-    insertion_prefix: str = Field(
-        default=CONST.I03.INSERTION_PREFIX, pattern=r"SR\d{2}[BIJS]"
-    )
     det_dist_to_beam_converter_path: str = Field(
         default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
     )
-    zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
-    trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
+    insertion_prefix: str = Field(
+        default=CONST.I03.INSERTION_PREFIX, pattern=r"SR\d{2}[BIJS]"
+    )
     detector_distance_mm: float | None = Field(default=None, gt=0)
-    demand_energy_ev: float | None = Field(default=None, gt=0)
+
+
+class DiffractionExperiment(
+    HyperionParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
+):
+    """For all experiments which use beam"""
+
+    file_name: str
+    exposure_time_s: float = Field(gt=0)
+    comment: str = Field(default="")
+    trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     run_number: int | None = Field(default=None, ge=0)
     selected_aperture: ApertureValue | None = Field(default=None)
     transmission_frac: float = Field(default=0.1)
@@ -176,12 +183,6 @@ class DiffractionExperiment(HyperionParameters, WithSnapshot):
             snapshot_dir if isinstance(snapshot_dir, Path) else Path(snapshot_dir)
         )
         return values
-
-    @property
-    def visit_directory(self) -> Path:
-        return (
-            Path(CONST.I03.BASE_DATA_DIR) / str(datetime.date.today().year) / self.visit
-        )
 
     @property
     def num_images(self) -> int:

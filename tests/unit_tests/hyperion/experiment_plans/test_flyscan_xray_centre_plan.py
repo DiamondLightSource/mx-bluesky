@@ -1,4 +1,3 @@
-import random
 import types
 from pathlib import Path
 from unittest.mock import DEFAULT, MagicMock, call, patch
@@ -30,6 +29,7 @@ from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
 )
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    CrystalNotFoundException,
     FlyScanXRayCentreComposite,
     SmargonSpeedException,
     _get_feature_controlled,
@@ -126,7 +126,7 @@ def ispyb_plan(test_fgs_params: ThreeDGridScan):
     def standalone_read_hardware_for_ispyb(
         und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
     ):
-        yield from read_hardware_pre_collection(und, syn, slits, robot, sm)
+        yield from read_hardware_pre_collection(und, syn, slits, dcm, sm)
         yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
 
     return standalone_read_hardware_for_ispyb
@@ -630,7 +630,7 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z",
         autospec=True,
     )
-    def test_when_gridscan_fails_ispyb_comment_appended_to(
+    def test_when_gridscan_finds_no_xtal_ispyb_comment_appended_to(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -653,11 +653,13 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, [])
-        RE(
-            ispyb_activation_wrapper(
-                wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
+        with pytest.raises(CrystalNotFoundException):
+            RE(
+                ispyb_activation_wrapper(
+                    wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
+                )
             )
-        )
+
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         append_aperture_call = app_to_comment.call_args_list[0].args[1]
@@ -666,60 +668,25 @@ class TestFlyscanXrayCentrePlan:
         assert "Zocalo found no crystals in this gridscan" in append_zocalo_call
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.mv",
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z",
         autospec=True,
     )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
-        autospec=True,
-    )
-    def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
+    def test_when_gridscan_finds_no_xtal_exception_is_raised(
         self,
-        mock_topup,
         move_xyz: MagicMock,
-        mock_mv: MagicMock,
-        mock_kickoff: MagicMock,
-        mock_complete: MagicMock,
+        run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: ThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        done_status: Status,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         feature_controlled = _get_feature_controlled(
             fgs_composite_with_panda_pcap,
             test_fgs_params_panda_zebra,
-        )
-        fgs_composite_with_panda_pcap.eiger.unstage = MagicMock(
-            return_value=done_status
-        )
-        initial_x_y_z = np.array(
-            [
-                random.uniform(-0.5, 0.5),
-                random.uniform(-0.5, 0.5),
-                random.uniform(-0.5, 0.5),
-            ]
-        )
-        set_mock_value(
-            fgs_composite_with_panda_pcap.smargon.x.user_readback, initial_x_y_z[0]
-        )
-        set_mock_value(
-            fgs_composite_with_panda_pcap.smargon.y.user_readback, initial_x_y_z[1]
-        )
-        set_mock_value(
-            fgs_composite_with_panda_pcap.smargon.z.user_readback, initial_x_y_z[2]
         )
 
         def wrapped_gridscan_and_move():
@@ -731,12 +698,12 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, [])
-        RE(
-            ispyb_activation_wrapper(
-                wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
+        with pytest.raises(CrystalNotFoundException):
+            RE(
+                ispyb_activation_wrapper(
+                    wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
+                )
             )
-        )
-        assert np.all(move_xyz.call_args[0][1:] == initial_x_y_z)
 
     @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
@@ -754,17 +721,13 @@ class TestFlyscanXrayCentrePlan:
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: ThreeDGridScan,
     ):
-        class MoveException(Exception):
-            pass
-
         feature_controlled = _get_feature_controlled(
             fgs_composite_with_panda_pcap,
             test_fgs_params_panda_zebra,
         )
         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, [])
-        move_xyz.side_effect = MoveException()
 
-        with pytest.raises(MoveException):
+        with pytest.raises(CrystalNotFoundException):
             RE(
                 run_gridscan_and_move(
                     fgs_composite_with_panda_pcap,
@@ -963,6 +926,9 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
+        sim_run_engine.add_read_handler_for(
+            fgs_composite_with_panda_pcap.zocalo.centres_of_mass, [(10, 10, 10)]
+        )
 
         msgs = sim_run_engine.simulate_plan(
             flyscan_xray_centre(fgs_composite_with_panda_pcap, fgs_params_use_panda)
@@ -1046,7 +1012,7 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
         autospec=True,
     )
-    def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
+    def test_when_grid_scan_fails_with_exception_then_detector_disarmed_and_correct_exception_returned(
         self,
         mock_topup,
         mock_complete,

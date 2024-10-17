@@ -9,8 +9,6 @@ from ispyb.sp.core import Core
 
 from mx_bluesky.hyperion.parameters.constants import CONST
 
-VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
-
 
 def get_ispyb_config():
     return os.environ.get("ISPYB_CONFIG_PATH", CONST.SIM.ISPYB_CONFIG)

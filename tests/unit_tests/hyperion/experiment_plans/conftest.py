@@ -10,8 +10,15 @@ from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
-from ophyd_async.core import AsyncStatus, DeviceCollector
+from ophyd.sim import NullStatus
+from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 
+from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
+    RobotLoadAndEnergyChangeComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
+    RobotLoadThenCentreComposite,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
@@ -198,6 +205,90 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     )
     oav.parameters.update_on_zoom(7.5, 1024, 768)
     return magic_mock
+
+
+@pytest.fixture
+def robot_load_composite(
+    smargon,
+    dcm,
+    robot,
+    aperture_scatterguard,
+    oav,
+    webcam,
+    thawer,
+    lower_gonio,
+    eiger,
+    xbpm_feedback,
+    attenuator,
+    fast_grid_scan,
+    undulator,
+    undulator_dcm,
+    s4_slit_gaps,
+    vfm,
+    vfm_mirror_voltages,
+    backlight,
+    detector_motion,
+    flux,
+    ophyd_pin_tip_detection,
+    zocalo,
+    synchrotron,
+    sample_shutter,
+    zebra,
+    panda,
+    panda_fast_grid_scan,
+) -> RobotLoadThenCentreComposite:
+    set_mock_value(dcm.energy_in_kev.user_readback, 11.105)
+    smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
+    aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    return RobotLoadThenCentreComposite(
+        xbpm_feedback=xbpm_feedback,
+        attenuator=attenuator,
+        aperture_scatterguard=aperture_scatterguard,
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        zebra_fast_grid_scan=fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=ophyd_pin_tip_detection,
+        smargon=smargon,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        zebra=zebra,
+        zocalo=zocalo,
+        panda=panda,
+        panda_fast_grid_scan=panda_fast_grid_scan,
+        thawer=thawer,
+        sample_shutter=sample_shutter,
+        vfm=vfm,
+        vfm_mirror_voltages=vfm_mirror_voltages,
+        dcm=dcm,
+        undulator_dcm=undulator_dcm,
+        robot=robot,
+        webcam=webcam,
+        lower_gonio=lower_gonio,
+    )
+
+
+@pytest.fixture
+def robot_load_and_energy_change_composite(
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio, eiger
+) -> RobotLoadAndEnergyChangeComposite:
+    composite: RobotLoadAndEnergyChangeComposite = MagicMock()
+    composite.smargon = smargon
+    composite.dcm = dcm
+    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
+    composite.robot = robot
+    composite.aperture_scatterguard = aperture_scatterguard
+    composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
+    composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    composite.oav = oav
+    composite.webcam = webcam
+    composite.lower_gonio = lower_gonio
+    composite.thawer = thawer
+    composite.eiger = eiger
+    return composite
 
 
 def assert_event(mock_call, expected):

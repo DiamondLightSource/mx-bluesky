@@ -12,6 +12,7 @@ from ophyd_async.fastcs.panda import SeqTable, SeqTrigger
 
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
+    PULSE_WIDTH_US,
     disarm_panda_for_gridscan,
     set_panda_directory,
     setup_panda_for_flyscan,
@@ -128,8 +129,6 @@ def test_setup_panda_correctly_configures_table(
     ][0]
 
     table = table_msg.args[0]
-
-    PULSE_WIDTH_US = 1
     SPACE_WIDTH_US = int(time_between_x_steps_ms * 1000 - PULSE_WIDTH_US)
 
     exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS

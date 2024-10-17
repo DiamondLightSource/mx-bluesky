@@ -6,11 +6,8 @@
 """
 
 import dataclasses
-from collections.abc import Generator
-from typing import Any
 
 from bluesky import plan_stubs as bps
-from bluesky.utils import Msg
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
@@ -49,11 +46,6 @@ def _set_energy_plan(
         energy_kev,
     )
     yield from bps.wait(group=UNDULATOR_GROUP)
-
-
-def read_energy(composite: SetEnergyComposite) -> Generator[Msg, Any, float]:
-    """Obtain the energy in kev"""
-    return (yield from bps.rd(composite.dcm.energy_in_kev))  # type: ignore
 
 
 def set_energy_plan(

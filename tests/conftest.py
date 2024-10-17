@@ -5,11 +5,13 @@ import logging
 import sys
 import threading
 from collections.abc import Callable, Generator, Sequence
+from contextlib import ExitStack
 from functools import partial
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import numpy
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -41,6 +43,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
+from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -280,6 +283,10 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     set_mock_value(smargon.z.user_readback, 0.0)
     set_mock_value(smargon.x.high_limit_travel, 2)
     set_mock_value(smargon.x.low_limit_travel, -2)
+    set_mock_value(smargon.y.high_limit_travel, 2)
+    set_mock_value(smargon.y.low_limit_travel, -2)
+    set_mock_value(smargon.z.high_limit_travel, 2)
+    set_mock_value(smargon.z.low_limit_travel, -2)
 
     with (
         patch_async_motor(smargon.omega),
@@ -423,7 +430,12 @@ def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
-    return dcm
+    with (
+        oa_patch_motor(dcm.roll_in_mrad),
+        oa_patch_motor(dcm.pitch_in_mrad),
+        oa_patch_motor(dcm.offset_in_mm),
+    ):
+        yield dcm
 
 
 @pytest.fixture
@@ -432,7 +444,9 @@ def vfm(RE):
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    return vfm
+    with ExitStack() as stack:
+        stack.enter_context(patch_motor(vfm.x_mm))
+        yield vfm
 
 
 @pytest.fixture
@@ -450,7 +464,15 @@ def lower_gonio(RE):
 def vfm_mirror_voltages():
     voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
-    yield voltages
+    with ExitStack() as stack:
+        [
+            stack.enter_context(context_mgr)
+            for context_mgr in [
+                patch.object(vc, "set") for vc in voltages.voltage_channels.values()
+            ]
+        ]
+
+        yield voltages
     beamline_utils.clear_devices()
 
 
@@ -612,7 +634,7 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav.zoom_controller.onst.sim_put("1.0x")  # type: ignore
+    oav.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
     oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
@@ -922,3 +944,20 @@ def assert_none_matching(
     predicate: Callable[[Msg], bool],
 ):
     assert not list(filter(predicate, messages))
+
+
+def pin_tip_edge_data():
+    tip_x_px = 100
+    tip_y_px = 200
+    microns_per_pixel = 2.87  # from zoom levels .xml
+    grid_width_px = int(400 / microns_per_pixel)
+    target_grid_height_px = 70
+    top_edge_data = ([0] * tip_x_px) + (
+        [(tip_y_px - target_grid_height_px // 2)] * grid_width_px
+    )
+    bottom_edge_data = [0] * tip_x_px + [
+        (tip_y_px + target_grid_height_px // 2)
+    ] * grid_width_px
+    top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
+    bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
+    return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array

@@ -30,7 +30,7 @@ for option in "$@"; do
 done
 
 PROJECTDIR=`dirname $0`/..
-PROJECT=hyperion
+IMAGE=mx-bluesky
 
 if ! git diff --cached --quiet; then
   echo "Cannot build image from unclean workspace"
@@ -40,7 +40,7 @@ fi
 
 if [[ $BUILD == 1 ]]; then
   echo "Building initial image"
-  LATEST_TAG=$PROJECT:latest
+  LATEST_TAG=$IMAGE:latest
   TMPDIR=/tmp podman build \
     -f $PROJECTDIR/Dockerfile.release \
     --tag $LATEST_TAG \
@@ -48,7 +48,7 @@ if [[ $BUILD == 1 ]]; then
   # Now extract the version from the built image and then rebuild with the label
   IMAGE_VERSION=$(podman run --rm --entrypoint=hyperion $LATEST_TAG -c "--version" | \
    sed -e 's/[^a-zA-Z0-9 ._-]/_/g')
-  TAG=$PROJECT:$IMAGE_VERSION
+  TAG=$IMAGE:$IMAGE_VERSION
   echo "Labelling image with version $IMAGE_VERSION, tagging with tags $TAG $LATEST_TAG"
   TMPDIR=/tmp podman build \
     -f $PROJECTDIR/Dockerfile.release \
@@ -64,7 +64,7 @@ if [[ $PUSH == 1 ]]; then
     echo "Not logged in to ghcr.io"
     exit 1
   fi
-  echo "Pushing to ghcr.io/$NAMESPACE/$PROJECT:latest ..."
-  podman push $PROJECT:latest docker://ghcr.io/$NAMESPACE/$PROJECT:latest
-  podman push $PROJECT:latest docker://ghcr.io/$NAMESPACE/$PROJECT:$IMAGE_VERSION
+  echo "Pushing to ghcr.io/$NAMESPACE/$IMAGE:latest ..."
+  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:latest
+  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:$IMAGE_VERSION
 fi

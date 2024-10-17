@@ -64,7 +64,7 @@ def callbacks(params):
 
 
 def reset_positions(smargon: Smargon):
-    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
+    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @pytest_asyncio.fixture
@@ -127,7 +127,7 @@ def test_read_hardware_pre_collection(
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
         yield from read_hardware_pre_collection(
-            undulator=u, synchrotron=s, s4_slit_gaps=g, robot=r, smargon=sm
+            undulator=u, synchrotron=s, s4_slit_gaps=g, dcm=dcm, smargon=sm
         )
         yield from read_hardware_during_collection(
             ap_sg, a, f, dcm, fxc_composite.eiger
