@@ -67,6 +67,11 @@ def setup_logging():
     log.config(logfile)
 
 
+def _create_directory_for_eiger_collection(filepath: str):
+    logger.debug(f"Creating the directory for the collection in {filepath}.")
+    Path(filepath).mkdir(parents=True)
+
+
 def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     """Give an estimation of the time the plan should wait for the data collection \
         to be finished.
@@ -474,24 +479,8 @@ def start_i24(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        logger.warning(
-            """TEMPORARY HACK!
-            Running a Single image pilatus data collection to create directory."""
-        )
-        num_imgs = 1
-        sup.pilatus(
-            "quickshot-internaltrig",
-            [filepath, filename, num_imgs, parameters.exposure_time_s],
-        )
-        logger.debug("Sleep 2s waiting for pilatus to arm")
-        sleep(2)
-        sleep(0.5)
-        caput(pv.pilat_acquire, "0")  # Disarm pilatus
-        sleep(0.5)
-        caput(pv.pilat_acquire, "1")  # Arm pilatus
-        logger.debug("Pilatus data collection DONE")
-        sup.pilatus("return to normal", None)
-        logger.info("Pilatus back to normal. Single image pilatus data collection DONE")
+        # STILL TO BE TESTED!!!
+        _create_directory_for_eiger_collection(filepath)
 
         logger.info(f"Triggered Eiger setup: filepath {filepath}")
         logger.info(f"Triggered Eiger setup: filename {filename}")
