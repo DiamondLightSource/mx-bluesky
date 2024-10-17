@@ -138,6 +138,16 @@ filterwarnings = [
     "ignore::DeprecationWarning:blueapi",
     # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
     "ignore:.*pkg_resources.*:DeprecationWarning",
+    # CI does not work in 3.12 because
+    # The following cannot be ignored because it is a SystemError
+    # deprecation warning from somewhere in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
+    # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
+    # until some combination of our dependencies has upgraded to the fixed version
+    # The fix for this is in https://github.com/protocolbuffers/protobuf/pull/15999
+    # But this fix exists only in 3.27.0<=protobuf<4 and protobuf>=v5, not in 4.x that we depend on
+    # Our dependency is via opentelemetry-exporter-otlp==1.27 which depends opentelemetry-proto==1.27
+    # which depends protobuf>=3.19, <5.0
+    # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
