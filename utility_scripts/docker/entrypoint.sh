@@ -39,10 +39,10 @@ kill_active_apps () {
 RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
 cd ${RELATIVE_SCRIPT_DIR}
 
-echo "$(date) Logging to $HYPERION_LOG_DIR"
-mkdir -p $HYPERION_LOG_DIR
-start_log_path=$HYPERION_LOG_DIR/start_log.log
-callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.log
+echo "$(date) Logging to $LOG_DIR"
+mkdir -p $LOG_DIR
+start_log_path=$LOG_DIR/start_log.log
+callback_start_log_path=$LOG_DIR/callback_start_log.log
 
 #Add future arguments here
 declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
