@@ -8,12 +8,15 @@ from dodal.devices.focusing_mirror import (
 )
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
-from dodal.devices.util.bragg_angle import energy_to_bragg_angle
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
 )
 
 from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.hyperion.utils.utils import (
+    SI_111_SPACING_ANGSTROMS,
+    energy_to_bragg_angle,
+)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
@@ -86,7 +89,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     # Adjust DCM Pitch
     dcm = undulator_dcm.dcm
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
-    bragg_deg = energy_to_bragg_angle(energy_kev)
+    bragg_deg = energy_to_bragg_angle(energy_kev, SI_111_SPACING_ANGSTROMS)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
         linear_interpolation_lut(undulator_dcm.pitch_energy_table_path),
