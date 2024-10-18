@@ -1,8 +1,12 @@
+import math
+
 import pytest
 
 from mx_bluesky.hyperion.utils.utils import (
+    SI_111_SPACING_ANGSTROMS,
     convert_angstrom_to_eV,
     convert_eV_to_angstrom,
+    energy_to_bragg_angle,
 )
 
 test_wavelengths = [1.620709, 1.2398425, 0.9762539, 0.8265616, 0.68880138]
@@ -23,3 +27,17 @@ def test_ev_to_a_converter(test_wavelength, test_energy):
 )
 def test_a_to_ev_converter(test_wavelength, test_energy):
     assert convert_angstrom_to_eV(test_wavelength) == pytest.approx(test_energy)
+
+
+@pytest.mark.parametrize(
+    "input_energy_kev, expected_bragg_angle_deg",
+    [[7, 16.41], [8, 14.31], [11, 10.35], [12.3, 9.25], [15, 7.57]],
+)
+def test_energy_to_bragg_angle(
+    input_energy_kev: float, expected_bragg_angle_deg: float
+):
+    assert math.isclose(
+        energy_to_bragg_angle(input_energy_kev, SI_111_SPACING_ANGSTROMS),
+        expected_bragg_angle_deg,
+        abs_tol=0.01,
+    )
