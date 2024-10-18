@@ -2,4 +2,4 @@
 # The values cannot change direction.
 Units Deg Deg
 5.0 10.0
-25.0 10.0
+25.0 10.1
