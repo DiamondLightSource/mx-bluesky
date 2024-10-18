@@ -32,7 +32,8 @@ dependencies = [
     "pyepics",
     "pyzmq",
     "requests",
-    "scanspec",
+    # Pinned until https://github.com/bluesky/scanspec/issues/149 is fixed
+    "scanspec < 0.7.3",
     "scipy",
     "semver",
     "matplotlib",
