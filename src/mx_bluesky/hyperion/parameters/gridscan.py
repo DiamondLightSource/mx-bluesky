@@ -40,8 +40,9 @@ class GridCommon(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
     use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
-    use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
-    use_cpu_and_gpu_zocalo: bool = Field(default=CONST.I03.USE_CPU_AND_GPU_ZOCALO)
+    compare_cpu_and_gpu_results: bool = Field(
+        default=CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
+    )
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
@@ -84,7 +85,7 @@ class GridCommon(
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.use_gpu,
+            enable_dev_shm=self.compare_cpu_and_gpu_results,
             **optional_args,
         )
 
