@@ -314,6 +314,8 @@ def zebra(RE):
 
 @pytest.fixture
 def backlight():
+    backlight = i03.backlight(fake_with_ophyd_sim=True)
+    backlight.TIME_TO_MOVE_S = 0.001
     return i03.backlight(fake_with_ophyd_sim=True)
 
 
@@ -480,12 +482,8 @@ def vfm_mirror_voltages():
 def undulator_dcm(RE, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
     undulator_dcm.dcm = dcm
-    undulator_dcm.roll_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    undulator_dcm.pitch_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
+    undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
     beamline_utils.clear_devices()
 

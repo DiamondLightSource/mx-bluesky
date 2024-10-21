@@ -29,6 +29,7 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
+    "pydantic-extra-types",
     "pyepics",
     "pyzmq",
     "requests",
@@ -46,7 +47,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.3a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@4d3b1d27836f706b3ed1a5a9930f043333ffa972",
 ]
 
 
@@ -134,6 +135,8 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
+    "ignore:.*pkg_resources.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
