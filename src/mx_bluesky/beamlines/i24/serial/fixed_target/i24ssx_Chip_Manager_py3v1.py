@@ -17,7 +17,6 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
-from dodal.common import inject
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -73,7 +72,7 @@ def setup_logging():
 
 @log.log_on_entry
 def initialise_stages(
-    pmac: PMAC = inject("pmac"),
+    pmac: PMAC = i24.pmac(wait_for_connection=False),
 ) -> MsgGenerator:
     """Initialise the portable stages PVs, usually used only once right after setting \
         up the stages either after use at different facility.
@@ -210,7 +209,7 @@ def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):
 @log.log_on_entry
 def define_current_chip(
     chipid: str = "oxford",
-    pmac: PMAC = inject("pmac"),
+    pmac: PMAC = i24.pmac(wait_for_connection=False),
 ) -> MsgGenerator:
     setup_logging()
     logger.debug("Run load stock map for just the first block")
@@ -255,7 +254,7 @@ def save_screen_map() -> MsgGenerator:
 
 
 @log.log_on_entry
-def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def upload_parameters(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     setup_logging()
     logger.info("Uploading Parameters for Oxford Chip to the GeoBrick")
     caput(CHIPTYPE_PV, 0)
@@ -606,7 +605,9 @@ def load_full_map() -> MsgGenerator:
 
 
 @log.log_on_entry
-def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def moveto(
+    place: str = "origin", pmac: PMAC = i24.pmac(wait_for_connection=False)
+) -> MsgGenerator:
     setup_logging()
     logger.info(f"Move to: {place}")
     if place == Fiducials.zero:
@@ -624,20 +625,20 @@ def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
     chip_move = CHIP_MOVES[chip_type]
 
     if place == Fiducials.origin:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid1:
-        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid2:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log.log_on_entry
 def moveto_preset(
     place: str,
-    pmac: PMAC = inject("pmac"),
-    beamstop: Beamstop = inject("beamstop"),
-    backlight: DualBacklight = inject("backlight"),
-    det_stage: DetectorMotion = inject("detector_motion"),
+    pmac: PMAC = i24.pmac(wait_for_connection=False),
+    beamstop: Beamstop = i24.beamstop(wait_for_connection=False),
+    backlight: DualBacklight = i24.backlight(wait_for_connection=False),
+    det_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
 ) -> MsgGenerator:
     setup_logging()
 
@@ -658,7 +659,7 @@ def moveto_preset(
     elif place == "collect_position":
         logger.info("collect position")
         caput(pv.me14e_filter, 20)
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.abs_set(
             beamstop.pos_select, BeamstopPositions.DATA_COLLECTION, group=place
         )
@@ -667,11 +668,13 @@ def moveto_preset(
 
     elif place == "microdrop_position":
         logger.info("microdrop align position")
-        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log.log_on_entry
-def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def laser_control(
+    laser_setting: str, pmac: PMAC = i24.pmac(wait_for_connection=False)
+) -> MsgGenerator:
     setup_logging()
     logger.info(f"Move to: {laser_setting}")
     if laser_setting == "laser1on":  # these are in laser edm
@@ -698,7 +701,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         logger.info("Laser 1  on")
         logger.info(f"Burn time is {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
-        yield from bps.sleep(led_burn_time)
+        yield from bps.sleep(float(led_burn_time))
         logger.info("Laser 1 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_OFF, wait=True)
 
@@ -707,7 +710,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         logger.info("Laser 2 on")
         logger.info(f"burntime {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_ON, wait=True)
-        yield from bps.sleep(led_burn_time)
+        yield from bps.sleep(float(led_burn_time))
         logger.info("Laser 2 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_OFF, wait=True)
 
@@ -731,7 +734,9 @@ def scrape_mtr_directions(motor_file_path: Path = CS_FILES_PATH):
 
 
 @log.log_on_entry
-def fiducial(point: int = 1, pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def fiducial(
+    point: int = 1, pmac: PMAC = i24.pmac(wait_for_connection=False)
+) -> MsgGenerator:
     setup_logging()
     scale = 10000.0  # noqa: F841
 
@@ -770,7 +775,7 @@ def scrape_mtr_fiducials(
 
 
 @log.log_on_entry
-def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     """
     Coordinate system.
 
@@ -930,7 +935,7 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     yield from bps.null()
 
 
-def cs_reset(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def cs_reset(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     """Used to clear CS when using Custom Chip"""
     setup_logging()
     cs1 = "#1->10000X+0Y+0Z"
@@ -994,7 +999,7 @@ def pumpprobe_calc() -> MsgGenerator:
 
 
 @log.log_on_entry
-def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+def block_check(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     setup_logging()
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/117
     caput(pv.me14e_gp9, 0)

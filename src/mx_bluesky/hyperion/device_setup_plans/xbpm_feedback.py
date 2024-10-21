@@ -23,14 +23,14 @@ def _check_and_pause_feedback(
                                                turning XBPM feedback off.
 
     """
-    yield from bps.mv(attenuator, 1.0)
+    yield from bps.mv(attenuator, 1.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     LOGGER.info("Waiting for XBPM feedback to be stable")
     yield from bps.trigger(xbpm_feedback, wait=True)
     LOGGER.info(
         f"XPBM feedback in position, pausing and setting transmission to {desired_transmission_fraction}"
     )
-    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.PAUSE)
-    yield from bps.mv(attenuator, desired_transmission_fraction)
+    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.PAUSE)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(attenuator, desired_transmission_fraction)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 def _unpause_xbpm_feedback_and_set_transmission_to_1(
@@ -44,7 +44,7 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
                                       the beam in position
         attenuator (Attenuator): The attenuator used to set transmission
     """
-    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.RUN, attenuator, 1.0)
+    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.RUN, attenuator, 1.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(

@@ -100,15 +100,17 @@ def prepare_for_robot_load(
         group="prepare_robot_load",
     )
 
-    yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
+    yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     # fmt: off
-    yield from bps.mv(smargon.x, 0,
-                      smargon.y, 0,
-                      smargon.z, 0,
-                      smargon.omega, 0,
-                      smargon.chi, 0,
-                      smargon.phi, 0)
+    yield from bps.mv(
+        smargon.x, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.y, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.z, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.omega, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.chi, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.phi, 0  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    )
     # fmt: on
 
     yield from bps.wait("prepare_robot_load")
@@ -135,7 +137,9 @@ def do_robot_load(
     yield from bps.wait("robot_load")
 
     yield from bps.abs_set(
-        composite.thawer.thaw_for_time_s, thawing_time, group="thawing_finished"
+        composite.thawer.thaw_for_time_s,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        thawing_time,
+        group="thawing_finished",
     )
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
@@ -195,7 +199,7 @@ def robot_load_and_snapshots(
 
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
     yield from bps.read(composite.robot.barcode)
-    yield from bps.read(composite.oav.snapshot)
+    yield from bps.read(composite.oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(composite.webcam)
     yield from bps.save()
 

@@ -46,7 +46,7 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
+    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
 
@@ -54,7 +54,7 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
+    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
 

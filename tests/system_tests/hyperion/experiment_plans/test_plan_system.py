@@ -55,7 +55,7 @@ async def test_getting_data_for_ispyb():
 
     @bpp.run_decorator()
     def standalone_read_hardware(und, syn, slits, robot, att, flux, ap_sg, sm):
-        yield from read_hardware_pre_collection(und, syn, slits, robot, smargon=sm)
+        yield from read_hardware_pre_collection(und, syn, slits, dcm, smargon=sm)
         yield from read_hardware_during_collection(ap_sg, att, flux, dcm, eiger)
 
     RE(

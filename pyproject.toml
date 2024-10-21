@@ -14,7 +14,7 @@ description = "Bluesky tools for MX Beamlines at DLS"
 dependencies = [
     #
     # If a constraint is not set here or if the dependency is pinned to a hash
-    # it will be auto-pinned to the latest release version by the pre-release workflow   
+    # it will be auto-pinned to the latest release version by the pre-release workflow
     #
     "annotated_types",
     "caproto",
@@ -25,7 +25,7 @@ dependencies = [
     "matplotlib",
     "nexgen",
     "numpy",
-    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui. 
+    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
@@ -39,7 +39,7 @@ dependencies = [
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
-    # 
+    #
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
@@ -62,6 +62,7 @@ dev = [
     # "copier",
     "diff-cover",
     "GitPython",
+    "import-linter",
     "ipython",
     "mypy",
     "myst-parser",
@@ -122,8 +123,6 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    # Ignore incorrect errors from bluesky (remove when https://github.com/bluesky/bluesky/issues/1797 is released)
-    "ignore:((.|\n)*)was never iterated.*:RuntimeWarning",
     # Ignore deprecation warning from sqlalchemy
     "ignore::sqlalchemy.exc.MovedIn20Warning",
     # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
@@ -134,10 +133,6 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore pydantic 2 issues from blueapi, see https://github.com/DiamondLightSource/blueapi/issues/622
-    "ignore::DeprecationWarning:blueapi",
-    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
-    "ignore:.*pkg_resources.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -198,3 +193,23 @@ lint.extend-ignore = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "mx_bluesky"
+
+[[tool.importlinter.contracts]]
+name = "Common does not import from apps"
+type = "forbidden"
+source_modules = "mx_bluesky.common"
+forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from each other"
+type = "independence"
+modules = "mx_bluesky.beamlines.*"
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from hyperion"
+type = "forbidden"
+source_modules = "mx_bluesky.beamlines.*"
+forbidden_modules = "mx_bluesky.hyperion"
