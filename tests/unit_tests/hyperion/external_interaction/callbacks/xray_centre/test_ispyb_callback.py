@@ -86,29 +86,24 @@ class TestXrayCentreISPyBCallback:
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
         mx_acq.upsert_data_collection_group.assert_not_called()
+        expected_upsert = {
+            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+            "slitgaphorizontal": 0.1234,
+            "slitgapvertical": 0.2345,
+            "synchrotronmode": "User",
+            "undulatorgap1": 1.234,
+            "resolution": 1.1830593328548429,
+            "wavelength": 1.1164718451643736,
+        }
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "slitgaphorizontal": 0.1234,
-                "slitgapvertical": 0.2345,
-                "synchrotronmode": "User",
-                "undulatorgap1": 1.234,
-            },
+            {"id": TEST_DATA_COLLECTION_IDS[0], **expected_upsert},
         )
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[1],
             mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[1],
-                "slitgaphorizontal": 0.1234,
-                "slitgapvertical": 0.2345,
-                "synchrotronmode": "User",
-                "undulatorgap1": 1.234,
-            },
+            {"id": TEST_DATA_COLLECTION_IDS[1], **expected_upsert},
         )
 
     def test_flux_read_events_3d(self, mock_ispyb_conn):
