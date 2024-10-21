@@ -407,6 +407,11 @@ def multi_rotation_scan(
         }
     )
     @bpp.stage_decorator([eiger])
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.xbpm_feedback,
+        composite.attenuator,
+        parameters.transmission_frac,
+    )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
@@ -416,6 +421,7 @@ def multi_rotation_scan(
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
+                    "zocalo_environment": parameters.zocalo_environment,
                     "hyperion_parameters": single_scan.model_dump_json(),
                 }
             )

@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import SupportsInt, TypeVar
+from typing import Literal, SupportsInt, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -105,7 +105,7 @@ class HyperionParameters(BaseModel):
     )
 
     def __hash__(self) -> int:
-        return self.json().__hash__()
+        return self.model_dump_json().__hash__()
 
     features: FeatureFlags = Field(default=FeatureFlags())
     parameter_model_version: ParameterVersion
@@ -224,6 +224,17 @@ class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 class WithOavCentring(BaseModel):
     oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
+
+
+class TopNByMaxCountSelection(BaseModel):
+    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"
+    n: int
+
+
+class WithCentreSelection(BaseModel):
+    select_centres: TopNByMaxCountSelection = Field(
+        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    )
 
 
 class OptionalXyzStarts(BaseModel):
