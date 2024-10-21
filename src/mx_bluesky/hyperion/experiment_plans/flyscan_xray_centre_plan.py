@@ -267,7 +267,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
-            fgs_composite.robot,
+            fgs_composite.dcm,
             fgs_composite.smargon,
         )
 
