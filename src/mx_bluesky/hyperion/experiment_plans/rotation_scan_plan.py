@@ -252,7 +252,7 @@ def rotation_scan_plan(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
-            composite.robot,
+            composite.dcm,
             composite.smargon,
         )
 
