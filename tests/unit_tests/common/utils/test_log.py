@@ -237,3 +237,17 @@ def test_get_logging_dir_uses_beamline_if_no_dir_env_var(mock_mkdir: MagicMock):
 def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock):
     assert log._get_logging_dir() == Path("/tmp/logs/bluesky")
     mock_mkdir.assert_called_once()
+
+
+@pytest.mark.skip_log_setup
+@patch("mx_bluesky.common.utils.log.Path.mkdir")
+@patch(
+    "mx_bluesky.common.utils.log.integrate_bluesky_and_ophyd_logging",
+)
+def test_default_logging_setup_integrate_logs_flag(
+    mock_integrate_logs: MagicMock, mock_mkdir
+):
+    log.do_default_logging_setup(
+        "hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True, integrate_all_logs=False
+    )
+    mock_integrate_logs.assert_not_called()

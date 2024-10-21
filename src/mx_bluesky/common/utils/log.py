@@ -45,10 +45,15 @@ def set_uid_tag(uid):
     tag_filter.run_uid = uid
 
 
-def do_default_logging_setup(file_name: str, graylog_port: int, dev_mode: bool = False):
+def do_default_logging_setup(
+    file_name: str,
+    graylog_port: int,
+    dev_mode: bool = False,
+    integrate_all_logs: bool = True,
+):
     """Configures dodal logger so that separate debug and info log files are created,
     info logs are sent to Graylog, info logs are streamed to sys.sterr, and logs from ophyd
-    and bluesky and ophyd-async are included."""
+    and bluesky and ophyd-async are optionally included."""
 
     handlers = set_up_all_logging_handlers(
         dodal_logger,
@@ -58,7 +63,10 @@ def do_default_logging_setup(file_name: str, graylog_port: int, dev_mode: bool =
         ERROR_LOG_BUFFER_LINES,
         graylog_port,
     )
-    integrate_bluesky_and_ophyd_logging(dodal_logger)
+
+    if integrate_all_logs:
+        integrate_bluesky_and_ophyd_logging(dodal_logger)
+
     handlers["graylog_handler"].addFilter(tag_filter)
 
     global __logger_handlers
