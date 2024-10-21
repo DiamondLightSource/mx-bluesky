@@ -6,6 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
+from dodal.common.crystal_metadata import CrystalMetadata, MaterialsEnum
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
     MirrorStripe,
@@ -170,9 +171,14 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     vfm_mirror_voltages: VFMMirrorVoltages,
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
 
+    sim_run_engine.add_read_handler_for(
+        undulator_dcm.dcm.crystal_metadata_d_spacing,
+        CrystalMetadata(MaterialsEnum.Si, (1, 1, 1)).d_spacing[0],
+    )
     messages = sim_run_engine.simulate_plan(
         adjust_dcm_pitch_roll_vfm_from_lut(undulator_dcm, vfm, vfm_mirror_voltages, 7.5)
     )

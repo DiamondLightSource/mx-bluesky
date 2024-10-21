@@ -4,9 +4,6 @@ from math import asin
 from scanspec.core import AxesPoints, Axis
 from scipy.constants import physical_constants
 
-# This value taken from BeamLineEnergy_DCM_Angstrom_To_Deg_converter.xml
-SI_111_SPACING_ANGSTROMS = 3.13475
-
 hc_in_eV_and_Angstrom: float = (
     physical_constants["speed of light in vacuum"][0]
     * physical_constants["Planck constant in eV/Hz"][0]
