@@ -114,6 +114,9 @@ class I03Constants:
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
     THAWING_TIME = 20
+
+    # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
+    # processed results. GPU results never used in analysis for now
     COMPARE_CPU_AND_GPU_ZOCALO = False
 
 
