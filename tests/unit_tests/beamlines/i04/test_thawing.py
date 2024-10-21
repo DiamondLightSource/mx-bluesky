@@ -1,16 +1,18 @@
 from collections.abc import AsyncGenerator
+from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from _pytest.python_api import ApproxBase
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder
+from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import Thawer, ThawerStates
-from ophyd.sim import NullStatus, instantiate_fake_device
+from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     DeviceCollector,
@@ -28,17 +30,6 @@ ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
 
 class MyException(Exception):
     pass
-
-
-@pytest.fixture
-def oav() -> OAV:
-    oav: OAV = instantiate_fake_device(OAV, params=MagicMock())
-
-    oav.zoom_controller.zrst.set("1.0x")
-
-    oav.wait_for_connection()
-
-    return oav
 
 
 def patch_motor(motor: Motor, initial_position: float = 0):
@@ -195,8 +186,8 @@ async def test_thaw_and_stream_sets_sample_id_and_kicks_off_forwarder(
         )
     )
     assert await oav_forwarder.sample_id.get_value() == 100
-    oav_forwarder.kickoff.assert_called_once()  # type: ignore
-    oav_forwarder.complete.assert_called_once()  # type: ignore
+    oav_forwarder.kickoff.assert_called()  # type: ignore
+    oav_forwarder.complete.assert_called()  # type: ignore
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
@@ -257,3 +248,115 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
         )
     )
     patch_murko_call.assert_called()
+
+
+def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
+    sim_run_engine,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+):
+    msgs = sim_run_engine.simulate_plan(
+        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder)
+    )
+    for source in [Source.FULL_SCREEN, Source.ROI]:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "oav_to_redis_forwarder-selected_source"
+            and msg.args[0] == source,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "kickoff"
+            and msg.obj.name == "oav_to_redis_forwarder",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set" and msg.obj.name == "smargon-omega",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "complete"
+            and msg.obj.name == "oav_to_redis_forwarder",
+        )
+
+
+def _run_thaw_and_stream_and_assert_zoom_changes(
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    RE: RunEngine,
+    expect_raises=None,
+):
+    mock_set = MagicMock()
+
+    def cb(*args, value, **kwargs):
+        mock_set(value)
+
+    oav.zoom_controller.level.sim_put("2.0x")  # type:ignore
+    oav.zoom_controller.level.subscribe(cb)
+
+    run_plan = partial(
+        RE,
+        thaw_and_stream_to_redis(
+            10,
+            360,
+            thawer=thawer,
+            smargon=smargon,
+            oav=oav,
+            robot=MagicMock(),
+            oav_to_redis_forwarder=oav_forwarder,
+        ),
+    )
+
+    if expect_raises:
+        with pytest.raises(expect_raises):
+            run_plan()
+    else:
+        run_plan()
+
+    mock_set.assert_has_calls(
+        [
+            call(
+                "1.0x",
+            ),
+            call(
+                "2.0x",
+            ),
+        ]
+    )
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+def test_given_thaw_succeeds_then_thaw_and_stream_sets_zoom_to_1_and_back(
+    patch_murko_callback,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    RE: RunEngine,
+):
+    _run_thaw_and_stream_and_assert_zoom_changes(
+        smargon, thawer, oav_forwarder, oav, RE
+    )
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+@patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
+def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
+    mock_thaw,
+    patch_murko_callback,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    RE: RunEngine,
+):
+    mock_thaw.side_effect = Exception()
+    _run_thaw_and_stream_and_assert_zoom_changes(
+        smargon, thawer, oav_forwarder, oav, RE, Exception
+    )
