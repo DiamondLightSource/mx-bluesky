@@ -97,7 +97,7 @@ class HyperionParameters(BaseModel):
     )
 
     def __hash__(self) -> int:
-        return self.json().__hash__()
+        return self.model_dump_json().__hash__()
 
     features: FeatureFlags = Field(default=FeatureFlags())
     parameter_model_version: SemanticVersion
