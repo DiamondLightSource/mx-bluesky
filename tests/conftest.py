@@ -22,7 +22,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
-from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.beamline_utils import clear_device, clear_devices
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -356,6 +356,13 @@ def oav(test_config_files):
     )
     parameters.micronsPerXPixel = 2.87
     parameters.micronsPerYPixel = 2.87
+
+    # This should only be needed until issues with https://github.com/DiamondLightSource/dodal/pull/854
+    # or ophyd-async OAV are resolved
+    try:
+        clear_device("oav")
+    except KeyError:
+        ...
     oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
 
     oav.zoom_controller.zrst.set("1.0x")
