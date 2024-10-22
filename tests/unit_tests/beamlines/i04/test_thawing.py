@@ -7,7 +7,6 @@ from _pytest.python_api import ApproxBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
-from dodal.common.test_utils import rebuild_oa_device_as_mocked_if_necessary
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
@@ -24,6 +23,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
+from mx_bluesky.common.test_utils import rebuild_oa_device_as_mocked_if_necessary
 
 DISPLAY_CONFIGURATION = "tests/devices/unit_tests/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
