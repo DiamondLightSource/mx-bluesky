@@ -126,7 +126,7 @@ def ispyb_plan(test_fgs_params: ThreeDGridScan):
     def standalone_read_hardware_for_ispyb(
         und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
     ):
-        yield from read_hardware_pre_collection(und, syn, slits, robot, sm)
+        yield from read_hardware_pre_collection(und, syn, slits, dcm, sm)
         yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
 
     return standalone_read_hardware_for_ispyb

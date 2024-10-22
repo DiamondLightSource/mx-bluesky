@@ -135,7 +135,7 @@ def flyscan_xray_centre(
     parameters.features.update_self_from_server()
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    composite.zocalo.use_cpu_and_gpu = parameters.use_cpu_and_gpu_zocalo
+    composite.zocalo.use_cpu_and_gpu = parameters.compare_cpu_and_gpu_results
 
     feature_controlled = _get_feature_controlled(composite, parameters)
 
@@ -267,7 +267,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
-            fgs_composite.robot,
+            fgs_composite.dcm,
             fgs_composite.smargon,
         )
 
