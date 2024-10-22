@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
+from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -22,7 +23,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
