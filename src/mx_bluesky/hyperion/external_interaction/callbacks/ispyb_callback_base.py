@@ -9,6 +9,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -22,7 +23,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from mx_bluesky.hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.utils import convert_eV_to_angstrom
