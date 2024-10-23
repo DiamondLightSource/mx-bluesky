@@ -34,14 +34,16 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
         expected_images * exposure_sec_per_image,
         30.0,
     )
+
+    # Make sure ZocaloResults queue is clear and ready to accept our new data. Zocalo MUST
+    # have been staged using ZOCALO_STAGE_GROUP prior to this
+    yield from bps.wait(ZOCALO_STAGE_GROUP)
+
     # RE must be subscribed to an appropriate callback for this read information to be saved
     yield from read_hardware_for_zocalo(detector)
     LOGGER.info("Wait for all moves with no assigned group")
     yield from bps.wait()
 
-    # Make sure ZocaloResults queue is clear and ready to accept our new data. Zocalo MUST
-    # have been staged using ZOCALO_STAGE_GROUP prior to this
-    yield from bps.wait(ZOCALO_STAGE_GROUP)
     LOGGER.info("kicking off FGS")
     yield from bps.kickoff(grid_scan_device, wait=True)
     gridscan_start_time = time()
