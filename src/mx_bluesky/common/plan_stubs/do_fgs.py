@@ -39,7 +39,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     # have been staged using ZOCALO_STAGE_GROUP prior to this
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
-    # RE must be subscribed to an appropriate callback for this read information to be saved
+    # Triggers Zocalo if RE is subscribed to ZocaloCallback
     yield from read_hardware_for_zocalo(detector)
     LOGGER.info("Wait for all moves with no assigned group")
     yield from bps.wait()
@@ -48,7 +48,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     yield from bps.kickoff(grid_scan_device, wait=True)
     gridscan_start_time = time()
     if during_collection_plan:
-        LOGGER.info(f"Running {during_collection_plan} during FGS")
+        LOGGER.info(f"Running {during_collection_plan.__name__} during FGS")
         yield from during_collection_plan()
     LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     LOGGER.info("completing FGS")
@@ -81,7 +81,8 @@ def kickoff_and_complete_gridscan(
                                                 Two elements in this list indicates that two grid scans will be done, eg for Hyperion's 3D grid scans.
         scan_start_indices (list[int]):         Contains the first index of each grid scan
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff but and completion, eg waiting on zocalo.
-        plan_name (str):                        Used in document metadata
+        plan_name (str):                        Used to check if Zocalo callback should be started in this plan,
+                                                depending on the metadata of the current run
     """
 
     assert len(scan_points) == len(
