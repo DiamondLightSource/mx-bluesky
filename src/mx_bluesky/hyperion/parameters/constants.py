@@ -31,7 +31,6 @@ class PlanNameConstants:
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
     GRIDSCAN_MAIN = "run_gridscan"
-    DO_FGS = "do_fgs"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"

@@ -14,5 +14,16 @@ class DocDescriptorNames:
 
 
 @dataclass(frozen=True)
+class PlanNameConstants:
+    DO_FGS = "do_fgs"
+
+
+@dataclass(frozen=True)
+class TriggerConstants:
+    ZOCALO = "trigger_zocalo_on"
+
+
+@dataclass(frozen=True)
 class MxConstants:
     DESCRIPTORS = DocDescriptorNames()
+    TRIGGER = TriggerConstants()

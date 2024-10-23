@@ -17,6 +17,7 @@ from scanspec.core import AxesPoints, Axis
 from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
+from mx_bluesky.common.parameters.constants import TriggerConstants
 from mx_bluesky.common.utils.tracing import TRACER
 
 
@@ -81,8 +82,7 @@ def kickoff_and_complete_gridscan(
                                                 Two elements in this list indicates that two grid scans will be done, eg for Hyperion's 3D grid scans.
         scan_start_indices (list[int]):         Contains the first index of each grid scan
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff but and completion, eg waiting on zocalo.
-        plan_name (str):                        Used to check if Zocalo callback should be started in this plan,
-                                                depending on the metadata of the current run
+        plan_name (str):                        Used in metadata
     """
 
     assert len(scan_points) == len(
@@ -94,6 +94,7 @@ def kickoff_and_complete_gridscan(
     @bpp.run_decorator(
         md={
             "subplan_name": plan_name,
+            TriggerConstants.ZOCALO: plan_name,
             "scan_points": scan_points,
             "scan_start_indices": scan_start_indices,
         }
