@@ -141,6 +141,8 @@ def test_hardware_read_events(
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
             "comments": "Sample position (µm): (158, 24, 3) test ",
+            "resolution": 1.1830593328548429,
+            "wavelength": 1.1164718451643736,
         },
     )
     expected_data = TestData.test_event_document_pre_data_collection["data"]
@@ -318,5 +320,7 @@ def test_comment_correct_after_hardware_read(
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
             "comments": "Sample position (µm): (158, 24, 3) a lovely unit test ",
+            "resolution": 1.1830593328548429,
+            "wavelength": 1.1164718451643736,
         },
     )

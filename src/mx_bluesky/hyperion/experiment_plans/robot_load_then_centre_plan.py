@@ -12,7 +12,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
-from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
+from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -78,7 +78,7 @@ class RobotLoadThenCentreComposite:
 
     # SetEnergyComposite fields
     vfm: FocusingMirrorWithStripes
-    vfm_mirror_voltages: VFMMirrorVoltages
+    mirror_voltages: MirrorVoltages
     dcm: DCM
     undulator_dcm: UndulatorDCM
 

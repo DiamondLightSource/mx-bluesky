@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -120,3 +121,15 @@ def test_selected_aperture_uses_default():
     raw_params["selected_aperture"] = None
     params = RotationScan(**raw_params)
     assert params.selected_aperture == ApertureValue.LARGE
+
+
+@patch("mx_bluesky.hyperion.parameters.gridscan.os")
+def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_params):
+    minimal_3d_gridscan_params["detector_distance_mm"] = 100
+
+    grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert not grid_scan.detector_params.enable_dev_shm
+
+    minimal_3d_gridscan_params["compare_cpu_and_gpu_results"] = True
+    grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert grid_scan.detector_params.enable_dev_shm

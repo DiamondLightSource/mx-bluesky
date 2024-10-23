@@ -103,9 +103,11 @@ class I03Constants:
     OAV_CENTRING_FILE = _test_oav_file if TEST_MODE else _live_oav_file
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
-    USE_GPU_FOR_GRIDSCAN_ANALYSIS = False
     THAWING_TIME = 20
-    USE_CPU_AND_GPU_ZOCALO = False
+
+    # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
+    # processed results. GPU results never used in analysis for now
+    COMPARE_CPU_AND_GPU_ZOCALO = False
 
 
 @dataclass(frozen=True)
@@ -127,6 +129,7 @@ class HyperionConstants:
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+    LOG_FILE_NAME = "hyperion.log"
 
 
 CONST = HyperionConstants()
