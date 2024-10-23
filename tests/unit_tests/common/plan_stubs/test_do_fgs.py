@@ -8,6 +8,9 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.beamlines.i03 import eiger
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_STAGE_GROUP,
+)
 from ophyd_async.core import DeviceCollector, set_mock_value
 
 from mx_bluesky.common.plan_stubs.do_fgs import kickoff_and_complete_gridscan
@@ -78,7 +81,12 @@ def test_kickoff_and_complete_gridscan_correct_messages(
 
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "kickoff" and msg.obj.name == "grid_scan_device",
+            lambda msg: msg.command == "wait"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "kickoff"
         )
 
         msgs = assert_message_and_return_remaining(
