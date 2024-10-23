@@ -1,8 +1,7 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from blueapi.core import MsgGenerator
-from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -11,7 +10,7 @@ from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from ophyd_async.core import DeviceCollector, set_mock_value
 
-from mx_bluesky.common.plan_stubs.do_fgs import do_fgs
+from mx_bluesky.common.plan_stubs.do_fgs import kickoff_and_complete_gridscan
 
 
 @pytest.fixture
@@ -30,7 +29,9 @@ def fgs_devices(RE):
     }
 
 
-def test_do_fgs_correct_messages(sim_run_engine: RunEngineSimulator, fgs_devices):
+def test_kickoff_and_complete_gridscan_correct_messages(
+    sim_run_engine: RunEngineSimulator, fgs_devices
+):
     def null_plan() -> MsgGenerator:
         yield from null()
 
@@ -46,11 +47,13 @@ def test_do_fgs_correct_messages(sim_run_engine: RunEngineSimulator, fgs_devices
         ) as mock_read_hardware,
     ):
         msgs = sim_run_engine.simulate_plan(
-            do_fgs(
+            kickoff_and_complete_gridscan(
                 fgs_device,
                 detector,
                 synchrotron,
-                during_collection_plan=null_plan(),
+                scan_points=[],
+                scan_start_indices=[],
+                plan_during_collection=null_plan,
             )
         )
 
@@ -105,10 +108,12 @@ def test_do_fgs_optionally_calls_during_collection_plan(
         detector = fgs_devices["detector"]
         fgs_device = fgs_devices["grid_scan_device"]
         msgs = sim_run_engine.simulate_plan(
-            do_fgs(
+            kickoff_and_complete_gridscan(
                 fgs_device,
                 detector,
                 synchrotron,
+                scan_points=[],
+                scan_start_indices=[],
             )
         )
         null_messages = [msg for msg in msgs if msg.command == "null"]
@@ -121,12 +126,17 @@ def test_do_fgs_with_run_engine(RE: RunEngine, fgs_devices):
     detector = fgs_devices["detector"]
     fgs_device: ZebraFastGridScan = fgs_devices["grid_scan_device"]
 
-    def do_fgs_plan_in_run():
-        yield from bps.open_run()
-        yield from do_fgs(fgs_device, detector, synchrotron)
-        yield from bps.close_run()
+    detector.unstage = MagicMock()
 
     set_mock_value(fgs_device.status, 1)
 
     with patch("mx_bluesky.common.plan_stubs.do_fgs.bps.complete"):
-        RE(do_fgs_plan_in_run())
+        RE(
+            kickoff_and_complete_gridscan(
+                fgs_device,
+                detector,
+                synchrotron,
+                scan_points=[],
+                scan_start_indices=[],
+            )
+        )

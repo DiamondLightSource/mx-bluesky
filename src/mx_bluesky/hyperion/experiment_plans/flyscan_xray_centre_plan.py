@@ -42,9 +42,9 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_result,
 )
 from ophyd_async.fastcs.panda import HDFPanda
-from scanspec.core import AxesPoints, Axis
 
-from mx_bluesky.common.plan_stubs.do_fgs import do_fgs
+from mx_bluesky.common.plan_stubs.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -67,7 +67,6 @@ from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
-from mx_bluesky.hyperion.tracing import TRACER
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
@@ -294,50 +293,9 @@ def run_gridscan(
         fgs_composite.synchrotron,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
-        do_during_run=read_during_collection,
+        plan_during_collection=read_during_collection,
     )
     yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
-
-
-def kickoff_and_complete_gridscan(
-    gridscan: FastGridScanCommon,
-    eiger: EigerDetector,
-    synchrotron: Synchrotron,
-    scan_points: list[AxesPoints[Axis]],
-    scan_start_indices: list[int],
-    do_during_run: Callable[[], MsgGenerator] | None = None,
-):
-    def during_collection_plan() -> MsgGenerator:
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        if do_during_run:
-            LOGGER.info(f"Running {do_during_run} during FGS")
-            yield from do_during_run()
-
-    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
-    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
-    @bpp.run_decorator(
-        md={
-            "subplan_name": CONST.PLAN.DO_FGS,
-            "scan_points": scan_points,
-            "scan_start_indices": scan_start_indices,
-        }
-    )
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        else_plan=lambda: (yield from bps.unstage(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    )
-    def do_fgs_and_wait_for_zocalo_and_read_hardware():
-        yield from do_fgs(
-            gridscan,
-            eiger,
-            synchrotron,
-            during_collection_plan=during_collection_plan(),
-        )
-
-    yield from do_fgs_and_wait_for_zocalo_and_read_hardware()
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
