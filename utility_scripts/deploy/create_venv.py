@@ -4,7 +4,9 @@ from subprocess import PIPE, CalledProcessError, Popen
 
 
 def run_process_and_print_output(proc_to_run):
-    with Popen(proc_to_run, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+    with Popen(
+        proc_to_run, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True
+    ) as p:
         if p.stdout is not None:
             for line in p.stdout:
                 print(line, end="")
