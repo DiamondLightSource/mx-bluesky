@@ -82,6 +82,7 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
+    simulate_xrc_result,
 )
 
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
@@ -922,8 +923,8 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
-        sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.zocalo.centres_of_mass, [(10, 10, 10)]
+        simulate_xrc_result(
+            sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(
