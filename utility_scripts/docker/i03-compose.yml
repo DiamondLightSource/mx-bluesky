@@ -34,7 +34,7 @@ services:
         target: /dls_sw/i03/logs
     environment:
       BEAMLINE: i03
-      HYPERION_LOG_DIR: /dls_sw/i03/logs/bluesky
+      LOG_DIR: /dls_sw/i03/logs/bluesky
       ZOCALO_GO_USER: gda2
       ZOCALO_GO_HOSTNAME: i03-control
       ZOCALO_CONFIG: /dls_sw/apps/zocalo/live/configuration.yaml
@@ -55,5 +55,5 @@ services:
         source: ../../tests
         target: /project/tests
     environment:
-      HYPERION_LOG_DIR: /tmp/dev
+      LOG_DIR: /tmp/dev
     entrypoint: [ "/bin/bash" ]

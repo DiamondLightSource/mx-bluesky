@@ -172,6 +172,7 @@ class TestData(OavGridSnapshotTestEvents):
             "smargon-x": 0.158435435,
             "smargon-y": 0.023547354,
             "smargon-z": 0.00345684712,
+            "dcm-energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
