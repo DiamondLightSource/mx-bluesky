@@ -531,7 +531,7 @@ def aperture_scatterguard(RE):
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=None,
+            radius=0,
         ),
     }
     with (
