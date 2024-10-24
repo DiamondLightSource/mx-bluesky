@@ -124,7 +124,7 @@ def test_load_motion_program_data(
     RE(load_motion_program_data(pmac, test_dict, map_type, pump_repeat, checker))
     call_list = []
     for i in expected_calls:
-        call_list.append(call(i, wait=True, timeout=10.0))
+        call_list.append(call(i, wait=True))
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(call_list)
 
@@ -170,8 +170,8 @@ def test_start_i24_with_eiger(
     assert fake_dcid.generate_dcid.call_count == 1
 
     shutter_call_list = [
-        call("Reset", wait=True, timeout=10.0),
-        call("Open", wait=True, timeout=10.0),
+        call("Reset", wait=True),
+        call("Open", wait=True),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -215,10 +215,10 @@ def test_finish_i24(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True, timeout=ANY)])
+    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
 
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True, timeout=ANY)])
+    mock_shutter.assert_has_calls([call("Close", wait=True)])
 
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 

@@ -66,8 +66,8 @@ def test_move_on_mouse_click_gets_beam_position_and_sends_correct_str(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(expected_xmove, wait=True, timeout=10),
-            call(expected_ymove, wait=True, timeout=10),
+            call(expected_xmove, wait=True),
+            call(expected_ymove, wait=True),
         ]
     )
 
