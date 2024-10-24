@@ -90,12 +90,12 @@ def grid_detection_plan(
 
     LOGGER.info("OAV Centring: Camera set up")
 
-    assert isinstance(oav.parameters.micronsPerXPixel, float)
-    box_size_x_pixels = box_size_um / oav.parameters.micronsPerXPixel
-    assert isinstance(oav.parameters.micronsPerYPixel, float)
-    box_size_y_pixels = box_size_um / oav.parameters.micronsPerYPixel
+    assert isinstance(oav.microns_per_pixel_x, float)
+    box_size_x_pixels = box_size_um / oav.microns_per_pixel_x
+    assert isinstance(oav.microns_per_pixel_y, float)
+    box_size_y_pixels = box_size_um / oav.microns_per_pixel_y
 
-    grid_width_pixels = int(grid_width_microns / oav.parameters.micronsPerXPixel)
+    grid_width_pixels = int(grid_width_microns / oav.microns_per_pixel_x)
 
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
@@ -115,7 +115,7 @@ def grid_detection_plan(
             (yield from bps.rd(pin_tip_detection.triggered_bottom_edge))
         )
 
-        full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
+        full_image_height_px = yield from bps.rd(oav.cam.array_size_y)
 
         # only use the area from the start of the pin onwards
         top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]

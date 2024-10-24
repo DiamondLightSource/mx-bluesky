@@ -132,13 +132,14 @@ def pin_tip_centre_plan(
     pin_tip_setup = composite.pin_tip_detection
     pin_tip_detect = composite.pin_tip_detection
 
-    assert oav.parameters.micronsPerXPixel is not None
-    tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
+    microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
+    assert microns_per_pixel_x is not None
+    tip_offset_px = int(tip_offset_microns / microns_per_pixel_x)
 
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, pixel_to_move_to, oav.parameters
+            smargon, pixel_to_move_to, oav
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
         yield from move_smargon_warn_on_out_of_range(smargon, position_mm)

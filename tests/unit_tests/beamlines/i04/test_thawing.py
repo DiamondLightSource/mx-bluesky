@@ -298,11 +298,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
 ):
     mock_set = MagicMock()
 
-    def cb(*args, value, **kwargs):
-        mock_set(value)
-
-    oav.zoom_controller.level.sim_put("2.0x")  # type:ignore
-    oav.zoom_controller.level.subscribe(cb)
+    set_mock_value(oav.zoom_controller.level, "2.0x")
 
     run_plan = partial(
         RE,

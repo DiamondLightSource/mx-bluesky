@@ -11,7 +11,7 @@ import cv2 as cv
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i24
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.oav.oav_async import OAV
+from dodal.devices.oav.oav_detector import OAV
 
 from mx_bluesky.beamlines.i24.serial.fixed_target import (
     i24ssx_Chip_Manager_py3v1 as manager,

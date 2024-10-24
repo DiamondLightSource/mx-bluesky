@@ -1,11 +1,10 @@
 from functools import partial
 
 import bluesky.plan_stubs as bps
+from dodal.devices.areadetector.plugins.CAM import ColorMode
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.oav.utils import ColorMode
 
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -62,11 +61,6 @@ def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
     yield from set_using_group(oav.cam.gain, parameters.gain)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     zoom_level_str = f"{float(parameters.zoom)}x"
-    if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
-        raise OAVError_ZoomLevelNotFound(
-            f"Found {zoom_level_str} as a zoom level but expected one of {oav.zoom_controller.allowed_zoom_levels}"
-        )
-
     yield from bps.abs_set(
         oav.zoom_controller,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         zoom_level_str,

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfigParams
+from dodal.devices.oav.oav_parameters import OAVConfig
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -94,15 +94,14 @@ def fake_create_rotation_devices():
     robot = i03.robot(fake_with_ophyd_sim=True)
     oav = i03.oav(
         fake_with_ophyd_sim=True,
-        params=OAVConfigParams(
-            zoom_params_file=ZOOM_LEVELS_XML, display_config=DISPLAY_CONFIGURATION
+        config=OAVConfig(
+            zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
         ),
     )
     xbpm_feedback = i03.xbpm_feedback(fake_with_ophyd_sim=True)
 
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
-    oav.zoom_controller.fvst.sim_put("1.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,

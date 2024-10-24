@@ -2,7 +2,6 @@ from typing import TypedDict
 
 import numpy as np
 from bluesky.callbacks import CallbackBase
-from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.utils import calculate_x_y_z_of_pixel
 from event_model.documents import Event
 
@@ -26,11 +25,9 @@ class GridParamUpdate(TypedDict):
 class GridDetectionCallback(CallbackBase):
     def __init__(
         self,
-        oav_params: OAVConfigParams,
         *args,
     ) -> None:
         super().__init__(*args)
-        self.oav_params = oav_params
         self.start_positions: list = []
         self.box_numbers: list = []
 
@@ -53,8 +50,17 @@ class GridDetectionCallback(CallbackBase):
             y_of_centre_of_first_box_px,
         )
 
+        microns_per_pixel_x = data["oav_microns_per_pixel_x"]
+        microns_per_pixel_y = data["oav_microns_per_pixel_y"]
+        beam_x = data["oav_beam_centre_i"]
+        beam_y = data["oav_beam_centre_j"]
+
         position_grid_start = calculate_x_y_z_of_pixel(
-            current_xyz, smargon_omega, centre_of_first_box, self.oav_params
+            current_xyz,
+            smargon_omega,
+            centre_of_first_box,
+            (beam_x, beam_y),
+            (microns_per_pixel_x, microns_per_pixel_y),
         )
 
         LOGGER.info(f"Calculated start position {position_grid_start}")
@@ -67,9 +73,9 @@ class GridDetectionCallback(CallbackBase):
             )
         )
 
-        self.x_step_size_mm = box_width_px * self.oav_params.micronsPerXPixel / 1000
-        self.y_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
-        self.z_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
+        self.x_step_size_mm = box_width_px * microns_per_pixel_x / 1000
+        self.y_step_size_mm = box_width_px * microns_per_pixel_y / 1000
+        self.z_step_size_mm = box_width_px * microns_per_pixel_y / 1000
         return doc
 
     def get_grid_parameters(self) -> GridParamUpdate:
