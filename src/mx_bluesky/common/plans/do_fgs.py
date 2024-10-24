@@ -42,6 +42,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
 
     # Make sure ZocaloResults queue is clear and ready to accept our new data. Zocalo MUST
     # have been staged using ZOCALO_STAGE_GROUP prior to this
+    LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
     # Triggers Zocalo if RE is subscribed to ZocaloCallback
@@ -54,7 +55,6 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     gridscan_start_time = time()
     if during_collection_plan:
         yield from during_collection_plan()
-    LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     LOGGER.info("completing FGS")
     yield from bps.complete(grid_scan_device, wait=True)
     # Remove this logging statement once metrics have been added
