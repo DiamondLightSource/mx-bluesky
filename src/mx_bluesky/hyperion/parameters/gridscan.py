@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -11,11 +10,10 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field, PrivateAttr, model_validator
+from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
-from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
 from mx_bluesky.hyperion.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -39,24 +37,10 @@ class GridCommon(
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
-    use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
-    compare_cpu_and_gpu_results: bool = Field(
-        default=CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
-    )
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
     selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_default_feature_flags(cls, values) -> Any:
-        cls.features = FeatureFlags().best_effort()
-        if "use_panda" in values:
-            cls.features.use_panda_for_gridscan = values["use_panda"]
-        if "use_gpu" in values:
-            cls.features.use_gpu_for_gridscan = values["use_gpu"]
-        return values
 
     @property
     def detector_params(self):
@@ -85,7 +69,7 @@ class GridCommon(
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.compare_cpu_and_gpu_results,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
             **optional_args,
         )
 

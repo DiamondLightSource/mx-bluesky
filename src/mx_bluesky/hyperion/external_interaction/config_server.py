@@ -1,5 +1,5 @@
 from daq_config_server.client import ConfigServer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -18,18 +18,30 @@ class FeatureFlags(BaseModel):
     # The default value will be used as the fallback when doing a best-effort fetch
     # from the service
     use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
-    use_gpu_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
+    compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
     set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
+
+    # Feature values specified in GDA will override values from the config server
+    overriden_features: dict = Field(default_factory=dict, exclude=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_overrides(cls, values):
+        assert isinstance(values, dict)
+        values["overriden_features"] = values.copy()
+        return values
 
     @classmethod
     def _get_flags(cls):
         flags = config_server().best_effort_get_all_feature_flags()
-        return {f: flags[f] for f in flags if f in cls.__fields__.keys()}
-
-    @classmethod
-    def best_effort(cls):
-        return cls(**cls._get_flags())
+        return {f: flags[f] for f in flags if f in cls.model_fields.keys()}
 
     def update_self_from_server(self):
+        """Used to update the feature flags from the server during a plan. Where flags which were explicitly set in GDA, these values will be used instead"""
         for flag, value in self._get_flags().items():
-            setattr(self, flag, value)
+            updated_value = (
+                value
+                if flag not in self.overriden_features.keys()
+                else self.overriden_features[flag]
+            )
+            setattr(self, flag, updated_value)
