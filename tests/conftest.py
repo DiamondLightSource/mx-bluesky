@@ -665,6 +665,7 @@ async def panda(RE: RunEngine):
         ):
             for name, dtype in attributes.items():
                 setattr(self, name, epics_signal_rw(dtype, "", ""))
+            super().__init__(name)
 
     def mock_vector_block(n, attributes):
         return DeviceVector(
