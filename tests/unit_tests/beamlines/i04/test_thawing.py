@@ -73,7 +73,9 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 @pytest.fixture
 def thawer(RE: RunEngine) -> Thawer:
-    return i04.thawer(fake_with_ophyd_sim=True)
+    return rebuild_oa_device_as_mocked_if_necessary(
+        i04.thawer, fake_with_ophyd_sim=True, wait_for_connection=True
+    )
 
 
 @pytest.fixture
@@ -94,8 +96,10 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 
 @pytest.fixture
-async def robot(RE: RunEngine) -> BartRobot:
-    return rebuild_oa_device_as_mocked_if_necessary(i04.robot, fake_with_ophyd_sim=True)
+def robot(RE: RunEngine) -> BartRobot:
+    return rebuild_oa_device_as_mocked_if_necessary(
+        i04.robot, wait_for_connection=True, fake_with_ophyd_sim=True
+    )
 
 
 def _do_thaw_and_confirm_cleanup(
@@ -277,7 +281,7 @@ def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
     msgs = sim_run_engine.simulate_plan(
         thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder)
     )
-    for source in [Source.FULL_SCREEN, Source.ROI]:
+    for source in [Source.FULL_SCREEN.value, Source.ROI.value]:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"

@@ -34,7 +34,11 @@ def thaw_and_stream_to_redis(
 
     def switch_forwarder_to_ROI() -> MsgGenerator:
         yield from bps.complete(oav_to_redis_forwarder, wait=True)
-        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.mv(
+            # See: https://github.com/bluesky/bluesky/issues/1809
+            oav_to_redis_forwarder.selected_source,  # type: ignore
+            Source.ROI.value,  # type: ignore
+        )
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
     microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
@@ -58,7 +62,7 @@ def thaw_and_stream_to_redis(
             oav_to_redis_forwarder.sample_id,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
             sample_id,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
             oav_to_redis_forwarder.selected_source,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-            Source.FULL_SCREEN,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+            Source.FULL_SCREEN.value,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         )
 
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
