@@ -41,10 +41,10 @@ def thaw_and_stream_to_redis(
     @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))
     @run_decorator(
         md={
-            "microns_per_x_pixel": oav.parameters.micronsPerXPixel,
-            "microns_per_y_pixel": oav.parameters.micronsPerYPixel,
-            "beam_centre_i": oav.parameters.beam_centre_i,
-            "beam_centre_j": oav.parameters.beam_centre_j,
+            "microns_per_x_pixel": oav.microns_per_pixel_x,
+            "microns_per_y_pixel": oav.microns_per_pixel_y,
+            "beam_centre_i": oav.beam_centre_i,
+            "beam_centre_j": oav.beam_centre_j,
             "zoom_percentage": zoom_percentage,
             "sample_id": sample_id,
         }

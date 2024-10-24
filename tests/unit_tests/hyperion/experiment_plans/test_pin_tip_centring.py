@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
-from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
@@ -262,11 +262,13 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 ):
     set_mock_value(smargon.omega.user_readback, 0)
     mock_oav: OAV = MagicMock(spec=OAV)
-    mock_oav.parameters = OAVConfigParams(
+    mock_oav.parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    mock_oav.parameters.micronsPerXPixel = 2.87
-    mock_oav.parameters.micronsPerYPixel = 2.87
+    ).get_parameters()
+    mock_oav.zoom_controller = MagicMock()
+    mock_oav.zoom_controller.level = MagicMock(return_value="1.0")
+    mock_oav.microns_per_pixel_x = MagicMock(return_value=2.87)
+    mock_oav.microns_per_pixel_y = MagicMock(return_value=2.87)
     composite = PinTipCentringComposite(
         backlight=MagicMock(),
         oav=mock_oav,

@@ -9,7 +9,7 @@ from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE, SampleLocation
@@ -42,18 +42,11 @@ def fake_devices(
     backlight: Backlight,
     test_config_files: dict[str, str],
 ):
-    params = OAVConfigParams(
+    params = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True, params=params)
-    oav.parameters.update_on_zoom = MagicMock()
-    oav.parameters.load_microns_per_pixel = MagicMock()
-    oav.parameters.micronsPerXPixel = 1.58
-    oav.parameters.micronsPerYPixel = 1.58
-    oav.parameters.beam_centre_i = 517
-    oav.parameters.beam_centre_j = 350
-
-    oav.wait_for_connection()
+    oav = i03.oav(fake_with_ophyd_sim=True, config=params)
+    set_mock_value(oav.zoom_controller.level, "5.0")
 
     pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
     pin_tip_detection._get_tip_and_edge_data = AsyncMock(
@@ -65,18 +58,15 @@ def fake_devices(
         )
     )
 
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.zoom_controller.onst.set("2.0x")
-    oav.zoom_controller.twst.set("3.0x")
-    oav.zoom_controller.thst.set("5.0x")
-    oav.zoom_controller.frst.set("7.0x")
-    oav.zoom_controller.fvst.set("9.0x")
-
     with (
-        patch("dodal.devices.areadetector.plugins.MJPG.requests") as patch_requests,
+        patch(
+            "dodal.devices.areadetector.plugins.MJPG.ClientSession"
+        ) as patch_requests,
         patch("dodal.devices.areadetector.plugins.MJPG.Image") as mock_image_class,
     ):
-        patch_requests.get.return_value.content = b""
+        patch_get = patch_requests.get
+        patch_get.return_value.__aenter__.return_value = (mock_response := AsyncMock())
+        mock_response.read.return_value = b""
         mock_image = MagicMock()
         mock_image_class.open.return_value.__enter__.return_value = mock_image
 
@@ -158,7 +148,7 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_given_when_grid_detect_then_start_position_as_expected(
+async def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
@@ -166,13 +156,15 @@ def test_given_when_grid_detect_then_start_position_as_expected(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     box_size_um = 0.2
     composite, _ = fake_devices
-    composite.oav.parameters.micronsPerXPixel = 0.1
-    composite.oav.parameters.micronsPerYPixel = 0.1
-    composite.oav.parameters.beam_centre_i = 4
-    composite.oav.parameters.beam_centre_j = 4
-    box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
+    # FIXME This won't work
+    await composite.oav.microns_per_pixel_x._backend.put(0.1)
+    await composite.oav.microns_per_pixel_y._backend.put(0.1)
+    await composite.oav.beam_centre_i._backend.put(4)
+    await composite.oav.beam_centre_j._backend.put(4)
+    microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
+    box_size_y_pixels = box_size_um / microns_per_pixel_y
 
-    grid_param_cb = GridDetectionCallback(composite.oav.parameters)
+    grid_param_cb = GridDetectionCallback()
     RE.subscribe(grid_param_cb)
 
     @bpp.run_decorator()
@@ -193,9 +185,7 @@ def test_given_when_grid_detect_then_start_position_as_expected(
     assert gridscan_params["x_start_um"] == pytest.approx(0.0005)
     assert gridscan_params["y_start_um"] == pytest.approx(
         -0.0001
-        - (
-            (box_size_y_pixels / 2) * composite.oav.parameters.micronsPerYPixel * 1e-3
-        )  # microns to mm
+        - ((box_size_y_pixels / 2) * microns_per_pixel_y * 1e-3)  # microns to mm
     )
     assert gridscan_params["z_start_um"] == pytest.approx(-0.0001)
 
@@ -238,7 +228,7 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
+async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
@@ -246,8 +236,9 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    composite.oav.parameters.micronsPerYPixel = 1.25
-    composite.oav.parameters.micronsPerXPixel = 1.25
+    # FIXME This won't work
+    await composite.oav.microns_per_pixel_x._backend.put(1.25)
+    await composite.oav.microns_per_pixel_y._backend.put(1.25)
     cb = GridscanISPyBCallback()
     RE.subscribe(cb)
 
@@ -313,7 +304,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
     box_size_um = 20
-    cb = GridDetectionCallback(composite.oav.parameters)
+    cb = GridDetectionCallback()
     RE.subscribe(cb)
 
     def decorated():
