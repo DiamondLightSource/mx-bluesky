@@ -26,7 +26,7 @@ class FeatureFlags(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def handle_overrides(cls, values):
+    def mark_overridden_features(cls, values):
         assert isinstance(values, dict)
         values["overriden_features"] = values.copy()
         return values
