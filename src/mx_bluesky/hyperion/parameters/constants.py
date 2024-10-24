@@ -140,6 +140,7 @@ class HyperionConstants:
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+    LOG_FILE_NAME = "hyperion.log"
 
 
 CONST = HyperionConstants()
