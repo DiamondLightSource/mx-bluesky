@@ -29,17 +29,17 @@ def fake_generator(value):
         (
             (15, 10),
             "#1J:-" + str(15 * ZOOMCALIBRATOR),
-            "#2J:-" + str(10 * ZOOMCALIBRATOR),
+            "#2J:" + str(10 * ZOOMCALIBRATOR),
         ),
         (
             (475, 309),
             "#1J:-" + str(475 * ZOOMCALIBRATOR),
-            "#2J:-" + str(309 * ZOOMCALIBRATOR),
+            "#2J:" + str(309 * ZOOMCALIBRATOR),
         ),
         (
             (638, 392),
             "#1J:-" + str(638 * ZOOMCALIBRATOR),
-            "#2J:-" + str(392 * ZOOMCALIBRATOR),
+            "#2J:" + str(392 * ZOOMCALIBRATOR),
         ),
     ],
 )
