@@ -8,7 +8,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
-from ophyd_async.fastcs.panda import SeqTable, SeqTrigger
+from ophyd_async.fastcs.panda import HDFPanda, SeqTable, SeqTrigger
 
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
@@ -24,11 +24,13 @@ def get_smargon_speed(x_step_size_mm: float, time_between_x_steps_ms: float) -> 
 
 
 def run_simulating_setup_panda_functions(
-    plan: str, sim_run_engine: RunEngineSimulator, mock_load_device=MagicMock
+    plan: str,
+    panda: HDFPanda,
+    sim_run_engine: RunEngineSimulator,
+    mock_load_device=MagicMock,
 ):
     num_of_sets = 0
     num_of_waits = 0
-    mock_panda = MagicMock()
 
     def count_commands(msg):
         nonlocal num_of_sets
@@ -45,7 +47,7 @@ def run_simulating_setup_panda_functions(
         smargon_speed = get_smargon_speed(0.1, 1)
         sim.simulate_plan(
             setup_panda_for_flyscan(
-                mock_panda,
+                panda,
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
                 0.1,
@@ -54,15 +56,15 @@ def run_simulating_setup_panda_functions(
             )
         )
     elif plan == "disarm":
-        sim.simulate_plan(disarm_panda_for_gridscan(mock_panda))
+        sim.simulate_plan(disarm_panda_for_gridscan(panda))
 
     return num_of_sets, num_of_waits
 
 
 @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_device")
-def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine):
+def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine, panda):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "setup", sim_run_engine, mock_load_device
+        "setup", panda, sim_run_engine, mock_load_device
     )
     mock_load_device.assert_called_once()
     assert num_of_sets == 8
@@ -181,7 +183,7 @@ def test_setup_panda_correctly_configures_table(
         )
 
 
-def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
+def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
     bps_wait_done = False
 
     def handle_wait(*args, **kwargs):
@@ -207,7 +209,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
     ):
         RE(
             setup_panda_for_flyscan(
-                MagicMock(),
+                panda,
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
                 0.1,
@@ -216,12 +218,14 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
             )
         )
 
+    assert bps_wait_done
+
 
 # It also would be useful to have some system tests which check that (at least)
 # all the blocks which were enabled on setup are also disabled on tidyup
-def test_disarm_panda_disables_correct_blocks(sim_run_engine):
+def test_disarm_panda_disables_correct_blocks(sim_run_engine, panda):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "disarm", sim_run_engine
+        "disarm", panda, sim_run_engine
     )
     assert num_of_sets == 5
     assert num_of_waits == 1

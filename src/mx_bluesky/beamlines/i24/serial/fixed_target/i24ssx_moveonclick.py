@@ -52,7 +52,7 @@ def _move_on_mouse_click_plan(
     beamX, beamY = yield from _get_beam_centre(oav)
     x, y = clicked_position
     xmove = -1 * (beamX - x) * zoomcalibrator
-    ymove = -1 * (beamY - y) * zoomcalibrator
+    ymove = 1 * (beamY - y) * zoomcalibrator
     logger.info(f"Moving X and Y {xmove} {ymove}")
     xmovepmacstring = "#1J:" + str(xmove)
     ymovepmacstring = "#2J:" + str(ymove)

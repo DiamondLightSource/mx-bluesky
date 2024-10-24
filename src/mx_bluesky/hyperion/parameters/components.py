@@ -16,10 +16,10 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_serializer,
     field_validator,
     model_validator,
 )
+from pydantic_extra_types.semantic_version import SemanticVersion
 from scanspec.core import AxesPoints
 from semver import Version
 
@@ -29,15 +29,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 T = TypeVar("T")
 
 
-class ParameterVersion(Version):
-    @classmethod
-    def _parse(cls, version):
-        if isinstance(version, cls):
-            return version
-        return cls.parse(version)
-
-
-PARAMETER_VERSION = ParameterVersion.parse("5.1.0")
+PARAMETER_VERSION = Version.parse("5.1.0")
 
 
 class RotationAxis(StrEnum):
@@ -105,24 +97,19 @@ class HyperionParameters(BaseModel):
     )
 
     def __hash__(self) -> int:
-        return self.json().__hash__()
+        return self.model_dump_json().__hash__()
 
     features: FeatureFlags = Field(default=FeatureFlags())
-    parameter_model_version: ParameterVersion
+    parameter_model_version: SemanticVersion
 
-    @field_serializer("parameter_model_version")
-    def serialize_parameter_version(self, version: ParameterVersion):
-        return str(version)
-
-    @field_validator("parameter_model_version", mode="before")
+    @field_validator("parameter_model_version")
     @classmethod
-    def _validate_version(cls, version_str: str):
-        version = ParameterVersion.parse(version_str)
+    def _validate_version(cls, version: Version):
         assert (
-            version >= ParameterVersion(major=PARAMETER_VERSION.major)
+            version >= Version(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
         assert (
-            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
+            version <= Version(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 

@@ -36,13 +36,13 @@ Deploys hyperion to kubernetes
 
 Important!
 If you do not specify --checkout-to-prod YOU MUST run this from the hyperion directory that will be bind-mounted to
-the container, NOT the directory that you built the container image from. 
+the container, NOT the directory that you built the container image from.
 
   --help                  This help
   --appVersion=version    Version of the image to fetch from the repository otherwise it is deduced
                           from the setuptools_scm
   -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline
-  --checkout-to-prod      Checkout source folders to the production folder using deploy_hyperion.py
+  --checkout-to-prod      Checkout source folders to the production folder using deploy_mx_bluesky.py
   --dev                   Install to a development kubernetes cluster (assumes project checked out under /home)
                           (default cluster is argus in user namespace)
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
@@ -84,11 +84,11 @@ else
     echo "Virtual env not activated, activating"
     . $PROJECTDIR/.venv/bin/activate
   fi
-  
+
   # First extract the version and location that will be deployed
-  DEPLOY_HYPERION="python $PROJECTDIR/utility_scripts/deploy/deploy_hyperion.py"
+  DEPLOY_HYPERION="python $PROJECTDIR/utility_scripts/deploy/deploy_mx_bluesky.py"
   HYPERION_BASE=$($DEPLOY_HYPERION --print-release-dir $BEAMLINE)
-  
+
   if [[ -n $CHECKOUT ]]; then
     echo "Running deploy_hyperion.py to deploy to production folder..."
     $DEPLOY_HYPERION --kubernetes $BEAMLINE
@@ -97,7 +97,7 @@ else
       exit 1
     fi
   fi
-  
+
   NEW_PROJECTDIR=$HYPERION_BASE/hyperion
   echo "Changing directory to $NEW_PROJECTDIR..."
   cd $NEW_PROJECTDIR
@@ -126,12 +126,12 @@ ensure_version_py() {
     python -m venv $PROJECTDIR/.venv
     . $PROJECTDIR/.venv/bin/activate
     pip install setuptools_scm
-  fi  
+  fi
 }
 
 app_version() {
   ensure_version_py
-  
+
   . $PROJECTDIR/.venv/bin/activate
   python -m setuptools_scm --force-write-version-files | sed -e 's/[^a-zA-Z0-9._-]/_/g'
 }
@@ -146,7 +146,7 @@ if [[ -z $APP_VERSION ]]; then
 fi
 
 echo "Checked out version that will be bind-mounted in $PROJECTDIR is $CHECKED_OUT_VERSION"
-echo "Container image version that will be pulled is $APP_VERSION" 
+echo "Container image version that will be pulled is $APP_VERSION"
 
 if [[ $APP_VERSION != $CHECKED_OUT_VERSION ]]; then
   echo "WARNING: Checked out version and container image versions differ!"
@@ -171,7 +171,7 @@ fi
 
 HELM_OPTIONS+="--set hyperion.appVersion=$APP_VERSION,\
 hyperion.projectDir=$DEPLOYMENT_DIR,\
-dodal.projectDir=$DEPLOYMENT_DIR/../dodal " 
+dodal.projectDir=$DEPLOYMENT_DIR/../dodal "
 
 module load helm
 

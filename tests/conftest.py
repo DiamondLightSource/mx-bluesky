@@ -22,7 +22,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
-from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.beamline_utils import clear_device, clear_devices
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -65,6 +65,7 @@ from ophyd_async.fastcs.panda import DatasetTable
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.common.utils.log import _get_logging_dir, do_default_logging_setup
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
@@ -80,8 +81,6 @@ from mx_bluesky.hyperion.log import (
     ISPYB_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
-    do_default_logging_setup,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -90,6 +89,8 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+TEST_GRAYLOG_PORT = 5555
 
 
 def raw_params_from_file(filename):
@@ -135,7 +136,7 @@ def pytest_runtest_setup(item):
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
-                do_default_logging_setup(dev_mode=True)
+                do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
@@ -356,6 +357,13 @@ def oav(test_config_files):
     )
     parameters.micronsPerXPixel = 2.87
     parameters.micronsPerYPixel = 2.87
+
+    # This should only be needed until issues with https://github.com/DiamondLightSource/dodal/pull/854
+    # or ophyd-async OAV are resolved
+    try:
+        clear_device("oav")
+    except KeyError:
+        ...
     oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
 
     oav.zoom_controller.zrst.set("1.0x")
@@ -463,18 +471,14 @@ def lower_gonio(RE):
 
 
 @pytest.fixture
-def vfm_mirror_voltages():
-    voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
+def mirror_voltages():
+    voltages = i03.mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
-    with ExitStack() as stack:
-        [
-            stack.enter_context(context_mgr)
-            for context_mgr in [
-                patch.object(vc, "set") for vc in voltages.voltage_channels.values()
-            ]
-        ]
-
-        yield voltages
+    for vc in voltages.vertical_voltages.values():
+        vc.set = MagicMock(return_value=NullStatus())
+    for vc in voltages.horizontal_voltages.values():
+        vc.set = MagicMock(return_value=NullStatus())
+    yield voltages
     beamline_utils.clear_devices()
 
 

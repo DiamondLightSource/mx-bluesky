@@ -13,7 +13,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
-from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
+from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -37,7 +37,7 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 class RobotLoadAndEnergyChangeComposite:
     # SetEnergyComposite fields
     vfm: FocusingMirrorWithStripes
-    vfm_mirror_voltages: VFMMirrorVoltages
+    mirror_voltages: MirrorVoltages
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback

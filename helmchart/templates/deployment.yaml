@@ -106,7 +106,7 @@ spec:
             containerPort: {{ .Values.hyperion.containerPort }}
             protocol: TCP
         env:
-          - name: HYPERION_LOG_DIR
+          - name: LOG_DIR
             value: /var/log/bluesky
           - name: BEAMLINE
             value: "{{ .Values.hyperion.beamline }}"

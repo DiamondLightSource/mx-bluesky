@@ -13,11 +13,11 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
 
 @pytest.fixture()
 def set_energy_composite(
-    attenuator, dcm, undulator_dcm, vfm, vfm_mirror_voltages, xbpm_feedback
+    attenuator, dcm, undulator_dcm, vfm, mirror_voltages, xbpm_feedback
 ):
     composite = SetEnergyComposite(
         vfm,
-        vfm_mirror_voltages,
+        mirror_voltages,
         dcm,
         undulator_dcm,
         xbpm_feedback,
