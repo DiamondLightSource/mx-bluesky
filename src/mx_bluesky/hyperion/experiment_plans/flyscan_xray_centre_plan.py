@@ -42,7 +42,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_processing_result,
 )
-from dodal.plans.check_topup import check_topup_and_wait_if_necessary
+from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.panda import HDFPanda
 from scanspec.core import AxesPoints, Axis
 
