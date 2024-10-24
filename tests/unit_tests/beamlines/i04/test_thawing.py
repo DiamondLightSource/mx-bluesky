@@ -72,10 +72,8 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 
 @pytest.fixture
-async def thawer(RE: RunEngine) -> Thawer:
-    return rebuild_oa_device_as_mocked_if_necessary(
-        i04.thawer, fake_with_ophyd_sim=True
-    )
+def thawer(RE: RunEngine) -> Thawer:
+    return i04.thawer(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
