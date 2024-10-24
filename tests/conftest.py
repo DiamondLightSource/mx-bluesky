@@ -940,9 +940,7 @@ class DocumentCapturer:
 
 @pytest.fixture
 def feature_flags():
-    return FeatureFlags(
-        **{field_name: False for field_name in FeatureFlags.model_fields.keys()}
-    )
+    return FeatureFlags()
 
 
 def assert_none_matching(
