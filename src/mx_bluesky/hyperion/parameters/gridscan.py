@@ -37,10 +37,6 @@ class GridCommon(
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
-    use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
-    compare_cpu_and_gpu_results: bool = Field(
-        default=CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
-    )
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
@@ -73,7 +69,7 @@ class GridCommon(
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.compare_cpu_and_gpu_results,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
             **optional_args,
         )
 
