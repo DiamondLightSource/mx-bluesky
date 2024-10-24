@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -61,7 +60,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.motor import Motor
 from ophyd_async.epics.signal import epics_signal_rw
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -191,11 +190,11 @@ def RE():
     del RE
 
 
-def pass_on_mock(motor, call_log: MagicMock | None = None):
-    def _pass_on_mock(value, **kwargs):
+def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value: float, wait: bool):
         set_mock_value(motor.user_readback, value)
         if call_log is not None:
-            call_log(value, **kwargs)
+            call_log(value, wait=wait)
 
     return _pass_on_mock
 
@@ -546,7 +545,7 @@ def aperture_scatterguard(RE):
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=None,
+            radius=0,
         ),
     }
     with (
@@ -682,6 +681,7 @@ async def panda(RE: RunEngine):
         ):
             for name, dtype in attributes.items():
                 setattr(self, name, epics_signal_rw(dtype, "", ""))
+            super().__init__(name)
 
     def mock_vector_block(n, attributes):
         return DeviceVector(
@@ -721,7 +721,8 @@ async def panda(RE: RunEngine):
     )
 
     set_mock_value(
-        panda.data.datasets, DatasetTable(name=np.array(["name"]), hdf5_type=[])
+        panda.data.datasets,
+        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda

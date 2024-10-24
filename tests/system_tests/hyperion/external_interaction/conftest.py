@@ -272,7 +272,9 @@ def grid_detect_then_xray_centre_composite(
         set_mock_value(
             zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
         )
-        set_mock_value(ophyd_pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px))
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_tip, numpy.array([tip_x_px, tip_y_px])
+        )
 
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
