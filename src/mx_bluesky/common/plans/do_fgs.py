@@ -17,7 +17,11 @@ from scanspec.core import AxesPoints, Axis
 from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
-from mx_bluesky.common.parameters.constants import PlanNameConstants, TriggerConstants
+from mx_bluesky.common.parameters.constants import (
+    MxConstants,
+    PlanNameConstants,
+    TriggerConstants,
+)
 from mx_bluesky.common.utils.tracing import TRACER
 
 
@@ -49,7 +53,6 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     yield from bps.kickoff(grid_scan_device, wait=True)
     gridscan_start_time = time()
     if during_collection_plan:
-        LOGGER.info(f"Running {during_collection_plan.__name__} during FGS")
         yield from during_collection_plan()
     LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     LOGGER.info("completing FGS")
@@ -67,6 +70,7 @@ def kickoff_and_complete_gridscan(
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
+    zocalo_environment: str = MxConstants.ZOCALO_ENV,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
     If the RunEngine is subscribed to ZocaloCallback, this plan will also trigger Zocalo.
@@ -82,6 +86,7 @@ def kickoff_and_complete_gridscan(
         scan_start_indices (list[int]):         Contains the first index of each grid scan
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff and completion,
                                                 eg waiting on zocalo.
+        zocalo_environment (Optional, str)      Used for zocalo connection
     """
 
     assert len(scan_points) == len(
@@ -98,6 +103,7 @@ def kickoff_and_complete_gridscan(
             TriggerConstants.ZOCALO: plan_name,
             "scan_points": scan_points,
             "scan_start_indices": scan_start_indices,
+            "zocalo_environment": zocalo_environment,
         }
     )
     @bpp.contingency_decorator(

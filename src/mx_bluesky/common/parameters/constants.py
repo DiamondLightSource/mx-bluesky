@@ -1,4 +1,9 @@
+import os
+
 from pydantic.dataclasses import dataclass
+
+TEST_MODE = os.environ.get("HYPERION_TEST_MODE")  # Environment name will be updated in
+# https://github.com/DiamondLightSource/mx-bluesky/issues/214
 
 
 @dataclass(frozen=True)
@@ -27,3 +32,4 @@ class TriggerConstants:
 class MxConstants:
     DESCRIPTORS = DocDescriptorNames()
     TRIGGER = TriggerConstants()
+    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"

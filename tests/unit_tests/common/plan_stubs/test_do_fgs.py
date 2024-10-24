@@ -13,7 +13,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from ophyd_async.core import DeviceCollector, set_mock_value
 
-from mx_bluesky.common.plan_stubs.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 
 
 @pytest.fixture
@@ -43,10 +43,10 @@ def test_kickoff_and_complete_gridscan_correct_messages(
     fgs_device = fgs_devices["grid_scan_device"]
     with (
         patch(
-            "mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary"
+            "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"
         ) as mock_check_topup,
         patch(
-            "mx_bluesky.common.plan_stubs.do_fgs.read_hardware_for_zocalo"
+            "mx_bluesky.common.plans.do_fgs.read_hardware_for_zocalo"
         ) as mock_read_hardware,
     ):
         msgs = sim_run_engine.simulate_plan(
@@ -111,7 +111,7 @@ def test_kickoff_and_complete_gridscan_correct_messages(
 def test_do_fgs_optionally_calls_during_collection_plan(
     sim_run_engine: RunEngineSimulator, fgs_devices
 ):
-    with patch("mx_bluesky.common.plan_stubs.do_fgs.check_topup_and_wait_if_necessary"):
+    with patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"):
         synchrotron = fgs_devices["synchrotron"]
         detector = fgs_devices["detector"]
         fgs_device = fgs_devices["grid_scan_device"]
@@ -138,7 +138,7 @@ def test_do_fgs_with_run_engine(RE: RunEngine, fgs_devices):
 
     set_mock_value(fgs_device.status, 1)
 
-    with patch("mx_bluesky.common.plan_stubs.do_fgs.bps.complete"):
+    with patch("mx_bluesky.common.plans.do_fgs.bps.complete"):
         RE(
             kickoff_and_complete_gridscan(
                 fgs_device,

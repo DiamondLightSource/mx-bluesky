@@ -43,7 +43,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.common.plan_stubs.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -140,7 +140,6 @@ def flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "zocalo_environment": parameters.zocalo_environment,
             "hyperion_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
