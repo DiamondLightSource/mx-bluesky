@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.hutch_shutter import (
@@ -16,7 +14,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
-from ophyd_async.core import callback_on_mock_put, set_mock_value
+from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 from ophyd_async.epics.motor import Motor
 
 
@@ -34,16 +32,16 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 
 @pytest.fixture
 def zebra(RE) -> Zebra:
-    zebra = i24.zebra(fake_with_ophyd_sim=True)
+    zebra = i24.zebra(fake_with_ophyd_sim=True, wait_for_connection=True)
 
-    async def mock_disarm(_):
-        await zebra.pc.arm.armed._backend.put(0)  # type: ignore
+    def mock_disarm(_, wait):
+        set_mock_value(zebra.pc.arm.armed, 0)
 
-    async def mock_arm(_):
-        await zebra.pc.arm.armed._backend.put(1)  # type: ignore
+    def mock_arm(_, wait):
+        set_mock_value(zebra.pc.arm.armed, 1)
 
-    zebra.pc.arm.arm_set.set = AsyncMock(side_effect=mock_arm)
-    zebra.pc.arm.disarm_set.set = AsyncMock(side_effect=mock_disarm)
+    get_mock_put(zebra.pc.arm.arm_set).side_effect = mock_arm
+    get_mock_put(zebra.pc.arm.disarm_set).side_effect = mock_disarm
     return zebra
 
 
