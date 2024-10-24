@@ -21,7 +21,7 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -89,7 +89,9 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(fake_fgs_composite: FlyScanXRayCentreComposite):
-    capture_table = DatasetTable(name=np.array(["name"]), hdf5_type=[])
+    capture_table = DatasetTable(
+        name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]
+    )
     set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
 
     return fake_fgs_composite
