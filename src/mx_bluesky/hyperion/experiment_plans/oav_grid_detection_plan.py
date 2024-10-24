@@ -63,7 +63,7 @@ def grid_detection_plan(
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
-    box_size_um: float = 20,
+    box_size_um: float,
 ):
     """
     Creates the parameters for two grids that are 90 degrees from each other and
