@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -61,7 +60,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.motor import Motor
 from ophyd_async.epics.signal import epics_signal_rw
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -705,7 +704,8 @@ async def panda(RE: RunEngine):
     )
 
     set_mock_value(
-        panda.data.datasets, DatasetTable(name=np.array(["name"]), hdf5_type=[])
+        panda.data.datasets,
+        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda
