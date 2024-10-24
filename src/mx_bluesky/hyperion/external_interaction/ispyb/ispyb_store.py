@@ -11,6 +11,7 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
 from pydantic import BaseModel
 
+from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionGroupInfo,
@@ -22,7 +23,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
     get_session_id_from_visit,
 )
 from mx_bluesky.hyperion.log import ISPYB_LOGGER
-from mx_bluesky.hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
     pass

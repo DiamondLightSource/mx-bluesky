@@ -8,8 +8,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
-def setup_tracing():
-    resource = Resource(attributes={SERVICE_NAME: "Hyperion"})
+def setup_tracing(service_name: str = "Hyperion"):
+    resource = Resource(attributes={SERVICE_NAME: service_name})
 
     traceProvider = TracerProvider(resource=resource)
     processor = BatchSpanProcessor(
