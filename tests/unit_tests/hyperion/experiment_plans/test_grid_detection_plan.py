@@ -133,7 +133,8 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     set_mock_value(composite.pin_tip_detection.validity_timeout, 0.01)
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         return_value=SampleLocation(
-            *PinTipDetection.INVALID_POSITION,
+            PinTipDetection.INVALID_POSITION[0],
+            PinTipDetection.INVALID_POSITION[1],
             np.array([]),
             np.array([]),
         )
