@@ -190,11 +190,11 @@ def RE():
     del RE
 
 
-def pass_on_mock(motor, call_log: MagicMock | None = None):
-    def _pass_on_mock(value, **kwargs):
+def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value: float, wait: bool):
         set_mock_value(motor.user_readback, value)
         if call_log is not None:
-            call_log(value, **kwargs)
+            call_log(value, wait=wait)
 
     return _pass_on_mock
 
