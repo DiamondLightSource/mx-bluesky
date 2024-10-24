@@ -18,7 +18,7 @@ from time import sleep
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
-from dodal.common import inject
+from dodal.beamlines import i24
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beamstop import Beamstop
@@ -72,7 +72,7 @@ def flush_print(text):
 
 @log.log_on_entry
 def initialise_extruder(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
 ) -> MsgGenerator:
     setup_logging()
     logger.info("Initialise Parameters for extruder data collection on I24.")
@@ -100,8 +100,8 @@ def initialise_extruder(
 @log.log_on_entry
 def laser_check(
     mode: str,
-    zebra: Zebra = inject("zebra"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    zebra: Zebra = i24.zebra(wait_for_connection=False),
+    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
 ) -> MsgGenerator:
     """Plan to open the shutter and check the laser beam from the viewer by pressing \
         'Laser On' and 'Laser Off' buttons on the edm.
@@ -133,11 +133,11 @@ def laser_check(
 
 @log.log_on_entry
 def enter_hutch(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
     setup_logging()
-    yield from bps.mv(detector_stage.z, SAFE_DET_Z)
+    yield from bps.mv(detector_stage.z, SAFE_DET_Z)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     logger.debug("Detector moved.")
 
 
@@ -466,13 +466,13 @@ def collection_complete_plan(
 
 
 def run_extruder_plan(
-    zebra: Zebra = inject("zebra"),
-    aperture: Aperture = inject("aperture"),
-    backlight: DualBacklight = inject("backlight"),
-    beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
-    shutter: HutchShutter = inject("shutter"),
-    dcm: DCM = inject("dcm"),
+    zebra: Zebra = i24.zebra(wait_for_connection=False),
+    aperture: Aperture = i24.aperture(wait_for_connection=False),
+    backlight: DualBacklight = i24.backlight(wait_for_connection=False),
+    beamstop: Beamstop = i24.beamstop(wait_for_connection=False),
+    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
+    shutter: HutchShutter = i24.shutter(wait_for_connection=False),
+    dcm: DCM = i24.dcm(wait_for_connection=False),
 ) -> MsgGenerator:
     setup_logging()
     start_time = datetime.now()

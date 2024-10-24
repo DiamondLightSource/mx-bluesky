@@ -10,7 +10,7 @@ import dataclasses
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
-from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
+from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
@@ -27,7 +27,7 @@ UNDULATOR_GROUP = "UNDULATOR_GROUP"
 @dataclasses.dataclass
 class SetEnergyComposite:
     vfm: FocusingMirrorWithStripes
-    vfm_mirror_voltages: VFMMirrorVoltages
+    mirror_voltages: MirrorVoltages
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback
@@ -42,7 +42,7 @@ def _set_energy_plan(
     yield from dcm_pitch_roll_mirror_adjuster.adjust_dcm_pitch_roll_vfm_from_lut(
         composite.undulator_dcm,
         composite.vfm,
-        composite.vfm_mirror_voltages,
+        composite.mirror_voltages,
         energy_kev,
     )
     yield from bps.wait(group=UNDULATOR_GROUP)

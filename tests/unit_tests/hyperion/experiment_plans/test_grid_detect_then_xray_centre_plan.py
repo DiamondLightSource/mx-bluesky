@@ -47,7 +47,7 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
+    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
 
@@ -55,41 +55,9 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
+    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
-
-
-@pytest.fixture
-def grid_detect_devices(
-    aperture_scatterguard: i03.ApertureScatterguard,
-    backlight: i03.Backlight,
-    detector_motion: i03.DetectorMotion,
-    smargon: Smargon,
-):
-    return GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=MagicMock(),
-        backlight=backlight,
-        detector_motion=detector_motion,
-        eiger=MagicMock(),
-        zebra_fast_grid_scan=MagicMock(),
-        flux=MagicMock(),
-        oav=MagicMock(),
-        pin_tip_detection=MagicMock(),
-        smargon=smargon,
-        synchrotron=MagicMock(),
-        s4_slit_gaps=MagicMock(),
-        undulator=MagicMock(),
-        xbpm_feedback=MagicMock(),
-        zebra=MagicMock(),
-        zocalo=MagicMock(),
-        panda=MagicMock(),
-        panda_fast_grid_scan=MagicMock(),
-        dcm=MagicMock(),
-        robot=MagicMock(),
-        sample_shutter=MagicMock(),
-    )
 
 
 def test_full_grid_scan(
