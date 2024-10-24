@@ -284,7 +284,7 @@ def _parse_options() -> tuple[str, Options]:
         "-nc",
         "--no-control",
         action="store_false",
-        help="Create environment from the control machine.",
+        help="Do not create environment running from the control machine.",
     )
     args = parser.parse_args()
     if args.dev:

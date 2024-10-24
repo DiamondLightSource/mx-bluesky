@@ -18,7 +18,7 @@ If you want to test the script for a specific beamline you can run:
     python ./deploy/deploy_mx_bluesky.py i03 --dev
 
 
-which will create the beamline deployment of the new release in ``/scratch/30day_tmp/mxbluesky_release_test``.
+which will create the beamline deployment of the new release in ``/scratch/30day_tmp/mx-bluesky_release_test``.
 
 
 .. note::
