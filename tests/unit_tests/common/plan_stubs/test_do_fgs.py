@@ -148,6 +148,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
 
         def event(self, doc: Event):
             self.event_data = list(doc.get("data").keys())
+            return doc
 
     test_callback = TestCallback()
 
