@@ -348,7 +348,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch("mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
-def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
+async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     fake_logger: MagicMock,
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     sim_run_engine: RunEngineSimulator,
@@ -359,8 +359,9 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     grid_width_microns = 161.2
     box_size_um = 20
-    assert composite.oav.parameters.micronsPerYPixel is not None
-    box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
+    microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
+    assert microns_per_pixel_y is not None
+    box_size_y_pixels = box_size_um / microns_per_pixel_y
     initial_min_y = 1
 
     abs_sets: dict[str, list] = {

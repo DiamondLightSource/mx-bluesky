@@ -208,8 +208,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
-    robot_load_and_energy_change_composite.oav.snapshot.last_saved_path.put(
-        "test_oav_snapshot"
+    set_mock_value(
+        robot_load_and_energy_change_composite.oav.snapshot.last_saved_path,
+        "test_oav_snapshot",
     )  # type: ignore
     set_mock_value(
         robot_load_and_energy_change_composite.webcam.last_saved_path,
@@ -253,8 +254,8 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
 
     oav.snapshot.trigger.assert_called_once()
-    assert oav.snapshot.filename.get() == "TIME_oav_snapshot_after_load"
-    assert oav.snapshot.directory.get() == TEST_DIRECTORY
+    assert await oav.snapshot.filename.get_value() == "TIME_oav_snapshot_after_load"
+    assert await oav.snapshot.directory.get_value() == TEST_DIRECTORY
 
     webcam.trigger.assert_called_once()
     assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"

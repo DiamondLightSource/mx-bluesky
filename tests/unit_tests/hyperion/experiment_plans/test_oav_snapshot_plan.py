@@ -5,10 +5,10 @@ from unittest.mock import patch
 import pytest
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.areadetector.plugins.CAM import ColorMode
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.oav.utils import ColorMode
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (

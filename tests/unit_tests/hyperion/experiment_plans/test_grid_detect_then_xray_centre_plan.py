@@ -43,7 +43,7 @@ def _fake_grid_detection(
     box_size_um: float = 0.0,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
-    set_mock_value(oav.grid_snapshot.box_width, 635.00986)
+    set_mock_value(oav.grid_snapshot.box_width, 635)
     # first grid detection: x * y
     set_mock_value(oav.grid_snapshot.num_boxes_x, 10)
     set_mock_value(oav.grid_snapshot.num_boxes_y, 4)

@@ -85,8 +85,7 @@ def composite(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_bottom_edge, bottom_edge_array
     )
-    composite.oav.parameters.update_on_zoom(7.5, 1024, 768)
-    composite.oav.zoom_controller.frst.set("7.5x")
+    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
