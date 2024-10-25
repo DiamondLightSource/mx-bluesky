@@ -8,7 +8,7 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from functools import partial
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
@@ -357,6 +357,10 @@ def oav(test_config_files, RE):
     )
     oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
 
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+        return_value=zoom_levels_list
+    )
     # Equivalent to previously set values for microns and beam centre
     set_mock_value(oav.zoom_controller.level, "5.0x")
 
