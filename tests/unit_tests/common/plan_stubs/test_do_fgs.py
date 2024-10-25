@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from blueapi.core import MsgGenerator
+from bluesky.callbacks import CallbackBase
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -11,8 +12,14 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
+from event_model.documents import Event, RunStart
 from ophyd_async.core import DeviceCollector, set_mock_value
 
+from mx_bluesky.common.parameters.constants import (
+    MxConstants,
+    PlanNameConstants,
+    TriggerConstants,
+)
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 
 
@@ -108,7 +115,7 @@ def test_kickoff_and_complete_gridscan_correct_messages(
         )
 
 
-def test_do_fgs_optionally_calls_during_collection_plan(
+def test_kickoff_and_complete_gridscan_optionally_calls_during_collection_plan(
     sim_run_engine: RunEngineSimulator, fgs_devices
 ):
     with patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"):
@@ -128,7 +135,23 @@ def test_do_fgs_optionally_calls_during_collection_plan(
         assert len(null_messages) == 0
 
 
-def test_do_fgs_with_run_engine(RE: RunEngine, fgs_devices):
+def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
+    RE: RunEngine, fgs_devices
+):
+    class TestCallback(CallbackBase):
+        def start(self, doc: RunStart):
+            self.trigger_plan = doc.get(TriggerConstants.ZOCALO)
+            self.subplan_name = doc.get("subplan_name")
+            self.scan_points = doc.get("scan_points")
+            self.scan_start_indices = doc.get("scan_start_indices")
+            self.zocalo_environment = doc.get("zocalo_environment")
+
+        def event(self, doc: Event):
+            self.event_data = list(doc.get("data").keys())
+
+    test_callback = TestCallback()
+
+    RE.subscribe(test_callback)
     synchrotron = fgs_devices["synchrotron"]
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.DEV)
     detector = fgs_devices["detector"]
@@ -148,3 +171,30 @@ def test_do_fgs_with_run_engine(RE: RunEngine, fgs_devices):
                 scan_start_indices=[],
             )
         )
+
+    assert test_callback.trigger_plan == PlanNameConstants.DO_FGS
+    assert test_callback.subplan_name == PlanNameConstants.DO_FGS
+    assert test_callback.scan_points == []
+    assert test_callback.scan_start_indices == []
+    assert test_callback.zocalo_environment == MxConstants.ZOCALO_ENV
+    assert len(test_callback.event_data) == 1
+    assert test_callback.event_data[0] == "eiger_odin_file_writer_id"
+
+
+def test_error_if_kickoff_and_complete_gridscan_parameters_wrong_lengths(
+    sim_run_engine: RunEngineSimulator, fgs_devices
+):
+    with patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"):
+        synchrotron = fgs_devices["synchrotron"]
+        detector = fgs_devices["detector"]
+        fgs_device = fgs_devices["grid_scan_device"]
+        with pytest.raises(AssertionError):
+            sim_run_engine.simulate_plan(
+                kickoff_and_complete_gridscan(
+                    fgs_device,
+                    detector,
+                    synchrotron,
+                    scan_points=[],
+                    scan_start_indices=[0],
+                )
+            )

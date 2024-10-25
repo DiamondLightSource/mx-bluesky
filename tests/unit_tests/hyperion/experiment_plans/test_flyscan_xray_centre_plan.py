@@ -592,7 +592,6 @@ class TestFlyscanXrayCentrePlan:
         set_mock_value(fgs.motion_program.running, 1)
 
         def test_plan():
-            yield from bps.open_run()
             yield from kickoff_and_complete_gridscan(
                 fgs,
                 fake_fgs_composite.eiger,
