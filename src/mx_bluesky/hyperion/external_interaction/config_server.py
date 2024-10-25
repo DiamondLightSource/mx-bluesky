@@ -37,7 +37,7 @@ class FeatureFlags(BaseModel):
         return {f: flags[f] for f in flags if f in cls.model_fields.keys()}
 
     def update_self_from_server(self):
-        """Used to update the feature flags from the server during a plan. Where flags which were explicitly set in GDA, these values will be used instead"""
+        """Used to update the feature flags from the server during a plan. Where there are flags which were explicitly set from externally supplied parameters, these values will be used instead."""
         for flag, value in self._get_flags().items():
             updated_value = (
                 value
