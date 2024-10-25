@@ -10,7 +10,7 @@ from enum import IntEnum
 import bluesky.plan_stubs as bps
 from blueapi.core import MsgGenerator
 from bluesky.utils import Msg
-from dodal.common import inject
+from dodal.beamlines import i24
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
 from mx_bluesky.beamlines.i24.serial import log
@@ -92,7 +92,8 @@ def _get_requested_detector(det_type_pv: str) -> str:
 
 
 def setup_detector_stage(
-    expt_type: SSXType, detector_stage: DetectorMotion = inject("detector_motion")
+    expt_type: SSXType,
+    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
 ) -> MsgGenerator:
     setup_logging()
     # Grab the correct PV depending on experiment

@@ -23,6 +23,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
+from mx_bluesky.common.test_utils import rebuild_oa_device_as_mocked_if_necessary
 
 DISPLAY_CONFIGURATION = "tests/devices/unit_tests/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
@@ -57,7 +58,9 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 @pytest.fixture
 async def thawer(RE: RunEngine) -> Thawer:
-    return i04.thawer(fake_with_ophyd_sim=True)
+    return rebuild_oa_device_as_mocked_if_necessary(
+        i04.thawer, fake_with_ophyd_sim=True
+    )
 
 
 @pytest.fixture
@@ -79,7 +82,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 @pytest.fixture
 async def robot(RE: RunEngine) -> BartRobot:
-    return i04.robot(fake_with_ophyd_sim=True)
+    return rebuild_oa_device_as_mocked_if_necessary(i04.robot, fake_with_ophyd_sim=True)
 
 
 def _do_thaw_and_confirm_cleanup(
@@ -195,6 +198,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     patch_murko_callback: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
+    robot: BartRobot,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
     RE: RunEngine,
@@ -207,7 +211,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
             thawer=thawer,
             smargon=smargon,
             oav=oav,
-            robot=MagicMock(),
+            robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
     )
@@ -230,6 +234,7 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
     patch_murko_call: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
+    robot: BartRobot,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
     RE: RunEngine,
@@ -241,7 +246,7 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
             thawer=thawer,
             smargon=smargon,
             oav=oav,
-            robot=MagicMock(),
+            robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
     )
@@ -287,6 +292,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
     thawer: Thawer,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
+    robot: BartRobot,
     RE: RunEngine,
     expect_raises=None,
 ):
@@ -306,7 +312,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
             thawer=thawer,
             smargon=smargon,
             oav=oav,
-            robot=MagicMock(),
+            robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         ),
     )
@@ -336,10 +342,11 @@ def test_given_thaw_succeeds_then_thaw_and_stream_sets_zoom_to_1_and_back(
     thawer: Thawer,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
+    robot: BartRobot,
     RE: RunEngine,
 ):
     _run_thaw_and_stream_and_assert_zoom_changes(
-        smargon, thawer, oav_forwarder, oav, RE
+        smargon, thawer, oav_forwarder, oav, robot, RE
     )
 
 
@@ -352,9 +359,10 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
     thawer: Thawer,
     oav_forwarder: OAVToRedisForwarder,
     oav: OAV,
+    robot: BartRobot,
     RE: RunEngine,
 ):
     mock_thaw.side_effect = Exception()
     _run_thaw_and_stream_and_assert_zoom_changes(
-        smargon, thawer, oav_forwarder, oav, RE, Exception
+        smargon, thawer, oav_forwarder, oav, robot, RE, Exception
     )

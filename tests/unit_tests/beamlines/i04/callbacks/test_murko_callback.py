@@ -100,7 +100,7 @@ def test_when_murko_called_with_event_data_then_meta_data_put_in_redis(
     }
 
     murko_callback.redis_client.hset.assert_called_once_with(  # type: ignore
-        "test-metadata", test_oav_uuid, json.dumps(expected_metadata)
+        "murko:12345:metadata", test_oav_uuid, json.dumps(expected_metadata)
     )
     murko_callback.redis_client.publish.assert_called_once_with(  # type: ignore
         "murko", json.dumps(expected_metadata)

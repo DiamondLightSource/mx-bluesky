@@ -29,6 +29,7 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
+    "pydantic-extra-types",
     "pyepics",
     "pyzmq",
     "requests",
@@ -45,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.3a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@0b2a05cb5ce8535120cc9282208cac2e4fcf4b35",
 ]
 
 
@@ -62,6 +63,7 @@ dev = [
     # "copier",
     "diff-cover",
     "GitPython",
+    "import-linter",
     "ipython",
     "mypy",
     "myst-parser",
@@ -122,8 +124,6 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    # Ignore incorrect errors from bluesky (remove when https://github.com/bluesky/bluesky/issues/1797 is released)
-    "ignore:((.|\n)*)was never iterated.*:RuntimeWarning",
     # Ignore deprecation warning from sqlalchemy
     "ignore::sqlalchemy.exc.MovedIn20Warning",
     # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
@@ -134,10 +134,17 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore pydantic 2 issues from blueapi, see https://github.com/DiamondLightSource/blueapi/issues/622
-    "ignore::DeprecationWarning:blueapi",
     # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
     "ignore:.*pkg_resources.*:DeprecationWarning",
+    # Ignore deprecation warning that gets promoted to SystemError from somewhere
+    # in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
+    # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
+    # The fix for this is in https://github.com/protocolbuffers/protobuf/pull/15999
+    # But this fix exists only in 3.27.0<=protobuf<4 and protobuf>=v5, not in 4.x that we depend on
+    # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
+    "ignore:.*custom tp_new.*:DeprecationWarning",
+    # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
+    "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -198,3 +205,23 @@ lint.extend-ignore = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "mx_bluesky"
+
+[[tool.importlinter.contracts]]
+name = "Common does not import from apps"
+type = "forbidden"
+source_modules = "mx_bluesky.common"
+forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from each other"
+type = "independence"
+modules = "mx_bluesky.beamlines.*"
+
+[[tool.importlinter.contracts]]
+name = "Beamlines do not import from hyperion"
+type = "forbidden"
+source_modules = "mx_bluesky.beamlines.*"
+forbidden_modules = "mx_bluesky.hyperion"

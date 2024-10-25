@@ -5,9 +5,11 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from dodal.beamline_specific_utils.i03 import beam_size_from_aperture
+from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -21,7 +23,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from mx_bluesky.hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.utils import convert_eV_to_angstrom
@@ -31,6 +33,25 @@ from .logging_callback import format_doc_for_log
 D = TypeVar("D")
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
+
+
+def _update_based_on_energy(
+    doc: Event,
+    detector_params: DetectorParams,
+    data_collection_info: DataCollectionInfo,
+):
+    """If energy has been read as part of this reading then add it into the data
+    collection info along with the other fields that depend on it."""
+    if energy_kev := doc["data"].get("dcm-energy_in_kev", None):
+        energy_ev = energy_kev * 1000
+        wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
+        data_collection_info.wavelength = wavelength_angstroms
+        data_collection_info.resolution = resolution(
+            detector_params,
+            wavelength_angstroms,
+            detector_params.detector_distance,
+        )
+    return data_collection_info
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -109,6 +130,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
         )
+        hwscan_data_collection_info = _update_based_on_energy(
+            doc, self.params.detector_params, hwscan_data_collection_info
+        )
         hwscan_position_info = DataCollectionPositionInfo(
             pos_x=float(doc["data"]["smargon-x"]),
             pos_y=float(doc["data"]["smargon-y"]),
@@ -137,16 +161,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
-        event_energy = doc["data"]["dcm-energy_in_kev"]
-        if event_energy:
-            energy_ev = event_energy * 1000
-            wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
-            hwscan_data_collection_info.wavelength = wavelength_angstroms
-            hwscan_data_collection_info.resolution = resolution(
-                self.params.detector_params,
-                wavelength_angstroms,
-                self.params.detector_params.detector_distance,
-            )
+        hwscan_data_collection_info = _update_based_on_energy(
+            doc, self.params.detector_params, hwscan_data_collection_info
+        )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, None, self.params
         )
