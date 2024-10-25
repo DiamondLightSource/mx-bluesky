@@ -21,7 +21,7 @@ class FeatureFlags(BaseModel):
     compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
     set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
 
-    # Feature values specified in GDA will override values from the config server
+    # Feature values supplied at construction will override values from the config server
     overriden_features: dict = Field(default_factory=dict, exclude=True)
 
     @model_validator(mode="before")
