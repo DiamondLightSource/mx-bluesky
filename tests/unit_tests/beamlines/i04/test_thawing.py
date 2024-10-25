@@ -51,11 +51,11 @@ async def oav(RE: RunEngine) -> OAV:
     oav = rebuild_oa_device_as_mocked_if_necessary(
         i04.oav, fake_with_ophyd_sim=True, params=oav_config
     )
-    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
         return_value=zoom_levels_list
     )
-    set_mock_value(oav.zoom_controller.level, "5.0x")
+    set_mock_value(oav.zoom_controller.level, "1.0x")
     return oav
 
 
