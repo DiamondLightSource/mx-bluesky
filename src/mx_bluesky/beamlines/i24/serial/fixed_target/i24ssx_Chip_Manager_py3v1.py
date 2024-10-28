@@ -587,12 +587,14 @@ def load_lite_map() -> MsgGenerator:
 
 @log.log_on_entry
 def load_full_map() -> MsgGenerator:
+    from matplotlib import pyplot as plt
+
     setup_logging()
     params = startup.read_parameter_file()
 
     fullmap_fid = FULLMAP_PATH / f"{caget(MAP_FILEPATH_PV)}.spec"
     logger.info(f"Opening {fullmap_fid}")
-    mapping.plot_file(fullmap_fid, params.chip.chip_type.value)
+    mapping.plot_file(plt, fullmap_fid, params.chip.chip_type.value)
     mapping.convert_chip_to_hex(fullmap_fid, params.chip.chip_type.value)
     shutil.copy2(fullmap_fid.with_suffix(".full"), FULLMAP_PATH / "currentchip.full")
     logger.info(
