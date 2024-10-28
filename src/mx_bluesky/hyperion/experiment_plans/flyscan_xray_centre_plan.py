@@ -135,7 +135,7 @@ def flyscan_xray_centre(
     parameters.features.update_self_from_server()
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    composite.zocalo.use_cpu_and_gpu = parameters.compare_cpu_and_gpu_results
+    composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
 
     feature_controlled = _get_feature_controlled(composite, parameters)
 
