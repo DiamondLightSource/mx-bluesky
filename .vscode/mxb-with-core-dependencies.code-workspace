@@ -1,0 +1,23 @@
+// To use this you should obviously have these all in the parent directory
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../dodal"
+		},
+		{
+			"path": "../../bluesky"
+		},
+		{
+			"path": "../../ophyd"
+		},
+		{
+			"path": "../../ophyd-async"
+		}
+	],
+	"settings": {
+		"terminal.integrated.gpuAcceleration": "off"
+	}
+}
