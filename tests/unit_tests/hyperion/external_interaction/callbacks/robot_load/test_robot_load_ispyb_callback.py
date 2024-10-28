@@ -12,6 +12,7 @@ from ophyd_async.core import set_mock_value
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
+from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 VISIT = "cm31105-4"
@@ -36,10 +37,14 @@ metadata = {
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    new=MagicMock(),
 )
 def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
     start_load: MagicMock,
@@ -60,10 +65,14 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    new=MagicMock(),
 )
 def test_given_failing_plan_then_exception_detail(
     start_load: MagicMock,
@@ -88,7 +97,11 @@ def test_given_failing_plan_then_exception_detail(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    new=MagicMock(),
 )
 def test_given_end_called_but_no_start_then_exception_raised(end_load):
     callback = RobotLoadISPyBCallback()
@@ -98,14 +111,33 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
     end_load.assert_not_called()
 
 
+@bpp.run_decorator(md=metadata)
+def successful_robot_load_plan(robot: BartRobot, oav: OAV, webcam: Webcam):
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
+    yield from bps.read(robot.barcode)
+    yield from bps.read(oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(webcam)
+    yield from bps.save()
+
+
+@bpp.run_decorator(md=metadata)
+def unsuccessful_robot_load_plan():
+    yield from []
+    raise AssertionError("Test failure")
+
+
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode_and_snapshots"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.update_barcode_and_snapshots"
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    new=MagicMock(),
 )
 def test_given_plan_reads_barcode_then_data_put_in_ispyb(
     update_barcode_and_snapshots: MagicMock,
@@ -122,18 +154,59 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
     set_mock_value(oav.snapshot.last_saved_path, "test_oav_snapshot")
     set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
 
-    @bpp.run_decorator(md=metadata)
-    def my_plan():
-        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
-        yield from bps.read(robot.barcode)
-        yield from bps.read(oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.read(webcam)
-        yield from bps.save()
-
-    RE(my_plan())
+    RE(successful_robot_load_plan(robot, oav, webcam))
 
     start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
     update_barcode_and_snapshots.assert_called_once_with(
         ACTION_ID, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
     end_load.assert_called_once_with(ACTION_ID, "success", "OK")
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    autospec=True,
+)
+def test_robot_load_complete_triggers_bl_sample_status_loaded(
+    mock_sample_handling,
+    RE: RunEngine,
+    robot: BartRobot,
+    oav: OAV,
+    webcam: Webcam,
+):
+    RE.subscribe(RobotLoadISPyBCallback())
+
+    RE(successful_robot_load_plan(robot, oav, webcam))
+
+    mock_sample_handling.return_value.update_sample_status.assert_called_with(
+        SAMPLE_ID, BLSampleStatus.LOADED
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    autospec=True,
+)
+def test_robot_load_fails_triggers_bl_sample_status_error(
+    mock_sample_handling,
+    RE: RunEngine,
+    robot: BartRobot,
+    oav: OAV,
+    webcam: Webcam,
+):
+    RE.subscribe(RobotLoadISPyBCallback())
+
+    with pytest.raises(AssertionError, match="Test failure"):
+        RE(unsuccessful_robot_load_plan())
+
+    mock_sample_handling.return_value.update_sample_status.assert_called_with(
+        SAMPLE_ID, BLSampleStatus.ERROR_BEAMLINE
+    )

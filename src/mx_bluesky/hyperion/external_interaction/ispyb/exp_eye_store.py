@@ -1,4 +1,6 @@
 import configparser
+from dataclasses import dataclass
+from enum import StrEnum
 
 from requests import patch, post
 from requests.auth import AuthBase
@@ -29,7 +31,16 @@ def _get_base_url_and_token() -> tuple[str, str]:
     return expeye_config["url"], expeye_config["token"]
 
 
-class ExpeyeInteraction:
+def _send_and_get_response(auth, url, data, send_func) -> dict:
+    response = send_func(url, auth=auth, json=data)
+    if not response.ok:
+        raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {response}")
+    return response.json()
+
+
+class ExpeyeCoreInteraction:
+    """Exposes functionality from the Expeye core API"""
+
     CREATE_ROBOT_ACTION = "/proposals/{proposal}/sessions/{visit_number}/robot-actions"
     UPDATE_ROBOT_ACTION = "/robot-actions/{action_id}"
 
@@ -37,12 +48,6 @@ class ExpeyeInteraction:
         url, token = _get_base_url_and_token()
         self.base_url = url
         self.auth = BearerAuth(token)
-
-    def _send_and_get_response(self, url, data, send_func) -> dict:
-        response = send_func(url, auth=self.auth, json=data)
-        if not response.ok:
-            raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {response}")
-        return response.json()
 
     def start_load(
         self,
@@ -77,7 +82,7 @@ class ExpeyeInteraction:
             "containerLocation": container_location,
             "dewarLocation": dewar_location,
         }
-        response = self._send_and_get_response(url, data, post)
+        response = _send_and_get_response(self.auth, url, data, post)
         return response["robotActionId"]
 
     def update_barcode_and_snapshots(
@@ -102,7 +107,7 @@ class ExpeyeInteraction:
             "xtalSnapshotBefore": snapshot_before_path,
             "xtalSnapshotAfter": snapshot_after_path,
         }
-        self._send_and_get_response(url, data, patch)
+        _send_and_get_response(self.auth, url, data, patch)
 
     def end_load(self, action_id: RobotActionID, status: str, reason: str):
         """Finish an existing robot action, providing final information about how it went
@@ -120,6 +125,55 @@ class ExpeyeInteraction:
         data = {
             "endTimestamp": get_current_time_string(),
             "status": run_status,
-            "message": reason,
+            "message": reason[:255] if reason else None,
         }
-        self._send_and_get_response(url, data, patch)
+        _send_and_get_response(self.auth, url, data, patch)
+
+
+class BLSampleStatus(StrEnum):
+    # The sample has been loaded
+    LOADED = "LOADED"
+    # Problem with the sample e.g. pin too long/short
+    ERROR_SAMPLE = "ERROR - sample error"
+    # Any other general error
+    ERROR_BEAMLINE = "ERROR - beamline error"
+
+
+@dataclass
+class BLSample:
+    container_id: int
+    bl_sample_id: int
+    bl_sample_status: str | None
+
+
+class ExpeyeSampleHandlingInteraction:
+    """Exposes needed functionality from the Expeye Sample Handling API"""
+
+    def __init__(self):
+        base_uri, token = _get_base_url_and_token()
+        self._uri = base_uri + "/sample-handling"
+        self._auth = BearerAuth(token)
+
+    def update_sample_status(
+        self, bl_sample_id: int, bl_sample_status: BLSampleStatus
+    ) -> BLSample:
+        """Update the blSampleStatus of a sample.
+        Args:
+            bl_sample_id: The sample ID
+            bl_sample_status: The sample status
+            status_message: An optional message
+        Returns:
+             The updated sample
+        """
+        data = {"blSampleStatus": (str(bl_sample_status))}
+        response = _send_and_get_response(
+            self._auth, self._uri + f"/samples/{bl_sample_id}", data, patch
+        )
+        return self._sample_from_json(response)
+
+    def _sample_from_json(self, response) -> BLSample:
+        return BLSample(
+            bl_sample_id=response["blSampleId"],
+            bl_sample_status=response["blSampleStatus"],
+            container_id=response["containerId"],
+        )

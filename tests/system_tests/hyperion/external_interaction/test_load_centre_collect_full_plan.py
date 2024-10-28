@@ -186,8 +186,8 @@ def test_execute_load_centre_collect_full_plan(
     ispyb_gridscan_cb = GridscanISPyBCallback()
     ispyb_rotation_cb = RotationISPyBCallback()
     robot_load_cb = RobotLoadISPyBCallback()
-    robot_load_cb.expeye = MagicMock()
-    robot_load_cb.expeye.start_load.return_value = 1234
+    robot_load_cb.expeye_core = MagicMock()
+    robot_load_cb.expeye_core.start_load.return_value = 1234
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
     )
@@ -202,14 +202,16 @@ def test_execute_load_centre_collect_full_plan(
         )
     )
 
-    assert robot_load_cb.expeye.start_load.called_once_with("cm37235", 4, 5461074, 2, 6)
-    assert robot_load_cb.expeye.update_barcode_and_snapshots(
+    assert robot_load_cb.expeye_core.start_load.called_once_with(
+        "cm37235", 4, 5461074, 2, 6
+    )
+    assert robot_load_cb.expeye_core.update_barcode_and_snapshots(
         1234,
         "BARCODE",
         "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/160705_webcam_after_load.png",
         "/tmp/snapshot1.png",
     )
-    assert robot_load_cb.expeye.end_load(1234, "success", "OK")
+    assert robot_load_cb.expeye_core.end_load(1234, "success", "OK")
 
     # Compare gridscan collection
     compare_actual_and_expected(
