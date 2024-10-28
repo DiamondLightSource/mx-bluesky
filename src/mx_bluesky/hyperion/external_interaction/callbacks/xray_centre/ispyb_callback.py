@@ -9,6 +9,7 @@ from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -86,7 +87,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._processing_start_time: float | None = None
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == CONST.PLAN.DO_FGS:
+        if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
         if doc.get("subplan_name") == CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
