@@ -39,13 +39,18 @@ def thaw_and_stream_to_redis(
         yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
+    microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
+    microns_per_pixel_y = yield from bps.rd(oav.microns_per_pixel_y)
+    beam_centre_i = yield from bps.rd(oav.beam_centre_i)
+    beam_centre_j = yield from bps.rd(oav.beam_centre_j)
+
     @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))
     @run_decorator(
         md={
-            "microns_per_x_pixel": oav.microns_per_pixel_x,
-            "microns_per_y_pixel": oav.microns_per_pixel_y,
-            "beam_centre_i": oav.beam_centre_i,
-            "beam_centre_j": oav.beam_centre_j,
+            "microns_per_x_pixel": microns_per_pixel_x,
+            "microns_per_y_pixel": microns_per_pixel_y,
+            "beam_centre_i": beam_centre_i,
+            "beam_centre_j": beam_centre_j,
             "zoom_percentage": zoom_percentage,
             "sample_id": sample_id,
         }

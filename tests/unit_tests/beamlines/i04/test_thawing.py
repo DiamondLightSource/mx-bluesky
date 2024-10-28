@@ -48,14 +48,15 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 @pytest.fixture
 async def oav(RE: RunEngine) -> OAV:
     oav_config = OAVConfig(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
-    oav = rebuild_oa_device_as_mocked_if_necessary(
-        i04.oav, fake_with_ophyd_sim=True, params=oav_config
-    )
-    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x"]
+    async with DeviceCollector(mock=True, connect=True):
+        oav = OAV("", config=oav_config, name="fake_oav")
+    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
         return_value=zoom_levels_list
     )
     set_mock_value(oav.zoom_controller.level, "1.0x")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
     return oav
 
 
@@ -310,8 +311,6 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
     RE: RunEngine,
     expect_raises=None,
 ):
-    mock_set = MagicMock()
-
     set_mock_value(oav.zoom_controller.level, "2.0x")
 
     run_plan = partial(
@@ -333,15 +332,9 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
     else:
         run_plan()
 
-    mock_set.assert_has_calls(
-        [
-            call(
-                "1.0x",
-            ),
-            call(
-                "2.0x",
-            ),
-        ]
+    mock_level_set = get_mock_put(oav.zoom_controller.level)
+    mock_level_set.assert_has_calls(
+        [call("1.0x", wait=True, timeout=ANY), call("2.0x", wait=True, timeout=ANY)]
     )
 
 
