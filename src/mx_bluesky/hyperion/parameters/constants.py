@@ -112,6 +112,9 @@ class I03Constants:
 
 @dataclass(frozen=True)
 class HyperionConstants:
+    DESCRIPTORS = DocDescriptorNames()
+    TRIGGER = TriggerConstants()
+    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
