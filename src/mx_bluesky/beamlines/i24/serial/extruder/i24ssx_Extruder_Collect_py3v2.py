@@ -274,7 +274,6 @@ def main_extruder_plan(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        # STILL TO BE TESTED!!!
         _create_directory_for_eiger_collection(filepath)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)

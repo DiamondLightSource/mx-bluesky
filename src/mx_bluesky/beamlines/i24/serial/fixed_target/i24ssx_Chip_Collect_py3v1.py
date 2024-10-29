@@ -90,7 +90,9 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    buffer = 30
+    pmac_move_time = 0.008  # around 7-8ms
+    buffer = pmac_move_time * parameters.total_num_images + 2
+    # buffer = 30
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
@@ -479,7 +481,6 @@ def start_i24(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        # STILL TO BE TESTED!!!
         _create_directory_for_eiger_collection(filepath)
 
         logger.info(f"Triggered Eiger setup: filepath {filepath}")
