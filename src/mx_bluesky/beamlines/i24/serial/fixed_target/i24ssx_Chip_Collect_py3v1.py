@@ -13,7 +13,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import MsgGenerator
-from dodal.beamlines import i24
+from dodal.common import inject
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beamstop import Beamstop
@@ -743,14 +743,14 @@ def tidy_up_after_collection_plan(
 
 
 def run_fixed_target_plan(
-    zebra: Zebra = i24.zebra(wait_for_connection=False),
-    pmac: PMAC = i24.pmac(wait_for_connection=False),
-    aperture: Aperture = i24.aperture(wait_for_connection=False),
-    backlight: DualBacklight = i24.backlight(wait_for_connection=False),
-    beamstop: Beamstop = i24.beamstop(wait_for_connection=False),
-    detector_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
-    shutter: HutchShutter = i24.shutter(wait_for_connection=False),
-    dcm: DCM = i24.dcm(wait_for_connection=False),
+    zebra: Zebra = inject("zebra"),
+    pmac: PMAC = inject("pmac"),
+    aperture: Aperture = inject("aperture"),
+    backlight: DualBacklight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    detector_stage: DetectorMotion = inject("detector_motion"),
+    shutter: HutchShutter = inject("shutter"),
+    dcm: DCM = inject("dcm"),
 ) -> MsgGenerator:
     setup_logging()
 
