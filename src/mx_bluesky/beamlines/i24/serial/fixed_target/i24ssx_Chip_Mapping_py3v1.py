@@ -8,7 +8,6 @@ import logging
 import time
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
@@ -53,7 +52,7 @@ def read_file_make_dict(fid, chip_type, switch=False):
 
 
 @log.log_on_entry
-def plot_file(fid, chip_type):
+def plot_file(plt, fid, chip_type):
     chip_dict = read_file_make_dict(fid, chip_type)
     x_list, y_list, z_list = [], [], []
     for k in sorted(chip_dict.keys()):
@@ -140,7 +139,7 @@ def convert_chip_to_hex(fid, chip_type):
     return 0
 
 
-def main():
+def main(plt):
     setup_logging()
     params = read_parameter_file()
 
@@ -151,11 +150,13 @@ def main():
     fid = PARAM_FILE_PATH_FT / f"{params.filename}.spec"
     logger.info(f"FID = {fid}")
 
-    plot_file(fid, params.chip.chip_type.value)
+    plot_file(plt, fid, params.chip.chip_type.value)
     convert_chip_to_hex(fid, params.chip.chip_type.value)
 
 
 if __name__ == "__main__":
-    main()
+    from matplotlib import pyplot as plt
+
+    main(plt)
     plt.show()
-plt.close()
+    plt.close()

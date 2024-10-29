@@ -123,6 +123,23 @@ def test_selected_aperture_uses_default():
     assert params.selected_aperture == ApertureValue.LARGE
 
 
+def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert test_params.features.use_panda_for_gridscan is False
+    assert test_params.features.compare_cpu_and_gpu_zocalo is False
+    minimal_3d_gridscan_params["features"] = {
+        "use_panda_for_gridscan": True,
+        "compare_cpu_and_gpu_zocalo": True,
+    }
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert test_params.features.compare_cpu_and_gpu_zocalo
+    assert test_params.features.use_panda_for_gridscan
+    # Config server shouldn't update values which were explicitly provided
+    test_params.features.update_self_from_server()
+    assert test_params.features.compare_cpu_and_gpu_zocalo
+    assert test_params.features.use_panda_for_gridscan
+
+
 @patch("mx_bluesky.hyperion.parameters.gridscan.os")
 def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_params):
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
@@ -130,6 +147,8 @@ def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_pa
     grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
     assert not grid_scan.detector_params.enable_dev_shm
 
-    minimal_3d_gridscan_params["compare_cpu_and_gpu_results"] = True
+    minimal_3d_gridscan_params["features"] = {
+        "compare_cpu_and_gpu_zocalo": True,
+    }
     grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
     assert grid_scan.detector_params.enable_dev_shm

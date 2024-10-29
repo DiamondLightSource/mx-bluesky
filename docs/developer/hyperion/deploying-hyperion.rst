@@ -1,11 +1,11 @@
 Building a deployable Docker image
 ==================================
 
-Release builds of container images should be built by the github CI on release, ad-hoc builds can be performed via 
+Release builds of container images should be built by the github CI on release, ad-hoc builds can be performed via
 manual invocation of the Publish Docker Image workflow.
 
 Development builds of container images can be made by running the ``utility_scripts/build_docker_image.sh`` script.
-By default it will both build and push the image unless you specify ``--no-build`` or ``--no-push``. To push an image 
+By default it will both build and push the image unless you specify ``--no-build`` or ``--no-push``. To push an image
 you will first need to create a GH personal access token and then log in with podman as described below.
 
 Pushing the docker image
@@ -79,16 +79,16 @@ Then create and deploy the helm release
 
     ./utility_scripts/deploy/deploy_hyperion_to_k8s.sh --beamline=<beamline> --checkout-to-prod hyperion
 
-This will run the ``deploy_hyperion.py`` script to deploy the latest hyperion to ``/dls_sw``.
+This will run the ``deploy_mx_bluesky.py`` script to deploy the latest hyperion to ``/dls_sw``.
 You will be prompted to log into the beamline cluster, then it will create a helm release "hyperion".
-The source folders will be mounted as bind mounts to allow the pod to pick up changes in production. 
+The source folders will be mounted as bind mounts to allow the pod to pick up changes in production.
 For production these are expected to be in the normal place defined in ``values.yaml``.
 
 Development deployment
 ~~~~~~~~~~~~~~~~~~~~~~
 
-From a development ``hyperion`` workspace, either with a release image or using a development image built with the 
-script 
+From a development ``hyperion`` workspace, either with a release image or using a development image built with the
+script
 above, you install a dev deployment to the cluster you are currently logged into with ``kubectl``:
 
 ::
@@ -96,12 +96,12 @@ above, you install a dev deployment to the cluster you are currently logged into
     ./utility_scripts/deploy/deploy_hyperion_to_k8s.sh --dev --beamline=<beamline> --repository=<your image repo> hyperion-test
 
 
-The dev deployment bind-mounts the current ``hyperion`` workspace and ``../dodal`` into the container so that you can 
-run against your own development code. **Clusters do not allow bind mounts from arbitrary directories so 
+The dev deployment bind-mounts the current ``hyperion`` workspace and ``../dodal`` into the container so that you can
+run against your own development code. **Clusters do not allow bind mounts from arbitrary directories so
 your workspace will have to be in a permitted directory such as your home directory.**
 
-By default the script will log into the ``argus`` cluster, if you want to deploy to an alternate cluster, 
-log in with ``kubectl set-context --current --namespace=<NAMESPACE>`` and then specify ``--no-login`` when running the 
+By default the script will log into the ``argus`` cluster, if you want to deploy to an alternate cluster,
+log in with ``kubectl set-context --current --namespace=<NAMESPACE>`` and then specify ``--no-login`` when running the
 script
 
 Please note, the deployment script is intended to be run from a checked-out matching version of the git repository.
