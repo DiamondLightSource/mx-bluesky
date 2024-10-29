@@ -14,7 +14,6 @@
     "transmission_frac": 1.0,
     "omega_start_deg": 0,
     "chi_start_deg": 30,
-    "use_panda": false
   },
   "multi_rotation_scan": {
     "comment": "Hyperion Rotation Scan - ",

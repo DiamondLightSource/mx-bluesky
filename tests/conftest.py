@@ -229,7 +229,7 @@ def test_fgs_params():
 
 @pytest.fixture
 def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
-    test_fgs_params.use_panda = True
+    test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
 
@@ -940,9 +940,7 @@ class DocumentCapturer:
 
 @pytest.fixture
 def feature_flags():
-    return FeatureFlags(
-        **{field_name: False for field_name in FeatureFlags.model_fields.keys()}
-    )
+    return FeatureFlags()
 
 
 def assert_none_matching(
