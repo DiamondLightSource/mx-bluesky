@@ -14,7 +14,7 @@ from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
-from mx_bluesky.hyperion.parameters.components import (
+from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
@@ -24,18 +24,24 @@ from mx_bluesky.hyperion.parameters.components import (
     WithScan,
     XyzStarts,
 )
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.hyperion.parameters.components import WithFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
+# TODO: Make this not common
 class GridCommon(
-    DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
+    DiffractionExperimentWithSample,
+    OptionalGonioAngleStarts,
+    WithOavCentring,
+    WithFeatures,
 ):
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
     panda_runup_distance_mm: float = Field(
-        default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
+        default=Field(default=GridscanParamConstants.PANDA_RUN_UP_DISTANCE_MM)
     )
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D

@@ -9,6 +9,7 @@ from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
@@ -39,7 +40,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.hyperion.log import ISPYB_LOGGER
-from mx_bluesky.hyperion.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommon,

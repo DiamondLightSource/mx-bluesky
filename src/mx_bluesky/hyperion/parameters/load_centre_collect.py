@@ -2,10 +2,9 @@ from typing import TypeVar
 
 from pydantic import BaseModel, model_validator
 
+from mx_bluesky.common.parameters.components import WithSample, WithVisit
 from mx_bluesky.hyperion.parameters.components import (
     HyperionParameters,
-    WithSample,
-    WithVisit,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     RobotLoadThenCentre,

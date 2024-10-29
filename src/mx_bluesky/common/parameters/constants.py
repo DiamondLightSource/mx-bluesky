@@ -1,10 +1,11 @@
-import os
+from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
-TEST_MODE = os.environ.get("HYPERION_TEST_MODE")  # Environment name will be updated in
-# https://github.com/DiamondLightSource/mx-bluesky/issues/214
+BEAMLINE = get_beamline_name("test")
+TEST_MODE = BEAMLINE == "test"
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,26 @@ class DocDescriptorNames:
 
 @dataclass(frozen=True)
 class PlanNameConstants:
+    # Robot load subplan
+    ROBOT_LOAD = "robot_load"
+    # Gridscan
+    GRID_DETECT_AND_DO_GRIDSCAN = "grid_detect_and_do_gridscan"
+    GRID_DETECT_INNER = "grid_detect"
+    GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
+    GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
+    GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
+    # Rotation scan
+    ROTATION_MULTI = "multi_rotation_wrapper"
+    ROTATION_OUTER = "rotation_scan_with_cleanup"
+    ROTATION_MAIN = "rotation_scan_main"
+
+
+@dataclass(frozen=True)
+class EnvironmentConstants:
+    ZOCALO_ENV = (
+        "dev_artemis" if TEST_MODE else "artemis"
+    )  # TODO: Tidy this up - remove properly from parameter model and sim constants
 
 
 @dataclass(frozen=True)
@@ -32,6 +52,8 @@ class TriggerConstants:
 @dataclass(frozen=True)
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
+    PANDA_FGS_RUN_UP_DEFAULT = 0.17
+    CRYOJET_MARGIN_MM = 0.2
 
 
 @dataclass(frozen=True)
@@ -42,6 +64,7 @@ class GridscanParamConstants:
     BOX_WIDTH_UM = 20.0
     OMEGA_1 = 0.0
     OMEGA_2 = 90.0
+    PANDA_RUN_UP_DISTANCE_MM = 0.2
 
 
 @dataclass(frozen=True)
@@ -54,7 +77,7 @@ class DetectorParamConstants:
     BEAM_XY_LUT_PATH = (
         "tests/test_data/test_det_dist_converter.txt"
         if TEST_MODE
-        else "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+        else "/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
 
 
@@ -85,30 +108,17 @@ class SimConstants:
     DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
 
 
-# Maybe this shouldn't be a thing and the mx params shouldn't have defaults so that beamlines are forced to think about their values
-@dataclass(frozen=True)
-class MxDefaultConstants:
-    DESCRIPTORS = DocDescriptorNames()
-    TRIGGER = TriggerConstants()
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
-    HARDWARE = HardwareConstants()
-    PARAM = ExperimentParamConstants()
-    PLAN = PlanNameConstants()
-    WAIT = PlanGroupCheckpointConstants()
-    SIM = SimConstants()
-    TRIGGER = TriggerConstants()
-    DESCRIPTORS = DocDescriptorNames()
-    CONFIG_SERVER_URL = (
-        "http://fake-url-not-real"
-        if TEST_MODE
-        else "https://daq-config.diamond.ac.uk/api"
-    )
-    GRAYLOG_PORT = 12232
-    PARAMETER_SCHEMA_DIRECTORY = (
-        "src/mx_bluesky/common/parameters/schemas/"  # TODO make this
-    )
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
-    LOG_FILE_NAME = "mx-bluesky.log"
+class Actions(Enum):
+    START = "start"
+    STOP = "stop"
+    SHUTDOWN = "shutdown"
+    STATUS = "status"
 
 
-CONST = MxDefaultConstants()
+class Status(Enum):
+    WARN = "Warn"
+    FAILED = "Failed"
+    SUCCESS = "Success"
+    BUSY = "Busy"
+    ABORTING = "Aborting"
+    IDLE = "Idle"

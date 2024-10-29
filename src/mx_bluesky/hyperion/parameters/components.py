@@ -16,6 +16,9 @@ T = TypeVar("T")
 PARAMETER_VERSION = Version.parse("5.1.0")
 
 
-class HyperionParameters(MxBlueskyParameters):
+class WithFeatures:
     features: FeatureFlags = Field(default=FeatureFlags())
+
+
+class HyperionParameters(MxBlueskyParameters):
     server_parameter_model: Version = PARAMETER_VERSION

@@ -18,7 +18,7 @@ from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.common.parameters.constants import (
-    MxConstants,
+    EnvironmentConstants,
     PlanNameConstants,
     TriggerConstants,
 )
@@ -70,7 +70,7 @@ def kickoff_and_complete_gridscan(
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
-    zocalo_environment: str = MxConstants.ZOCALO_ENV,
+    zocalo_environment: str = EnvironmentConstants.ZOCALO_ENV,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
     If the RunEngine is subscribed to ZocaloCallback, this plan will also trigger Zocalo.

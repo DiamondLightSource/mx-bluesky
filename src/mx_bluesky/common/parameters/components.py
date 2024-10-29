@@ -15,8 +15,6 @@ from pydantic_extra_types.semantic_version import SemanticVersion
 from scanspec.core import AxesPoints
 from semver import Version
 
-from mx_bluesky.common.parameters.constants import CONST
-
 
 class RotationAxis(StrEnum):
     OMEGA = "omega"
@@ -125,7 +123,6 @@ class WithOptionalEnergyChange(BaseModel):
 class WithVisit(BaseModel):
     beamline: str
     visit: str = Field(min_length=1)
-    zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
     det_dist_to_beam_converter_path: str
     insertion_prefix: str
     detector_distance_mm: float | None = Field(default=None, gt=0)

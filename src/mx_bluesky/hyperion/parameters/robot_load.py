@@ -1,11 +1,13 @@
 from pydantic import Field
 
-from mx_bluesky.hyperion.parameters.components import (
-    HyperionParameters,
+from mx_bluesky.common.parameters.components import (
     WithOptionalEnergyChange,
     WithSample,
     WithSnapshot,
     WithVisit,
+)
+from mx_bluesky.hyperion.parameters.components import (
+    HyperionParameters,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
