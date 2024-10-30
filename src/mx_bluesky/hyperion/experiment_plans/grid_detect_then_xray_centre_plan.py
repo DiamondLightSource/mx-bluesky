@@ -109,7 +109,7 @@ def detect_grid_and_do_gridscan(
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
-    grid_params_callback = GridDetectionCallback(composite.oav.parameters)
+    grid_params_callback = GridDetectionCallback()
 
     @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(

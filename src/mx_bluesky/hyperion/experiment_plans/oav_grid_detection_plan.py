@@ -164,7 +164,7 @@ def grid_detection_plan(
         yield from bps.trigger(oav.grid_snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
 
-        yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.read(smargon)
         yield from bps.save()
 

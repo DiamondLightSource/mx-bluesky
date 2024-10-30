@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
-from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
@@ -80,6 +80,7 @@ def grid_detect_devices(
     backlight: Backlight,
     detector_motion: DetectorMotion,
     smargon: Smargon,
+    oav: OAV,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -89,7 +90,7 @@ def grid_detect_devices(
         eiger=MagicMock(),
         zebra_fast_grid_scan=MagicMock(),
         flux=MagicMock(),
-        oav=MagicMock(),
+        oav=oav,
         pin_tip_detection=MagicMock(),
         smargon=smargon,
         synchrotron=MagicMock(),

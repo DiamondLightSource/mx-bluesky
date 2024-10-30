@@ -364,6 +364,9 @@ def oav(test_config_files, RE):
     # Equivalent to previously set values for microns and beam centre
     set_mock_value(oav.zoom_controller.level, "5.0x")
 
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
+
     oav.snapshot.trigger = MagicMock(return_value=NullStatus())
     oav.grid_snapshot.trigger = MagicMock(return_value=NullStatus())
     return oav

@@ -45,7 +45,7 @@ def fake_devices(
     params = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, config=params)
+    oav = i03.oav(fake_with_ophyd_sim=True, params=params)
     set_mock_value(oav.zoom_controller.level, "5.0")
 
     pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
@@ -261,31 +261,31 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         assert_event(
             cb.activity_gated_event.mock_calls[0],  # pyright: ignore
             {
-                "oav_grid_snapshot_top_left_x": 8,
-                "oav_grid_snapshot_top_left_y": -6,
-                "oav_grid_snapshot_num_boxes_x": 8,
-                "oav_grid_snapshot_num_boxes_y": 2,
-                "oav_grid_snapshot_box_width": 16,
-                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
-                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
-                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
-                "oav_grid_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
-                "oav_grid_snapshot_last_saved_path": "tmp/test_0.png",
+                "oav-grid_snapshot-top_left_x": 8,
+                "oav-grid_snapshot-top_left_y": -6,
+                "oav-grid_snapshot-num_boxes_x": 8,
+                "oav-grid_snapshot-num_boxes_y": 2,
+                "oav-grid_snapshot-box_width": 16,
+                "oav-grid_snapshot-microns_per_pixel_x": 1.25,
+                "oav-grid_snapshot-microns_per_pixel_y": 1.25,
+                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_0_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": "tmp/test_0_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": "tmp/test_0.png",
             },
         )
         assert_event(
             cb.activity_gated_event.mock_calls[1],  # pyright:ignore
             {
-                "oav_grid_snapshot_top_left_x": 8,
-                "oav_grid_snapshot_top_left_y": 2,
-                "oav_grid_snapshot_num_boxes_x": 8,
-                "oav_grid_snapshot_num_boxes_y": 1,
-                "oav_grid_snapshot_box_width": 16,
-                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
-                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
-                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
-                "oav_grid_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
-                "oav_grid_snapshot_last_saved_path": "tmp/test_90.png",
+                "oav-grid_snapshot-top_left_x": 8,
+                "oav-grid_snapshot-top_left_y": 2,
+                "oav-grid_snapshot-num_boxes_x": 8,
+                "oav-grid_snapshot-num_boxes_y": 1,
+                "oav-grid_snapshot-box_width": 16,
+                "oav-grid_snapshot-microns_per_pixel_x": 1.25,
+                "oav-grid_snapshot-microns_per_pixel_y": 1.25,
+                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_90_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": "tmp/test_90_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": "tmp/test_90.png",
             },
         )
 
