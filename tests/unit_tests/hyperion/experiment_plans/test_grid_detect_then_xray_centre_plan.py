@@ -13,6 +13,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import set_mock_value
+from ophyd.sim import NullStatus
 
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -102,10 +103,11 @@ async def test_detect_grid_and_do_gridscan(
     with patch.object(
         grid_detect_devices_with_oav_config_params.aperture_scatterguard,
         "set",
-        MagicMock(),
+        MagicMock(return_value=NullStatus()),
     ) as mock_aperture_scatterguard:
-        RE(
-            ispyb_activation_wrapper(
+
+        def gridscan_and_wait():
+            yield from ispyb_activation_wrapper(
                 detect_grid_and_do_gridscan(
                     grid_detect_devices_with_oav_config_params,
                     parameters=test_full_grid_scan_params,
@@ -115,7 +117,9 @@ async def test_detect_grid_and_do_gridscan(
                 ),
                 test_full_grid_scan_params,
             )
-        )
+            yield from bps.wait(group=CONST.WAIT.GRID_READY_FOR_DC, timeout=1)
+
+        RE(gridscan_and_wait())
         # Verify we called the grid detection plan
         mock_grid_detection_plan.assert_called_once()
 
