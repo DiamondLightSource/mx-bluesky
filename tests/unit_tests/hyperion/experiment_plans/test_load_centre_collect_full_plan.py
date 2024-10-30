@@ -1,5 +1,5 @@
 import dataclasses
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bluesky.protocols import Location
@@ -84,6 +84,10 @@ def composite(
     )
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_bottom_edge, bottom_edge_array
+    )
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x"]
+    composite.oav.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": zoom_levels_list}}
     )
     set_mock_value(composite.oav.zoom_controller.level, "7.5x")
 
