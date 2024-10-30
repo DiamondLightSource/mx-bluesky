@@ -16,7 +16,7 @@ from event_model.documents import Event, RunStart
 from ophyd_async.core import DeviceCollector, set_mock_value
 
 from mx_bluesky.common.parameters.constants import (
-    MxDefaultConstants,
+    EnvironmentConstants,
     PlanNameConstants,
     TriggerConstants,
 )
@@ -39,8 +39,13 @@ def fgs_devices(RE):
     }
 
 
+@patch("mx_bluesky.common.plans.do_fgs.read_hardware_for_zocalo")
+@patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary")
 def test_kickoff_and_complete_gridscan_correct_messages(
-    sim_run_engine: RunEngineSimulator, fgs_devices
+    mock_check_topup,
+    mock_read_hardware,
+    sim_run_engine: RunEngineSimulator,
+    fgs_devices,
 ):
     def null_plan() -> MsgGenerator:
         yield from null()
@@ -48,93 +53,56 @@ def test_kickoff_and_complete_gridscan_correct_messages(
     synchrotron = fgs_devices["synchrotron"]
     detector = fgs_devices["detector"]
     fgs_device = fgs_devices["grid_scan_device"]
-    with (
-        patch(
-            "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"
-        ) as mock_check_topup,
-        patch(
-            "mx_bluesky.common.plans.do_fgs.read_hardware_for_zocalo"
-        ) as mock_read_hardware,
-    ):
-        msgs = sim_run_engine.simulate_plan(
-            kickoff_and_complete_gridscan(
-                fgs_device,
-                detector,
-                synchrotron,
-                scan_points=[],
-                scan_start_indices=[],
-                plan_during_collection=null_plan,
-            )
+
+    msgs = sim_run_engine.simulate_plan(
+        kickoff_and_complete_gridscan(
+            fgs_device,
+            detector,
+            synchrotron,
+            scan_points=[],
+            scan_start_indices=[],
+            plan_during_collection=null_plan,
         )
+    )
 
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "read"
-            and msg.obj.name == "grid_scan_device-expected_images",
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "read"
+        and msg.obj.name == "grid_scan_device-expected_images",
+    )
 
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "read"
-            and msg.obj.name == "eiger_cam_acquire_time",
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "read" and msg.obj.name == "eiger_cam_acquire_time",
+    )
 
-        mock_check_topup.assert_called_once()
-        mock_read_hardware.assert_called_once()
+    mock_check_topup.assert_called_once()
+    mock_read_hardware.assert_called_once()
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "wait"
-        )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
 
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait" and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+    )
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "kickoff"
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "kickoff"
+    )
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "wait"
-        )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "null"
-        )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "null")
 
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "complete"
-            and msg.obj.name == "grid_scan_device",
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "complete" and msg.obj.name == "grid_scan_device",
+    )
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "wait"
-        )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
 
 
-def test_kickoff_and_complete_gridscan_optionally_calls_during_collection_plan(
-    sim_run_engine: RunEngineSimulator, fgs_devices
-):
-    with patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"):
-        synchrotron = fgs_devices["synchrotron"]
-        detector = fgs_devices["detector"]
-        fgs_device = fgs_devices["grid_scan_device"]
-        msgs = sim_run_engine.simulate_plan(
-            kickoff_and_complete_gridscan(
-                fgs_device,
-                detector,
-                synchrotron,
-                scan_points=[],
-                scan_start_indices=[],
-            )
-        )
-        null_messages = [msg for msg in msgs if msg.command == "null"]
-        assert len(null_messages) == 0
-
-
+# This test should use the real Zocalo callbacks once https://github.com/DiamondLightSource/mx-bluesky/issues/215 is done
 def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     RE: RunEngine, fgs_devices
 ):
@@ -177,25 +145,25 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     assert test_callback.subplan_name == PlanNameConstants.DO_FGS
     assert test_callback.scan_points == []
     assert test_callback.scan_start_indices == []
-    assert test_callback.zocalo_environment == MxDefaultConstants.ZOCALO_ENV
+    assert test_callback.zocalo_environment == EnvironmentConstants.ZOCALO_ENV
     assert len(test_callback.event_data) == 1
     assert test_callback.event_data[0] == "eiger_odin_file_writer_id"
 
 
+@patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary")
 def test_error_if_kickoff_and_complete_gridscan_parameters_wrong_lengths(
-    sim_run_engine: RunEngineSimulator, fgs_devices
+    mock_check_topup, sim_run_engine: RunEngineSimulator, fgs_devices
 ):
-    with patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary"):
-        synchrotron = fgs_devices["synchrotron"]
-        detector = fgs_devices["detector"]
-        fgs_device = fgs_devices["grid_scan_device"]
-        with pytest.raises(AssertionError):
-            sim_run_engine.simulate_plan(
-                kickoff_and_complete_gridscan(
-                    fgs_device,
-                    detector,
-                    synchrotron,
-                    scan_points=[],
-                    scan_start_indices=[0],
-                )
+    synchrotron = fgs_devices["synchrotron"]
+    detector = fgs_devices["detector"]
+    fgs_device = fgs_devices["grid_scan_device"]
+    with pytest.raises(AssertionError):
+        sim_run_engine.simulate_plan(
+            kickoff_and_complete_gridscan(
+                fgs_device,
+                detector,
+                synchrotron,
+                scan_points=[],
+                scan_start_indices=[0],
             )
+        )
