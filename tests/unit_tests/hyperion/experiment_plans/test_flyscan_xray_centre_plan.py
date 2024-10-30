@@ -1027,10 +1027,7 @@ class TestFlyscanXrayCentrePlan:
             return_value=Status(None, None, 0, True, True)
         )
 
-        finished_status = Status()
-        finished_status.set_finished()
-
-        fake_fgs_composite.eiger.filewriters_finished = finished_status
+        fake_fgs_composite.eiger.filewriters_finished = NullStatus()
 
         fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
 
