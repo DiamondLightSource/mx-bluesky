@@ -30,7 +30,7 @@ def get_fake_pin_values_generator(x, y):
     return np.array([x, y])
 
 
-FAKE_EDGE_ARRAYS = np.ndarray([1, 2, 3]), np.ndarray([3, 4, 5])
+FAKE_EDGE_ARRAYS = np.array([1.0, 2.0, 3.0]), np.array([3.0, 4.0, 5.0])
 
 
 @pytest.fixture
