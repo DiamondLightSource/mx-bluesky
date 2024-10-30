@@ -787,7 +787,7 @@ async def fake_fgs_composite(
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
-    fake_composite.eiger.odin.check_odin_state = lambda: True
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda: True
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
