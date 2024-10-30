@@ -41,7 +41,6 @@ class CompositeImpl(OavSnapshotComposite):
 
 @pytest.fixture
 def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
-    oav.zoom_controller.fvst.sim_put("5.0x")
     return CompositeImpl(
         smargon=smargon,
         oav=oav,

@@ -46,7 +46,13 @@ def fake_devices(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(fake_with_ophyd_sim=True, params=params)
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+        return_value=zoom_levels_list
+    )
     set_mock_value(oav.zoom_controller.level, "5.0")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
 
     pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
     pin_tip_detection._get_tip_and_edge_data = AsyncMock(

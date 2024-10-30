@@ -254,7 +254,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
 
     oav.snapshot.trigger.assert_called_once()
-    assert await oav.snapshot.filename.get_value() == "TIME_oav_snapshot_after_load"
+    assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"
     assert await oav.snapshot.directory.get_value() == TEST_DIRECTORY
 
     webcam.trigger.assert_called_once()
