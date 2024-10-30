@@ -46,7 +46,7 @@ from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra import ArmDemand, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -304,8 +304,8 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 def zebra(RE):
     zebra = i03.zebra(fake_with_ophyd_sim=True)
 
-    def mock_side(*args, **kwargs):
-        set_mock_value(zebra.pc.arm.armed, *args, **kwargs)
+    def mock_side(demand: ArmDemand):
+        set_mock_value(zebra.pc.arm.armed, demand.value)
         return NullStatus()
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
