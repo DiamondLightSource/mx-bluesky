@@ -4,8 +4,8 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator, subs_decorator
 from dls_bluesky_core.core import MsgGenerator
-from dodal.beamlines import i04
 from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
+from dodal.common import inject
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
@@ -18,13 +18,11 @@ from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
 def thaw_and_stream_to_redis(
     time_to_thaw: float,
     rotation: float = 360,
-    robot: BartRobot = i04.robot(wait_for_connection=False),
-    thawer: Thawer = i04.thawer(wait_for_connection=False),
-    smargon: Smargon = i04.smargon(wait_for_connection=False),
-    oav: OAV = i04.oav(wait_for_connection=False),
-    oav_to_redis_forwarder: OAVToRedisForwarder = i04.oav_to_redis_forwarder(
-        wait_for_connection=False
-    ),
+    robot: BartRobot = inject("robot"),
+    thawer: Thawer = inject("thawer"),
+    smargon: Smargon = inject("smargon"),
+    oav: OAV = inject("oav"),
+    oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
     zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     sample_id = yield from bps.rd(robot.sample_id)
@@ -83,8 +81,8 @@ def thaw_and_stream_to_redis(
 def thaw(
     time_to_thaw: float,
     rotation: float = 360,
-    thawer: Thawer = i04.thawer(wait_for_connection=False),
-    smargon: Smargon = i04.smargon(wait_for_connection=False),
+    thawer: Thawer = inject("thawer"),
+    smargon: Smargon = inject("smargon"),
     plan_between_rotations: Callable[[], MsgGenerator] | None = None,
 ) -> MsgGenerator:
     """Rotates the sample and thaws it at the same time.
@@ -93,9 +91,9 @@ def thaw(
         time_to_thaw (float): Time to thaw for, in seconds.
         rotation (float, optional): How much to rotate by whilst thawing, in degrees.
                                     Defaults to 360.
-        thawer (Thawer, optional): The thawing device. Defaults to i04.thawer(wait_for_connection=False).
+        thawer (Thawer, optional): The thawing device. Defaults to inject("thawer").
         smargon (Smargon, optional): The smargon used to rotate.
-                                     Defaults to i04.smargon(wait_for_connection=False)
+                                     Defaults to inject("smargon")
         plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
                                     of the smargon. Defaults to no plan.
     """
