@@ -1,13 +1,10 @@
-import dataclasses
-from abc import ABC
 from collections.abc import Generator
-from datetime import time
 from typing import Any
 
-import bluesky.plan_stubs as bps
 from bluesky import Msg
-from bluesky.protocols import Readable, Reading
-from event_model import DataKey, Event, EventDescriptor, RunStart
+from bluesky.preprocessors import msg_mutator, contingency_wrapper
+from bluesky.utils import make_decorator
+from event_model import Event, EventDescriptor, RunStart, RunStop
 
 from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -16,35 +13,36 @@ from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
-@dataclasses.dataclass
-class AbstractEvent(Readable, ABC):
-    def _reading_from_value(self, value):
-        return Reading(timestamp=time.time(), value=value)
-
-    def read(self) -> dict[str, Reading]:
-        return {f.name: getattr(self, f.name) for f in dataclasses.fields(self)}
-
-    def describe(self) -> dict[str, DataKey]:
-        return {
-            f.name: DataKey(dtype=f.type, shape=[], source="")
-            for f in dataclasses.fields(self)
-        }
-
-    @property
-    def name(self) -> str:
-        return type(self).__name__
+# TODO remove this preprocessor shenanigans once
+# https://github.com/bluesky/bluesky/issues/1829 is addressed
 
 
-@dataclasses.dataclass
-class ExceptionEvent(AbstractEvent):
-    exception_type: str
+def _exception_handling_preprocessor(wrapped_plan: Generator[Msg, Any, Any]):
+    """This preprocessor intercepts the enclosing ``close_run`` message and replaces
+    the ``reason`` and ``exit_status`` fields if an exception was thrown inside the
+    run.
+    It is necessary since it is not possible to close a run early because the
+    enclosing ``run_decorator`` will still also close the run and checks
+    inside ``RunEngine._close_run()`` that will check if there is an imbalance of open/close
+    messages."""
+    intercepted_exception = None
+
+    def _exception_interceptor(exception: Exception) -> Generator[Msg, Any, Any]:
+        nonlocal intercepted_exception
+        intercepted_exception = exception
+        yield from []
+
+    def close_run_interceptor(msg: Msg) -> Msg:
+        if intercepted_exception and msg.command == "close_run":
+            msg.kwargs["exit_status"] = "abort"
+            msg.kwargs["reason"] = type(intercepted_exception).__name__
+        return msg
+
+    plan_with_exception_handler = contingency_wrapper(wrapped_plan, except_plan=_exception_interceptor, auto_raise=True)
+    yield from msg_mutator(plan_with_exception_handler, close_run_interceptor)
 
 
-def exception_interceptor(exception: Exception) -> Generator[Msg, Any, Any]:
-    yield from bps.create(CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION)
-    event = ExceptionEvent(exception_type=exception.__class__.__name__)
-    yield from bps.read(event)
-    yield from bps.save()
+exception_handling_decorator = make_decorator(_exception_handling_preprocessor)
 
 
 class SampleHandlingCallback(PlanReactiveCallback):
@@ -55,7 +53,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         if not self._sample_id:
-            self._sample_id = doc["metadata"]["sample_id"]
+            self._sample_id = doc.get("metadata", {}).get("sample_id")
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
         if doc["name"] == CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION:
@@ -67,6 +65,11 @@ class SampleHandlingCallback(PlanReactiveCallback):
             exception_type = doc["data"]["exception_type"]
             self._record_exception(exception_type)
         return doc
+
+    def activity_gated_stop(self, doc: RunStop) -> RunStop | None:
+        if doc["exit_status"] == "abort":
+            self._record_exception(doc.get("reason"))
+        return super().activity_gated_stop(doc)
 
     def _record_exception(self, exception_type: str):
         # TODO
