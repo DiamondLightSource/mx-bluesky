@@ -49,7 +49,6 @@ from ..external_interaction.conftest import (  # noqa
 def params():
     params = ThreeDGridScan(**default_raw_params())
     params.beamline = CONST.SIM.BEAMLINE
-    params.zocalo_environment = "dev_artemis"
     yield params
 
 

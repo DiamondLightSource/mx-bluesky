@@ -14,7 +14,6 @@
     "omega_start_deg": 0.0,
     "tip_offset_um": 108.9,
     "grid_width_um": 290.6,
-    "oav_centring_file": "tests/test_data/test_OAVCentring.json",
     "transmission_frac": 1.0,
     "visit": "cm31105-4"
 }

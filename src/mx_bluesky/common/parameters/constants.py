@@ -8,6 +8,11 @@ BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 
 
+def get_visit_beamline_from_beamline():
+    # Or just default to BL03I and do this later, to fix pydantic error from visit
+    ...
+
+
 @dataclass(frozen=True)
 class DocDescriptorNames:
     # Robot load event descriptor
@@ -18,6 +23,13 @@ class DocDescriptorNames:
     HARDWARE_READ_PRE = "read_hardware_for_callbacks_pre_collection"
     HARDWARE_READ_DURING = "read_hardware_for_callbacks_during_collection"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
+
+
+@dataclass(frozen=True)
+class OavConstants:
+    OAV_CONFIG_JSON = (
+        f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+    )
 
 
 @dataclass(frozen=True)

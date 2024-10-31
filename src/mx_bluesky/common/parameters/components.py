@@ -15,6 +15,10 @@ from pydantic_extra_types.semantic_version import SemanticVersion
 from scanspec.core import AxesPoints
 from semver import Version
 
+from mx_bluesky.common.parameters.constants import TEST_MODE, DetectorParamConstants
+
+PARAMETER_VERSION = Version.parse("5.1.0")
+
 
 class RotationAxis(StrEnum):
     OMEGA = "omega"
@@ -83,21 +87,17 @@ class MxBlueskyParameters(BaseModel):
     def __hash__(self) -> int:
         return self.model_dump_json().__hash__()
 
-    # Version of the parameter model which, eg GDA or BlueAPI are using
-    client_parameter_model_version: SemanticVersion
+    parameter_model_version: SemanticVersion
 
-    # Parameter version expected by mx-bluesky
-    server_parameter_model: Version
-
-    @field_validator("client_parameter_model_version")
+    @field_validator("parameter_model_version")
     @classmethod
     def _validate_version(cls, version: Version):
         assert (
-            version >= Version(major=cls.server_parameter_model.major)
-        ), f"Parameter version too old! This version of hyperion uses {cls.server_parameter_model}"
+            version >= Version(major=PARAMETER_VERSION.major)
+        ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
         assert (
-            version <= Version(major=cls.server_parameter_model.major + 1)
-        ), f"Parameter version too new! This version of hyperion uses {cls.server_parameter_model}"
+            version <= Version(major=PARAMETER_VERSION.major + 1)
+        ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
     @classmethod
@@ -119,12 +119,14 @@ class WithOptionalEnergyChange(BaseModel):
     demand_energy_ev: float | None = Field(default=None, gt=0)
 
 
-# todo make sure hyperion creates this with proper defaults
+# TODO do this properly. These probably shouldn't default to anything anymore
 class WithVisit(BaseModel):
-    beamline: str
+    beamline: str = Field(default="BL03I", pattern=r"BL\d{2}[BIJS]")
     visit: str = Field(min_length=1)
-    det_dist_to_beam_converter_path: str
-    insertion_prefix: str
+    det_dist_to_beam_converter_path: str = Field(
+        default=DetectorParamConstants.BEAM_XY_LUT_PATH
+    )
+    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
     detector_distance_mm: float | None = Field(default=None, gt=0)
 
 
@@ -190,10 +192,6 @@ class WithSample(BaseModel):
 
 
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
-
-
-class WithOavCentring(BaseModel):
-    oav_centring_file: str
 
 
 class OptionalXyzStarts(BaseModel):

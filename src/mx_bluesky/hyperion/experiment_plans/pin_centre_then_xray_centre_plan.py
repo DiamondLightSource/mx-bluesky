@@ -59,7 +59,6 @@ def pin_centre_then_xray_centre_plan(
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    oav_config_file = parameters.oav_centring_file
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
