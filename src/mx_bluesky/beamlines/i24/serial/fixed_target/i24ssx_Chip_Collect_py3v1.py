@@ -56,9 +56,9 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
 
-ABORTED = False
-
 logger = logging.getLogger("I24ssx.fixed_target")
+
+PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
 
 
 def setup_logging():
@@ -90,8 +90,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    pmac_move_time = 0.008  # around 7-8ms
-    buffer = pmac_move_time * parameters.total_num_images + 2
+    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 2
     # buffer = 30
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
