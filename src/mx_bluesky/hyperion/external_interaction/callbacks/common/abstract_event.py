@@ -2,6 +2,7 @@ import builtins
 import dataclasses
 import time
 from abc import ABC
+from typing import Literal
 
 from bluesky.protocols import Readable, Reading
 from event_model import DataKey
@@ -47,7 +48,7 @@ class AbstractEvent(Readable, ABC):
         return Reading(timestamp=time.time(), value=value)
 
     @classmethod
-    def _dtype_of(cls, t: type) -> str:
+    def _dtype_of(cls, t) -> Literal["string", "number", "boolean", "integer"]:
         match t:
             case builtins.str:
                 return "string"

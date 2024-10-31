@@ -2,7 +2,7 @@ import dataclasses
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 
 from mx_bluesky.hyperion.external_interaction.callbacks.common.abstract_event import (
     AbstractEvent,
