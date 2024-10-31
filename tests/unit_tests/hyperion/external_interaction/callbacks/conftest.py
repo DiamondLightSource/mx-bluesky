@@ -4,6 +4,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
@@ -46,7 +47,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
         "hyperion_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
@@ -83,7 +84,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "zocalo_environment": "dev_artemis",
-        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
         "hyperion_parameters": dummy_params().model_dump_json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
@@ -130,7 +131,7 @@ class TestData(OavGridSnapshotTestEvents):
         "scan_id": 1,
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
-        "subplan_name": CONST.PLAN.DO_FGS,
+        "subplan_name": PlanNameConstants.DO_FGS,
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_oav_rotation_snapshot: EventDescriptor = {
