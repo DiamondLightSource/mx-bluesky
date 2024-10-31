@@ -41,6 +41,7 @@ def run_extruder():
 
 def run_fixed_target():
     args = _parse_input("fixed target")
+    print(args.test)
     loc = get_location()
     logger.info(f"Running on {loc}.")
     edm_path = get_edm_path()
