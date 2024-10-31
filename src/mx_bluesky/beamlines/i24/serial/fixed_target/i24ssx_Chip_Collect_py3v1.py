@@ -58,6 +58,8 @@ from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
 
 logger = logging.getLogger("I24ssx.fixed_target")
 
+# Move this in common place as part of
+# https://github.com/DiamondLightSource/mx-bluesky/pull/603
 PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
 
 
