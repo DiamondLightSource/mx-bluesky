@@ -86,7 +86,6 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
         The estimated collection time, in s.
     """
     buffer = PMAC_MOVE_TIME * parameters.total_num_images + 2
-    # buffer = 30
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
