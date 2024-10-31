@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.i24.serial import log
 
 @pytest.fixture
 def dummy_logger():
-    logger = logging.getLogger("I24ssx")
+    logger = logging.getLogger("I24serial")
     yield logger
 
 
@@ -58,23 +58,20 @@ def test_integrate_bluesky_logs():
         assert mock_ophyd_log.parent == mock_dodal_logger
 
 
-@patch("mx_bluesky.beamlines.i24.serial.log._integrate_bluesky_logs")
-def test_default_logging_setup_removes_dodal_stream(mock_integrate_logs):
-    with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
-        log.default_logging_setup(dev_mode=True)
-        assert mock_dodal_logger.addHandler.call_count == 3
-        mock_integrate_logs.assert_called_once_with(mock_dodal_logger)
-
-
 @patch("mx_bluesky.beamlines.i24.serial.log.Path.mkdir")
-@patch("mx_bluesky.beamlines.i24.serial.log.default_logging_setup")
-def test_logging_config_with_filehandler(mock_default, mock_dir, dummy_logger):
-    # dodal handlers mocked out
-    log.config("dummy.log", delayed=True, dev_mode=True)
-    assert len(dummy_logger.handlers) == 2
-    mock_default.assert_called_once()
-    assert mock_dir.call_count == 1
-    assert dummy_logger.handlers[1].level == logging.DEBUG
-    # Clear FileHandler to avoid other tests failing if it is kept open
-    dummy_logger.removeHandler(dummy_logger.handlers[1])
-    _destroy_handlers(dummy_logger.parent)
+@patch("mx_bluesky.beamlines.i24.serial.log.do_default_logging_setup")
+@patch("mx_bluesky.beamlines.i24.serial.log._integrate_bluesky_logs")
+def test_logging_config_with_filehandler(
+    mock_integrate_logs, mock_default, mock_dir, dummy_logger
+):
+    with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
+        log.config("dummy.log", delayed=True, dev_mode=True)
+        assert len(dummy_logger.handlers) == 2
+        mock_default.assert_called_once()
+        mock_integrate_logs.assert_called_once_with(mock_dodal_logger)
+        assert mock_dodal_logger.removeHandler.call_count == 1
+        assert mock_dir.call_count == 1
+        assert dummy_logger.handlers[1].level == logging.DEBUG
+        # Clear FileHandler to avoid other tests failing if it is kept open
+        dummy_logger.removeHandler(dummy_logger.handlers[1])
+        _destroy_handlers(dummy_logger.parent)

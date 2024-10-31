@@ -2,9 +2,7 @@
 Fixed target data collection
 """
 
-import logging
 import shutil
-import time
 from datetime import datetime
 from pathlib import Path
 from time import sleep
@@ -23,7 +21,6 @@ from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 
-from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -33,6 +30,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     write_parameter_file,
 )
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
     ChipDescription,
     FixedTargetParameters,
@@ -56,17 +54,9 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
 
-logger = logging.getLogger("I24ssx.fixed_target")
-
 # Move this in common place as part of
 # https://github.com/DiamondLightSource/mx-bluesky/pull/603
 PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
-
-
-def setup_logging():
-    # Log should now change name daily
-    logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
-    log.config(logfile)
 
 
 def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
@@ -133,7 +123,7 @@ def write_userlog(
     # Write a record of what was collected to the processing directory
     userlog_path = Path(parameters.visit) / f"processing/{parameters.directory}"
     userlog_fid = f"{filename}_parameters.txt"
-    logger.debug(f"Write a user log in {userlog_path}")
+    SSX_LOGGER.debug(f"Write a user log in {userlog_path}")
 
     userlog_path.mkdir(parents=True, exist_ok=True)
 
@@ -156,7 +146,7 @@ def write_userlog(
         f.write(text)
 
 
-@log.log_on_entry
+@log_on_entry
 def get_chip_prog_values(
     parameters: FixedTargetParameters,
 ):
@@ -181,7 +171,7 @@ def get_chip_prog_values(
     else:
         raise ValueError(f"Unknown pump_repeat, pump_repeat = {parameters.pump_repeat}")
 
-    logger.info(
+    SSX_LOGGER.info(
         f"Pump repeat is {str(parameters.pump_repeat)}, PVAR set to {pump_repeat_pvar}"
     )
 
@@ -190,7 +180,7 @@ def get_chip_prog_values(
     else:
         pump_in_probe = 0
 
-    logger.info(f"pump_in_probe set to {pump_in_probe}")
+    SSX_LOGGER.info(f"pump_in_probe set to {pump_in_probe}")
 
     chip_dict: dict[str, list] = {
         "X_NUM_STEPS": [11, parameters.chip.x_num_steps],
@@ -228,7 +218,7 @@ def get_chip_prog_values(
     return chip_dict
 
 
-@log.log_on_entry
+@log_on_entry
 def load_motion_program_data(
     pmac: PMAC,
     motion_program_dict: dict[str, list],
@@ -236,26 +226,26 @@ def load_motion_program_data(
     pump_repeat: int,
     checker_pattern: bool,
 ):
-    logger.info("Loading motion program data for chip.")
-    logger.info(f"Pump_repeat is {PumpProbeSetting(pump_repeat)}")
+    SSX_LOGGER.info("Loading motion program data for chip.")
+    SSX_LOGGER.info(f"Pump_repeat is {PumpProbeSetting(pump_repeat)}")
     if pump_repeat == PumpProbeSetting.NoPP:
         if map_type == MappingType.NoMap:
             prefix = 11
-            logger.info(f"Map type is None, setting program prefix to {prefix}")
+            SSX_LOGGER.info(f"Map type is None, setting program prefix to {prefix}")
         elif map_type == MappingType.Lite:
             prefix = 12
         elif map_type == MappingType.Full:
             prefix = 13
         else:
-            logger.warning(f"Unknown Map Type, map_type = {map_type}")
+            SSX_LOGGER.warning(f"Unknown Map Type, map_type = {map_type}")
             return
     elif pump_repeat in [pp.value for pp in PumpProbeSetting if pp != 0]:
         # Pump setting chosen
         prefix = 14
-        logger.info(f"Setting program prefix to {prefix}")
+        SSX_LOGGER.info(f"Setting program prefix to {prefix}")
         yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if checker_pattern:
-            logger.info("Checker pattern setting enabled.")
+            SSX_LOGGER.info("Checker pattern setting enabled.")
             yield from bps.abs_set(pmac.pmac_string, "P1439=1", wait=True)
         if pump_repeat == PumpProbeSetting.Medium1:
             # Medium1 has time delays (Fast shutter opening time in ms)
@@ -263,23 +253,23 @@ def load_motion_program_data(
         else:
             yield from bps.abs_set(pmac.pmac_string, "P1441=0", wait=True)
     else:
-        logger.warning(f"Unknown Pump repeat, pump_repeat = {pump_repeat}")
+        SSX_LOGGER.warning(f"Unknown Pump repeat, pump_repeat = {pump_repeat}")
         return
 
-    logger.info("Set PMAC_STRING pv.")
+    SSX_LOGGER.info("Set PMAC_STRING pv.")
     for key in sorted(motion_program_dict.keys()):
         v = motion_program_dict[key]
         pvar_base = prefix * 100
         pvar = pvar_base + v[0]
         value = str(v[1])
         s = f"P{pvar}={value}"
-        logger.info(f"{key} \t {s}")
+        SSX_LOGGER.info(f"{key} \t {s}")
         yield from bps.abs_set(pmac.pmac_string, s, wait=True)
         yield from bps.sleep(0.02)
     yield from bps.sleep(0.2)
 
 
-@log.log_on_entry
+@log_on_entry
 def get_prog_num(
     chip_type: ChipType, map_type: MappingType, pump_repeat: PumpProbeSetting
 ) -> int:
@@ -292,60 +282,60 @@ def get_prog_num(
         - Oxford chips with full mapping should return 13. Currently disabled, will \
             raise an error.
     """
-    logger.info("Get Program Number for the motion program.")
-    logger.info(f"Pump_repeat: {str(pump_repeat)} \t Chip Type: {str(chip_type)}")
+    SSX_LOGGER.info("Get Program Number for the motion program.")
+    SSX_LOGGER.info(f"Pump_repeat: {str(pump_repeat)} \t Chip Type: {str(chip_type)}")
     if pump_repeat != PumpProbeSetting.NoPP:
-        logger.info("Assuming Map type = Mapping Lite.")
-        logger.info("Program number: 14")
+        SSX_LOGGER.info("Assuming Map type = Mapping Lite.")
+        SSX_LOGGER.info("Program number: 14")
         return 14
 
     if chip_type not in [ChipType.Oxford, ChipType.OxfordInner]:
-        logger.info("Program number: 11")
+        SSX_LOGGER.info("Program number: 11")
         return 11
 
     if map_type == MappingType.NoMap:
-        logger.info(f"Map type: {str(map_type)}")
-        logger.info("Program number: 11")
+        SSX_LOGGER.info(f"Map type: {str(map_type)}")
+        SSX_LOGGER.info("Program number: 11")
         return 11
     if map_type == MappingType.Lite:
-        logger.info(f"Map type: {str(map_type)}")
-        logger.info("Program number: 12")
+        SSX_LOGGER.info(f"Map type: {str(map_type)}")
+        SSX_LOGGER.info("Program number: 12")
         return 12
     if map_type == MappingType.Full:
         # TODO See https://github.com/DiamondLightSource/mx-bluesky/issues/515
-        logger.info(f"Map type: {str(map_type)}")
-        logger.info("Program number: 13")
+        SSX_LOGGER.info(f"Map type: {str(map_type)}")
+        SSX_LOGGER.info("Program number: 13")
         # TODO once reinstated return 13
         msg = "Full mapping is broken and currently disabled."
-        logger.error(msg)
+        SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
 
-@log.log_on_entry
+@log_on_entry
 def datasetsizei24(
     n_exposures: int,
     chip_params: ChipDescription,
     map_type: MappingType,
 ) -> int:
     # Calculates how many images will be collected based on map type and N repeats
-    logger.info("Calculate total number of images expected in data collection.")
+    SSX_LOGGER.info("Calculate total number of images expected in data collection.")
 
     if map_type == MappingType.NoMap:
         if chip_params.chip_type == ChipType.Custom:
             total_numb_imgs = chip_params.x_num_steps * chip_params.y_num_steps
-            logger.info(
+            SSX_LOGGER.info(
                 f"Map type: None \tCustom chip \tNumber of images {total_numb_imgs}"
             )
         else:
             chip_format = chip_params.chip_format[:4]
             total_numb_imgs = int(np.prod(chip_format))
-            logger.info(
+            SSX_LOGGER.info(
                 f"""Map type: None \tOxford chip {chip_params.chip_type} \t \
                     Number of images {total_numb_imgs}"""
             )
 
     elif map_type == MappingType.Lite:
-        logger.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
+        SSX_LOGGER.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
         chip_format = chip_params.chip_format[2:4]
         block_count = 0
         with open(LITEMAP_PATH / "currentchip.map") as f:
@@ -354,29 +344,29 @@ def datasetsizei24(
                 if entry[2] == "1":
                     block_count += 1
 
-        logger.info(f"Block count={block_count}")
-        logger.info(f"Chip format={chip_format}")
+        SSX_LOGGER.info(f"Block count={block_count}")
+        SSX_LOGGER.info(f"Chip format={chip_format}")
 
-        logger.info(f"Number of exposures={n_exposures}")
+        SSX_LOGGER.info(f"Number of exposures={n_exposures}")
 
         total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
-        logger.info(f"Calculated number of images: {total_numb_imgs}")
+        SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
 
     elif map_type == MappingType.Full:
-        logger.error("Not Set Up For Full Mapping")
+        SSX_LOGGER.error("Not Set Up For Full Mapping")
         raise ValueError("The beamline is currently not set for Full Mapping.")
 
     else:
-        logger.warning(f"Unknown Map Type, map_type = {str(map_type)}")
+        SSX_LOGGER.warning(f"Unknown Map Type, map_type = {str(map_type)}")
         raise ValueError("Unknown map type")
 
-    logger.info("Set PV to calculated number of images.")
+    SSX_LOGGER.info("Set PV to calculated number of images.")
     caput(pv.me14e_gp10, int(total_numb_imgs))
 
     return int(total_numb_imgs)
 
 
-@log.log_on_entry
+@log_on_entry
 def start_i24(
     zebra: Zebra,
     aperture: Aperture,
@@ -392,11 +382,11 @@ def start_i24(
     Returns the start_time.
     """
 
-    logger.info("Start I24 data collection.")
+    SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
-    logger.info(f"Collection start time {start_time.ctime()}")
+    SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
 
-    logger.debug("Set up beamline")
+    SSX_LOGGER.debug("Set up beamline")
     yield from sup.setup_beamline_for_collection_plan(
         aperture, backlight, beamstop, wait=True
     )
@@ -405,27 +395,27 @@ def start_i24(
         detector_stage, parameters.detector_distance_mm
     )
 
-    logger.debug("Set up beamline DONE")
+    SSX_LOGGER.debug("Set up beamline DONE")
 
     filepath = parameters.collection_directory.as_posix()
     filename = parameters.filename
 
-    logger.debug("Acquire Region")
+    SSX_LOGGER.debug("Acquire Region")
 
     num_gates = parameters.total_num_images // parameters.num_exposures
 
-    logger.info(f"Total number of images: {parameters.total_num_images}")
-    logger.info(f"Number of exposures: {parameters.num_exposures}")
-    logger.info(f"Number of gates (=Total images/N exposures): {num_gates:.4f}")
+    SSX_LOGGER.info(f"Total number of images: {parameters.total_num_images}")
+    SSX_LOGGER.info(f"Number of exposures: {parameters.num_exposures}")
+    SSX_LOGGER.info(f"Number of gates (=Total images/N exposures): {num_gates:.4f}")
 
     if parameters.detector_name == "pilatus":
-        logger.info("Using Pilatus detector")
-        logger.info(f"Fastchip Pilatus setup: filepath {filepath}")
-        logger.info(f"Fastchip Pilatus setup: filename {filename}")
-        logger.info(
+        SSX_LOGGER.info("Using Pilatus detector")
+        SSX_LOGGER.info(f"Fastchip Pilatus setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Fastchip Pilatus setup: filename {filename}")
+        SSX_LOGGER.info(
             f"Fastchip Pilatus setup: number of images {parameters.total_num_images}"
         )
-        logger.info(
+        SSX_LOGGER.info(
             f"Fastchip Pilatus setup: exposure time {parameters.exposure_time_s}"
         )
 
@@ -440,7 +430,7 @@ def start_i24(
         )
 
         # DCID process depends on detector PVs being set up already
-        logger.debug("Start DCID process")
+        SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
             visit=parameters.visit.name,
             image_dir=filepath,
@@ -453,7 +443,7 @@ def start_i24(
             pump_status=parameters.pump_repeat.value,
         )
 
-        logger.debug("Arm Pilatus. Arm Zebra.")
+        SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
         shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
         yield from setup_zebra_for_fastchip_plan(
             zebra,
@@ -474,17 +464,17 @@ def start_i24(
         sleep(1.5)
 
     elif parameters.detector_name == "eiger":
-        logger.info("Using Eiger detector")
+        SSX_LOGGER.info("Using Eiger detector")
 
-        logger.debug(f"Creating the directory for the collection in {filepath}.")
+        SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
         Path(filepath).mkdir(parents=True)
 
-        logger.info(f"Triggered Eiger setup: filepath {filepath}")
-        logger.info(f"Triggered Eiger setup: filename {filename}")
-        logger.info(
+        SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
+        SSX_LOGGER.info(
             f"Triggered Eiger setup: number of images {parameters.total_num_images}"
         )
-        logger.info(
+        SSX_LOGGER.info(
             f"Triggered Eiger setup: exposure time {parameters.exposure_time_s}"
         )
 
@@ -499,7 +489,7 @@ def start_i24(
         )
 
         # DCID process depends on detector PVs being set up already
-        logger.debug("Start DCID process")
+        SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
             visit=parameters.visit.name,
             image_dir=filepath,
@@ -512,7 +502,7 @@ def start_i24(
             pump_status=parameters.pump_repeat.value,
         )
 
-        logger.debug("Arm Zebra.")
+        SSX_LOGGER.debug("Arm Zebra.")
         shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
         yield from setup_zebra_for_fastchip_plan(
             zebra,
@@ -533,7 +523,7 @@ def start_i24(
 
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
-        logger.error(msg)
+        SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
     # Open the hutch shutter
@@ -542,7 +532,7 @@ def start_i24(
     return start_time
 
 
-@log.log_on_entry
+@log_on_entry
 def finish_i24(
     zebra: Zebra,
     pmac: PMAC,
@@ -550,20 +540,22 @@ def finish_i24(
     dcm: DCM,
     parameters: FixedTargetParameters,
 ):
-    logger.info(f"Finish I24 data collection with {parameters.detector_name} detector.")
+    SSX_LOGGER.info(
+        f"Finish I24 data collection with {parameters.detector_name} detector."
+    )
 
     complete_filename: str
     transmission = float(caget(pv.pilat_filtertrasm))
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
 
     if parameters.detector_name == "pilatus":
-        logger.debug("Finish I24 Pilatus")
+        SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
         sup.pilatus("return-to-normal", None)
         sleep(0.2)
     elif parameters.detector_name == "eiger":
-        logger.debug("Finish I24 Eiger")
+        SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         sup.eiger("return-to-normal", None)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
@@ -571,9 +563,9 @@ def finish_i24(
         raise ValueError(f"{parameters.detector_name=} unrecognised")
 
     # Detector independent moves
-    logger.info("Move chip back to home position by setting PMAC_STRING pv.")
+    SSX_LOGGER.info("Move chip back to home position by setting PMAC_STRING pv.")
     yield from bps.trigger(pmac.to_xyz_zero)
-    logger.info("Closing shutter")
+    SSX_LOGGER.info("Closing shutter")
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     # Write a record of what was collected to the processing directory
@@ -585,14 +577,14 @@ def run_aborted_plan(pmac: PMAC, dcid: DCID):
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    logger.warning("Data Collection Aborted")
+    SSX_LOGGER.warning("Data Collection Aborted")
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=True)
 
 
-@log.log_on_entry
+@log_on_entry
 def main_fixed_target_plan(
     zebra: Zebra,
     pmac: PMAC,
@@ -605,17 +597,17 @@ def main_fixed_target_plan(
     parameters: FixedTargetParameters,
     dcid: DCID,
 ) -> MsgGenerator:
-    logger.info("Running a chip collection on I24")
+    SSX_LOGGER.info("Running a chip collection on I24")
 
-    logger.info("Getting Program Dictionary")
+    SSX_LOGGER.info("Getting Program Dictionary")
 
     # If alignment type is Oxford inner it is still an Oxford type chip
     if parameters.chip.chip_type == ChipType.OxfordInner:
-        logger.debug("Change chip type Oxford Inner to Oxford.")
+        SSX_LOGGER.debug("Change chip type Oxford Inner to Oxford.")
         parameters.chip.chip_type = ChipType.Oxford
 
     chip_prog_dict = get_chip_prog_values(parameters)
-    logger.info("Loading Motion Program Data")
+    SSX_LOGGER.info("Loading Motion Program Data")
     yield from load_motion_program_data(
         pmac,
         chip_prog_dict,
@@ -632,21 +624,21 @@ def main_fixed_target_plan(
         zebra, aperture, backlight, beamstop, detector_stage, shutter, parameters, dcid
     )
 
-    logger.info("Moving to Start")
+    SSX_LOGGER.info("Moving to Start")
     yield from bps.trigger(pmac.to_xyz_zero)
     sleep(2.0)
 
     # Now ready for data collection. Open fast shutter (zebra gate)
-    logger.info("Opening fast shutter.")
+    SSX_LOGGER.info("Opening fast shutter.")
     yield from open_fast_shutter(zebra)
 
     # Kick off the StartOfCollect script
-    logger.debug("Notify DCID of the start of the collection.")
+    SSX_LOGGER.debug("Notify DCID of the start of the collection.")
     dcid.notify_start()
 
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
     if parameters.detector_name == "eiger":
-        logger.debug("Start nexus writing service.")
+        SSX_LOGGER.debug("Start nexus writing service.")
         call_nexgen(
             chip_prog_dict,
             start_time,
@@ -664,7 +656,7 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
     yield from bps.abs_set(pmac.program_number, prog_num, group="setup_pmac")
     # Calculate approx collection time
     total_collection_time = calculate_collection_timeout(parameters)
-    logger.info(f"Estimated collection time: {total_collection_time}s.")
+    SSX_LOGGER.info(f"Estimated collection time: {total_collection_time}s.")
     yield from bps.abs_set(
         pmac.collection_time, total_collection_time, group="setup_pmac"
     )
@@ -672,20 +664,20 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
-        logger.info(f"Kick off PMAC with program number {prog_num}.")
+        SSX_LOGGER.info(f"Kick off PMAC with program number {prog_num}.")
         yield from bps.kickoff(pmac.run_program, wait=True)
         yield from bps.complete(pmac.run_program, wait=True)
-        logger.info("Collection completed without errors.")
+        SSX_LOGGER.info("Collection completed without errors.")
 
     yield from run_collection()
 
 
-@log.log_on_entry
+@log_on_entry
 def collection_complete_plan(
     dcid: DCID, collection_directory: Path, map_type: MappingType
 ) -> MsgGenerator:
     end_time = datetime.now()
-    logger.debug(f"Collection end time {end_time}")
+    SSX_LOGGER.debug(f"Collection end time {end_time}")
     dcid.collection_complete(end_time, aborted=False)
 
     # Copy parameter file and eventual chip map to collection directory
@@ -693,7 +685,7 @@ def collection_complete_plan(
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def tidy_up_after_collection_plan(
     zebra: Zebra,
     pmac: PMAC,
@@ -705,27 +697,29 @@ def tidy_up_after_collection_plan(
     """A plan to be run to tidy things up at the end af a fixed target collection, \
     both successful or aborted.
     """
-    logger.info("Closing fast shutter")
+    SSX_LOGGER.info("Closing fast shutter")
     yield from close_fast_shutter(zebra)
     sleep(2.0)
 
     # This probably should go in main then
     if parameters.detector_name == "pilatus":
-        logger.debug("Pilatus Acquire STOP")
+        SSX_LOGGER.debug("Pilatus Acquire STOP")
         caput(pv.pilat_acquire, 0)
     elif parameters.detector_name == "eiger":
-        logger.debug("Eiger Acquire STOP")
+        SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
     sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 
-    logger.debug("Notify DCID of end of collection.")
+    SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
 
-    logger.debug("Quick summary of settings")
-    logger.debug(f"Chip name = {parameters.filename} sub_dir = {parameters.directory}")
+    SSX_LOGGER.debug("Quick summary of settings")
+    SSX_LOGGER.debug(
+        f"Chip name = {parameters.filename} sub_dir = {parameters.directory}"
+    )
 
 
 def run_fixed_target_plan(
@@ -738,12 +732,10 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
 ) -> MsgGenerator:
-    setup_logging()
-
     # in the first instance, write params here
     yield from write_parameter_file(detector_stage)
 
-    logger.info("Getting parameters from file.")
+    SSX_LOGGER.info("Getting parameters from file.")
     parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
 
     log_msg = f"""
@@ -762,7 +754,7 @@ def run_fixed_target_plan(
                 pumpdelay = {parameters.laser_delay_s}
                 prepumpexptime = {parameters.pre_pump_exposure_s}
         """
-    logger.info(log_msg)
+    SSX_LOGGER.info(log_msg)
 
     # DCID instance - do not create yet
     dcid = DCID(

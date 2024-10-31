@@ -5,7 +5,6 @@ This version in python3 new Feb2021 by RLO
 """
 
 import json
-import logging
 import re
 import shutil
 import sys
@@ -27,8 +26,12 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
 
-from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.log import (
+    SSX_LOGGER,
+    _read_visit_directory_from_file,
+    log_on_entry,
+)
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters, SSXType
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     PARAM_FILE_NAME,
@@ -54,15 +57,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
 
-usage = "%(prog)s command [options]"
-logger = logging.getLogger("I24ssx.extruder")
-
 SAFE_DET_Z = 1480
-
-
-def setup_logging():
-    logfile = time.strftime("i24extruder_%d%B%y.log").lower()
-    log.config(logfile)
 
 
 def flush_print(text):
@@ -70,15 +65,14 @@ def flush_print(text):
     sys.stdout.flush()
 
 
-@log.log_on_entry
+@log_on_entry
 def initialise_extruder(
     detector_stage: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
-    setup_logging()
-    logger.info("Initialise Parameters for extruder data collection on I24.")
+    SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
     visit = caget(pv.ioc12_gp1)
-    logger.info(f"Visit defined {visit}")
+    SSX_LOGGER.info(f"Visit defined {visit}")
 
     # Define detector in use
     det_type = yield from get_detector_type(detector_stage)
@@ -93,11 +87,11 @@ def initialise_extruder(
     caput(pv.ioc12_gp10, 0)
     caput(pv.ioc12_gp15, det_type.name)
     caput(pv.pilat_cbftemplate, 0)
-    logger.info("Initialisation complete.")
+    SSX_LOGGER.info("Initialisation complete.")
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def laser_check(
     mode: str,
     zebra: Zebra = inject("zebra"),
@@ -116,8 +110,7 @@ def laser_check(
     detector in use is the Eiger, the Pilatus cable is repurposed to trigger the light \
     source, and viceversa.
     """
-    setup_logging()
-    logger.debug(f"Laser check: {mode}")
+    SSX_LOGGER.debug(f"Laser check: {mode}")
 
     det_type = yield from get_detector_type(detector_stage)
 
@@ -131,24 +124,23 @@ def laser_check(
         yield from set_shutter_mode(zebra, "manual")
 
 
-@log.log_on_entry
+@log_on_entry
 def enter_hutch(
     detector_stage: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
-    setup_logging()
     yield from bps.mv(detector_stage.z, SAFE_DET_Z)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    logger.debug("Detector moved.")
+    SSX_LOGGER.debug("Detector moved.")
 
 
-@log.log_on_entry
+@log_on_entry
 def write_parameter_file(detector_stage: DetectorMotion):
     """Writes a json parameter file that can later be parsed by the model."""
     param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
-    logger.debug(f"Writing Parameter File to: {param_file}\n")
+    SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
 
     det_type = yield from get_detector_type(detector_stage)
-    logger.warning(f"DETECTOR TYPE: {det_type}")
+    SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
     filename = caget(pv.ioc12_gp3)
     # If file name ends in a digit this causes processing/pilatus pain.
     # Append an underscore
@@ -158,7 +150,7 @@ def write_parameter_file(detector_stage: DetectorMotion):
             # Note for future reference. Appending underscore causes more hassle and
             # high probability of users accidentally overwriting data. Use a dash
             filename = filename + "-"
-            logger.info(
+            SSX_LOGGER.info(
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
@@ -167,7 +159,7 @@ def write_parameter_file(detector_stage: DetectorMotion):
     pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else None
 
     params_dict = {
-        "visit": log._read_visit_directory_from_file().as_posix(),  # noqa
+        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": caget(pv.ioc12_gp2),
         "filename": filename,
         "exposure_time_s": float(caget(pv.ioc12_gp5)),
@@ -181,12 +173,12 @@ def write_parameter_file(detector_stage: DetectorMotion):
     with open(param_file, "w") as f:
         json.dump(params_dict, f, indent=4)
 
-    logger.info("Parameters \n")
-    logger.info(pformat(params_dict))
+    SSX_LOGGER.info("Parameters \n")
+    SSX_LOGGER.info(pformat(params_dict))
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def main_extruder_plan(
     zebra: Zebra,
     aperture: Aperture,
@@ -200,7 +192,7 @@ def main_extruder_plan(
     start_time: datetime,
 ) -> MsgGenerator:
     # Setting up the beamline
-    logger.debug("Open hutch shutter")
+    SSX_LOGGER.debug("Open hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
     yield from sup.setup_beamline_for_collection_plan(
@@ -213,25 +205,25 @@ def main_extruder_plan(
 
     # For pixel detector
     filepath = parameters.collection_directory.as_posix()
-    logger.debug(f"Filepath {filepath}")
-    logger.debug(f"Filename {parameters.filename}")
+    SSX_LOGGER.debug(f"Filepath {filepath}")
+    SSX_LOGGER.debug(f"Filename {parameters.filename}")
 
     if parameters.detector_name == "pilatus":
-        logger.info("Using pilatus mini cbf")
+        SSX_LOGGER.info("Using pilatus mini cbf")
         caput(pv.pilat_cbftemplate, 0)
-        logger.info(f"Pilatus quickshot setup: filepath {filepath}")
-        logger.info(f"Pilatus quickshot setup: filepath {parameters.filename}")
-        logger.info(
+        SSX_LOGGER.info(f"Pilatus quickshot setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Pilatus quickshot setup: filepath {parameters.filename}")
+        SSX_LOGGER.info(
             f"Pilatus quickshot setup: number of images {parameters.num_images}"
         )
-        logger.info(
+        SSX_LOGGER.info(
             f"Pilatus quickshot setup: exposure time {parameters.exposure_time_s}"
         )
 
         if parameters.pump_status:
-            logger.info("Pump probe extruder data collection")
-            logger.info(f"Pump exposure time {parameters.laser_dwell_s}")
-            logger.info(f"Pump delay time {parameters.laser_delay_s}")
+            SSX_LOGGER.info("Pump probe extruder data collection")
+            SSX_LOGGER.info(f"Pump exposure time {parameters.laser_dwell_s}")
+            SSX_LOGGER.info(f"Pump delay time {parameters.laser_delay_s}")
             sup.pilatus(
                 "fastchip",
                 [
@@ -252,7 +244,7 @@ def main_extruder_plan(
                 wait=True,
             )
         else:
-            logger.info("Static experiment: no photoexcitation")
+            SSX_LOGGER.info("Static experiment: no photoexcitation")
             sup.pilatus(
                 "quickshot",
                 [
@@ -267,23 +259,25 @@ def main_extruder_plan(
             )
 
     elif parameters.detector_name == "eiger":
-        logger.info("Using Eiger detector")
+        SSX_LOGGER.info("Using Eiger detector")
 
-        logger.debug(f"Creating the directory for the collection in {filepath}.")
+        SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
         Path(filepath).mkdir(parents=True)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
-        logger.info(f"Eiger quickshot setup: filepath {filepath}")
-        logger.info(f"Eiger quickshot setup: filepath {parameters.filename}")
-        logger.info(f"Eiger quickshot setup: number of images {parameters.num_images}")
-        logger.info(
+        SSX_LOGGER.info(f"Eiger quickshot setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Eiger quickshot setup: filepath {parameters.filename}")
+        SSX_LOGGER.info(
+            f"Eiger quickshot setup: number of images {parameters.num_images}"
+        )
+        SSX_LOGGER.info(
             f"Eiger quickshot setup: exposure time {parameters.exposure_time_s}"
         )
 
         if parameters.pump_status:
-            logger.info("Pump probe extruder data collection")
-            logger.debug(f"Pump exposure time {parameters.laser_dwell_s}")
-            logger.debug(f"Pump delay time {parameters.laser_delay_s}")
+            SSX_LOGGER.info("Pump probe extruder data collection")
+            SSX_LOGGER.debug(f"Pump exposure time {parameters.laser_dwell_s}")
+            SSX_LOGGER.debug(f"Pump delay time {parameters.laser_delay_s}")
             sup.eiger(
                 "triggered",
                 [
@@ -304,7 +298,7 @@ def main_extruder_plan(
                 wait=True,
             )
         else:
-            logger.info("Static experiment: no photoexcitation")
+            SSX_LOGGER.info("Static experiment: no photoexcitation")
             sup.eiger(
                 "quickshot",
                 [
@@ -319,7 +313,7 @@ def main_extruder_plan(
             )
     else:
         err = f"Unknown Detector Type, det_type = {parameters.detector_name}"
-        logger.error(err)
+        SSX_LOGGER.error(err)
         raise UnknownDetectorType(err)
 
     # Do DCID creation BEFORE arming the detector
@@ -335,20 +329,20 @@ def main_extruder_plan(
     )
 
     # Collect
-    logger.info("Fast shutter opening")
+    SSX_LOGGER.info("Fast shutter opening")
     yield from open_fast_shutter(zebra)
     if parameters.detector_name == "pilatus":
-        logger.info("Pilatus acquire ON")
+        SSX_LOGGER.info("Pilatus acquire ON")
         caput(pv.pilat_acquire, 1)
     elif parameters.detector_name == "eiger":
-        logger.info("Triggering Eiger NOW")
+        SSX_LOGGER.info("Triggering Eiger NOW")
         caput(pv.eiger_trigger, 1)
 
     dcid.notify_start()
 
     if parameters.detector_name == "eiger":
         wavelength = yield from bps.rd(dcm.wavelength_in_a)
-        logger.debug("Call nexgen server for nexus writing.")
+        SSX_LOGGER.debug("Call nexgen server for nexus writing.")
         call_nexgen(None, start_time, parameters, wavelength, "extruder")
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
@@ -366,25 +360,25 @@ def main_extruder_plan(
         if zebra_arm_status == 0:  # not zebra.pc.is_armed():
             # As soon as zebra is disarmed, exit.
             # Epics updates this PV once the collection is done.
-            logger.info("Zebra disarmed - Collection done.")
+            SSX_LOGGER.info("Zebra disarmed - Collection done.")
             break
         if time.time() >= timeout_time:
-            logger.warning(
+            SSX_LOGGER.warning(
                 """
                 Something went wrong and data collection timed out. Aborting.
             """
             )
             raise TimeoutError("Data collection timed out.")
 
-    logger.debug("Collection completed without errors.")
+    SSX_LOGGER.debug("Collection completed without errors.")
 
 
-@log.log_on_entry
+@log_on_entry
 def collection_aborted_plan(
     zebra: Zebra, detector_name: str, dcid: DCID
 ) -> MsgGenerator:
     """A plan to run in case the collection is aborted before the end."""
-    logger.warning("Data Collection Aborted")
+    SSX_LOGGER.warning("Data Collection Aborted")
     yield from disarm_zebra(zebra)  # If aborted/timed out zebra still armed
     if detector_name == "pilatus":
         caput(pv.pilat_acquire, 0)
@@ -395,7 +389,7 @@ def collection_aborted_plan(
     dcid.collection_complete(end_time, aborted=True)
 
 
-@log.log_on_entry
+@log_on_entry
 def tidy_up_at_collection_end_plan(
     zebra: Zebra,
     shutter: HutchShutter,
@@ -416,23 +410,23 @@ def tidy_up_at_collection_end_plan(
         sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
         sup.eiger("return-to-normal", None)
-        logger.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
-    logger.debug("End of Run")
-    logger.debug("Close hutch shutter")
+        SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
+    SSX_LOGGER.debug("End of Run")
+    SSX_LOGGER.debug("Close hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     dcid.notify_end()
 
 
-@log.log_on_entry
+@log_on_entry
 def collection_complete_plan(
     collection_directory: Path, detector_name: str, dcid: DCID
 ) -> MsgGenerator:
     if detector_name == "pilatus":
-        logger.info("Pilatus Acquire STOP")
+        SSX_LOGGER.info("Pilatus Acquire STOP")
         caput(pv.pilat_acquire, 0)
     elif detector_name == "eiger":
-        logger.info("Eiger Acquire STOP")
+        SSX_LOGGER.info("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
 
@@ -440,7 +434,7 @@ def collection_complete_plan(
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=False)
-    logger.info(f"End Time = {end_time.ctime()}")
+    SSX_LOGGER.info(f"End Time = {end_time.ctime()}")
 
     # Copy parameter file
     shutil.copy2(
@@ -459,9 +453,8 @@ def run_extruder_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
 ) -> MsgGenerator:
-    setup_logging()
     start_time = datetime.now()
-    logger.info(f"Collection start time: {start_time.ctime()}")
+    SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
     yield from write_parameter_file(detector_stage)
     parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)

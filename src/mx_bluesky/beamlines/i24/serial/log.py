@@ -5,23 +5,19 @@ from os import environ
 from pathlib import Path
 
 from bluesky.log import logger as bluesky_logger
-from dodal.log import (
-    ERROR_LOG_BUFFER_LINES,
-    get_graylog_configuration,
-    ophyd_async_logger,
-    set_up_DEBUG_memory_handler,
-    set_up_graylog_handler,
-    set_up_INFO_file_handler,
-)
+from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
 from dodal.log import LOGGER as dodal_logger
+
+from mx_bluesky.common.utils.log import do_default_logging_setup
 
 VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
 
 
 # Logging set up
-logger = logging.getLogger("I24ssx")
-logger.addHandler(logging.NullHandler())
-logger.parent = dodal_logger
+SSX_LOGGER = logging.getLogger("I24serial")
+SSX_LOGGER.addHandler(logging.NullHandler())
+SSX_LOGGER.parent = dodal_logger
+
 
 logging_config = {
     "version": 1,
@@ -41,9 +37,9 @@ logging_config = {
         }
     },
     "loggers": {
-        "I24ssx": {
+        "I24serial": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         }
     },
@@ -59,10 +55,8 @@ def _read_visit_directory_from_file() -> Path:
 
 
 def _get_logging_file_path() -> Path:
-    """Get the path to write the artemis log files to.
-    If on a beamline, this will be written to the according area depending on the
-    BEAMLINE envrionment variable. If no envrionment variable is found it will default
-    it to the tmp/dev directory.
+    """Get the path to write the serial experiment specific log file to.
+    If on a beamline, this will be written to the tmp folder in the current visit.
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
@@ -85,22 +79,6 @@ def _integrate_bluesky_logs(parent_logger: logging.Logger):
         log.setLevel(logging.DEBUG)
 
 
-def default_logging_setup(dev_mode: bool = False):
-    """ Default log setup for i24 serial.
-
-    - Set up handlers for parent logger (from dodal): INFO file, DEBUG \
-        memory and graylog.
-    - integrate bluesky and ophyd loggers.
-    """
-    logging_path = _get_logging_file_path()
-    set_up_INFO_file_handler(dodal_logger, logging_path, "dodal.log")
-    set_up_DEBUG_memory_handler(
-        dodal_logger, logging_path, "dodal.log", ERROR_LOG_BUFFER_LINES
-    )
-    set_up_graylog_handler(dodal_logger, *get_graylog_configuration(dev_mode, None))
-    _integrate_bluesky_logs(dodal_logger)
-
-
 def config(
     logfile: str | None = None,
     write_mode: str = "a",
@@ -118,7 +96,15 @@ def config(
         dev_mode (bool, optional): If true, will log to graylog on localhost instead \
             of production. Defaults to False.
     """
-    default_logging_setup(dev_mode=dev_mode)
+    do_default_logging_setup(
+        "mx-bluesky.log",
+        DEFAULT_GRAYLOG_PORT,
+        dev_mode=dev_mode,
+        integrate_all_logs=False,
+    )
+    # Remove dodal StreamHandler to avoid duplication of messages above debug
+    dodal_logger.removeHandler(dodal_logger.handlers[0])
+    _integrate_bluesky_logs(dodal_logger)
 
     if logfile:
         logs = _get_logging_file_path() / logfile
@@ -129,14 +115,14 @@ def config(
         FH = logging.FileHandler(logs, mode=write_mode, encoding="utf-8", delay=delayed)
         FH.setLevel(logging.DEBUG)
         FH.setFormatter(fileFormatter)
-        logger.addHandler(FH)
+        SSX_LOGGER.addHandler(FH)
 
 
 def log_on_entry(func):
     @functools.wraps(func)
     def decorator(*args, **kwargs):
         name = func.__name__
-        logger.debug(f"Running {name} ")
+        SSX_LOGGER.debug(f"Running {name} ")
         return func(*args, **kwargs)
 
     return decorator
