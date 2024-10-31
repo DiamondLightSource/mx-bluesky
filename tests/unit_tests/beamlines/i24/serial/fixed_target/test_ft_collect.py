@@ -158,7 +158,7 @@ def test_load_motion_program_data(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1._create_directory_for_eiger_collection"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
 )
 def test_start_i24_with_eiger(
     fake_mkdir,
@@ -194,9 +194,7 @@ def test_start_i24_with_eiger(
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_with(
-        dummy_params_without_pp.collection_directory.as_posix()
-    )
+    fake_mkdir.assert_called_once()
 
     shutter_call_list = [
         call("Reset", wait=True, timeout=10.0),

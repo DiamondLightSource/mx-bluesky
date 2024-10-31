@@ -67,11 +67,6 @@ def setup_logging():
     log.config(logfile)
 
 
-def _create_directory_for_eiger_collection(filepath: str):
-    logger.debug(f"Creating the directory for the collection in {filepath}.")
-    Path(filepath).mkdir(parents=True)
-
-
 def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     """Give an estimation of the time the plan should wait for the data collection \
         to be finished.
@@ -480,7 +475,8 @@ def start_i24(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        _create_directory_for_eiger_collection(filepath)
+        logger.debug(f"Creating the directory for the collection in {filepath}.")
+        Path(filepath).mkdir(parents=True)
 
         logger.info(f"Triggered Eiger setup: filepath {filepath}")
         logger.info(f"Triggered Eiger setup: filename {filename}")

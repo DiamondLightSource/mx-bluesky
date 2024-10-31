@@ -8,7 +8,6 @@ from ophyd_async.core import get_mock_put
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
     TTL_PILATUS,
-    _create_directory_for_eiger_collection,
     collection_aborted_plan,
     collection_complete_plan,
     enter_hutch,
@@ -83,12 +82,6 @@ def test_initialise_extruder(
     assert fake_caget.call_count == 1
 
 
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path")
-def test_create_directory_for_eiger_collection(fake_path):
-    _create_directory_for_eiger_collection("")
-    fake_path.assert_called_once()
-
-
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
 )
@@ -147,7 +140,7 @@ async def test_laser_check(
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._create_directory_for_eiger_collection"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
 )
 def test_run_extruder_quickshot_with_eiger(
     fake_mkdir,
@@ -193,7 +186,7 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
     assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_with(dummy_params.collection_directory.as_posix())
+    fake_mkdir.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")

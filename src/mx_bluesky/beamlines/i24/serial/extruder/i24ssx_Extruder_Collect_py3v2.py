@@ -65,11 +65,6 @@ def setup_logging():
     log.config(logfile)
 
 
-def _create_directory_for_eiger_collection(filepath: str):
-    logger.debug(f"Creating the directory for the collection in {filepath}.")
-    Path(filepath).mkdir(parents=True)
-
-
 def flush_print(text):
     sys.stdout.write(str(text))
     sys.stdout.flush()
@@ -274,7 +269,8 @@ def main_extruder_plan(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        _create_directory_for_eiger_collection(filepath)
+        logger.debug(f"Creating the directory for the collection in {filepath}.")
+        Path(filepath).mkdir(parents=True)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
         logger.info(f"Eiger quickshot setup: filepath {filepath}")
