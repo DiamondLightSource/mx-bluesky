@@ -93,9 +93,7 @@ def grid_detection_plan(
     microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
     microns_per_pixel_y = yield from bps.rd(oav.microns_per_pixel_y)
 
-    assert isinstance(microns_per_pixel_x, float)
     box_size_x_pixels = box_size_um / microns_per_pixel_x
-    assert isinstance(microns_per_pixel_y, float)
     box_size_y_pixels = box_size_um / microns_per_pixel_y
 
     grid_width_pixels = int(grid_width_microns / microns_per_pixel_x)
