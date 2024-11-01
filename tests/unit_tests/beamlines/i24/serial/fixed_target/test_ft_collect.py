@@ -15,6 +15,8 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+    PMAC_MOVE_TIME,
+    calculate_collection_timeout,
     datasetsizei24,
     finish_i24,
     get_chip_prog_values,
@@ -35,6 +37,27 @@ chipmap_str = """01status    P3011       1
 def fake_generator(value):
     yield from bps.null()
     return value
+
+
+def test_calculate_collection_timeout(dummy_params_without_pp):
+    dummy_params_without_pp.total_num_images = 400
+    expected_collection_time = (
+        dummy_params_without_pp.total_num_images
+        * dummy_params_without_pp.exposure_time_s
+    )
+    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 2
+    timeout = calculate_collection_timeout(dummy_params_without_pp)
+
+    assert timeout == expected_collection_time + buffer
+
+
+def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
+    dummy_params_with_pp.total_num_images = 400
+    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 2
+    expected_pump_and_probe_time = 12.05
+    timeout = calculate_collection_timeout(dummy_params_with_pp)
+
+    assert timeout == expected_pump_and_probe_time + buffer
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
@@ -134,7 +157,11 @@ def test_load_motion_program_data(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
 def test_start_i24_with_eiger(
+    fake_mkdir,
     fake_sleep,
     fake_sup,
     fake_caget,
@@ -165,9 +192,9 @@ def test_start_i24_with_eiger(
     assert fake_sup.eiger.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
-    # Pilatus gets called for hack to create directory
-    assert fake_sup.pilatus.call_count == 2
     assert fake_dcid.generate_dcid.call_count == 1
+    assert fake_mkdir.call_count == 1
+    fake_mkdir.assert_called_once()
 
     shutter_call_list = [
         call("Reset", wait=True, timeout=10.0),
