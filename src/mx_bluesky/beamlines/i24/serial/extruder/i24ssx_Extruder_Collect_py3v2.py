@@ -154,7 +154,7 @@ def write_parameter_file(detector_stage: DetectorMotion):
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
-    pump_status = bool(caget(pv.ioc12_gp6))
+    pump_status = bool(int(caget(pv.ioc12_gp6)))
     pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else None
     pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else None
 
@@ -192,7 +192,7 @@ def main_extruder_plan(
     start_time: datetime,
 ) -> MsgGenerator:
     # Setting up the beamline
-    SSX_LOGGER.debug("Open hutch shutter")
+    SSX_LOGGER.info("Open hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
     yield from sup.setup_beamline_for_collection_plan(
@@ -370,7 +370,7 @@ def main_extruder_plan(
             )
             raise TimeoutError("Data collection timed out.")
 
-    SSX_LOGGER.debug("Collection completed without errors.")
+    SSX_LOGGER.info("Collection completed without errors.")
 
 
 @log_on_entry
@@ -412,7 +412,7 @@ def tidy_up_at_collection_end_plan(
         sup.eiger("return-to-normal", None)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
-    SSX_LOGGER.debug("Close hutch shutter")
+    SSX_LOGGER.info("Close hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     dcid.notify_end()

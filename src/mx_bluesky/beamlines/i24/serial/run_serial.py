@@ -15,6 +15,7 @@ def _parse_input(expt: SSXType):
     return args
 
 
+# ACHTUNG THIS IS NOT YET RUN BY DETECTOR SO IT WON'T WORK CORRECTLY HERE
 def _setup_collection_logs(expt: SSXType, dev_mode: bool = False):
     # Set up logging on start up
     if expt == SSXType.FIXED:
@@ -39,9 +40,9 @@ def _get_file_path() -> Path:
 
 def run_extruder():
     args = _parse_input(SSXType.EXTRUDER)
-    _setup_collection_logs(SSXType.EXTRUDER, args.test)
+    # _setup_collection_logs(SSXType.EXTRUDER, args.test)
     loc = get_location()
-    SSX_LOGGER.debug(f"Running on {loc}.")
+    SSX_LOGGER.info(f"Running on {loc}.")
     edm_path = get_edm_path()
     filepath = _get_file_path()
     test_mode = "--test" if args.test else ""
@@ -53,7 +54,7 @@ def run_extruder():
 
 def run_fixed_target():
     args = _parse_input(SSXType.FIXED)
-    _setup_collection_logs(SSXType.FIXED, args.test)
+    # _setup_collection_logs(SSXType.FIXED, args.test)
     loc = get_location()
     SSX_LOGGER.info(f"Running on {loc}.")
     edm_path = get_edm_path()

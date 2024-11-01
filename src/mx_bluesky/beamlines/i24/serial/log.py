@@ -1,9 +1,12 @@
 import functools
 import logging
 import logging.config
+import time
 from os import environ
 from pathlib import Path
 
+import bluesky.plan_stubs as bps
+from blueapi.core import MsgGenerator
 from bluesky.log import logger as bluesky_logger
 from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
 from dodal.log import LOGGER as dodal_logger
@@ -39,7 +42,7 @@ logging_config = {
     "loggers": {
         "I24serial": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         }
     },
@@ -103,7 +106,7 @@ def config(
         integrate_all_logs=False,
     )
     # Remove dodal StreamHandler to avoid duplication of messages above debug
-    dodal_logger.removeHandler(dodal_logger.handlers[0])
+    # dodal_logger.removeHandler(dodal_logger.handlers[0])
     _integrate_bluesky_logs(dodal_logger)
 
     if logfile:
@@ -126,3 +129,23 @@ def log_on_entry(func):
         return func(*args, **kwargs)
 
     return decorator
+
+
+def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
+    # Set up logging on start up
+    if expt == "Serial Fixed":  # SSXType.FIXED:
+        logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
+    else:
+        logfile = time.strftime("i24extruder_%d%B%y.log").lower()
+
+    config(logfile, dev_mode=dev_mode)
+    yield from bps.null()
+
+
+def clean_up_log_config_at_end() -> MsgGenerator:
+    for handler in SSX_LOGGER.handlers:
+        SSX_LOGGER.removeHandler(handler)
+    for handler in dodal_logger.handlers:
+        SSX_LOGGER.removeHandler(handler)
+        dodal_logger.removeHandler(handler)
+    yield from bps.null()
