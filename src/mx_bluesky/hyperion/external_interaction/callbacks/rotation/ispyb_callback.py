@@ -158,7 +158,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         data_collection_info = DataCollectionInfo(
             **{
                 f"xtal_snapshot{self._oav_snapshot_event_idx}": data.get(
-                    "oav_snapshot_last_saved_path"
+                    "oav-snapshot-last_saved_path"
                 )
             }
         )

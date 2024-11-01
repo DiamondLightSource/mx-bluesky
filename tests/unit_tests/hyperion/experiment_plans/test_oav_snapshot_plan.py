@@ -95,7 +95,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_snapshot_directory"
+        and msg.obj.name == "oav-snapshot-directory"
         and msg.args[0] == "/tmp/my_snapshots",
     )
     for expected in [
@@ -114,13 +114,13 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "oav_snapshot_filename"
+            and msg.obj.name == "oav-snapshot-filename"
             and msg.args[0] == expected["filename"],
         )
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "trigger"
-            and msg.obj.name == "oav_snapshot"
+            and msg.obj.name == "oav-snapshot"
             and msg.kwargs["group"] is None,
         )
         msgs = assert_message_and_return_remaining(
