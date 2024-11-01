@@ -23,8 +23,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-DISPLAY_CONFIGURATION = "tests/devices/unit_tests/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
+DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
+ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
 TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_METAFILE = "ins_8_5_meta.h5.gz"
 FAKE_DATAFILE = "../fake_data.h5"
@@ -94,7 +94,7 @@ def fake_create_rotation_devices():
     robot = i03.robot(fake_with_ophyd_sim=True)
     oav = i03.oav(
         fake_with_ophyd_sim=True,
-        config=OAVConfig(
+        params=OAVConfig(
             zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
         ),
     )

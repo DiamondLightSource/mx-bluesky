@@ -188,8 +188,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 * data["oav-grid_snapshot-num_boxes_y"]
             ),
         )
-        microns_per_pixel_x = data["oav-grid_snapshot-microns_per_pixel_x"]
-        microns_per_pixel_y = data["oav-grid_snapshot-microns_per_pixel_y"]
+        microns_per_pixel_x = data["oav-microns_per_pixel_x"]
+        microns_per_pixel_y = data["oav-microns_per_pixel_y"]
         data_collection_grid_info = DataCollectionGridInfo(
             dx_in_mm=data["oav-grid_snapshot-box_width"] * microns_per_pixel_x / 1000,
             dy_in_mm=data["oav-grid_snapshot-box_width"] * microns_per_pixel_y / 1000,

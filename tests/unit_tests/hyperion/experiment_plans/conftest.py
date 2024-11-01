@@ -241,7 +241,7 @@ def simple_beamline(
     magic_mock.dcm = dcm
     magic_mock.synchrotron = synchrotron
     magic_mock.eiger = eiger
-    oav.zoom_controller.set("7.5x")
+    oav.zoom_controller.level.set("7.5x")
     oav.parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     ).get_parameters()

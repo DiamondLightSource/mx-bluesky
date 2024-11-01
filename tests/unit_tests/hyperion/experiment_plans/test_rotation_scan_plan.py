@@ -518,7 +518,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot"
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
     )
 
 
@@ -629,7 +629,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot"
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
     )
     msgs = assert_message_and_return_remaining(
         msgs,

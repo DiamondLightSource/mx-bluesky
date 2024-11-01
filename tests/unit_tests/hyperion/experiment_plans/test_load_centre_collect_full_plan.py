@@ -190,6 +190,8 @@ def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
     )
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
@@ -217,6 +219,9 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     sim_run_engine,
     grid_detection_callback_with_detected_grid,
 ):
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
+
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
             load_centre_collect_full_plan(

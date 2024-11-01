@@ -78,8 +78,6 @@ def fake_devices(
         mock_response.read.return_value = b""
         mock_image_class.open.return_value.__aenter__.return_value = b""
 
-        oav.grid_snapshot._save_image = AsyncMock()
-
         composite = OavGridDetectionComposite(
             backlight=backlight,
             oav=oav,
@@ -103,6 +101,8 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, image_save = fake_devices
 
+    composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
+
     @bpp.run_decorator()
     def decorated():
         yield from grid_detection_plan(
@@ -115,7 +115,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     RE(decorated())
     assert image_save.await_count == 4
-    assert composite.oav.grid_snapshot._save_image.call_count == 2
+    assert mock_save.call_count == 2
 
 
 @patch(

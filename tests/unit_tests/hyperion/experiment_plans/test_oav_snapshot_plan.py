@@ -65,31 +65,31 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_color_mode"
+        and msg.obj.name == "oav-cam-color_mode"
         and msg.args[0] == ColorMode.RGB1,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_acquire_period"
+        and msg.obj.name == "oav-cam-acquire_period"
         and msg.args[0] == 0.05,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_acquire_time"
+        and msg.obj.name == "oav-cam-acquire_time"
         and msg.args[0] == 0.075,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_gain"
+        and msg.obj.name == "oav-cam-gain"
         and msg.args[0] == 1,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_zoom_controller"
+        and msg.obj.name == "oav-zoom_controller"
         and msg.args[0] == "5.0x",
     )
     msgs = assert_message_and_return_remaining(
@@ -134,7 +134,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
             == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         )
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav_snapshot"
+            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav-snapshot"
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
