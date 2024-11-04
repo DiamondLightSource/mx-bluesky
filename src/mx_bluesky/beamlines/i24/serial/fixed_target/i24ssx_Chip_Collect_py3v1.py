@@ -56,9 +56,11 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
 
-ABORTED = False
-
 logger = logging.getLogger("I24ssx.fixed_target")
+
+# Move this in common place as part of
+# https://github.com/DiamondLightSource/mx-bluesky/pull/603
+PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
 
 
 def setup_logging():
@@ -85,7 +87,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    buffer = 30
+    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 2
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
@@ -474,24 +476,8 @@ def start_i24(
     elif parameters.detector_name == "eiger":
         logger.info("Using Eiger detector")
 
-        logger.warning(
-            """TEMPORARY HACK!
-            Running a Single image pilatus data collection to create directory."""
-        )
-        num_imgs = 1
-        sup.pilatus(
-            "quickshot-internaltrig",
-            [filepath, filename, num_imgs, parameters.exposure_time_s],
-        )
-        logger.debug("Sleep 2s waiting for pilatus to arm")
-        sleep(2)
-        sleep(0.5)
-        caput(pv.pilat_acquire, "0")  # Disarm pilatus
-        sleep(0.5)
-        caput(pv.pilat_acquire, "1")  # Arm pilatus
-        logger.debug("Pilatus data collection DONE")
-        sup.pilatus("return to normal", None)
-        logger.info("Pilatus back to normal. Single image pilatus data collection DONE")
+        logger.debug(f"Creating the directory for the collection in {filepath}.")
+        Path(filepath).mkdir(parents=True)
 
         logger.info(f"Triggered Eiger setup: filepath {filepath}")
         logger.info(f"Triggered Eiger setup: filename {filename}")
