@@ -125,7 +125,7 @@ class ExpeyeCoreInteraction:
         data = {
             "endTimestamp": get_current_time_string(),
             "status": run_status,
-            "message": reason[:255] if reason else None,
+            "message": reason[:255] if reason else "",
         }
         _send_and_get_response(self.auth, url, data, patch)
 
