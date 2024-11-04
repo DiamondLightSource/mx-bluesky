@@ -13,6 +13,12 @@ class WarningException(Exception):
     pass
 
 
+class SampleException(WarningException):
+    """An exception which identifies an issue relating to the sample."""
+
+    pass
+
+
 T = TypeVar("T")
 
 

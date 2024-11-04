@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
+from bluesky import Msg
+from bluesky.preprocessors import contingency_wrapper
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -17,7 +20,7 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
-from mx_bluesky.hyperion.exceptions import catch_exception_and_warn
+from mx_bluesky.hyperion.exceptions import SampleException
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -105,8 +108,13 @@ def grid_detection_plan(
         # See #673 for improvements
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
-        tip_x_px, tip_y_px = yield from catch_exception_and_warn(
-            PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detection
+        def wrap_exception(e: Exception) -> Generator[Msg, Any, Any]:
+            if isinstance(e, PinNotFoundException):
+                raise SampleException(str(e))
+            yield from []
+
+        tip_x_px, tip_y_px = yield from contingency_wrapper(
+            wait_for_tip_to_be_found(pin_tip_detection), except_plan=wrap_exception
         )
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
