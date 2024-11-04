@@ -20,7 +20,13 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     scrape_mtr_directions,
     scrape_mtr_fiducials,
     set_pmac_strings_for_cs,
+    upload_parameters,
 )
+
+chipmap_str = """01status    P3011       1
+02status    P3021       0
+03status    P3031       0
+04status    P3041       0"""
 
 mtr_dir_str = """#Some words
 mtr1_dir=1
@@ -63,6 +69,50 @@ async def test_initialise(
             call("m808=100 m809=150", wait=True, timeout=10.0),
         ]
     )
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.exists"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sys.stdout"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
+def test_upload_parameters(
+    fake_caput: MagicMock,
+    fake_stdout: MagicMock,
+    fake_file_exists: MagicMock,
+    pmac: PMAC,
+    RE,
+):
+    fake_file_exists.return_value = True
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+        mock_open(read_data=chipmap_str),
+    ):
+        RE(upload_parameters(pmac))
+
+    mock_pmac_str = get_mock_put(pmac.pmac_string)
+    mock_pmac_str.assert_has_calls(
+        [
+            call("P3011=1", wait=True, timeout=10.0),
+            call("P3021=0", wait=True, timeout=10.0),
+            call("P3031=0", wait=True, timeout=10.0),
+            call("P3041=0", wait=True, timeout=10.0),
+        ]
+    )
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.exists"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
+def test_upload_parameters_fails_if_no_file(
+    fake_caput: MagicMock, fake_file_exists: MagicMock, pmac: PMAC, RE
+):
+    fake_file_exists.return_value = False
+    with pytest.raises(FileNotFoundError):
+        RE(upload_parameters(pmac))
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
