@@ -37,6 +37,7 @@ class OavConstants:
 
 @dataclass(frozen=True)
 class PlanNameConstants:
+    LOAD_CENTRE_COLLECT = "load_centre_collect"
     # Robot load subplan
     ROBOT_LOAD = "robot_load"
     # Gridscan
@@ -46,6 +47,9 @@ class PlanNameConstants:
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
     GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
+    # IspyB callback activation
+    ISPYB_ACTIVATION = "ispyb_activation"
+    ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"

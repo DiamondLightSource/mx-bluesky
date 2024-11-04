@@ -68,6 +68,7 @@ def test_given_server_does_not_respond_when_start_load_called_then_error(mock_po
 
 @patch("mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store.patch")
 def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
+    # mocks HTTP PATCH
     mock_patch,
 ):
     expeye_interactor = ExpeyeCoreInteraction()

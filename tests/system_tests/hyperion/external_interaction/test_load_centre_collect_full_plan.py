@@ -3,14 +3,18 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
+from ispyb.sqlalchemy import BLSample
+from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
@@ -20,6 +24,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -171,6 +178,16 @@ ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "6}_oav_snapshot_270\\.png",
 }
 
+SAMPLE_ID = 5461074
+
+
+@pytest.fixture(autouse=True)
+def use_real_ispyb():
+    with patch.dict(
+        os.environ, values={"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
+    ):
+        yield
+
 
 @pytest.mark.s03
 def test_execute_load_centre_collect_full_plan(
@@ -181,8 +198,8 @@ def test_execute_load_centre_collect_full_plan(
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
 ):
-    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_gridscan_cb = GridscanISPyBCallback()
     ispyb_rotation_cb = RotationISPyBCallback()
     robot_load_cb = RobotLoadISPyBCallback()
@@ -270,3 +287,99 @@ def test_execute_load_centre_collect_full_plan(
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
         "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
     )
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_robot_load_fail():
+    assert False, "TODO"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    pin_tip_no_pin_found: PinTipDetection,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with pytest.raises(
+        WarningException, match="Pin tip centring failed - pin too long/short.*"
+    ):
+        RE(
+            load_centre_collect_full_plan(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    # robot_load_cb.expeye_sample_handling = MagicMock()
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_not_found(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    descriptor = None
+
+    def wait_for_first_oav_grid(name: str, doc: dict):
+        nonlocal descriptor
+        if (
+            name == "descriptor"
+            and doc["name"] == CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED
+        ):
+            descriptor = doc["uid"]
+        if name == "event" and doc["descriptor"] == descriptor:
+            # Trigger a fail to find the pin at 2nd grid detect
+            set_mock_value(
+                load_centre_collect_composite.pin_tip_detection.triggered_tip,
+                PinTipDetection.INVALID_POSITION,
+            )
+            trigger = load_centre_collect_composite.pin_tip_detection.trigger
+            trigger.return_value = NullStatus()
+            trigger.side_effect = None
+
+    RE.subscribe(wait_for_first_oav_grid)
+
+    with pytest.raises(WarningException, match="No pin found after 5.0 seconds"):
+        RE(
+            load_centre_collect_full_plan(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    # robot_load_cb.expeye_sample_handling = MagicMock()
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction():
+    assert False, "TODO"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_rotation_failure():
+    assert False, "TODO"

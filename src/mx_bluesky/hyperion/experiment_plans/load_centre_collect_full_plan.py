@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 import pydantic
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.preprocessors import subs_wrapper
+from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
@@ -20,6 +20,10 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     multi_rotation_scan,
 )
 from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    sample_handling_callback_decorator,
+)
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -53,36 +57,52 @@ def load_centre_collect_full(
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
 
-    flyscan_event_handler = XRayCentreEventHandler()
-    yield from subs_wrapper(
-        robot_load_then_xray_centre(composite, parameters.robot_load_then_centre),
-        flyscan_event_handler,
+    # Below causes close_run not received before open_run in _open_run
+    # @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
+    # @run_decorator(md={"metadata": {"sample_id": params.sample_id},
+    #                    "activate_callbacks": ["SampleHandlingCallback"]})
+    # @sample_handling_callback_decorator()
+    @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
+    @run_decorator(
+        md={
+            "metadata": {"sample_id": parameters.sample_id},
+            "activate_callbacks": ["SampleHandlingCallback"],
+        }
     )
+    @sample_handling_callback_decorator()
+    def plan_with_callback_subs():
 
-    assert (
-        flyscan_event_handler.xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+        flyscan_event_handler = XRayCentreEventHandler()
+        yield from subs_wrapper(
+            robot_load_then_xray_centre(composite, parameters.robot_load_then_centre),
+            flyscan_event_handler,
+        )
 
-    selection_func = flyscan_result.resolve_selection_fn(parameters.selection_params)
-    hits: Sequence[flyscan_result.XRayCentreResult] = selection_func(
-        flyscan_event_handler.xray_centre_results
-    )
-    LOGGER.info(
-        f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
-    )
+        assert (
+            flyscan_event_handler.xray_centre_results
+        ), "Flyscan result event not received or no crystal found and exception not raised"
 
-    multi_rotation = parameters.multi_rotation_scan
-    rotation_template = multi_rotation.rotation_scans.copy()
+        selection_func = flyscan_result.resolve_selection_fn(parameters.selection_params)
+        hits: Sequence[flyscan_result.XRayCentreResult] = selection_func(
+            flyscan_event_handler.xray_centre_results
+        )
+        LOGGER.info(
+            f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
+        )
 
-    multi_rotation.rotation_scans.clear()
+        multi_rotation = parameters.multi_rotation_scan
+        rotation_template = multi_rotation.rotation_scans.copy()
 
-    for hit in hits:
-        for rot in rotation_template:
-            combination = rot.model_copy()
-            combination.x_start_um, combination.y_start_um, combination.z_start_um = (
-                axis * 1000 for axis in hit.centre_of_mass_mm
-            )
-            multi_rotation.rotation_scans.append(combination)
-    multi_rotation = MultiRotationScan.model_validate(multi_rotation)
+        multi_rotation.rotation_scans.clear()
 
-    yield from multi_rotation_scan(composite, multi_rotation, oav_params)
+        for hit in hits:
+            for rot in rotation_template:
+                combination = rot.model_copy()
+                combination.x_start_um, combination.y_start_um, combination.z_start_um = (
+                    axis * 1000 for axis in hit.centre_of_mass_mm
+                )
+                multi_rotation.rotation_scans.append(combination)
+        multi_rotation = MultiRotationScan.model_validate(multi_rotation)
+
+        yield from multi_rotation_scan(composite, multi_rotation, oav_params)
+    yield from plan_with_callback_subs()
