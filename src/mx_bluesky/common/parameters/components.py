@@ -17,7 +17,7 @@ from semver import Version
 
 from mx_bluesky.common.parameters.constants import TEST_MODE, DetectorParamConstants
 
-PARAMETER_VERSION = Version.parse("5.1.0")
+PARAMETER_VERSION = Version.parse("5.2.0")
 
 
 class RotationAxis(StrEnum):

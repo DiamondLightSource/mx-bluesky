@@ -1,5 +1,3 @@
-import json
-
 from daq_config_server.client import ConfigServer
 from pydantic import BaseModel, Field, model_validator
 
@@ -47,8 +45,3 @@ class FeatureFlags(BaseModel):
                 else self.overriden_features[flag]
             )
             setattr(self, flag, updated_value)
-
-    @classmethod
-    def from_json(cls, input: str | None):
-        assert input is not None
-        return cls(**json.loads(input))
