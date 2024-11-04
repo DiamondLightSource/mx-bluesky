@@ -1,4 +1,5 @@
 import logging
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -75,3 +76,21 @@ def test_logging_config_with_filehandler(
         # Clear FileHandler to avoid other tests failing if it is kept open
         dummy_logger.removeHandler(dummy_logger.handlers[1])
         _destroy_handlers(dummy_logger.parent)
+
+
+@patch("mx_bluesky.beamlines.i24.serial.log.config")
+def test_setup_collection_logs_in_dev_mode(mock_config, RE):
+    # Fixed target, dev mode
+    fake_filename = time.strftime("i24fixedtarget_%d%B%y.log").lower()
+    RE(log.setup_collection_logs("Serial Fixed", True))
+
+    mock_config.assert_called_once_with(fake_filename, dev_mode=True)
+
+
+@patch("mx_bluesky.beamlines.i24.serial.log.config")
+def test_setup_collection_logs(mock_config, RE):
+    # Extruder, non dev mode
+    fake_filename = time.strftime("i24extruder_%d%B%y.log").lower()
+    RE(log.setup_collection_logs("Serial Jet"))
+
+    mock_config.assert_called_once_with(fake_filename, dev_mode=False)
