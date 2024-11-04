@@ -132,7 +132,10 @@ def log_on_entry(func):
 
 
 def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
-    # Set up logging on start up
+    """A small plan to set up the logging from blueapi on start up as we're running \
+        on procserv.
+        This setup will likely change once the beamline has a cluster.
+    """
     if (
         expt == "Serial Fixed"
     ):  # SSXType.FIXED: See https://github.com/DiamondLightSource/mx-bluesky/issues/608
@@ -145,6 +148,7 @@ def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
 
 
 def clean_up_log_config_at_end() -> MsgGenerator:
+    """A small plan for blueapi to tidy up logging configuration."""
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
     for handler in SSX_LOGGER.handlers:
         SSX_LOGGER.removeHandler(handler)
