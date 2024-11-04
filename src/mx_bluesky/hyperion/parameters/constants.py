@@ -7,6 +7,7 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     ExperimentParamConstants,
     HardwareConstants,
+    OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
     SimConstants,
@@ -15,9 +16,6 @@ from mx_bluesky.common.parameters.constants import (
 
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
-_test_oav_file = "tests/test_data/test_OAVCentring.json"
-_live_oav_file = "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json"
-
 
 @dataclass(frozen=True)
 class I03Constants:
@@ -25,7 +23,7 @@ class I03Constants:
     BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     DETECTOR = EIGER2_X_16M_SIZE
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
-    OAV_CENTRING_FILE = _test_oav_file if TEST_MODE else _live_oav_file
+    OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
     THAWING_TIME = 20

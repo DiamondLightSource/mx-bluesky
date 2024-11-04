@@ -28,7 +28,11 @@ class DocDescriptorNames:
 @dataclass(frozen=True)
 class OavConstants:
     OAV_CONFIG_JSON = (
-        f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+        "tests/test_data/test_OAVCentring.json"
+        if TEST_MODE
+        else (
+            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+        )
     )
 
 

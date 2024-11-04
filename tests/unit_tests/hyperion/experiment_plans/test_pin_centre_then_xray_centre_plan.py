@@ -62,7 +62,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
         pin_centre_then_xray_centre_plan(
             grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
-            test_config_files,
+            test_config_files["oav_config_json"],
         )
     )
 
