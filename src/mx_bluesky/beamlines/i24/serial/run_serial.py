@@ -28,7 +28,6 @@ def _get_file_path() -> Path:
 
 def run_extruder():
     args = _parse_input(SSXType.EXTRUDER)
-    # _setup_collection_logs(SSXType.EXTRUDER, args.test)
     loc = get_location()
     SSX_LOGGER.info(f"Running on {loc}.")
     edm_path = get_edm_path()
@@ -42,7 +41,6 @@ def run_extruder():
 
 def run_fixed_target():
     args = _parse_input(SSXType.FIXED)
-    # _setup_collection_logs(SSXType.FIXED, args.test)
     loc = get_location()
     SSX_LOGGER.info(f"Running on {loc}.")
     edm_path = get_edm_path()
