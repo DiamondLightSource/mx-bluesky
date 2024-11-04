@@ -134,9 +134,14 @@ class BLSampleStatus(StrEnum):
     # The sample has been loaded
     LOADED = "LOADED"
     # Problem with the sample e.g. pin too long/short
-    ERROR_SAMPLE = "ERROR - sample error"
+    ERROR_SAMPLE = "ERROR - sample"
     # Any other general error
-    ERROR_BEAMLINE = "ERROR - beamline error"
+    ERROR_BEAMLINE = "ERROR - beamline"
+
+
+assert all(
+    len(value) <= 20 for value in BLSampleStatus
+), "Column size limit of 20 for BLSampleStatus"
 
 
 @dataclass
