@@ -133,7 +133,6 @@ def pin_tip_centre_plan(
     pin_tip_detect = composite.pin_tip_detection
 
     microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
-    assert microns_per_pixel_x is not None
     tip_offset_px = int(tip_offset_microns / microns_per_pixel_x)
 
     def offset_and_move(tip: Pixel):
