@@ -94,3 +94,11 @@ def test_setup_collection_logs(mock_config, RE):
     RE(log.setup_collection_logs("Serial Jet"))
 
     mock_config.assert_called_once_with(fake_filename, dev_mode=False)
+
+
+def test_clean_up_log(dummy_logger, RE):
+    with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
+        RE(log.clean_up_log_config_at_end())
+
+        assert len(dummy_logger.handlers) == 0
+        assert len(mock_dodal_logger.handlers) == 0
