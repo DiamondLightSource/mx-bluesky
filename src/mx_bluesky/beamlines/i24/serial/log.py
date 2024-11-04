@@ -133,7 +133,9 @@ def log_on_entry(func):
 
 def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
     # Set up logging on start up
-    if expt == "Serial Fixed":  # SSXType.FIXED:
+    if (
+        expt == "Serial Fixed"
+    ):  # SSXType.FIXED: See https://github.com/DiamondLightSource/mx-bluesky/issues/608
         logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
     else:
         logfile = time.strftime("i24extruder_%d%B%y.log").lower()
@@ -143,9 +145,9 @@ def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
 
 
 def clean_up_log_config_at_end() -> MsgGenerator:
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
     for handler in SSX_LOGGER.handlers:
         SSX_LOGGER.removeHandler(handler)
     for handler in dodal_logger.handlers:
-        SSX_LOGGER.removeHandler(handler)
         dodal_logger.removeHandler(handler)
     yield from bps.null()
