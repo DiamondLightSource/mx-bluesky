@@ -115,12 +115,16 @@ class MultiRotationScan(RotationExperiment, SplitScan):
 
     def _single_rotation_scan(self, scan: RotationScanPerSweep) -> RotationScan:
         # self has everything from RotationExperiment
-        params = self.model_dump()
-        del params["rotation_scans"]
+        allowed_keys = RotationScan.model_fields.keys()
+        params_dump = self.model_dump()
         # provided `scan` has everything from RotationScanPerSweep
-        params.update(scan.model_dump())
+        scan_dump = scan.model_dump()
+        rotation_scan_kv_pairs = {
+            k: v for k, v in (params_dump | scan_dump).items() if k in allowed_keys
+        }
         # together they have everything for RotationScan
-        return RotationScan(**params)
+        rotation_scan = RotationScan(**rotation_scan_kv_pairs)
+        return rotation_scan
 
     @model_validator(mode="after")
     @classmethod

@@ -132,6 +132,30 @@ def grid_detection_callback_with_detected_grid():
         yield callback
 
 
+def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
+    load_centre_collect_params.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_robot_load_params(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.robot_load_then_centre.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_multi_rotation_scan(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.multi_rotation_scan.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_single_rotation_scans(
+    load_centre_collect_params,
+):
+    list(load_centre_collect_params.multi_rotation_scan.single_rotation_scans)[
+        0
+    ].model_dump_json()
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     return_value=iter([]),
