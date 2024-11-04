@@ -1,10 +1,9 @@
 import argparse
 import subprocess
-import time
 from os import environ
 from pathlib import Path
 
-from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, config
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import SSXType
 
 
@@ -13,17 +12,6 @@ def _parse_input(expt: SSXType):
     parser.add_argument("-t", "--test", action="store_true", help="Run in test mode.")
     args = parser.parse_args()
     return args
-
-
-# ACHTUNG THIS IS NOT YET RUN BY DETECTOR SO IT WON'T WORK CORRECTLY HERE
-def _setup_collection_logs(expt: SSXType, dev_mode: bool = False):
-    # Set up logging on start up
-    if expt == SSXType.FIXED:
-        logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
-    else:
-        logfile = time.strftime("i24extruder_%d%B%y.log").lower()
-
-    config(logfile, dev_mode=dev_mode)
 
 
 def get_location(default: str = "dev") -> str:
