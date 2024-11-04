@@ -6,7 +6,7 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
-from mx_bluesky.hyperion.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.parameters.gridscan import (
     OddYStepsException,
     RobotLoadThenCentre,

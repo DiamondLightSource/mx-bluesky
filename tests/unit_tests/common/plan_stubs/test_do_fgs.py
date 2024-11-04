@@ -16,7 +16,7 @@ from event_model.documents import Event, RunStart
 from ophyd_async.core import DeviceCollector, set_mock_value
 
 from mx_bluesky.common.parameters.constants import (
-    MxConstants,
+    EnvironmentConstants,
     PlanNameConstants,
     TriggerConstants,
 )
@@ -145,7 +145,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     assert test_callback.subplan_name == PlanNameConstants.DO_FGS
     assert test_callback.scan_points == []
     assert test_callback.scan_start_indices == []
-    assert test_callback.zocalo_environment == MxConstants.ZOCALO_ENV
+    assert test_callback.zocalo_environment == EnvironmentConstants.ZOCALO_ENV
     assert len(test_callback.event_data) == 1
     assert test_callback.event_data[0] == "eiger_odin_file_writer_id"
 

@@ -10,6 +10,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -42,7 +43,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,

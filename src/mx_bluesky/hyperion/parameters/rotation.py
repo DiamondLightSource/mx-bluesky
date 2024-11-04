@@ -17,7 +17,7 @@ from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.hyperion.parameters.components import (
+from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
