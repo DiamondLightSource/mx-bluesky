@@ -2,7 +2,6 @@ from typing import TypedDict
 
 import numpy as np
 from bluesky.callbacks import CallbackBase
-from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.utils import calculate_x_y_z_of_pixel
 from event_model.documents import Event
 
@@ -26,21 +25,19 @@ class GridParamUpdate(TypedDict):
 class GridDetectionCallback(CallbackBase):
     def __init__(
         self,
-        oav_params: OAVConfigParams,
         *args,
     ) -> None:
         super().__init__(*args)
-        self.oav_params = oav_params
         self.start_positions: list = []
         self.box_numbers: list = []
 
     def event(self, doc: Event):
         data = doc.get("data")
-        top_left_x_px = data["oav_grid_snapshot_top_left_x"]
-        box_width_px = data["oav_grid_snapshot_box_width"]
+        top_left_x_px = data["oav-grid_snapshot-top_left_x"]
+        box_width_px = data["oav-grid_snapshot-box_width"]
         x_of_centre_of_first_box_px = top_left_x_px + box_width_px / 2
 
-        top_left_y_px = data["oav_grid_snapshot_top_left_y"]
+        top_left_y_px = data["oav-grid_snapshot-top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
         smargon_omega = data["smargon-omega"]
@@ -53,8 +50,17 @@ class GridDetectionCallback(CallbackBase):
             y_of_centre_of_first_box_px,
         )
 
+        microns_per_pixel_x = data["oav-microns_per_pixel_x"]
+        microns_per_pixel_y = data["oav-microns_per_pixel_y"]
+        beam_x = data["oav-snapshot-beam_centre_i"]
+        beam_y = data["oav-snapshot-beam_centre_j"]
+
         position_grid_start = calculate_x_y_z_of_pixel(
-            current_xyz, smargon_omega, centre_of_first_box, self.oav_params
+            current_xyz,
+            smargon_omega,
+            centre_of_first_box,
+            (beam_x, beam_y),
+            (microns_per_pixel_x, microns_per_pixel_y),
         )
 
         LOGGER.info(f"Calculated start position {position_grid_start}")
@@ -62,14 +68,14 @@ class GridDetectionCallback(CallbackBase):
         self.start_positions.append(position_grid_start)
         self.box_numbers.append(
             (
-                data["oav_grid_snapshot_num_boxes_x"],
-                data["oav_grid_snapshot_num_boxes_y"],
+                data["oav-grid_snapshot-num_boxes_x"],
+                data["oav-grid_snapshot-num_boxes_y"],
             )
         )
 
-        self.x_step_size_mm = box_width_px * self.oav_params.micronsPerXPixel / 1000
-        self.y_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
-        self.z_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
+        self.x_step_size_mm = box_width_px * microns_per_pixel_x / 1000
+        self.y_step_size_mm = box_width_px * microns_per_pixel_y / 1000
+        self.z_step_size_mm = box_width_px * microns_per_pixel_y / 1000
         return doc
 
     def get_grid_parameters(self) -> GridParamUpdate:

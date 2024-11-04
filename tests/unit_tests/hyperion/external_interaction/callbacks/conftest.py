@@ -160,7 +160,7 @@ class TestData(OavGridSnapshotTestEvents):
         "timestamps": {},
         "seq_num": 1,
         "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
-        "data": {"oav_snapshot_last_saved_path": "snapshot_0"},
+        "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
     }
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

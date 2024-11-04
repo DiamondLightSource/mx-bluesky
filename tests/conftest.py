@@ -8,7 +8,7 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from functools import partial
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
@@ -22,7 +22,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
-from dodal.common.beamlines.beamline_utils import clear_device, clear_devices
+from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -35,7 +35,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -351,38 +351,23 @@ def synchrotron(RE):
 
 
 @pytest.fixture
-def oav(test_config_files):
-    parameters = OAVConfigParams(
+def oav(test_config_files, RE):
+    parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    parameters.micronsPerXPixel = 2.87
-    parameters.micronsPerYPixel = 2.87
-
-    # This should only be needed until issues with https://github.com/DiamondLightSource/dodal/pull/854
-    # or ophyd-async OAV are resolved
-    try:
-        clear_device("oav")
-    except KeyError:
-        ...
     oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
 
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.zoom_controller.onst.set("2.0x")
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+        return_value=zoom_levels_list
+    )
+    # Equivalent to previously set values for microns and beam centre
+    set_mock_value(oav.zoom_controller.level, "5.0x")
 
-    oav.parameters.micronsPerXPixel = 1.58
-    oav.parameters.micronsPerYPixel = 1.58
-    oav.parameters.beam_centre_i = 517
-    oav.parameters.beam_centre_j = 350
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
 
     oav.snapshot.trigger = MagicMock(return_value=NullStatus())
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.zoom_controller.onst.set("2.0x")
-    oav.zoom_controller.twst.set("3.0x")
-    oav.zoom_controller.thst.set("5.0x")
-    oav.zoom_controller.frst.set("7.0x")
-    oav.zoom_controller.fvst.set("9.0x")
-    oav.proc.port_name.sim_put("proc")  # type: ignore
-    oav.cam.port_name.sim_put("CAM")  # type: ignore
     oav.grid_snapshot.trigger = MagicMock(return_value=NullStatus())
     return oav
 
@@ -640,8 +625,6 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
-    oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,

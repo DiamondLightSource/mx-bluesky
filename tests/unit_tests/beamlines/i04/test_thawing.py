@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
 from functools import partial
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from _pytest.python_api import ApproxBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -25,8 +25,8 @@ from ophyd_async.epics.motor import Motor
 from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
 from mx_bluesky.common.test_utils import rebuild_oa_device_as_mocked_if_necessary
 
-DISPLAY_CONFIGURATION = "tests/devices/unit_tests/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
+DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
+ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
 
 
 class MyException(Exception):
@@ -43,6 +43,21 @@ def patch_motor(motor: Motor, initial_position: float = 0):
         motor.user_setpoint,
         lambda pos, *args, **kwargs: set_mock_value(motor.user_readback, pos),
     )
+
+
+@pytest.fixture
+async def oav(RE: RunEngine) -> OAV:
+    oav_config = OAVConfig(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
+    async with DeviceCollector(mock=True, connect=True):
+        oav = OAV("", config=oav_config, name="fake_oav")
+    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
+    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+        return_value=zoom_levels_list
+    )
+    set_mock_value(oav.zoom_controller.level, "1.0x")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
+    return oav
 
 
 @pytest.fixture
@@ -296,13 +311,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
     RE: RunEngine,
     expect_raises=None,
 ):
-    mock_set = MagicMock()
-
-    def cb(*args, value, **kwargs):
-        mock_set(value)
-
-    oav.zoom_controller.level.sim_put("2.0x")  # type:ignore
-    oav.zoom_controller.level.subscribe(cb)
+    set_mock_value(oav.zoom_controller.level, "2.0x")
 
     run_plan = partial(
         RE,
@@ -323,15 +332,9 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
     else:
         run_plan()
 
-    mock_set.assert_has_calls(
-        [
-            call(
-                "1.0x",
-            ),
-            call(
-                "2.0x",
-            ),
-        ]
+    mock_level_set = get_mock_put(oav.zoom_controller.level)
+    mock_level_set.assert_has_calls(
+        [call("1.0x", wait=True, timeout=ANY), call("2.0x", wait=True, timeout=ANY)]
     )
 
 

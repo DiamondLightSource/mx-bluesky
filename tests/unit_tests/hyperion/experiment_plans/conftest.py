@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
@@ -80,6 +80,7 @@ def grid_detect_devices(
     backlight: Backlight,
     detector_motion: DetectorMotion,
     smargon: Smargon,
+    oav: OAV,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -89,7 +90,7 @@ def grid_detect_devices(
         eiger=MagicMock(),
         zebra_fast_grid_scan=MagicMock(),
         flux=MagicMock(),
-        oav=MagicMock(),
+        oav=oav,
         pin_tip_detection=MagicMock(),
         smargon=smargon,
         synchrotron=MagicMock(),
@@ -240,11 +241,10 @@ def simple_beamline(
     magic_mock.dcm = dcm
     magic_mock.synchrotron = synchrotron
     magic_mock.eiger = eiger
-    oav.zoom_controller.frst.set("7.5x")
-    oav.parameters = OAVConfigParams(
+    oav.zoom_controller.level = MagicMock(return_value="7.5x")
+    oav.parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    oav.parameters.update_on_zoom(7.5, 1024, 768)
+    ).get_parameters()
     return magic_mock
 
 

@@ -1,5 +1,5 @@
 import dataclasses
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bluesky.protocols import Location
@@ -85,8 +85,11 @@ def composite(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_bottom_edge, bottom_edge_array
     )
-    composite.oav.parameters.update_on_zoom(7.5, 1024, 768)
-    composite.oav.zoom_controller.frst.set("7.5x")
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x"]
+    composite.oav.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": zoom_levels_list}}
+    )
+    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
@@ -187,6 +190,8 @@ def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
     )
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
@@ -214,6 +219,9 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     sim_run_engine,
     grid_detection_callback_with_detected_grid,
 ):
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
+
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
             load_centre_collect_full_plan(

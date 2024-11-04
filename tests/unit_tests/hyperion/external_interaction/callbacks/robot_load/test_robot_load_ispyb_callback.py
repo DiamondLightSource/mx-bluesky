@@ -119,7 +119,7 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
     RE.subscribe(RobotLoadISPyBCallback())
     start_load.return_value = ACTION_ID
 
-    oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
+    set_mock_value(oav.snapshot.last_saved_path, "test_oav_snapshot")
     set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
 
     @bpp.run_decorator(md=metadata)

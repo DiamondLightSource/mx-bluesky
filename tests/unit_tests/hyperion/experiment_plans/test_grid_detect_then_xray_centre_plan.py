@@ -7,13 +7,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -41,21 +40,21 @@ def _fake_grid_detection(
     grid_width_microns: float = 0,
     box_size_um: float = 0.0,
 ):
-    oav = i03.oav(fake_with_ophyd_sim=True)
-    oav.grid_snapshot.box_width.put(635.00986)
+    oav = devices.oav
+    set_mock_value(oav.grid_snapshot.box_width, 635)
     # first grid detection: x * y
-    oav.grid_snapshot.num_boxes_x.put(10)
-    oav.grid_snapshot.num_boxes_y.put(4)
+    set_mock_value(oav.grid_snapshot.num_boxes_x, 10)
+    set_mock_value(oav.grid_snapshot.num_boxes_y, 4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
 
     # second grid detection: x * z, so num_boxes_y refers to smargon z
-    oav.grid_snapshot.num_boxes_x.put(10)
-    oav.grid_snapshot.num_boxes_y.put(1)
+    set_mock_value(oav.grid_snapshot.num_boxes_x, 10)
+    set_mock_value(oav.grid_snapshot.num_boxes_y, 1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
 
@@ -77,13 +76,7 @@ def grid_detect_devices_with_oav_config_params(
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_config_files: dict[str, str],
 ) -> GridDetectThenXRayCentreComposite:
-    grid_detect_devices.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
-    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
-    grid_detect_devices.oav.parameters.beam_centre_i = 549
-    grid_detect_devices.oav.parameters.beam_centre_j = 347
+    set_mock_value(grid_detect_devices.oav.zoom_controller.level, "7.5x")
     return grid_detect_devices
 
 
