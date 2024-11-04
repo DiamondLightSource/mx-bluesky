@@ -239,7 +239,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:
         raise ValueError(
-            f"Supplied parameters don't match the plan for this endpoint {request.data} for plan {plan}"
+            f"Supplied parameters don't match the plan for this endpoint {request.data}, for plan {plan_name}"
         ) from e
     return plan, parameters, plan_name, callback_type
 

@@ -119,7 +119,6 @@ class WithOptionalEnergyChange(BaseModel):
     demand_energy_ev: float | None = Field(default=None, gt=0)
 
 
-# TODO do this properly. These probably shouldn't default to anything anymore
 class WithVisit(BaseModel):
     beamline: str = Field(default="BL03I", pattern=r"BL\d{2}[BIJS]")
     visit: str = Field(min_length=1)

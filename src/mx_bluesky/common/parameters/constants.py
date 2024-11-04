@@ -8,11 +8,6 @@ BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 
 
-def get_visit_beamline_from_beamline():
-    # Or just default to BL03I and do this later, to fix pydantic error from visit
-    ...
-
-
 @dataclass(frozen=True)
 class DocDescriptorNames:
     # Robot load event descriptor
@@ -55,9 +50,7 @@ class PlanNameConstants:
 
 @dataclass(frozen=True)
 class EnvironmentConstants:
-    ZOCALO_ENV = (
-        "dev_artemis" if TEST_MODE else "artemis"
-    )  # TODO: Tidy this up - remove properly from parameter model and sim constants
+    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
 
 
 @dataclass(frozen=True)
