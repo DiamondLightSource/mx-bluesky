@@ -863,7 +863,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()  # type: ignore
-        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock(
+            return_value=True
+        )
         fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
@@ -1029,7 +1031,7 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()
 
-        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
+        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock()
 
         fake_fgs_composite.eiger.disarm_detector = MagicMock()
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()

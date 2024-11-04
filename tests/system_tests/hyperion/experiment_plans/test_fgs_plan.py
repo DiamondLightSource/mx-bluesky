@@ -102,7 +102,7 @@ async def fxc_composite():
     large = composite.aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
     await composite.aperture_scatterguard._set_raw_unsafe(large)
     composite.eiger.cam.manual_trigger.put("Yes")
-    composite.eiger.odin.check_odin_initialised = lambda: (True, "")
+    composite.eiger.odin.wait_for_odin_initialised = lambda timeout: (True, "")
     composite.eiger.stage = MagicMock(return_value=NullStatus())
     composite.eiger.unstage = MagicMock(return_value=NullStatus())
 
