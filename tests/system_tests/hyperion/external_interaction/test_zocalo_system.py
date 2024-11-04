@@ -8,7 +8,10 @@ import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
-from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.constants import (
+    EnvironmentConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
@@ -76,7 +79,7 @@ def run_zocalo_with_dev_ispyb(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
                     CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
-                    "zocalo_environment": dummy_params.zocalo_environment,
+                    "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
                     "hyperion_parameters": dummy_params.model_dump_json(),
                 }
             )

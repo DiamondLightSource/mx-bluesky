@@ -4,8 +4,9 @@ import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_chi_omega
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -55,11 +56,10 @@ def create_parameters_for_grid_detection(
 def pin_centre_then_xray_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
-    oav_config_file: str = OAV_CONFIG_JSON,
+    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    oav_config_file = parameters.oav_centring_file
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
@@ -102,7 +102,7 @@ def pin_centre_then_xray_centre_plan(
 def pin_tip_centre_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
-    oav_config_file: str = OAV_CONFIG_JSON,
+    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 

@@ -1,9 +1,11 @@
-import os
+from enum import Enum
 
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
-TEST_MODE = os.environ.get("HYPERION_TEST_MODE")  # Environment name will be updated in
-# https://github.com/DiamondLightSource/mx-bluesky/issues/214
+BEAMLINE = get_beamline_name("test")
+TEST_MODE = BEAMLINE == "test"
 
 
 @dataclass(frozen=True)
@@ -19,8 +21,36 @@ class DocDescriptorNames:
 
 
 @dataclass(frozen=True)
+class OavConstants:
+    OAV_CONFIG_JSON = (
+        "tests/test_data/test_OAVCentring.json"
+        if TEST_MODE
+        else (
+            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+        )
+    )
+
+
+@dataclass(frozen=True)
 class PlanNameConstants:
+    # Robot load subplan
+    ROBOT_LOAD = "robot_load"
+    # Gridscan
+    GRID_DETECT_AND_DO_GRIDSCAN = "grid_detect_and_do_gridscan"
+    GRID_DETECT_INNER = "grid_detect"
+    GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
+    GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
+    GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
+    # Rotation scan
+    ROTATION_MULTI = "multi_rotation_wrapper"
+    ROTATION_OUTER = "rotation_scan_with_cleanup"
+    ROTATION_MAIN = "rotation_scan_main"
+
+
+@dataclass(frozen=True)
+class EnvironmentConstants:
+    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
 
 
 @dataclass(frozen=True)
@@ -29,7 +59,75 @@ class TriggerConstants:
 
 
 @dataclass(frozen=True)
-class MxConstants:
-    DESCRIPTORS = DocDescriptorNames()
-    TRIGGER = TriggerConstants()
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+class HardwareConstants:
+    OAV_REFRESH_DELAY = 0.3
+    PANDA_FGS_RUN_UP_DEFAULT = 0.17
+    CRYOJET_MARGIN_MM = 0.2
+
+
+@dataclass(frozen=True)
+class GridscanParamConstants:
+    WIDTH_UM = 600.0
+    EXPOSURE_TIME_S = 0.004
+    USE_ROI = True
+    BOX_WIDTH_UM = 20.0
+    OMEGA_1 = 0.0
+    OMEGA_2 = 90.0
+    PANDA_RUN_UP_DISTANCE_MM = 0.2
+
+
+@dataclass(frozen=True)
+class RotationParamConstants:
+    DEFAULT_APERTURE_POSITION = ApertureValue.LARGE
+
+
+@dataclass(frozen=True)
+class DetectorParamConstants:
+    BEAM_XY_LUT_PATH = (
+        "tests/test_data/test_det_dist_converter.txt"
+        if TEST_MODE
+        else "/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+    )
+
+
+@dataclass(frozen=True)
+class ExperimentParamConstants:
+    DETECTOR = DetectorParamConstants()
+    GRIDSCAN = GridscanParamConstants()
+    ROTATION = RotationParamConstants()
+
+
+@dataclass(frozen=True)
+class PlanGroupCheckpointConstants:
+    # For places to synchronise / stop and wait in plans, use as bluesky group names
+    GRID_READY_FOR_DC = "grid_ready_for_data_collection"
+    ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
+    MOVE_GONIO_TO_START = "move_gonio_to_start"
+    READY_FOR_OAV = "ready_for_oav"
+
+
+@dataclass(frozen=True)
+class SimConstants:
+    BEAMLINE = "BL03S"
+    INSERTION_PREFIX = "SR03S"
+    ZOCALO_ENV = "dev_artemis"
+    # this one is for unit tests
+    ISPYB_CONFIG = "tests/test_data/test_config.cfg"
+    # this one is for system tests
+    DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
+
+
+class Actions(Enum):
+    START = "start"
+    STOP = "stop"
+    SHUTDOWN = "shutdown"
+    STATUS = "status"
+
+
+class Status(Enum):
+    WARN = "Warn"
+    FAILED = "Failed"
+    SUCCESS = "Success"
+    BUSY = "Busy"
+    ABORTING = "Aborting"
+    IDLE = "Idle"

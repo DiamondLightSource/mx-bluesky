@@ -1,17 +1,17 @@
 from inspect import getfullargspec
 
 import mx_bluesky.hyperion.experiment_plans as plan_module
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.hyperion.experiment_plans import __all__ as exposed_plans
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     do_nothing,
 )
-from mx_bluesky.hyperion.parameters.components import HyperionParameters
 
 
 def test_experiment_registry_param_types():
     for plan in PLAN_REGISTRY.keys():
-        assert issubclass(PLAN_REGISTRY[plan]["param_type"], HyperionParameters)
+        assert issubclass(PLAN_REGISTRY[plan]["param_type"], MxBlueskyParameters)
 
 
 def test_exposed_plans_in_reg():

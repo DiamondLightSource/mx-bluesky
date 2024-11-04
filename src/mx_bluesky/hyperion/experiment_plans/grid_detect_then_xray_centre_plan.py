@@ -15,7 +15,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -28,6 +28,7 @@ from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -178,7 +179,7 @@ def detect_grid_and_do_gridscan(
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetect,
-    oav_config: str = OAV_CONFIG_JSON,
+    oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination

@@ -13,7 +13,6 @@
     "run_number": 0,
     "use_roi_mode": false,
     "transmission_frac": 1.0,
-    "zocalo_environment": "dev_artemis",
     "x_steps": 40,
     "y_steps": 20,
     "z_steps": 10,
@@ -26,4 +25,5 @@
     "z_start_um": 0.0,
     "z2_start_um": 0.0,
     "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/"
+    
 }
