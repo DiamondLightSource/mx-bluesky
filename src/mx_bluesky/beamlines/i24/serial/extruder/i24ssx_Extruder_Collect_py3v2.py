@@ -155,8 +155,8 @@ def write_parameter_file(detector_stage: DetectorMotion):
             )
 
     pump_status = bool(int(caget(pv.ioc12_gp6)))
-    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else None
-    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else None
+    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
+    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
 
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa

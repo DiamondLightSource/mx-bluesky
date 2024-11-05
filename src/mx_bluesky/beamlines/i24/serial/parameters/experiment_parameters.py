@@ -37,8 +37,8 @@ class SerialExperiment(BaseModel):
 class LaserExperiment(BaseModel):
     """Laser settings for pump probe serial collections."""
 
-    laser_dwell_s: float | None = None  # pump exposure time
-    laser_delay_s: float | None = None  # pump delay
+    laser_dwell_s: float = 0.0  # pump exposure time
+    laser_delay_s: float = 0.0  # pump delay
     pre_pump_exposure_s: float | None = None  # Pre illumination, just for chip
 
 

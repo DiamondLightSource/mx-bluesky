@@ -159,8 +159,8 @@ def write_parameter_file(
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
-        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else None,
-        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else None,
+        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
+        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
         if pump_repeat != 0
         else None,

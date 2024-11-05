@@ -137,7 +137,7 @@ class DCID:
             elif isinstance(self.detector, Eiger):
                 # Eiger base filename is directly written to the PV
                 # Nexgen then uses this to write the .nxs file
-                fileTemplate = str(cagetstring(self.detector.pv.file_name)) + ".nxs"
+                fileTemplate = self.parameters.filename + ".nxs"
                 startImageNumber = 1
             else:
                 raise ValueError("Unknown detector:", self.detector)
