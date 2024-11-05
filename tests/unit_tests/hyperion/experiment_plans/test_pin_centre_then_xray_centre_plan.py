@@ -4,12 +4,15 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_xray_centre_plan,
@@ -19,6 +22,8 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ....conftest import raw_params_from_file
+from ....system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
+from .conftest import simulate_xrc_result
 
 
 @pytest.fixture
@@ -51,12 +56,15 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     RE = RunEngine()
     RE(
         pin_centre_then_xray_centre_plan(
-            MagicMock(), test_pin_centre_then_xray_centre_params, test_config_files
+            grid_detect_devices,
+            test_pin_centre_then_xray_centre_params,
+            test_config_files["oav_config_json"],
         )
     )
 
@@ -124,10 +132,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    sim_run_engine.add_read_handler_for(
-        simple_beamline.zocalo.centres_of_mass, [10, 10, 10]
-    )
-
+    simulate_xrc_result(sim_run_engine, simple_beamline.zocalo, TEST_RESULT_LARGE)
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             simple_beamline,
@@ -169,6 +174,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
     mock_pin_tip_centre_plan,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
@@ -178,7 +184,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_xray_centre_plan(
-            MagicMock(),
+            grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -209,8 +215,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
 def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    backlight: Backlight,
-    aperture_scatterguard: ApertureScatterguard,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
@@ -220,13 +225,9 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     )
     mock_pin_tip_centre_plan.return_value = iter([Msg("pin_tip_centre_plan")])
 
-    mock_composite = MagicMock()
-    mock_composite.aperture_scatterguard = aperture_scatterguard
-    mock_composite.backlight = backlight
-
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_xray_centre_plan(
-            mock_composite,
+            grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )

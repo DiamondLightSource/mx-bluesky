@@ -21,7 +21,7 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -82,6 +82,7 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
+    simulate_xrc_result,
 )
 
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
@@ -89,7 +90,9 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(fake_fgs_composite: FlyScanXRayCentreComposite):
-    capture_table = DatasetTable(name=np.array(["name"]), hdf5_type=[])
+    capture_table = DatasetTable(
+        name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]
+    )
     set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
 
     return fake_fgs_composite
@@ -574,7 +577,7 @@ class TestFlyscanXrayCentrePlan:
         assert "Crystal 1: Strength 999999" in append_zocalo_call
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
     )
     def test_waits_for_motion_program(
         self,
@@ -590,24 +593,9 @@ class TestFlyscanXrayCentrePlan:
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_mock_value(fgs.motion_program.running, 1)
-        with pytest.raises(FailedStatus):
-            RE(
-                kickoff_and_complete_gridscan(
-                    fgs,
-                    fake_fgs_composite.eiger,
-                    fake_fgs_composite.synchrotron,
-                    [
-                        test_fgs_params.scan_points_first_grid,
-                        test_fgs_params.scan_points_second_grid,
-                    ],
-                    test_fgs_params.scan_indices,
-                )
-            )
-        fgs.KICKOFF_TIMEOUT = 1
-        set_mock_value(fgs.motion_program.running, 0)
-        set_mock_value(fgs.status, 1)
-        res = RE(
-            kickoff_and_complete_gridscan(
+
+        def test_plan():
+            yield from kickoff_and_complete_gridscan(
                 fgs,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
@@ -617,7 +605,14 @@ class TestFlyscanXrayCentrePlan:
                 ],
                 test_fgs_params.scan_indices,
             )
-        )
+
+        with pytest.raises(FailedStatus):
+            RE(test_plan())
+        fgs.KICKOFF_TIMEOUT = 1
+        set_mock_value(fgs.motion_program.running, 0)
+        set_mock_value(fgs.status, 1)
+        res = RE(test_plan())
+
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
         clear_device("zebra_fast_grid_scan")
@@ -846,7 +841,7 @@ class TestFlyscanXrayCentrePlan:
         spec_set=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
@@ -871,7 +866,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()  # type: ignore
-        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock(
+            return_value=True
+        )
         fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
@@ -926,8 +923,8 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
-        sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.zocalo.centres_of_mass, [(10, 10, 10)]
+        simulate_xrc_result(
+            sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(
@@ -970,7 +967,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_fgs_arms_eiger_without_grid_detect(
@@ -1009,7 +1006,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_fails_with_exception_then_detector_disarmed_and_correct_exception_returned(
@@ -1035,7 +1032,9 @@ class TestFlyscanXrayCentrePlan:
             return_value=Status(None, None, 0, True, True)
         )
 
-        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
+        fake_fgs_composite.eiger.filewriters_finished = NullStatus()
+
+        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock()
 
         fake_fgs_composite.eiger.disarm_detector = MagicMock()
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
@@ -1043,7 +1042,6 @@ class TestFlyscanXrayCentrePlan:
         # Without the complete finishing we will not get all the images
         fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
 
-        # Want to get the underlying completion error, not the one raised from unstage
         with pytest.raises(CompleteException):
             RE(
                 run_gridscan(
@@ -1067,7 +1065,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_kickoff_and_complete_gridscan_triggers_zocalo(
@@ -1086,15 +1084,10 @@ class TestFlyscanXrayCentrePlan:
         ispyb_cb.ispyb = MagicMock()
         ispyb_cb.params = MagicMock()
         ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
-        assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
+        assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_env = "dev_env"
 
         mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
-
-        zocalo_cb.start(
-            {CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS, "zocalo_environment": zocalo_env}  # type: ignore
-        )
-        assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
 
         fake_fgs_composite.eiger.unstage = MagicMock()
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
@@ -1102,6 +1095,7 @@ class TestFlyscanXrayCentrePlan:
         x_steps, y_steps, z_steps = 10, 20, 30
 
         RE.subscribe(ispyb_cb)
+
         RE(
             kickoff_and_complete_gridscan(
                 fake_fgs_composite.zebra_fast_grid_scan,
@@ -1109,9 +1103,9 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.synchrotron,
                 scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
                 scan_start_indices=[0, x_steps * y_steps],
+                zocalo_environment=zocalo_env,
             )
         )
-
         mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
         expected_start_infos = [
@@ -1133,7 +1127,7 @@ class TestFlyscanXrayCentrePlan:
         assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         new=MagicMock(side_effect=lambda *_, **__: iter([Msg("check_topup")])),
     )
     def test_read_hardware_during_collection_occurs_after_eiger_arm(

@@ -1,7 +1,7 @@
 from bluesky.callbacks import CallbackBase
 from event_model import RunStart, RunStop
 
-from mx_bluesky.hyperion.log import set_uid_tag
+from mx_bluesky.common.utils.log import set_uid_tag
 
 
 class LogUidTaggingCallback(CallbackBase):

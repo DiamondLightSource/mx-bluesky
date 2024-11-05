@@ -14,6 +14,10 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
+from mx_bluesky.common.parameters.constants import Actions, Status
+from mx_bluesky.common.utils.log import do_default_logging_setup, flush_debug_handler
+from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
@@ -36,13 +40,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import 
 )
 from mx_bluesky.hyperion.log import (
     LOGGER,
-    do_default_logging_setup,
-    flush_debug_handler,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
-from mx_bluesky.hyperion.parameters.components import HyperionParameters
-from mx_bluesky.hyperion.parameters.constants import CONST, Actions, Status
-from mx_bluesky.hyperion.tracing import TRACER
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: bool | None = None
@@ -53,7 +53,7 @@ class Command:
     action: Actions
     devices: Any | None = None
     experiment: Callable[[Any, Any], MsgGenerator] | None = None
-    parameters: HyperionParameters | None = None
+    parameters: MxBlueskyParameters | None = None
     callbacks: CallbacksFactory | None = None
 
 
@@ -119,7 +119,7 @@ class BlueskyRunner:
     def start(
         self,
         experiment: Callable,
-        parameters: HyperionParameters,
+        parameters: MxBlueskyParameters,
         plan_name: str,
         callbacks: CallbacksFactory | None,
     ) -> StatusAndMessage:
@@ -239,7 +239,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:
         raise ValueError(
-            f"Supplied parameters don't match the plan for this endpoint {request.data}"
+            f"Supplied parameters don't match the plan for this endpoint {request.data}, for plan {plan_name}"
         ) from e
     return plan, parameters, plan_name, callback_type
 
@@ -345,7 +345,9 @@ def create_app(
 def create_targets():
     hyperion_port = 5005
     args = parse_cli_args()
-    do_default_logging_setup(dev_mode=args.dev_mode)
+    do_default_logging_setup(
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
+    )
     if not args.use_external_callbacks:
         setup_callback_logging(args.dev_mode)
     app, runner = create_app(

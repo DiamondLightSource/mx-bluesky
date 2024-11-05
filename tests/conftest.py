@@ -8,11 +8,10 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from functools import partial
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -35,7 +34,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -47,7 +46,7 @@ from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra import ArmDemand, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -61,10 +60,11 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.motor import Motor
 from ophyd_async.epics.signal import epics_signal_rw
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.common.utils.log import _get_logging_dir, do_default_logging_setup
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
@@ -80,8 +80,6 @@ from mx_bluesky.hyperion.log import (
     ISPYB_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
-    do_default_logging_setup,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -90,6 +88,8 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+TEST_GRAYLOG_PORT = 5555
 
 
 def raw_params_from_file(filename):
@@ -135,7 +135,7 @@ def pytest_runtest_setup(item):
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
-                do_default_logging_setup(dev_mode=True)
+                do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
@@ -190,11 +190,11 @@ def RE():
     del RE
 
 
-def pass_on_mock(motor, call_log: MagicMock | None = None):
-    def _pass_on_mock(value, **kwargs):
+def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value: float, wait: bool):
         set_mock_value(motor.user_readback, value)
         if call_log is not None:
-            call_log(value, **kwargs)
+            call_log(value, wait=wait)
 
     return _pass_on_mock
 
@@ -228,7 +228,7 @@ def test_fgs_params():
 
 @pytest.fixture
 def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
-    test_fgs_params.use_panda = True
+    test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
 
@@ -304,8 +304,8 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 def zebra(RE):
     zebra = i03.zebra(fake_with_ophyd_sim=True)
 
-    def mock_side(*args, **kwargs):
-        set_mock_value(zebra.pc.arm.armed, *args, **kwargs)
+    def mock_side(demand: ArmDemand):
+        set_mock_value(zebra.pc.arm.armed, demand.value)
         return NullStatus()
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
@@ -350,31 +350,23 @@ def synchrotron(RE):
 
 
 @pytest.fixture
-def oav(test_config_files):
-    parameters = OAVConfigParams(
+def oav(test_config_files, RE):
+    parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    parameters.micronsPerXPixel = 2.87
-    parameters.micronsPerYPixel = 2.87
     oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
 
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.zoom_controller.onst.set("2.0x")
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+        return_value=zoom_levels_list
+    )
+    # Equivalent to previously set values for microns and beam centre
+    set_mock_value(oav.zoom_controller.level, "5.0x")
 
-    oav.parameters.micronsPerXPixel = 1.58
-    oav.parameters.micronsPerYPixel = 1.58
-    oav.parameters.beam_centre_i = 517
-    oav.parameters.beam_centre_j = 350
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
 
     oav.snapshot.trigger = MagicMock(return_value=NullStatus())
-    oav.zoom_controller.zrst.set("1.0x")
-    oav.zoom_controller.onst.set("2.0x")
-    oav.zoom_controller.twst.set("3.0x")
-    oav.zoom_controller.thst.set("5.0x")
-    oav.zoom_controller.frst.set("7.0x")
-    oav.zoom_controller.fvst.set("9.0x")
-    oav.proc.port_name.sim_put("proc")  # type: ignore
-    oav.cam.port_name.sim_put("CAM")  # type: ignore
     oav.grid_snapshot.trigger = MagicMock(return_value=NullStatus())
     return oav
 
@@ -463,18 +455,14 @@ def lower_gonio(RE):
 
 
 @pytest.fixture
-def vfm_mirror_voltages():
-    voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
+def mirror_voltages():
+    voltages = i03.mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
-    with ExitStack() as stack:
-        [
-            stack.enter_context(context_mgr)
-            for context_mgr in [
-                patch.object(vc, "set") for vc in voltages.voltage_channels.values()
-            ]
-        ]
-
-        yield voltages
+    for vc in voltages.vertical_voltages.values():
+        vc.set = MagicMock(return_value=NullStatus())
+    for vc in voltages.horizontal_voltages.values():
+        vc.set = MagicMock(return_value=NullStatus())
+    yield voltages
     beamline_utils.clear_devices()
 
 
@@ -542,7 +530,7 @@ def aperture_scatterguard(RE):
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=None,
+            radius=0,
         ),
     }
     with (
@@ -636,8 +624,6 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
-    oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -678,6 +664,7 @@ async def panda(RE: RunEngine):
         ):
             for name, dtype in attributes.items():
                 setattr(self, name, epics_signal_rw(dtype, "", ""))
+            super().__init__(name)
 
     def mock_vector_block(n, attributes):
         return DeviceVector(
@@ -717,7 +704,8 @@ async def panda(RE: RunEngine):
     )
 
     set_mock_value(
-        panda.data.datasets, DatasetTable(name=np.array(["name"]), hdf5_type=[])
+        panda.data.datasets,
+        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda
@@ -783,7 +771,7 @@ async def fake_fgs_composite(
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
-    fake_composite.eiger.odin.check_odin_state = lambda: True
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
@@ -936,9 +924,7 @@ class DocumentCapturer:
 
 @pytest.fixture
 def feature_flags():
-    return FeatureFlags(
-        **{field_name: False for field_name in FeatureFlags.model_fields.keys()}
-    )
+    return FeatureFlags()
 
 
 def assert_none_matching(

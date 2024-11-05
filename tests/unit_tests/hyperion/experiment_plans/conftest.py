@@ -1,18 +1,26 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -69,6 +77,39 @@ BASIC_POST_SETUP_DOC = {
 
 
 @pytest.fixture
+def grid_detect_devices(
+    aperture_scatterguard: ApertureScatterguard,
+    backlight: Backlight,
+    detector_motion: DetectorMotion,
+    smargon: Smargon,
+    oav: OAV,
+) -> GridDetectThenXRayCentreComposite:
+    return GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=MagicMock(),
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=MagicMock(),
+        zebra_fast_grid_scan=MagicMock(),
+        flux=MagicMock(),
+        oav=oav,
+        pin_tip_detection=MagicMock(),
+        smargon=smargon,
+        synchrotron=MagicMock(),
+        s4_slit_gaps=MagicMock(),
+        undulator=MagicMock(),
+        xbpm_feedback=MagicMock(),
+        zebra=MagicMock(),
+        zocalo=MagicMock(),
+        panda=MagicMock(),
+        panda_fast_grid_scan=MagicMock(),
+        dcm=MagicMock(),
+        robot=MagicMock(),
+        sample_shutter=MagicMock(),
+    )
+
+
+@pytest.fixture
 def sim_run_engine_for_rotation(sim_run_engine):
     sim_run_engine.add_handler(
         "read",
@@ -92,6 +133,17 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
+
+
+def simulate_xrc_result(
+    sim_run_engine: RunEngineSimulator,
+    zocalo: ZocaloResults,
+    test_results: Sequence[dict],
+):
+    for k in test_results[0].keys():
+        sim_run_engine.add_read_handler_for(
+            getattr(zocalo, k), np.array([r[k] for r in test_results])
+        )
 
 
 def run_generic_ispyb_handler_setup(
@@ -187,7 +239,9 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files, dcm):
+def simple_beamline(
+    detector_motion, eiger, oav, smargon, synchrotron, test_config_files, dcm
+):
     magic_mock = MagicMock(autospec=True)
 
     with DeviceCollector(mock=True):
@@ -199,11 +253,11 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     magic_mock.detector_motion = detector_motion
     magic_mock.dcm = dcm
     magic_mock.synchrotron = synchrotron
-    oav.zoom_controller.frst.set("7.5x")
-    oav.parameters = OAVConfigParams(
+    magic_mock.eiger = eiger
+    oav.zoom_controller.level = MagicMock(return_value="7.5x")
+    oav.parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    oav.parameters.update_on_zoom(7.5, 1024, 768)
+    ).get_parameters()
     return magic_mock
 
 
@@ -225,7 +279,7 @@ def robot_load_composite(
     undulator_dcm,
     s4_slit_gaps,
     vfm,
-    vfm_mirror_voltages,
+    mirror_voltages,
     backlight,
     detector_motion,
     flux,
@@ -262,7 +316,7 @@ def robot_load_composite(
         thawer=thawer,
         sample_shutter=sample_shutter,
         vfm=vfm,
-        vfm_mirror_voltages=vfm_mirror_voltages,
+        mirror_voltages=mirror_voltages,
         dcm=dcm,
         undulator_dcm=undulator_dcm,
         robot=robot,

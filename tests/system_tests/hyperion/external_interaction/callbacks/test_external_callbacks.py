@@ -151,7 +151,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     locally at DLS."""
 
     RE = RE_with_external_callbacks
-    test_fgs_params.zocalo_environment = "dev_artemis"
 
     set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore

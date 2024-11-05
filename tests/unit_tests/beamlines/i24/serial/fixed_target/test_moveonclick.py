@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 import cv2 as cv
 import pytest
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.oav.oav_async import OAV
+from dodal.devices.oav.oav_detector import OAV
 from ophyd_async.core import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
@@ -29,17 +29,17 @@ def fake_generator(value):
         (
             (15, 10),
             "#1J:-" + str(15 * ZOOMCALIBRATOR),
-            "#2J:-" + str(10 * ZOOMCALIBRATOR),
+            "#2J:" + str(10 * ZOOMCALIBRATOR),
         ),
         (
             (475, 309),
             "#1J:-" + str(475 * ZOOMCALIBRATOR),
-            "#2J:-" + str(309 * ZOOMCALIBRATOR),
+            "#2J:" + str(309 * ZOOMCALIBRATOR),
         ),
         (
             (638, 392),
             "#1J:-" + str(638 * ZOOMCALIBRATOR),
-            "#2J:-" + str(392 * ZOOMCALIBRATOR),
+            "#2J:" + str(392 * ZOOMCALIBRATOR),
         ),
     ],
 )
@@ -66,8 +66,8 @@ def test_move_on_mouse_click_gets_beam_position_and_sends_correct_str(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(expected_xmove, wait=True, timeout=10),
-            call(expected_ymove, wait=True, timeout=10),
+            call(expected_xmove, wait=True),
+            call(expected_ymove, wait=True),
         ]
     )
 

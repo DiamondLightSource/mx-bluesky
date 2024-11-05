@@ -5,19 +5,19 @@ from unittest.mock import patch
 import pytest
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.areadetector.plugins.CAM import ColorMode
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.oav.utils import ColorMode
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.parameters.components import WithSnapshot
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
-from mx_bluesky.hyperion.parameters.components import WithSnapshot
-from mx_bluesky.hyperion.parameters.constants import DocDescriptorNames
 
 from ....conftest import raw_params_from_file
 
@@ -41,7 +41,6 @@ class CompositeImpl(OavSnapshotComposite):
 
 @pytest.fixture
 def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
-    oav.zoom_controller.fvst.sim_put("5.0x")
     return CompositeImpl(
         smargon=smargon,
         oav=oav,
@@ -66,37 +65,37 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_color_mode"
+        and msg.obj.name == "oav-cam-color_mode"
         and msg.args[0] == ColorMode.RGB1,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_acquire_period"
+        and msg.obj.name == "oav-cam-acquire_period"
         and msg.args[0] == 0.05,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_acquire_time"
+        and msg.obj.name == "oav-cam-acquire_time"
         and msg.args[0] == 0.075,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_cam_gain"
+        and msg.obj.name == "oav-cam-gain"
         and msg.args[0] == 1,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_zoom_controller"
+        and msg.obj.name == "oav-zoom_controller"
         and msg.args[0] == "5.0x",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "oav_snapshot_directory"
+        and msg.obj.name == "oav-snapshot-directory"
         and msg.args[0] == "/tmp/my_snapshots",
     )
     for expected in [
@@ -115,13 +114,13 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "oav_snapshot_filename"
+            and msg.obj.name == "oav-snapshot-filename"
             and msg.args[0] == expected["filename"],
         )
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "trigger"
-            and msg.obj.name == "oav_snapshot"
+            and msg.obj.name == "oav-snapshot"
             and msg.kwargs["group"] is None,
         )
         msgs = assert_message_and_return_remaining(
@@ -135,7 +134,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
             == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         )
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav_snapshot"
+            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav-snapshot"
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"

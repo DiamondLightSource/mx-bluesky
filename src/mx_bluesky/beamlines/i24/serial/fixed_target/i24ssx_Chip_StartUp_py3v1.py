@@ -2,7 +2,6 @@
 Startup utilities for chip
 """
 
-import logging
 import os
 import string
 import time
@@ -10,8 +9,8 @@ from pathlib import Path
 
 import numpy as np
 
-from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
@@ -21,14 +20,6 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     PARAM_FILE_NAME,
     PARAM_FILE_PATH_FT,
 )
-
-logger = logging.getLogger("I24ssx.chip_startup")
-
-
-def setup_logging():
-    # Log should now change name daily.
-    logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
-    log.config(logfile)
 
 
 def read_parameter_file(
@@ -41,16 +32,16 @@ def read_parameter_file(
     return params
 
 
-@log.log_on_entry
+@log_on_entry
 def fiducials(chip_type: int):
     fiducial_list: list | None = None
     if chip_type in [ChipType.Oxford, ChipType.OxfordInner, ChipType.Minichip]:
         fiducial_list = []
     elif chip_type == ChipType.Custom:
         # No fiducial for custom
-        logger.warning("No fiducials for custom chip")
+        SSX_LOGGER.warning("No fiducials for custom chip")
     else:
-        logger.warning(f"Unknown chip_type, {chip_type}, in fiducials")
+        SSX_LOGGER.warning(f"Unknown chip_type, {chip_type}, in fiducials")
     return fiducial_list
 
 
@@ -118,9 +109,9 @@ def pathli(l_in=None, way="typewriter", reverse=False):
                 for _ in range(25):
                     long_list.append(entry)
         else:
-            logger.warning(f"No known path, way =  {way}")
+            SSX_LOGGER.warning(f"No known path, way =  {way}")
     else:
-        logger.warning("No list written")
+        SSX_LOGGER.warning("No list written")
     return long_list
 
 
@@ -154,11 +145,11 @@ def get_alphanumeric(chip_type: ChipType):
     for block in block_list:
         for window in window_list:
             alphanumeric_list.append(block + "_" + window)
-    logger.info(f"Length of alphanumeric list = {len(alphanumeric_list)}")
+    SSX_LOGGER.info(f"Length of alphanumeric list = {len(alphanumeric_list)}")
     return alphanumeric_list
 
 
-@log.log_on_entry
+@log_on_entry
 def get_shot_order(chip_type: ChipType):
     cell_format = get_chip_format(chip_type)
     blk_num = cell_format.x_blocks
@@ -192,11 +183,11 @@ def get_shot_order(chip_type: ChipType):
                 count = 0
                 switch = 0
 
-    logger.info(f"Length of collect list = {len(collect_list)}")
+    SSX_LOGGER.info(f"Length of collect list = {len(collect_list)}")
     return collect_list
 
 
-@log.log_on_entry
+@log_on_entry
 def write_file(
     location: str = "i24",
     suffix: str = ".addr",
@@ -208,7 +199,7 @@ def write_file(
         params = read_parameter_file(param_file_path)
     else:
         msg = f"Unknown location, {location}"
-        logger.error(msg)
+        SSX_LOGGER.error(msg)
         raise ValueError(msg)
     chip_file_path = save_path / f"chips/{params.directory}/{params.filename}{suffix}"
 
@@ -235,10 +226,10 @@ def write_file(
             line = "\t".join([xtal_name, str(x), str(y), "0.0", pres]) + "\n"
             g.write(line)
 
-    logger.info(f"Write {chip_file_path} completed")
+    SSX_LOGGER.info(f"Write {chip_file_path} completed")
 
 
-@log.log_on_entry
+@log_on_entry
 def check_files(
     location: str,
     suffix_list: list[str],
@@ -249,7 +240,7 @@ def check_files(
         params = read_parameter_file(param_file_path)
     else:
         msg = f"Unknown location, {location}"
-        logger.error(msg)
+        SSX_LOGGER.error(msg)
         raise ValueError(msg)
     chip_file_path = save_path / f"chips/{params.directory}/{params.filename}"
 
@@ -265,12 +256,12 @@ def check_files(
                 full_fid.parent / f"{time_str}_{params.filename}{full_fid.suffix}"
             )
             # FIXME hack / fix. Actually move the file
-            logger.info(f"File {full_fid} Already Exists")
-    logger.debug("Check files done")
+            SSX_LOGGER.info(f"File {full_fid} Already Exists")
+    SSX_LOGGER.debug("Check files done")
     return 1
 
 
-@log.log_on_entry
+@log_on_entry
 def write_headers(
     location: str,
     suffix_list: list[str],
@@ -305,24 +296,23 @@ def write_headers(
                 )
     else:
         msg = f"Unknown location, {location}"
-        logger.error(msg)
+        SSX_LOGGER.error(msg)
         raise ValueError(msg)
-    logger.debug("Write headers done")
+    SSX_LOGGER.debug("Write headers done")
 
 
 def run():
-    logger.debug("Run Startup")
+    SSX_LOGGER.debug("Run Startup")
     check_files("i24", [".addr", ".shot"])
-    logger.info("Checked Files")
+    SSX_LOGGER.info("Checked Files")
     write_headers("i24", [".addr", ".shot"])
-    logger.info("Written Headers")
-    logger.info("Writing to Files has been disabled. Headers Only")
+    SSX_LOGGER.info("Written Headers")
+    SSX_LOGGER.info("Writing to Files has been disabled. Headers Only")
     # Makes a file with random crystal positions
     check_files("i24", ["rando.spec"])
     write_headers("i24", ["rando.spec"])
-    logger.debug("StartUp Done")
+    SSX_LOGGER.debug("StartUp Done")
 
 
 if __name__ == "__main__":
-    setup_logging()
     run()

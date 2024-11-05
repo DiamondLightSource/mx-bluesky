@@ -15,6 +15,8 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+    PMAC_MOVE_TIME,
+    calculate_collection_timeout,
     datasetsizei24,
     finish_i24,
     get_chip_prog_values,
@@ -24,6 +26,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     run_aborted_plan,
     start_i24,
     tidy_up_after_collection_plan,
+    write_userlog,
 )
 
 chipmap_str = """01status    P3011       1
@@ -35,6 +38,43 @@ chipmap_str = """01status    P3011       1
 def fake_generator(value):
     yield from bps.null()
     return value
+
+
+def test_calculate_collection_timeout(dummy_params_without_pp):
+    dummy_params_without_pp.total_num_images = 400
+    expected_collection_time = (
+        dummy_params_without_pp.total_num_images
+        * dummy_params_without_pp.exposure_time_s
+    )
+    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 2
+    timeout = calculate_collection_timeout(dummy_params_without_pp)
+
+    assert timeout == expected_collection_time + buffer
+
+
+def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
+    dummy_params_with_pp.total_num_images = 400
+    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 2
+    expected_pump_and_probe_time = 12.05
+    timeout = calculate_collection_timeout(dummy_params_with_pp)
+
+    assert timeout == expected_pump_and_probe_time + buffer
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
+def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
+        mock_open(),
+    ):
+        write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
+    fake_mkdir.assert_called_once()
+    fake_log.debug.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
@@ -124,7 +164,7 @@ def test_load_motion_program_data(
     RE(load_motion_program_data(pmac, test_dict, map_type, pump_repeat, checker))
     call_list = []
     for i in expected_calls:
-        call_list.append(call(i, wait=True, timeout=10.0))
+        call_list.append(call(i, wait=True))
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(call_list)
 
@@ -134,7 +174,11 @@ def test_load_motion_program_data(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
 def test_start_i24_with_eiger(
+    fake_mkdir,
     fake_sleep,
     fake_sup,
     fake_caget,
@@ -165,13 +209,13 @@ def test_start_i24_with_eiger(
     assert fake_sup.eiger.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
-    # Pilatus gets called for hack to create directory
-    assert fake_sup.pilatus.call_count == 2
     assert fake_dcid.generate_dcid.call_count == 1
+    assert fake_mkdir.call_count == 1
+    fake_mkdir.assert_called_once()
 
     shutter_call_list = [
-        call("Reset", wait=True, timeout=10.0),
-        call("Open", wait=True, timeout=10.0),
+        call("Reset", wait=True),
+        call("Open", wait=True),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -215,10 +259,10 @@ def test_finish_i24(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True, timeout=ANY)])
+    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
 
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True, timeout=ANY)])
+    mock_shutter.assert_has_calls([call("Close", wait=True)])
 
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 

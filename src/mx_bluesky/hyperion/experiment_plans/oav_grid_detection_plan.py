@@ -90,12 +90,13 @@ def grid_detection_plan(
 
     LOGGER.info("OAV Centring: Camera set up")
 
-    assert isinstance(oav.parameters.micronsPerXPixel, float)
-    box_size_x_pixels = box_size_um / oav.parameters.micronsPerXPixel
-    assert isinstance(oav.parameters.micronsPerYPixel, float)
-    box_size_y_pixels = box_size_um / oav.parameters.micronsPerYPixel
+    microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
+    microns_per_pixel_y = yield from bps.rd(oav.microns_per_pixel_y)
 
-    grid_width_pixels = int(grid_width_microns / oav.parameters.micronsPerXPixel)
+    box_size_x_pixels = box_size_um / microns_per_pixel_x
+    box_size_y_pixels = box_size_um / microns_per_pixel_y
+
+    grid_width_pixels = int(grid_width_microns / microns_per_pixel_x)
 
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
@@ -115,7 +116,7 @@ def grid_detection_plan(
             (yield from bps.rd(pin_tip_detection.triggered_bottom_edge))
         )
 
-        full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
+        full_image_height_px = yield from bps.rd(oav.cam.array_size_y)
 
         # only use the area from the start of the pin onwards
         top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]
@@ -164,7 +165,7 @@ def grid_detection_plan(
         yield from bps.trigger(oav.grid_snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
 
-        yield from bps.read(oav.grid_snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.read(smargon)
         yield from bps.save()
 

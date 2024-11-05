@@ -29,6 +29,7 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
+    "pydantic-extra-types",
     "pyepics",
     "pyzmq",
     "requests",
@@ -111,6 +112,7 @@ reportMissingImports = false # Ignore missing stubs in imported modules
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
@@ -133,6 +135,17 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
+    "ignore:.*pkg_resources.*:DeprecationWarning",
+    # Ignore deprecation warning that gets promoted to SystemError from somewhere
+    # in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
+    # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
+    # The fix for this is in https://github.com/protocolbuffers/protobuf/pull/15999
+    # But this fix exists only in 3.27.0<=protobuf<4 and protobuf>=v5, not in 4.x that we depend on
+    # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
+    "ignore:.*custom tp_new.*:DeprecationWarning",
+    # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
+    "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"

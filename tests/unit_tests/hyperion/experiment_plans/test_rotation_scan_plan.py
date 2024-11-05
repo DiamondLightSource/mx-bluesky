@@ -18,6 +18,7 @@ from dodal.devices.zebra import PC_GATE, SOFT_IN1, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
 )
@@ -35,7 +36,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import IspybIds
-from mx_bluesky.hyperion.parameters.constants import CONST, DocDescriptorNames
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .conftest import fake_read
@@ -224,10 +225,10 @@ async def test_full_rotation_plan_smargon_settings(
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
     assert omega_velocity_set.call_args_list == [
-        call(test_max_velocity, wait=True, timeout=10),
-        call(test_max_velocity, wait=True, timeout=10),
-        call(rotation_speed, wait=True, timeout=10),
-        call(test_max_velocity, wait=True, timeout=10),
+        call(test_max_velocity, wait=True),
+        call(test_max_velocity, wait=True),
+        call(rotation_speed, wait=True),
+        call(test_max_velocity, wait=True),
     ]
 
 
@@ -517,7 +518,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot"
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
     )
 
 
@@ -628,7 +629,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot"
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
     )
     msgs = assert_message_and_return_remaining(
         msgs,
