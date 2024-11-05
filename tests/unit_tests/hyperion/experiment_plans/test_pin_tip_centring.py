@@ -1,5 +1,5 @@
 from functools import partial
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -57,6 +57,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
     assert await smargon.x.user_readback.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
+    assert all(type(_) is int for _ in result.plan_result)
 
 
 @patch(
@@ -85,6 +86,42 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
     assert await smargon.x.user_readback.get_value() == DEFAULT_STEP_SIZE
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    new=MagicMock(),
+)
+async def test_tip_found_only_after_all_iterations_exhausted_then_tip_returned(
+    smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
+):
+    set_mock_value(mock_pin_tip.validity_timeout, 0.015)
+    set_mock_value(smargon.x.user_readback, 0)
+
+    iterations = 0
+
+    def set_pin_tip_when_x_moved(f, *args, **kwargs):
+        nonlocal iterations
+        iterations += 1
+        if iterations == 2:
+            mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
+                100, 200, *FAKE_EDGE_ARRAYS
+            )
+        return f(*args, **kwargs)
+
+    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint.side_effect = partial(
+        set_pin_tip_when_x_moved, x_user_setpoint.side_effect
+    )
+
+    result = RE(move_pin_into_view(mock_pin_tip, smargon, max_steps=2))
+
+    x_user_setpoint.assert_has_calls(
+        [call(DEFAULT_STEP_SIZE, wait=True), call(DEFAULT_STEP_SIZE * 2, wait=True)]
+    )
+    assert isinstance(result, RunEngineResult)
+    assert result.plan_result == (100, 200)
+    assert all(type(_) is int for _ in result.plan_result)
 
 
 @patch(
