@@ -1,9 +1,11 @@
 # Changes here will be overwritten by Copier
-_commit: 2.2.0
+_commit: 2.5.0
 _src_path: gh:DiamondLightSource/python-copier-template
 author_email: dominic.oram@diamond.ac.uk
 author_name: Dominic Oram
+component_lifecycle: production
 component_owner: group:data-acquisition
+component_type: library
 description: Bluesky tools for MX Beamlines at DLS
 distribution_name: mx-bluesky
 docker: true
