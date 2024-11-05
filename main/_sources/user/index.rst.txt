@@ -49,7 +49,7 @@ side-bar.
             :caption: Reference
             :maxdepth: 1
 
-            reference/api
+            ../_api/mx_bluesky
             ../genindex
 
         +++
