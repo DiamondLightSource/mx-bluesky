@@ -143,10 +143,10 @@ def test_upload_parameters(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("P3011=1", wait=True, timeout=10.0),
-            call("P3021=0", wait=True, timeout=10.0),
-            call("P3031=0", wait=True, timeout=10.0),
-            call("P3041=0", wait=True, timeout=10.0),
+            call("P3011=1", wait=True),
+            call("P3021=0", wait=True),
+            call("P3031=0", wait=True),
+            call("P3041=0", wait=True),
         ]
     )
 
