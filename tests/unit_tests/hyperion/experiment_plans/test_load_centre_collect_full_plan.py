@@ -1,6 +1,7 @@
 import dataclasses
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy
 import pytest
 from bluesky.protocols import Location
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -32,7 +33,7 @@ from ....conftest import pin_tip_edge_data, raw_params_from_file
 
 def find_a_pin(pin_tip_detection):
     def set_good_position():
-        set_mock_value(pin_tip_detection.triggered_tip, (100, 110))
+        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([100, 110]))
         return NullStatus()
 
     return set_good_position

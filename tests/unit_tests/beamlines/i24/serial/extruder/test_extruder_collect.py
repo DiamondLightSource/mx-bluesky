@@ -255,8 +255,8 @@ def test_run_extruder_pump_probe_with_pilatus(
     mock_pp_plan.assert_called_once()
 
     shutter_call_list = [
-        call("Reset", wait=True, timeout=10.0),
-        call("Open", wait=True, timeout=10.0),
+        call("Reset", wait=True),
+        call("Open", wait=True),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -284,7 +284,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True, timeout=10.0)])
+    mock_shutter.assert_has_calls([call("Close", wait=True)])
 
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1

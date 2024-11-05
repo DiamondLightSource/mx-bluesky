@@ -21,7 +21,7 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -82,6 +82,7 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
+    simulate_xrc_result,
 )
 
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
@@ -89,7 +90,9 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(fake_fgs_composite: FlyScanXRayCentreComposite):
-    capture_table = DatasetTable(name=np.array(["name"]), hdf5_type=[])
+    capture_table = DatasetTable(
+        name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]
+    )
     set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
 
     return fake_fgs_composite
@@ -920,8 +923,8 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
-        sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.zocalo.centres_of_mass, [(10, 10, 10)]
+        simulate_xrc_result(
+            sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(

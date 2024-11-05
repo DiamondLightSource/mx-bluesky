@@ -111,10 +111,10 @@ async def test_initialise(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("m508=100 m509=150", wait=True, timeout=10.0),
-            call("m608=100 m609=150", wait=True, timeout=10.0),
-            call("m708=100 m709=150", wait=True, timeout=10.0),
-            call("m808=100 m809=150", wait=True, timeout=10.0),
+            call("m508=100 m509=150", wait=True),
+            call("m608=100 m609=150", wait=True),
+            call("m708=100 m709=150", wait=True),
+            call("m808=100 m809=150", wait=True),
         ]
     )
 
@@ -143,10 +143,10 @@ def test_upload_parameters(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("P3011=1", wait=True, timeout=10.0),
-            call("P3021=0", wait=True, timeout=10.0),
-            call("P3031=0", wait=True, timeout=10.0),
-            call("P3041=0", wait=True, timeout=10.0),
+            call("P3011=1", wait=True),
+            call("P3021=0", wait=True),
+            call("P3031=0", wait=True),
+            call("P3041=0", wait=True),
         ]
     )
 
@@ -267,8 +267,8 @@ def test_laser_control_burn_setting(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(" M712=1 M711=1", wait=True, timeout=10.0),
-            call(" M712=0 M711=1", wait=True, timeout=10.0),
+            call(" M712=1 M711=1", wait=True),
+            call(" M712=0 M711=1", wait=True),
         ]
     )
 
@@ -307,10 +307,10 @@ def test_cs_pmac_str_set(pmac: PMAC, RE):
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("&2", wait=True, timeout=10.0),
-            call("#1->-10000X+0Y+0Z", wait=True, timeout=10.0),
-            call("#2->+0X+10000Y+0Z", wait=True, timeout=10.0),
-            call("#3->0X+0Y+10000Z", wait=True, timeout=10.0),
+            call("&2", wait=True),
+            call("#1->-10000X+0Y+0Z", wait=True),
+            call("#2->+0X+10000Y+0Z", wait=True),
+            call("#3->0X+0Y+10000Z", wait=True),
         ]
     )
 
