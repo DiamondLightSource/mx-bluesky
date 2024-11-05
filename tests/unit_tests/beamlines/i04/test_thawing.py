@@ -335,9 +335,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
         run_plan()
 
     mock_level_set = get_mock_put(oav.zoom_controller.level)
-    mock_level_set.assert_has_calls(
-        [call("1.0x", wait=True, timeout=ANY), call("2.0x", wait=True, timeout=ANY)]
-    )
+    mock_level_set.assert_has_calls([call("1.0x", wait=True), call("2.0x", wait=True)])
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
