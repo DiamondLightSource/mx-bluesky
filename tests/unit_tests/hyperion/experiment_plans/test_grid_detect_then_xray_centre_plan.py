@@ -12,8 +12,8 @@ from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
-from ophyd_async.core import set_mock_value
 from ophyd.sim import NullStatus
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
