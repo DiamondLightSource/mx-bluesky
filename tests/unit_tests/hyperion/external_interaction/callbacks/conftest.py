@@ -10,7 +10,7 @@ from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 from .....conftest import default_raw_params, raw_params_from_file
@@ -18,7 +18,7 @@ from ...conftest import OavGridSnapshotTestEvents
 
 
 def dummy_params():
-    dummy_params = ThreeDGridScan(**default_raw_params())
+    dummy_params = HyperionThreeDGridScan(**default_raw_params())
     return dummy_params
 
 
@@ -27,7 +27,7 @@ def dummy_params_2d():
         "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
     raw_params["z_steps"] = 1
-    return ThreeDGridScan(**raw_params)
+    return HyperionThreeDGridScan(**raw_params)
 
 
 @pytest.fixture

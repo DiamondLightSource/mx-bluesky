@@ -12,6 +12,8 @@ from dodal.log import (
 )
 from dodal.log import LOGGER as dodal_logger
 
+LOGGER = logging.getLogger("mx-bluesky")
+
 __logger_handlers: DodalLogHandlers | None = None
 
 

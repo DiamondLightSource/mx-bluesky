@@ -1,6 +1,7 @@
 from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
@@ -88,6 +89,7 @@ class DetectorParamConstants:
         if TEST_MODE
         else "/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
+    DETECTOR = EIGER2_X_16M_SIZE
 
 
 @dataclass(frozen=True)

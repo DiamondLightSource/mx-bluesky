@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
@@ -140,7 +140,7 @@ def test_RE_with_external_callbacks_starts_and_stops(
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     fake_fgs_composite: FlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,

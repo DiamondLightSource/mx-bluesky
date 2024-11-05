@@ -36,7 +36,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callba
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 from ....conftest import default_raw_params
 from ..external_interaction.conftest import (  # noqa
@@ -47,7 +47,7 @@ from ..external_interaction.conftest import (  # noqa
 
 @pytest.fixture
 def params():
-    params = ThreeDGridScan(**default_raw_params())
+    params = HyperionThreeDGridScan(**default_raw_params())
     params.beamline = CONST.SIM.BEAMLINE
     yield params
 
@@ -151,7 +151,7 @@ def test_read_hardware_pre_collection(
 async def test_xbpm_feedback_decorator(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     # This test is currently kind of more a unit test since we are faking XBPM feedback
@@ -189,7 +189,7 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     RE: RunEngine,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
@@ -224,7 +224,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     RE: RunEngine,
 ):
     class _Exception(Exception): ...
@@ -244,7 +244,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,  # noqa
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     _, ispyb_cb = callbacks
@@ -274,7 +274,7 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     callbacks,
     done_status,
 ):
@@ -317,7 +317,7 @@ async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
     callbacks,
     done_status,
 ):

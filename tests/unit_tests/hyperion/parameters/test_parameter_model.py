@@ -8,9 +8,9 @@ from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.parameters.gridscan import (
+    HyperionThreeDGridScan,
     OddYStepsException,
     RobotLoadThenCentre,
-    ThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -37,7 +37,7 @@ def minimal_3d_gridscan_params():
 
 
 def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
-    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    test_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert {"sam_x", "sam_y", "sam_z"} == set(test_params.scan_points.keys())
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
@@ -45,16 +45,16 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
 
 
 def test_cant_do_panda_fgs_with_odd_y_steps(minimal_3d_gridscan_params):
-    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    test_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     with pytest.raises(OddYStepsException):
         _ = test_params.panda_FGS_params
     assert test_params.FGS_params
 
 
 def test_serialise_deserialise(minimal_3d_gridscan_params):
-    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    test_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     serialised = json.loads(test_params.model_dump_json())
-    deserialised = ThreeDGridScan(**serialised)
+    deserialised = HyperionThreeDGridScan(**serialised)
     assert deserialised.demand_energy_ev is None
     assert deserialised.visit == "cm12345"
     assert deserialised.x_start_um == 0.123
@@ -63,16 +63,16 @@ def test_serialise_deserialise(minimal_3d_gridscan_params):
 def test_param_version(minimal_3d_gridscan_params):
     with pytest.raises(ValidationError):
         minimal_3d_gridscan_params["parameter_model_version"] = "4.3.0"
-        _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+        _ = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     minimal_3d_gridscan_params["parameter_model_version"] = "5.0.0"
-    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    _ = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     minimal_3d_gridscan_params["parameter_model_version"] = "5.3.0"
-    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    _ = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     minimal_3d_gridscan_params["parameter_model_version"] = "5.3.7"
-    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    _ = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     with pytest.raises(ValidationError):
         minimal_3d_gridscan_params["parameter_model_version"] = "6.3.7"
-        _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+        _ = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
 
 
 def test_robot_load_then_centre_params():
@@ -89,7 +89,7 @@ def test_robot_load_then_centre_params():
 
 
 def test_default_snapshot_path(minimal_3d_gridscan_params):
-    gridscan_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    gridscan_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert gridscan_params.snapshot_directory == Path(
         "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/snapshots"
     )
@@ -97,7 +97,9 @@ def test_default_snapshot_path(minimal_3d_gridscan_params):
     params_with_snapshot_path = dict(minimal_3d_gridscan_params)
     params_with_snapshot_path["snapshot_directory"] = "/tmp/my_snapshots"
 
-    gridscan_params_with_snapshot_path = ThreeDGridScan(**params_with_snapshot_path)
+    gridscan_params_with_snapshot_path = HyperionThreeDGridScan(
+        **params_with_snapshot_path
+    )
     assert gridscan_params_with_snapshot_path.snapshot_directory == Path(
         "/tmp/my_snapshots"
     )
@@ -124,14 +126,14 @@ def test_selected_aperture_uses_default():
 
 
 def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
-    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    test_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.features.use_panda_for_gridscan is False
     assert test_params.features.compare_cpu_and_gpu_zocalo is False
     minimal_3d_gridscan_params["features"] = {
         "use_panda_for_gridscan": True,
         "compare_cpu_and_gpu_zocalo": True,
     }
-    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    test_params = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.features.compare_cpu_and_gpu_zocalo
     assert test_params.features.use_panda_for_gridscan
     # Config server shouldn't update values which were explicitly provided
@@ -144,11 +146,11 @@ def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
 def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_params):
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
 
-    grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
+    grid_scan = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert not grid_scan.detector_params.enable_dev_shm
 
     minimal_3d_gridscan_params["features"] = {
         "compare_cpu_and_gpu_zocalo": True,
     }
-    grid_scan = ThreeDGridScan(**minimal_3d_gridscan_params)
+    grid_scan = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert grid_scan.detector_params.enable_dev_shm
