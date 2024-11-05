@@ -84,7 +84,7 @@ def test_write_parameter_file(
         RE(write_parameter_file(detector_stage))
 
     fake_mkdir.assert_called_once()
-    assert fake_caget.call_count == 12
+    assert fake_caget.call_count == 13
     mock_json.dump.assert_called_once()
     assert fake_log.info.call_count == 3
 

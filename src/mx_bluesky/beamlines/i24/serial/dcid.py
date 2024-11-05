@@ -126,6 +126,10 @@ class DCID:
                 start_time = start_time.astimezone()
 
             # Gather data from the beamline
+            # TODO
+            # Detector distance from det_motion, wavelength from dcm.
+            # Could be passed as input?
+            # transmission needs to go into params. Det distance actually already in there.
             detector_distance = float(caget(self.detector.pv.detector_distance))
             wavelength = float(caget(self.detector.pv.wavelength))
             resolution = get_resolution(self.detector, detector_distance, wavelength)
@@ -133,6 +137,7 @@ class DCID:
             transmission = float(caget(self.detector.pv.transmission)) * 100
             xbeam, ybeam = get_beam_center(self.detector)
 
+            # TODO This is already done in other bits of code, why redo, just grab it
             if isinstance(self.detector, Pilatus):
                 # Mirror the construction that the PPU does
                 fileTemplate = get_pilatus_filename_template_from_pvs()
@@ -414,6 +419,7 @@ def get_resolution(detector: Detector, distance: float, wavelength: float) -> fl
 
 def get_beam_center(detector: Detector) -> tuple[float, float]:
     """Get the detector beam center, in mm"""
+    # TODO These beamx, beamy values right now are actually hard coded
     beamX = float(caget(detector.pv.beamx)) * detector.pixel_size_mm[0]
     beamY = float(caget(detector.pv.beamy)) * detector.pixel_size_mm[1]
     return (beamX, beamY)

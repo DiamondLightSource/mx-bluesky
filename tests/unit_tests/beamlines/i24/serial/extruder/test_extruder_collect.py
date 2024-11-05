@@ -30,6 +30,7 @@ def dummy_params():
         "exposure_time_s": 0.1,
         "detector_distance_mm": 100,
         "detector_name": "eiger",
+        "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
     }
@@ -45,6 +46,7 @@ def dummy_params_pp():
         "exposure_time_s": 0.1,
         "detector_distance_mm": 100,
         "detector_name": "pilatus",
+        "transmission": 1.0,
         "num_images": 10,
         "pump_status": True,
         "laser_dwell_s": 0.01,
@@ -79,7 +81,7 @@ def test_write_parameter_file(
     ):
         RE(write_parameter_file(detector_stage))
 
-    assert fake_caget.call_count == 8
+    assert fake_caget.call_count == 9
     mock_json.dump.assert_called_once()
     fake_log.debug.assert_called_once()
     fake_log.warning.assert_called_once()

@@ -23,6 +23,8 @@ def __which__():
     print("path to pv.py: ")
 
 
+requested_transmission = "BL24I-OP-ATTN-01:T2A:SETVAL1"
+
 # PILATUS
 pilat_filepath = "BL24I-EA-PILAT-01:cam1:FilePath"
 pilat_filename = "BL24I-EA-PILAT-01:cam1:FileName"

@@ -20,6 +20,7 @@ class SerialExperiment(BaseModel):
     exposure_time_s: float
     detector_distance_mm: float
     detector_name: Literal["eiger", "pilatus"]
+    transmission: float
 
     @field_validator("visit", mode="before")
     @classmethod

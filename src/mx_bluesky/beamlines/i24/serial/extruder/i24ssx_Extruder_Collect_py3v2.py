@@ -165,6 +165,7 @@ def write_parameter_file(detector_stage: DetectorMotion):
         "exposure_time_s": float(caget(pv.ioc12_gp5)),
         "detector_distance_mm": float(caget(pv.ioc12_gp7)),
         "detector_name": str(det_type),
+        "transmission": float(caget(pv.requested_transmission)),
         "num_images": int(caget(pv.ioc12_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
