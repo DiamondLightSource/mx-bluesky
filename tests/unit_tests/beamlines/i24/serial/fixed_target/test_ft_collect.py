@@ -26,6 +26,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     run_aborted_plan,
     start_i24,
     tidy_up_after_collection_plan,
+    write_userlog,
 )
 
 chipmap_str = """01status    P3011       1
@@ -58,6 +59,22 @@ def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
     timeout = calculate_collection_timeout(dummy_params_with_pp)
 
     assert timeout == expected_pump_and_probe_time + buffer
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
+def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
+        mock_open(),
+    ):
+        write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
+    fake_mkdir.assert_called_once()
+    fake_log.debug.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
