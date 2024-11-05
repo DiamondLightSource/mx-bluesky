@@ -64,10 +64,13 @@ def fake_generator(value):
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.json")
 @patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._read_visit_directory_from_file"
+)
+@patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
 )
 def test_write_parameter_file(
-    fake_log, mock_json, fake_caget, fake_det, detector_stage, RE
+    fake_log, mock_read_visit, mock_json, fake_caget, fake_det, detector_stage, RE
 ):
     fake_det.side_effect = [fake_generator(Eiger())]
     with patch(

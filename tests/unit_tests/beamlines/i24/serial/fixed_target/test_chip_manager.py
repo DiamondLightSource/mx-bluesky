@@ -53,13 +53,24 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.json")
 @patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._read_visit_directory_from_file"
+)
+@patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
 )
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
 )
 def test_write_parameter_file(
-    fake_mkdir, fake_log, mock_json, fake_caget, fake_chip, fake_det, detector_stage, RE
+    fake_mkdir,
+    fake_log,
+    mock_read_visit,
+    mock_json,
+    fake_caget,
+    fake_chip,
+    fake_det,
+    detector_stage,
+    RE,
 ):
     def fake_generator(value):
         yield from bps.null()
