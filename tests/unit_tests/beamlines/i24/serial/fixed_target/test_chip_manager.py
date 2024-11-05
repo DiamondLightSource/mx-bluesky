@@ -1,6 +1,7 @@
 import json
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
@@ -21,7 +22,9 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     scrape_mtr_fiducials,
     set_pmac_strings_for_cs,
     upload_parameters,
+    write_parameter_file,
 )
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
 chipmap_str = """01status    P3011       1
 02status    P3021       0
@@ -39,6 +42,40 @@ MTR2 1 -1
 MTR3 0 -1"""
 
 cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir":-1, "Sz_dir":0}'
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_detector_type"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_chip_format"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.json")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
+)
+def test_write_parameter_file(
+    fake_mkdir, fake_log, mock_json, fake_caget, fake_chip, fake_det, detector_stage, RE
+):
+    def fake_generator(value):
+        yield from bps.null()
+        return value
+
+    fake_det.side_effect = [fake_generator(Eiger())]
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+        mock_open(),
+    ):
+        RE(write_parameter_file(detector_stage))
+
+    fake_mkdir.assert_called_once()
+    assert fake_caget.call_count == 12
+    mock_json.dump.assert_called_once()
+    assert fake_log.info.call_count == 3
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sys")
