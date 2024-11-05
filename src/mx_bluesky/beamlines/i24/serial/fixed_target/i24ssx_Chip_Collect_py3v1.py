@@ -375,6 +375,7 @@ def start_i24(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
+    dcm: DCM,
     dcid: DCID,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
@@ -382,6 +383,7 @@ def start_i24(
     Returns the start_time.
     """
 
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
     SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
@@ -432,15 +434,12 @@ def start_i24(
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            wavelength=wavelength,
             image_dir=filepath,
-            start_time=start_time,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
@@ -491,15 +490,12 @@ def start_i24(
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            wavelength=wavelength,
             image_dir=filepath,
-            start_time=start_time,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Zebra.")
@@ -621,7 +617,15 @@ def main_fixed_target_plan(
     )
 
     start_time = yield from start_i24(
-        zebra, aperture, backlight, beamstop, detector_stage, shutter, parameters, dcid
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        parameters,
+        dcm,
+        dcid,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -760,7 +764,7 @@ def run_fixed_target_plan(
     dcid = DCID(
         emit_errors=False,
         ssx_type=SSXType.FIXED,
-        detector=parameters.detector_name,
+        expt_params=parameters,
     )
 
     yield from bpp.contingency_wrapper(

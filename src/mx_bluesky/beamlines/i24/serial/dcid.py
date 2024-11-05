@@ -5,12 +5,16 @@ import math
 import os
 import re
 import subprocess
-import warnings
 from functools import lru_cache
 
 import requests
 
-from mx_bluesky.beamlines.i24.serial.parameters import SSXType
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    ExtruderParameters,
+    FixedTargetParameters,
+    SSXType,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     Detector,
     Eiger,
@@ -19,11 +23,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     cagetstring,
     pv,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    pass
 
 logger = logging.getLogger("I24ssx.DCID")
 
@@ -63,7 +62,7 @@ class DCID:
             stop collection if you can't get a DCID
         timeout: Length of time to wait for the DB server before giving up
         ssx_type: The type of SSX experiment this is for
-        detector: The detector in use for current collection.
+        expt_parameters: Collection parameters input by user.
 
 
     Attributes:
@@ -78,46 +77,43 @@ class DCID:
         emit_errors: bool = True,
         timeout: float = 10,
         ssx_type: SSXType = SSXType.FIXED,
-        detector: Detector | Literal["eiger", "pilatus"] | None = None,
+        expt_params: ExtruderParameters | FixedTargetParameters,
     ):
+        self.parameters = expt_params
         self.detector: Detector
         # Handle case of string literal
-        if detector == "eiger":
-            self.detector = Eiger()
-        elif detector == "pilatus":
-            self.detector = Pilatus()
-        elif detector is None:
-            self.detector = Pilatus()
-            warnings.warn(
-                "Please pass detector= to DCID. Pilatus assumed, this will be removed in the future.",
-                UserWarning,
-                stacklevel=5,
-            )
+        match expt_params.detector_name:
+            case "eiger":
+                self.detector = Eiger()
+            case "pilatus":
+                self.detector = Pilatus()
 
         self.server = server or DEFAULT_ISPYB_SERVER
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.ssx_type = SSXType(ssx_type)
+        self.ssx_type = ssx_type
         self.dcid = None
 
     def generate_dcid(
         self,
-        visit: str,
+        wavelength: float,
         image_dir: str,
         num_images: int,
-        exposure_time: float,
-        start_time: datetime.datetime | None = None,
         shots_per_position: int = 1,
-        pump_exposure_time: float | None = None,
-        pump_delay: float = 0,
-        pump_status: int = 0,
+        start_time: datetime.datetime | None = None,
+        pump_probe: bool = False,
     ):
         """Generate an ispyb DCID.
 
         Args:
-            visit: The name of the visit e.g. "mx12345-4"
-            image_dir: The location the images will be written
+            wavelength (float): Wavelength read from dcm, in A.
+            image_dir(str): The location the images will be written.
+            num_images (int): Total number of images to be collected.
+            start_time (datetime): Start time of collection.
+            shots_per_position (int): Number of exposures per position in a chip. \
+                Defaults to 1, which works for extruder.
+            pump_probe (bool): It True, pump probe collection. Defaults to False.
         """
         try:
             if not start_time:
@@ -126,15 +122,11 @@ class DCID:
                 start_time = start_time.astimezone()
 
             # Gather data from the beamline
-            # TODO
-            # Detector distance from det_motion, wavelength from dcm.
-            # Could be passed as input?
-            # transmission needs to go into params. Det distance actually already in there.
-            detector_distance = float(caget(self.detector.pv.detector_distance))
-            wavelength = float(caget(self.detector.pv.wavelength))
-            resolution = get_resolution(self.detector, detector_distance, wavelength)
+            resolution = get_resolution(
+                self.detector, self.parameters.detector_distance_mm, wavelength
+            )
             beamsize_x, beamsize_y = get_beamsize()
-            transmission = float(caget(self.detector.pv.transmission)) * 100
+            transmission = self.parameters.transmission * 100
             xbeam, ybeam = get_beam_center(self.detector)
 
             # TODO This is already done in other bits of code, why redo, just grab it
@@ -154,47 +146,45 @@ class DCID:
                 {
                     "name": "Xray probe",
                     "offset": 0,
-                    "duration": exposure_time,
-                    "period": exposure_time,
+                    "duration": self.parameters.exposure_time_s,
+                    "period": self.parameters.exposure_time_s,
                     "repetition": shots_per_position,
                     "eventType": "XrayDetection",
                 }
             ]
-            if pump_status > 0:
-                # https://confluence.diamond.ac.uk/pages/viewpage.action?pageId=131238829
-                # https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets
-                # pump_status = 0: no pump probe
-                # pump_status = 1: pump then probe
-                # pump_status = 2: pump within probe
-                # pump_status = 3-7: different EAVA modes (i.e. also pump then probe)
-                if pump_status != 2 and self.ssx_type is SSXType.FIXED:
-                    # Pump status could be 1 for extruder but not have this.
+            if pump_probe:
+                if self.ssx_type is SSXType.FIXED:
                     # pump then probe - pump_delay corresponds to time *before* first image
-                    pump_delay = -pump_delay
+                    pump_delay = (
+                        -self.parameters.laser_delay_s  # type: ignore
+                        if self.parameters.pump_repeat is not PumpProbeSetting.Short2  # type: ignore
+                        else self.parameters.laser_delay_s
+                    )  # type: ignore
+                else:
+                    pump_delay = self.parameters.laser_delay_s  # type: ignore
                 events.append(
                     {
                         "name": "Laser probe",
                         "offset": pump_delay,
-                        "duration": pump_exposure_time,
-                        # "period": None,
+                        "duration": self.parameters.laser_dwell_s,
                         "repetition": 1,
                         "eventType": "LaserExcitation",
                     },
                 )
 
             data = {
-                "detectorDistance": float(detector_distance),
+                "detectorDistance": self.parameters.detector_distance_mm,
                 "detectorId": self.detector.id,
-                "exposureTime": float(exposure_time),
+                "exposureTime": self.parameters.exposure_time_s,
                 "fileTemplate": fileTemplate,
-                "imageDirectory": str(image_dir),
-                "numberOfImages": int(num_images),
-                "resolution": float(resolution),
+                "imageDirectory": image_dir,
+                "numberOfImages": num_images,
+                "resolution": resolution,
                 "startImageNumber": startImageNumber,
                 "startTime": start_time.isoformat(),
-                "transmission": float(transmission),
-                "visit": visit,
-                "wavelength": float(wavelength),
+                "transmission": transmission,
+                "visit": self.parameters.visit.name,
+                "wavelength": wavelength,
                 "group": {"experimentType": self.ssx_type.value},
                 "xBeam": xbeam,
                 "yBeam": ybeam,

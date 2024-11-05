@@ -236,7 +236,7 @@ def test_run_extruder_pump_probe_with_pilatus(
 ):
     fake_start_time = MagicMock()
     # Mock end of data collection (zebra disarmed)
-    fake_read.side_effect = [fake_generator(0)]
+    fake_read.side_effect = [fake_generator(0.6), fake_generator(0)]
     RE(
         main_extruder_plan(
             zebra,

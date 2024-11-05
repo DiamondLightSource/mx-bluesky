@@ -192,6 +192,7 @@ def main_extruder_plan(
     dcid: DCID,
     start_time: datetime,
 ) -> MsgGenerator:
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
     # Setting up the beamline
     SSX_LOGGER.info("Open hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
@@ -319,14 +320,11 @@ def main_extruder_plan(
 
     # Do DCID creation BEFORE arming the detector
     dcid.generate_dcid(
-        visit=parameters.visit.name,
+        wavelength=wavelength,
         image_dir=parameters.collection_directory.as_posix(),
-        start_time=start_time,
         num_images=parameters.num_images,
-        exposure_time=parameters.exposure_time_s,
-        pump_exposure_time=parameters.laser_dwell_s,
-        pump_delay=parameters.laser_delay_s or 0,
-        pump_status=int(parameters.pump_status),
+        start_time=start_time,
+        pump_probe=parameters.pump_status,
     )
 
     # Collect
@@ -342,7 +340,6 @@ def main_extruder_plan(
     dcid.notify_start()
 
     if parameters.detector_name == "eiger":
-        wavelength = yield from bps.rd(dcm.wavelength_in_a)
         SSX_LOGGER.debug("Call nexgen server for nexus writing.")
         call_nexgen(None, start_time, parameters, wavelength, "extruder")
 
@@ -461,11 +458,7 @@ def run_extruder_plan(
     parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)
 
     # DCID - not generated yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.EXTRUDER,
-        detector=parameters.detector_name,
-    )
+    dcid = DCID(emit_errors=False, ssx_type=SSXType.EXTRUDER, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_extruder_plan(
