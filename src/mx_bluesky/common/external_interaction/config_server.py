@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class FeatureFlags(BaseModel, ABC):
-    """Abstract interface to use ConfigServer to toggle features for an experiment
+    """Abstract class to use ConfigServer to toggle features for an experiment
 
     A module wanting to use FeatureFlags should inherit this class, add boolean features
     as attributes, and implement a get_config_server method, which ideally returns a cached creation of
