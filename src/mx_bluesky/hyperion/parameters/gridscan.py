@@ -27,7 +27,9 @@ from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 
 
 class HyperionGridCommon(GridCommon, WithHyperionFeatures):
-    # Override this property from GridCommon to properly select enable_dev_shm
+    # This class only exists so that we can properly select enable_dev_shm. Remove in
+    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
+
     @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (

@@ -9,7 +9,7 @@ class FeatureFlags(BaseModel, ABC):
 
     A module wanting to use FeatureFlags should inherit this class, add boolean features
     as attributes, and implement a get_config_server method, which ideally returns a cached creation of
-    ConfigServer. See Hyperion HyperionFeatureFlags for an example
+    ConfigServer. See HyperionFeatureFlags for an example
 
     Values supplied upon class creation will always take priority over the config server. If connection to the server cannot
     be made AND values were not supplied, attributes will use their default values
