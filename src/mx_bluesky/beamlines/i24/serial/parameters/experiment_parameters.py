@@ -1,4 +1,5 @@
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -102,3 +103,9 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
         with open(filename) as fh:
             raw_params = json.load(fh)
         return cls(**raw_params)
+
+
+class BeamSettings(BaseModel):
+    wavelength_in_a: float
+    beam_size_in_um: Sequence[float]
+    beam_center_in_mm: Sequence[float]

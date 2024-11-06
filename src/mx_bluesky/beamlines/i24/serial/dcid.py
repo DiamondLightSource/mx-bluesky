@@ -6,6 +6,7 @@ import re
 import subprocess
 from functools import lru_cache
 
+import bluesky.plan_stubs as bps
 import requests
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
@@ -14,6 +15,7 @@ from dodal.devices.i24.focus_mode import MirrorFocusMode
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import (
+    BeamSettings,
     ExtruderParameters,
     FixedTargetParameters,
     SSXType,
@@ -50,10 +52,19 @@ def get_auth_header() -> dict:
     return {"Authorization": "Bearer " + token}
 
 
-def read_values_from_hardware(
+def read_beam_info_from_hardware(
     dcm: DCM, mirrors: MirrorFocusMode, beam_center: DetectorBeamCenter
 ):
-    pass
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    beamsize_x = yield from bps.rd(mirrors.beam_size_x)
+    beamsize_y = yield from bps.rd(mirrors.beam_size_y)
+    beam_center_x = yield from bps.rd(beam_center.beam_x)
+    beam_center_y = yield from bps.rd(beam_center.beam_y)
+    return BeamSettings(
+        wavelength_in_a=wavelength,
+        beam_size_in_um=[beamsize_x, beamsize_y],
+        beam_center_in_mm=[beam_center_x, beam_center_y],
+    )
 
 
 class DCID:
