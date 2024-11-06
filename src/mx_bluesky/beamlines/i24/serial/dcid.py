@@ -55,6 +55,8 @@ def get_auth_header() -> dict:
 def read_beam_info_from_hardware(
     dcm: DCM, mirrors: MirrorFocusMode, beam_center: DetectorBeamCenter
 ):
+    # In the future this should also read the transmission from the attenuator, but no
+    # device yet. See https://github.com/DiamondLightSource/dodal/issues/889
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
     beamsize_x = yield from bps.rd(mirrors.beam_size_x)
     beamsize_y = yield from bps.rd(mirrors.beam_size_y)
