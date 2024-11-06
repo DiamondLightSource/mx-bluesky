@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.3a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@978837bfd45c749441e3254d56a28b7ecb5f8dfa",
 ]
 
 
@@ -108,7 +108,7 @@ version_file = "src/mx_bluesky/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-reportMissingImports = false # Ignore missing stubs in imported modules
+reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
