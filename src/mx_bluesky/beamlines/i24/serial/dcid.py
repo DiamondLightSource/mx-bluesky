@@ -7,6 +7,9 @@ import subprocess
 from functools import lru_cache
 
 import requests
+from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.i24.dcm import DCM
+from dodal.devices.i24.focus_mode import MirrorFocusMode
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -45,6 +48,12 @@ def get_auth_header() -> dict:
     with open(CREDENTIALS_LOCATION) as f:
         token = f.read().strip()
     return {"Authorization": "Bearer " + token}
+
+
+def read_values_from_hardware(
+    dcm: DCM, mirrors: MirrorFocusMode, beam_center: DetectorBeamCenter
+):
+    pass
 
 
 class DCID:
