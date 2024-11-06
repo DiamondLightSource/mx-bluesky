@@ -1,20 +1,22 @@
 from abc import ABC, abstractmethod
 
 from daq_config_server.client import ConfigServer
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class FeatureFlags(BaseModel, ABC):
-    """Common interface to use ConfigServer to toggle features for an experiment. To use, inherit this class and add desired features as attributes along with
-    the actual config server"""
+    """Abstract interface to use ConfigServer to toggle features for an experiment
 
-    # The default value will be used as the fallback when doing a best-effort fetch
-    # from the service
+    A module wanting to use FeatureFlags should inherit this class, add boolean features
+    as attributes, and implement a get_config_server method, which ideally returns a cached creation of
+    ConfigServer. See Hyperion HyperionFeatureFlags for an example
+
+    Values supplied upon class creation will always take priority over the config server. If connection to the server cannot
+    be made AND values were not supplied, attributes will use their default values
+    """
 
     # Feature values supplied at construction will override values from the config server
     overriden_features: dict = Field(default_factory=dict, exclude=True)
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @abstractmethod
     def get_config_server(self) -> ConfigServer: ...

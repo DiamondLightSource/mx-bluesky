@@ -20,12 +20,10 @@ from mx_bluesky.common.parameters.components import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    PinTipCentreThenXrayCentre,
     SpecifiedGrid,
 )
 from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
 class HyperionGridCommon(GridCommon, WithHyperionFeatures):
@@ -60,21 +58,6 @@ class HyperionGridCommon(GridCommon, WithHyperionFeatures):
             enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
             **optional_args,
         )
-
-
-class RobotLoadThenCentre(HyperionGridCommon):
-    thawing_time: float = Field(default=CONST.I03.THAWING_TIME)
-
-    def robot_load_params(self):
-        my_params = self.model_dump()
-        return RobotLoadAndEnergyChange(**my_params)
-
-    def pin_centre_then_xray_centre_params(self):
-        my_params = self.model_dump()
-        del my_params["thawing_time"]
-        return PinTipCentreThenXrayCentre(**my_params)
-
-    ...
 
 
 class HyperionThreeDGridScan(
@@ -121,6 +104,7 @@ class HyperionThreeDGridScan(
     @property
     def panda_FGS_params(self) -> PandAGridScanParams:
         if self.y_steps % 2 and self.z_steps > 0:
+            # See https://github.com/DiamondLightSource/hyperion/issues/1118 for explanation
             raise OddYStepsException(
                 "The number of Y steps must be even for a PandA gridscan"
             )

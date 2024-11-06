@@ -7,10 +7,10 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
     OddYStepsException,
-    RobotLoadThenCentre,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 

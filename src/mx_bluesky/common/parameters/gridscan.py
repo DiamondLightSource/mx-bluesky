@@ -18,7 +18,9 @@ from mx_bluesky.common.parameters.components import (
 from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
     GridscanParamConstants,
+    HardwareConstants,
 )
+from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
 
 
 class GridCommon(
@@ -63,6 +65,19 @@ class GridCommon(
             trigger_mode=self.trigger_mode,
             **optional_args,
         )
+
+
+class RobotLoadThenCentre(GridCommon):
+    thawing_time: float = Field(default=HardwareConstants.THAWING_TIME)
+
+    def robot_load_params(self):
+        my_params = self.model_dump()
+        return RobotLoadAndEnergyChange(**my_params)
+
+    def pin_centre_then_xray_centre_params(self):
+        my_params = self.model_dump()
+        del my_params["thawing_time"]
+        return PinTipCentreThenXrayCentre(**my_params)
 
 
 class GridScanWithEdgeDetect(GridCommon): ...
