@@ -440,15 +440,15 @@ def _panda_triggering_setup(
     )
 
     sample_velocity_mm_per_s = (
-        parameters.panda_FGS_params.x_step_size * 1e3 / time_between_x_steps_ms
+        parameters.panda_FGS_params.x_step_size_mm * 1e3 / time_between_x_steps_ms
     )
     if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
         raise SmargonSpeedException(
             f"Smargon speed was calculated from x step size\
-            {parameters.panda_FGS_params.x_step_size} and\
+            {parameters.panda_FGS_params.x_step_size_mm}mm and\
             time_between_x_steps_ms {time_between_x_steps_ms} as\
-            {sample_velocity_mm_per_s}. The smargon's speed limit is\
-            {smargon_speed_limit_mm_per_s} mm/s."
+            {sample_velocity_mm_per_s}mm/s. The smargon's speed limit is\
+            {smargon_speed_limit_mm_per_s}mm/s."
         )
     else:
         LOGGER.info(

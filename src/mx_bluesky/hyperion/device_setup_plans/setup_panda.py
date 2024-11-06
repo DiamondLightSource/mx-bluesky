@@ -68,7 +68,7 @@ def _get_seq_table(
     # x_start is the first trigger point, so we need to travel to x_steps-1 for the final trigger point
     end_of_grid_x_counts = int(
         start_of_grid_x_counts
-        + (parameters.x_step_size * (parameters.x_steps - 1) * MM_TO_ENCODER_COUNTS)
+        + (parameters.x_step_size_mm * (parameters.x_steps - 1) * MM_TO_ENCODER_COUNTS)
     )
 
     exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
@@ -140,7 +140,7 @@ def setup_panda_for_flyscan(
     """
     assert parameters.x_steps > 0
     assert time_between_x_steps_ms * 1000 >= exposure_time_s
-    assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size
+    assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size_mm
 
     yield from bps.stage(panda, group="panda-config")
 

@@ -93,7 +93,7 @@ def test_setup_panda_correctly_configures_table(
     sample_velocity_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
         x_steps=x_steps,
-        x_step_size=x_step_size,
+        x_step_size_mm=x_step_size,
         x_start=x_start,
         run_up_distance_mm=run_up_distance_mm,
         transmission_fraction=0.01,
@@ -166,7 +166,7 @@ def test_setup_panda_correctly_configures_table(
             repeats=x_steps,
             trigger=SeqTrigger.POSA_LT,
             position=int(
-                (params.x_start + (params.x_steps - 1) * params.x_step_size)
+                (params.x_start + (params.x_steps - 1) * params.x_step_size_mm)
                 * MM_TO_ENCODER_COUNTS
                 + exposure_distance_counts
             ),
