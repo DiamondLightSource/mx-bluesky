@@ -120,6 +120,14 @@ def eiger_beam_center(RE) -> DetectorBeamCenter:
 
 
 @pytest.fixture
+def pilatus_beam_center(RE) -> DetectorBeamCenter:
+    bc: DetectorBeamCenter = i24.pilatus_beam_center(fake_with_ophyd_sim=True)
+    set_mock_value(bc.beam_x, 1298)
+    set_mock_value(bc.beam_y, 1307)
+    return bc
+
+
+@pytest.fixture
 def mirrors(RE) -> FocusMirrorsMode:
     mirrors: FocusMirrorsMode = i24.focus_mirrors(fake_with_ophyd_sim=True)
     set_mock_value(mirrors.horizontal, HFocusMode.focus10)

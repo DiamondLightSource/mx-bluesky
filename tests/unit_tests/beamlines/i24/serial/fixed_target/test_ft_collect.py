@@ -177,9 +177,7 @@ def test_load_motion_program_data(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.rd")
 def test_start_i24_with_eiger(
-    fake_rd,
     fake_mkdir,
     fake_sleep,
     fake_sup,
@@ -194,10 +192,12 @@ def test_start_i24_with_eiger(
     beamstop,
     detector_stage,
     dcm,
+    mirrors,
+    eiger_beam_center,
     dummy_params_without_pp,
 ):
     dummy_params_without_pp.total_num_images = 800
-    fake_rd.side_effect = [fake_generator(0.6)]
+    set_mock_value(dcm.wavelength_in_a, 0.6)
     RE(
         start_i24(
             zebra,
@@ -208,6 +208,8 @@ def test_start_i24_with_eiger(
             shutter,
             dummy_params_without_pp,
             dcm,
+            mirrors,
+            eiger_beam_center,
             fake_dcid,
         )
     )
