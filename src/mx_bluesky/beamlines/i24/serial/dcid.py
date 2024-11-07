@@ -53,19 +53,28 @@ def get_auth_header() -> dict:
 
 
 def read_beam_info_from_hardware(
-    dcm: DCM, mirrors: FocusMirrorsMode, beam_center: DetectorBeamCenter
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center: DetectorBeamCenter,
+    detector_name: str,
 ):
     # In the future this should also read the transmission from the attenuator, but no
     # device yet. See https://github.com/DiamondLightSource/dodal/issues/889
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
     beamsize_x = yield from bps.rd(mirrors.beam_size_x)
     beamsize_y = yield from bps.rd(mirrors.beam_size_y)
+    pixel_size = (
+        Eiger().pixel_size_mm if detector_name == "eiger" else Pilatus().pixel_size_mm
+    )
     beam_center_x = yield from bps.rd(beam_center.beam_x)
     beam_center_y = yield from bps.rd(beam_center.beam_y)
     return BeamSettings(
         wavelength_in_a=wavelength,
-        beam_size_in_um=[beamsize_x, beamsize_y],
-        beam_center_in_mm=[beam_center_x, beam_center_y],
+        beam_size_in_um=(beamsize_x, beamsize_y),
+        beam_center_in_mm=(
+            beam_center_x * pixel_size[0],
+            beam_center_y * pixel_size[1],
+        ),
     )
 
 
@@ -148,8 +157,7 @@ class DCID:
             )
             beamsize_x, beamsize_y = beam_settings.beam_size_in_um
             transmission = self.parameters.transmission * 100
-            xbeam = beam_settings.beam_center_in_mm[0] * self.detector.pixel_size_mm[0]
-            ybeam = beam_settings.beam_center_in_mm[1] * self.detector.pixel_size_mm[1]
+            xbeam, ybeam = beam_settings.beam_center_in_mm
 
             # TODO This is already done in other bits of code, why redo, just grab it
             if isinstance(self.detector, Pilatus):
@@ -380,37 +388,6 @@ def get_pilatus_filename_template_from_pvs() -> str:
         raise ValueError(f"{filename=} did not contain the numbers for templating")
 
 
-def get_beamsize() -> tuple[float | None, float | None]:
-    """
-    Read the PVs to get the current beamsize.
-
-    Returns:
-        A tuple (x, y) of beam size (in µm). These values can be 'None'
-        if the focus mode was unrecognised.
-    """
-    # These I24 modes are from GDA
-    focus_modes = {
-        "focus10": ("7x7", 7, 7),
-        "focus20d": ("20x20", 20, 20),
-        "focus30d": ("30x30", 30, 30),
-        "focus50d": ("50x50", 50, 50),
-        "focus1050d": ("10x50", 10, 50),
-        "focus5010d": ("50x10", 50, 10),
-        "focus3010d": ("30x10", 30, 10),
-    }
-    v_mode = caget("BL24I-OP-MFM-01:G0:TARGETAPPLY")
-    h_mode = caget("BL24I-OP-MFM-01:G1:TARGETAPPLY")
-    # Validate these and note an error otherwise
-    if not v_mode.startswith("VMFM") or v_mode[4:] not in focus_modes:
-        SSX_LOGGER.error("Unrecognised vertical beam mode %s", v_mode)
-    if not h_mode.startswith("HMFM") or h_mode[4:] not in focus_modes:
-        SSX_LOGGER.error("Unrecognised horizontal beam mode %s", h_mode)
-    _, h, _ = focus_modes.get(h_mode[4:], (None, None, None))
-    _, _, v = focus_modes.get(v_mode[4:], (None, None, None))
-
-    return (h, v)
-
-
 def get_resolution(detector: Detector, distance: float, wavelength: float) -> float:
     """
     Calculate the inscribed resolution for detector.
@@ -427,11 +404,3 @@ def get_resolution(detector: Detector, distance: float, wavelength: float) -> fl
     """
     width = detector.image_size_mm[0]
     return round(wavelength / (2 * math.sin(math.atan(width / (2 * distance)) / 2)), 2)
-
-
-def get_beam_center(detector: Detector) -> tuple[float, float]:
-    """Get the detector beam center, in mm"""
-    # TODO These beamx, beamy values right now are actually hard coded
-    beamX = float(caget(detector.pv.beamx)) * detector.pixel_size_mm[0]
-    beamY = float(caget(detector.pv.beamy)) * detector.pixel_size_mm[1]
-    return (beamX, beamY)

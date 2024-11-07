@@ -388,7 +388,7 @@ def start_i24(
     """
 
     beam_settings = yield from read_beam_info_from_hardware(
-        dcm, mirrors, beam_center_device
+        dcm, mirrors, beam_center_device, parameters.detector_name
     )
     # wavelength = yield from bps.rd(dcm.wavelength_in_a)
     SSX_LOGGER.info("Start I24 data collection.")

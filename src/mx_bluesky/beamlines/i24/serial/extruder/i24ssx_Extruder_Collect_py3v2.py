@@ -326,7 +326,7 @@ def main_extruder_plan(
         raise UnknownDetectorType(err)
 
     beam_settings = yield from read_beam_info_from_hardware(
-        dcm, mirrors, beam_center_device
+        dcm, mirrors, beam_center_device, parameters.detector_name
     )
 
     # Do DCID creation BEFORE arming the detector

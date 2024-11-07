@@ -13,6 +13,7 @@ from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
@@ -113,4 +114,14 @@ def dcm(RE) -> DCM:
 @pytest.fixture
 def eiger_beam_center(RE) -> DetectorBeamCenter:
     bc: DetectorBeamCenter = i24.eiger_beam_center(fake_with_ophyd_sim=True)
+    set_mock_value(bc.beam_x, 1605)
+    set_mock_value(bc.beam_y, 1702)
     return bc
+
+
+@pytest.fixture
+def mirrors(RE) -> FocusMirrorsMode:
+    mirrors: FocusMirrorsMode = i24.focus_mirrors(fake_with_ophyd_sim=True)
+    set_mock_value(mirrors.horizontal, HFocusMode.focus10)
+    set_mock_value(mirrors.vertical, VFocusMode.focus10)
+    return mirrors
