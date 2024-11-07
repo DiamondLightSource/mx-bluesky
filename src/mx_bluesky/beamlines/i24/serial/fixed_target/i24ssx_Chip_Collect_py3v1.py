@@ -655,8 +655,8 @@ def main_fixed_target_plan(
     SSX_LOGGER.debug("Notify DCID of the start of the collection.")
     dcid.notify_start()
 
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
     if parameters.detector_name == "eiger":
+        wavelength = yield from bps.rd(dcm.wavelength_in_a)
         SSX_LOGGER.debug("Start nexus writing service.")
         call_nexgen(
             chip_prog_dict,
