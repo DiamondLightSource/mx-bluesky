@@ -1,9 +1,12 @@
+from unittest.mock import patch
+
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
+    get_pilatus_filename_template_from_pvs,
     get_resolution,
     read_beam_info_from_hardware,
 )
@@ -35,3 +38,15 @@ def test_get_resolution():
 
     assert eiger_resolution == 0.78
     assert pilatus_resolution == 0.61
+
+
+@patch("mx_bluesky.beamlines.i24.serial.dcid.cagetstring")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.caget")
+def test_get_pilatus_filename_from_pvs(fake_caget, fake_cagetstring):
+    fake_cagetstring.side_effect = ["test_", "%s%s%05d.cbf"]
+    fake_caget.return_value = 2
+
+    expected_template = "test_00002_#####.cbf"
+    res = get_pilatus_filename_template_from_pvs()
+
+    assert res == expected_template
