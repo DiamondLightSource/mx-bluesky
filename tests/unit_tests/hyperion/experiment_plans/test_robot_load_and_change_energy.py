@@ -203,7 +203,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 )
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
-    MagicMock()
+    MagicMock(),
 )
 def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
     start_load: MagicMock,
