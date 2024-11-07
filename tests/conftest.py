@@ -933,7 +933,7 @@ def assert_none_matching(
 
 
 def pin_tip_edge_data():
-    tip_x_px = 100
+    tip_x_px = 130
     tip_y_px = 200
     microns_per_pixel = 2.87  # from zoom levels .xml
     grid_width_px = int(400 / microns_per_pixel)
