@@ -324,8 +324,3 @@ def test_comment_correct_after_hardware_read(
             "wavelength": 1.1164718451643736,
         },
     )
-
-
-def test_end_deposition_updates_bl_sample_id_with_status_on_failure():
-    # assert False, "TODO"
-    pass

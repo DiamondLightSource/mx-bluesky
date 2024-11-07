@@ -12,9 +12,12 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 
 from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    CrystalNotFoundException,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
@@ -181,6 +184,22 @@ ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
 SAMPLE_ID = 5461074
 
 
+@pytest.fixture
+def composite_with_no_diffraction(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+) -> LoadCentreCollectComposite:
+    zocalo = load_centre_collect_composite.zocalo
+
+    @AsyncStatus.wrap
+    async def mock_zocalo_complete():
+        await zocalo._put_results([], {"dcid": 0, "dcgid": 0})
+
+    with (
+        patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete),
+    ):
+        yield load_centre_collect_composite
+
+
 @pytest.fixture(autouse=True)
 def use_real_ispyb():
     with patch.dict(
@@ -291,8 +310,34 @@ def test_execute_load_centre_collect_full_plan(
 
 
 @pytest.mark.s03
-def test_load_centre_collect_updates_bl_sample_status_robot_load_fail():
-    assert False, "TODO"
+def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with (
+        patch(
+            "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.wait_for_smargon_not_disabled",
+            side_effect=TimeoutError("Simulated timeout"),
+        ),
+        pytest.raises(TimeoutError, match="Simulated timeout"),
+    ):
+        RE(
+            load_centre_collect_full_plan(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
 
 
 @pytest.mark.s03
@@ -322,7 +367,6 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
             )
         )
 
-    # robot_load_cb.expeye_sample_handling = MagicMock()
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
@@ -371,15 +415,64 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
             )
         )
 
-    # robot_load_cb.expeye_sample_handling = MagicMock()
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
 @pytest.mark.s03
-def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction():
-    assert False, "TODO"
+def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
+    composite_with_no_diffraction: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with pytest.raises(CrystalNotFoundException):
+        RE(
+            load_centre_collect_full_plan(
+                composite_with_no_diffraction,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
 @pytest.mark.s03
-def test_load_centre_collect_updates_bl_sample_status_rotation_failure():
-    assert False, "TODO"
+def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with (
+        patch(
+            "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.arm_zebra",
+            side_effect=TimeoutError("Simulated timeout"),
+        ),
+        pytest.raises(TimeoutError, match="Simulated timeout"),
+    ):
+        RE(
+            load_centre_collect_full_plan(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"

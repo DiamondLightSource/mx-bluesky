@@ -10,6 +10,9 @@ from bluesky.utils import make_decorator
 from event_model import Event, EventDescriptor, RunStart
 
 from mx_bluesky.hyperion.exceptions import SampleException
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    CrystalNotFoundException,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.common.abstract_event import (
     AbstractEvent,
 )
@@ -79,6 +82,6 @@ class SampleHandlingCallback(PlanReactiveCallback):
 
     def _decode_sample_status(self, exception_type: str) -> BLSampleStatus:
         match exception_type:
-            case SampleException.__name__:
+            case SampleException.__name__ | CrystalNotFoundException.__name__:
                 return BLSampleStatus.ERROR_SAMPLE
         return BLSampleStatus.ERROR_BEAMLINE
