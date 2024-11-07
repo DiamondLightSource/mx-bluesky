@@ -115,9 +115,10 @@ GRID_DC_1_EXPECTED_VALUES = {
     "wavelength": 0.71,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
-    "xtalsnapshotfullpath1": "test_1_y",
-    "xtalsnapshotfullpath2": "test_2_y",
-    "xtalsnapshotfullpath3": "test_3_y",
+    "xtalsnapshotfullpath1": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+    "xtalsnapshotfullpath2": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_0_outer_overlay.png",
+    "xtalsnapshotfullpath3": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/robot_load_centring_file_1_0.png",
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
@@ -131,6 +132,12 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
     "numberofimages": 180,
+    "xtalsnapshotfullpath1": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90_grid_overlay.png",
+    "xtalsnapshotfullpath2": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "xtalsnapshotfullpath3": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90.png",
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
@@ -145,17 +152,23 @@ ROTATION_DC_EXPECTED_VALUES = {
     "synchrotronMode": SynchrotronMode.USER.value,
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
-    "xtalSnapshotFullPath1": "/tmp/snapshot2.png",
-    "xtalSnapshotFullPath2": "/tmp/snapshot3.png",
-    "xtalSnapshotFullPath3": "/tmp/snapshot4.png",
-    "xtalSnapshotFullPath4": "/tmp/snapshot5.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_90\\.png",
+    "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_180\\.png",
+    "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_270\\.png",
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
-    "xtalSnapshotFullPath1": "/tmp/snapshot6.png",
-    "xtalSnapshotFullPath2": "/tmp/snapshot7.png",
-    "xtalSnapshotFullPath3": "/tmp/snapshot8.png",
-    "xtalSnapshotFullPath4": "/tmp/snapshot9.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_90\\.png",
+    "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_180\\.png",
+    "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_270\\.png",
 }
 
 
@@ -250,5 +263,5 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (675, 719, -409) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (-2506, -573, 370) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
     )

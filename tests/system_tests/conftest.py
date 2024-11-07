@@ -1,12 +1,12 @@
 import re
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
-from ophyd_async.core import AsyncStatus, set_mock_value
-from requests import Response
+from ophyd_async.core import set_mock_value
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -141,48 +141,20 @@ def oav_for_system_test(test_config_files):
     set_mock_value(oav.grid_snapshot.top_left_y, 100)
     size_in_pixels = 0.1 * 1000 / 1.25
     set_mock_value(oav.grid_snapshot.box_width, size_in_pixels)
-    unpatched_snapshot_trigger = oav.grid_snapshot.trigger
 
-    async def mock_grid_snapshot_trigger():
-        await oav.grid_snapshot.last_path_full_overlay.set("test_1_y")
-        await oav.grid_snapshot.last_path_outer.set("test_2_y")
-        await oav.grid_snapshot.last_saved_path.set("test_3_y")
-        return unpatched_snapshot_trigger()
+    empty_response = AsyncMock(spec=ClientResponse)
+    empty_response.read.return_value = b""
 
-    # Plain snapshots
-    def next_snapshot():
-        next_snapshot_idx = 1
-        while True:
-            yield f"/tmp/snapshot{next_snapshot_idx}.png"
-            next_snapshot_idx += 1
-
-    empty_response = MagicMock(spec=Response)
-    empty_response.content = b""
     with (
         patch(
-            "dodal.devices.areadetector.plugins.MJPG.requests.get",
-            return_value=empty_response,
-        ),
+            "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
+        ) as mock_get,
         patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
-        patch.object(oav.grid_snapshot, "post_processing"),
-        patch.object(
-            oav.grid_snapshot, "trigger", side_effect=mock_grid_snapshot_trigger
-        ),
-        patch.object(oav.snapshot.last_saved_path, "get") as mock_last_saved_path,
+        patch("dodal.devices.oav.snapshots.snapshot_with_beam_centre.draw_crosshair"),
     ):
-        it_next_snapshot = next_snapshot()
-
-        @AsyncStatus.wrap
-        async def mock_rotation_snapshot_trigger():
-            mock_last_saved_path.side_effect = lambda: next(it_next_snapshot)
-
-        with patch.object(
-            oav.snapshot,
-            "trigger",
-            side_effect=mock_rotation_snapshot_trigger,
-        ):
-            set_mock_value(oav.zoom_controller.level, "1.0")
-            yield oav
+        mock_get.return_value.__aenter__.return_value = empty_response
+        set_mock_value(oav.zoom_controller.level, "1.0")
+        yield oav
 
 
 def compare_actual_and_expected(
@@ -197,6 +169,8 @@ def compare_actual_and_expected(
             actual = float(actual)
         if isinstance(v, float):
             actual_v = actual == pytest.approx(v)
+        if isinstance(v, str) and v.startswith("regex:"):
+            actual_v = re.match(v.removeprefix("regex:"), actual)
         else:
             actual_v = actual == v
         if not actual_v:

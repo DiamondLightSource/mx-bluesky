@@ -484,10 +484,14 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
-        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
-        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
-        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
+        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        ".png",
+        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        ".png",
+        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        ".png",
+        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
+        ".png",
     }
 
     compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)

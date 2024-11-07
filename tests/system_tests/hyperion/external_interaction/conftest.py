@@ -2,7 +2,7 @@ import os
 from collections.abc import Callable, Generator, Sequence
 from functools import partial
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import ispyb.sqlalchemy
 import numpy
@@ -363,8 +363,9 @@ def composite_for_rotation_scan(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav_for_system_test.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
-    oav_for_system_test.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
+    oav_for_system_test.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
+    )
 
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
