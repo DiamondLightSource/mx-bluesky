@@ -14,14 +14,16 @@ from blueapi.core import MsgGenerator
 from dodal.common import inject
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.dcid import DCID, read_beam_info_from_hardware
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
@@ -376,6 +378,8 @@ def start_i24(
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     dcid: DCID,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
@@ -383,7 +387,10 @@ def start_i24(
     Returns the start_time.
     """
 
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    beam_settings = yield from read_beam_info_from_hardware(
+        dcm, mirrors, beam_center_device
+    )
+    # wavelength = yield from bps.rd(dcm.wavelength_in_a)
     SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
@@ -434,7 +441,7 @@ def start_i24(
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
-            wavelength=wavelength,
+            beam_settings=beam_settings,
             image_dir=filepath,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
@@ -490,7 +497,7 @@ def start_i24(
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
         dcid.generate_dcid(
-            wavelength=wavelength,
+            beam_settings=beam_settings,
             image_dir=filepath,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
@@ -580,10 +587,6 @@ def run_aborted_plan(pmac: PMAC, dcid: DCID):
     dcid.collection_complete(end_time, aborted=True)
 
 
-def _get_beam_center_device(detector_in_use: str):
-    pass
-
-
 @log_on_entry
 def main_fixed_target_plan(
     zebra: Zebra,
@@ -594,10 +597,16 @@ def main_fixed_target_plan(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
+
+    yield from sup.set_detector_beam_center_plan(
+        beam_center_device, parameters.detector_name
+    )
 
     SSX_LOGGER.info("Getting Program Dictionary")
 
@@ -629,6 +638,8 @@ def main_fixed_target_plan(
         shutter,
         parameters,
         dcm,
+        mirrors,
+        beam_center_device,
         dcid,
     )
 
@@ -739,6 +750,7 @@ def run_fixed_target_plan(
     detector_stage: DetectorMotion = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
 ) -> MsgGenerator:
     # in the first instance, write params here
     yield from write_parameter_file(detector_stage)
@@ -764,6 +776,8 @@ def run_fixed_target_plan(
         """
     SSX_LOGGER.info(log_msg)
 
+    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+
     # DCID instance - do not create yet
     dcid = DCID(
         emit_errors=False,
@@ -781,6 +795,8 @@ def run_fixed_target_plan(
             detector_stage,
             shutter,
             dcm,
+            mirrors,
+            beam_center_device,
             parameters,
             dcid,
         ),

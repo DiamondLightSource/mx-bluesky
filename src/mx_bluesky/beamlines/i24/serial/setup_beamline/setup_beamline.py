@@ -1,6 +1,7 @@
 from time import sleep
 
 import bluesky.plan_stubs as bps
+from dodal.beamlines import i24
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
@@ -15,6 +16,13 @@ BEAM_CENTER_POS: dict[str, list] = {
     "eiger": [1605.7, 1702.7],
     "pilatus": [1298, 1307],
 }
+
+
+def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
+    if detector_in_use == "eiger":
+        return i24.eiger_beam_center()
+    else:
+        return i24.pilatus_beam_center()
 
 
 def setup_beamline_for_collection_plan(

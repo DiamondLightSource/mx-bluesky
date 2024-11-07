@@ -10,7 +10,7 @@ import bluesky.plan_stubs as bps
 import requests
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.focus_mode import MirrorFocusMode
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -53,7 +53,7 @@ def get_auth_header() -> dict:
 
 
 def read_beam_info_from_hardware(
-    dcm: DCM, mirrors: MirrorFocusMode, beam_center: DetectorBeamCenter
+    dcm: DCM, mirrors: FocusMirrorsMode, beam_center: DetectorBeamCenter
 ):
     # In the future this should also read the transmission from the attenuator, but no
     # device yet. See https://github.com/DiamondLightSource/dodal/issues/889
@@ -116,7 +116,7 @@ class DCID:
 
     def generate_dcid(
         self,
-        wavelength: float,
+        beam_settings: BeamSettings,
         image_dir: str,
         num_images: int,
         shots_per_position: int = 1,
@@ -142,11 +142,14 @@ class DCID:
 
             # Gather data from the beamline
             resolution = get_resolution(
-                self.detector, self.parameters.detector_distance_mm, wavelength
+                self.detector,
+                self.parameters.detector_distance_mm,
+                beam_settings.wavelength_in_a,
             )
-            beamsize_x, beamsize_y = get_beamsize()
+            beamsize_x, beamsize_y = beam_settings.beam_size_in_um
             transmission = self.parameters.transmission * 100
-            xbeam, ybeam = get_beam_center(self.detector)
+            xbeam = beam_settings.beam_center_in_mm[0] * self.detector.pixel_size_mm[0]
+            ybeam = beam_settings.beam_center_in_mm[1] * self.detector.pixel_size_mm[1]
 
             # TODO This is already done in other bits of code, why redo, just grab it
             if isinstance(self.detector, Pilatus):
@@ -203,7 +206,7 @@ class DCID:
                 "startTime": start_time.isoformat(),
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,
-                "wavelength": wavelength,
+                "wavelength": beam_settings.wavelength_in_a,
                 "group": {"experimentType": self.ssx_type.value},
                 "xBeam": xbeam,
                 "yBeam": ybeam,

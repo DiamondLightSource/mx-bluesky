@@ -20,13 +20,15 @@ from blueapi.core import MsgGenerator
 from dodal.common import inject
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.dcid import DCID, read_beam_info_from_hardware
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
@@ -188,11 +190,16 @@ def main_extruder_plan(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     parameters: ExtruderParameters,
     dcid: DCID,
     start_time: datetime,
 ) -> MsgGenerator:
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    yield from sup.set_detector_beam_center_plan(
+        beam_center_device, parameters.detector_name
+    )
+
     # Setting up the beamline
     SSX_LOGGER.info("Open hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
@@ -318,9 +325,13 @@ def main_extruder_plan(
         SSX_LOGGER.error(err)
         raise UnknownDetectorType(err)
 
+    beam_settings = yield from read_beam_info_from_hardware(
+        dcm, mirrors, beam_center_device
+    )
+
     # Do DCID creation BEFORE arming the detector
     dcid.generate_dcid(
-        wavelength=wavelength,
+        beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
         num_images=parameters.num_images,
         start_time=start_time,
@@ -341,7 +352,9 @@ def main_extruder_plan(
 
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Call nexgen server for nexus writing.")
-        call_nexgen(None, start_time, parameters, wavelength, "extruder")
+        call_nexgen(
+            None, start_time, parameters, beam_settings.wavelength_in_a, "extruder"
+        )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
@@ -450,12 +463,15 @@ def run_extruder_plan(
     detector_stage: DetectorMotion = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
     yield from write_parameter_file(detector_stage)
     parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)
+
+    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID - not generated yet
     dcid = DCID(emit_errors=False, ssx_type=SSXType.EXTRUDER, expt_params=parameters)
@@ -469,6 +485,8 @@ def run_extruder_plan(
             detector_stage=detector_stage,
             shutter=shutter,
             dcm=dcm,
+            mirrors=mirrors,
+            beam_center_device=beam_center_device,
             parameters=parameters,
             dcid=dcid,
             start_time=start_time,
