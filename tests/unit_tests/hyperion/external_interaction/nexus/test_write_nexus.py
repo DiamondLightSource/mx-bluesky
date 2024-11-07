@@ -243,7 +243,7 @@ def assert_x_data_stride_correct(
     sam_x_data = data_path["sam_x"][:]
     assert len(sam_x_data) == (grid_scan_params.x_steps) * (varying_axis_steps)
     assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
-        grid_scan_params.x_step_size_mm
+        grid_scan_params.x_step_size_mm * 1000
     )
 
 
@@ -252,7 +252,7 @@ def assert_varying_axis_stride_correct(
 ):
     assert len(axis_data) == (grid_scan_params.x_steps) * (varying_axis.full_steps)
     assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(
-        varying_axis.step_size_mm
+        varying_axis.step_size_mm * 1000
     )
 
 

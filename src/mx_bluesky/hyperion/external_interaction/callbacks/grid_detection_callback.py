@@ -72,9 +72,9 @@ class GridDetectionCallback(CallbackBase):
             )
         )
 
-        self.x_step_size_mm = box_width_px * microns_per_pixel_x / 1000
-        self.y_step_size_mm = box_width_px * microns_per_pixel_y / 1000
-        self.z_step_size_mm = box_width_px * microns_per_pixel_y / 1000
+        self.x_step_size_um = box_width_px * microns_per_pixel_x
+        self.y_step_size_um = box_width_px * microns_per_pixel_y
+        self.z_step_size_um = box_width_px * microns_per_pixel_y
         return doc
 
     def get_grid_parameters(self) -> GridParamUpdate:
@@ -87,7 +87,7 @@ class GridDetectionCallback(CallbackBase):
             "x_steps": self.box_numbers[0][0],
             "y_steps": self.box_numbers[0][1],
             "z_steps": self.box_numbers[1][1],
-            "x_step_size_um": self.x_step_size_mm,
-            "y_step_size_um": self.y_step_size_mm,
-            "z_step_size_um": self.z_step_size_mm,
+            "x_step_size_um": self.x_step_size_um,
+            "y_step_size_um": self.y_step_size_um,
+            "z_step_size_um": self.z_step_size_um,
         }

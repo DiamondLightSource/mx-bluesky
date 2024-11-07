@@ -158,31 +158,26 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
-    with patch.object(
-        grid_detect_devices_with_oav_config_params.aperture_scatterguard,
-        "set",
-        MagicMock(),
-    ):
-        RE(
-            ispyb_activation_wrapper(
-                detect_grid_and_do_gridscan(
-                    grid_detect_devices_with_oav_config_params,
-                    parameters=test_full_grid_scan_params,
-                    oav_params=oav_params,
-                ),
-                test_full_grid_scan_params,
-            )
+    RE(
+        ispyb_activation_wrapper(
+            detect_grid_and_do_gridscan(
+                grid_detect_devices_with_oav_config_params,
+                parameters=test_full_grid_scan_params,
+                oav_params=oav_params,
+            ),
+            test_full_grid_scan_params,
         )
+    )
 
-        params: ThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
+    params: ThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
 
-        assert params.detector_params.num_triggers == 50
+    assert params.detector_params.num_triggers == 50
 
-        assert params.FGS_params.x_axis.full_steps == 10
-        assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
+    assert params.FGS_params.x_axis.full_steps == 10
+    assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
 
-        # Parameters can be serialized
-        params.model_dump_json()
+    # Parameters can be serialized
+    params.model_dump_json()
 
 
 @patch(

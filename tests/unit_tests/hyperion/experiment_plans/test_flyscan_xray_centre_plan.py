@@ -343,32 +343,15 @@ class TestFlyscanXrayCentrePlan:
         RE, _ = RE_with_subs
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE)
-        RE(
-            run_gridscan_and_move(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
-                feature_controlled,
+        for result in [TEST_RESULT_LARGE, TEST_RESULT_MEDIUM, TEST_RESULT_SMALL]:
+            mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, result)
+            RE(
+                run_gridscan_and_move(
+                    fgs_composite_with_panda_pcap,
+                    test_fgs_params_panda_zebra,
+                    feature_controlled,
+                )
             )
-        )
-
-        mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_MEDIUM)
-        RE(
-            run_gridscan_and_move(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
-                feature_controlled,
-            )
-        )
-
-        mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_SMALL)
-        RE(
-            run_gridscan_and_move(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
-                feature_controlled,
-            )
-        )
 
         aperture_scatterguard = fgs_composite_with_panda_pcap.aperture_scatterguard
         large = aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
@@ -376,18 +359,9 @@ class TestFlyscanXrayCentrePlan:
         ap_call_large = call(large, ApertureValue.LARGE)
         ap_call_medium = call(medium, ApertureValue.MEDIUM)
 
-        move_aperture.assert_has_calls(
-            [ap_call_large, ap_call_large, ap_call_medium], any_order=True
-        )
+        move_aperture.assert_has_calls([ap_call_large, ap_call_large, ap_call_medium])
 
-        mv_call_large = call(
-            fgs_composite_with_panda_pcap.sample_motors,
-            0.05,
-            pytest.approx(0.15),
-            0.25,
-            wait=True,
-        )
-        mv_call_medium = call(
+        mv_to_centre = call(
             fgs_composite_with_panda_pcap.sample_motors,
             0.05,
             pytest.approx(0.15),
@@ -395,7 +369,7 @@ class TestFlyscanXrayCentrePlan:
             wait=True,
         )
         move_x_y_z.assert_has_calls(
-            [mv_call_large, mv_call_large, mv_call_medium], any_order=True
+            [mv_to_centre, mv_to_centre, mv_to_centre], any_order=True
         )
 
     @patch("bluesky.plan_stubs.abs_set", autospec=True)
@@ -1178,7 +1152,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         RE: RunEngine,
     ):
-        test_fgs_params_panda_zebra.x_step_size_um = 10
+        test_fgs_params_panda_zebra.x_step_size_um = 10000
         test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
 
         feature_controlled = _get_feature_controlled(

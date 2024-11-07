@@ -333,13 +333,13 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     )
     assert my_grid_params["z_start_um"] == pytest.approx(-0.53984)
     assert my_grid_params["z2_start_um"] == pytest.approx(-0.53984)
-    assert my_grid_params["x_step_size_um"] == pytest.approx(0.02)
-    assert my_grid_params["y_step_size_um"] == pytest.approx(0.02)
-    assert my_grid_params["z_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["x_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_size_um"] == box_size_um
+    assert my_grid_params["z_step_size_um"] == box_size_um
     assert my_grid_params["x_steps"] == pytest.approx(9)
     assert my_grid_params["y_steps"] == pytest.approx(2)
     assert my_grid_params["z_steps"] == pytest.approx(1)
-    assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
+    assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
 @pytest.mark.parametrize(
