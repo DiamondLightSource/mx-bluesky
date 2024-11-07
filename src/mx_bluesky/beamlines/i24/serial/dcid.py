@@ -159,7 +159,6 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            # TODO This is already done in other bits of code, why redo, just grab it
             if isinstance(self.detector, Pilatus):
                 # Mirror the construction that the PPU does
                 fileTemplate = get_pilatus_filename_template_from_pvs()
