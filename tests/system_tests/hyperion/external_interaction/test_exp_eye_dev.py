@@ -79,6 +79,6 @@ def test_update_sample_updates_the_sample_status():
     output_sample = sample_handling.update_sample_status(
         SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
-    expected_status = "ERROR - sample error"
+    expected_status = "ERROR - sample"
     assert output_sample.bl_sample_status == expected_status
     assert output_sample.container_id == CONTAINER_ID
