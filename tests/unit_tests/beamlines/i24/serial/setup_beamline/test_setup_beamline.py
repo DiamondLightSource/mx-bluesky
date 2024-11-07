@@ -49,7 +49,7 @@ def test_pilatus_raises_error_if_fastchip_and_no_args_list(fake_caget, fake_capu
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
 def test_pilatus_quickshot(_, fake_caget, fake_caput):
     setup_beamline.pilatus("quickshot", ["", "", 1, 0.1])
-    assert fake_caput.call_count == 12
+    assert fake_caput.call_count == 10
     assert fake_caget.call_count == 2
 
 
@@ -65,4 +65,4 @@ def test_eiger_raises_error_if_quickshot_and_no_args_list(fake_caget, fake_caput
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
 def test_eiger_quickshot(_, fake_caget, fake_caput):
     setup_beamline.eiger("quickshot", ["", "", "1", "0.1"])
-    assert fake_caput.call_count == 32
+    assert fake_caput.call_count == 30

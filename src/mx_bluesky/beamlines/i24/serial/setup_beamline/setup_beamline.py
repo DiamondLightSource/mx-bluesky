@@ -267,11 +267,6 @@ def pilatus(action, args_list):
     # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
-    SSX_LOGGER.warning("WARNING: Have you set beam X and Y?")
-    # 16 Fed 2022 last change DA
-    caput(pv.pilat_beamx, 1298)
-    caput(pv.pilat_beamy, 1307)
-    sleep(0.1)
 
     # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
     if action == "fastchip":
@@ -365,11 +360,8 @@ def eiger(action, args_list):
             SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    SSX_LOGGER.warning("WARNING: Have you set header info?")
     caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_omegaincr, 0.0)
-    caput(pv.eiger_beamx, 1605.7)
-    caput(pv.eiger_beamy, 1702.7)
     sleep(0.1)
     # Setup common to all collections ###
     caput(pv.eiger_filewriter, "No")
