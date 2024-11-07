@@ -4,9 +4,8 @@ from functools import partial
 from typing import Any
 
 import bluesky.plan_stubs as bps
-from bluesky import Msg
 from bluesky.preprocessors import contingency_wrapper
-from bluesky.utils import make_decorator
+from bluesky.utils import Msg, make_decorator
 from event_model import Event, EventDescriptor, RunStart
 
 from mx_bluesky.hyperion.exceptions import SampleException
@@ -61,7 +60,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
             self._sample_id = sample_id
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        if doc["name"] == CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION:
+        if doc.get("name") == CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION:
             self._descriptor = doc["uid"]
         return super().activity_gated_descriptor(doc)
 

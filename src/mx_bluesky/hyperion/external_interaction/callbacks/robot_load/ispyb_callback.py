@@ -89,6 +89,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 reason = doc.get("reason") or "OK"
 
             self.expeye_core.end_load(self.action_id, exit_status, reason)
+            assert self._metadata, "Metadata was not set for robot load."
             self.expeye_sample_handling.update_sample_status(
                 self._metadata["sample_id"],
                 BLSampleStatus.LOADED

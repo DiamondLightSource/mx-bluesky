@@ -8,8 +8,8 @@ import bluesky.plan_stubs as bps
 import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
-from bluesky import Msg
 from bluesky.preprocessors import contingency_wrapper
+from bluesky.utils import Msg
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection

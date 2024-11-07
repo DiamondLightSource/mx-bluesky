@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -187,16 +187,14 @@ SAMPLE_ID = 5461074
 @pytest.fixture
 def composite_with_no_diffraction(
     load_centre_collect_composite: LoadCentreCollectComposite,
-) -> LoadCentreCollectComposite:
+) -> Generator[LoadCentreCollectComposite, Any, None]:
     zocalo = load_centre_collect_composite.zocalo
 
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
         await zocalo._put_results([], {"dcid": 0, "dcgid": 0})
 
-    with (
-        patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete),
-    ):
+    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
         yield load_centre_collect_composite
 
 
@@ -306,7 +304,7 @@ def test_execute_load_centre_collect_full_plan(
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
         "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
     )
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
 
 
 @pytest.mark.s03
@@ -401,8 +399,8 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
                 PinTipDetection.INVALID_POSITION,
             )
             trigger = load_centre_collect_composite.pin_tip_detection.trigger
-            trigger.return_value = NullStatus()
-            trigger.side_effect = None
+            trigger.return_value = NullStatus()  # type:ignore
+            trigger.side_effect = None  # type: ignore
 
     RE.subscribe(wait_for_first_oav_grid)
 

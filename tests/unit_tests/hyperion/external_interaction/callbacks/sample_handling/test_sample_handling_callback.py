@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
 import pytest
-from bluesky import RunEngine
 from bluesky.preprocessors import run_decorator
+from bluesky.run_engine import RunEngine
 
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
