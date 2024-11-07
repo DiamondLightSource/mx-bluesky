@@ -11,6 +11,11 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 
+BEAM_CENTER_POS: dict[str, list] = {
+    "eiger": [1605.7, 1702.7],
+    "pilatus": [1298, 1307],
+}
+
 
 def setup_beamline_for_collection_plan(
     aperture: Aperture,
@@ -45,9 +50,24 @@ def move_detector_stage_to_position_plan(
 
 
 def set_detector_beam_center_plan(
-    beam_center_device: DetectorBeamCenter, detector_name: str
+    beam_center_device: DetectorBeamCenter,
+    detector_name: str,
+    group: str = "set_beamcenter",
+    wait: bool = True,
 ):
-    pass
+    """A small temporary plan to set up the beam center on the detector in use."""
+    # NOTE This will be removed once the detectors are using ophyd_async devices
+    SSX_LOGGER.debug(
+        f"Set beam center on {detector_name} detector: {BEAM_CENTER_POS[detector_name]}"
+    )
+    yield from bps.abs_set(
+        beam_center_device.beam_x, BEAM_CENTER_POS[detector_name][0], group=group
+    )
+    yield from bps.abs_set(
+        beam_center_device.beam_y, BEAM_CENTER_POS[detector_name][1], group=group
+    )
+    if wait:
+        yield from bps.wait(group=group)
 
 
 def modechange(action):

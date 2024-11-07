@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -27,6 +28,13 @@ async def test_move_detector_stage_to_position_plan(detector_stage: DetectorMoti
     RE(setup_beamline.move_detector_stage_to_position_plan(detector_stage, det_dist))
 
     assert await detector_stage.z.user_readback.get_value() == det_dist
+
+
+async def test_set_detector_beam_center_plan(eiger_beam_center: DetectorBeamCenter, RE):
+    RE(setup_beamline.set_detector_beam_center_plan(eiger_beam_center, "eiger"))
+
+    assert await eiger_beam_center.beam_x.get_value() == 1605.7
+    assert await eiger_beam_center.beam_y.get_value() == 1702.7
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")

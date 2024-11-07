@@ -580,6 +580,10 @@ def run_aborted_plan(pmac: PMAC, dcid: DCID):
     dcid.collection_complete(end_time, aborted=True)
 
 
+def _get_beam_center_device(detector_in_use: str):
+    pass
+
+
 @log_on_entry
 def main_fixed_target_plan(
     zebra: Zebra,

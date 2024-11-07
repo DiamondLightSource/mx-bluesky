@@ -9,6 +9,7 @@ from dodal.devices.hutch_shutter import (
     ShutterState,
 )
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
@@ -107,3 +108,9 @@ def pmac(RE):
 def dcm(RE) -> DCM:
     dcm = i24.dcm(fake_with_ophyd_sim=True)
     return dcm
+
+
+@pytest.fixture
+def eiger_beam_center(RE) -> DetectorBeamCenter:
+    bc: DetectorBeamCenter = i24.eiger_beam_center(fake_with_ophyd_sim=True)
+    return bc
