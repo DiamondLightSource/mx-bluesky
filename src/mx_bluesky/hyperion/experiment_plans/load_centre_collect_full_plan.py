@@ -2,7 +2,7 @@ import dataclasses
 from collections.abc import Sequence
 
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.preprocessors import subs_decorator
+from bluesky.preprocessors import subs_wrapper
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
@@ -12,7 +12,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
-    robot_load_then_flyscan,
+    robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     MultiRotationScan,
@@ -54,23 +54,22 @@ def load_centre_collect_full(
         oav_params = OAVParameters(context="xrayCentring")
 
     flyscan_event_handler = XRayCentreEventHandler()
+    yield from subs_wrapper(
+        robot_load_then_xray_centre(composite, parameters.robot_load_then_centre),
+        flyscan_event_handler,
+    )
 
-    @subs_decorator(flyscan_event_handler)
-    def fetch_results_from_robot_load_then_flyscan():
-        yield from robot_load_then_flyscan(composite, parameters.robot_load_then_centre)
-
-    yield from fetch_results_from_robot_load_then_flyscan()
     assert (
         flyscan_event_handler.xray_centre_results
     ), "Flyscan result event not received or no crystal found and exception not raised"
 
-    selection_params = parameters.select_centres
-    selection_func = flyscan_result.resolve_selection_fn(selection_params.name)
-    selection_args = selection_params.model_dump(exclude={"name"})  # type: ignore
+    selection_func = flyscan_result.resolve_selection_fn(parameters.selection_params)
     hits: Sequence[flyscan_result.XRayCentreResult] = selection_func(
-        flyscan_event_handler.xray_centre_results, **selection_args
-    )  # type: ignore
-    LOGGER.info(f"Selected hits {hits} using {selection_func}, args={selection_args}")
+        flyscan_event_handler.xray_centre_results
+    )
+    LOGGER.info(
+        f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
+    )
 
     multi_rotation = parameters.multi_rotation_scan
     rotation_template = multi_rotation.rotation_scans.copy()

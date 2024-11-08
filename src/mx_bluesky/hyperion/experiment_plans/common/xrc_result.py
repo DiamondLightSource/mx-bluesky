@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from functools import partial
 
 import numpy as np
+
+from mx_bluesky.common.parameters.components import (
+    MultiXtalSelection,
+    TopNByMaxCountSelection,
+)
 
 
 @dataclasses.dataclass
@@ -33,7 +39,9 @@ def top_n_by_max_count(
     return sorted_hits[:n]
 
 
-def resolve_selection_fn(name: str):
-    if name == "TopNByMaxCount":
-        return top_n_by_max_count
-    raise ValueError(f"Invalid selection function {name}")
+def resolve_selection_fn(
+    params: MultiXtalSelection,
+) -> Callable[[Sequence[XRayCentreResult]], Sequence[XRayCentreResult]]:
+    if isinstance(params, TopNByMaxCountSelection):
+        return partial(top_n_by_max_count, n=params.n)
+    raise ValueError(f"Invalid selection function {params.name}")

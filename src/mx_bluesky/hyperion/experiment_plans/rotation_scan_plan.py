@@ -423,7 +423,7 @@ def multi_rotation_scan(
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-                    "zocalo_environment": parameters.zocalo_environment,
+                    "zocalo_environment": CONST.ZOCALO_ENV,
                     "hyperion_parameters": single_scan.model_dump_json(),
                 }
             )

@@ -138,14 +138,14 @@ def robot_load_then_centre(
     Performs a robot load if necessary. Centre on the best diffracting centre.
     """
 
-    flyscan_event_handler = XRayCentreEventHandler()
+    xray_centre_event_handler = XRayCentreEventHandler()
 
-    @bpp.subs_decorator(flyscan_event_handler)
-    def robot_load_then_flyscan_and_fetch_results():
-        yield from robot_load_then_flyscan(composite, parameters)
+    @bpp.subs_decorator(xray_centre_event_handler)
+    def robot_load_then_xray_centre_and_fetch_results():
+        yield from robot_load_then_xray_centre(composite, parameters)
 
-    yield from robot_load_then_flyscan_and_fetch_results()
-    flyscan_results = flyscan_event_handler.xray_centre_results
+    yield from robot_load_then_xray_centre_and_fetch_results()
+    flyscan_results = xray_centre_event_handler.xray_centre_results
     if flyscan_results is not None:
         yield from change_aperture_then_move_to_xtal(
             flyscan_results[0], composite.smargon, composite.aperture_scatterguard
@@ -153,7 +153,7 @@ def robot_load_then_centre(
     # else no chi change, no need to recentre.
 
 
-def robot_load_then_flyscan(
+def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
     parameters: RobotLoadThenCentre,
 ) -> MsgGenerator:

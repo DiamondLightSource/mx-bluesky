@@ -254,7 +254,7 @@ def run_gridscan_and_fetch_results(
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
             if xrc_results:
                 flyscan_results = [
-                    _xrc_result_to_xray_centre_result(xr, parameters)
+                    _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
                     for xr in xrc_results
                 ]
             else:
@@ -272,7 +272,7 @@ def run_gridscan_and_fetch_results(
         yield from bps.wait()
 
 
-def _xrc_result_to_xray_centre_result(
+def _xrc_result_in_boxes_to_result_in_mm(
     xrc_result: XrcResult, parameters: ThreeDGridScan
 ) -> XRayCentreResult:
     fgs_params = parameters.FGS_params

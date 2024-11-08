@@ -4,11 +4,11 @@ import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
 
+from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
-from mx_bluesky.hyperion.tracing import TRACER
 
 
 def change_aperture_then_move_to_xtal(
@@ -17,8 +17,8 @@ def change_aperture_then_move_to_xtal(
     aperture_scatterguard: ApertureScatterguard,
     parameters: ThreeDGridScan | None = None,
 ):
-    """For the given flyscan result,
-    * Change the aperture to something sensible
+    """For the given x-ray centring result,
+    * Change the aperture so that the beam size is comparable to the crystal size
     * Centre on the centre-of-mass
     * Reset the stub offsets if specified by params"""
     if best_hit.bounding_box_mm is not None:
@@ -38,7 +38,8 @@ def change_aperture_then_move_to_xtal(
         x, y, z = best_hit.centre_of_mass_mm
         yield from move_x_y_z(smargon, x, y, z, wait=True)
 
-    # TODO support for setting stub offsets in multipin mx-bluesky 552
+    # TODO support for setting stub offsets in multipin
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/552
     if parameters and parameters.FGS_params.set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
         yield from bps.mv(

@@ -10,11 +10,11 @@ from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
+)
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -67,7 +67,9 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     RE = RunEngine()
     RE(
         pin_tip_centre_then_xray_centre(
-            MagicMock(), test_pin_centre_then_xray_centre_params, test_config_files
+            MagicMock(),
+            test_pin_centre_then_xray_centre_params,
+            test_config_files["oav_config_json"],
         )
     )
 
