@@ -198,7 +198,7 @@ class MultiXtalSelection(BaseModel):
 
 
 class TopNByMaxCountSelection(MultiXtalSelection):
-    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"
+    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"  #  pyright: ignore [reportIncompatibleVariableOverride]
     n: int
 
 

@@ -356,7 +356,7 @@ class TestFlyscanXrayCentrePlan:
             max_count=105062,
             total_count=2387574,
         )
-        assert len(actual) == 1
+        assert actual and len(actual) == 1
         assert all(isclose(actual[0].centre_of_mass_mm, expected.centre_of_mass_mm))
         assert all(isclose(actual[0].bounding_box_mm[0], expected.bounding_box_mm[0]))
         assert all(isclose(actual[0].bounding_box_mm[1], expected.bounding_box_mm[1]))
