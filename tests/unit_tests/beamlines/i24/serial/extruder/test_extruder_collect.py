@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -15,6 +15,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
     laser_check,
     main_extruder_plan,
     tidy_up_at_collection_end_plan,
+    write_parameter_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
@@ -57,17 +58,43 @@ def fake_generator(value):
     return value
 
 
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
+)
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.json")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._read_visit_directory_from_file"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
+)
+def test_write_parameter_file(
+    fake_log, mock_read_visit, mock_json, fake_caget, fake_det, detector_stage, RE
+):
+    fake_det.side_effect = [fake_generator(Eiger())]
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.open",
+        mock_open(),
+    ):
+        RE(write_parameter_file(detector_stage))
+
+    assert fake_caget.call_count == 8
+    mock_json.dump.assert_called_once()
+    fake_log.debug.assert_called_once()
+    fake_log.warning.assert_called_once()
+    assert fake_log.info.call_count == 2
+
+
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.logger")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
 )
 def test_initialise_extruder(
-    fake_log_setup,
     fake_log,
     fake_det,
     fake_caput,
@@ -82,10 +109,7 @@ def test_initialise_extruder(
     assert fake_caget.call_count == 1
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
-)
-async def test_enterhutch(fake_log_setup, detector_stage, RE):
+async def test_enterhutch(detector_stage, RE):
     RE(enter_hutch(detector_stage))
     assert await detector_stage.z.user_readback.get_value() == 1480
 
@@ -102,11 +126,7 @@ async def test_enterhutch(fake_log_setup, detector_stage, RE):
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
-)
 async def test_laser_check(
-    fake_log_setup,
     fake_det,
     laser_mode,
     expected_in1,
@@ -135,9 +155,6 @@ async def test_laser_check(
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_zebra_for_quickshot_plan"
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
-)
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
@@ -145,7 +162,6 @@ async def test_laser_check(
 def test_run_extruder_quickshot_with_eiger(
     fake_mkdir,
     fake_read,
-    fake_log_setup,
     mock_quickshot_plan,
     fake_sup,
     fake_caget,
@@ -197,13 +213,9 @@ def test_run_extruder_quickshot_with_eiger(
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_zebra_for_extruder_with_pump_probe_plan"
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_logging"
-)
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 def test_run_extruder_pump_probe_with_pilatus(
     fake_read,
-    fake_log_setup,
     mock_pp_plan,
     fake_sup,
     fake_caget,
@@ -243,8 +255,8 @@ def test_run_extruder_pump_probe_with_pilatus(
     mock_pp_plan.assert_called_once()
 
     shutter_call_list = [
-        call("Reset", wait=True, timeout=10.0),
-        call("Open", wait=True, timeout=10.0),
+        call("Reset", wait=True),
+        call("Open", wait=True),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -272,7 +284,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True, timeout=10.0)])
+    mock_shutter.assert_has_calls([call("Close", wait=True)])
 
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1

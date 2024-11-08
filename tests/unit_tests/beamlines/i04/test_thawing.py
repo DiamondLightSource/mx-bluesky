@@ -72,9 +72,9 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 
 @pytest.fixture
-async def thawer(RE: RunEngine) -> Thawer:
+def thawer(RE: RunEngine) -> Thawer:
     return rebuild_oa_device_as_mocked_if_necessary(
-        i04.thawer, fake_with_ophyd_sim=True
+        i04.thawer, fake_with_ophyd_sim=True, wait_for_connection=True
     )
 
 
@@ -96,8 +96,10 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 
 @pytest.fixture
-async def robot(RE: RunEngine) -> BartRobot:
-    return rebuild_oa_device_as_mocked_if_necessary(i04.robot, fake_with_ophyd_sim=True)
+def robot(RE: RunEngine) -> BartRobot:
+    return rebuild_oa_device_as_mocked_if_necessary(
+        i04.robot, wait_for_connection=True, fake_with_ophyd_sim=True
+    )
 
 
 def _do_thaw_and_confirm_cleanup(
@@ -108,9 +110,9 @@ def _do_thaw_and_confirm_cleanup(
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer.control).call_args_list[-1]
-    assert last_thawer_call == call(ThawerStates.OFF, wait=ANY, timeout=ANY)
+    assert last_thawer_call == call(ThawerStates.OFF, wait=ANY)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
-    assert last_velocity_call == call(initial_velocity, wait=ANY, timeout=ANY)
+    assert last_velocity_call == call(initial_velocity, wait=ANY)
 
 
 def test_given_thaw_succeeds_then_velocity_restored_and_thawer_turned_off(
@@ -154,7 +156,7 @@ def test_given_different_rotations_and_times_then_velocity_correct(
 ):
     RE(thaw(time, rotation, thawer=thawer, smargon=smargon))
     first_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[0]
-    assert first_velocity_call == call(expected_speed, wait=ANY, timeout=ANY)
+    assert first_velocity_call == call(expected_speed, wait=ANY)
 
 
 @pytest.mark.parametrize(
@@ -176,8 +178,8 @@ def test_given_different_rotations_then_motor_moved_relative(
     set_mock_value(smargon.omega.user_setpoint, start_pos)
     RE(thaw(10, rotation, thawer=thawer, smargon=smargon))
     assert get_mock_put(smargon.omega.user_setpoint).call_args_list == [
-        call(expected_end, wait=ANY, timeout=ANY),
-        call(start_pos, wait=ANY, timeout=ANY),
+        call(expected_end, wait=ANY),
+        call(start_pos, wait=ANY),
     ]
 
 
@@ -279,7 +281,7 @@ def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
     msgs = sim_run_engine.simulate_plan(
         thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder)
     )
-    for source in [Source.FULL_SCREEN, Source.ROI]:
+    for source in [Source.FULL_SCREEN.value, Source.ROI.value]:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
@@ -333,9 +335,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
         run_plan()
 
     mock_level_set = get_mock_put(oav.zoom_controller.level)
-    mock_level_set.assert_has_calls(
-        [call("1.0x", wait=True, timeout=ANY), call("2.0x", wait=True, timeout=ANY)]
-    )
+    mock_level_set.assert_has_calls([call("1.0x", wait=True), call("2.0x", wait=True)])
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")

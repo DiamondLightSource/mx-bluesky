@@ -1,39 +1,30 @@
 import functools
 import logging
 import logging.config
+import time
 from os import environ
 from pathlib import Path
 
-from dodal.log import (
-    ERROR_LOG_BUFFER_LINES,
-    integrate_bluesky_and_ophyd_logging,
-    set_up_all_logging_handlers,
-)
+import bluesky.plan_stubs as bps
+from blueapi.core import MsgGenerator
+from bluesky.log import logger as bluesky_logger
+from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
 from dodal.log import LOGGER as dodal_logger
+
+from mx_bluesky.common.utils.log import do_default_logging_setup
 
 VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
 
 
-class OphydDebugFilter(logging.Filter):  # NOTE yet to be fully tested
-    """Do not send ophyd debug log messages to stream handler."""
-
-    def filter(self, record):
-        return "ophyd" not in record.getMessage().lower()
-
-
 # Logging set up
-logger = logging.getLogger("I24ssx")
-logger.addHandler(logging.NullHandler())
-logger.parent = dodal_logger
+SSX_LOGGER = logging.getLogger("I24serial")
+SSX_LOGGER.addHandler(logging.NullHandler())
+SSX_LOGGER.parent = dodal_logger
+
 
 logging_config = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {
-        "ophyd_filter": {
-            "()": OphydDebugFilter,
-        }
-    },
     "formatters": {
         "default": {
             "class": "logging.Formatter",
@@ -42,18 +33,17 @@ logging_config = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "default",
-            "filters": ["ophyd_filter"],
             "stream": "ext://sys.stdout",
         }
     },
     "loggers": {
-        "I24ssx": {
+        "I24serial": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": True,
+            "propagate": False,
         }
     },
 }
@@ -68,10 +58,8 @@ def _read_visit_directory_from_file() -> Path:
 
 
 def _get_logging_file_path() -> Path:
-    """Get the path to write the artemis log files to.
-    If on a beamline, this will be written to the according area depending on the
-    BEAMLINE envrionment variable. If no envrionment variable is found it will default
-    it to the tmp/dev directory.
+    """Get the path to write the serial experiment specific log file to.
+    If on a beamline, this will be written to the tmp folder in the current visit.
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
@@ -87,24 +75,11 @@ def _get_logging_file_path() -> Path:
     return logging_path
 
 
-def default_logging_setup(dev_mode: bool = False):
-    """ Default log setup for i24 serial.
-
-    - Set up handlers for parent logger (from dodal)
-    - integrate bluesky and ophyd loggers
-    - Remove dodal stream handler to avoid double messages (for now, use only the \
-        i24ssx default stream to keep the output expected by the scientists.)
-    """
-    handlers = set_up_all_logging_handlers(  # noqa: F841
-        dodal_logger,
-        _get_logging_file_path(),
-        "dodal.log",
-        dev_mode,
-        ERROR_LOG_BUFFER_LINES,
-    )
-    integrate_bluesky_and_ophyd_logging(dodal_logger)
-    # Remove dodal StreamHandler to avoid duplication of messages above debug
-    dodal_logger.removeHandler(dodal_logger.handlers[0])
+def _integrate_bluesky_logs(parent_logger: logging.Logger):
+    # Integrate only bluesky and ophyd_async logger
+    for log in [bluesky_logger, ophyd_async_logger]:
+        log.parent = parent_logger
+        log.setLevel(logging.DEBUG)
 
 
 def config(
@@ -124,7 +99,15 @@ def config(
         dev_mode (bool, optional): If true, will log to graylog on localhost instead \
             of production. Defaults to False.
     """
-    default_logging_setup(dev_mode=dev_mode)
+    do_default_logging_setup(
+        "mx-bluesky.log",
+        DEFAULT_GRAYLOG_PORT,
+        dev_mode=dev_mode,
+        integrate_all_logs=False,
+    )
+    # Remove dodal StreamHandler to avoid duplication of messages above debug
+    dodal_logger.removeHandler(dodal_logger.handlers[0])
+    _integrate_bluesky_logs(dodal_logger)
 
     if logfile:
         logs = _get_logging_file_path() / logfile
@@ -135,14 +118,40 @@ def config(
         FH = logging.FileHandler(logs, mode=write_mode, encoding="utf-8", delay=delayed)
         FH.setLevel(logging.DEBUG)
         FH.setFormatter(fileFormatter)
-        logger.addHandler(FH)
+        SSX_LOGGER.addHandler(FH)
 
 
 def log_on_entry(func):
     @functools.wraps(func)
     def decorator(*args, **kwargs):
         name = func.__name__
-        logger.debug(f"Running {name} ")
+        SSX_LOGGER.debug(f"Running {name} ")
         return func(*args, **kwargs)
 
     return decorator
+
+
+def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
+    """A small plan to set up the logging from blueapi on start up as we're running \
+        on procserv.
+        This setup will likely change once the beamline has a cluster.
+    """
+    if (
+        expt == "Serial Fixed"
+    ):  # SSXType.FIXED: See https://github.com/DiamondLightSource/mx-bluesky/issues/608
+        logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
+    else:
+        logfile = time.strftime("i24extruder_%d%B%y.log").lower()
+
+    config(logfile, dev_mode=dev_mode)
+    yield from bps.null()
+
+
+def clean_up_log_config_at_end() -> MsgGenerator:
+    """A small plan for blueapi to tidy up logging configuration."""
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
+    for handler in SSX_LOGGER.handlers:
+        SSX_LOGGER.removeHandler(handler)
+    for handler in dodal_logger.handlers:
+        dodal_logger.removeHandler(handler)
+    yield from bps.null()

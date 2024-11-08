@@ -43,10 +43,9 @@ def test_get_requested_detector_raises_error_for_invalid_value(fake_caget):
         _get_requested_detector("some_pv")
 
 
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector.setup_logging")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector.caget")
 async def test_setup_detector_stage(
-    fake_caget, fake_log, detector_stage: DetectorMotion, RE: RunEngine
+    fake_caget, detector_stage: DetectorMotion, RE: RunEngine
 ):
     fake_caget.return_value = DetRequest.eiger.value
     RE(setup_detector_stage(SSXType.FIXED, detector_stage))

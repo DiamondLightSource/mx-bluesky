@@ -26,6 +26,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     run_aborted_plan,
     start_i24,
     tidy_up_after_collection_plan,
+    write_userlog,
 )
 
 chipmap_str = """01status    P3011       1
@@ -58,6 +59,22 @@ def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
     timeout = calculate_collection_timeout(dummy_params_with_pp)
 
     assert timeout == expected_pump_and_probe_time + buffer
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
+def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
+        mock_open(),
+    ):
+        write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
+    fake_mkdir.assert_called_once()
+    fake_log.debug.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
@@ -147,7 +164,7 @@ def test_load_motion_program_data(
     RE(load_motion_program_data(pmac, test_dict, map_type, pump_repeat, checker))
     call_list = []
     for i in expected_calls:
-        call_list.append(call(i, wait=True, timeout=10.0))
+        call_list.append(call(i, wait=True))
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(call_list)
 
@@ -197,8 +214,8 @@ def test_start_i24_with_eiger(
     fake_mkdir.assert_called_once()
 
     shutter_call_list = [
-        call("Reset", wait=True, timeout=10.0),
-        call("Open", wait=True, timeout=10.0),
+        call("Reset", wait=True),
+        call("Open", wait=True),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -242,10 +259,10 @@ def test_finish_i24(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True, timeout=ANY)])
+    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
 
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True, timeout=ANY)])
+    mock_shutter.assert_has_calls([call("Close", wait=True)])
 
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 
@@ -324,6 +341,7 @@ async def test_kick_off_and_complete_collection(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.calculate_collection_timeout"
 )
+@patch("dodal.devices.i24.pmac.DEFAULT_TIMEOUT", 0.1)
 async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
     fake_collection_time, pmac, dummy_params_without_pp, RE
 ):

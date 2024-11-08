@@ -1,6 +1,7 @@
 import dataclasses
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy
 import pytest
 from bluesky.protocols import Location
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -32,7 +33,7 @@ from ....conftest import pin_tip_edge_data, raw_params_from_file
 
 def find_a_pin(pin_tip_detection):
     def set_good_position():
-        set_mock_value(pin_tip_detection.triggered_tip, (100, 110))
+        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([100, 110]))
         return NullStatus()
 
     return set_good_position
@@ -130,6 +131,30 @@ def grid_detection_callback_with_detected_grid():
             "z_step_size_um": 0.1,
         }
         yield callback
+
+
+def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
+    load_centre_collect_params.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_robot_load_params(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.robot_load_then_centre.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_multi_rotation_scan(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.multi_rotation_scan.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_single_rotation_scans(
+    load_centre_collect_params,
+):
+    list(load_centre_collect_params.multi_rotation_scan.single_rotation_scans)[
+        0
+    ].model_dump_json()
 
 
 @patch(

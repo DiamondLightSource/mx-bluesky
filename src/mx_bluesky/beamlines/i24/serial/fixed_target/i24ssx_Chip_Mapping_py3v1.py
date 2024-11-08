@@ -4,12 +4,8 @@ Chip mapping utilities for fixed target
 This version changed to python3 March2020 by RLO
 """
 
-import logging
-import time
-
 import numpy as np
 
-from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1 import (
     check_files,
@@ -18,19 +14,12 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1 impo
     read_parameter_file,
     write_file,
 )
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
 from mx_bluesky.beamlines.i24.serial.parameters.constants import PARAM_FILE_PATH_FT
 
-logger = logging.getLogger("I24ssx.chip_mapping")
 
-
-def setup_logging():
-    # Log should now change name daily.
-    logfile = time.strftime("i24_%Y_%m_%d.log").lower()
-    log.config(logfile)
-
-
-@log.log_on_entry
+@log_on_entry
 def read_file_make_dict(fid, chip_type, switch=False):
     a_dict = {}
     b_dict = {}
@@ -51,7 +40,7 @@ def read_file_make_dict(fid, chip_type, switch=False):
         return a_dict
 
 
-@log.log_on_entry
+@log_on_entry
 def plot_file(plt, fid, chip_type):
     chip_dict = read_file_make_dict(fid, chip_type)
     x_list, y_list, z_list = [], [], []
@@ -83,7 +72,7 @@ def plot_file(plt, fid, chip_type):
     return 1
 
 
-@log.log_on_entry
+@log_on_entry
 def convert_chip_to_hex(fid, chip_type):
     chip_dict = read_file_make_dict(fid, chip_type, True)
     chip_format = get_chip_format(ChipType(chip_type))
@@ -92,14 +81,14 @@ def convert_chip_to_hex(fid, chip_type):
         # Normal
         if chip_type in [ChipType.Oxford, ChipType.OxfordInner]:
             shot_order_list = get_shot_order(chip_type)
-            logger.info("Shot Order List: \n")
-            logger.info(f"{shot_order_list[:14]}")
-            logger.info(f"{shot_order_list[-14:]}")
+            SSX_LOGGER.info("Shot Order List: \n")
+            SSX_LOGGER.info(f"{shot_order_list[:14]}")
+            SSX_LOGGER.info(f"{shot_order_list[-14:]}")
             for i, k in enumerate(shot_order_list):
                 if i % 20 == 0:
-                    logger.info("\n")
+                    SSX_LOGGER.info("\n")
                 else:
-                    logger.info(f"{k}")
+                    SSX_LOGGER.info(f"{k}")
             sorted_pres_list = []
             for addr in shot_order_list:
                 sorted_pres_list.append(chip_dict[addr])
@@ -123,32 +112,31 @@ def convert_chip_to_hex(fid, chip_type):
                 pvar = 5001 + i
                 line = f"P{pvar}=${hex_string}"
                 g.write(line + "\n")
-                logger.info("hex string: %s" % (hex_string + 4 * "0"))
-                logger.info(f"line number= {i}")
-                logger.info(
+                SSX_LOGGER.info("hex string: %s" % (hex_string + 4 * "0"))
+                SSX_LOGGER.info(f"line number= {i}")
+                SSX_LOGGER.info(
                     "right_list: \n{}\n".format("".join(str(x) for x in right_list))
                 )
-                logger.info(f"PVAR: {line}")
+                SSX_LOGGER.info(f"PVAR: {line}")
                 if (i + 1) % windows_per_block == 0:
-                    logger.info(
+                    SSX_LOGGER.info(
                         "\n %s" % (40 * (" %i" % ((i / windows_per_block) + 2)))
                     )
-            logger.info(f"hex_length: {hex_length}")
+            SSX_LOGGER.info(f"hex_length: {hex_length}")
         else:
-            logger.warning("Chip type unknown, no conversion done.")
+            SSX_LOGGER.warning("Chip type unknown, no conversion done.")
     return 0
 
 
 def main(plt):
-    setup_logging()
     params = read_parameter_file()
 
     check_files("i24", [".spec"])
     write_file(suffix=".spec", order="shot")
 
-    logger.info(f"PARAMETER PATH = {PARAM_FILE_PATH_FT}")
+    SSX_LOGGER.info(f"PARAMETER PATH = {PARAM_FILE_PATH_FT}")
     fid = PARAM_FILE_PATH_FT / f"{params.filename}.spec"
-    logger.info(f"FID = {fid}")
+    SSX_LOGGER.info(f"FID = {fid}")
 
     plot_file(plt, fid, params.chip.chip_type.value)
     convert_chip_to_hex(fid, params.chip.chip_type.value)

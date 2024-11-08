@@ -39,7 +39,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
     ZocaloResults,
-    get_processing_result,
+    get_full_processing_results,
 )
 from ophyd_async.fastcs.panda import HDFPanda
 
@@ -197,24 +197,25 @@ def run_gridscan_and_move(
                 [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
             )
             LOGGER.info("Zocalo triggered and read, interpreting results.")
-            xray_centre, bbox_size = yield from get_processing_result(
-                fgs_composite.zocalo
-            )
-            LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
-            if xray_centre is not None:
+            xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
+            LOGGER.info(f"Got xray centring results: {xrc_results}")
+            if xrc_results:
+                best_result = xrc_results[0]
+                xrc_centre_grid_coords = best_result["centre_of_mass"]
                 xray_centre = parameters.FGS_params.grid_position_to_motor_position(
-                    xray_centre
+                    np.array(xrc_centre_grid_coords)
                 )
-            else:
-                LOGGER.warning("No X-ray centre received")
-                raise CrystalNotFoundException()
-            if bbox_size is not None:
                 with TRACER.start_span("change_aperture"):
+                    bbox_size = np.abs(
+                        np.array(best_result["bounding_box"][1])
+                        - np.array(best_result["bounding_box"][0])
+                    )
                     yield from set_aperture_for_bbox_size(
                         fgs_composite.aperture_scatterguard, bbox_size
                     )
             else:
-                LOGGER.warning("No bounding box size received")
+                LOGGER.warning("No X-ray centre received")
+                raise CrystalNotFoundException()
 
         # once we have the results, go to the appropriate position
         LOGGER.info("Moving to centre of mass.")

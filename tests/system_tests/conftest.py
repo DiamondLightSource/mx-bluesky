@@ -139,7 +139,7 @@ def oav_for_system_test(test_config_files):
     set_mock_value(oav.grid_snapshot.y_size, 768)
     set_mock_value(oav.grid_snapshot.top_left_x, 50)
     set_mock_value(oav.grid_snapshot.top_left_y, 100)
-    size_in_pixels = int(0.1 * 1000 / 1.25)
+    size_in_pixels = 0.1 * 1000 / 1.25
     set_mock_value(oav.grid_snapshot.box_width, size_in_pixels)
     unpatched_snapshot_trigger = oav.grid_snapshot.trigger
 

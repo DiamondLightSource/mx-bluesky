@@ -2,6 +2,7 @@ import asyncio
 import gzip
 import json
 import logging
+import os
 import sys
 import threading
 from collections.abc import Callable, Generator, Sequence
@@ -12,7 +13,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -47,7 +47,7 @@ from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra import ArmDemand, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -61,7 +61,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.motor import Motor
 from ophyd_async.epics.signal import epics_signal_rw
-from ophyd_async.fastcs.panda import DatasetTable
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -191,11 +191,11 @@ def RE():
     del RE
 
 
-def pass_on_mock(motor, call_log: MagicMock | None = None):
-    def _pass_on_mock(value, **kwargs):
+def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value: float, wait: bool):
         set_mock_value(motor.user_readback, value)
         if call_log is not None:
-            call_log(value, **kwargs)
+            call_log(value, wait=wait)
 
     return _pass_on_mock
 
@@ -305,8 +305,8 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 def zebra(RE):
     zebra = i03.zebra(fake_with_ophyd_sim=True)
 
-    def mock_side(*args, **kwargs):
-        set_mock_value(zebra.pc.arm.armed, *args, **kwargs)
+    def mock_side(demand: ArmDemand):
+        set_mock_value(zebra.pc.arm.armed, demand.value)
         return NullStatus()
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
@@ -531,7 +531,7 @@ def aperture_scatterguard(RE):
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=None,
+            radius=0,
         ),
     }
     with (
@@ -665,6 +665,7 @@ async def panda(RE: RunEngine):
         ):
             for name, dtype in attributes.items():
                 setattr(self, name, epics_signal_rw(dtype, "", ""))
+            super().__init__(name)
 
     def mock_vector_block(n, attributes):
         return DeviceVector(
@@ -704,7 +705,8 @@ async def panda(RE: RunEngine):
     )
 
     set_mock_value(
-        panda.data.datasets, DatasetTable(name=np.array(["name"]), hdf5_type=[])
+        panda.data.datasets,
+        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda
@@ -948,3 +950,21 @@ def pin_tip_edge_data():
     top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
     bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+# Prevent pytest from catching exceptions when debugging in vscode so that break on
+# exception works correctly (see: https://github.com/pytest-dev/pytest/issues/7409)
+if os.getenv("PYTEST_RAISE", "0") == "1":
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_exception_interact(call: pytest.CallInfo[Any]):
+        if call.excinfo is not None:
+            raise call.excinfo.value
+        else:
+            raise RuntimeError(
+                f"{call} has no exception data, an unknown error has occurred"
+            )
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
+        raise excinfo.value

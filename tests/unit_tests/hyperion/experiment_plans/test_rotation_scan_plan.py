@@ -225,10 +225,10 @@ async def test_full_rotation_plan_smargon_settings(
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
     assert omega_velocity_set.call_args_list == [
-        call(test_max_velocity, wait=True, timeout=10),
-        call(test_max_velocity, wait=True, timeout=10),
-        call(rotation_speed, wait=True, timeout=10),
-        call(test_max_velocity, wait=True, timeout=10),
+        call(test_max_velocity, wait=True),
+        call(test_max_velocity, wait=True),
+        call(rotation_speed, wait=True),
+        call(test_max_velocity, wait=True),
     ]
 
 
