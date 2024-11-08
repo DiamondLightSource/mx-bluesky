@@ -3,11 +3,12 @@ import math
 import pytest
 
 from mx_bluesky.hyperion.utils.utils import (
-    SI_111_SPACING_ANGSTROMS,
     convert_angstrom_to_eV,
     convert_eV_to_angstrom,
     energy_to_bragg_angle,
 )
+
+SI_111_SPACING_ANGSTROMS = 3.13475
 
 test_wavelengths = [1.620709, 1.2398425, 0.9762539, 0.8265616, 0.68880138]
 test_energies = [7650, 10000, 12700, 15000, 18000]

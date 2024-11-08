@@ -14,7 +14,6 @@ from dodal.devices.util.lookup_tables import (
 
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.utils.utils import (
-    SI_111_SPACING_ANGSTROMS,
     energy_to_bragg_angle,
 )
 
@@ -89,7 +88,8 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     # Adjust DCM Pitch
     dcm = undulator_dcm.dcm
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
-    bragg_deg = energy_to_bragg_angle(energy_kev, SI_111_SPACING_ANGSTROMS)
+    d_spacing_a: float = yield from bps.rd(undulator_dcm.dcm.crystal_metadata_d_spacing)
+    bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
         linear_interpolation_lut(undulator_dcm.pitch_energy_table_path),

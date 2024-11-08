@@ -425,6 +425,7 @@ def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
     with (
         oa_patch_motor(dcm.roll_in_mrad),
         oa_patch_motor(dcm.pitch_in_mrad),

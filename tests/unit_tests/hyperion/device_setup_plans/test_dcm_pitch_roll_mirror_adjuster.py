@@ -1,5 +1,5 @@
 from math import isclose
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -83,6 +83,9 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     mirror_voltages: MirrorVoltages,
     sim_run_engine: RunEngineSimulator,
 ):
+    sim_run_engine.add_read_handler_for(
+        undulator_dcm.dcm.crystal_metadata_d_spacing, 3.13475
+    )
     sim_run_engine.add_handler_for_callback_subscribes()
 
     messages = sim_run_engine.simulate_plan(
