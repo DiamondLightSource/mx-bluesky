@@ -159,7 +159,7 @@ class DCID:
 
             if isinstance(self.detector, Pilatus):
                 # Mirror the construction that the PPU does
-                fileTemplate = get_pilatus_filename_template_from_device()
+                fileTemplate = yield from get_pilatus_filename_template_from_device()
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
                 # Eiger base filename is directly written to the PV
