@@ -349,6 +349,7 @@ async def test_kick_off_and_complete_collection(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.calculate_collection_timeout"
 )
+@patch("dodal.devices.i24.pmac.DEFAULT_TIMEOUT", 0.1)
 async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
     fake_collection_time, pmac, dummy_params_without_pp, RE
 ):

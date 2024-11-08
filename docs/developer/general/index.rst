@@ -33,6 +33,7 @@ Documentation is split into four categories, and each is also accessible from li
             how-to/update-tools
             how-to/create-a-release
             how-to/deploy-a-release
+            how-to/profile-tests
 
         +++
 
