@@ -1,4 +1,4 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -153,17 +153,6 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def simulate_xrc_result(
-    sim_run_engine: RunEngineSimulator,
-    zocalo: ZocaloResults,
-    test_results: Sequence[dict],
-):
-    for k in test_results[0].keys():
-        sim_run_engine.add_read_handler_for(
-            getattr(zocalo, k), np.array([r[k] for r in test_results])
-        )
 
 
 def run_generic_ispyb_handler_setup(

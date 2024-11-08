@@ -24,10 +24,9 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan impor
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
-from ....conftest import raw_params_from_file
+from ....conftest import raw_params_from_file, simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_LARGE,
-    simulate_xrc_result,
 )
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
@@ -59,10 +58,8 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
 ):
-    mock_detect_and_do_gridscan.side_effect = (
-        lambda _, __, ___: _fire_xray_centre_result_event(
-            [FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW]
-        )
+    mock_detect_and_do_gridscan.side_effect = lambda *_: _fire_xray_centre_result_event(
+        [FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW]
     )
     RE = RunEngine()
     RE(

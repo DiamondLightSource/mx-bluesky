@@ -21,7 +21,9 @@ def test_exposed_plans_in_reg():
         assert plan in PLAN_REGISTRY.keys()
 
 
-@pytest.mark.skip(reason="Conflicting MsgGenerator import strangeness")
+@pytest.mark.skip(
+    reason="Conflicting MsgGenerator import strangeness https://github.com/DiamondLightSource/mx-bluesky/pull/564"
+)
 def test_param_types_in_registry_match_plan():
     for plan in exposed_plans:
         plan_function = getattr(plan_module, plan)

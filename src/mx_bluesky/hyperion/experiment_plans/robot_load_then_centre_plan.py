@@ -140,11 +140,9 @@ def robot_load_then_centre(
 
     xray_centre_event_handler = XRayCentreEventHandler()
 
-    @bpp.subs_decorator(xray_centre_event_handler)
-    def robot_load_then_xray_centre_and_fetch_results():
-        yield from robot_load_then_xray_centre(composite, parameters)
-
-    yield from robot_load_then_xray_centre_and_fetch_results()
+    yield from bpp.subs_wrapper(
+        robot_load_then_xray_centre(composite, parameters), xray_centre_event_handler
+    )
     flyscan_results = xray_centre_event_handler.xray_centre_results
     if flyscan_results is not None:
         yield from change_aperture_then_move_to_xtal(

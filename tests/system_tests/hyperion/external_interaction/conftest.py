@@ -1,7 +1,6 @@
 import os
 from collections.abc import Callable, Generator, Sequence
 from functools import partial
-from inspect import get_annotations
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -26,7 +25,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
-from dodal.devices.zocalo import XrcResult, ZocaloResults
+from dodal.devices.zocalo import ZocaloResults
 from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
@@ -90,12 +89,6 @@ def simulate_xrc_result(
         sim_run_engine.add_read_handler_for(
             getattr(zocalo, k), numpy.array([r[k] for r in test_results])
         )
-
-
-def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
-    keys = get_annotations(XrcResult).keys()
-    results_by_key = {k: [r[k] for r in test_results] for k in keys}
-    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
@@ -337,7 +330,6 @@ def fgs_composite_for_fake_zocalo(
     set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
-    # fake_fgs_composite.zocalo = zocalo_device
     callback_on_mock_put(
         fake_fgs_composite.zebra_fast_grid_scan.run_cmd,
         lambda *args, **kwargs: set_mock_value(

@@ -41,35 +41,38 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     )
 
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj is aperture_scatterguard
+        and msg.args[0] == ApertureValue.MEDIUM,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-x"
+        and msg.obj is smargon.x
         and msg.args[0] == 0.1,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-y"
+        and msg.obj is smargon.y
         and msg.args[0] == 0.2,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-z"
+        and msg.obj is smargon.z
         and msg.args[0] == 0.3,
     )
     if set_stub_offsets:
         assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon-stub_offsets"
+            and msg.obj is smargon.stub_offsets
             and msg.args[0] == StubPosition.CURRENT_AS_CENTER,
         )
     else:
         assert all(
-            not (msg.command == "set" and msg.obj.name == "smargon-stub_offsets")
+            not (msg.command == "set" and msg.obj is smargon.stub_offsets)
             for msg in msgs
         )

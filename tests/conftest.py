@@ -8,6 +8,7 @@ import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from functools import partial
+from inspect import get_annotations
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -49,6 +50,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import ArmDemand, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.sim import NullStatus
@@ -965,3 +967,20 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
         raise excinfo.value
+
+
+def simulate_xrc_result(
+    sim_run_engine: RunEngineSimulator,
+    zocalo: ZocaloResults,
+    test_results: Sequence[dict],
+):
+    for k in test_results[0].keys():
+        sim_run_engine.add_read_handler_for(
+            getattr(zocalo, k), numpy.array([r[k] for r in test_results])
+        )
+
+
+def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
+    keys = get_annotations(XrcResult).keys()
+    results_by_key = {k: [r[k] for r in test_results] for k in keys}
+    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}

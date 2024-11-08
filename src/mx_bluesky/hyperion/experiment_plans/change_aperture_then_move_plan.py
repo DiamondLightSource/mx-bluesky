@@ -52,7 +52,7 @@ def change_aperture_then_move_to_xtal(
 def _set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard, bbox_size_mm: list[float] | numpy.ndarray
 ):
-    # TODO confirm correction factor see mx-bluesky 231
+    # TODO confirm correction factor see https://github.com/DiamondLightSource/mx-bluesky/issues/618
     ASSUMED_BOX_SIZE_MM = 0.020
     bbox_size_boxes = [round(mm / ASSUMED_BOX_SIZE_MM) for mm in bbox_size_mm]
     yield from set_aperture_for_bbox_size(aperture_device, bbox_size_boxes)

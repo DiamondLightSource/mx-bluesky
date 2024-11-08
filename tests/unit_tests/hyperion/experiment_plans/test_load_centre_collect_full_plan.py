@@ -258,6 +258,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     assert isinstance(rotation_scan_composite, RotationScanComposite)
     assert isinstance(rotation_scan_params, MultiRotationScan)
     # XXX sample test file xyz conflicts with detected xyz
+    # see https://github.com/DiamondLightSource/mx-bluesky/issues/563
     expected_rotation_scans = [
         {
             "omega_start_deg": 0,

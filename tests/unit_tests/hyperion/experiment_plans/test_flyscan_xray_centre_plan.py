@@ -1,5 +1,4 @@
 import types
-from asyncio import get_event_loop, wait_for
 from pathlib import Path
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
@@ -19,7 +18,6 @@ from dodal.devices.detector.det_dim_constants import (
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
-from event_model import DocumentRouter
 from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
@@ -36,6 +34,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
     FlyScanXRayCentreComposite,
     SmargonSpeedException,
+    XRayCentreEventHandler,
     _get_feature_controlled,
     flyscan_xray_centre,
     flyscan_xray_centre_no_move,
@@ -75,11 +74,11 @@ from tests.conftest import (
     create_dummy_scan_spec,
 )
 
+from ....conftest import simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
-    simulate_xrc_result,
 )
 from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
@@ -336,14 +335,9 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params_panda_zebra,
         )
         RE, _ = RE_with_subs
-        event_doc = get_event_loop().create_future()
 
-        class FlyscanEventHandler(DocumentRouter):
-            def start(self, doc):
-                if "xray_centre_results" in doc:
-                    event_doc.set_result(doc["xray_centre_results"])
-
-        RE.subscribe(FlyscanEventHandler())
+        x_ray_centre_event_handler = XRayCentreEventHandler()
+        RE.subscribe(x_ray_centre_event_handler)
         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE)
 
         def plan():
@@ -355,10 +349,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(plan())
 
-        actual = [
-            XRayCentreResult(**result_dict)
-            for result_dict in (await wait_for(event_doc, 1))
-        ]
+        actual = x_ray_centre_event_handler.xray_centre_results
         expected = XRayCentreResult(
             centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
             bounding_box_mm=(np.array([0.2, 0.2, 0.2]), np.array([0.8, 0.8, 0.7])),
@@ -528,10 +519,6 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
             )
         )
-        # assert (
-        #     await fgs_composite_with_panda_pcap.smargon.stub_offsets.center_at_current_position.proc.get_value()
-        #     == 1
-        # )
         assert fgs_composite_with_panda_pcap.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
