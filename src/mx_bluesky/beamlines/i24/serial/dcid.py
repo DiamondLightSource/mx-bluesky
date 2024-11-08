@@ -2,15 +2,16 @@ import datetime
 import json
 import math
 import os
-import re
 import subprocess
 from functools import lru_cache
 
 import bluesky.plan_stubs as bps
 import requests
+from dodal.beamlines import i24
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -24,9 +25,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     Detector,
     Eiger,
     Pilatus,
-    caget,
-    cagetstring,
-    pv,
 )
 
 # Collection start/end script to kick off analysis
@@ -161,7 +159,7 @@ class DCID:
 
             if isinstance(self.detector, Pilatus):
                 # Mirror the construction that the PPU does
-                fileTemplate = get_pilatus_filename_template_from_pvs()
+                fileTemplate = get_pilatus_filename_template_from_device()
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
                 # Eiger base filename is directly written to the PV
@@ -360,31 +358,16 @@ class DCID:
             SSX_LOGGER.warning("Error completing DCID: %s (%s)", e, resp_str)
 
 
-def get_pilatus_filename_template_from_pvs() -> str:
+def get_pilatus_filename_template_from_device():
     """
     Get the template file path by querying the detector PVs.
 
     Returns: A template string, with the image numbers replaced with '#'
     """
+    pilatus_metadata: PilatusMetadata = i24.pilatus_metadata()
 
-    filename = cagetstring(pv.pilat_filename)
-    filename_template = cagetstring(pv.pilat_filetemplate)
-    file_number = int(caget(pv.pilat_filenumber))
-    # Exploit fact that passing negative numbers will put the - before the 0's
-    expected_filename = str(filename_template % (filename, f"{file_number:05d}_", -9))
-    # Now, find the -09 part of this
-    numberpart = re.search(r"(-0+9)", expected_filename)
-    # Make sure this was the only one
-    if numberpart is not None:
-        assert re.search(r"(-0+9)", expected_filename[numberpart.end() :]) is None
-        template_fill = "#" * len(numberpart.group(0))
-        return (
-            expected_filename[: numberpart.start()]
-            + template_fill
-            + expected_filename[numberpart.end() :]
-        )
-    else:
-        raise ValueError(f"{filename=} did not contain the numbers for templating")
+    filename_template = yield from bps.rd(pilatus_metadata.filename_template)
+    return filename_template
 
 
 def get_resolution(detector: Detector, distance: float, wavelength: float) -> float:
