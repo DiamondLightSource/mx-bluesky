@@ -17,7 +17,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
     tidy_up_at_collection_end_plan,
     write_parameter_file,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
 
@@ -53,6 +53,13 @@ def dummy_params_pp():
         "laser_delay_s": 0.005,
     }
     return ExtruderParameters(**params_pp)
+
+
+@pytest.fixture
+def dummy_beam_settings():
+    return BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=[7, 7], beam_center_in_mm=[120.4, 127.6]
+    )
 
 
 def fake_generator(value):
@@ -161,7 +168,11 @@ async def test_laser_check(
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
+)
 def test_run_extruder_quickshot_with_eiger(
+    mock_read_beam_info,
     fake_mkdir,
     fake_read,
     mock_quickshot_plan,
@@ -182,14 +193,12 @@ def test_run_extruder_quickshot_with_eiger(
     mirrors,
     eiger_beam_center,
     dummy_params,
+    dummy_beam_settings,
 ):
     fake_start_time = MagicMock()
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    mock_read_beam_info.side_effect = [fake_generator(dummy_beam_settings)]
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [
-        fake_generator(0.6),  # wavelength
-        fake_generator(7),  # beam size
-        fake_generator(7),
         fake_generator(1605),  # beam center
         fake_generator(1702),
         fake_generator(0),  # zebra disarm
@@ -210,13 +219,16 @@ def test_run_extruder_quickshot_with_eiger(
             fake_start_time,
         )
     )
-    fake_nexgen.assert_called_once_with(None, ANY, dummy_params, 0.6, "extruder")
+    fake_nexgen.assert_called_once_with(
+        None, dummy_params, 0.6, [1605, 1702], "extruder"
+    )
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
     assert fake_mkdir.call_count == 1
     fake_mkdir.assert_called_once()
+    mock_read_beam_info.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")

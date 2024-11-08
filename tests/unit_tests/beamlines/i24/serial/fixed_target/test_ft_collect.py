@@ -399,6 +399,7 @@ async def test_main_fixed_target_plan(
     eiger_beam_center,
     dummy_params_without_pp,
 ):
+    mock_get_chip_prog.return_value = MagicMock()
     set_mock_value(dcm.wavelength_in_a, 0.6)
     fake_datasize.return_value = 400
     RE(
@@ -434,7 +435,12 @@ async def test_main_fixed_target_plan(
     mock_zebra_input.assert_called_once_with(
         "Yes", wait=True
     )  # Check fast shutter open
-    assert fake_nexgen.call_count == 1
+    fake_nexgen.assert_called_once_with(
+        mock_get_chip_prog.return_value,
+        dummy_params_without_pp,
+        0.6,
+        [1605.7, 1702.7],
+    )
     mock_kickoff.assert_called_once_with(
         pmac, dummy_params_without_pp
     )  # Check collection kick off

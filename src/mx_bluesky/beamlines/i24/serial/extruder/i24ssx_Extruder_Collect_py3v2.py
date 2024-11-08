@@ -352,8 +352,14 @@ def main_extruder_plan(
 
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Call nexgen server for nexus writing.")
+        beam_x = yield from bps.rd(beam_center_device.beam_x)
+        beam_y = yield from bps.rd(beam_center_device.beam_y)
         call_nexgen(
-            None, start_time, parameters, beam_settings.wavelength_in_a, "extruder"
+            None,
+            parameters,
+            beam_settings.wavelength_in_a,
+            [beam_x, beam_y],
+            "extruder",
         )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10

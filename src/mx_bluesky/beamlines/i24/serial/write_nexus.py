@@ -2,7 +2,6 @@ import os
 import pathlib
 import pprint
 import time
-from datetime import datetime
 from typing import Literal
 
 import requests
@@ -13,14 +12,14 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget, cagetstring
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget
 
 
 def call_nexgen(
     chip_prog_dict: dict | None,
-    start_time: datetime,
     parameters: ExtruderParameters | FixedTargetParameters,
     wavelength: float,
+    beam_center: list[float],
     expt_type: Literal["fixed-target", "extruder"] = "fixed-target",
 ):
     det_type = parameters.detector_name
@@ -44,12 +43,8 @@ def call_nexgen(
     else:
         raise ValueError(f"{expt_type=} not recognised")
 
-    filename_prefix = cagetstring(Eiger.pv.filenameRBV)
-    meta_h5 = (
-        pathlib.Path(parameters.visit)
-        / parameters.directory
-        / f"{filename_prefix}_meta.h5"
-    )
+    filename_prefix = parameters.filename
+    meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()
     max_wait = 60  # seconds
     SSX_LOGGER.info(f"Watching for {meta_h5}")
@@ -64,7 +59,7 @@ def call_nexgen(
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return False
 
-    transmission = (float(caget(Eiger.pv.transmission)),)
+    transmission = parameters.transmission
 
     if det_type == Eiger.name:
         bit_depth = int(caget(Eiger.pv.bit_depth))
@@ -78,7 +73,7 @@ def call_nexgen(
 
         payload = {
             "beamline": "i24",
-            "beam_center": [caget(Eiger.pv.beamx), caget(Eiger.pv.beamy)],
+            "beam_center": beam_center,
             "chipmap": current_chip_map,
             "chip_info": chip_prog_dict,
             "det_dist": parameters.detector_distance_mm,
@@ -89,7 +84,7 @@ def call_nexgen(
             "pump_status": pump_status,
             "pump_exp": parameters.laser_dwell_s,
             "pump_delay": parameters.laser_delay_s,
-            "transmission": transmission[0],
+            "transmission": transmission,
             "visitpath": os.fspath(meta_h5.parent),
             "wavelength": wavelength,
             "bit_depth": bit_depth,
