@@ -55,6 +55,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
 ):
@@ -64,7 +65,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     RE = RunEngine()
     RE(
         pin_tip_centre_then_xray_centre(
-            MagicMock(),
+            grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
