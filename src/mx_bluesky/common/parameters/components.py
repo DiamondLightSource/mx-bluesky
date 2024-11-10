@@ -1,4 +1,3 @@
-import json
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
@@ -100,11 +99,6 @@ class MxBlueskyParameters(BaseModel):
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
-    @classmethod
-    def from_json(cls, input: str | None):
-        assert input is not None
-        return cls(**json.loads(input))
-
 
 class WithSnapshot(BaseModel):
     snapshot_directory: Path
@@ -147,11 +141,9 @@ class DiffractionExperiment(
     @model_validator(mode="before")
     @classmethod
     def validate_snapshot_directory(cls, values):
-        snapshot_dir = values.get(
-            "snapshot_directory", Path(values["storage_directory"], "snapshots")
-        )
-        values["snapshot_directory"] = (
-            snapshot_dir if isinstance(snapshot_dir, Path) else Path(snapshot_dir)
+        values["snapshot_directory"] = values.get(
+            "snapshot_directory",
+            Path(values["storage_directory"], "snapshots").as_posix(),
         )
         return values
 
