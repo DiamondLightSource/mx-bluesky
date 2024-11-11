@@ -373,3 +373,28 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     mock_move_into_view.assert_called_once_with(mock_ophyd_pin_tip_detection, smargon)
 
     assert mock_setup_oav.call_count == 1
+
+
+@pytest.mark.execution_timeout(5)
+async def test_exception_before_await_during_trigger_causes_timeout(
+    pin_tip: PinTipDetection, RE: RunEngine
+):
+    array = np.array([1, 1, 1, 1, 1, 1, 1])
+    array_index_to_increment = [0]
+
+    async def array_update_then_exception(_):
+        array_index_to_increment[0] += 1
+        array = np.array([1, 2, 1, array_index_to_increment[0], 1, 1, 1])
+        set_mock_value(pin_tip.array_data, array)
+        raise Exception
+
+    def plan():
+        for _ in range(2):
+            yield from trigger_and_return_pin_tip(pin_tip)
+
+    pin_tip._get_tip_and_edge_data = MagicMock(side_effect=array_update_then_exception)
+
+    set_mock_value(pin_tip.array_data, array)
+    set_mock_value(pin_tip.validity_timeout, 0.1)
+
+    RE(plan())
