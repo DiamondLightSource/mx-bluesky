@@ -88,6 +88,17 @@ def fake_devices(
         yield composite, mock_save_image
 
 
+def do_grid_and_edge_detect(composite, parameters):
+    yield from grid_detection_plan(
+        composite,
+        parameters=parameters,
+        snapshot_dir="tmp",
+        snapshot_template="test_{angle}",
+        grid_width_microns=161.2,
+        box_size_um=20,
+    )
+
+
 @patch(
     "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
     lambda a, b: True,
@@ -103,17 +114,8 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
 
-    @bpp.run_decorator()
-    def decorated():
-        yield from grid_detection_plan(
-            composite,
-            parameters=params,
-            snapshot_dir="tmp",
-            snapshot_template="test_{angle}",
-            grid_width_microns=161.2,
-        )
+    RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params)))
 
-    RE(decorated())
     assert image_save.await_count == 4
     assert mock_save.call_count == 2
 
@@ -143,15 +145,8 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     with pytest.raises(WarningException) as excinfo:
-        RE(
-            grid_detection_plan(
-                composite,
-                parameters=params,
-                snapshot_dir="tmp",
-                snapshot_template="test_{angle}",
-                grid_width_microns=161.2,
-            )
-        )
+        RE(do_grid_and_edge_detect(composite, params))
+
     assert "No pin found" in excinfo.value.args[0]
 
 
@@ -182,7 +177,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
-            box_size_um=0.2,
+            box_size_um=box_size_um,
         )
 
     RE(decorated())
@@ -216,18 +211,7 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     composite, _ = fake_devices
 
     for _ in range(2):
-
-        @bpp.run_decorator()
-        def decorated():
-            yield from grid_detection_plan(
-                composite,
-                parameters=params,
-                snapshot_dir="tmp",
-                snapshot_template="test_{angle}",
-                grid_width_microns=161.2,
-            )
-
-        RE(decorated())
+        RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params)))
 
 
 @patch(
@@ -246,17 +230,12 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     cb = GridscanISPyBCallback()
     RE.subscribe(cb)
 
-    def decorated():
-        yield from grid_detection_plan(
-            composite,
-            parameters=params,
-            snapshot_dir="tmp",
-            snapshot_template="test_{angle}",
-            grid_width_microns=161.2,
-        )
-
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
-        RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
+        RE(
+            ispyb_activation_wrapper(
+                do_grid_and_edge_detect(composite, params), test_fgs_params
+            )
+        )
 
         assert_event(
             cb.activity_gated_start.mock_calls[0],  # pyright:ignore
@@ -311,16 +290,11 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     cb = GridDetectionCallback()
     RE.subscribe(cb)
 
-    def decorated():
-        yield from grid_detection_plan(
-            composite,
-            parameters=params,
-            snapshot_dir="tmp",
-            snapshot_template="test_{angle}",
-            grid_width_microns=161.2,
+    RE(
+        ispyb_activation_wrapper(
+            do_grid_and_edge_detect(composite, params), test_fgs_params
         )
-
-    RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
+    )
 
     my_grid_params = cb.get_grid_parameters()
 
@@ -361,7 +335,6 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
 ):
     composite, _ = fake_devices
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-    grid_width_microns = 161.2
     box_size_um = 20
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
     assert microns_per_pixel_y is not None
@@ -398,15 +371,8 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
     sim_run_engine.add_handler("read", handle_read)
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
-    msgs = sim_run_engine.simulate_plan(
-        grid_detection_plan(
-            composite,
-            parameters=params,
-            snapshot_dir="tmp",
-            snapshot_template="test_{angle}",
-            grid_width_microns=grid_width_microns,
-        )
-    )
+
+    msgs = sim_run_engine.simulate_plan(do_grid_and_edge_detect(composite, params))
 
     expected_min_y = initial_min_y - box_size_y_pixels / 2 if odd else initial_min_y
     expected_y_steps = 2

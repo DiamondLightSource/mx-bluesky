@@ -2,6 +2,7 @@ import asyncio
 import gzip
 import json
 import logging
+import os
 import sys
 import threading
 from collections.abc import Callable, Generator, Sequence
@@ -424,6 +425,7 @@ def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
     with (
         oa_patch_motor(dcm.roll_in_mrad),
         oa_patch_motor(dcm.pitch_in_mrad),
@@ -470,12 +472,8 @@ def mirror_voltages():
 def undulator_dcm(RE, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
     undulator_dcm.dcm = dcm
-    undulator_dcm.roll_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    undulator_dcm.pitch_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
+    undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
     beamline_utils.clear_devices()
 
@@ -949,3 +947,21 @@ def pin_tip_edge_data():
     top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
     bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+# Prevent pytest from catching exceptions when debugging in vscode so that break on
+# exception works correctly (see: https://github.com/pytest-dev/pytest/issues/7409)
+if os.getenv("PYTEST_RAISE", "0") == "1":
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_exception_interact(call: pytest.CallInfo[Any]):
+        if call.excinfo is not None:
+            raise call.excinfo.value
+        else:
+            raise RuntimeError(
+                f"{call} has no exception data, an unknown error has occurred"
+            )
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
+        raise excinfo.value
