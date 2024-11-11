@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from functools import cache
 
 from daq_config_server.client import ConfigServer
 from pydantic import BaseModel, Field, model_validator
@@ -18,8 +19,10 @@ class FeatureFlags(BaseModel, ABC):
     # Feature values supplied at construction will override values from the config server
     overriden_features: dict = Field(default_factory=dict, exclude=True)
 
+    @staticmethod
+    @cache
     @abstractmethod
-    def get_config_server(self) -> ConfigServer: ...
+    def get_config_server() -> ConfigServer: ...
 
     @model_validator(mode="before")
     @classmethod
@@ -29,7 +32,7 @@ class FeatureFlags(BaseModel, ABC):
         return values
 
     def _get_flags(self):
-        flags = self.get_config_server().best_effort_get_all_feature_flags()
+        flags = type(self).get_config_server().best_effort_get_all_feature_flags()
         return {f: flags[f] for f in flags if f in self.model_fields.keys()}
 
     def update_self_from_server(self):
