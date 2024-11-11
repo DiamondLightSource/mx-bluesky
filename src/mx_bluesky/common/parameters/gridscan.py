@@ -80,7 +80,8 @@ class RobotLoadThenCentre(GridCommon):
         return PinTipCentreThenXrayCentre(**my_params)
 
 
-class GridScanWithEdgeDetect(GridCommon): ...
+class GridScanWithEdgeDetect(GridCommon):
+    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
 
 
 class PinTipCentreThenXrayCentre(GridCommon):
