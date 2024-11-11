@@ -8,10 +8,10 @@ class FeatureFlags(BaseModel, ABC):
     """Abstract class to use ConfigServer to toggle features for an experiment
 
     A module wanting to use FeatureFlags should inherit this class, add boolean features
-    as attributes, and implement a get_config_server method, which ideally returns a cached creation of
+    as attributes, and implement a get_config_server method, which returns a cached creation of
     ConfigServer. See HyperionFeatureFlags for an example
 
-    Values supplied upon class creation will always take priority over the config server. If connection to the server cannot
+    Values supplied upon class instantiation will always take priority over the config server. If connection to the server cannot
     be made AND values were not supplied, attributes will use their default values
     """
 
