@@ -130,7 +130,8 @@ def detect_grid_and_do_gridscan(
             oav_params,
             snapshot_template,
             str(snapshot_dir),
-            grid_width_microns=parameters.grid_width_um,
+            parameters.grid_width_um,
+            parameters.box_size_um,
         )
 
     yield from run_grid_detection_plan(
