@@ -9,6 +9,8 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
@@ -84,14 +86,16 @@ def grid_detect_devices(
     oav: OAV,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
+    fast_grid_scan: ZebraFastGridScan,
+    eiger: EigerDetector,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=MagicMock(),
         backlight=backlight,
         detector_motion=detector_motion,
-        eiger=MagicMock(),
-        zebra_fast_grid_scan=MagicMock(),
+        eiger=eiger,
+        zebra_fast_grid_scan=fast_grid_scan,
         flux=MagicMock(),
         oav=oav,
         pin_tip_detection=MagicMock(),
