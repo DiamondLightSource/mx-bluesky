@@ -59,8 +59,8 @@ from ophyd_async.core import (
     callback_on_mock_put,
     set_mock_value,
 )
+from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
-from ophyd_async.epics.signal import epics_signal_rw
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -425,6 +425,7 @@ def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
     with (
         oa_patch_motor(dcm.roll_in_mrad),
         oa_patch_motor(dcm.pitch_in_mrad),
@@ -471,12 +472,8 @@ def mirror_voltages():
 def undulator_dcm(RE, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
     undulator_dcm.dcm = dcm
-    undulator_dcm.roll_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    undulator_dcm.pitch_energy_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
+    undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
     beamline_utils.clear_devices()
 

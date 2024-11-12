@@ -80,7 +80,8 @@ class GridCommon(
         )
 
 
-class GridScanWithEdgeDetect(GridCommon): ...
+class GridScanWithEdgeDetect(GridCommon):
+    box_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
 
 
 class PinTipCentreThenXrayCentre(GridCommon):
