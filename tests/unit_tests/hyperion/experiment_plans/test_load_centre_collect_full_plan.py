@@ -1,6 +1,6 @@
 import dataclasses
 from collections.abc import Sequence
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy
 import pytest
@@ -479,3 +479,27 @@ def _compare_rotation_scans(
         assert rotation_scan.y_start_um == expected["y_start_um"]
         assert rotation_scan.z_start_um == expected["z_start_um"]
         assert rotation_scan.nexus_vds_start_img == expected["nexus_vds_start_img"]
+
+
+@patch("mx_bluesky.common.parameters.components.os.makedirs")
+def test_load_centre_collect_creates_storage_directory_if_not_present(
+    mock_makedirs,
+):
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+    )
+    LoadCentreCollect(**params)
+
+    mock_makedirs.assert_has_calls(
+        [
+            call(
+                "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/xraycentring",
+                exist_ok=True,
+            )
+        ],
+        any_order=True,
+    )
+    mock_makedirs.assert_has_calls(
+        [call("/tmp/dls/i03/data/2024/cm31105-4/auto/123458/", exist_ok=True)],
+        any_order=True,
+    )

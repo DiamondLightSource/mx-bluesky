@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from dodal.devices.detector import (
     DetectorParams,
 )
@@ -42,7 +40,6 @@ class HyperionGridCommon(GridCommon, WithHyperionFeatures):
         assert (
             self.detector_distance_mm is not None
         ), "Detector distance must be filled before generating DetectorParams"
-        os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,

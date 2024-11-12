@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
@@ -152,7 +153,9 @@ class DiffractionExperiment(
 
     @model_validator(mode="before")
     @classmethod
-    def validate_snapshot_directory(cls, values):
+    def validate_directories(cls, values):
+        os.makedirs(values["storage_directory"], exist_ok=True)
+
         values["snapshot_directory"] = values.get(
             "snapshot_directory",
             Path(values["storage_directory"], "snapshots").as_posix(),
