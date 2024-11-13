@@ -136,6 +136,7 @@ rst_epilog = """
 .. _black: https://github.com/psf/black
 .. _mypy: http://mypy-lang.org/
 .. _pre-commit: https://pre-commit.com/
+.. _ruff: https://github.com/astral-sh/ruff
 """
 
 # Ignore localhost links for periodic check that links in docs are valid
