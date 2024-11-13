@@ -1,19 +1,12 @@
 import re
-from collections.abc import Callable, Awaitable
 from decimal import Decimal
-from functools import partial
-from typing import Any, Callable, Coroutine
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from aiohttp import ClientResponse, ClientSession
-from bluesky.protocols import Status
-from ophyd import StatusBase
-
+from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
-from ophyd_async.core import AsyncStatus, set_mock_value, get_mock_put
-from requests import Response
+from ophyd_async.core import set_mock_value
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -176,8 +169,8 @@ def compare_actual_and_expected(
             actual = float(actual)
         if isinstance(v, float):
             actual_v = actual == pytest.approx(v)
-        if isinstance(v, str) and v.startswith("regex:"):
-            actual_v = re.match(v.removeprefix("regex:"), actual)
+        elif isinstance(v, str) and v.startswith("regex:"):
+            actual_v = re.match(v.removeprefix("regex:"), actual)  # type: ignore
         else:
             actual_v = actual == v
         if not actual_v:

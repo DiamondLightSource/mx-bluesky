@@ -2,7 +2,7 @@ import os
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import ispyb.sqlalchemy
 import numpy
