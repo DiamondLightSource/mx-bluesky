@@ -7,7 +7,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
-from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
+from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_READING_PLAN_NAME,
+    get_processing_results_from_event,
+)
 
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
@@ -149,7 +152,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ISPYB_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
         )
-        raw_results = doc["data"]["zocalo-results"]
+        raw_results = get_processing_results_from_event("zocalo", doc)
         if len(raw_results) > 0:
             for n, res in enumerate(raw_results):
                 bb = res["bounding_box"]

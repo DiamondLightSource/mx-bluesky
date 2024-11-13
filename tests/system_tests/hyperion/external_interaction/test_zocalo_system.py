@@ -50,7 +50,7 @@ async def zocalo_device():
 @bpp.run_decorator(
     md={
         "subplan_name": PlanNameConstants.DO_FGS,
-        "zocalo_environment": "dev_artemis",
+        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
 )
@@ -96,7 +96,7 @@ def run_zocalo_with_dev_ispyb(
                 trigger_zocalo_after_fast_grid_scan(), dummy_params
             )
         )
-        centre = await zocalo_device.centres_of_mass.get_value()
+        centre = await zocalo_device.centre_of_mass.get_value()
         if centre.size == 0:
             centre = fallback
         else:

@@ -52,8 +52,8 @@ class GridDetectionCallback(CallbackBase):
 
         microns_per_pixel_x = data["oav-microns_per_pixel_x"]
         microns_per_pixel_y = data["oav-microns_per_pixel_y"]
-        beam_x = data["oav-snapshot-beam_centre_i"]
-        beam_y = data["oav-snapshot-beam_centre_j"]
+        beam_x = data["oav-beam_centre_i"]
+        beam_y = data["oav-beam_centre_j"]
 
         position_grid_start = calculate_x_y_z_of_pixel(
             current_xyz,
@@ -62,7 +62,6 @@ class GridDetectionCallback(CallbackBase):
             (beam_x, beam_y),
             (microns_per_pixel_x, microns_per_pixel_y),
         )
-
         LOGGER.info(f"Calculated start position {position_grid_start}")
 
         self.start_positions.append(position_grid_start)

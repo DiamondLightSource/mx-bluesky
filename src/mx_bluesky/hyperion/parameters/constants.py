@@ -5,6 +5,7 @@ from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
+    EnvironmentConstants,
     ExperimentParamConstants,
     HardwareConstants,
     OavConstants,
@@ -38,7 +39,7 @@ class I03Constants:
 class HyperionConstants:
     DESCRIPTORS = DocDescriptorNames()
     TRIGGER = TriggerConstants()
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+    ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
@@ -55,7 +56,6 @@ class HyperionConstants:
     )
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
     LOG_FILE_NAME = "hyperion.log"
 
 

@@ -1,6 +1,7 @@
 from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
@@ -50,7 +51,7 @@ class PlanNameConstants:
 
 @dataclass(frozen=True)
 class EnvironmentConstants:
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+    ZOCALO_ENV = ZOCALO_ENV_FROM_DODAL
 
 
 @dataclass(frozen=True)
@@ -110,7 +111,6 @@ class PlanGroupCheckpointConstants:
 class SimConstants:
     BEAMLINE = "BL03S"
     INSERTION_PREFIX = "SR03S"
-    ZOCALO_ENV = "dev_artemis"
     # this one is for unit tests
     ISPYB_CONFIG = "tests/test_data/test_config.cfg"
     # this one is for system tests

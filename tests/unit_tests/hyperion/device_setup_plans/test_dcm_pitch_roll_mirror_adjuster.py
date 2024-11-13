@@ -1,3 +1,4 @@
+from math import isclose
 from unittest.mock import MagicMock
 
 import pytest
@@ -82,29 +83,27 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     mirror_voltages: MirrorVoltages,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_handler_for_callback_subscribes()
-    sim_run_engine.add_handler(
-        "read",
-        lambda msg: {"dcm-bragg_in_degrees": {"value": 5.0}},
-        "dcm-bragg_in_degrees",
+    sim_run_engine.add_read_handler_for(
+        undulator_dcm.dcm.crystal_metadata_d_spacing, 3.13475
     )
+    sim_run_engine.add_handler_for_callback_subscribes()
 
     messages = sim_run_engine.simulate_plan(
         adjust_dcm_pitch_roll_vfm_from_lut(undulator_dcm, vfm, mirror_voltages, 7.5)
     )
-
+    # target bragg angle 15.288352 deg
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm-pitch_in_mrad"
-        and abs(msg.args[0] - -0.75859) < 1e-5
+        and abs(msg.args[0] - -0.78229639) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm-roll_in_mrad"
-        and abs(msg.args[0] - 4.0) < 1e-5
+        and abs(msg.args[0] - -0.2799) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = assert_message_and_return_remaining(
@@ -152,5 +151,5 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm-x_mm"
-        and msg.args == (10.0,),
+        and isclose(msg.args[0], 10.05144, abs_tol=1e-5),
     )

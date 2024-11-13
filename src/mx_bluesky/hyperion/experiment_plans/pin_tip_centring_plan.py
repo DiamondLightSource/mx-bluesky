@@ -7,7 +7,7 @@ from bluesky.utils import Msg
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
-from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
 from dodal.devices.oav.utils import (
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
@@ -43,11 +43,11 @@ def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
 
 def trigger_and_return_pin_tip(
     pin_tip: PinTipDetection,
-) -> Generator[Msg, None, Pixel]:
+) -> Generator[Msg, None, Tip]:
     yield from bps.trigger(pin_tip, wait=True)
     tip_x_y_px = yield from bps.rd(pin_tip.triggered_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
-    return tip_x_y_px  # type: ignore
+    return tip_x_y_px
 
 
 def move_pin_into_view(
@@ -74,16 +74,16 @@ def move_pin_into_view(
         Tuple[int, int]: The location of the pin tip in pixels
     """
 
-    def pin_tip_valid(pin_x: float):
-        return pin_x != 0 and pin_x != pin_tip_device.INVALID_POSITION[0]
+    def pin_tip_valid(pin_xy: Tip):
+        return not all(pin_xy == pin_tip_device.INVALID_POSITION) and pin_xy[0] != 0
 
     for _ in range(max_steps):
-        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
+        tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
-        if pin_tip_valid(tip_x_px):
-            return (tip_x_px, tip_y_px)
+        if pin_tip_valid(tip_xy_px):
+            return (int(tip_xy_px[0]), int(tip_xy_px[1]))
 
-        if tip_x_px == 0:
+        if tip_xy_px[0] == 0:
             # Pin is off in the -ve direction
             step_size_mm = -step_size_mm
 
@@ -102,14 +102,14 @@ def move_pin_into_view(
         # Some time for the view to settle after the move
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
-    tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
+    tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
-    if not pin_tip_valid(tip_x_px):
+    if not pin_tip_valid(tip_xy_px):
         raise WarningException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
     else:
-        return (tip_x_px, tip_y_px)
+        return (int(tip_xy_px[0]), int(tip_xy_px[1]))
 
 
 def pin_tip_centre_plan(

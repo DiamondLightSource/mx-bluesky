@@ -1,5 +1,5 @@
 from functools import partial
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -27,10 +27,10 @@ from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
 
 def get_fake_pin_values_generator(x, y):
     yield from null()
-    return x, y
+    return np.array([x, y])
 
 
-FAKE_EDGE_ARRAYS = np.ndarray([1, 2, 3]), np.ndarray([3, 4, 5])
+FAKE_EDGE_ARRAYS = np.array([1.0, 2.0, 3.0]), np.array([3.0, 4.0, 5.0])
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
     set_mock_value(smargon.x.user_readback, 0)
-    await mock_pin_tip.triggered_tip._backend.put((100, 200))  # type: ignore
+    set_mock_value(mock_pin_tip.triggered_tip, np.array([100, 200]))
 
     mock_pin_tip.trigger = MagicMock(return_value=NullStatus())
 
@@ -57,6 +57,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
     assert await smargon.x.user_readback.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
+    assert all(type(_) is int for _ in result.plan_result)
 
 
 @patch(
@@ -85,6 +86,42 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
     assert await smargon.x.user_readback.get_value() == DEFAULT_STEP_SIZE
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    new=MagicMock(),
+)
+async def test_tip_found_only_after_all_iterations_exhausted_then_tip_returned(
+    smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
+):
+    set_mock_value(mock_pin_tip.validity_timeout, 0.015)
+    set_mock_value(smargon.x.user_readback, 0)
+
+    iterations = 0
+
+    def set_pin_tip_when_x_moved(f, *args, **kwargs):
+        nonlocal iterations
+        iterations += 1
+        if iterations == 2:
+            mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
+                100, 200, *FAKE_EDGE_ARRAYS
+            )
+        return f(*args, **kwargs)
+
+    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint.side_effect = partial(
+        set_pin_tip_when_x_moved, x_user_setpoint.side_effect
+    )
+
+    result = RE(move_pin_into_view(mock_pin_tip, smargon, max_steps=2))
+
+    x_user_setpoint.assert_has_calls(
+        [call(DEFAULT_STEP_SIZE, wait=True), call(DEFAULT_STEP_SIZE * 2, wait=True)]
+    )
+    assert isinstance(result, RunEngineResult)
+    assert result.plan_result == (100, 200)
+    assert all(type(_) is int for _ in result.plan_result)
 
 
 @patch(
@@ -126,7 +163,7 @@ async def test_trigger_and_return_pin_tip_works_for_AD_pin_tip_detection(
     )
     set_mock_value(mock_pin_tip.validity_timeout, 0.15)
     re_result = RE(trigger_and_return_pin_tip(mock_pin_tip))
-    assert re_result.plan_result == (200, 100)  # type: ignore
+    assert all(re_result.plan_result == (200, 100))  # type: ignore
 
 
 def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
@@ -137,7 +174,7 @@ def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
         return_value=mock_trigger_result
     )
     re_result = RE(trigger_and_return_pin_tip(ophyd_pin_tip_detection))
-    assert re_result.plan_result == (100, 200)  # type: ignore
+    assert all(re_result.plan_result == (100, 200))  # type: ignore
 
 
 @patch(
@@ -183,8 +220,12 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     pin_tip: PinTipDetection,
 ):
     mock_trigger_and_return_pin_tip.side_effect = [
-        get_fake_pin_values_generator(None, None),
-        get_fake_pin_values_generator(None, None),
+        get_fake_pin_values_generator(
+            PinTipDetection.INVALID_POSITION[0], PinTipDetection.INVALID_POSITION[1]
+        ),
+        get_fake_pin_values_generator(
+            PinTipDetection.INVALID_POSITION[0], PinTipDetection.INVALID_POSITION[1]
+        ),
     ]
     set_mock_value(smargon.x.user_setpoint, 1.8)
     set_mock_value(smargon.x.user_readback, 1.8)
