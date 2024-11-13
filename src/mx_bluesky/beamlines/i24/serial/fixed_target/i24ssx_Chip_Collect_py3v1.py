@@ -77,7 +77,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 30
+    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 600
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
@@ -97,7 +97,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
         )
         if pump_setting == PumpProbeSetting.Medium1:
             # Long delay between pump and probe, with fast shutter opening and closing.
-            timeout = timeout + SHUTTER_OPEN_TIME
+            timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
 
 
@@ -444,7 +444,11 @@ def start_i24(
         )
 
         SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,
@@ -467,7 +471,7 @@ def start_i24(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True)
+        Path(filepath).mkdir(parents=True, exist_ok=True)
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -503,7 +507,11 @@ def start_i24(
         )
 
         SSX_LOGGER.debug("Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,
