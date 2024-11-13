@@ -106,6 +106,9 @@ def initialise_stages(
     sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
+        if i == 100:
+            # Do not clear visit PV
+            continue
         pvar = "ME14E-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
