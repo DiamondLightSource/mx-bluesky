@@ -61,6 +61,7 @@ class HyperionGridCommon(GridCommon, WithHyperionFeatures):
             **optional_args,
         )
 
+
 class HyperionThreeDGridScan(
     HyperionGridCommon,
     SpecifiedGrid,

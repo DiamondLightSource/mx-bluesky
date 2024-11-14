@@ -156,9 +156,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         )
     )
 
-
     params: HyperionThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
-
 
     assert params.detector_params.num_triggers == 50
 
