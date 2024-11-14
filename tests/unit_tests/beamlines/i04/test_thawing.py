@@ -23,7 +23,6 @@ from ophyd_async.core import (
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
-from mx_bluesky.common.test_utils import rebuild_oa_device_as_mocked_if_necessary
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -73,9 +72,7 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 @pytest.fixture
 def thawer(RE: RunEngine) -> Thawer:
-    return rebuild_oa_device_as_mocked_if_necessary(
-        i04.thawer, fake_with_ophyd_sim=True, wait_for_connection=True
-    )
+    return i04.thawer(fake_with_ophyd_sim=True, wait_for_connection=True)
 
 
 @pytest.fixture
@@ -97,9 +94,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 @pytest.fixture
 def robot(RE: RunEngine) -> BartRobot:
-    return rebuild_oa_device_as_mocked_if_necessary(
-        i04.robot, wait_for_connection=True, fake_with_ophyd_sim=True
-    )
+    return i04.robot(wait_for_connection=True, fake_with_ophyd_sim=True)
 
 
 def _do_thaw_and_confirm_cleanup(
