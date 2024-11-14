@@ -156,7 +156,7 @@ class ExpeyeSampleHandlingInteraction:
 
     def __init__(self):
         base_uri, token = _get_base_url_and_token()
-        self._uri = base_uri + "/sample-handling"
+        self._uri = base_uri
         self._auth = BearerAuth(token)
 
     def update_sample_status(
