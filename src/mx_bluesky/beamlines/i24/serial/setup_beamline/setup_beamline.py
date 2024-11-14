@@ -13,8 +13,8 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 
 BEAM_CENTER_POS: dict[str, list] = {
-    "eiger": [1605.7, 1702.7],
-    "pilatus": [1298, 1307],
+    "eiger": [1600.0, 1697.4],
+    "pilatus": [1284.7, 1308.6],
 }
 
 
