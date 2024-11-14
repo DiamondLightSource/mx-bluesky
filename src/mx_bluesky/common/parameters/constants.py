@@ -3,7 +3,6 @@ from enum import Enum
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
-
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
