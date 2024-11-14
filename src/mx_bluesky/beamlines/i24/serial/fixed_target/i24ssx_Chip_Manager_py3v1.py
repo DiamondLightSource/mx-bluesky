@@ -167,11 +167,6 @@ def write_parameter_file(
     SSX_LOGGER.info("Information written to file \n")
     SSX_LOGGER.info(pformat(params_dict))
 
-    # if map_type == MappingType.Full:
-    #     # This step creates some header files (.addr, .spec), containing the parameters,
-    #     # that are only needed when full mapping is in use.
-    #     SSX_LOGGER.info("Full mapping in use. Running start up now.")
-    #     startup.run()
     yield from bps.null()
 
 

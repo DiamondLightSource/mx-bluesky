@@ -1,4 +1,4 @@
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -6,7 +6,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1 impo
     check_files,
     fiducials,
     pathli,
-    run,
 )
 
 
@@ -41,18 +40,3 @@ def test_check_files(fake_read_params, mock_os, dummy_params_without_pp):
 )
 def test_pathli(list_in, way, reverse, expected_res):
     assert pathli(list_in, way, reverse) == expected_res
-
-
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1.check_files"
-)
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1.write_headers"
-)
-def test_run(mock_write, mock_check):
-    run()
-
-    call_list = [call("i24", [".addr", ".shot"]), call("i24", ["rando.spec"])]
-
-    mock_check.assert_has_calls(call_list)
-    mock_write.assert_has_calls(call_list)
