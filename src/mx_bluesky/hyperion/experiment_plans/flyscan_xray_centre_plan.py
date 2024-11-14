@@ -41,7 +41,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_full_processing_results,
 )
-
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
