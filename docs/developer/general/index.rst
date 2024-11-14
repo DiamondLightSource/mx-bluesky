@@ -12,7 +12,7 @@ Documentation is split into four categories, and each is also accessible from li
             :caption: Tutorials
             :maxdepth: 1
 
-            tutorials/dev-install
+            tutorials/profile-tests
 
         +++
 
@@ -26,14 +26,9 @@ Documentation is split into four categories, and each is also accessible from li
 
             how-to/get-started
             how-to/contribute
-            how-to/build-docs
-            how-to/run-tests
-            how-to/static-analysis
-            how-to/lint
-            how-to/update-tools
             how-to/create-a-release
             how-to/deploy-a-release
-            how-to/profile-tests
+            how-to/dev-ops/dev-ops
 
         +++
 
