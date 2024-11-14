@@ -324,7 +324,7 @@ def datasetsizei24(
                     Number of images {total_numb_imgs}"""
             )
 
-    if map_type == MappingType.Lite:
+    elif map_type == MappingType.Lite:
         SSX_LOGGER.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
         chip_format = chip_params.chip_format[2:4]
         block_count = 0
