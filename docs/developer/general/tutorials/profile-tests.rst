@@ -15,7 +15,7 @@ value e.g.
 0.1s
 
 How to profile the unit tests
-=============================
+-----------------------------
 
 Sometimes tests can exhibit slowdowns for unknown reasons, in order to diagnose the cause it can be useful to profile
 the test code.
@@ -35,7 +35,7 @@ You can then often step through in the debugger to find lines which execute slow
 
 
 More detailed profiling
-=======================
+------------------------
 
 Occasionally this is not sufficient. In which case more detailed profiling is necessary
 

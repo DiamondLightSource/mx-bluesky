@@ -22,7 +22,7 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.plans.motor_util_plans import MoveTooLarge, home_and_reset_wrapper
+from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
