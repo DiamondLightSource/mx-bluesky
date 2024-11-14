@@ -234,8 +234,6 @@ def load_motion_program_data(
             SSX_LOGGER.info(f"Map type is None, setting program prefix to {prefix}")
         elif map_type == MappingType.Lite:
             prefix = 12
-        elif map_type == MappingType.Full:
-            prefix = 13
         else:
             SSX_LOGGER.warning(f"Unknown Map Type, map_type = {map_type}")
             return
@@ -301,14 +299,6 @@ def get_prog_num(
         SSX_LOGGER.info(f"Map type: {str(map_type)}")
         SSX_LOGGER.info("Program number: 12")
         return 12
-    if map_type == MappingType.Full:
-        # TODO See https://github.com/DiamondLightSource/mx-bluesky/issues/515
-        SSX_LOGGER.info(f"Map type: {str(map_type)}")
-        SSX_LOGGER.info("Program number: 13")
-        # TODO once reinstated return 13
-        msg = "Full mapping is broken and currently disabled."
-        SSX_LOGGER.error(msg)
-        raise ValueError(msg)
 
 
 @log_on_entry
@@ -334,7 +324,7 @@ def datasetsizei24(
                     Number of images {total_numb_imgs}"""
             )
 
-    elif map_type == MappingType.Lite:
+    if map_type == MappingType.Lite:
         SSX_LOGGER.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
         chip_format = chip_params.chip_format[2:4]
         block_count = 0
@@ -351,14 +341,6 @@ def datasetsizei24(
 
         total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
         SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
-
-    elif map_type == MappingType.Full:
-        SSX_LOGGER.error("Not Set Up For Full Mapping")
-        raise ValueError("The beamline is currently not set for Full Mapping.")
-
-    else:
-        SSX_LOGGER.warning(f"Unknown Map Type, map_type = {str(map_type)}")
-        raise ValueError("Unknown map type")
 
     SSX_LOGGER.info("Set PV to calculated number of images.")
     caput(pv.me14e_gp10, int(total_numb_imgs))

@@ -28,11 +28,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target import (
 from mx_bluesky.beamlines.i24.serial.fixed_target import (
     i24ssx_Chip_StartUp_py3v1 as startup,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
-    ChipType,
-    Fiducials,
-    MappingType,
-)
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, Fiducials
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
@@ -171,11 +167,11 @@ def write_parameter_file(
     SSX_LOGGER.info("Information written to file \n")
     SSX_LOGGER.info(pformat(params_dict))
 
-    if map_type == MappingType.Full:
-        # This step creates some header files (.addr, .spec), containing the parameters,
-        # that are only needed when full mapping is in use.
-        SSX_LOGGER.info("Full mapping in use. Running start up now.")
-        startup.run()
+    # if map_type == MappingType.Full:
+    #     # This step creates some header files (.addr, .spec), containing the parameters,
+    #     # that are only needed when full mapping is in use.
+    #     SSX_LOGGER.info("Full mapping in use. Running start up now.")
+    #     startup.run()
     yield from bps.null()
 
 
