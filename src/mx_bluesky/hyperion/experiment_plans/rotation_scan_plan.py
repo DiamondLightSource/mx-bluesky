@@ -24,6 +24,9 @@ from dodal.devices.zebra import RotationDirection, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
+from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_zocalo,
+)
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_phi_chi_omega,
@@ -32,7 +35,6 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
 )
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
-    read_hardware_for_zocalo,
     read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
@@ -348,7 +350,7 @@ def rotation_scan(
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            "zocalo_environment": parameters.zocalo_environment,
+            "zocalo_environment": CONST.ZOCALO_ENV,
             "hyperion_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",

@@ -14,33 +14,35 @@ from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
-from mx_bluesky.hyperion.parameters.components import (
+from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
     SplitScan,
-    WithOavCentring,
     WithOptionalEnergyChange,
     WithScan,
     XyzStarts,
 )
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.hyperion.parameters.components import WithFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
+# This will be restructed once Once https://github.com/DiamondLightSource/mx-bluesky/issues/323#issue-2500957290 is further along
+# to handle slightly different parameters between different beamline implementations
 class GridCommon(
-    DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
+    DiffractionExperimentWithSample,
+    OptionalGonioAngleStarts,
+    WithFeatures,
 ):
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
     panda_runup_distance_mm: float = Field(
-        default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
+        default=GridscanParamConstants.PANDA_RUN_UP_DISTANCE_MM
     )
-    use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
-    compare_cpu_and_gpu_results: bool = Field(
-        default=CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
-    )
+
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
@@ -73,12 +75,13 @@ class GridCommon(
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.compare_cpu_and_gpu_results,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
             **optional_args,
         )
 
 
-class GridScanWithEdgeDetect(GridCommon): ...
+class GridScanWithEdgeDetect(GridCommon):
+    box_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
 
 
 class PinTipCentreThenXrayCentre(GridCommon):

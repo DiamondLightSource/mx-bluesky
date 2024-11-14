@@ -17,7 +17,6 @@
     "sample_id": 123456,
     "shutter_opening_time_s": 0.6,
     "visit": "cm31105-4",
-    "zocalo_environment": "dev_artemis",
     "transmission_frac": 0.1,
     "phi_start_deg": 0.47,
     "chi_start_deg": 23.85,

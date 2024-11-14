@@ -1,14 +1,16 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
@@ -80,6 +82,7 @@ def grid_detect_devices(
     backlight: Backlight,
     detector_motion: DetectorMotion,
     smargon: Smargon,
+    oav: OAV,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -89,7 +92,7 @@ def grid_detect_devices(
         eiger=MagicMock(),
         zebra_fast_grid_scan=MagicMock(),
         flux=MagicMock(),
-        oav=MagicMock(),
+        oav=oav,
         pin_tip_detection=MagicMock(),
         smargon=smargon,
         synchrotron=MagicMock(),
@@ -130,6 +133,17 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
+
+
+def simulate_xrc_result(
+    sim_run_engine: RunEngineSimulator,
+    zocalo: ZocaloResults,
+    test_results: Sequence[dict],
+):
+    for k in test_results[0].keys():
+        sim_run_engine.add_read_handler_for(
+            getattr(zocalo, k), np.array([r[k] for r in test_results])
+        )
 
 
 def run_generic_ispyb_handler_setup(
@@ -240,11 +254,10 @@ def simple_beamline(
     magic_mock.dcm = dcm
     magic_mock.synchrotron = synchrotron
     magic_mock.eiger = eiger
-    oav.zoom_controller.frst.set("7.5x")
-    oav.parameters = OAVConfigParams(
+    oav.zoom_controller.level = MagicMock(return_value="7.5x")
+    oav.parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    oav.parameters.update_on_zoom(7.5, 1024, 768)
+    ).get_parameters()
     return magic_mock
 
 

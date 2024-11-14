@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
@@ -11,7 +12,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
 )
-from mx_bluesky.hyperion.parameters.components import DiffractionExperimentWithSample
 
 
 def populate_data_collection_group(params: DiffractionExperimentWithSample):

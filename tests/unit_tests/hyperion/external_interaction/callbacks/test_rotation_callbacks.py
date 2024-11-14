@@ -4,6 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
+from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_rotation_callbacks,
@@ -22,7 +23,6 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 

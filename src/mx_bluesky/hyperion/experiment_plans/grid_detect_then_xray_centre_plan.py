@@ -15,7 +15,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -28,6 +28,7 @@ from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -109,7 +110,7 @@ def detect_grid_and_do_gridscan(
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
-    grid_params_callback = GridDetectionCallback(composite.oav.parameters)
+    grid_params_callback = GridDetectionCallback()
 
     @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(
@@ -129,7 +130,8 @@ def detect_grid_and_do_gridscan(
             oav_params,
             snapshot_template,
             str(snapshot_dir),
-            grid_width_microns=parameters.grid_width_um,
+            parameters.grid_width_um,
+            parameters.box_size_um,
         )
 
     yield from run_grid_detection_plan(
@@ -178,7 +180,7 @@ def detect_grid_and_do_gridscan(
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetect,
-    oav_config: str = OAV_CONFIG_JSON,
+    oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination

@@ -22,6 +22,8 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ....conftest import raw_params_from_file
+from ....system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
+from .conftest import simulate_xrc_result
 
 
 @pytest.fixture
@@ -62,7 +64,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
         pin_centre_then_xray_centre_plan(
             grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
-            test_config_files,
+            test_config_files["oav_config_json"],
         )
     )
 
@@ -130,10 +132,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    sim_run_engine.add_read_handler_for(
-        simple_beamline.zocalo.centres_of_mass, [10, 10, 10]
-    )
-
+    simulate_xrc_result(sim_run_engine, simple_beamline.zocalo, TEST_RESULT_LARGE)
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             simple_beamline,

@@ -31,6 +31,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
@@ -97,6 +98,7 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 def centring_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_xray_centre_plan(
         cast(GridDetectThenXRayCentreComposite, composite),
@@ -107,13 +109,14 @@ def centring_plan_from_robot_load_params(
 def robot_load_then_centre_plan(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
         cast(RobotLoadAndEnergyChangeComposite, composite),
         params.robot_load_params(),
     )
 
-    yield from centring_plan_from_robot_load_params(composite, params)
+    yield from centring_plan_from_robot_load_params(composite, params, oav_config_file)
 
 
 def robot_load_then_centre(

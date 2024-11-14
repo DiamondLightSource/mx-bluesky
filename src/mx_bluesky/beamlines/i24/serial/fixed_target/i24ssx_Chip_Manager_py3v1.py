@@ -4,7 +4,6 @@ This version changed to python3 March2020 by RLO
 """
 
 import json
-import logging
 import re
 import shutil
 import sys
@@ -17,12 +16,12 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
+from dodal.common import inject
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
 
-from mx_bluesky.beamlines.i24.serial import log
 from mx_bluesky.beamlines.i24.serial.fixed_target import (
     i24ssx_Chip_Mapping_py3v1 as mapping,
 )
@@ -33,6 +32,11 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     Fiducials,
     MappingType,
+)
+from mx_bluesky.beamlines.i24.serial.log import (
+    SSX_LOGGER,
+    _read_visit_directory_from_file,
+    log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
@@ -48,8 +52,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     get_detector_type,
 )
 
-logger = logging.getLogger("I24ssx.chip_manager")
-
 # An approximation of the chip size for the move during fiducials alignment.
 CHIP_MOVES = {
     ChipType.Oxford: 25.40,
@@ -64,22 +66,15 @@ PUMP_REPEAT_PV = pv.me14e_gp4
 MAP_FILEPATH_PV = pv.me14e_gp5
 
 
-def setup_logging():
-    # Log should now change name daily.
-    logfile = time.strftime("i24fixedtarget_%d%B%y.log").lower()
-    log.config(logfile)
-
-
-@log.log_on_entry
+@log_on_entry
 def initialise_stages(
-    pmac: PMAC = i24.pmac(wait_for_connection=False),
+    pmac: PMAC = inject("pmac"),
 ) -> MsgGenerator:
     """Initialise the portable stages PVs, usually used only once right after setting \
         up the stages either after use at different facility.
     """
-    setup_logging()
     group = "initialise_stages"
-    logger.info("Setting velocity, acceleration and limits for stages")
+    SSX_LOGGER.info("Setting velocity, acceleration and limits for stages")
 
     yield from bps.abs_set(pmac.x.velocity, 20, group=group)
     yield from bps.abs_set(pmac.y.velocity, 20, group=group)
@@ -109,18 +104,18 @@ def initialise_stages(
     caput(pv.pilat_cbftemplate, 0)
 
     sleep(0.1)
-    logger.info("Clearing General Purpose PVs 1-120")
+    SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
         pvar = "ME14E-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
 
-    logger.info("Initialisation of the stages complete")
+    SSX_LOGGER.info("Initialisation of the stages complete")
     yield from bps.wait(group=group)
 
 
-@log.log_on_entry
+@log_on_entry
 def write_parameter_file(
     detector_stage: DetectorMotion,
 ) -> MsgGenerator:
@@ -128,7 +123,9 @@ def write_parameter_file(
     # Create directory if it doesn't yet exist.
     param_path.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Writing Parameter File: {(param_path / PARAM_FILE_NAME).as_posix()}")
+    SSX_LOGGER.info(
+        f"Writing Parameter File: {(param_path / PARAM_FILE_NAME).as_posix()}"
+    )
 
     filename = caget(pv.me14e_chip_name)
     det_type = yield from get_detector_type(detector_stage)
@@ -145,12 +142,12 @@ def write_parameter_file(
             # Note for future reference. Appending underscore causes more hassle and
             # high probability of users accidentally overwriting data. Use a dash
             filename = filename + "-"
-            logger.debug(
+            SSX_LOGGER.debug(
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
     params_dict = {
-        "visit": log._read_visit_directory_from_file().as_posix(),  # noqa
+        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": caget(pv.me14e_filepath),
         "filename": filename,
         "exposure_time_s": caget(pv.me14e_exptime),
@@ -171,13 +168,13 @@ def write_parameter_file(
     with open(param_path / PARAM_FILE_NAME, "w") as f:
         json.dump(params_dict, f, indent=4)
 
-    logger.info("Information written to file \n")
-    logger.info(pformat(params_dict))
+    SSX_LOGGER.info("Information written to file \n")
+    SSX_LOGGER.info(pformat(params_dict))
 
     if map_type == MappingType.Full:
         # This step creates some header files (.addr, .spec), containing the parameters,
         # that are only needed when full mapping is in use.
-        logger.info("Full mapping in use. Running start up now.")
+        SSX_LOGGER.info("Full mapping in use. Running start up now.")
         startup.run()
     yield from bps.null()
 
@@ -206,13 +203,12 @@ def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):
     return block_start_list
 
 
-@log.log_on_entry
+@log_on_entry
 def define_current_chip(
     chipid: str = "oxford",
-    pmac: PMAC = i24.pmac(wait_for_connection=False),
+    pmac: PMAC = inject("pmac"),
 ) -> MsgGenerator:
-    setup_logging()
-    logger.debug("Run load stock map for just the first block")
+    SSX_LOGGER.debug("Run load stock map for just the first block")
     yield from load_stock_map("Just The First Block")
     """
     Not sure what this is for:
@@ -220,43 +216,41 @@ def define_current_chip(
     caput(pv.me14e_gp2, 1)
     """
     chip_type = int(caget(CHIPTYPE_PV))
-    logger.info(f"Chip type:{chip_type} Chipid:{chipid}")
+    SSX_LOGGER.info(f"Chip type:{chip_type} Chipid:{chipid}")
     if chipid == "oxford":
         caput(CHIPTYPE_PV, 0)
 
     with open(PVAR_FILE_PATH / f"{chipid}.pvar") as f:
-        logger.info(f"Opening {chipid}.pvar")
+        SSX_LOGGER.info(f"Opening {chipid}.pvar")
         for line in f.readlines():
             if line.startswith("#"):
                 continue
             line_from_file = line.rstrip("\n")
-            logger.info(f"{line_from_file}")
+            SSX_LOGGER.info(f"{line_from_file}")
             yield from bps.abs_set(pmac.pmac_string, line_from_file)
 
 
-@log.log_on_entry
+@log_on_entry
 def save_screen_map() -> MsgGenerator:
-    setup_logging()
     litemap_path: Path = LITEMAP_PATH
     litemap_path.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Saving {litemap_path.as_posix()} currentchip.map")
+    SSX_LOGGER.info(f"Saving {litemap_path.as_posix()} currentchip.map")
     with open(litemap_path / "currentchip.map", "w") as f:
-        logger.debug("Printing only blocks with block_val == 1")
+        SSX_LOGGER.debug("Printing only blocks with block_val == 1")
         for x in range(1, 82):
             block_str = "ME14E-MO-IOC-01:GP%i" % (x + 10)
             block_val = int(caget(block_str))
             if block_val == 1:
-                logger.info("%s %d" % (block_str, block_val))
+                SSX_LOGGER.info("%s %d" % (block_str, block_val))
             line = "%02dstatus    P3%02d1 \t%s\n" % (x, x, block_val)
             f.write(line)
     yield from bps.null()
 
 
-@log.log_on_entry
-def upload_parameters(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
-    setup_logging()
-    logger.info("Uploading Parameters for Oxford Chip to the GeoBrick")
+@log_on_entry
+def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+    SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
     caput(CHIPTYPE_PV, 0)
     width = 8
 
@@ -265,8 +259,8 @@ def upload_parameters(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGe
         raise FileNotFoundError(f"The file {map_file} has not yet been created")
 
     with open(map_file) as f:
-        logger.info(f"Chipid {ChipType.Oxford}")
-        logger.info(f"width {width}")
+        SSX_LOGGER.info(f"Chipid {ChipType.Oxford}")
+        SSX_LOGGER.info(f"width {width}")
         x = 1
         for line in f.readlines()[: width**2]:
             cols = line.split()
@@ -287,14 +281,13 @@ def upload_parameters(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGe
             yield from bps.abs_set(pmac.pmac_string, s, wait=True)
             sleep(0.02)
 
-    logger.warning("Automatic Setting Mapping Type to Lite has been disabled")
-    logger.debug("Upload parameters done.")
+    SSX_LOGGER.warning("Automatic Setting Mapping Type to Lite has been disabled")
+    SSX_LOGGER.debug("Upload parameters done.")
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def upload_full(pmac: PMAC | None = None) -> MsgGenerator:
-    setup_logging()
     if not pmac:
         pmac = i24.pmac()
 
@@ -309,19 +302,18 @@ def upload_full(pmac: PMAC | None = None) -> MsgGenerator:
         for _j in range(2):
             pmac_list.append(f.pop(0).rstrip("\n"))
         writeline = " ".join(pmac_list)
-        logger.info(f"{writeline}")
+        SSX_LOGGER.info(f"{writeline}")
         yield from bps.abs_set(pmac.pmac_string, writeline, wait=True)
         yield from bps.sleep(0.02)
-    logger.debug("Upload fullmap done")
+    SSX_LOGGER.debug("Upload fullmap done")
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def load_stock_map(map_choice: str = "clear") -> MsgGenerator:
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/122
-    setup_logging()
-    logger.info("Adjusting Lite Map EDM Screen")
-    logger.debug("Please wait, adjusting lite map")
+    SSX_LOGGER.info("Adjusting Lite Map EDM Screen")
+    SSX_LOGGER.debug("Please wait, adjusting lite map")
     #
     r33 = [19, 18, 17, 26, 31, 32, 33, 24, 25]
     r55 = [9, 10, 11, 12, 13, 16, 27, 30, 41, 40, 39, 38, 37, 34, 23, 20] + r33
@@ -504,25 +496,24 @@ def load_stock_map(map_choice: str = "clear") -> MsgGenerator:
     map_dict["half1"] = half1
     map_dict["half2"] = half2
 
-    logger.info("Clearing GP 10-74")  # Actually 11-44
+    SSX_LOGGER.info("Clearing GP 10-74")  # Actually 11-44
     for i in range(1, 65):
         pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
-    logger.info("Map cleared")
-    logger.info(f"Loading Map Choice {map_choice}")
+    SSX_LOGGER.info("Map cleared")
+    SSX_LOGGER.info(f"Loading Map Choice {map_choice}")
     for i in map_dict[map_choice]:
         pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 1)
-    logger.debug("Load stock map done.")
+    SSX_LOGGER.debug("Load stock map done.")
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def load_lite_map() -> MsgGenerator:
-    setup_logging()
-    logger.debug("Run load stock map with 'clear' setting.")
+    SSX_LOGGER.debug("Run load stock map with 'clear' setting.")
     yield from load_stock_map("clear")
     # fmt: off
     # Oxford_block_dict is wrong (columns and rows need to flip) added in script below to generate it automatically however kept this for backwards compatiability/reference
@@ -539,7 +530,7 @@ def load_lite_map() -> MsgGenerator:
     # fmt: on
     chip_type = int(caget(CHIPTYPE_PV))
     if chip_type in [ChipType.Oxford, ChipType.OxfordInner]:
-        logger.info("Oxford Block Order")
+        SSX_LOGGER.info("Oxford Block Order")
         rows = ["A", "B", "C", "D", "E", "F", "G", "H"]
         columns = list(range(1, 10))
         btn_names = {}
@@ -558,7 +549,7 @@ def load_lite_map() -> MsgGenerator:
                 elif flip is True:
                     z = 8 - (y + 1)
                 else:
-                    logger.warning("Problem in Chip Grid Creation")
+                    SSX_LOGGER.warning("Problem in Chip Grid Creation")
                     break
                 button_name = str(row) + str(column)
                 lab_num = x * 8 + z
@@ -569,9 +560,9 @@ def load_lite_map() -> MsgGenerator:
         raise ValueError(f"{chip_type=} unrecognised")
 
     litemap_fid = f"{caget(MAP_FILEPATH_PV)}.lite"
-    logger.info("Please wait, loading LITE map")
-    logger.debug("Loading Lite Map")
-    logger.info("Opening %s" % (LITEMAP_PATH / litemap_fid))
+    SSX_LOGGER.info("Please wait, loading LITE map")
+    SSX_LOGGER.debug("Loading Lite Map")
+    SSX_LOGGER.info("Opening %s" % (LITEMAP_PATH / litemap_fid))
     with open(LITEMAP_PATH / litemap_fid) as fh:
         f = fh.readlines()
     for line in f:
@@ -580,48 +571,46 @@ def load_lite_map() -> MsgGenerator:
         yesno = entry[1]
         block_num = block_dict[block_name]
         pvar = "ME14E-MO-IOC-01:GP" + str(int(block_num) + 10)
-        logger.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
-    logger.debug("Load lite map done")
+        SSX_LOGGER.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
+    SSX_LOGGER.debug("Load lite map done")
     yield from bps.null()
 
 
-@log.log_on_entry
+@log_on_entry
 def load_full_map() -> MsgGenerator:
-    setup_logging()
+    from matplotlib import pyplot as plt
+
     params = startup.read_parameter_file()
 
     fullmap_fid = FULLMAP_PATH / f"{caget(MAP_FILEPATH_PV)}.spec"
-    logger.info(f"Opening {fullmap_fid}")
-    mapping.plot_file(fullmap_fid, params.chip.chip_type.value)
+    SSX_LOGGER.info(f"Opening {fullmap_fid}")
+    mapping.plot_file(plt, fullmap_fid, params.chip.chip_type.value)
     mapping.convert_chip_to_hex(fullmap_fid, params.chip.chip_type.value)
     shutil.copy2(fullmap_fid.with_suffix(".full"), FULLMAP_PATH / "currentchip.full")
-    logger.info(
+    SSX_LOGGER.info(
         "Copying {} to {}".format(
             fullmap_fid.with_suffix(".full"), FULLMAP_PATH / "currentchip.full"
         )
     )
-    logger.debug("Load full map done")
+    SSX_LOGGER.debug("Load full map done")
     yield from bps.null()
 
 
-@log.log_on_entry
-def moveto(
-    place: str = "origin", pmac: PMAC = i24.pmac(wait_for_connection=False)
-) -> MsgGenerator:
-    setup_logging()
-    logger.info(f"Move to: {place}")
+@log_on_entry
+def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
+    SSX_LOGGER.info(f"Move to: {place}")
     if place == Fiducials.zero:
-        logger.info("Chip aspecific move.")
+        SSX_LOGGER.info("Chip aspecific move.")
         yield from bps.trigger(pmac.to_xyz_zero)
         return
 
     chip_type = ChipType(int(caget(CHIPTYPE_PV)))
-    logger.info(f"Chip type is {chip_type}")
+    SSX_LOGGER.info(f"Chip type is {chip_type}")
     if chip_type not in list(ChipType):
-        logger.warning("Unknown chip_type move")
+        SSX_LOGGER.warning("Unknown chip_type move")
         return
 
-    logger.info(f"{str(chip_type)} Move")
+    SSX_LOGGER.info(f"{str(chip_type)} Move")
     chip_move = CHIP_MOVES[chip_type]
 
     if place == Fiducials.origin:
@@ -632,23 +621,21 @@ def moveto(
         yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
-@log.log_on_entry
+@log_on_entry
 def moveto_preset(
     place: str,
-    pmac: PMAC = i24.pmac(wait_for_connection=False),
-    beamstop: Beamstop = i24.beamstop(wait_for_connection=False),
-    backlight: DualBacklight = i24.backlight(wait_for_connection=False),
-    det_stage: DetectorMotion = i24.detector_motion(wait_for_connection=False),
+    pmac: PMAC = inject("pmac"),
+    beamstop: Beamstop = inject("beamstop"),
+    backlight: DualBacklight = inject("backlight"),
+    det_stage: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
-    setup_logging()
-
     # Non Chip Specific Move
     if place == "zero":
-        logger.info(f"Moving to {place}")
+        SSX_LOGGER.info(f"Moving to {place}")
         yield from bps.trigger(pmac.to_xyz_zero)
 
     elif place == "load_position":
-        logger.info("load position")
+        SSX_LOGGER.info("load position")
         yield from bps.abs_set(
             beamstop.pos_select, BeamstopPositions.ROBOT, group=place
         )
@@ -657,7 +644,7 @@ def moveto_preset(
         yield from bps.wait(group=place)
 
     elif place == "collect_position":
-        logger.info("collect position")
+        SSX_LOGGER.info("collect position")
         caput(pv.me14e_filter, 20)
         yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.abs_set(
@@ -667,55 +654,52 @@ def moveto_preset(
         yield from bps.wait(group=place)
 
     elif place == "microdrop_position":
-        logger.info("microdrop align position")
+        SSX_LOGGER.info("microdrop align position")
         yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
-@log.log_on_entry
-def laser_control(
-    laser_setting: str, pmac: PMAC = i24.pmac(wait_for_connection=False)
-) -> MsgGenerator:
-    setup_logging()
-    logger.info(f"Move to: {laser_setting}")
+@log_on_entry
+def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerator:
+    SSX_LOGGER.info(f"Move to: {laser_setting}")
     if laser_setting == "laser1on":  # these are in laser edm
-        logger.info("Laser 1 /BNC2 shutter is open")
+        SSX_LOGGER.info("Laser 1 /BNC2 shutter is open")
         # Use M712 = 0 if triggering on falling edge. M712 =1 if on rising edge
         # Be sure to also change laser1off
         # caput(pv.me14e_pmac_str, ' M712=0 M711=1')
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
 
     elif laser_setting == "laser1off":
-        logger.info("Laser 1 shutter is closed")
+        SSX_LOGGER.info("Laser 1 shutter is closed")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_OFF, wait=True)
 
     elif laser_setting == "laser2on":
-        logger.info("Laser 2 / BNC3 shutter is open")
+        SSX_LOGGER.info("Laser 2 / BNC3 shutter is open")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_ON, wait=True)
 
     elif laser_setting == "laser2off":
-        logger.info("Laser 2 shutter is closed")
+        SSX_LOGGER.info("Laser 2 shutter is closed")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_OFF, wait=True)
 
     elif laser_setting == "laser1burn":
         led_burn_time = caget(pv.me14e_gp103)
-        logger.info("Laser 1  on")
-        logger.info(f"Burn time is {led_burn_time} s")
+        SSX_LOGGER.info("Laser 1  on")
+        SSX_LOGGER.info(f"Burn time is {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
         yield from bps.sleep(float(led_burn_time))
-        logger.info("Laser 1 off")
+        SSX_LOGGER.info("Laser 1 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_OFF, wait=True)
 
     elif laser_setting == "laser2burn":
         led_burn_time = caget(pv.me14e_gp109)
-        logger.info("Laser 2 on")
-        logger.info(f"burntime {led_burn_time} s")
+        SSX_LOGGER.info("Laser 2 on")
+        SSX_LOGGER.info(f"burntime {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_ON, wait=True)
         yield from bps.sleep(float(led_burn_time))
-        logger.info("Laser 2 off")
+        SSX_LOGGER.info("Laser 2 off")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_OFF, wait=True)
 
 
-@log.log_on_entry
+@log_on_entry
 def scrape_mtr_directions(motor_file_path: Path = CS_FILES_PATH):
     with open(motor_file_path / "motor_direction.txt") as f:
         lines = f.readlines()
@@ -729,15 +713,12 @@ def scrape_mtr_directions(motor_file_path: Path = CS_FILES_PATH):
             mtr3_dir = float(line.split("=")[1])
         else:
             continue
-    logger.debug(f"mt1_dir {mtr1_dir} mtr2_dir {mtr2_dir} mtr3_dir {mtr3_dir}")
+    SSX_LOGGER.debug(f"mt1_dir {mtr1_dir} mtr2_dir {mtr2_dir} mtr3_dir {mtr3_dir}")
     return mtr1_dir, mtr2_dir, mtr3_dir
 
 
-@log.log_on_entry
-def fiducial(
-    point: int = 1, pmac: PMAC = i24.pmac(wait_for_connection=False)
-) -> MsgGenerator:
-    setup_logging()
+@log_on_entry
+def fiducial(point: int = 1, pmac: PMAC = inject("pmac")) -> MsgGenerator:
     scale = 10000.0  # noqa: F841
 
     mtr1_dir, mtr2_dir, mtr3_dir = scrape_mtr_directions(CS_FILES_PATH)
@@ -748,18 +729,18 @@ def fiducial(
 
     output_param_path = PARAM_FILE_PATH_FT
     output_param_path.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Writing Fiducial File {output_param_path}/fiducial_{point}.txt")
-    logger.info("MTR\tRBV\tRAW\tCorr\tf_value")
-    logger.info("MTR1\t%1.4f\t%i" % (rbv_1, mtr1_dir))
-    logger.info("MTR2\t%1.4f\t%i" % (rbv_2, mtr2_dir))
-    logger.info("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
+    SSX_LOGGER.info(f"Writing Fiducial File {output_param_path}/fiducial_{point}.txt")
+    SSX_LOGGER.info("MTR\tRBV\tRAW\tCorr\tf_value")
+    SSX_LOGGER.info("MTR1\t%1.4f\t%i" % (rbv_1, mtr1_dir))
+    SSX_LOGGER.info("MTR2\t%1.4f\t%i" % (rbv_2, mtr2_dir))
+    SSX_LOGGER.info("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
 
     with open(output_param_path / f"fiducial_{point}.txt", "w") as f:
         f.write("MTR\tRBV\tCorr\n")
         f.write("MTR1\t%1.4f\t%i\n" % (rbv_1, mtr1_dir))
         f.write("MTR2\t%1.4f\t%i\n" % (rbv_2, mtr2_dir))
         f.write("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
-    logger.info(f"Fiducial {point} set.")
+    SSX_LOGGER.info(f"Fiducial {point} set.")
     yield from bps.null()
 
 
@@ -774,8 +755,8 @@ def scrape_mtr_fiducials(
     return f_x, f_y, f_z
 
 
-@log.log_on_entry
-def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
+@log_on_entry
+def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     """
     Coordinate system.
 
@@ -805,28 +786,27 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     This should be measured in situ prior to expriment, ie. measure by hand using
     opposite and adjacent RBV after calibration of scale factors.
     """
-    setup_logging()
     chip_type = int(caget(CHIPTYPE_PV))
     fiducial_dict = {}
     fiducial_dict[0] = [25.400, 25.400]
     fiducial_dict[1] = [24.600, 24.600]
     fiducial_dict[2] = [25.400, 25.400]
     fiducial_dict[3] = [18.25, 18.25]
-    logger.info(f"Chip type is {chip_type} with size {fiducial_dict[chip_type]}")
+    SSX_LOGGER.info(f"Chip type is {chip_type} with size {fiducial_dict[chip_type]}")
 
     mtr1_dir, mtr2_dir, mtr3_dir = scrape_mtr_directions()
     f1_x, f1_y, f1_z = scrape_mtr_fiducials(1)
     f2_x, f2_y, f2_z = scrape_mtr_fiducials(2)
-    logger.info(f"mtr1 direction: {mtr1_dir}")
-    logger.info(f"mtr2 direction: {mtr2_dir}")
-    logger.info(f"mtr3 direction: {mtr3_dir}")
+    SSX_LOGGER.info(f"mtr1 direction: {mtr1_dir}")
+    SSX_LOGGER.info(f"mtr2 direction: {mtr2_dir}")
+    SSX_LOGGER.info(f"mtr3 direction: {mtr3_dir}")
 
     # Scale parameters saved in json file
     try:
         with open(CS_FILES_PATH / "cs_maker.json") as fh:
             cs_info = json.load(fh)
     except json.JSONDecodeError:
-        logger.error("Invalid JSON file.")
+        SSX_LOGGER.error("Invalid JSON file.")
         raise
 
     try:
@@ -842,7 +822,7 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
             int(cs_info["Sz_dir"]),
         )
     except KeyError:
-        logger.error("Wrong or missing key in the cs json file.")
+        SSX_LOGGER.error("Wrong or missing key in the cs json file.")
         raise
 
     def check_dir(val):
@@ -859,21 +839,21 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     Sz2 = f2_x / fiducial_dict[chip_type][1]
     Sz = Sz_dir * ((Sz1 + Sz2) / 2)
     Cz = np.sqrt(1 - Sz**2)
-    logger.info(f"Sz1 , {Sz1:1.4f}, {np.degrees(np.arcsin(Sz1)):1.4f}")
-    logger.info(f"Sz2 , {Sz2:1.4f}, {np.degrees(np.arcsin(Sz2)):1.4f}")
-    logger.info(f"Sz , {Sz:1.4f}, {np.degrees(np.arcsin(Sz)):1.4f}")
-    logger.info(f"Cz , {Cz:1.4f}, {np.degrees(np.arcsin(Cz)):1.4f}")
+    SSX_LOGGER.info(f"Sz1 , {Sz1:1.4f}, {np.degrees(np.arcsin(Sz1)):1.4f}")
+    SSX_LOGGER.info(f"Sz2 , {Sz2:1.4f}, {np.degrees(np.arcsin(Sz2)):1.4f}")
+    SSX_LOGGER.info(f"Sz , {Sz:1.4f}, {np.degrees(np.arcsin(Sz)):1.4f}")
+    SSX_LOGGER.info(f"Cz , {Cz:1.4f}, {np.degrees(np.arcsin(Cz)):1.4f}")
     # Rotation Around Y
     Sy = Sy_dir * f1_z / fiducial_dict[chip_type][0]
     Cy = np.sqrt(1 - Sy**2)
-    logger.info(f"Sy , {Sy:1.4f}, {np.degrees(np.arcsin(Sy)):1.4f}")
-    logger.info(f"Cy , {Cy:1.4f}, {np.degrees(np.arcsin(Cy)):1.4f}")
+    SSX_LOGGER.info(f"Sy , {Sy:1.4f}, {np.degrees(np.arcsin(Sy)):1.4f}")
+    SSX_LOGGER.info(f"Cy , {Cy:1.4f}, {np.degrees(np.arcsin(Cy)):1.4f}")
     # Rotation Around X
     # If stages upsidedown (I24) change sign of Sx
     Sx = Sx_dir * f2_z / fiducial_dict[chip_type][1]
     Cx = np.sqrt(1 - Sx**2)
-    logger.info(f"Sx , {Sx:1.4f}, {np.degrees(np.arcsin(Sx)):1.4f}")
-    logger.info(f"Cx , {Cx:1.4f}, {np.degrees(np.arcsin(Cx)):1.4f}")
+    SSX_LOGGER.info(f"Sx , {Sx:1.4f}, {np.degrees(np.arcsin(Sx)):1.4f}")
+    SSX_LOGGER.info(f"Cx , {Cx:1.4f}, {np.degrees(np.arcsin(Cx)):1.4f}")
 
     x1factor = mtr1_dir * scalex * (Cy * Cz)
     y1factor = mtr2_dir * scaley * (-1.0 * Cx * Sz)
@@ -887,15 +867,15 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     y3factor = mtr2_dir * scaley * ((Cx * Sy * Sz) + (Sx * Cz))
     z3factor = mtr3_dir * scalez * (Cx * Cy)
 
-    logger.info(f"Skew being used is: {skew:1.4f}")
+    SSX_LOGGER.info(f"Skew being used is: {skew:1.4f}")
     s1 = np.degrees(np.arcsin(Sz1))
     s2 = np.degrees(np.arcsin(Sz2))
     rot = np.degrees(np.arcsin((Sz1 + Sz2) / 2))
     calc_skew = (s1 - rot) - (s2 - rot)
-    logger.info(f"s1:{s1:1.4f} s2:{s2:1.4f} rot:{rot:1.4f}")
-    logger.info(f"Calculated rotation from current fiducials is: {rot:1.4f}")
-    logger.info(f"Calculated Skew from current fiducials is: {calc_skew:1.4f}")
-    logger.info("Calculated Skew has been known to have the wrong sign")
+    SSX_LOGGER.info(f"s1:{s1:1.4f} s2:{s2:1.4f} rot:{rot:1.4f}")
+    SSX_LOGGER.info(f"Calculated rotation from current fiducials is: {rot:1.4f}")
+    SSX_LOGGER.info(f"Calculated Skew from current fiducials is: {calc_skew:1.4f}")
+    SSX_LOGGER.info("Calculated Skew has been known to have the wrong sign")
 
     sinD = np.sin((skew / 2) * (np.pi / 180))
     cosD = np.cos((skew / 2) * (np.pi / 180))
@@ -907,16 +887,16 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     cs1 = f"#1->{new_x1factor:+1.3f}X{new_y1factor:+1.3f}Y{z1factor:+1.3f}Z"
     cs2 = f"#2->{new_x2factor:+1.3f}X{new_y2factor:+1.3f}Y{z2factor:+1.3f}Z"
     cs3 = f"#3->{x3factor:+1.3f}X{y3factor:+1.3f}Y{z3factor:+1.3f}Z"
-    logger.info(f"PMAC strings. \ncs1: {cs1} \ncs2: {cs2}cs3: {cs3}")
-    logger.info(
+    SSX_LOGGER.info(f"PMAC strings. \ncs1: {cs1} \ncs2: {cs2}cs3: {cs3}")
+    SSX_LOGGER.info(
         """These next values should be 1.
         This is the sum of the squares of the factors divided by their scale."""
     )
     sqfact1 = np.sqrt(x1factor**2 + y1factor**2 + z1factor**2) / scalex
     sqfact2 = np.sqrt(x2factor**2 + y2factor**2 + z2factor**2) / scaley
     sqfact3 = np.sqrt(x3factor**2 + y3factor**2 + z3factor**2) / scalez
-    logger.info(f"{sqfact1:1.4f} \n {sqfact2:1.4f} \n {sqfact3:1.4f}")
-    logger.debug("Long wait, please be patient")
+    SSX_LOGGER.info(f"{sqfact1:1.4f} \n {sqfact2:1.4f} \n {sqfact3:1.4f}")
+    SSX_LOGGER.debug("Long wait, please be patient")
     yield from bps.trigger(pmac.to_xyz_zero)
     sleep(2.5)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
@@ -924,27 +904,26 @@ def cs_maker(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
     sleep(0.1)
     yield from bps.trigger(pmac.home, wait=True)
     sleep(0.1)
-    logger.debug(f"Chip_type is {chip_type}")
+    SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
         sleep(0.1)
         yield from bps.trigger(pmac.home, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)
-    logger.debug("CSmaker done.")
+    SSX_LOGGER.debug("CSmaker done.")
     yield from bps.null()
 
 
-def cs_reset(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
+def cs_reset(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     """Used to clear CS when using Custom Chip"""
-    setup_logging()
     cs1 = "#1->10000X+0Y+0Z"
     cs2 = "#2->+0X-10000Y+0Z"
     cs3 = "#3->0X+0Y-10000Z"
     strg = "\n".join([cs1, cs2, cs3])
     print(strg)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
-    logger.debug("CSreset Done")
+    SSX_LOGGER.debug("CSreset Done")
     yield from bps.null()
 
 
@@ -969,16 +948,15 @@ def set_pmac_strings_for_cs(pmac: PMAC, cs_str: dict):
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs3"], wait=True)
 
 
-@log.log_on_entry
+@log_on_entry
 def pumpprobe_calc() -> MsgGenerator:
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/122
-    setup_logging()
-    logger.info("Calculate and show exposure and dwell time for each option.")
+    SSX_LOGGER.info("Calculate and show exposure and dwell time for each option.")
     exptime = float(caget(pv.me14e_exptime))
     pumpexptime = float(caget(pv.me14e_gp103))
     movetime = 0.008
-    logger.info(f"X-ray exposure time {exptime}")
-    logger.info(f"Laser dwell time {pumpexptime}")
+    SSX_LOGGER.info(f"X-ray exposure time {exptime}")
+    SSX_LOGGER.info(f"Laser dwell time {pumpexptime}")
     repeat1 = 2 * 20 * (movetime + (pumpexptime + exptime) / 2)
     repeat2 = 4 * 20 * (movetime + (pumpexptime + exptime) / 2)
     repeat3 = 6 * 20 * (movetime + (pumpexptime + exptime) / 2)
@@ -993,48 +971,42 @@ def pumpprobe_calc() -> MsgGenerator:
     ):
         rounded = round(repeat, 4)
         caput(pv_name, rounded)
-        logger.info(f"Repeat ({pv_name}): {rounded} s")
-    logger.debug("PP calculations done")
+        SSX_LOGGER.info(f"Repeat ({pv_name}): {rounded} s")
+    SSX_LOGGER.debug("PP calculations done")
     yield from bps.null()
 
 
-@log.log_on_entry
-def block_check(pmac: PMAC = i24.pmac(wait_for_connection=False)) -> MsgGenerator:
-    setup_logging()
+@log_on_entry
+def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/117
     caput(pv.me14e_gp9, 0)
     while True:
         if int(caget(pv.me14e_gp9)) == 0:
             chip_type = int(caget(CHIPTYPE_PV))
             if chip_type == ChipType.Minichip:
-                logger.info("Oxford mini chip in use.")
+                SSX_LOGGER.info("Oxford mini chip in use.")
                 block_start_list = scrape_pvar_file("minichip_oxford.pvar")
             elif chip_type == ChipType.Custom:
-                logger.error("This is a custom chip, no block check available!")
+                SSX_LOGGER.error("This is a custom chip, no block check available!")
                 raise ValueError(
                     "Chip type set to 'custom', which has no block check."
                     "If not using a custom chip, please double check chip in the GUI."
                 )
             else:
-                logger.warning("Default is Oxford chip block start list.")
+                SSX_LOGGER.warning("Default is Oxford chip block start list.")
                 block_start_list = scrape_pvar_file("oxford.pvar")
             for entry in block_start_list:
                 if int(caget(pv.me14e_gp9)) != 0:
-                    logger.warning("Block Check Aborted")
+                    SSX_LOGGER.warning("Block Check Aborted")
                     sleep(1.0)
                     break
                 block, x, y = entry
-                logger.debug(f"Block: {block} -> (x={x} y={y})")
+                SSX_LOGGER.debug(f"Block: {block} -> (x={x} y={y})")
                 yield from bps.abs_set(pmac.pmac_string, f"!x{x}y{y}", wait=True)
                 time.sleep(0.4)
         else:
-            logger.warning("Block Check Aborted due to GP 9 not equalling 0")
+            SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")
             break
         break
-    logger.debug("Block check done")
+    SSX_LOGGER.debug("Block check done")
     yield from bps.null()
-
-
-# setup_logging now called in all functions.
-# TODO See logging issue on blueapi
-# https://github.com/DiamondLightSource/blueapi/issues/494

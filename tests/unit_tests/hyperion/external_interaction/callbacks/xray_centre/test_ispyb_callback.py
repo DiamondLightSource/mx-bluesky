@@ -184,7 +184,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
-                "images in 100.0 um by 120.0 um steps. Top left (px): [50,100], "
+                "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
                 "bottom right (px): [3250,1700].",
                 "axisstart": 0,
                 "omegastart": 0,
@@ -203,7 +203,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
-                "images in 100.0 um by 120.0 um steps. Top left (px): [50,0], "
+                "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",
                 "axisstart": 90,
                 "omegastart": 90,
@@ -216,12 +216,12 @@ class TestXrayCentreISPyBCallback:
             mx_acq.get_dc_grid_params(),
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[0],
-                "dxinmm": 0.1,
-                "dyinmm": 0.12,
+                "dxinmm": 0.1264,
+                "dyinmm": 0.1264,
                 "stepsx": 40,
                 "stepsy": 20,
-                "micronsperpixelx": 1.25,
-                "micronsperpixely": 1.5,
+                "micronsperpixelx": 1.58,
+                "micronsperpixely": 1.58,
                 "snapshotoffsetxpixel": 50,
                 "snapshotoffsetypixel": 100,
                 "orientation": "horizontal",
@@ -233,12 +233,12 @@ class TestXrayCentreISPyBCallback:
             mx_acq.get_dc_grid_params(),
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[1],
-                "dxinmm": 0.1,
-                "dyinmm": 0.12,
+                "dxinmm": 0.1264,
+                "dyinmm": 0.1264,
                 "stepsx": 40,
                 "stepsy": 10,
-                "micronsperpixelx": 1.25,
-                "micronsperpixely": 1.5,
+                "micronsperpixelx": 1.58,
+                "micronsperpixely": 1.58,
                 "snapshotoffsetxpixel": 50,
                 "snapshotoffsetypixel": 0,
                 "orientation": "horizontal",

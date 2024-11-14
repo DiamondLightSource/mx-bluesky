@@ -1,6 +1,7 @@
 import dataclasses
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy
 import pytest
 from bluesky.protocols import Location
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -32,7 +33,7 @@ from ....conftest import pin_tip_edge_data, raw_params_from_file
 
 def find_a_pin(pin_tip_detection):
     def set_good_position():
-        set_mock_value(pin_tip_detection.triggered_tip, (100, 110))
+        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([100, 110]))
         return NullStatus()
 
     return set_good_position
@@ -85,8 +86,11 @@ def composite(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_bottom_edge, bottom_edge_array
     )
-    composite.oav.parameters.update_on_zoom(7.5, 1024, 768)
-    composite.oav.zoom_controller.frst.set("7.5x")
+    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x"]
+    composite.oav.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": zoom_levels_list}}
+    )
+    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
@@ -127,6 +131,30 @@ def grid_detection_callback_with_detected_grid():
             "z_step_size_um": 0.1,
         }
         yield callback
+
+
+def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
+    load_centre_collect_params.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_robot_load_params(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.robot_load_then_centre.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_multi_rotation_scan(
+    load_centre_collect_params,
+):
+    load_centre_collect_params.multi_rotation_scan.model_dump_json()
+
+
+def test_can_serialize_load_centre_collect_single_rotation_scans(
+    load_centre_collect_params,
+):
+    list(load_centre_collect_params.multi_rotation_scan.single_rotation_scans)[
+        0
+    ].model_dump_json()
 
 
 @patch(
@@ -187,6 +215,8 @@ def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
     )
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
@@ -214,6 +244,9 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     sim_run_engine,
     grid_detection_callback_with_detected_grid,
 ):
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
+
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
             load_centre_collect_full_plan(

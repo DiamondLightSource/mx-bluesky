@@ -1,9 +1,17 @@
+from collections.abc import Sequence
+from inspect import get_annotations
+
+import numpy
 import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.synchrotron import SynchrotronMode
-from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
+from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME, XrcResult
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
+from mx_bluesky.common.parameters.constants import (
+    EnvironmentConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
@@ -34,6 +42,12 @@ def test_rotation_start_outer_document(dummy_rotation_params):
     }
 
 
+def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
+    keys = get_annotations(XrcResult).keys()
+    results_by_key = {k: [r[k] for r in test_results] for k in keys}
+    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
+
+
 class TestData(OavGridSnapshotTestEvents):
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
@@ -46,7 +60,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
         "hyperion_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
@@ -72,7 +86,7 @@ class TestData(OavGridSnapshotTestEvents):
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
         "subplan_name": CONST.PLAN.ROTATION_MAIN,
-        "zocalo_environment": "dev_artemis",
+        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
     }
     test_gridscan_outer_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -82,8 +96,8 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        "zocalo_environment": "dev_artemis",
-        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
+        CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
         "hyperion_parameters": dummy_params().model_dump_json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
@@ -130,7 +144,7 @@ class TestData(OavGridSnapshotTestEvents):
         "scan_id": 1,
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
-        "subplan_name": CONST.PLAN.DO_FGS,
+        "subplan_name": PlanNameConstants.DO_FGS,
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_oav_rotation_snapshot: EventDescriptor = {
@@ -159,7 +173,7 @@ class TestData(OavGridSnapshotTestEvents):
         "timestamps": {},
         "seq_num": 1,
         "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
-        "data": {"oav_snapshot_last_saved_path": "snapshot_0"},
+        "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
     }
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -260,5 +274,5 @@ class TestData(OavGridSnapshotTestEvents):
     }  # type:ignore
     test_zocalo_reading_event: Event = {
         "descriptor": "unique_id_zocalo_reading",
-        "data": {"zocalo-results": []},
+        "data": generate_xrc_result_event("zocalo", []),
     }  # type:ignore
