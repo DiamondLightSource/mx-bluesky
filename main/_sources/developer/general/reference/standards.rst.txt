@@ -15,7 +15,7 @@ The code in this repository conforms to standards set by the following tools:
 
 .. seealso::
 
-    How-to guides `../how-to/lint` and `../how-to/static-analysis`
+    How-to guides `../how-to/dev-ops/lint`
 
 .. _documentation_standards:
 
@@ -60,4 +60,4 @@ Docs follow the underlining convention::
 
 .. seealso::
 
-    How-to guide `../how-to/build-docs`
+    How-to guide `../how-to/dev-ops/build-docs`
