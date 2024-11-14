@@ -47,6 +47,15 @@ def test_pilatus_quickshot(_, fake_caget, fake_caput):
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
+def test_pilatus_fastchip(_, fake_caget, fake_caput):
+    setup_beamline.pilatus("fastchip", ["", "", 10, 0.1])
+    assert fake_caput.call_count == 15
+    assert fake_caget.call_count == 2
+
+
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 def test_eiger_raises_error_if_quickshot_and_no_args_list(fake_caget, fake_caput):
     with pytest.raises(TypeError):
         setup_beamline.eiger("quickshot", None)
@@ -57,4 +66,13 @@ def test_eiger_raises_error_if_quickshot_and_no_args_list(fake_caget, fake_caput
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
 def test_eiger_quickshot(_, fake_caget, fake_caput):
     setup_beamline.eiger("quickshot", ["", "", "1", "0.1"])
+    assert fake_caput.call_count == 32
+
+
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
+def test_eiger_triggered(_, fake_caget, fake_caput):
+    setup_beamline.eiger("triggered", ["", "", "10", "0.1"])
+    assert fake_caget.call_count == 4
     assert fake_caput.call_count == 32
