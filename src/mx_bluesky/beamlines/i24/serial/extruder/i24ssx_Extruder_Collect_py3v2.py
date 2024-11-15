@@ -271,7 +271,7 @@ def main_extruder_plan(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True)
+        Path(filepath).mkdir(parents=True, exist_ok=True)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
         SSX_LOGGER.info(f"Eiger quickshot setup: filepath {filepath}")

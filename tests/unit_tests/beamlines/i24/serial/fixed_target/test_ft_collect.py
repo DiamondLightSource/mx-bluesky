@@ -47,7 +47,7 @@ def test_calculate_collection_timeout(dummy_params_without_pp):
         dummy_params_without_pp.total_num_images
         * dummy_params_without_pp.exposure_time_s
     )
-    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 2
+    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 600
     timeout = calculate_collection_timeout(dummy_params_without_pp)
 
     assert timeout == expected_collection_time + buffer
@@ -55,7 +55,7 @@ def test_calculate_collection_timeout(dummy_params_without_pp):
 
 def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
     dummy_params_with_pp.total_num_images = 400
-    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 2
+    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 600
     expected_pump_and_probe_time = 12.05
     timeout = calculate_collection_timeout(dummy_params_with_pp)
 

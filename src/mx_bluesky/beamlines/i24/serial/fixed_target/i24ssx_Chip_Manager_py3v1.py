@@ -93,6 +93,9 @@ def initialise_stages(
     sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
+        if i == 100:
+            # Do not clear visit PV
+            continue
         pvar = "ME14E-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
@@ -841,13 +844,13 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     sleep(2.5)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(0.1)
+    sleep(2.5)
     yield from bps.trigger(pmac.home, wait=True)
-    sleep(0.1)
+    sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
-        sleep(0.1)
+        sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)
