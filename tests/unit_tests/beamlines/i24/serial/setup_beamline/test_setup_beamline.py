@@ -58,7 +58,7 @@ def test_pilatus_quickshot(_, fake_caget, fake_caput):
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
 def test_pilatus_fastchip(_, fake_caget, fake_caput):
     setup_beamline.pilatus("fastchip", ["", "", 10, 0.1])
-    assert fake_caput.call_count == 15
+    assert fake_caput.call_count == 13
     assert fake_caget.call_count == 2
 
 
