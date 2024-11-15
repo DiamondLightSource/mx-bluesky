@@ -12,7 +12,7 @@ from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
 from mx_bluesky.hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.hyperion.log import NEXUS_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -49,7 +49,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            parameters = ThreeDGridScan.from_json(json_params)
+            parameters = HyperionThreeDGridScan.from_json(json_params)
             d_size = parameters.detector_params.detector_size_constants.det_size_pixels
             grid_n_img_1 = parameters.scan_indices[1]
             grid_n_img_2 = parameters.num_images - grid_n_img_1

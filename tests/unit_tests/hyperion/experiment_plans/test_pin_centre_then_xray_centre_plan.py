@@ -10,6 +10,9 @@ from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -19,7 +22,6 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan impor
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ....conftest import raw_params_from_file
 from ....system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
