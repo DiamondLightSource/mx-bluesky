@@ -7,6 +7,7 @@ from functools import lru_cache
 
 import bluesky.plan_stubs as bps
 import requests
+from bluesky.run_engine import RunEngine
 from dodal.beamlines import i24
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
@@ -130,13 +131,11 @@ class DCID:
         start_time: datetime.datetime | None = None,
         pump_probe: bool = False,
     ):
-        """Generate an ispyb DCID.
-
-        Args:
-            wavelength (float): Wavelength read from dcm, in A.
-            image_dir(str): The location the images will be written.
-            num_images (int): Total number of images to be collected.
-            start_time (datetime): Start time of collection.
+        """Generate an ispyb DCID.patch_resolution.assert_called_once_with(
+        #     test_dcid.detector,
+        #     dummy_params_ex.detector_distance_mm,
+        #     beam_settings.wavelength_in_a,
+        # )time of collection.
             shots_per_position (int): Number of exposures per position in a chip. \
                 Defaults to 1, which works for extruder.
             pump_probe (bool): It True, pump probe collection. Defaults to False.
@@ -159,7 +158,7 @@ class DCID:
 
             if isinstance(self.detector, Pilatus):
                 # Mirror the construction that the PPU does
-                fileTemplate = yield from get_pilatus_filename_template_from_device()
+                fileTemplate = get_pilatus_filename_template_from_device()
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
                 # Eiger base filename is directly written to the PV
@@ -366,7 +365,9 @@ def get_pilatus_filename_template_from_device():
     """
     pilatus_metadata: PilatusMetadata = i24.pilatus_metadata()
 
-    filename_template = yield from bps.rd(pilatus_metadata.filename_template)
+    filename_template = RunEngine(
+        bps.rd(pilatus_metadata.filename_template)
+    ).plan_result  # type: ignore
     return filename_template
 
 

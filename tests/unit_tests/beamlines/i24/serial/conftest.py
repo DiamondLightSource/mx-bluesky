@@ -19,6 +19,24 @@ from dodal.devices.zebra import Zebra
 from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 from ophyd_async.epics.motor import Motor
 
+from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+
+
+@pytest.fixture
+def dummy_params_ex():
+    params = {
+        "visit": "foo",
+        "directory": "bar",
+        "filename": "protein",
+        "exposure_time_s": 0.1,
+        "detector_distance_mm": 100,
+        "detector_name": "eiger",
+        "transmission": 1.0,
+        "num_images": 10,
+        "pump_status": False,
+    }
+    return ExtruderParameters(**params)
+
 
 def patch_motor(motor: Motor, initial_position: float = 0):
     set_mock_value(motor.user_setpoint, initial_position)

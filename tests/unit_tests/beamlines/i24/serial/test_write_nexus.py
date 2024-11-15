@@ -2,24 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
-
-
-@pytest.fixture
-def dummy_params_ex():
-    params = {
-        "visit": "foo",
-        "directory": "bar",
-        "filename": "protein",
-        "exposure_time_s": 0.1,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "transmission": 1.0,
-        "num_images": 10,
-        "pump_status": False,
-    }
-    return ExtruderParameters(**params)
 
 
 def test_call_nexgen_fails_for_wrong_experiment_type(dummy_params_ex):

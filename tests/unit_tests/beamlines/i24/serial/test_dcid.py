@@ -1,11 +1,19 @@
+from unittest.mock import patch
+
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
     get_resolution,
     read_beam_info_from_hardware,
+)
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    BeamSettings,
+    ExtruderParameters,
+    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
@@ -35,3 +43,36 @@ def test_get_resolution():
 
     assert eiger_resolution == 0.78
     assert pilatus_resolution == 0.61
+
+
+@patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.json")
+def test_generate_dcid(fake_json, fake_log, patch_resolution, dummy_params_ex, RE):
+    test_dcid = DCID(
+        server="fake_server",
+        emit_errors=False,
+        ssx_type=SSXType.EXTRUDER,
+        expt_params=dummy_params_ex,
+    )
+
+    assert isinstance(test_dcid.detector, Eiger)
+    assert isinstance(test_dcid.parameters, ExtruderParameters)
+
+    beam_settings = BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(100, 100)
+    )
+
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.dcid.requests") as patch_request,
+        patch("mx_bluesky.beamlines.i24.serial.dcid.get_auth_header") as fake_auth,
+    ):
+        test_dcid.generate_dcid(beam_settings, "", 10)
+        patch_resolution.assert_called_once_with(
+            test_dcid.detector,
+            dummy_params_ex.detector_distance_mm,
+            beam_settings.wavelength_in_a,
+        )
+        fake_auth.assert_called_once()
+        fake_json.dumps.assert_called_once()
+        patch_request.post.assert_called_once()
