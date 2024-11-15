@@ -48,7 +48,9 @@ def test_get_resolution():
 @patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.json")
-def test_generate_dcid(fake_json, fake_log, patch_resolution, dummy_params_ex, RE):
+def test_generate_dcid_for_eigee(
+    fake_json, fake_log, patch_resolution, dummy_params_ex, RE
+):
     test_dcid = DCID(
         server="fake_server",
         emit_errors=False,
@@ -73,6 +75,48 @@ def test_generate_dcid(fake_json, fake_log, patch_resolution, dummy_params_ex, R
             dummy_params_ex.detector_distance_mm,
             beam_settings.wavelength_in_a,
         )
+        fake_auth.assert_called_once()
+        fake_json.dumps.assert_called_once()
+        patch_request.post.assert_called_once()
+
+
+@patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.json")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.get_pilatus_filename_template_from_device")
+def test_generate_dcid_for_pilatus_with_pump_probe(
+    mock_pilatus_temp, fake_json, fake_log, patch_resolution, dummy_params_ex, RE
+):
+    dummy_params_ex.detector_name = "pilatus"
+    dummy_params_ex.pump_status = True
+    dummy_params_ex.laser_dwell_s = 0.01
+    dummy_params_ex.laser_delay_s = 0.02
+
+    test_dcid = DCID(
+        server="fake_server",
+        emit_errors=False,
+        ssx_type=SSXType.EXTRUDER,
+        expt_params=dummy_params_ex,
+    )
+
+    assert isinstance(test_dcid.detector, Pilatus)
+
+    beam_settings = BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(100, 100)
+    )
+    mock_pilatus_temp.return_value = "test_00001_#####.cbf"
+
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.dcid.requests") as patch_request,
+        patch("mx_bluesky.beamlines.i24.serial.dcid.get_auth_header") as fake_auth,
+    ):
+        test_dcid.generate_dcid(beam_settings, "", 10)
+        patch_resolution.assert_called_once_with(
+            test_dcid.detector,
+            dummy_params_ex.detector_distance_mm,
+            beam_settings.wavelength_in_a,
+        )
+        mock_pilatus_temp.assert_called_once()
         fake_auth.assert_called_once()
         fake_json.dumps.assert_called_once()
         patch_request.post.assert_called_once()
