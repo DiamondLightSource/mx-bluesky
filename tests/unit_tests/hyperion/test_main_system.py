@@ -364,9 +364,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     arg_list,
     parsed_arg_values,
 ):
-    mock_params = MagicMock()
     mock_param_class = MagicMock()
-    mock_param_class.from_json.return_value = mock_params
     callbacks_mock = MagicMock(
         name="mock_callback_class",
         return_value=("test_cb_1", "test_cb_2"),
