@@ -2,13 +2,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
@@ -294,7 +294,7 @@ def test_begin_deposition_with_alternate_experiment_type(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "mx_bluesky.common.external_interaction.ispyb.ispyb_store.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition(
@@ -414,7 +414,7 @@ def test_update_deposition_with_group_id_updates(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "mx_bluesky.common.external_interaction.ispyb.ispyb_store.get_current_time_string",
 )
 def test_end_deposition_happy_path(
     get_current_time,

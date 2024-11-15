@@ -28,8 +28,13 @@ from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
+    GridParamUpdate,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -46,14 +51,9 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.grid_detection_callback import (
-    GridDetectionCallback,
-    GridParamUpdate,
-)
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,

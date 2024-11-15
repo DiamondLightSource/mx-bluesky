@@ -27,6 +27,7 @@ from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_phi_chi_omega,
@@ -53,7 +54,6 @@ from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     oav_snapshot_plan,
     setup_beamline_for_OAV,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,

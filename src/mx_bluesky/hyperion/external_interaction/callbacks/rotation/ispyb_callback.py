@@ -16,7 +16,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.utils.log import set_dcgid_tag
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -24,7 +24,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping imp
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     populate_data_collection_info_for_rotation,
 )
-from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 

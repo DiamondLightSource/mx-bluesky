@@ -4,7 +4,7 @@ import numpy
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav import utils as oav_utils
 
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
 )

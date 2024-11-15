@@ -4,7 +4,7 @@ from time import sleep
 import pytest
 from requests import get
 
-from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     ExpeyeInteraction,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST

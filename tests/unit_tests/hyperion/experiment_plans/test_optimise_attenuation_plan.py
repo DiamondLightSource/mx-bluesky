@@ -9,6 +9,7 @@ from dodal.beamlines import i03
 from ophyd.status import Status
 from ophyd_async.core import AsyncStatus, set_mock_value
 
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
 from mx_bluesky.hyperion.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
@@ -22,7 +23,6 @@ from mx_bluesky.hyperion.experiment_plans.optimise_attenuation_plan import (
     is_deadtime_optimised,
     total_counts_optimisation,
 )
-from mx_bluesky.hyperion.log import LOGGER
 
 
 @pytest.fixture

@@ -18,7 +18,7 @@ def nexus_writer():
 @pytest.fixture
 def mock_ispyb_get_time():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils.get_current_time_string"
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_utils.get_current_time_string"
     ) as p:
         yield p
 

@@ -11,6 +11,7 @@ from mx_bluesky.common.parameters.gridscan import (
     GridScanWithEdgeDetect,
     PinTipCentreThenXrayCentre,
 )
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_chi_omega
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -29,7 +30,6 @@ from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 

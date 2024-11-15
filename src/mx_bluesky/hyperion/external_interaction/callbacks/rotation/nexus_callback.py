@@ -2,19 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+    format_doc_for_log,
+)
 from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.utils.log import NEXUS_LOGGER
 from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
 )
 from mx_bluesky.hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.hyperion.log import NEXUS_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
-
-from ..logging_callback import format_doc_for_log
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart

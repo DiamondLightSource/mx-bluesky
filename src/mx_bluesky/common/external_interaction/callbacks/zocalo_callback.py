@@ -6,9 +6,12 @@ from bluesky.callbacks import CallbackBase
 from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
 from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    TriggerConstants,
+)
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
@@ -40,7 +43,7 @@ class ZocaloCallback(CallbackBase):
 
     def start(self, doc: RunStart):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info("Zocalo handler received start document.")
-        if triggering_plan := doc.get(CONST.TRIGGER.ZOCALO):
+        if triggering_plan := doc.get(TriggerConstants.ZOCALO):
             self.triggering_plan = triggering_plan
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -75,7 +78,7 @@ class ZocaloCallback(CallbackBase):
 
     def event(self, doc: Event) -> Event:
         event_descriptor = self.descriptors[doc["descriptor"]]
-        if event_descriptor.get("name") == CONST.DESCRIPTORS.ZOCALO_HW_READ:
+        if event_descriptor.get("name") == DocDescriptorNames.ZOCALO_HW_READ:
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename

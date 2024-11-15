@@ -7,13 +7,13 @@ import pytest
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as DODAL_LOGGER
 
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     main,
     setup_callbacks,
     setup_logging,
     setup_threads,
 )
-from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER
 
 
 @patch(

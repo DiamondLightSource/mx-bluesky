@@ -26,7 +26,7 @@ from dodal.devices.zebra import (
 )
 from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterControl
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 ZEBRA_STATUS_TIMEOUT = 30
 

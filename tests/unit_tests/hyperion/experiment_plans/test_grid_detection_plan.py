@@ -17,14 +17,14 @@ from dodal.devices.smargon import Smargon
 from numpy._typing._array_like import NDArray
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
+)
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.grid_detection_callback import (
-    GridDetectionCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,

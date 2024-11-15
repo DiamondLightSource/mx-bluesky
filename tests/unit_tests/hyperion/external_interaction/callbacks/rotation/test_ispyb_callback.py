@@ -262,7 +262,7 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
     mx.upsert_data_collection.reset_mock()
 
     with patch(
-        "mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.get_current_time_string",
         new=MagicMock(return_value=EXPECTED_END_TIME),
     ):
         callback.activity_gated_stop(TestData.test_rotation_stop_main_document)

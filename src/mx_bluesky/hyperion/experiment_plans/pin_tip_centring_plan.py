@@ -15,12 +15,12 @@ from dodal.devices.oav.utils import (
 )
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,
 )
 from mx_bluesky.hyperion.exceptions import WarningException
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 

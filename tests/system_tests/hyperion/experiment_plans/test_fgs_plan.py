@@ -13,6 +13,7 @@ from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -34,7 +35,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 

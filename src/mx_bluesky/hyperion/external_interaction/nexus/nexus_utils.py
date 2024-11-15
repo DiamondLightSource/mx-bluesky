@@ -10,8 +10,8 @@ from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Go
 from nexgen.nxs_utils.axes import TransformationType
 from numpy.typing import DTypeLike
 
+from mx_bluesky.common.utils.log import NEXUS_LOGGER
 from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
-from mx_bluesky.hyperion.log import NEXUS_LOGGER
 
 
 def vds_type_based_on_bit_depth(detector_bit_depth: int) -> DTypeLike:
