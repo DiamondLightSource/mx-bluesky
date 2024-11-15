@@ -16,7 +16,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
-from .conftest import TestData
+from ....hyperion.external_interaction.callbacks.conftest import TestData
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}

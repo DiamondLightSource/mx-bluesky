@@ -10,7 +10,10 @@ from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback imp
     PlanReactiveCallback,
 )
 
-from ..conftest import MockReactiveCallback, get_test_plan
+from ..conftest import (
+    MockReactiveCallback,
+    get_test_plan,
+)
 
 
 def test_activity_gated_functions_not_called_when_inactive(

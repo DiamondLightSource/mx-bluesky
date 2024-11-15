@@ -4,13 +4,13 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
-
 import ispyb
 import ispyb.sqlalchemy
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
+from pydantic import BaseModel
+
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionGroupInfo,
