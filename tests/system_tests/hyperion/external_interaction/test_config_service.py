@@ -5,12 +5,12 @@ import numpy as np
 import pytest
 from daq_config_server.client import ConfigServer
 
-from mx_bluesky.hyperion.external_interaction.config_server import config_server
+from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 
 
 @pytest.fixture
 def config_service():
-    return config_server()
+    return HyperionFeatureFlags.get_config_server()
 
 
 @pytest.mark.s03

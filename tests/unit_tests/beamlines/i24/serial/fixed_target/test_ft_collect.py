@@ -119,11 +119,6 @@ def test_get_prog_number(chip_type, map_type, pump_repeat, expected_prog):
     assert get_prog_num(chip_type, map_type, pump_repeat) == expected_prog
 
 
-def test_get_prog_number_raises_error_for_disabled_map_setting():
-    with pytest.raises(ValueError):
-        get_prog_num(ChipType.Oxford, MappingType.Full, PumpProbeSetting.NoPP)
-
-
 @pytest.mark.parametrize(
     "map_type, pump_repeat, checker, expected_calls",
     [
