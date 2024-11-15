@@ -249,11 +249,11 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
         fetch_comment(dcid2)
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -291,11 +291,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     expected_comments = [
         (
-            "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
         ),
         (
-            "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
+            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
         ),
     ]
@@ -378,7 +378,7 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 20 by 12 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 12 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
         "bottom right (px): [239,244]. ApertureValue.SMALL. ",
     )
@@ -432,7 +432,7 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 20 by 11 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 11 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
         "bottom right (px): [239,241]. ApertureValue.SMALL. ",
     )

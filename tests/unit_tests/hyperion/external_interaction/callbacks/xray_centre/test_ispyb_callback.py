@@ -183,7 +183,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_y",
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
-                "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
                 "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
                 "bottom right (px): [3250,1700].",
                 "axisstart": 0,
@@ -202,7 +202,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_z",
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
-                "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
+                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
                 "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",
                 "axisstart": 90,

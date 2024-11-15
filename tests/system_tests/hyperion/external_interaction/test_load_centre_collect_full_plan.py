@@ -217,14 +217,14 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 4 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 4 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,152], "
         "bottom right (px): [844,251]. Aperture: ApertureValue.SMALL. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 3 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 3 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
         "bottom right (px): [844,239]. Aperture: ApertureValue.SMALL. ",
     )

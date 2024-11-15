@@ -66,7 +66,7 @@ def scan_data_info_for_begin():
             beamsize_at_samplex=0.1,
             beamsize_at_sampley=0.1,
             transmission=100.0,
-            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
+            comments="MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
@@ -114,7 +114,7 @@ def scan_data_infos_for_update():
             beamsize_at_samplex=0.1,
             beamsize_at_sampley=0.1,
             transmission=100.0,
-            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
+            comments="MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
@@ -172,7 +172,7 @@ def scan_data_infos_for_update():
             beamsize_at_samplex=0.1,
             beamsize_at_sampley=0.1,
             transmission=100.0,
-            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720].",
+            comments="MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720].",
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
@@ -247,11 +247,11 @@ def test_ispyb_deposition_comment_for_3D_correct(
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[2][0][0]
     assert first_upserted_param_value_list[29] == (
-        "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700]."
     )
     assert second_upserted_param_value_list[29] == (
-        "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 images "
         "in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720]."
     )
 
@@ -326,7 +326,7 @@ def test_begin_deposition(
             "beamsize_at_samplex": 0.1,
             "beamsize_at_sampley": 0.1,
             "transmission": 100.0,
-            "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+            "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
             "data_collection_number": 1,
@@ -408,7 +408,7 @@ def test_update_deposition(
             "beamsize_at_samplex": 0.1,
             "beamsize_at_sampley": 0.1,
             "transmission": 100.0,
-            "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+            "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
             "data_collection_number": 1,
@@ -484,7 +484,7 @@ def test_update_deposition(
             "beamsize_at_samplex": 0.1,
             "beamsize_at_sampley": 0.1,
             "transmission": 100.0,
-            "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
+            "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 200.0 um steps. Top left (px): [50,120], "
             "bottom right (px): [3250,1720].",
             "data_collection_number": 1,
