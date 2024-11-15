@@ -1,7 +1,7 @@
-General MX-Bluesky Developer Guide
+Hyperion Developer Guide
 ==================================
 
-Documentation is split into four categories, and each is also accessible from links in the side-bar.
+Documentation specific for the Hyperion module within MX-Bluesky
 
 .. grid:: 2
     :gutter: 2

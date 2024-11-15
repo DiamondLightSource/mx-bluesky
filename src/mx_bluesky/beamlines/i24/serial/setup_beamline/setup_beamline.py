@@ -1,4 +1,3 @@
-import logging
 from time import sleep
 
 import bluesky.plan_stubs as bps
@@ -7,10 +6,9 @@ from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
-
-logger = logging.getLogger("I24ssx.sup")
 
 
 def setup_beamline_for_collection_plan(
@@ -20,7 +18,7 @@ def setup_beamline_for_collection_plan(
     group: str = "setup_beamline_collect",
     wait: bool = True,
 ):
-    logger.debug("Setup beamline: collect.")
+    SSX_LOGGER.debug("Setup beamline: collect.")
     yield from bps.abs_set(aperture.position, AperturePositions.IN, group=group)
     yield from bps.abs_set(backlight, BacklightPositions.OUT, group=group)
     yield from bps.sleep(3)  # Not sure needed - to test
@@ -38,8 +36,8 @@ def move_detector_stage_to_position_plan(
     detector_stage: DetectorMotion,
     detector_distance: float,
 ):
-    logger.debug("Setup beamline: moving detector stage.")
-    logger.debug(
+    SSX_LOGGER.debug("Setup beamline: moving detector stage.")
+    SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
     yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
@@ -60,7 +58,7 @@ def modechange(action):
         caput(pv.fluo_trans, "OUT")
         caput(pv.cstrm_p1701, 0)
         caput(pv.cstrm_mp_select, "Out")
-        logger.debug("Pin Hand Mount Done")
+        SSX_LOGGER.debug("Pin Hand Mount Done")
 
     # Pin Room Tempreature Hand Mount
     elif action == "Pin_rt_hand_mount":
@@ -75,7 +73,7 @@ def modechange(action):
         caput(pv.vgon_pinxs, 0)
         caput(pv.vgon_pinzs, 0)
         caput(pv.fluo_trans, "OUT")
-        logger.debug("RT Pin Hand Mount Done")
+        SSX_LOGGER.debug("RT Pin Hand Mount Done")
 
     # Pin Data Collection
     elif action == "Pin_data_collection":
@@ -94,11 +92,11 @@ def modechange(action):
         caput(pv.bs_mp_select, "Data Collection")
         sleep(2.3)
         caput(pv.bl_mp_select, "In")
-        logger.debug("Pin Data Collection Done")
+        SSX_LOGGER.debug("Pin Data Collection Done")
 
     # Pin Room Tempreature Data Collection
     elif action == "Pin_rt_data_collection":
-        logger.debug("RT Mode")
+        SSX_LOGGER.debug("RT Mode")
         caput(pv.cstrm_p1701, 0)
         caput(pv.cstrm_mp_select, "Away")
         caput(pv.aptr1_mp_select, "In")
@@ -114,7 +112,7 @@ def modechange(action):
         sleep(2.6)
         caput(pv.bl_mp_select, "In")
         caput(pv.bs_mp_select, "Data Collection")
-        logger.debug("RT Data Collection Done")
+        SSX_LOGGER.debug("RT Data Collection Done")
 
     # Tray Hand Mount
     elif action == "Tray_hand_mount":
@@ -128,7 +126,7 @@ def modechange(action):
         caput(pv.bs_mp_select, "Tray Mount")
         while float(caget(pv.ttab_x + ".RBV")) > 3:
             sleep(1)
-        logger.debug("Tray Hand Mount Done")
+        SSX_LOGGER.debug("Tray Hand Mount Done")
 
     # Tray Robot Load. This action needs to be reviewed and revised
     elif action == "Tray_robot_load":
@@ -150,11 +148,11 @@ def modechange(action):
         caput(pv.bs_roty, 0)
         sleep(4)
         caput(pv.bl_mp_select, "In")
-        logger.debug("Tray Robot Mount Done")
+        SSX_LOGGER.debug("Tray Robot Mount Done")
 
     # Tray Data Collection
     elif action == "Tray_data_collection":
-        logger.debug("This should be E11 on the test tray (CrystalQuickX)")
+        SSX_LOGGER.debug("This should be E11 on the test tray (CrystalQuickX)")
         caput(pv.ttab_x, 37.4)
         caput(pv.hgon_trayys, -8.0)
         caput(pv.hgon_trayzs, -2.1)
@@ -171,7 +169,7 @@ def modechange(action):
         caput(pv.bs_roty, 0)
         sleep(4)
         caput(pv.bl_mp_select, "In")
-        logger.debug("Tray Data Collection Done")
+        SSX_LOGGER.debug("Tray Data Collection Done")
 
     # Pin Switch to Tray
     elif action == "Pin_switch2tray":
@@ -192,19 +190,19 @@ def modechange(action):
         caput(pv.vgon_pinyh, 0)
         caput(pv.vgon_pinzs, 0)
         while float(caget(pv.ttab_x + ".RBV")) > 1:
-            logger.debug(f"moving ttab_x {caget(pv.ttab_x)}")
+            SSX_LOGGER.debug(f"moving ttab_x {caget(pv.ttab_x)}")
             sleep(0.1)
         while caget(pv.fluo_out_limit) == "OFF":
-            logger.debug("waiting on fluorescence detector")
+            SSX_LOGGER.debug("waiting on fluorescence detector")
             sleep(0.1)
         while caget(pv.bl_mp_select) != "Out":
-            logger.debug("waiting on back light to move to out")
+            SSX_LOGGER.debug("waiting on back light to move to out")
             sleep(0.1)
         caput(pv.bs_mp_select, "Robot")
         caput(pv.bs_roty, 0)
         while float(caget(pv.ptab_y + ".RBV")) > -89.0:
             sleep(1)
-        logger.debug("Switch To Tray Done")
+        SSX_LOGGER.debug("Switch To Tray Done")
 
     # Tray Switch to Pin
     elif action == "Tray_switch2pin":
@@ -218,26 +216,26 @@ def modechange(action):
         while float(caget(pv.ptab_y + ".RBV")) < -1.0:
             sleep(1)
         modechange("Pin_data_collection")
-        logger.debug("Switch To Pin Done")
+        SSX_LOGGER.debug("Switch To Pin Done")
     else:
-        logger.debug(f"Unknown action: {action}")
+        SSX_LOGGER.debug(f"Unknown action: {action}")
     return 1
 
 
 def pilatus(action, args_list):
-    logger.debug("***** Entering Pilatus")
-    logger.info(f"Setup pilatus - {action}")
+    SSX_LOGGER.debug("***** Entering Pilatus")
+    SSX_LOGGER.info(f"Setup pilatus - {action}")
     if args_list:
         for arg in args_list:
-            logger.debug(f"Argument: {arg}")
+            SSX_LOGGER.debug(f"Argument: {arg}")
 
     # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
-    logger.warning("WARNING: Have you set beam X and Y?")
+    SSX_LOGGER.warning("WARNING: Have you set beam X and Y?")
     # 16 Fed 2022 last change DA
-    caput(pv.pilat_beamx, 1298)
-    caput(pv.pilat_beamy, 1307)
+    caput(pv.pilat_beamx, 1284.7)
+    caput(pv.pilat_beamy, 1308.6)
     sleep(0.1)
 
     # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
@@ -245,12 +243,12 @@ def pilatus(action, args_list):
         [filepath, filename, total_numb_imgs, exptime] = args_list
         rampath = filepath.replace("dls/i24/data", "ramdisk")
         acqtime = float(exptime) - 0.001
-        logger.debug(f"Filepath was set as {filepath}")
-        logger.debug(f"Rampath set as {rampath}")
-        logger.debug(f"Filename set as {filename}")
-        logger.debug(f"total_numb_imgs {total_numb_imgs}")
-        logger.debug(f"Exposure time set as {exptime} s")
-        logger.debug(f"Acquire time set as {acqtime} s")
+        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
+        SSX_LOGGER.debug(f"Rampath set as {rampath}")
+        SSX_LOGGER.debug(f"Filename set as {filename}")
+        SSX_LOGGER.debug(f"total_numb_imgs {total_numb_imgs}")
+        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
+        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
         caput(pv.pilat_startangle, 0.0)
         caput(pv.pilat_angleincr, 0.0)
         caput(pv.pilat_omegaincr, 0.0)
@@ -265,7 +263,7 @@ def pilatus(action, args_list):
 
     # Quick set of images no coordinated motion
     elif action == "quickshot":
-        logger.debug("quickshot")
+        SSX_LOGGER.debug("quickshot")
         [filepath, filename, num_imgs, exptime] = args_list
         rampath = filepath.replace("dls/i24/data", "ramdisk")
         caput(pv.pilat_filepath, rampath)
@@ -275,13 +273,13 @@ def pilatus(action, args_list):
         acqtime = float(exptime) - 0.001
         caput(pv.pilat_acquiretime, str(acqtime))
         caput(pv.pilat_acquireperiod, str(exptime))
-        logger.debug(f"Filepath was set as {filepath}")
-        logger.debug(f"Rampath set as {rampath}")
-        logger.debug(f"Filename set as {filename}")
-        logger.debug(f"num_imgs {num_imgs}")
-        logger.debug(f"Exposure time set as {exptime} s")
-        logger.debug(f"Acquire time set as {acqtime} s")
-        logger.debug("Pilatus takes time apprx 2sec")
+        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
+        SSX_LOGGER.debug(f"Rampath set as {rampath}")
+        SSX_LOGGER.debug(f"Filename set as {filename}")
+        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
+        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
+        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
+        SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
         sleep(2)
         caput(pv.pilat_delaytime, 0.00)
         caput(pv.pilat_numimages, str(num_imgs))
@@ -290,7 +288,7 @@ def pilatus(action, args_list):
         sleep(0.2)
 
     elif action == "quickshot-internaltrig":
-        logger.debug("quickshot-internaltrig")
+        SSX_LOGGER.debug("quickshot-internaltrig")
         [filepath, filename, num_imgs, exptime] = args_list
         rampath = filepath.replace("dls/i24/data", "ramdisk")
         caput(pv.pilat_filepath, rampath)
@@ -300,13 +298,13 @@ def pilatus(action, args_list):
         acqtime = float(exptime) - 0.001
         caput(pv.pilat_acquiretime, str(acqtime))
         caput(pv.pilat_acquireperiod, str(exptime))
-        logger.debug(f"Filepath was set as {filepath}")
-        logger.debug(f"Rampath set as {rampath}")
-        logger.debug(f"Filename set as {filename}")
-        logger.debug(f"num_imgs {num_imgs}")
-        logger.debug(f"Exposure time set as {exptime} s")
-        logger.debug(f"Acquire time set as {acqtime} s")
-        logger.debug("Pilatus takes time apprx 2sec")
+        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
+        SSX_LOGGER.debug(f"Rampath set as {rampath}")
+        SSX_LOGGER.debug(f"Filename set as {filename}")
+        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
+        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
+        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
+        SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
         sleep(2)
         caput(pv.pilat_delaytime, 0.00)
         caput(pv.pilat_numimages, str(num_imgs))
@@ -319,24 +317,24 @@ def pilatus(action, args_list):
         caput(pv.pilat_imagemode, "Continuous")
         caput(pv.pilat_triggermode, "Ext. Trigger")
         caput(pv.pilat_numexpimage, 1)
-    logger.debug("***** leaving pilatus")
+    SSX_LOGGER.debug("***** leaving pilatus")
     sleep(0.1)
     return 0
 
 
 def eiger(action, args_list):
-    logger.debug("***** Entering Eiger")
-    logger.info(f"Setup eiger - {action}")
+    SSX_LOGGER.debug("***** Entering Eiger")
+    SSX_LOGGER.info(f"Setup eiger - {action}")
     if args_list:
         for arg in args_list:
-            logger.debug(f"Argument: {arg}")
+            SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    logger.warning("WARNING: Have you set header info?")
+    SSX_LOGGER.warning("WARNING: Have you set header info?")
     caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_omegaincr, 0.0)
-    caput(pv.eiger_beamx, 1605.7)
-    caput(pv.eiger_beamy, 1702.7)
+    caput(pv.eiger_beamx, 1600.0)
+    caput(pv.eiger_beamy, 1697.4)
     sleep(0.1)
     # Setup common to all collections ###
     caput(pv.eiger_filewriter, "No")
@@ -354,7 +352,7 @@ def eiger(action, args_list):
     # Quick set of images no coordinated motion
     if action == "quickshot":
         # Sends a single trigger to start data collection
-        logger.debug("Eiger quickshot")
+        SSX_LOGGER.debug("Eiger quickshot")
         [filepath, filename, num_imgs, exptime] = args_list
         filename = filename + "_" + str(caget(pv.eiger_seqID))
         caput(pv.eiger_ODfilepath, filepath)
@@ -363,11 +361,11 @@ def eiger(action, args_list):
         sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
-        logger.debug(f"Filepath was set as {filepath}")
-        logger.debug(f"Filename set as {filename}")
-        logger.debug(f"num_imgs {num_imgs}")
-        logger.debug(f"Exposure time set as {exptime} s")
-        logger.debug(f"Acquire time set as {acqtime} s")
+        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
+        SSX_LOGGER.debug(f"Filename set as {filename}")
+        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
+        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
+        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
         caput(pv.eiger_acquireperiod, str(exptime))
         caput(pv.eiger_numimages, str(num_imgs))
         caput(pv.eiger_imagemode, "Continuous")
@@ -376,7 +374,7 @@ def eiger(action, args_list):
         caput(pv.eiger_manualtrigger, "Yes")
         sleep(1.0)
         # ODIN setup
-        logger.info("Setting up Odin")
+        SSX_LOGGER.info("Setting up Odin")
         caput(pv.eiger_ODfilename, filename)
         caput(pv.eiger_ODfilepath, filepath)
         caput(pv.eiger_ODnumcapture, str(num_imgs))
@@ -386,17 +384,17 @@ def eiger(action, args_list):
         caput(pv.eiger_ODcompress, "BSL24")
         sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
-        logger.info("Done: Odin waiting for data")
+        SSX_LOGGER.info("Done: Odin waiting for data")
         caput(pv.eiger_ODcapture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
-        logger.info("Arming Eiger")
+        SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
         # Will now wait for Manual trigger. Add the below line to your DAQ script ###
         # caput(pv.eiger_trigger, 1)
 
     if action == "triggered":
         # Send a trigger for every image. Records while TTL is high
-        logger.info("Eiger triggered")
+        SSX_LOGGER.info("Eiger triggered")
         [filepath, filename, num_imgs, exptime] = args_list
         filename = filename + "_" + str(caget(pv.eiger_seqID))
         caput(pv.eiger_ODfilepath, filepath)
@@ -405,11 +403,11 @@ def eiger(action, args_list):
         sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
-        logger.debug(f"Filepath was set as {filepath}")
-        logger.debug(f"Filename set as {filename}")
-        logger.debug(f"num_imgs {num_imgs}")
-        logger.debug(f"Exposure time set as {exptime} s")
-        logger.debug(f"Acquire time set as {acqtime} s")
+        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
+        SSX_LOGGER.debug(f"Filename set as {filename}")
+        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
+        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
+        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
         caput(pv.eiger_acquireperiod, str(exptime))
         caput(pv.eiger_numimages, 1)
         caput(pv.eiger_imagemode, "Continuous")
@@ -418,7 +416,7 @@ def eiger(action, args_list):
         caput(pv.eiger_manualtrigger, "Yes")
         sleep(1.0)
         # ODIN setup #
-        logger.info("Setting up Odin")
+        SSX_LOGGER.info("Setting up Odin")
         caput(pv.eiger_ODfilename, filename)
         caput(pv.eiger_ODfilepath, filepath)
         caput(pv.eiger_ODnumcapture, str(num_imgs))
@@ -428,10 +426,10 @@ def eiger(action, args_list):
         caput(pv.eiger_ODcompress, "BSL24")
         sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
-        logger.info("Done: Odin waiting for data")
+        SSX_LOGGER.info("Done: Odin waiting for data")
         caput(pv.eiger_ODcapture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
-        logger.info("Arming Eiger")
+        SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
         # Will now wait for Manual trigger. Add the below line to your DAQ script
         # caput(pv.eiger_trigger, 1)
@@ -440,17 +438,17 @@ def eiger(action, args_list):
     elif action == "return-to-normal":
         caput(pv.eiger_manualtrigger, "No")
         # caput(pv.eiger_seqID, int(caget(pv.eiger_seqID))+1)
-    logger.debug("***** leaving Eiger")
+    SSX_LOGGER.debug("***** leaving Eiger")
     sleep(0.1)
     return 0
 
 
 def xspress3(action, args_list):
-    logger.debug("***** Entering xspress3")
-    logger.info(f"xspress3 - {action}")
+    SSX_LOGGER.debug("***** Entering xspress3")
+    SSX_LOGGER.info(f"xspress3 - {action}")
     if args_list:
         for arg in args_list:
-            logger.debug(f"Argument: {arg}")
+            SSX_LOGGER.debug(f"Argument: {arg}")
 
     if action == "stop-and-start":
         [exp_time, lo, hi] = args_list
@@ -486,8 +484,8 @@ def xspress3(action, args_list):
         caput(pv.xsp3_erase, 0)
 
     else:
-        logger.error("Unknown action for xspress3 method:", action)
+        SSX_LOGGER.error("Unknown action for xspress3 method:", action)
 
     sleep(0.1)
-    logger.debug("***** leaving xspress3")
+    SSX_LOGGER.debug("***** leaving xspress3")
     return 1

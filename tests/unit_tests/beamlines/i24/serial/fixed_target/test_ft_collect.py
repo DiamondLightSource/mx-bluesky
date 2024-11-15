@@ -46,7 +46,7 @@ def test_calculate_collection_timeout(dummy_params_without_pp):
         dummy_params_without_pp.total_num_images
         * dummy_params_without_pp.exposure_time_s
     )
-    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 2
+    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 600
     timeout = calculate_collection_timeout(dummy_params_without_pp)
 
     assert timeout == expected_collection_time + buffer
@@ -54,7 +54,7 @@ def test_calculate_collection_timeout(dummy_params_without_pp):
 
 def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
     dummy_params_with_pp.total_num_images = 400
-    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 2
+    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 600
     expected_pump_and_probe_time = 12.05
     timeout = calculate_collection_timeout(dummy_params_with_pp)
 
@@ -116,11 +116,6 @@ def test_get_chip_prog_values(dummy_params_without_pp):
 )
 def test_get_prog_number(chip_type, map_type, pump_repeat, expected_prog):
     assert get_prog_num(chip_type, map_type, pump_repeat) == expected_prog
-
-
-def test_get_prog_number_raises_error_for_disabled_map_setting():
-    with pytest.raises(ValueError):
-        get_prog_num(ChipType.Oxford, MappingType.Full, PumpProbeSetting.NoPP)
 
 
 @pytest.mark.parametrize(

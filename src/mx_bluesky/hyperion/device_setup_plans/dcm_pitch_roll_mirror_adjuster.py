@@ -13,6 +13,9 @@ from dodal.devices.util.lookup_tables import (
 )
 
 from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.hyperion.utils.utils import (
+    energy_to_bragg_angle,
+)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
@@ -77,16 +80,17 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     energy_kev,
 ):
     """Beamline energy-change post-adjustments : Adjust DCM and VFM directly from lookup tables.
-    Lookups are performed against the Bragg angle which will have been automatically set by EPICS as a side-effect of the
-    energy change prior to calling this function.
+    Lookups are performed against the Bragg angle which is computed directly from the target energy
+    rather than waiting for the EPICS controls PV to reach it.
     Feedback should be OFF prior to entry, in order to prevent
     feedback from making unnecessary corrections while beam is being adjusted."""
 
-    # DCM Pitch
+    # Adjust DCM Pitch
     dcm = undulator_dcm.dcm
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
-    bragg_deg = yield from bps.rd(dcm.bragg_in_degrees.user_readback)
-    LOGGER.info(f"Read Bragg angle = {bragg_deg} degrees")
+    d_spacing_a: float = yield from bps.rd(undulator_dcm.dcm.crystal_metadata_d_spacing)
+    bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
+    LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
         linear_interpolation_lut(undulator_dcm.pitch_energy_table_path),
         dcm.pitch_in_mrad,

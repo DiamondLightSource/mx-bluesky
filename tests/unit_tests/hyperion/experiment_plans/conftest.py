@@ -39,7 +39,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 
 def make_event_doc(data, descriptor="abc123") -> Event:
@@ -153,7 +153,7 @@ def simulate_xrc_result(
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridscanISPyBCallback,
-    params: ThreeDGridScan,
+    params: HyperionThreeDGridScan,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""
