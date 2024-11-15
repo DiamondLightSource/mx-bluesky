@@ -196,9 +196,9 @@ def test_full_multi_rotation_plan_docs_emitted(
         assert DocumentCapturer.is_match(
             scan_docs[0],
             "start",
-            has_fields=["trigger_zocalo_on", "hyperion_parameters"],
+            has_fields=["trigger_zocalo_on", "mx_bluesky_parameters"],
         )
-        params = RotationScan(**json.loads(scan_docs[0][1]["hyperion_parameters"]))
+        params = RotationScan(**json.loads(scan_docs[0][1]["mx_bluesky_parameters"]))
         assert params == scan
         assert len(events := DocumentCapturer.get_matches(scan_docs, "event")) == 3
         DocumentCapturer.assert_events_and_data_in_order(

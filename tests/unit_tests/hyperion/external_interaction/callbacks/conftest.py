@@ -38,7 +38,7 @@ def test_rotation_start_outer_document(dummy_rotation_params):
     return {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "subplan_name": CONST.PLAN.ROTATION_OUTER,
-        "hyperion_parameters": dummy_rotation_params.model_dump_json(),
+        "mx_bluesky_parameters": dummy_rotation_params.model_dump_json(),
     }
 
 
@@ -61,7 +61,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
-        "hyperion_parameters": dummy_params().model_dump_json(),
+        "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -71,7 +71,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": "test",
         "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-        "hyperion_parameters": dummy_params().model_dump_json(),
+        "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -81,7 +81,7 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": "test",
         "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-        "hyperion_parameters": dummy_params_2d().model_dump_json(),
+        "mx_bluesky_parameters": dummy_params_2d().model_dump_json(),
     }
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
@@ -98,7 +98,7 @@ class TestData(OavGridSnapshotTestEvents):
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
         CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
-        "hyperion_parameters": dummy_params().model_dump_json(),
+        "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

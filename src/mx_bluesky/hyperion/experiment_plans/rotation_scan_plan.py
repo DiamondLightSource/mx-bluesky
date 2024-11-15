@@ -351,7 +351,7 @@ def rotation_scan(
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
             "zocalo_environment": CONST.ZOCALO_ENV,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
@@ -418,7 +418,7 @@ def multi_rotation_scan(
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-                    "hyperion_parameters": single_scan.model_dump_json(),
+                    "mx_bluesky_parameters": single_scan.model_dump_json(),
                 }
             )
             def rotation_scan_core(

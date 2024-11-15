@@ -125,7 +125,7 @@ def ispyb_plan(test_fgs_params: HyperionThreeDGridScan):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": test_fgs_params.model_dump_json(),
+            "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
         }
     )
     def standalone_read_hardware_for_ispyb(

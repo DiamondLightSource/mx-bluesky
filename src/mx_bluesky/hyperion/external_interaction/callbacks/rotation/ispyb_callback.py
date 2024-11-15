@@ -60,7 +60,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters."
             )
-            hyperion_params = doc.get("hyperion_parameters")
+            hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
             self.params = RotationScan.model_validate_json(hyperion_params)
             dcgid = (

@@ -140,7 +140,7 @@ def flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],

@@ -157,7 +157,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": params.model_dump_json(),
+            "mx_bluesky_parameters": params.model_dump_json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(

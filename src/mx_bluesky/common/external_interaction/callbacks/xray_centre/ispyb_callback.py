@@ -56,7 +56,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         md={
             "activate_callbacks": ["GridscanISPyBCallback"],
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
         },
     )
 
@@ -96,9 +96,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback received start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
-            hyperion_params = doc.get("hyperion_parameters")
-            assert isinstance(hyperion_params, str)
-            self.params = GridCommon.model_validate_json(hyperion_params)
+            mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
+            assert isinstance(mx_bluesky_parameters, str)
+            self.params = GridCommon.model_validate_json(mx_bluesky_parameters)
             self.ispyb = StoreInIspyb(self.ispyb_config)
             data_collection_group_info = populate_data_collection_group(self.params)
 

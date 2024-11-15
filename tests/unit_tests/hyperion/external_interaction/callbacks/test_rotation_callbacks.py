@@ -293,7 +293,7 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images
     doc["subplan_name"] = CONST.PLAN.ROTATION_OUTER  # type: ignore
-    doc["hyperion_parameters"] = params.model_dump_json()  # type: ignore
+    doc["mx_bluesky_parameters"] = params.model_dump_json()  # type: ignore
 
     cb.start(doc)
     assert (cb.last_sample_id == 987678) is store_id

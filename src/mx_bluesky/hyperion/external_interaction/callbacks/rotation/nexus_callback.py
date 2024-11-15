@@ -79,7 +79,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             self.meta_data_run_number = doc.get("meta_data_run_number")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             self.run_uid = doc.get("uid")
-            hyperion_params = doc.get("hyperion_parameters")
+            hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {hyperion_params}"
