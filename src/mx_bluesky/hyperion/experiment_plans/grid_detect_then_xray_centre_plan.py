@@ -28,7 +28,7 @@ from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
     GridParamUpdate,
 )

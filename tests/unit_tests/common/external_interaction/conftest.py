@@ -8,7 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from ophyd.sim import SynAxis
 
-from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 

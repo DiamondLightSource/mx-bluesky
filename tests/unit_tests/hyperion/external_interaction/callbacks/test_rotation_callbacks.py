@@ -99,7 +99,7 @@ def test_nexus_handler_only_writes_once(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -133,7 +133,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -172,7 +172,7 @@ def test_ispyb_triggered_before_zocalo(
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(

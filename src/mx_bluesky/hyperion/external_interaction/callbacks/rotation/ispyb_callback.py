@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
-)
-from mx_bluesky.common.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,

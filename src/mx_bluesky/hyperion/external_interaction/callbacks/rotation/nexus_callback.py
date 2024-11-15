@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     format_doc_for_log,
 )
-from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (

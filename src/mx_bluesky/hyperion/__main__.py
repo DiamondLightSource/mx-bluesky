@@ -14,13 +14,13 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-from mx_bluesky.common.external_interaction.callbacks.aperture_change_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.aperture_change_callback import (
     ApertureChangeCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.log_uid_tag_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters

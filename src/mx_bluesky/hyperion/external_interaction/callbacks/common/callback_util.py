@@ -2,14 +2,14 @@ from collections.abc import Callable
 
 from bluesky.callbacks import CallbackBase
 
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,

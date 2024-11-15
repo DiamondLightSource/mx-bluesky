@@ -11,7 +11,7 @@ from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
 import mx_bluesky.common.utils.log as log
-from mx_bluesky.common.external_interaction.callbacks.log_uid_tag_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
 

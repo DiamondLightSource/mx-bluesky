@@ -12,14 +12,14 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_results_from_event,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     format_doc_for_log,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (

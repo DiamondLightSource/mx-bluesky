@@ -65,7 +65,7 @@ from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect

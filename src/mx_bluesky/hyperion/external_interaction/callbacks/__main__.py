@@ -7,17 +7,17 @@ from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
-from mx_bluesky.common.external_interaction.callbacks.log_uid_tag_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
 )
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,

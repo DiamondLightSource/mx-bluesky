@@ -202,7 +202,7 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 def mock_subscriptions(test_fgs_params):
     with (
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+            "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
             modified_interactor_mock,
         ),
         patch(

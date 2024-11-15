@@ -18,7 +18,7 @@ from dodal.devices.zebra import PC_GATE, SOFT_IN1, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.core import get_mock_put
 
-from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
@@ -667,7 +667,9 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
     mock_store_in_ispyb.assert_called()
 
 
-@patch("mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger")
+@patch(
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger"
+)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )

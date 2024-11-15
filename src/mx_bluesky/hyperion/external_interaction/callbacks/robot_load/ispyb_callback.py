@@ -7,7 +7,7 @@ from event_model.documents import EventDescriptor
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
-from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (

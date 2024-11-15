@@ -23,11 +23,14 @@ from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
-from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -35,9 +38,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
@@ -448,7 +448,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -883,7 +883,7 @@ class TestFlyscanXrayCentrePlan:
                 autospec=True,
             ),
             patch(
-                "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+                "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
                 lambda _: modified_interactor_mock(mock_parent.run_end),
             ),
         ):
@@ -1063,7 +1063,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
     @patch(

@@ -9,7 +9,10 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
+    format_doc_for_log,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -26,10 +29,6 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, SimConstants
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
-
-from ....common.external_interaction.callbacks.logging_callback import (
-    format_doc_for_log,
-)
 
 D = TypeVar("D")
 if TYPE_CHECKING:

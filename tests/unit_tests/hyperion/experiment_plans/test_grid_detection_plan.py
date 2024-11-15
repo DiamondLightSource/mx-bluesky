@@ -17,7 +17,7 @@ from dodal.devices.smargon import Smargon
 from numpy._typing._array_like import NDArray
 from ophyd_async.core import set_mock_value
 
-from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
