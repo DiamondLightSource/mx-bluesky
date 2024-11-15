@@ -1,4 +1,4 @@
-# hyperion
+# Introduction to Hyperion
 
 ![Tests](https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/hyperion)
 
@@ -17,13 +17,15 @@ Left to do is:
 
 # Development Installation
 
+
 This project supports only the most recent Python version for which our dependencies are available - currently Python 3.11.
 
 Run `./utility_scripts/dls_dev_env.sh` (This assumes you're on a DLS machine. If you are not, you should be able to just run a subset of this script)
 
 Note that because Hyperion makes heavy use of [Dodal](https://github.com/DiamondLightSource/dodal) this will also pull a local editable version of dodal to the parent folder of this repo.
 
-# Controlling the Gridscan Externally (e.g. from GDA)
+## Controlling the Gridscan Externally (e.g. from GDA)
+
 
 ## Starting the bluesky runner
 

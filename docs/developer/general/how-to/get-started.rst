@@ -1,4 +1,4 @@
-Get Started with mx-bluesky
+Get started with MX-Bluesky
 ---------------------------
 =======================
 Development Environment

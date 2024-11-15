@@ -12,9 +12,11 @@ Documentation specific for the Hyperion module within MX-Bluesky
             :caption: Reference
             :maxdepth: 1
 
-            reference/param-hierarchy
             reference/readme
             deploying-hyperion
+            aperture-scatterguard-collisions
+            beamline-energy-implementation
+            reference/param-hierarchy
 
         +++
 
