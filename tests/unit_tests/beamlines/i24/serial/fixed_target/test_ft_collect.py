@@ -435,7 +435,7 @@ async def test_main_fixed_target_plan(
         mock_get_chip_prog.return_value,
         dummy_params_without_pp,
         0.6,
-        [1605.7, 1702.7],
+        [1600.0, 1697.4],
     )
     mock_kickoff.assert_called_once_with(
         pmac, dummy_params_without_pp
