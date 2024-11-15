@@ -79,7 +79,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import 
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.log import (
     ALL_LOGGERS,
-    ISPYB_LOGGER,
+    ISPYB_ZOCALO_CALLBACK_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
 )
@@ -137,10 +137,10 @@ def pytest_runtest_setup(item):
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
-        if ISPYB_LOGGER.handlers == []:
+        if ISPYB_ZOCALO_CALLBACK_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
-                ISPYB_LOGGER,
+                ISPYB_ZOCALO_CALLBACK_LOGGER,
                 _get_logging_dir(),
                 "hyperion_ispyb_callback.log",
                 True,

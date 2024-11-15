@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from bluesky.callbacks import CallbackBase
 from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
-from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
+from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.utils.utils import number_of_frames_from_scan_spec
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
@@ -39,11 +39,13 @@ class ZocaloCallback(CallbackBase):
         self._reset_state()
 
     def start(self, doc: RunStart):
-        ISPYB_LOGGER.info("Zocalo handler received start document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info("Zocalo handler received start document.")
         if triggering_plan := doc.get(CONST.TRIGGER.ZOCALO):
             self.triggering_plan = triggering_plan
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
-            ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+                f"Zocalo environment set to {zocalo_environment}."
+            )
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
 
         if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
@@ -83,7 +85,7 @@ class ZocaloCallback(CallbackBase):
 
     def stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
-            ISPYB_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             assert self.zocalo_interactor is not None

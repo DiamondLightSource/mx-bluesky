@@ -12,15 +12,16 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_results_from_event,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.utils.log import set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import (
     format_doc_for_log,
@@ -30,7 +31,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_mappin
     populate_xy_data_collection_info,
     populate_xz_data_collection_info,
 )
-from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
@@ -42,7 +42,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommon,
@@ -94,7 +94,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self._start_of_fgs_uid = doc.get("uid")
         if doc.get("subplan_name") == CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
-            ISPYB_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
@@ -151,7 +151,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             proc_time = time() - self._processing_start_time
             crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
         bboxes: list[np.ndarray] = []
-        ISPYB_LOGGER.info(
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
         )
         raw_results = get_processing_results_from_event("zocalo", doc)
@@ -221,7 +221,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             data_collection_id=data_collection_id,
             data_collection_grid_info=data_collection_grid_info,
         )
-        ISPYB_LOGGER.info("Updating ispyb data collection after oav snapshot.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            "Updating ispyb data collection after oav snapshot."
+        )
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
 
@@ -266,7 +268,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
-            ISPYB_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received stop document corresponding to start document "
                 f"with uid: {self.uid_to_finalize_on}."
             )

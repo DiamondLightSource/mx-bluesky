@@ -4,6 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
+from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
@@ -15,7 +16,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )

@@ -6,12 +6,11 @@ import os
 from ispyb import NoResult
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.core import Core
-
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.common.parameters.constants import SimConstants
 
 
 def get_ispyb_config():
-    return os.environ.get("ISPYB_CONFIG_PATH", CONST.SIM.ISPYB_CONFIG)
+    return os.environ.get("ISPYB_CONFIG_PATH", SimConstants.ISPYB_CONFIG)
 
 
 def get_session_id_from_visit(conn: Connector, visit: str):

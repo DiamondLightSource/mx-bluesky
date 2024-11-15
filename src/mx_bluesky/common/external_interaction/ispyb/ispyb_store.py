@@ -4,25 +4,25 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
+
 import ispyb
 import ispyb.sqlalchemy
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
-from pydantic import BaseModel
-
-from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionGroupInfo,
     DataCollectionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
+from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_session_id_from_visit,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
+from mx_bluesky.common.utils.tracing import TRACER
 
 if TYPE_CHECKING:
     pass
@@ -124,7 +124,7 @@ class StoreInIspyb:
         ), "Cannot end ISPyB deposition without data collection group ID"
 
         for id_ in ispyb_ids.data_collection_ids:
-            ISPYB_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 f"End ispyb deposition with status '{success}' and reason '{reason}'."
             )
             if success == "fail" or success == "abort":

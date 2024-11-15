@@ -21,6 +21,7 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.core import set_mock_value
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
@@ -33,7 +34,6 @@ from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa

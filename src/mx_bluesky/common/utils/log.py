@@ -12,7 +12,11 @@ from dodal.log import (
 )
 from dodal.log import LOGGER as dodal_logger
 
-LOGGER = logging.getLogger("mx-bluesky")
+LOGGER = logging.getLogger("MX-Bluesky")
+ISPYB_ZOCALO_CALLBACK_LOGGER = logging.getLogger("ISPyB and Zocalo callbacks")
+NEXUS_LOGGER = logging.getLogger("NeXus callbacks")
+NEXUS_LOGGER.setLevel(logging.DEBUG)
+ALL_LOGGERS = [LOGGER, ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER]
 
 __logger_handlers: DodalLogHandlers | None = None
 

@@ -7,6 +7,9 @@ from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
+from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
+)
 from mx_bluesky.common.utils.log import _get_logging_dir, tag_filter
 from mx_bluesky.hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
@@ -26,11 +29,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
-)
 from mx_bluesky.hyperion.log import (
-    ISPYB_LOGGER,
+    ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
@@ -54,7 +54,7 @@ def setup_callbacks():
 
 def setup_logging(dev_mode: bool):
     for logger, filename in [
-        (ISPYB_LOGGER, "hyperion_ispyb_callback.log"),
+        (ISPYB_ZOCALO_CALLBACK_LOGGER, "hyperion_ispyb_callback.log"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
     ]:
         if logger.handlers == []:
@@ -70,7 +70,7 @@ def setup_logging(dev_mode: bool):
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
-    dodal_logger.parent = ISPYB_LOGGER
+    dodal_logger.parent = ISPYB_ZOCALO_CALLBACK_LOGGER
     log_debug("nexgen logger added to nexus logger")
 
 
@@ -90,12 +90,12 @@ def setup_threads():
 
 
 def log_info(msg, *args, **kwargs):
-    ISPYB_LOGGER.info(msg, *args, **kwargs)
+    ISPYB_ZOCALO_CALLBACK_LOGGER.info(msg, *args, **kwargs)
     NEXUS_LOGGER.info(msg, *args, **kwargs)
 
 
 def log_debug(msg, *args, **kwargs):
-    ISPYB_LOGGER.debug(msg, *args, **kwargs)
+    ISPYB_ZOCALO_CALLBACK_LOGGER.debug(msg, *args, **kwargs)
     NEXUS_LOGGER.debug(msg, *args, **kwargs)
 
 

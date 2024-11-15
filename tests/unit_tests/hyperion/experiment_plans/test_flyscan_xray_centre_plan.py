@@ -23,6 +23,12 @@ from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
+from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
+)
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -45,9 +51,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
 from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
@@ -55,14 +58,11 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
-)
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from tests.conftest import (
@@ -259,7 +259,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
 
-        test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
+        test_ispyb_callback = PlanReactiveCallback(ISPYB_ZOCALO_CALLBACK_LOGGER)
         test_ispyb_callback.active = True
 
         with patch.multiple(

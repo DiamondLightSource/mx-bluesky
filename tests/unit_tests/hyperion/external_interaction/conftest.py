@@ -11,12 +11,12 @@ from bluesky.run_engine import RunEngine
 from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import SynAxis
 
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from ....conftest import raw_params_from_file
 

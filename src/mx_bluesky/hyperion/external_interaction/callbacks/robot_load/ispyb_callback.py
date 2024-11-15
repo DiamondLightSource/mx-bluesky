@@ -4,17 +4,17 @@ from typing import TYPE_CHECKING
 
 from event_model.documents import EventDescriptor
 
+from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     ExpeyeInteraction,
     RobotActionID,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
@@ -23,17 +23,21 @@ if TYPE_CHECKING:
 
 class RobotLoadISPyBCallback(PlanReactiveCallback):
     def __init__(self) -> None:
-        ISPYB_LOGGER.debug("Initialising ISPyB Robot Load Callback")
-        super().__init__(log=ISPYB_LOGGER)
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug("Initialising ISPyB Robot Load Callback")
+        super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
         self.run_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
         self.action_id: RobotActionID | None = None
         self.expeye = ExpeyeInteraction()
 
     def activity_gated_start(self, doc: RunStart):
-        ISPYB_LOGGER.debug("ISPyB robot load callback received start document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
+            "ISPyB robot load callback received start document."
+        )
         if doc.get("subplan_name") == CONST.PLAN.ROBOT_LOAD:
-            ISPYB_LOGGER.debug(f"ISPyB robot load callback received: {doc}")
+            ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
+                f"ISPyB robot load callback received: {doc}"
+            )
             self.run_uid = doc.get("uid")
             assert isinstance(metadata := doc.get("metadata"), dict)
             proposal, session = get_proposal_and_session_from_visit_string(
@@ -72,7 +76,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         return super().activity_gated_event(doc)
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop | None:
-        ISPYB_LOGGER.debug("ISPyB robot load callback received stop document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
+            "ISPyB robot load callback received stop document."
+        )
         if doc.get("run_start") == self.run_uid:
             assert (
                 self.action_id is not None

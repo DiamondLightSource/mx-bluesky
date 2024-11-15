@@ -1,7 +1,7 @@
 from bluesky.callbacks import CallbackBase
 from event_model.documents.run_start import RunStart
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 from .logging_callback import format_doc_for_log
 

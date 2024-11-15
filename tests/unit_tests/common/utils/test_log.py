@@ -156,15 +156,15 @@ def test_callback_loggers_log_to_own_files(
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     hyperion_logger = hyperion_log.LOGGER
-    ispyb_logger = hyperion_log.ISPYB_LOGGER
+    ISPYB_ZOCALO_CALLBACK_LOGGER = hyperion_log.ISPYB_ZOCALO_CALLBACK_LOGGER
     nexus_logger = hyperion_log.NEXUS_LOGGER
-    for logger in [ispyb_logger, nexus_logger]:
+    for logger in [ISPYB_ZOCALO_CALLBACK_LOGGER, nexus_logger]:
         set_up_all_logging_handlers(
             logger, log._get_logging_dir(), logger.name, True, 10000
         )
 
     hyperion_logger.info("test_hyperion")
-    ispyb_logger.info("test_ispyb")
+    ISPYB_ZOCALO_CALLBACK_LOGGER.info("test_ispyb")
     nexus_logger.info("test_nexus")
 
     total_filehandler_calls = mock_filehandler_emit.mock_calls
@@ -176,7 +176,10 @@ def test_callback_loggers_log_to_own_files(
         filter(lambda h: isinstance(h, TimedRotatingFileHandler), dodal_logger.handlers)  # type: ignore
     )
     ispyb_filehandler = next(
-        filter(lambda h: isinstance(h, TimedRotatingFileHandler), ispyb_logger.handlers)  # type: ignore
+        filter(
+            lambda h: isinstance(h, TimedRotatingFileHandler),
+            ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
+        )  # type: ignore
     )
     nexus_filehandler = next(
         filter(lambda h: isinstance(h, TimedRotatingFileHandler), nexus_logger.handlers)  # type: ignore

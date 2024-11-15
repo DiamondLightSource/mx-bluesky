@@ -9,26 +9,27 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.utils.log import set_dcgid_tag
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.utils.utils import convert_eV_to_angstrom
+from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_config
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, SimConstants
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
 
-from .logging_callback import format_doc_for_log
+from ....common.external_interaction.callbacks.logging_callback import (
+    format_doc_for_log,
+)
 
 D = TypeVar("D")
 if TYPE_CHECKING:
@@ -63,25 +64,25 @@ class BaseISPyBCallback(PlanReactiveCallback):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
-        ISPYB_LOGGER.debug("Initialising ISPyB callback")
-        super().__init__(log=ISPYB_LOGGER, emit=emit)
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug("Initialising ISPyB callback")
+        super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
         self.params: DiffractionExperimentWithSample | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
         if (
-            self.ispyb_config == CONST.SIM.ISPYB_CONFIG
-            or self.ispyb_config == CONST.SIM.DEV_ISPYB_DATABASE_CFG
+            self.ispyb_config == SimConstants.ISPYB_CONFIG
+            or self.ispyb_config == SimConstants.DEV_ISPYB_DATABASE_CFG
         ):
-            ISPYB_LOGGER.warning(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
                 "want to use the real database, please set the ISPYB_CONFIG_PATH "
                 "environment variable."
             )
         self.uid_to_finalize_on: str | None = None
         self.ispyb_ids: IspybIds = IspybIds()
-        self.log = ISPYB_LOGGER
+        self.log = ISPYB_ZOCALO_CALLBACK_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
@@ -94,31 +95,33 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def activity_gated_event(self, doc: Event) -> Event:
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
-        ISPYB_LOGGER.debug("ISPyB handler received event document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug("ISPyB handler received event document.")
         assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
         assert self.params is not None, "ISPyB handler didn't receive parameters!"
 
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
-            ISPYB_LOGGER.warning(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Ispyb handler {self} received event doc {format_doc_for_log(doc)} and "
                 "has no corresponding descriptor record"
             )
             return doc
         match event_descriptor.get("name"):
-            case CONST.DESCRIPTORS.HARDWARE_READ_PRE:
+            case DocDescriptorNames.HARDWARE_READ_PRE:
                 scan_data_infos = self._handle_ispyb_hardware_read(doc)
-            case CONST.DESCRIPTORS.HARDWARE_READ_DURING:
+            case DocDescriptorNames.HARDWARE_READ_DURING:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
         self.ispyb_ids = self.ispyb.update_deposition(self.ispyb_ids, scan_data_infos)
-        ISPYB_LOGGER.info(f"Received ISPYB IDs: {self.ispyb_ids}")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Received ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params, "Event handled before activity_gated_start received params"
-        ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            "ISPyB handler received event from read hardware"
+        )
         assert isinstance(
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
             SynchrotronMode,
@@ -141,7 +144,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, hwscan_position_info, self.params
         )
-        ISPYB_LOGGER.info("Updating ispyb data collection after hardware read.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            "Updating ispyb data collection after hardware read."
+        )
         return scan_data_infos
 
     def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
@@ -167,7 +172,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, None, self.params
         )
-        ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            "Updating ispyb data collection after flux read."
+        )
         self.append_to_comment(f"Aperture: {aperture}. ")
         return scan_data_infos
 
@@ -186,7 +193,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         assert (
             self.ispyb is not None
         ), "ISPyB handler received stop document, but deposition object doesn't exist!"
-        ISPYB_LOGGER.debug("ISPyB handler received stop document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.debug("ISPyB handler received stop document.")
         exit_status = (
             doc.get("exit_status") or "Exit status not available in stop document!"
         )
@@ -195,7 +202,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         try:
             self.ispyb.end_deposition(self.ispyb_ids, exit_status, reason)
         except Exception as e:
-            ISPYB_LOGGER.warning(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {format_doc_for_log(doc)} with exception: {e}"
             )
         return self._tag_doc(doc)
@@ -205,7 +212,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         try:
             self.ispyb.append_to_comment(id, comment)
         except TypeError:
-            ISPYB_LOGGER.warning(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 "ISPyB deposition not initialised, can't update comment."
             )
 

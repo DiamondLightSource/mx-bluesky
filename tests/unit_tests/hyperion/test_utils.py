@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from mx_bluesky.hyperion.utils.utils import (
+from mx_bluesky.common.utils.utils import (
     convert_angstrom_to_eV,
     convert_eV_to_angstrom,
     energy_to_bragg_angle,

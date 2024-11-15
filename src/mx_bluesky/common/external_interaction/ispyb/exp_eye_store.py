@@ -3,8 +3,8 @@ import configparser
 from requests import patch, post
 from requests.auth import AuthBase
 
-from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_utils import (
+from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_ispyb_config,
 )

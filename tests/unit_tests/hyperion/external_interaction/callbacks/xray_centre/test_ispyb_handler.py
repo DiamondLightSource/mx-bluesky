@@ -11,7 +11,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.hyperion.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 from ..conftest import TestData
 
@@ -109,7 +109,10 @@ class TestXrayCentreIspybHandler:
     ):
         setup_logging(True)
         gelf_handler: MagicMock = next(
-            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
+            filter(
+                lambda h: isinstance(h, GELFTCPHandler),
+                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
+            )  # type: ignore
         )
         gelf_handler.emit = MagicMock()
 
@@ -126,7 +129,7 @@ class TestXrayCentreIspybHandler:
             td.test_event_document_during_data_collection
         )
 
-        ISPYB_LOGGER.info("test")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info("test")
         latest_record = gelf_handler.emit.call_args.args[-1]
         assert latest_record.dc_group_id == DCG_ID
 
@@ -136,7 +139,10 @@ class TestXrayCentreIspybHandler:
     ):
         setup_logging(True)
         gelf_handler: MagicMock = next(
-            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
+            filter(
+                lambda h: isinstance(h, GELFTCPHandler),
+                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
+            )  # type: ignore
         )
         gelf_handler.emit = MagicMock()
 
@@ -154,7 +160,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        ISPYB_LOGGER.info("test")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info("test")
         latest_record = gelf_handler.emit.call_args.args[-1]
         assert not hasattr(latest_record, "dc_group_id")
 
