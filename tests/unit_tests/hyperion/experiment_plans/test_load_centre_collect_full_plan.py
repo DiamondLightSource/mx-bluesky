@@ -11,7 +11,7 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
 )

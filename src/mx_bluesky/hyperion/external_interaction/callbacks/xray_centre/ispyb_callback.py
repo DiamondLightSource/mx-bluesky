@@ -18,7 +18,6 @@ from mx_bluesky.common.external_interaction.callbacks.ispyb_callback_base import
 from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
     format_doc_for_log,
 )
-from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
@@ -32,6 +31,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,

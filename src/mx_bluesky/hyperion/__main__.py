@@ -25,13 +25,13 @@ from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
     flush_debug_handler,
 )
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,

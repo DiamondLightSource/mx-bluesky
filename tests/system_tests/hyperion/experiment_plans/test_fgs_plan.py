@@ -14,6 +14,7 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -21,7 +22,6 @@ from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,

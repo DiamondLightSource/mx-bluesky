@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from bluesky.callbacks import CallbackBase
 from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
-from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     TriggerConstants,
 )
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 

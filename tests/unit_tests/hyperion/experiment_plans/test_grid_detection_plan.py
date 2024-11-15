@@ -20,7 +20,7 @@ from ophyd_async.core import set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,

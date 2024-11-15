@@ -2,12 +2,12 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BearerAuth,
     ExpeyeInteraction,
     _get_base_url_and_token,
 )
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 
 
 def test_get_url_and_token_returns_expected_data():

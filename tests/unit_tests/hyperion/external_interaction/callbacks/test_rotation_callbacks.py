@@ -4,7 +4,6 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
-from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
@@ -13,6 +12,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_rotation_callbacks,
@@ -99,7 +99,7 @@ def test_nexus_handler_only_writes_once(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -133,7 +133,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -172,7 +172,7 @@ def test_ispyb_triggered_before_zocalo(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(

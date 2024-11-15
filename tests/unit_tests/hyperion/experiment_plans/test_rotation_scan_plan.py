@@ -667,9 +667,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
     mock_store_in_ispyb.assert_called()
 
 
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger"
-)
+@patch("mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger")
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )

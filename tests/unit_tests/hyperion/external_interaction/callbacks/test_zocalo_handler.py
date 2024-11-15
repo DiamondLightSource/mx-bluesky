@@ -6,11 +6,11 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.common.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
@@ -66,7 +66,7 @@ class TestZocaloHandler:
             )
 
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
     def test_handler_inits_zocalo_trigger_on_right_plan(self, zocalo_trigger):
@@ -82,7 +82,7 @@ class TestZocaloHandler:
         assert zocalo_handler.zocalo_interactor is not None
 
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
     @patch(

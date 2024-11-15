@@ -35,12 +35,12 @@ from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
     FlyScanXRayCentreComposite,

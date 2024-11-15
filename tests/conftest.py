@@ -119,7 +119,7 @@ def _reset_loggers(loggers):
     """Clear all handlers and tear down the logging hierarchy, leave logger references intact."""
     clear_log_handlers(loggers)
     for logger in loggers:
-        if logger.name != "Hyperion":
+        if logger.name != "Hyperion" and logger.name != "MX-Bluesky":
             # Hyperion parent is configured on module import, do not remove
             logger.parent = logging.getLogger()
 

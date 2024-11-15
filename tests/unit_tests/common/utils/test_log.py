@@ -129,7 +129,7 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
     logger = log.LOGGER
-    logger.info("test_hyperion")
+    logger.info("test MX_Bluesky")
     dodal_logger.info("test_dodal")
 
     filehandler_calls = mock_filehandler_emit.mock_calls
@@ -141,9 +141,9 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     for handler in [filehandler_calls, graylog_calls]:
         handler_names = [c.args[0].name for c in handler]
         handler_messages = [c.args[0].message for c in handler]
-        assert "Hyperion" in handler_names
+        assert "MX-Bluesky" in handler_names
         assert "Dodal" in handler_names
-        assert "test_hyperion" in handler_messages
+        assert "test MX_Bluesky" in handler_messages
         assert "test_dodal" in handler_messages
 
 
