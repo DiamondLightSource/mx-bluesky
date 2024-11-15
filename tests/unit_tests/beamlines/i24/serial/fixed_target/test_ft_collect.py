@@ -419,7 +419,7 @@ async def test_main_fixed_target_plan(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_zebra_input = get_mock_put(zebra.inputs.soft_in_2)
 
-    mock_beam_x.assert_called_once_with(1605.7, wait=True)  # Check beam center set
+    mock_beam_x.assert_called_once_with(1600.0, wait=True)  # Check beam center set
     assert dummy_params_without_pp.total_num_images == 400
     mock_get_chip_prog.assert_called_once_with(dummy_params_without_pp)
     mock_motion_program.asset_called_once()
