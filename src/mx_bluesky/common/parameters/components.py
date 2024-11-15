@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
@@ -9,12 +11,22 @@ from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 from pydantic_extra_types.semantic_version import SemanticVersion
 from scanspec.core import AxesPoints
 from semver import Version
 
-from mx_bluesky.common.parameters.constants import TEST_MODE, DetectorParamConstants
+from mx_bluesky.common.parameters.constants import (
+    TEST_MODE,
+    DetectorParamConstants,
+    GridscanParamConstants,
+)
 
 PARAMETER_VERSION = Version.parse("5.2.0")
 
@@ -166,6 +178,14 @@ class WithScan(BaseModel):
     @property
     @abstractmethod
     def num_images(self) -> int: ...
+
+
+class WithPandaGridScan(BaseModel):
+    """For experiments which use a PandA for constant-motion grid scans"""
+
+    panda_runup_distance_mm: float = Field(
+        default=GridscanParamConstants.PANDA_RUN_UP_DISTANCE_MM
+    )
 
 
 class SplitScan(BaseModel):

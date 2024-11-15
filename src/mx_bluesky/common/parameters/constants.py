@@ -1,6 +1,7 @@
 from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
@@ -64,6 +65,7 @@ class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
+    THAWING_TIME = 20
 
 
 @dataclass(frozen=True)
@@ -89,6 +91,7 @@ class DetectorParamConstants:
         if TEST_MODE
         else "/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
+    DETECTOR = EIGER2_X_16M_SIZE
 
 
 @dataclass(frozen=True)

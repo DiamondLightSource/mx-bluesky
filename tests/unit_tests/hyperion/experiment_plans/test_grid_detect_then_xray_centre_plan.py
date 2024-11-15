@@ -9,12 +9,10 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.smargon import Smargon
-from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     OavGridDetectionComposite,
@@ -26,8 +24,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 
 from ..conftest import OavGridSnapshotTestEvents
@@ -61,7 +58,7 @@ def _fake_grid_detection(
 
 
 def test_full_grid_scan(
-    test_fgs_params: ThreeDGridScan, test_config_files: dict[str, str]
+    test_fgs_params: HyperionThreeDGridScan, test_config_files: dict[str, str]
 ):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
@@ -94,46 +91,39 @@ async def test_detect_grid_and_do_gridscan(
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
-    smargon: Smargon,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
 ):
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
-    with patch.object(
-        grid_detect_devices_with_oav_config_params.aperture_scatterguard,
-        "set",
-        MagicMock(return_value=NullStatus()),
-    ) as mock_aperture_scatterguard:
+    composite = grid_detect_devices_with_oav_config_params
 
-        def gridscan_and_wait():
-            yield from ispyb_activation_wrapper(
-                detect_grid_and_do_gridscan(
-                    grid_detect_devices_with_oav_config_params,
-                    parameters=test_full_grid_scan_params,
-                    oav_params=OAVParameters(
-                        "xrayCentring", test_config_files["oav_config_json"]
-                    ),
+    RE(
+        ispyb_activation_wrapper(
+            detect_grid_and_do_gridscan(
+                composite,
+                parameters=test_full_grid_scan_params,
+                oav_params=OAVParameters(
+                    "xrayCentring", test_config_files["oav_config_json"]
                 ),
-                test_full_grid_scan_params,
-            )
-            yield from bps.wait(group=CONST.WAIT.GRID_READY_FOR_DC, timeout=1)
-
-        RE(gridscan_and_wait())
-        # Verify we called the grid detection plan
-        mock_grid_detection_plan.assert_called_once()
-
-        # Check backlight was moved OUT
-        assert (
-            await grid_detect_devices_with_oav_config_params.backlight.position.get_value()
-            == BacklightPosition.OUT
+            ),
+            test_full_grid_scan_params,
         )
+    )
+    # Verify we called the grid detection plan
+    mock_grid_detection_plan.assert_called_once()
 
-        # Check aperture was changed to SMALL
-        mock_aperture_scatterguard.assert_called_once_with(ApertureValue.SMALL)
+    # Check backlight was moved OUT
+    assert await composite.backlight.position.get_value() == BacklightPosition.OUT
 
-        # Check we called out to underlying fast grid scan plan
-        mock_flyscan_xray_centre_plan.assert_called_once_with(ANY, ANY)
+    # Check aperture was changed to SMALL
+    assert (
+        await composite.aperture_scatterguard.selected_aperture.get_value()
+        == ApertureValue.SMALL
+    )
+
+    # Check we called out to underlying fast grid scan plan
+    mock_flyscan_xray_centre_plan.assert_called_once_with(ANY, ANY)
 
 
 @patch(
@@ -147,42 +137,34 @@ async def test_detect_grid_and_do_gridscan(
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
-    eiger: EigerDetector,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
-    smargon: Smargon,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
-
-    with patch.object(
-        grid_detect_devices_with_oav_config_params.aperture_scatterguard,
-        "set",
-        MagicMock(),
-    ):
-        RE(
-            ispyb_activation_wrapper(
-                detect_grid_and_do_gridscan(
-                    grid_detect_devices_with_oav_config_params,
-                    parameters=test_full_grid_scan_params,
-                    oav_params=oav_params,
-                ),
-                test_full_grid_scan_params,
-            )
+    RE(
+        ispyb_activation_wrapper(
+            detect_grid_and_do_gridscan(
+                grid_detect_devices_with_oav_config_params,
+                parameters=test_full_grid_scan_params,
+                oav_params=oav_params,
+            ),
+            test_full_grid_scan_params,
         )
+    )
 
-        params: ThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
+    params: HyperionThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
 
-        assert params.detector_params.num_triggers == 50
+    assert params.detector_params.num_triggers == 50
 
-        assert params.FGS_params.x_axis.full_steps == 10
-        assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
+    assert params.FGS_params.x_axis.full_steps == 10
+    assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
 
-        # Parameters can be serialized
-        params.model_dump_json()
+    # Parameters can be serialized
+    params.model_dump_json()
 
 
 @patch(

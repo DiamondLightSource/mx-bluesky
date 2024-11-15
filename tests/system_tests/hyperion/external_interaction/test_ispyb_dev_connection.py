@@ -11,6 +11,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -45,8 +46,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -124,7 +124,9 @@ def grid_detect_then_xray_centre_parameters():
 
 
 def scan_xy_data_info_for_update(
-    data_collection_group_id, dummy_params: ThreeDGridScan, scan_data_info_for_begin
+    data_collection_group_id,
+    dummy_params: HyperionThreeDGridScan,
+    scan_data_info_for_begin,
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
@@ -151,7 +153,7 @@ def scan_xy_data_info_for_update(
 
 
 def scan_data_infos_for_update_3d(
-    ispyb_ids, scan_xy_data_info_for_update, dummy_params: ThreeDGridScan
+    ispyb_ids, scan_xy_data_info_for_update, dummy_params: HyperionThreeDGridScan
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
         dummy_params.detector_params
