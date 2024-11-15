@@ -86,10 +86,10 @@ class TestZocaloHandler:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter",
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter",
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     )
     def test_execution_of_do_fgs_triggers_zocalo_calls(
         self, ispyb_store: MagicMock, nexus_writer: MagicMock, zocalo_trigger

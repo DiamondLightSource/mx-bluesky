@@ -6,6 +6,9 @@ from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -26,9 +29,6 @@ from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
     pin_tip_centre_plan,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context

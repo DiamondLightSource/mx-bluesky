@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from numpy.typing import DTypeLike
 
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
 
@@ -15,7 +15,7 @@ from ..conftest import TestData
 @pytest.fixture
 def nexus_writer():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.nexus.write_nexus.NexusWriter"
+        "mx_bluesky.common.external_interaction.nexus.write_nexus.NexusWriter"
     ) as nw:
         yield nw
 
@@ -30,7 +30,7 @@ def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
 )
 def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
@@ -65,7 +65,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     ],
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
 )
 def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
     mock_nexus_writer: MagicMock,
@@ -95,7 +95,7 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
 )
 def test_beam_and_attenuator_set_on_ispyb_transmission_event(
     mock_nexus_writer: MagicMock,

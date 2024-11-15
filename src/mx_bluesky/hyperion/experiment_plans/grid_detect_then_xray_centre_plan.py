@@ -32,6 +32,9 @@ from mx_bluesky.common.external_interaction.callbacks.grid_detection_callback im
     GridDetectionCallback,
     GridParamUpdate,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import LOGGER
@@ -50,9 +53,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (

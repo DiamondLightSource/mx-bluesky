@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import DTypeLike
 
-from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
+from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     vds_type_based_on_bit_depth,
 )
 

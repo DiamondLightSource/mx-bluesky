@@ -18,6 +18,9 @@ from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -33,9 +36,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
@@ -206,10 +206,10 @@ def mock_subscriptions(test_fgs_params):
             modified_interactor_mock,
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0), data_collection_group_id=0
@@ -217,7 +217,7 @@ def mock_subscriptions(test_fgs_params):
             ),
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0),

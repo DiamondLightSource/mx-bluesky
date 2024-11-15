@@ -78,7 +78,7 @@ def test_rotation_nexgen(
     RE = RunEngine({})
 
     with patch(
-        "mx_bluesky.hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
+        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
     ):
         RE(

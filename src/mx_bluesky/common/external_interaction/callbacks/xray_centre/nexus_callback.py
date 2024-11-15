@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.common.utils.log import NEXUS_LOGGER
-from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
+from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
 )
-from mx_bluesky.hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -44,13 +44,13 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.log = NEXUS_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
+        if doc.get("subplan_name") == PlanNameConstants.GRIDSCAN_OUTER:
             hyperion_params = doc.get("hyperion_parameters")
             assert isinstance(hyperion_params, str)
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {hyperion_params}"
             )
-            parameters = HyperionThreeDGridScan.model_validate_json(hyperion_params)
+            parameters = ThreeDGridScan.model_validate_json(hyperion_params)
             d_size = parameters.detector_params.detector_size_constants.det_size_pixels
             grid_n_img_1 = parameters.scan_indices[1]
             grid_n_img_2 = parameters.num_images - grid_n_img_1
@@ -75,7 +75,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         assert (event_descriptor := self.descriptors.get(doc["descriptor"])) is not None
-        if event_descriptor.get("name") == CONST.DESCRIPTORS.HARDWARE_READ_DURING:
+        if event_descriptor.get("name") == DocDescriptorNames.HARDWARE_READ_DURING:
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 assert nexus_writer, "Nexus callback did not receive start doc"

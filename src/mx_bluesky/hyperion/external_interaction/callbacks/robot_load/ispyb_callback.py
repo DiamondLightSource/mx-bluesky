@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING
 
 from event_model.documents import EventDescriptor
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
+    get_proposal_and_session_from_visit_string,
+)
 from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -12,9 +15,6 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     RobotActionID,
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
-from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    get_proposal_and_session_from_visit_string,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:

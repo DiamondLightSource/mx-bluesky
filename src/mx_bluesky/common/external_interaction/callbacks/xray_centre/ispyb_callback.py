@@ -12,11 +12,20 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_results_from_event,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_group,
+    populate_remaining_data_collection_info,
+)
 from mx_bluesky.common.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
     format_doc_for_log,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+    construct_comment_for_gridscan,
+    populate_xy_data_collection_info,
+    populate_xz_data_collection_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -30,22 +39,12 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
-from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    populate_data_collection_group,
-    populate_remaining_data_collection_info,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import (
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
 )
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
@@ -56,7 +55,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         plan_generator,
         md={
             "activate_callbacks": ["GridscanISPyBCallback"],
-            "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
             "hyperion_parameters": parameters.model_dump_json(),
         },
     )
@@ -91,7 +90,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
-        if doc.get("subplan_name") == CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN:
+        if doc.get("subplan_name") == PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters and "
@@ -136,7 +135,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
         if descriptor_name == ZOCALO_READING_PLAN_NAME:
             self._handle_zocalo_read_event(doc)
-        elif descriptor_name == CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED:
+        elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos

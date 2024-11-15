@@ -12,15 +12,15 @@ from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     OavGridDetectionComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (

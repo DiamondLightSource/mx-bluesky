@@ -29,6 +29,13 @@ from mx_bluesky.common.external_interaction.callbacks.logging_callback import (
 from mx_bluesky.common.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+    ispyb_activation_wrapper,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
@@ -54,13 +61,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    ispyb_activation_wrapper,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -157,7 +157,7 @@ def _custom_msg(command_name: str):
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -838,7 +838,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.nexus.write_nexus.NexusWriter",
+        "mx_bluesky.common.external_interaction.nexus.write_nexus.NexusWriter",
         autospec=True,
         spec_set=True,
     )
@@ -879,7 +879,7 @@ class TestFlyscanXrayCentrePlan:
 
         with (
             patch(
-                "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+                "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
                 autospec=True,
             ),
             patch(

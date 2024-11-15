@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 
@@ -10,7 +10,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 @pytest.fixture
 def nexus_writer():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ) as nw:
         yield nw
 
@@ -26,7 +26,7 @@ def mock_ispyb_get_time():
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
     ) as p:
         yield p
 
@@ -34,7 +34,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb._update_scan_with_end_time_and_status"
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb._update_scan_with_end_time_and_status"
     ) as p:
         yield p
 
@@ -42,7 +42,7 @@ def mock_ispyb_update_time_and_status():
 @pytest.fixture
 def mock_ispyb_begin_deposition():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition"
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition"
     ) as p:
         yield p
 
@@ -50,7 +50,7 @@ def mock_ispyb_begin_deposition():
 @pytest.fixture
 def mock_ispyb_end_deposition():
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.end_deposition"
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.end_deposition"
     ) as p:
         yield p
 
