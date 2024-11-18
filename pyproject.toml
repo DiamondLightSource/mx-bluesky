@@ -47,6 +47,7 @@ dependencies = [
     "ophyd-async >= 0.3a5",
     "bluesky >= 1.13.0a4",
     "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@541a7a95ddf1ae042cff84cba1f62d7dab152ad0",
+    "dls-bluesky-core",
 ]
 
 
