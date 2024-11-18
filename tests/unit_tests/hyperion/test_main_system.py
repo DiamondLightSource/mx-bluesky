@@ -431,8 +431,8 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     attenuator = MagicMock(spec=Attenuator)
 
     context = BlueskyContext()
-    context.device(zebra, "zebra")
-    context.device(attenuator, "attenuator")
+    context.register_device(zebra, "zebra")
+    context.register_device(attenuator, "attenuator")
 
     @dataclass
     class FakeComposite:
