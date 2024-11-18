@@ -16,6 +16,7 @@ Documentation specific for the Hyperion module within MX-Bluesky
             deploying-hyperion
             aperture-scatterguard-collisions
             beamline-energy-implementation
+            code-map
             reference/param-hierarchy
 
         +++

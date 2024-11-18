@@ -4,7 +4,6 @@ Aperture Scatterguard Collisions
 If the aperture/scatterguard are not moved sensibly in y it is possible for the scatterguard to collide with the cryostream. See the below diagram...
 
 .. image:: images/aperture-scatterguard-collisions.svg
-   :alt: Alternative text for the image
    :width: 600px
    :align: center
 
