@@ -703,7 +703,7 @@ async def panda(RE: RunEngine):
 
     set_mock_value(
         panda.data.datasets,
-        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
+        DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda
