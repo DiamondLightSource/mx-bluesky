@@ -66,7 +66,7 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
@@ -116,7 +116,7 @@ def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
 
 def flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -124,7 +124,7 @@ def flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (ThreeDGridScan): The parameters to run the scan.
+        parameters (HyperionThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -154,7 +154,7 @@ def flyscan_xray_centre(
     )
     def run_gridscan_and_move_and_tidy(
         fgs_composite: FlyScanXRayCentreComposite,
-        params: ThreeDGridScan,
+        params: HyperionThreeDGridScan,
         feature_controlled: _FeatureControlled,
     ):
         yield from run_gridscan_and_move(fgs_composite, params, feature_controlled)
@@ -166,7 +166,7 @@ def flyscan_xray_centre(
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
     feature_controlled: _FeatureControlled,
 ) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
@@ -243,7 +243,7 @@ def run_gridscan_and_move(
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
     feature_controlled: _FeatureControlled,
     md={  # noqa
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
@@ -350,7 +350,7 @@ class _FeatureControlled:
         def __call__(
             self,
             fgs_composite: FlyScanXRayCentreComposite,
-            parameters: ThreeDGridScan,
+            parameters: HyperionThreeDGridScan,
             initial_xyz: np.ndarray,
         ) -> MsgGenerator: ...
 
@@ -362,7 +362,7 @@ class _FeatureControlled:
 
 def _get_feature_controlled(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
 ):
     if parameters.features.use_panda_for_gridscan:
         return _FeatureControlled(
@@ -411,7 +411,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
 
 def _zebra_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
     initial_xyz: np.ndarray,
 ):
     yield from setup_zebra_for_gridscan(
@@ -421,7 +421,7 @@ def _zebra_triggering_setup(
 
 def _panda_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: HyperionThreeDGridScan,
     initial_xyz: np.ndarray,
 ):
     LOGGER.info("Setting up Panda for flyscan")

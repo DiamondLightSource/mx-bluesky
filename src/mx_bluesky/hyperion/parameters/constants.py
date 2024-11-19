@@ -27,7 +27,6 @@ class I03Constants:
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
-    THAWING_TIME = 20
     SET_STUB_OFFSETS = False
 
     # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-

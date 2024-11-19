@@ -10,6 +10,9 @@ from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -19,7 +22,6 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan impor
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ....conftest import raw_params_from_file
 from ....system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
@@ -88,7 +90,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_pin_tip_centre: MagicMock,
     mock_grid_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    simple_beamline,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -132,21 +134,21 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    simulate_xrc_result(sim_run_engine, simple_beamline.zocalo, TEST_RESULT_LARGE)
+    simulate_xrc_result(sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE)
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
-            simple_beamline,
+            grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         ),
     )
 
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
+        messages, lambda msg: msg.obj is grid_detect_devices.detector_motion.z
     )
     assert messages[0].args[0] == 100
     assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
-    assert messages[1].obj is simple_beamline.detector_motion.shutter
+    assert messages[1].obj is grid_detect_devices.detector_motion.shutter
     assert messages[1].args[0] == ShutterState.OPEN
     assert messages[1].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     messages = assert_message_and_return_remaining(

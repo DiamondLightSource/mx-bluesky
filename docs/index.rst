@@ -6,24 +6,17 @@
 How the documentation is structured
 -----------------------------------
 
-The documentation is split into 2 sections:
+The documentation consists of a Developer Guide for MX-Bluesky, which also includes documentation for Hyperion. At its current stage in development, there is no user guide.
 
-.. grid:: 2
-
-    .. grid-item-card:: :material-regular:`person;4em`
-        :link: user/index
-        :link-type: doc
-
-        The User Guide contains documentation on how to install and use mx-bluesky.
+.. grid:: 1
 
     .. grid-item-card:: :material-regular:`code;4em`
         :link: developer/index
         :link-type: doc
 
-        The Developer Guide contains documentation on how to develop and contribute changes back to mx-bluesky.
+        The Developer Guide contains documentation on how to install, develop and contribute changes to MX-Bluesky; explanations about the purpose of the software and some of the technical concepts; as well as how-to guides and tutorials.
 
 .. toctree::
     :hidden:
 
-    user/index
     developer/index

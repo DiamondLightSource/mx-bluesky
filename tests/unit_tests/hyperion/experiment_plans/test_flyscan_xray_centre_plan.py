@@ -58,13 +58,13 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callba
 from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
+from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from tests.conftest import (
     RunEngineSimulator,
     create_dummy_scan_spec,
@@ -90,16 +90,16 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(fake_fgs_composite: FlyScanXRayCentreComposite):
-    capture_table = DatasetTable(
-        name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]
-    )
+    capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
     set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
 
     return fake_fgs_composite
 
 
 @pytest.fixture
-def fgs_params_use_panda(test_fgs_params: ThreeDGridScan, feature_flags: FeatureFlags):
+def fgs_params_use_panda(
+    test_fgs_params: HyperionThreeDGridScan, feature_flags: HyperionFeatureFlags
+):
     feature_flags.use_panda_for_gridscan = True
     test_fgs_params.features = feature_flags
     return test_fgs_params
@@ -108,8 +108,8 @@ def fgs_params_use_panda(test_fgs_params: ThreeDGridScan, feature_flags: Feature
 @pytest.fixture(params=[True, False], ids=["panda", "zebra"])
 def test_fgs_params_panda_zebra(
     request: pytest.FixtureRequest,
-    feature_flags: FeatureFlags,
-    test_fgs_params: ThreeDGridScan,
+    feature_flags: HyperionFeatureFlags,
+    test_fgs_params: HyperionThreeDGridScan,
 ):
     if request.param:
         feature_flags.use_panda_for_gridscan = request.param
@@ -118,7 +118,7 @@ def test_fgs_params_panda_zebra(
 
 
 @pytest.fixture
-def ispyb_plan(test_fgs_params: ThreeDGridScan):
+def ispyb_plan(test_fgs_params: HyperionThreeDGridScan):
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -163,7 +163,7 @@ class TestFlyscanXrayCentrePlan:
 
     def test_eiger2_x_16_detector_specified(
         self,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
     ):
         assert (
             test_fgs_params.detector_params.detector_size_constants.det_type_string
@@ -180,7 +180,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         RE: RunEngine,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
         mock_ispyb: MagicMock,
     ):
         ispyb_callback = GridscanISPyBCallback()
@@ -211,7 +211,7 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
         RE: RunEngine,
         ispyb_plan,
     ):
@@ -333,7 +333,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
         feature_controlled = _get_feature_controlled(
@@ -402,7 +402,7 @@ class TestFlyscanXrayCentrePlan:
     def test_results_passed_to_move_motors(
         self,
         bps_abs_set: MagicMock,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         RE: RunEngine,
     ):
@@ -456,7 +456,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         RE_with_subs: ReWithSubs,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
     ):
         RE, (_, ispyb_cb) = RE_with_subs
         feature_controlled = _get_feature_controlled(
@@ -497,7 +497,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
     ):
         feature_controlled = _get_feature_controlled(
@@ -545,7 +545,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -583,7 +583,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         check_topup_and_wait,
         RE: RunEngine,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status: Status,
     ):
@@ -630,7 +630,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -675,7 +675,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -714,7 +714,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         RE: RunEngine,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
     ):
         feature_controlled = _get_feature_controlled(
             fgs_composite_with_panda_pcap,
@@ -748,7 +748,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         RE_with_subs: ReWithSubs,
         done_status: Status,
     ):
@@ -854,7 +854,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: ThreeDGridScan,
+        test_fgs_params: HyperionThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
         test_fgs_params.x_steps = 8
@@ -916,7 +916,7 @@ class TestFlyscanXrayCentrePlan:
         mock_set_panda_directory: MagicMock,
         done_status: Status,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        fgs_params_use_panda: ThreeDGridScan,
+        fgs_params_use_panda: HyperionThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
     ):
         sim_run_engine.add_handler("unstage", lambda _: done_status)
@@ -977,7 +977,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         RE: RunEngine,
         done_status: Status,
     ):
@@ -1016,7 +1016,7 @@ class TestFlyscanXrayCentrePlan:
         mock_wait,
         mock_kickoff,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         RE: RunEngine,
     ):
         class CompleteException(Exception):
@@ -1038,9 +1038,6 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.disarm_detector = MagicMock()
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
-
-        # Without the complete finishing we will not get all the images
-        fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
 
         with pytest.raises(CompleteException):
             RE(
@@ -1133,7 +1130,7 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
     ):
         feature_controlled = _get_feature_controlled(
@@ -1174,7 +1171,7 @@ class TestFlyscanXrayCentrePlan:
     def test_if_smargon_speed_over_limit_then_log_error(
         self,
         mock_kickoff_and_complete: MagicMock,
-        test_fgs_params_panda_zebra: ThreeDGridScan,
+        test_fgs_params_panda_zebra: HyperionThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         RE: RunEngine,
     ):

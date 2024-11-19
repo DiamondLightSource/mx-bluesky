@@ -16,7 +16,7 @@ from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
 )
 from mx_bluesky.hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -33,7 +33,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
             assert "end_time_estimated" in entry
 
 
-def create_nexus_writer(parameters: ThreeDGridScan, writer_num):
+def create_nexus_writer(parameters: HyperionThreeDGridScan, writer_num):
     d_size = parameters.detector_params.detector_size_constants.det_size_pixels
     n_img = (
         parameters.scan_indices[1]
@@ -66,7 +66,7 @@ def create_nexus_writer(parameters: ThreeDGridScan, writer_num):
 
 
 @contextmanager
-def create_nexus_writers(parameters: ThreeDGridScan):
+def create_nexus_writers(parameters: HyperionThreeDGridScan):
     writers = [create_nexus_writer(parameters, i) for i in [1, 2]]
     writers[1].start_index = parameters.scan_indices[1]
     try:
@@ -79,7 +79,7 @@ def create_nexus_writers(parameters: ThreeDGridScan):
 
 
 @pytest.fixture
-def dummy_nexus_writers(test_fgs_params: ThreeDGridScan):
+def dummy_nexus_writers(test_fgs_params: HyperionThreeDGridScan):
     with create_nexus_writers(test_fgs_params) as (
         nexus_writer_1,
         nexus_writer_2,
@@ -88,7 +88,7 @@ def dummy_nexus_writers(test_fgs_params: ThreeDGridScan):
 
 
 @pytest.fixture
-def dummy_nexus_writers_with_more_images(test_fgs_params: ThreeDGridScan):
+def dummy_nexus_writers_with_more_images(test_fgs_params: HyperionThreeDGridScan):
     x, y, z = 45, 35, 25
     test_fgs_params.x_steps = x
     test_fgs_params.y_steps = y
@@ -101,7 +101,7 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: ThreeDGridScan):
 
 
 @pytest.fixture
-def single_dummy_file(test_fgs_params: ThreeDGridScan):
+def single_dummy_file(test_fgs_params: HyperionThreeDGridScan):
     test_fgs_params.use_roi_mode = True
     d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_fgs_params.scan_indices[1], d_size.width, d_size.height)
@@ -123,7 +123,7 @@ def single_dummy_file(test_fgs_params: ThreeDGridScan):
     indirect=["test_fgs_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     expected_num_of_files: Literal[3, 4, 9],
     single_dummy_file: NexusWriter,
 ):
@@ -141,7 +141,7 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
@@ -270,7 +270,7 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    test_fgs_params: ThreeDGridScan, single_dummy_file: NexusWriter
+    test_fgs_params: HyperionThreeDGridScan, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
@@ -290,7 +290,7 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file: Nexus
 
 @patch.dict(os.environ, {"BEAMLINE": "I03"})
 def test_nexus_writer_writes_beamline_name_correctly(
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
 ):
     d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_fgs_params.num_images, d_size.width, d_size.height)
@@ -358,7 +358,7 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 
 
 def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
 ):
     test_fgs_params.file_name = "non_existant_file"
     with create_nexus_writers(test_fgs_params) as (

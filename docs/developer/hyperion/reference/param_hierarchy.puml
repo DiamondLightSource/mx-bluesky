@@ -31,7 +31,7 @@ package Experiments {
     class RobotLoadAndEnergyChange
     class RobotLoadThenCentre
     class SpecifiedGridScan
-    class ThreeDGridScan
+    class HyperionThreeDGridScan
 }
 
 class HyperionParameters
@@ -66,9 +66,9 @@ RobotLoadThenCentre *-- RobotLoadAndEnergyChange
 RobotLoadThenCentre *-- PinTipCentreThenXrayCentre
 GridCommon <|-- SpecifiedGridScan
 WithScan <|-- SpecifiedGridScan
-SpecifiedGridScan <|-- ThreeDGridScan
-SplitScan <|-- ThreeDGridScan
-WithOptionalEnergyChange <|-- ThreeDGridScan
+SpecifiedGridScan <|-- HyperionThreeDGridScan
+SplitScan <|-- HyperionThreeDGridScan
+WithOptionalEnergyChange <|-- HyperionThreeDGridScan
 WithOavCentring <|-- GridCommon
 WithScan <|-- RotationScan
 RotationScanPerSweep <|-- RotationScan
