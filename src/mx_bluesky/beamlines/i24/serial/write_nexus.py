@@ -1,4 +1,3 @@
-import logging
 import os
 import pathlib
 import pprint
@@ -9,13 +8,12 @@ from typing import Literal
 import requests
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, MappingType
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget, cagetstring
-
-logger = logging.getLogger("I24ssx.nexus_writer")
 
 
 def call_nexgen(
@@ -54,23 +52,23 @@ def call_nexgen(
     )
     t0 = time.time()
     max_wait = 60  # seconds
-    logger.info(f"Watching for {meta_h5}")
+    SSX_LOGGER.info(f"Watching for {meta_h5}")
     while time.time() - t0 < max_wait:
         if meta_h5.exists():
-            logger.info(f"Found {meta_h5} after {time.time() - t0:.1f} seconds")
+            SSX_LOGGER.info(f"Found {meta_h5} after {time.time() - t0:.1f} seconds")
             time.sleep(5)
             break
-        logger.debug(f"Waiting for {meta_h5}")
+        SSX_LOGGER.debug(f"Waiting for {meta_h5}")
         time.sleep(1)
     if not meta_h5.exists():
-        logger.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
+        SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return False
 
     transmission = (float(caget(Eiger.pv.transmission)),)
 
     if det_type == Eiger.name:
         bit_depth = int(caget(Eiger.pv.bit_depth))
-        logger.debug(
+        SSX_LOGGER.debug(
             f"Call to nexgen server with the following chip definition: \n{chip_prog_dict}"
         )
 
@@ -96,10 +94,12 @@ def call_nexgen(
             "wavelength": wavelength,
             "bit_depth": bit_depth,
         }
-        logger.info(f"Sending POST request to {url} with payload:")
-        logger.info(pprint.pformat(payload))
+        SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
+        SSX_LOGGER.info(pprint.pformat(payload))
         response = requests.post(url, headers=headers, json=payload)
-        logger.info(f"Response: {response.text} (status code: {response.status_code})")
+        SSX_LOGGER.info(
+            f"Response: {response.text} (status code: {response.status_code})"
+        )
         # the following will raise an error if the request was unsuccessful
         return response.status_code == requests.codes.ok
     return False

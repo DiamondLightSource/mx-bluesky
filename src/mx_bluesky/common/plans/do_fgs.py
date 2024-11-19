@@ -11,7 +11,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 from dodal.log import LOGGER
-from dodal.plans.check_topup import check_topup_and_wait_if_necessary
+from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from scanspec.core import AxesPoints, Axis
 
 from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
