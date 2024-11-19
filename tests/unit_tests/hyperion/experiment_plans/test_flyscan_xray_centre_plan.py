@@ -1041,9 +1041,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector = MagicMock()
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
-        # Without the complete finishing we will not get all the images
-        fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
-
         with pytest.raises(CompleteException):
             RE(
                 run_gridscan(
