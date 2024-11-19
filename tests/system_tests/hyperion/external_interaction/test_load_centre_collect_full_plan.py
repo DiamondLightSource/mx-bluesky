@@ -112,7 +112,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "overlap": 0,
     "omegastart": 0,
     "startimagenumber": 1,
-    "wavelength": 0.71,
+    "wavelength": 0.976254,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
     "xtalsnapshotfullpath1": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
@@ -144,7 +144,7 @@ ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": 370,
     # "chiStart": 0, mx-bluesky 325
-    "wavelength": 0.71,
+    "wavelength": 0.976254,
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.004,
@@ -188,6 +188,9 @@ def test_execute_load_centre_collect_full_plan(
     robot_load_cb = RobotLoadISPyBCallback()
     robot_load_cb.expeye = MagicMock()
     robot_load_cb.expeye.start_load.return_value = 1234
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+    )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
     RE.subscribe(robot_load_cb)
