@@ -317,7 +317,7 @@ def zebra(RE):
 def backlight():
     backlight = i03.backlight(fake_with_ophyd_sim=True)
     backlight.TIME_TO_MOVE_S = 0.001
-    return i03.backlight(fake_with_ophyd_sim=True)
+    return backlight
 
 
 @pytest.fixture
@@ -585,6 +585,7 @@ def fake_create_devices(
     zebra: Zebra,
     detector_motion: DetectorMotion,
     aperture_scatterguard: ApertureScatterguard,
+    backlight: Backlight,
 ):
     mock_omega_sets = MagicMock(return_value=NullStatus())
 
@@ -596,7 +597,7 @@ def fake_create_devices(
         "smargon": smargon,
         "zebra": zebra,
         "detector_motion": detector_motion,
-        "backlight": i03.backlight(fake_with_ophyd_sim=True),
+        "backlight": backlight,
         "ap_sg": aperture_scatterguard,
     }
     return devices
