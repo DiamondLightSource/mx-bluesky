@@ -90,9 +90,7 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(fake_fgs_composite: FlyScanXRayCentreComposite):
-    capture_table = DatasetTable(
-        name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]
-    )
+    capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
     set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
 
     return fake_fgs_composite
