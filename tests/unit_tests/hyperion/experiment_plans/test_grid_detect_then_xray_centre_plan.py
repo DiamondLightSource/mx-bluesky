@@ -10,7 +10,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -114,7 +114,9 @@ async def test_detect_grid_and_do_gridscan(
     mock_grid_detection_plan.assert_called_once()
 
     # Check backlight was moved OUT
-    assert await composite.backlight.position.get_value() == BacklightPosition.OUT
+    get_mock_put(composite.backlight.position).assert_called_once_with(
+        BacklightPosition.OUT, wait=ANY
+    )
 
     # Check aperture was changed to SMALL
     assert (
