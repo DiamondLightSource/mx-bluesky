@@ -741,11 +741,12 @@ async def fake_fgs_composite(
     zocalo,
     dcm,
     panda,
+    backlight,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
-        backlight=i03.backlight(fake_with_ophyd_sim=True),
+        backlight=backlight,
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
@@ -767,7 +768,6 @@ async def fake_fgs_composite(
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
-    fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
 
