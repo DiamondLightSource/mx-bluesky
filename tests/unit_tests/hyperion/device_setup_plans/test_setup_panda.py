@@ -94,7 +94,7 @@ def test_setup_panda_correctly_configures_table(
     params = PandAGridScanParams(
         x_steps=x_steps,
         x_step_size_mm=x_step_size,
-        x_start=x_start,
+        x_start_mm=x_start,
         run_up_distance_mm=run_up_distance_mm,
         transmission_fraction=0.01,
     )
@@ -147,7 +147,7 @@ def test_setup_panda_correctly_configures_table(
         + SeqTable.row(
             repeats=x_steps,
             trigger=SeqTrigger.POSA_GT,
-            position=int(params.x_start * MM_TO_ENCODER_COUNTS),
+            position=int(params.x_start_mm * MM_TO_ENCODER_COUNTS),
             time1=PULSE_WIDTH_US,
             outa1=True,
             time2=SPACE_WIDTH_US,
@@ -166,7 +166,7 @@ def test_setup_panda_correctly_configures_table(
             repeats=x_steps,
             trigger=SeqTrigger.POSA_LT,
             position=int(
-                (params.x_start + (params.x_steps - 1) * params.x_step_size_mm)
+                (params.x_start_mm + (params.x_steps - 1) * params.x_step_size_mm)
                 * MM_TO_ENCODER_COUNTS
                 + exposure_distance_counts
             ),

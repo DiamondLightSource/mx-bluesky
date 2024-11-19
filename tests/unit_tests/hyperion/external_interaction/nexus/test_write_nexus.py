@@ -163,7 +163,9 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_varying_axis_stride_correct(
                 sam_y[:], grid_scan_params, grid_scan_params.y_axis
             )
-            assert_axis_data_fixed(written_nexus_file, "z", grid_scan_params.z1_start)
+            assert_axis_data_fixed(
+                written_nexus_file, "z", grid_scan_params.z1_start_mm
+            )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
@@ -215,7 +217,9 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_varying_axis_stride_correct(
                 sam_z[:], grid_scan_params, grid_scan_params.z_axis
             )
-            assert_axis_data_fixed(written_nexus_file, "y", grid_scan_params.y2_start)
+            assert_axis_data_fixed(
+                written_nexus_file, "y", grid_scan_params.y2_start_mm
+            )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
