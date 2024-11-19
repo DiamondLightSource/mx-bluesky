@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from blueapi.core import MsgGenerator
 from bluesky.callbacks import CallbackBase
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.beamlines.i03 import eiger
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
