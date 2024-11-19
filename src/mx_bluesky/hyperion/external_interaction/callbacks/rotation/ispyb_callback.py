@@ -61,7 +61,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters."
             )
-            self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
+            hyperion_params = doc.get("hyperion_parameters")
+            assert isinstance(hyperion_params, str)
+            self.params = RotationScan.model_validate_json(hyperion_params)
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)

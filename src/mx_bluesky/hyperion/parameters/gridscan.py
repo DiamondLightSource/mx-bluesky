@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
     DetectorParams,
 )
@@ -15,38 +14,21 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
 from mx_bluesky.common.parameters.components import (
-    DiffractionExperimentWithSample,
-    IspybExperimentType,
-    OptionalGonioAngleStarts,
     SplitScan,
     WithOptionalEnergyChange,
-    WithScan,
-    XyzStarts,
+    WithPandaGridScan,
 )
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
-from mx_bluesky.hyperion.parameters.components import WithFeatures
+from mx_bluesky.common.parameters.gridscan import (
+    GridCommon,
+    SpecifiedGrid,
+)
+from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
-# This will be restructed once Once https://github.com/DiamondLightSource/mx-bluesky/issues/323#issue-2500957290 is further along
-# to handle slightly different parameters between different beamline implementations
-class GridCommon(
-    DiffractionExperimentWithSample,
-    OptionalGonioAngleStarts,
-    WithFeatures,
-):
-    grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
-    exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
-    use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
-    panda_runup_distance_mm: float = Field(
-        default=GridscanParamConstants.PANDA_RUN_UP_DISTANCE_MM
-    )
-
-    ispyb_experiment_type: IspybExperimentType = Field(
-        default=IspybExperimentType.GRIDSCAN_3D
-    )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
+class HyperionGridCommon(GridCommon, WithHyperionFeatures):
+    # This class only exists so that we can properly select enable_dev_shm. Remove in
+    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
 
     @property
     def detector_params(self):
@@ -80,36 +62,13 @@ class GridCommon(
         )
 
 
-class GridScanWithEdgeDetect(GridCommon):
-    box_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
-
-
-class PinTipCentreThenXrayCentre(GridCommon):
-    tip_offset_um: float = 0
-
-
-class RobotLoadThenCentre(GridCommon):
-    thawing_time: float = Field(default=CONST.I03.THAWING_TIME)
-
-    def robot_load_params(self):
-        my_params = self.model_dump()
-        return RobotLoadAndEnergyChange(**my_params)
-
-    def pin_centre_then_xray_centre_params(self):
-        my_params = self.model_dump()
-        del my_params["thawing_time"]
-        return PinTipCentreThenXrayCentre(**my_params)
-
-
-class SpecifiedGridScan(GridCommon, XyzStarts, WithScan):
-    """A specified grid scan is one which has defined values for the start position,
-    grid and box sizes, etc., as opposed to parameters for a plan which will create
-    those parameters at some point (e.g. through optical pin detection)."""
-
-    ...
-
-
-class ThreeDGridScan(SpecifiedGridScan, SplitScan, WithOptionalEnergyChange):
+class HyperionThreeDGridScan(
+    HyperionGridCommon,
+    SpecifiedGrid,
+    SplitScan,
+    WithOptionalEnergyChange,
+    WithPandaGridScan,
+):
     """Parameters representing a so-called 3D grid scan, which consists of doing a
     gridscan in X and Y, followed by one in X and Z."""
 
@@ -147,6 +106,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan, WithOptionalEnergyChange):
     @property
     def panda_FGS_params(self) -> PandAGridScanParams:
         if self.y_steps % 2 and self.z_steps > 0:
+            # See https://github.com/DiamondLightSource/hyperion/issues/1118 for explanation
             raise OddYStepsException(
                 "The number of Y steps must be even for a PandA gridscan"
             )

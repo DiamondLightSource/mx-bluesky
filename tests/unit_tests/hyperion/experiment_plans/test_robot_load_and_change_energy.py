@@ -13,6 +13,7 @@ from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
     prepare_for_robot_load,
@@ -22,7 +23,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 from ....conftest import raw_params_from_file
 

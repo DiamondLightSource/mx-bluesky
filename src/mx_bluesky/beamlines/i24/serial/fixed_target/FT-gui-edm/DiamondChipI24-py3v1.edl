@@ -1270,21 +1270,18 @@ topShadowColor index 1
 botShadowColor index 8
 controlPv "ME14E-MO-IOC-01:GP2"
 font "arial-medium-r-18.0"
-numItems 3
+numItems 2
 symbolTag {
   0 "None"
   1 "Mapping Lite"
-  2 "Full Mapping"
 }
 symbol0 {
   0 "NN"
   1 "ML"
-  2 "FM"
 }
 value0 {
   0 "none"
   1 "mappinglite"
-  2 "fullmapping"
 }
 endObjectProperties
 
