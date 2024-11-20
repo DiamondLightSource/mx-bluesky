@@ -12,6 +12,7 @@ from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     OavGridDetectionComposite,
@@ -23,8 +24,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 
 from ..conftest import OavGridSnapshotTestEvents
@@ -58,7 +58,7 @@ def _fake_grid_detection(
 
 
 def test_full_grid_scan(
-    test_fgs_params: ThreeDGridScan, test_config_files: dict[str, str]
+    test_fgs_params: HyperionThreeDGridScan, test_config_files: dict[str, str]
 ):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
@@ -156,7 +156,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         )
     )
 
-    params: ThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
+    params: HyperionThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
 
     assert params.detector_params.num_triggers == 50
 

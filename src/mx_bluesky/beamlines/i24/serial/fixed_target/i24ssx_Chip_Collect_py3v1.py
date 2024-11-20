@@ -10,7 +10,7 @@ from time import sleep
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
@@ -77,7 +77,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 2
+    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 600
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
@@ -97,7 +97,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
         )
         if pump_setting == PumpProbeSetting.Medium1:
             # Long delay between pump and probe, with fast shutter opening and closing.
-            timeout = timeout + SHUTTER_OPEN_TIME
+            timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
 
 
@@ -234,8 +234,6 @@ def load_motion_program_data(
             SSX_LOGGER.info(f"Map type is None, setting program prefix to {prefix}")
         elif map_type == MappingType.Lite:
             prefix = 12
-        elif map_type == MappingType.Full:
-            prefix = 13
         else:
             SSX_LOGGER.warning(f"Unknown Map Type, map_type = {map_type}")
             return
@@ -301,14 +299,6 @@ def get_prog_num(
         SSX_LOGGER.info(f"Map type: {str(map_type)}")
         SSX_LOGGER.info("Program number: 12")
         return 12
-    if map_type == MappingType.Full:
-        # TODO See https://github.com/DiamondLightSource/mx-bluesky/issues/515
-        SSX_LOGGER.info(f"Map type: {str(map_type)}")
-        SSX_LOGGER.info("Program number: 13")
-        # TODO once reinstated return 13
-        msg = "Full mapping is broken and currently disabled."
-        SSX_LOGGER.error(msg)
-        raise ValueError(msg)
 
 
 @log_on_entry
@@ -351,14 +341,6 @@ def datasetsizei24(
 
         total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
         SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
-
-    elif map_type == MappingType.Full:
-        SSX_LOGGER.error("Not Set Up For Full Mapping")
-        raise ValueError("The beamline is currently not set for Full Mapping.")
-
-    else:
-        SSX_LOGGER.warning(f"Unknown Map Type, map_type = {str(map_type)}")
-        raise ValueError("Unknown map type")
 
     SSX_LOGGER.info("Set PV to calculated number of images.")
     caput(pv.me14e_gp10, int(total_numb_imgs))
@@ -444,7 +426,11 @@ def start_i24(
         )
 
         SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,
@@ -467,7 +453,7 @@ def start_i24(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True)
+        Path(filepath).mkdir(parents=True, exist_ok=True)
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -503,7 +489,11 @@ def start_i24(
         )
 
         SSX_LOGGER.debug("Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,

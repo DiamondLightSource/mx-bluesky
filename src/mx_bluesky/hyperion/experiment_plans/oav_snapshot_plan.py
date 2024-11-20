@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Protocol
 
-from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
