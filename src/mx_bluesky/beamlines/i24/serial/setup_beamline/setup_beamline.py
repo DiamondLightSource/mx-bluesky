@@ -8,8 +8,8 @@ from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
-from mx_bluesky.beamlines.i24.serial.constants import BEAM_CENTER_POS
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_POS
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 
