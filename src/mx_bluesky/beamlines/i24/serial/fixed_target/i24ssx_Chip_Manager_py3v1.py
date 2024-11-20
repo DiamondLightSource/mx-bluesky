@@ -30,11 +30,14 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format, get_chip_map
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    FixedTargetParameters,
+    get_chip_format,
+    get_chip_map,
+)
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     CS_FILES_PATH,
     LITEMAP_PATH,
-    PARAM_FILE_NAME,
     PARAM_FILE_PATH_FT,
     PVAR_FILE_PATH,
 )
@@ -110,16 +113,14 @@ def initialise_stages(
 
 
 @log_on_entry
-def write_parameter_file(
+def read_parameters(
     detector_stage: DetectorMotion,
 ) -> MsgGenerator:
     param_path: Path = PARAM_FILE_PATH_FT
     # Create directory if it doesn't yet exist.
     param_path.mkdir(parents=True, exist_ok=True)
 
-    SSX_LOGGER.info(
-        f"Writing Parameter File: {(param_path / PARAM_FILE_NAME).as_posix()}"
-    )
+    SSX_LOGGER.info("Creating parameter model from input.")
 
     filename = caget(pv.me14e_chip_name)
     det_type = yield from get_detector_type(detector_stage)
@@ -167,13 +168,11 @@ def write_parameter_file(
         else None,
     }
 
-    with open(param_path / PARAM_FILE_NAME, "w") as f:
-        json.dump(params_dict, f, indent=4)
-
-    SSX_LOGGER.info("Information written to file \n")
+    SSX_LOGGER.info("Parameters for I24 serial collection: \n")
     SSX_LOGGER.info(pformat(params_dict))
 
     yield from bps.null()
+    return FixedTargetParameters(**params_dict)
 
 
 def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):

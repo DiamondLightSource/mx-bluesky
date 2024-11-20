@@ -28,7 +28,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
-    write_parameter_file,
+    read_parameters,
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -38,7 +38,6 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     LITEMAP_PATH,
-    PARAM_FILE_NAME,
     PARAM_FILE_PATH_FT,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
@@ -722,29 +721,10 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
 ) -> MsgGenerator:
-    # in the first instance, write params here
-    yield from write_parameter_file(detector_stage)
+    # Read the parameters
+    parameters = yield from read_parameters(detector_stage)
 
-    SSX_LOGGER.info("Getting parameters from file.")
-    parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
-
-    log_msg = f"""
-            Parameters for I24 serial collection: \n
-                Chip name is {parameters.filename}
-                visit = {parameters.visit}
-                sub_dir = {parameters.directory}
-                n_exposures = {parameters.num_exposures}
-                chip_type = {str(parameters.chip.chip_type)}
-                map_type = {str(parameters.map_type)}
-                dcdetdist = {parameters.detector_distance_mm}
-                exptime = {parameters.exposure_time_s}
-                det_type = {parameters.detector_name}
-                pump_repeat = {str(parameters.pump_repeat)}
-                pumpexptime = {parameters.laser_dwell_s}
-                pumpdelay = {parameters.laser_delay_s}
-                prepumpexptime = {parameters.pre_pump_exposure_s}
-        """
-    SSX_LOGGER.info(log_msg)
+    # TODO HERE do equivalent of upload_parameters
 
     # DCID instance - do not create yet
     dcid = DCID(

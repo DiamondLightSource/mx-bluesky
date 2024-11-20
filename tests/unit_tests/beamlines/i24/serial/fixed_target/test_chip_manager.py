@@ -18,11 +18,11 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     moveto,
     moveto_preset,
     pumpprobe_calc,
+    read_parameters,
     scrape_mtr_directions,
     scrape_mtr_fiducials,
     set_pmac_strings_for_cs,
     upload_parameters,
-    write_parameter_file,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
@@ -61,7 +61,7 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
 )
-def test_write_parameter_file(
+def test_read_parameters(
     fake_mkdir,
     fake_log,
     mock_read_visit,
@@ -78,14 +78,12 @@ def test_write_parameter_file(
 
     fake_det.side_effect = [fake_generator(Eiger())]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
-        mock_open(),
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.FixedTargetParameters",
     ):
-        RE(write_parameter_file(detector_stage))
+        RE(read_parameters(detector_stage))
 
     fake_mkdir.assert_called_once()
     assert fake_caget.call_count == 12
-    mock_json.dump.assert_called_once()
     assert fake_log.info.call_count == 3
 
 
