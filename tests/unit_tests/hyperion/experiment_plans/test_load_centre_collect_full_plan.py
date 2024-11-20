@@ -424,77 +424,36 @@ def test_load_centre_collect_full_plan_multiple_centres(
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "multi_rotation_scan"
     )
+
+    def _rotation_at_first_position(chi=0):
+        return {
+            "omega_start_deg": 10,
+            "chi_start_deg": chi,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        }
+
+    def _rotation_at_second_position(chi=0):
+        return {
+            "omega_start_deg": 10,
+            "chi_start_deg": chi,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        }
+
     expected_rotation_scans = [
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 0,
-            "x_start_um": 100,
-            "y_start_um": 200,
-            "z_start_um": 300,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 30,
-            "x_start_um": 100,
-            "y_start_um": 200,
-            "z_start_um": 300,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 0,
-            "x_start_um": 100,
-            "y_start_um": 200,
-            "z_start_um": 300,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 30,
-            "x_start_um": 100,
-            "y_start_um": 200,
-            "z_start_um": 300,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 0,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 30,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 0,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 30,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 0,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
-        {
-            "omega_start_deg": 10,
-            "chi_start_deg": 30,
-            "x_start_um": 400,
-            "y_start_um": 500,
-            "z_start_um": 600,
-        },
+        _rotation_at_first_position(0),
+        _rotation_at_first_position(30),
+        _rotation_at_first_position(0),
+        _rotation_at_first_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
     ]
     for i in range(0, len(expected_rotation_scans)):
         expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i

@@ -8,7 +8,6 @@ import ispyb.sqlalchemy
 import numpy
 import pytest
 import pytest_asyncio
-from bluesky.simulators import RunEngineSimulator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -78,17 +77,6 @@ TEST_RESULT_SMALL = [
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
     }
 ]
-
-
-def simulate_xrc_result(
-    sim_run_engine: RunEngineSimulator,
-    zocalo: ZocaloResults,
-    test_results: Sequence[dict],
-):
-    for k in test_results[0].keys():
-        sim_run_engine.add_read_handler_for(
-            getattr(zocalo, k), numpy.array([r[k] for r in test_results])
-        )
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
