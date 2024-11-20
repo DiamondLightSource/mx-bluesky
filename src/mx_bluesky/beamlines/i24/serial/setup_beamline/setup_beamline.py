@@ -65,6 +65,7 @@ def set_detector_beam_center_plan(
 ):
     """A small temporary plan to set up the beam center on the detector in use."""
     # NOTE This will be removed once the detectors are using ophyd_async devices
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/62
     SSX_LOGGER.debug(
         f"Set beam center on {detector_name} detector: {BEAM_CENTER_POS[detector_name]}"
     )
