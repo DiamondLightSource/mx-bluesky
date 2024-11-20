@@ -3,9 +3,10 @@ from __future__ import annotations
 import dataclasses
 from pathlib import Path
 
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight, BacklightPosition
