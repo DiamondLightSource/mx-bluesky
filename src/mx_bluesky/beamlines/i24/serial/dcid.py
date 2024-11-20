@@ -22,11 +22,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     SSXType,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import (
-    Detector,
-    Eiger,
-    Pilatus,
-)
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger, Pilatus
 
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
@@ -131,14 +127,17 @@ class DCID:
         start_time: datetime.datetime | None = None,
         pump_probe: bool = False,
     ):
-        """Generate an ispyb DCID.patch_resolution.assert_called_once_with(
-        #     test_dcid.detector,
-        #     dummy_params_ex.detector_distance_mm,
-        #     beam_settings.wavelength_in_a,
-        # )time of collection.
-            shots_per_position (int): Number of exposures per position in a chip. \
-                Defaults to 1, which works for extruder.
-            pump_probe (bool): It True, pump probe collection. Defaults to False.
+        """Generate an ispyb DCID.
+
+        Args:
+            beam_settings (BeamSettings): Information about the beam read from hardware.
+            image_dir (str): The location the images will be written to.
+            num_images (int): Total number of images to be collected.
+            shots_per_position (int, optional): Number of exposures per position in a \
+                chip. Defaults to 1, which works for extruder.
+            start_time(datetime, optional): Collection start time. Defaults to None.
+            pump_probe (bool, optional): If True, a pump probe collection is runnung. \
+                Defaults to False.
         """
         try:
             if not start_time:
