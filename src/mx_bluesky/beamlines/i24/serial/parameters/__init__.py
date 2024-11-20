@@ -4,7 +4,10 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
-from mx_bluesky.beamlines.i24.serial.parameters.utils import get_chip_format
+from mx_bluesky.beamlines.i24.serial.parameters.utils import (
+    get_chip_format,
+    get_chip_map,
+)
 
 __all__ = [
     "SSXType",
@@ -12,4 +15,5 @@ __all__ = [
     "ChipDescription",
     "FixedTargetParameters",
     "get_chip_format",
+    "get_chip_map",
 ]

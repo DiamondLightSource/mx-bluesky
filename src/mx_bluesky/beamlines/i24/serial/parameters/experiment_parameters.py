@@ -1,4 +1,5 @@
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -85,6 +86,10 @@ class ChipDescription(BaseModel):
         else:
             return ((self.y_num_steps - 1) * self.y_step_size) + self.b2b_vert
 
+    @property
+    def tot_num_blocks(self) -> int:
+        return self.x_blocks * self.y_blocks
+
 
 class FixedTargetParameters(SerialExperiment, LaserExperiment):
     """Fixed target parameter model."""
@@ -94,6 +99,7 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
     map_type: MappingType
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
+    chip_map: Sequence[int] | None = None
     total_num_images: int = 0  # Calculated in the code for now
 
     @classmethod

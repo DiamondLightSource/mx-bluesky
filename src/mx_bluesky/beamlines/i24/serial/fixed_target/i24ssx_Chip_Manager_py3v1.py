@@ -20,13 +20,17 @@ from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
 
-from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, Fiducials
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
+    ChipType,
+    Fiducials,
+    MappingType,
+)
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
+from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format, get_chip_map
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     CS_FILES_PATH,
     LITEMAP_PATH,
@@ -121,6 +125,13 @@ def write_parameter_file(
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType(int(caget(CHIPTYPE_PV))))
     map_type = int(caget(MAPTYPE_PV))
+    if map_type == MappingType.Lite and chip_params.chip_type in [
+        ChipType.Oxford,
+        ChipType.OxfordInner,
+    ]:
+        chip_map = get_chip_map()
+    else:
+        chip_map = None
     pump_repeat = int(caget(PUMP_REPEAT_PV))
 
     # If file name ends in a digit this causes processing/pilatus pain.
@@ -144,10 +155,11 @@ def write_parameter_file(
         "detector_distance_mm": caget(pv.me14e_dcdetdist),
         "detector_name": str(det_type),
         "num_exposures": int(caget(NUM_EXPOSURES_PV)),
-        "chip": chip_params.dict(),
+        "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
+        "chip_map": chip_map,
         "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else None,
         "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else None,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))

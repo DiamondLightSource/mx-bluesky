@@ -22,6 +22,7 @@ def dummy_params_without_pp():
         "map_type": 1,
         "pump_repeat": 0,
         "checker_pattern": False,
+        "chip_map": [1],
     }
     return FixedTargetParameters(**params)
 
@@ -41,6 +42,7 @@ def dummy_params_with_pp():
         "map_type": 1,
         "pump_repeat": 3,
         "checker_pattern": False,
+        "chip_map": [1],
         "laser_dwell_s": 0.02,
         "laser_delay_s": 0.05,
     }
