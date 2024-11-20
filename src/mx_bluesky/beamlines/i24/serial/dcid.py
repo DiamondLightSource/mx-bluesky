@@ -1,6 +1,5 @@
 import datetime
 import json
-import logging
 import math
 import os
 import re
@@ -10,6 +9,7 @@ from functools import lru_cache
 
 import requests
 
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     Detector,
@@ -25,8 +25,6 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger("I24ssx.DCID")
-
 
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
@@ -41,7 +39,7 @@ CREDENTIALS_LOCATION = "/scratch/ssx_dcserver.key"
 def get_auth_header() -> dict:
     """Read the credentials file and build the Authorisation header"""
     if not os.path.isfile(CREDENTIALS_LOCATION):
-        logger.warning(
+        SSX_LOGGER.warning(
             "Could not read %s; attempting to proceed without credentials",
             CREDENTIALS_LOCATION,
         )
@@ -205,12 +203,12 @@ class DCID:
 
             # Log what we are doing here
             try:
-                logger.info(
+                SSX_LOGGER.info(
                     "BRIDGE: POST /dc --data %s",
                     repr(json.dumps(data)),
                 )
             except Exception:
-                logger.info(
+                SSX_LOGGER.info(
                     "Caught exception converting data to JSON. Data:\n%s\nVERBOSE:\n%s",
                     str({k: type(v) for k, v in data.items()}),
                 )
@@ -224,20 +222,20 @@ class DCID:
             )
             resp.raise_for_status()
             self.dcid = resp.json()["dataCollectionId"]
-            logger.info("Generated DCID %s", self.dcid)
+            SSX_LOGGER.info("Generated DCID %s", self.dcid)
         except requests.HTTPError as e:
             self.error = True
-            logger.error(
+            SSX_LOGGER.error(
                 "DCID generation Failed; Reason from server: %s", e.response.text
             )
             if self.emit_errors:
                 raise
-            logger.exception("Error generating DCID: %s", e)
+            SSX_LOGGER.exception("Error generating DCID: %s", e)
         except Exception as e:
             self.error = True
             if self.emit_errors:
                 raise
-            logger.exception("Error generating DCID: %s", e)
+            SSX_LOGGER.exception("Error generating DCID: %s", e)
 
     def __int__(self):
         return self.dcid
@@ -248,13 +246,13 @@ class DCID:
             return None
         try:
             command = [COLLECTION_START_SCRIPT, str(self.dcid)]
-            logger.info("Running %s", " ".join(command))
+            SSX_LOGGER.info("Running %s", " ".join(command))
             subprocess.Popen(command)
         except Exception as e:
             self.error = True
             if self.emit_errors:
                 raise
-            logger.warning("Error starting start of collect script: %s", e)
+            SSX_LOGGER.warning("Error starting start of collect script: %s", e)
 
     def notify_end(self):
         """Send notifications that the collection has now ended"""
@@ -262,13 +260,13 @@ class DCID:
             return
         try:
             command = [COLLECTION_END_SCRIPT, str(self.dcid)]
-            logger.info("Running %s", " ".join(command))
+            SSX_LOGGER.info("Running %s", " ".join(command))
             subprocess.Popen(command)
         except Exception as e:
             self.error = True
             if self.emit_errors:
                 raise
-            logger.warning("Error running end of collect notification: %s", e)
+            SSX_LOGGER.warning("Error running end of collect notification: %s", e)
 
     def collection_complete(
         self, end_time: str | datetime.datetime | None = None, aborted: bool = False
@@ -285,7 +283,7 @@ class DCID:
             # end_time might be a string from time.ctime
             if isinstance(end_time, str):
                 end_time = datetime.datetime.strptime(end_time, "%a %b %d %H:%M:%S %Y")
-                logger.debug("Parsed end time: %s", end_time)
+                SSX_LOGGER.debug("Parsed end time: %s", end_time)
 
             if not end_time:
                 end_time = datetime.datetime.now().astimezone()
@@ -302,13 +300,13 @@ class DCID:
             if self.dcid is None:
                 # Print what we would have sent. This means that if something is failing,
                 # we still have the data to upload in the log files.
-                logger.info(
+                SSX_LOGGER.info(
                     'BRIDGE: No DCID but Would PATCH "/dc/XXXX" --data=%s',
                     repr(json.dumps(data)),
                 )
                 return
 
-            logger.info(
+            SSX_LOGGER.info(
                 'BRIDGE: PATCH "/dc/%s" --data=%s', self.dcid, repr(json.dumps(data))
             )
             response = requests.patch(
@@ -318,7 +316,7 @@ class DCID:
                 headers=get_auth_header(),
             )
             response.raise_for_status()
-            logger.info("Successfully updated end time for DCID %d", self.dcid)
+            SSX_LOGGER.info("Successfully updated end time for DCID %d", self.dcid)
         except Exception as e:
             resp_obj = getattr(e, "response", None)
             try:
@@ -333,7 +331,7 @@ class DCID:
             self.error = True
             if self.emit_errors:
                 raise
-            logger.warning("Error completing DCID: %s (%s)", e, resp_str)
+            SSX_LOGGER.warning("Error completing DCID: %s (%s)", e, resp_str)
 
 
 def get_pilatus_filename_template_from_pvs() -> str:
@@ -385,9 +383,9 @@ def get_beamsize() -> tuple[float | None, float | None]:
     h_mode = caget("BL24I-OP-MFM-01:G1:TARGETAPPLY")
     # Validate these and note an error otherwise
     if not v_mode.startswith("VMFM") or v_mode[4:] not in focus_modes:
-        logger.error("Unrecognised vertical beam mode %s", v_mode)
+        SSX_LOGGER.error("Unrecognised vertical beam mode %s", v_mode)
     if not h_mode.startswith("HMFM") or h_mode[4:] not in focus_modes:
-        logger.error("Unrecognised horizontal beam mode %s", h_mode)
+        SSX_LOGGER.error("Unrecognised horizontal beam mode %s", h_mode)
     _, h, _ = focus_modes.get(h_mode[4:], (None, None, None))
     _, _, v = focus_modes.get(v_mode[4:], (None, None, None))
 

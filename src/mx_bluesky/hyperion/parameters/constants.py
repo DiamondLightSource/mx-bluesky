@@ -5,6 +5,7 @@ from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
+    EnvironmentConstants,
     ExperimentParamConstants,
     HardwareConstants,
     OavConstants,
@@ -26,7 +27,6 @@ class I03Constants:
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
-    THAWING_TIME = 20
     SET_STUB_OFFSETS = False
 
     # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
@@ -38,7 +38,7 @@ class I03Constants:
 class HyperionConstants:
     DESCRIPTORS = DocDescriptorNames()
     TRIGGER = TriggerConstants()
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
+    ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
@@ -55,7 +55,6 @@ class HyperionConstants:
     )
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
-    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
     LOG_FILE_NAME = "hyperion.log"
 
 

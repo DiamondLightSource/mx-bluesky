@@ -29,6 +29,7 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -55,8 +56,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callba
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -95,10 +95,10 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetect,
     grid_parameters: GridParamUpdate,
-) -> ThreeDGridScan:
+) -> HyperionThreeDGridScan:
     params_json = grid_scan_with_edge_params.model_dump()
     params_json.update(grid_parameters)
-    flyscan_xray_centre_parameters = ThreeDGridScan(**params_json)
+    flyscan_xray_centre_parameters = HyperionThreeDGridScan(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
 
@@ -130,7 +130,8 @@ def detect_grid_and_do_gridscan(
             oav_params,
             snapshot_template,
             str(snapshot_dir),
-            grid_width_microns=parameters.grid_width_um,
+            parameters.grid_width_um,
+            parameters.box_size_um,
         )
 
     yield from run_grid_detection_plan(

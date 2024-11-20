@@ -3,7 +3,6 @@ Move on click gui for fixed targets at I24
 Robin Owen 12 Jan 2021
 """
 
-import logging
 from collections.abc import Sequence
 
 import bluesky.plan_stubs as bps
@@ -17,9 +16,8 @@ from mx_bluesky.beamlines.i24.serial.fixed_target import (
     i24ssx_Chip_Manager_py3v1 as manager,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters.constants import OAV1_CAM
-
-logger = logging.getLogger("I24ssx.moveonclick")
 
 
 def _get_beam_centre(oav: OAV):
@@ -53,7 +51,7 @@ def _move_on_mouse_click_plan(
     x, y = clicked_position
     xmove = -1 * (beamX - x) * zoomcalibrator
     ymove = 1 * (beamY - y) * zoomcalibrator
-    logger.info(f"Moving X and Y {xmove} {ymove}")
+    SSX_LOGGER.info(f"Moving X and Y {xmove} {ymove}")
     xmovepmacstring = "#1J:" + str(xmove)
     ymovepmacstring = "#2J:" + str(ymove)
     yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
@@ -66,7 +64,7 @@ def onMouse(event, x, y, flags, param):
         RE = param[0]
         pmac = param[1]
         oav = param[2]
-        logger.info(f"Clicked X and Y {x} {y}")
+        SSX_LOGGER.info(f"Clicked X and Y {x} {y}")
         RE(_move_on_mouse_click_plan(oav, pmac, (x, y)))
 
 
@@ -159,7 +157,7 @@ def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
     cv.namedWindow("OAV1view")
     cv.setMouseCallback("OAV1view", onMouse, param=[RE, pmac, oav])  # type: ignore
 
-    logger.info("Showing camera feed. Press escape to close")
+    SSX_LOGGER.info("Showing camera feed. Press escape to close")
     # Read captured video and store them in success and frame
     success, frame = cap.read()
 

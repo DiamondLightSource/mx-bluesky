@@ -63,7 +63,7 @@ def grid_detection_plan(
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
-    box_size_um: float = 20,
+    box_size_um: float,
 ):
     """
     Creates the parameters for two grids that are 90 degrees from each other and
@@ -74,7 +74,7 @@ def grid_detection_plan(
         parameters (OAVParameters): Object containing parameters for setting up the OAV
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
-        grid_width_microns (int): The width of the grid to scan in microns
+        grid_width_microns (float): The width of the grid to scan in microns
         box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = composite.oav

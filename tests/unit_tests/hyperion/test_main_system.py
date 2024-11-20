@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
@@ -124,7 +124,7 @@ TEST_EXPTS = {
     },
     "fgs_real_params": {
         "setup": MagicMock(),
-        "param_type": ThreeDGridScan,
+        "param_type": HyperionThreeDGridScan,
         "experiment_param_type": MagicMock(),
         "callback_collection_type": MagicMock(),
     },
@@ -364,9 +364,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     arg_list,
     parsed_arg_values,
 ):
-    mock_params = MagicMock()
     mock_param_class = MagicMock()
-    mock_param_class.from_json.return_value = mock_params
     callbacks_mock = MagicMock(
         name="mock_callback_class",
         return_value=("test_cb_1", "test_cb_2"),
@@ -433,8 +431,8 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     attenuator = MagicMock(spec=Attenuator)
 
     context = BlueskyContext()
-    context.device(zebra, "zebra")
-    context.device(attenuator, "attenuator")
+    context.register_device(zebra, "zebra")
+    context.register_device(attenuator, "attenuator")
 
     @dataclass
     class FakeComposite:
@@ -475,7 +473,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, test_fgs_params: ThreeDGridScan
+    mock_setup, test_fgs_params: HyperionThreeDGridScan
 ):
     mock_setup = MagicMock()
     with patch.dict(
