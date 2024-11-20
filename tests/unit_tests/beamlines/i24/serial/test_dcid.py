@@ -48,7 +48,7 @@ def test_get_resolution():
 @patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.json")
-def test_generate_dcid_for_eigee(
+def test_generate_dcid_for_eiger(
     fake_json, fake_log, patch_resolution, dummy_params_ex, RE
 ):
     test_dcid = DCID(
