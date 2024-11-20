@@ -9,8 +9,6 @@ the edm screen, while on the schematics they are 0 indexed. Thus, `Soft In 1` fr
 schematics corresponds to soft_in_2 in the code.
 """
 
-import logging
-
 import bluesky.plan_stubs as bps
 from dodal.devices.zebra import (
     AND3,
@@ -35,6 +33,8 @@ from dodal.devices.zebra import (
     Zebra,
 )
 
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+
 # Detector specific outs
 TTL_EIGER = 1
 TTL_PILATUS = 2
@@ -47,8 +47,6 @@ SHUTTER_MODE = {
 
 GATE_START = 1.0
 SHUTTER_OPEN_TIME = 0.05  # For pp with long delays
-
-logger = logging.getLogger("I24ssx.setup_zebra")
 
 
 def get_zebra_settings_for_extruder(
@@ -71,28 +69,28 @@ def get_zebra_settings_for_extruder(
 
 def arm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    logger.info("Zebra armed.")
+    SSX_LOGGER.info("Zebra armed.")
 
 
 def disarm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    logger.info("Zebra disarmed.")
+    SSX_LOGGER.info("Zebra disarmed.")
 
 
 def open_fast_shutter(zebra: Zebra):
     yield from bps.abs_set(zebra.inputs.soft_in_2, SoftInState.YES, wait=True)
-    logger.info("Fast shutter open.")
+    SSX_LOGGER.info("Fast shutter open.")
 
 
 def close_fast_shutter(zebra: Zebra):
     yield from bps.abs_set(zebra.inputs.soft_in_2, SoftInState.NO, wait=True)
-    logger.info("Fast shutter closed.")
+    SSX_LOGGER.info("Fast shutter closed.")
 
 
 def set_shutter_mode(zebra: Zebra, mode: str):
     # SOFT_IN:B0 has to be disabled for manual mode
     yield from bps.abs_set(zebra.inputs.soft_in_1, SHUTTER_MODE[mode], wait=True)
-    logger.info(f"Shutter mode set to {mode}.")
+    SSX_LOGGER.info(f"Shutter mode set to {mode}.")
 
 
 def setup_pc_sources(
@@ -124,12 +122,12 @@ def setup_zebra_for_quickshot_plan(
         exp_time (float): Collection exposure time, in s.
         num_images (float): Number of images to be collected.
     """
-    logger.info("Setup ZEBRA for quickshot collection.")
+    SSX_LOGGER.info("Setup ZEBRA for quickshot collection.")
     yield from bps.abs_set(zebra.pc.arm_source, ArmSource.SOFT, group=group)
     yield from setup_pc_sources(zebra, TrigSource.TIME, TrigSource.EXTERNAL)
 
     gate_width = exp_time * num_images + 0.5
-    logger.info(f"Gate start set to {GATE_START}, with width {gate_width}.")
+    SSX_LOGGER.info(f"Gate start set to {GATE_START}, with width {gate_width}.")
     yield from bps.abs_set(zebra.pc.gate_start, GATE_START, group=group)
     yield from bps.abs_set(zebra.pc.gate_width, gate_width, group=group)
 
@@ -138,7 +136,7 @@ def setup_zebra_for_quickshot_plan(
 
     if wait:
         yield from bps.wait(group)
-    logger.info("Finished setting up zebra.")
+    SSX_LOGGER.info("Finished setting up zebra.")
 
 
 def set_logic_gates_for_porto_triggering(
@@ -204,7 +202,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
         pulse1_delay (float, optional): Delay to start pulse1 (the laser control) after \
             gate start. Defaults to 0.0.
     """
-    logger.info("Setup ZEBRA for pump probe extruder collection.")
+    SSX_LOGGER.info("Setup ZEBRA for pump probe extruder collection.")
 
     yield from set_shutter_mode(zebra, "manual")
 
@@ -226,7 +224,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     gate_width, gate_step = get_zebra_settings_for_extruder(
         exp_time, pump_exp, pump_delay
     )
-    logger.info(
+    SSX_LOGGER.info(
         f"""
         Gate start set to {GATE_START}, with calculated width {gate_width}
         and step {gate_step}.
@@ -241,13 +239,13 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     # Settings for extruder pump probe:
     # PULSE1_DLY is the start (0 usually), PULSE1_WID is the laser dwell set on edm
     # PULSE2_DLY is the laser delay set on edm, PULSE2_WID is the exposure time
-    logger.info(
+    SSX_LOGGER.info(
         f"Pulse1 starting at {pulse1_delay} with width set to laser dwell {pump_exp}."
     )
     yield from bps.abs_set(zebra.output.pulse_1.input, PC_GATE, group=group)
     yield from bps.abs_set(zebra.output.pulse_1.delay, pulse1_delay, group=group)
     yield from bps.abs_set(zebra.output.pulse_1.width, pump_exp, group=group)
-    logger.info(
+    SSX_LOGGER.info(
         f"""
         Pulse2 starting at laser delay {pump_delay} with width set to \
         exposure time {exp_time}.
@@ -259,7 +257,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
 
     if wait:
         yield from bps.wait(group)
-    logger.info("Finished setting up zebra.")
+    SSX_LOGGER.info("Finished setting up zebra.")
 
 
 def setup_zebra_for_fastchip_plan(
@@ -302,7 +300,7 @@ def setup_zebra_for_fastchip_plan(
         start_time_offset (float): Delay on the start of the position compare. \
             Defaults to 0.0 (standard chip collection).
     """
-    logger.info("Setup ZEBRA for a fixed target collection.")
+    SSX_LOGGER.info("Setup ZEBRA for a fixed target collection.")
 
     yield from set_shutter_mode(zebra, "manual")
 
@@ -341,7 +339,7 @@ def setup_zebra_for_fastchip_plan(
 
     if wait:
         yield from bps.wait(group)
-    logger.info("Finished setting up zebra.")
+    SSX_LOGGER.info("Finished setting up zebra.")
 
 
 def open_fast_shutter_at_each_position_plan(
@@ -371,10 +369,10 @@ def open_fast_shutter_at_each_position_plan(
         num_exposures (int): Number of times data is collected in each aperture.
         exposure_time (float): Exposure time for each shot.
     """
-    logger.info(
+    SSX_LOGGER.info(
         "ZEBRA setup for fastchip collection with long delays between exposures."
     )
-    logger.debug("Controlling the fast shutter on PULSE2.")
+    SSX_LOGGER.debug("Controlling the fast shutter on PULSE2.")
     # Output panel pulse_2 settings
     yield from bps.abs_set(zebra.output.pulse_2.input, PC_GATE, group=group)
     yield from bps.abs_set(zebra.output.pulse_2.delay, 0.0, group=group)
@@ -386,7 +384,7 @@ def open_fast_shutter_at_each_position_plan(
 
     if wait:
         yield from bps.wait(group=group)
-    logger.debug("Finished setting up for long delays.")
+    SSX_LOGGER.debug("Finished setting up for long delays.")
 
 
 def reset_pc_gate_and_pulse(zebra: Zebra, group: str = "reset_pc"):
@@ -444,16 +442,16 @@ def zebra_return_to_normal_plan(
 
     if wait:
         yield from bps.wait(group)
-    logger.info("Zebra settings back to normal.")
+    SSX_LOGGER.info("Zebra settings back to normal.")
 
 
 def reset_zebra_when_collection_done_plan(zebra: Zebra):
     """
     End of collection zebra operations: close fast shutter, disarm and reset settings.
     """
-    logger.debug("Close the fast shutter.")
+    SSX_LOGGER.debug("Close the fast shutter.")
     yield from close_fast_shutter(zebra)
-    logger.debug("Disarm the zebra.")
+    SSX_LOGGER.debug("Disarm the zebra.")
     yield from disarm_zebra(zebra)
-    logger.debug("Set zebra back to normal.")
+    SSX_LOGGER.debug("Set zebra back to normal.")
     yield from zebra_return_to_normal_plan(zebra, wait=True)

@@ -98,7 +98,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback received start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
-            self.params = GridCommon.from_json(doc.get("hyperion_parameters"))
+            hyperion_params = doc.get("hyperion_parameters")
+            assert isinstance(hyperion_params, str)
+            self.params = GridCommon.model_validate_json(hyperion_params)
             self.ispyb = StoreInIspyb(self.ispyb_config)
             data_collection_group_info = populate_data_collection_group(self.params)
 

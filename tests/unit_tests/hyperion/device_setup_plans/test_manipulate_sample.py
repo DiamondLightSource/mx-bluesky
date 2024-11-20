@@ -11,7 +11,7 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ async def test_move_aperture_does_nothing_when_none_selected(
 @patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_results_passed_to_move_motors(
     bps_abs_set: MagicMock,
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     fake_fgs_composite: FlyScanXRayCentreComposite,
     RE: RunEngine,
 ):

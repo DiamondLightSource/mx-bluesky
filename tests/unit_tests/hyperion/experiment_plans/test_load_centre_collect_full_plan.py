@@ -14,6 +14,7 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 from pydantic import ValidationError
 
+from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
@@ -30,7 +31,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScanPerSweep,

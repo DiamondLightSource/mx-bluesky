@@ -14,7 +14,7 @@ from ophyd.sim import SynAxis
 from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
@@ -80,7 +80,7 @@ def test_rotation_params():
 @pytest.fixture(params=[1050])
 def test_fgs_params(request):
     assert request.param % 25 == 0, "Please use a multiple of 25 images"
-    params = ThreeDGridScan(**default_raw_params())
+    params = HyperionThreeDGridScan(**default_raw_params())
     params.demand_energy_ev = convert_angstrom_to_eV(1.0)
     params.use_roi_mode = True
     first_scan_img = (request.param // 10) * 6

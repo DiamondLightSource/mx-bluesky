@@ -15,7 +15,10 @@ import zmq
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
-from dodal.devices.zocalo.zocalo_results import get_processing_results_from_event
+from dodal.devices.zocalo.zocalo_results import (
+    ZocaloResults,
+    get_processing_results_from_event,
+)
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -28,7 +31,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
@@ -136,8 +139,10 @@ def test_RE_with_external_callbacks_starts_and_stops(
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     fgs_composite_for_fake_zocalo: FlyScanXRayCentreComposite,
+    done_status,
+    zocalo_device: ZocaloResults,
     fetch_comment,  # noqa
 ):
     """This test doesn't actually require S03 to be running, but it does require fake

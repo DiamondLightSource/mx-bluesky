@@ -8,7 +8,7 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
-from mx_bluesky.hyperion.parameters.gridscan import (
+from mx_bluesky.common.parameters.gridscan import (
     RobotLoadThenCentre,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan

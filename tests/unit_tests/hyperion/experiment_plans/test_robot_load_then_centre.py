@@ -7,6 +7,10 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.robot import SampleLocation
 
+from mx_bluesky.common.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+    RobotLoadThenCentre,
+)
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
@@ -18,10 +22,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import (
-    PinTipCentreThenXrayCentre,
-    RobotLoadThenCentre,
-)
 
 from ....conftest import assert_none_matching, raw_params_from_file
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run

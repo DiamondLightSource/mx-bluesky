@@ -78,12 +78,14 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             self.meta_data_run_number = doc.get("meta_data_run_number")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             self.run_uid = doc.get("uid")
-            json_params = doc.get("hyperion_parameters")
+            hyperion_params = doc.get("hyperion_parameters")
+            assert isinstance(hyperion_params, str)
             NEXUS_LOGGER.info(
-                f"Nexus writer received start document with experiment parameters {json_params}"
+                f"Nexus writer received start document with experiment parameters {hyperion_params}"
             )
-            parameters = RotationScan.from_json(json_params)
-            NEXUS_LOGGER.info(f"Writing Nexus file for {parameters.model_dump_json()}")
+            parameters = RotationScan.model_validate_json(hyperion_params)
+            NEXUS_LOGGER.info("Setting up nexus file...")
+
             det_size = (
                 parameters.detector_params.detector_size_constants.det_size_pixels
             )

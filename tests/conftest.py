@@ -67,6 +67,7 @@ from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import _get_logging_dir, do_default_logging_setup
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
@@ -77,7 +78,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import FeatureFlags
+from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.log import (
     ALL_LOGGERS,
     ISPYB_LOGGER,
@@ -85,8 +86,7 @@ from mx_bluesky.hyperion.log import (
     NEXUS_LOGGER,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -222,7 +222,7 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return ThreeDGridScan(
+    return HyperionThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
@@ -230,7 +230,7 @@ def test_fgs_params():
 
 
 @pytest.fixture
-def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
+def test_panda_fgs_params(test_fgs_params: HyperionThreeDGridScan):
     test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
@@ -705,7 +705,7 @@ async def panda(RE: RunEngine):
 
     set_mock_value(
         panda.data.datasets,
-        DatasetTable(name=["name"], hdf5_type=[PandaHdf5DatasetType.FLOAT_64]),
+        DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
     return panda
@@ -733,7 +733,7 @@ def panda_fast_grid_scan(RE):
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: ThreeDGridScan,
+    test_fgs_params: HyperionThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
@@ -743,11 +743,12 @@ async def fake_fgs_composite(
     zocalo,
     dcm,
     panda,
+    backlight,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
-        backlight=i03.backlight(fake_with_ophyd_sim=True),
+        backlight=backlight,
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
@@ -769,7 +770,6 @@ async def fake_fgs_composite(
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
-    fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
 
@@ -924,7 +924,7 @@ class DocumentCapturer:
 
 @pytest.fixture
 def feature_flags():
-    return FeatureFlags()
+    return HyperionFeatureFlags()
 
 
 def assert_none_matching(
