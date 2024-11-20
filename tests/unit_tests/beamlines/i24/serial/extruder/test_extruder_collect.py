@@ -243,7 +243,11 @@ def test_run_extruder_quickshot_with_eiger(
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_pilatus_filename_template_from_device"
+)
 def test_run_extruder_pump_probe_with_pilatus(
+    mock_pilatus_temp,
     mock_read_beam_info,
     fake_read,
     mock_pp_plan,
@@ -268,6 +272,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     set_mock_value(dcm.wavelength_in_a, 0.6)
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [fake_generator(0)]
+    mock_pilatus_temp.return_value = "test_00001_#####.cbf"
     RE(
         main_extruder_plan(
             zebra,
@@ -284,6 +289,7 @@ def test_run_extruder_pump_probe_with_pilatus(
             fake_start_time,
         )
     )
+    mock_pilatus_temp.assert_called_once()
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1

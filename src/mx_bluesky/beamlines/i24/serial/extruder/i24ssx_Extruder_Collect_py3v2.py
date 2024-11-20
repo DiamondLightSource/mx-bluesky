@@ -28,7 +28,11 @@ from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID, read_beam_info_from_hardware
+from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
+    get_pilatus_filename_template_from_device,
+    read_beam_info_from_hardware,
+)
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
@@ -330,9 +334,14 @@ def main_extruder_plan(
     )
 
     # Do DCID creation BEFORE arming the detector
+    if parameters.detector_name == "eiger":
+        filetemplate = f"{parameters.filename}.nxs"
+    else:
+        filetemplate = yield from get_pilatus_filename_template_from_device()
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
+        filetemplate=filetemplate,
         num_images=parameters.num_images,
         start_time=start_time,
         pump_probe=parameters.pump_status,

@@ -23,7 +23,11 @@ from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID, read_beam_info_from_hardware
+from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
+    get_pilatus_filename_template_from_device,
+    read_beam_info_from_hardware,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
@@ -422,9 +426,11 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = yield from get_pilatus_filename_template_from_device()
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
+            filetemplate=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
@@ -482,9 +488,11 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = f"{parameters.filename}.nxs"
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
+            filetemplate=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
