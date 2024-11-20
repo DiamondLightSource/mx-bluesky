@@ -10,7 +10,7 @@ from time import sleep
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture

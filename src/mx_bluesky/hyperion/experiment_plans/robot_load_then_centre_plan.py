@@ -4,7 +4,8 @@ import dataclasses
 from typing import cast
 
 import bluesky.preprocessors as bpp
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight

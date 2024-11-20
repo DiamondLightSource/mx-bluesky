@@ -293,6 +293,10 @@ def grid_detect_then_xray_centre_composite(
             bottom_edge_array,
         )
         set_mock_value(
+            zocalo_for_system_test.bounding_box,
+            numpy.array([[10, 10, 10]], dtype=numpy.uint64),
+        )
+        set_mock_value(
             ophyd_pin_tip_detection.triggered_tip, numpy.array([tip_x_px, tip_y_px])
         )
 

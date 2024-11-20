@@ -5,8 +5,8 @@ from time import time
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
+from bluesky.utils import MsgGenerator
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     get_processing_results_from_event,

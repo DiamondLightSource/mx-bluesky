@@ -11,7 +11,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.callbacks import CallbackBase
-from dls_bluesky_core.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )

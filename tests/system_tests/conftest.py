@@ -169,7 +169,7 @@ def compare_actual_and_expected(
             actual = float(actual)
         if isinstance(v, float):
             actual_v = actual == pytest.approx(v)
-        if isinstance(v, str) and v.startswith("regex:"):
+        elif isinstance(v, str) and v.startswith("regex:"):
             actual_v = re.match(v.removeprefix("regex:"), actual)  # type: ignore
         else:
             actual_v = actual == v
