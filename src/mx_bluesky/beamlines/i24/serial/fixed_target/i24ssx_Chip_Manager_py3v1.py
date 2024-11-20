@@ -254,6 +254,9 @@ def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     if not map_file.exists():
         raise FileNotFoundError(f"The file {map_file} has not yet been created")
 
+    # NOTE: PVAR STRING TEMPLATE
+    # for i in range(1, 65):
+    #   pvar = f"P3{i:02d}1"
     with open(map_file) as f:
         SSX_LOGGER.info(f"Chipid {ChipType.Oxford}")
         SSX_LOGGER.info(f"width {width}")
