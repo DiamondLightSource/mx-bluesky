@@ -13,6 +13,9 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
 )
 
 
+# NOTE On second thought, this should be used for the user log at the end instead
+# of the parameter files written/copied/moved etc at the beginning.
+# I suspect the users will expect an user log, but not the rest of it.
 class ParameterFileWriter(CallbackBase):
     parameters: ExtruderParameters | FixedTargetParameters
 
