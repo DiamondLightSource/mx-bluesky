@@ -63,7 +63,7 @@ def _get_seq_table(
         An instance of SeqTable describing the panda sequencer table
     """
 
-    start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
+    start_of_grid_x_counts = int(parameters.x_start_mm * MM_TO_ENCODER_COUNTS)
 
     # x_start is the first trigger point, so we need to travel to x_steps-1 for the final trigger point
     end_of_grid_x_counts = int(

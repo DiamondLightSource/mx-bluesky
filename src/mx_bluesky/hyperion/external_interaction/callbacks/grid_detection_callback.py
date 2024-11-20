@@ -28,7 +28,7 @@ class GridDetectionCallback(CallbackBase):
         *args,
     ) -> None:
         super().__init__(*args)
-        self.start_positions: list = []
+        self.start_positions_mm: list = []
         self.box_numbers: list = []
 
     def event(self, doc: Event):
@@ -55,16 +55,16 @@ class GridDetectionCallback(CallbackBase):
         beam_x = data["oav-beam_centre_i"]
         beam_y = data["oav-beam_centre_j"]
 
-        position_grid_start = calculate_x_y_z_of_pixel(
+        position_grid_start_mm = calculate_x_y_z_of_pixel(
             current_xyz,
             smargon_omega,
             centre_of_first_box,
             (beam_x, beam_y),
             (microns_per_pixel_x, microns_per_pixel_y),
         )
-        LOGGER.info(f"Calculated start position {position_grid_start}")
+        LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
-        self.start_positions.append(position_grid_start)
+        self.start_positions_mm.append(position_grid_start_mm)
         self.box_numbers.append(
             (
                 data["oav-grid_snapshot-num_boxes_x"],
@@ -79,11 +79,11 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridParamUpdate:
         return {
-            "x_start_um": self.start_positions[0][0],
-            "y_start_um": self.start_positions[0][1],
-            "y2_start_um": self.start_positions[0][1],
-            "z_start_um": self.start_positions[1][2],
-            "z2_start_um": self.start_positions[1][2],
+            "x_start_um": self.start_positions_mm[0][0] * 1000,
+            "y_start_um": self.start_positions_mm[0][1] * 1000,
+            "y2_start_um": self.start_positions_mm[0][1] * 1000,
+            "z_start_um": self.start_positions_mm[1][2] * 1000,
+            "z2_start_um": self.start_positions_mm[1][2] * 1000,
             "x_steps": self.box_numbers[0][0],
             "y_steps": self.box_numbers[0][1],
             "z_steps": self.box_numbers[1][1],
