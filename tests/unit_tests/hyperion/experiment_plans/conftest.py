@@ -9,14 +9,15 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
-from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, DeviceCollector, set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -83,24 +84,28 @@ def grid_detect_devices(
     detector_motion: DetectorMotion,
     smargon: Smargon,
     oav: OAV,
+    zocalo: ZocaloResults,
+    synchrotron: Synchrotron,
+    fast_grid_scan: ZebraFastGridScan,
+    eiger: EigerDetector,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=MagicMock(),
         backlight=backlight,
         detector_motion=detector_motion,
-        eiger=MagicMock(),
-        zebra_fast_grid_scan=MagicMock(),
+        eiger=eiger,
+        zebra_fast_grid_scan=fast_grid_scan,
         flux=MagicMock(),
         oav=oav,
         pin_tip_detection=MagicMock(),
         smargon=smargon,
-        synchrotron=MagicMock(),
+        synchrotron=synchrotron,
         s4_slit_gaps=MagicMock(),
         undulator=MagicMock(),
         xbpm_feedback=MagicMock(),
         zebra=MagicMock(),
-        zocalo=MagicMock(),
+        zocalo=zocalo,
         panda=MagicMock(),
         panda_fast_grid_scan=MagicMock(),
         dcm=MagicMock(),
@@ -236,29 +241,6 @@ def mock_subscriptions(test_fgs_params):
 def fake_read(obj, initial_positions, _):
     initial_positions[obj] = 0
     yield Msg("null", obj)
-
-
-@pytest.fixture
-def simple_beamline(
-    detector_motion, eiger, oav, smargon, synchrotron, test_config_files, dcm
-):
-    magic_mock = MagicMock(autospec=True)
-
-    with DeviceCollector(mock=True):
-        magic_mock.zocalo = ZocaloResults()
-        magic_mock.zebra_fast_grid_scan = ZebraFastGridScan("preifx", "fake_fgs")
-
-    magic_mock.oav = oav
-    magic_mock.smargon = smargon
-    magic_mock.detector_motion = detector_motion
-    magic_mock.dcm = dcm
-    magic_mock.synchrotron = synchrotron
-    magic_mock.eiger = eiger
-    oav.zoom_controller.level = MagicMock(return_value="7.5x")
-    oav.parameters = OAVConfig(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    ).get_parameters()
-    return magic_mock
 
 
 @pytest.fixture
