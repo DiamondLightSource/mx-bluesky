@@ -3,7 +3,8 @@ from __future__ import annotations
 import dataclasses
 from typing import cast
 
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight

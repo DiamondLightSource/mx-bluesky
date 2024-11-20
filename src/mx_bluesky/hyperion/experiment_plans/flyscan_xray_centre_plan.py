@@ -9,7 +9,8 @@ from typing import Protocol
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
