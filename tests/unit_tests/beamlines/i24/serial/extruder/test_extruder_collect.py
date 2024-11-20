@@ -272,7 +272,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     set_mock_value(dcm.wavelength_in_a, 0.6)
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [fake_generator(0)]
-    mock_pilatus_temp.return_value = "test_00001_#####.cbf"
+    mock_pilatus_temp.side_effect = [fake_generator("test_00001_#####.cbf")]
     RE(
         main_extruder_plan(
             zebra,
