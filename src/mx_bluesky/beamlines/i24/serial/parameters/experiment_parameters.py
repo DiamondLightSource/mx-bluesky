@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -106,6 +106,7 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
 
 
 class BeamSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
     wavelength_in_a: float
     beam_size_in_um: Sequence[float]
     beam_center_in_mm: Sequence[float]
