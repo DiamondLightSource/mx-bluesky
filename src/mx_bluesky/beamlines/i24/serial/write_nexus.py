@@ -22,6 +22,22 @@ def call_nexgen(
     beam_center: list[float],
     expt_type: Literal["fixed-target", "extruder"] = "fixed-target",
 ):
+    """Call the nexus writer by sending a request to nexgen-server.
+
+    Args:
+        chip_prog_dict (dict | None): Dictionary containing most of the information \
+            passed to the program runner for the collection. Only used for fixed target.
+        parameters (ExtruderParameters | FixedTargetParameters): Collection parameters.
+        wavelength (float): Wavelength, in A.
+        beam_center (list[float]): Beam center position on detector, in pixels.
+        expt_type (Literal[&quot;fixed, optional): Experiment being run. Defaults to\
+            "fixed-target".
+
+    Raises:
+        ValueError: For a wrong experiment type passed (either unknwon or not matched \
+            to parameter model).
+
+    """
     det_type = parameters.detector_name
     print(f"det_type: {det_type}")
 
