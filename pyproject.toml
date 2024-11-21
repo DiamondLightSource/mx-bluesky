@@ -28,7 +28,7 @@ dependencies = [
     "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
-    "pydantic",
+    "pydantic < 2.10",             # Temporary pin
     "pydantic-extra-types",
     "pyepics",
     "pyzmq",
