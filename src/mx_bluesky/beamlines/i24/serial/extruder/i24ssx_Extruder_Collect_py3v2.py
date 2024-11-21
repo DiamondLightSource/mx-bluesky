@@ -18,6 +18,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator_base import AttenuatorBase
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -140,7 +141,7 @@ def enter_hutch(
 
 
 @log_on_entry
-def write_parameter_file(detector_stage: DetectorMotion):
+def write_parameter_file(detector_stage: DetectorMotion, attenuator: AttenuatorBase):
     """Writes a json parameter file that can later be parsed by the model."""
     param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
     SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
@@ -160,6 +161,8 @@ def write_parameter_file(detector_stage: DetectorMotion):
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
+    transmission = yield from bps.rd(attenuator.actual_transmission)
+
     pump_status = bool(int(caget(pv.ioc12_gp6)))
     pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
     pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
@@ -171,7 +174,7 @@ def write_parameter_file(detector_stage: DetectorMotion):
         "exposure_time_s": float(caget(pv.ioc12_gp5)),
         "detector_distance_mm": float(caget(pv.ioc12_gp7)),
         "detector_name": str(det_type),
-        "transmission": float(caget(pv.requested_transmission)),
+        "transmission": transmission,
         "num_images": int(caget(pv.ioc12_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
@@ -479,11 +482,12 @@ def run_extruder_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: AttenuatorBase = inject("attenuator"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
-    yield from write_parameter_file(detector_stage)
+    yield from write_parameter_file(detector_stage, attenuator)
     parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)

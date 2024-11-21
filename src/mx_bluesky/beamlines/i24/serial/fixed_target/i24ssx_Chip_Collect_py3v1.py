@@ -12,6 +12,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator_base import AttenuatorBase
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -746,9 +747,10 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: AttenuatorBase = inject("attenuator"),
 ) -> MsgGenerator:
     # in the first instance, write params here
-    yield from write_parameter_file(detector_stage)
+    yield from write_parameter_file(detector_stage, attenuator)
 
     SSX_LOGGER.info("Getting parameters from file.")
     parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
