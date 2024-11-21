@@ -420,18 +420,21 @@ def xbpm_feedback(done_status):
     beamline_utils.clear_devices()
 
 
-@pytest.fixture
-def dcm(RE):
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
+def set_up_dcm(dcm):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    with (
-        oa_patch_motor(dcm.roll_in_mrad),
-        oa_patch_motor(dcm.pitch_in_mrad),
-        oa_patch_motor(dcm.offset_in_mm),
-    ):
-        yield dcm
+    oa_patch_motor(dcm.roll_in_mrad)
+    oa_patch_motor(dcm.pitch_in_mrad)
+    oa_patch_motor(dcm.offset_in_mm)
+    return dcm
+
+
+@pytest.fixture
+def dcm(RE):
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    set_up_dcm(dcm)
+    yield dcm
 
 
 @pytest.fixture
@@ -471,7 +474,7 @@ def mirror_voltages():
 @pytest.fixture
 def undulator_dcm(RE, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
-    undulator_dcm.dcm = dcm
+    set_up_dcm(undulator_dcm.dcm)
     undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
     undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
@@ -933,7 +936,7 @@ def assert_none_matching(
 
 
 def pin_tip_edge_data():
-    tip_x_px = 100
+    tip_x_px = 130
     tip_y_px = 200
     microns_per_pixel = 2.87  # from zoom levels .xml
     grid_width_px = int(400 / microns_per_pixel)
