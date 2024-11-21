@@ -115,7 +115,7 @@ class MultiRotationScan(RotationExperiment, SplitScan):
 
     def _single_rotation_scan(self, scan: RotationScanPerSweep) -> RotationScan:
         # self has everything from RotationExperiment
-        allowed_keys = RotationScan.model_fields.keys()
+        allowed_keys = RotationScan.model_fields.keys()  # type: ignore # Seems like mypy fails to realise this is a property instead of a function returning a dict
         params_dump = self.model_dump()
         # provided `scan` has everything from RotationScanPerSweep
         scan_dump = scan.model_dump()
