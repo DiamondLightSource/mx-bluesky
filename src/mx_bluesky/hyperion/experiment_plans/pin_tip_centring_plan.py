@@ -1,7 +1,7 @@
-import dataclasses
 from collections.abc import Generator
 
 import bluesky.plan_stubs as bps
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.backlight import Backlight
@@ -27,7 +27,7 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 DEFAULT_STEP_SIZE = 0.5
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 

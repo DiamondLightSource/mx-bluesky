@@ -4,6 +4,7 @@ import dataclasses
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -63,7 +64,7 @@ from mx_bluesky.hyperion.parameters.rotation import (
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 

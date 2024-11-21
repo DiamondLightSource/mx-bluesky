@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import dataclasses
 from typing import cast
 
 import bluesky.preprocessors as bpp
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -59,7 +59,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class RobotLoadThenCentreComposite:
     # common fields
     xbpm_feedback: XBPMFeedback

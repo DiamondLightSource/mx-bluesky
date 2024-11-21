@@ -1,8 +1,8 @@
-import dataclasses
 from collections.abc import Sequence
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.preprocessors import subs_wrapper
+import pydantic
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
@@ -24,7 +24,7 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
     """Composite that provides access to the required devices."""
 

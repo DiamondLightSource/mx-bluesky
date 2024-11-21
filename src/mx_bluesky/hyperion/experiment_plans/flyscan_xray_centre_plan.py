@@ -9,6 +9,7 @@ from typing import Protocol
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.callbacks import CallbackBase
 from bluesky.utils import MsgGenerator
@@ -89,7 +90,7 @@ class CrystalNotFoundException(WarningException):
     pass
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 

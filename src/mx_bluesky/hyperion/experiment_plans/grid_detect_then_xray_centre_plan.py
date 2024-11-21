@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
 
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -67,7 +67,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class GridDetectThenXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 

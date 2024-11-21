@@ -5,8 +5,7 @@
 * reenable feedback
 """
 
-import dataclasses
-
+import pydantic
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
@@ -24,7 +23,7 @@ DESIRED_TRANSMISSION_FRACTION = 0.1
 UNDULATOR_GROUP = "UNDULATOR_GROUP"
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class SetEnergyComposite:
     vfm: FocusingMirrorWithStripes
     mirror_voltages: MirrorVoltages
