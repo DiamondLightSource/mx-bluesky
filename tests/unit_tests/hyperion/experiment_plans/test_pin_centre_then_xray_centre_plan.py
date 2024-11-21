@@ -318,13 +318,14 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
+    grid_detect_devices,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
         [Msg("detect_grid_and_do_gridscan")]
     )
     mock_pin_tip_centre_plan.return_value = iter([Msg("pin_tip_centre_plan")])
 
-    mock_composite = MagicMock()
+    mock_composite = grid_detect_devices
     mock_composite.smargon = smargon
 
     test_pin_centre_then_xray_centre_params.phi_start_deg = 30
@@ -332,7 +333,7 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_flyscan_plan(
-            mock_composite,
+            grid_detect_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )

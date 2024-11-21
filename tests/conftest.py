@@ -316,6 +316,11 @@ def zebra(RE):
 
 
 @pytest.fixture
+def zebra_shutter(RE):
+    return i03.sample_shutter(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def backlight():
     backlight = i03.backlight(fake_with_ophyd_sim=True)
     backlight.TIME_TO_MOVE_S = 0.001

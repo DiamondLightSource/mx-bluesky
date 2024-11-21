@@ -10,14 +10,19 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -108,29 +113,36 @@ def grid_detect_devices(
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
     fast_grid_scan: ZebraFastGridScan,
+    zebra,
+    zebra_shutter,
+    xbpm_feedback,
+    attenuator,
+    undulator,
+    undulator_dcm,
+    dcm,
 ) -> GridDetectThenXRayCentreComposite:
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
-        attenuator=MagicMock(),
+        attenuator=attenuator,
         backlight=backlight,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
-        flux=MagicMock(),
+        flux=MagicMock(spec=Flux),
         oav=oav,
-        pin_tip_detection=MagicMock(),
+        pin_tip_detection=MagicMock(spec=PinTipDetection),
         smargon=smargon,
         synchrotron=synchrotron,
-        s4_slit_gaps=MagicMock(),
-        undulator=MagicMock(),
-        xbpm_feedback=MagicMock(),
-        zebra=MagicMock(),
+        s4_slit_gaps=MagicMock(spec=S4SlitGaps),
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
         zocalo=zocalo,
-        panda=MagicMock(),
-        panda_fast_grid_scan=MagicMock(),
-        dcm=MagicMock(),
-        robot=MagicMock(),
-        sample_shutter=MagicMock(),
+        panda=MagicMock(spec=HDFPanda),
+        panda_fast_grid_scan=MagicMock(spec=PandAFastGridScan),
+        dcm=dcm,
+        robot=MagicMock(spec=BartRobot),
+        sample_shutter=zebra_shutter,
     )
 
 
