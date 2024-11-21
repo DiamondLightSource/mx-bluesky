@@ -4,6 +4,7 @@ import math
 import os
 import subprocess
 from functools import lru_cache
+from typing import Literal
 
 import bluesky.plan_stubs as bps
 import requests
@@ -50,8 +51,20 @@ def read_beam_info_from_hardware(
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center: DetectorBeamCenter,
-    detector_name: str,
+    detector_name: Literal["eiger", "pilatus"],
 ):
+    """ Read the beam information from hardware.
+
+    Args:
+        dcm (DCM): The decm device.
+        mirrors (FocusMirrorMode): The device describing the focus mirror mode settings.
+        beam_center (DetectorBeamCenter): A device to set and read the beam center on \
+            the detector.
+        detector_name (Literal["eiger", "pilatus"]): The detector currently in use.
+
+    Returns:
+        BeamSettings parameter model.
+    """
     # In the future this should also read the transmission from the attenuator, but no
     # device yet. See https://github.com/DiamondLightSource/dodal/issues/889
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
@@ -73,18 +86,19 @@ def read_beam_info_from_hardware(
 
 
 class DCID:
-    """
-    Interfaces with ISPyB to allow ssx DCID/synchweb interaction.
+    """ Interfaces with ISPyB to allow ssx DCID/synchweb interaction.
 
     Args:
-        server: The URL for the bridge server, if not the default.
-        emit_errors:
-            If False, errors while interacting with the DCID server will
-            not be propagated to the caller. This decides if you want to
-            stop collection if you can't get a DCID
-        timeout: Length of time to wait for the DB server before giving up
-        ssx_type: The type of SSX experiment this is for
-        expt_parameters: Collection parameters input by user.
+        server (str, optional): The URL for the bridge server, if not the default.
+        emit_errors (bool, optional): If False, errors while interacting with the DCID \
+            server will not be propagated to the caller. This decides if you want to \
+            stop collection if you can't get a DCID. Defaults to True.
+        timeout (float, optional): Length of time in s to wait for the DB server before \
+            giving up. Defaults to 10 s.
+        ssx_type (SSXType, optional): The type of SSX experiment this is for. Defaults \
+            to "Serial Fixed".
+        expt_parameters (ExtruderParameters | FixedTargetParameters): Collection \
+            parameters input by user.
 
 
     Attributes:
@@ -357,7 +371,8 @@ def get_pilatus_filename_template_from_device():
     Get the template file path by querying the detector PVs, mirror the construction \
     that the PPU does.
 
-    Returns: A template string, with the image numbers replaced with '#'
+    Returns:
+        A template string, with the image numbers replaced with '#'
     """
     pilatus_metadata: PilatusMetadata = i24.pilatus_metadata()
 
@@ -366,18 +381,18 @@ def get_pilatus_filename_template_from_device():
 
 
 def get_resolution(detector: Detector, distance: float, wavelength: float) -> float:
-    """
-    Calculate the inscribed resolution for detector.
+    """ Calculate the inscribed resolution for detector.
 
-    This assumes perfectly centered beam as I don't know where to
-    extract the beam position parameters yet.
+    This assumes perfectly centered beam as I don't know where to extract the beam \
+    position parameters yet.
 
     Args:
-        distance: Distance to detector (mm)
-        wavelength: Beam wavelength (Å)
+        detector (Detector): Detector instance, Eiger() or Pilatus().
+        distance (float): Distance to detector, in mm.
+        wavelength (float): Beam wavelength, in Å.
 
     Returns:
-        Maximum resolution (Å)
+        Maximum resolution, in Å.
     """
     width = detector.image_size_mm[0]
     return round(wavelength / (2 * math.sin(math.atan(width / (2 * distance)) / 2)), 2)
