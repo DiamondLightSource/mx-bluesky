@@ -57,11 +57,6 @@ def load_centre_collect_full(
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
 
-    # Below causes close_run not received before open_run in _open_run
-    # @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
-    # @run_decorator(md={"metadata": {"sample_id": params.sample_id},
-    #                    "activate_callbacks": ["SampleHandlingCallback"]})
-    # @sample_handling_callback_decorator()
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
         md={
