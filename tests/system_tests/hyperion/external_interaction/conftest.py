@@ -2,7 +2,7 @@ import os
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import ispyb.sqlalchemy
 import numpy
@@ -37,7 +37,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
@@ -187,7 +187,7 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = ThreeDGridScan(
+    dummy_params = HyperionThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
@@ -270,7 +270,7 @@ def grid_detect_then_xray_centre_composite(
             bottom_edge_array,
         )
         set_mock_value(
-            zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
+            zocalo.bounding_box, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
         )
         set_mock_value(
             ophyd_pin_tip_detection.triggered_tip, numpy.array([tip_x_px, tip_y_px])
@@ -314,8 +314,9 @@ def composite_for_rotation_scan(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav_for_system_test.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
-    oav_for_system_test.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
+    oav_for_system_test.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
+    )
 
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,

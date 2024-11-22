@@ -4,7 +4,7 @@ Run the tests using pytest
 Testing is done with pytest_. It will find functions in the project that `look
 like tests`_, and run them to check for errors. You can run it with::
 
-    $ tox -e pytest
+    $ tox -e tests
 
 It will also report coverage to the commandline and to ``cov.xml``.
 

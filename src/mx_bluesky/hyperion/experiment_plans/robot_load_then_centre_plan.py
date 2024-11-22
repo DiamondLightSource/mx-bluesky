@@ -3,7 +3,8 @@ from __future__ import annotations
 import dataclasses
 from typing import cast
 
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
+from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -32,6 +33,7 @@ from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
@@ -48,7 +50,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     robot_load_and_change_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import RobotLoadThenCentre
 
 
 @dataclasses.dataclass

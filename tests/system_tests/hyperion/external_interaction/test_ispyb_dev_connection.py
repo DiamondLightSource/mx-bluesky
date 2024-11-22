@@ -11,6 +11,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -45,8 +46,7 @@ from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
+    HyperionThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -124,7 +124,9 @@ def grid_detect_then_xray_centre_parameters():
 
 
 def scan_xy_data_info_for_update(
-    data_collection_group_id, dummy_params: ThreeDGridScan, scan_data_info_for_begin
+    data_collection_group_id,
+    dummy_params: HyperionThreeDGridScan,
+    scan_data_info_for_begin,
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
@@ -151,7 +153,7 @@ def scan_xy_data_info_for_update(
 
 
 def scan_data_infos_for_update_3d(
-    ispyb_ids, scan_xy_data_info_for_update, dummy_params: ThreeDGridScan
+    ispyb_ids, scan_xy_data_info_for_update, dummy_params: HyperionThreeDGridScan
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
         dummy_params.detector_params
@@ -484,10 +486,14 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
-        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
-        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
-        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
+        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        ".png",
+        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        ".png",
+        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        ".png",
+        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
+        ".png",
     }
 
     compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)
