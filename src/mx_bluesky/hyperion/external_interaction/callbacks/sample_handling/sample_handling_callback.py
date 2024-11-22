@@ -8,10 +8,7 @@ from bluesky.preprocessors import contingency_wrapper
 from bluesky.utils import Msg, make_decorator
 from event_model import Event, EventDescriptor, RunStart
 
-from mx_bluesky.hyperion.exceptions import SampleException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    CrystalNotFoundException,
-)
+from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
 from mx_bluesky.hyperion.external_interaction.callbacks.common.abstract_event import (
     AbstractEvent,
 )

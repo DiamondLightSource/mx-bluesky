@@ -66,7 +66,7 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.hyperion.exceptions import SampleException
+from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
@@ -81,12 +81,6 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 class SmargonSpeedException(Exception):
-    pass
-
-
-class CrystalNotFoundException(SampleException):
-    """Raised if grid detection completed normally but no crystal was found."""
-
     pass
 
 

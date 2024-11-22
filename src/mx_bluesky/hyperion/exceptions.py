@@ -22,6 +22,12 @@ class SampleException(WarningException):
 T = TypeVar("T")
 
 
+class CrystalNotFoundException(SampleException):
+    """Raised if grid detection completed normally but no crystal was found."""
+
+    pass
+
+
 def catch_exception_and_warn(
     exception_to_catch: type[Exception],
     func: Callable[..., Generator[Msg, None, T]],

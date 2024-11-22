@@ -207,7 +207,7 @@ def use_dev_ispyb():
 
 
 @pytest.mark.s03
-def test_execute_load_centre_collect_full_plan(
+def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -328,7 +328,7 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
         pytest.raises(TimeoutError, match="Simulated timeout"),
     ):
         RE(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
@@ -358,7 +358,7 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
         WarningException, match="Pin tip centring failed - pin too long/short.*"
     ):
         RE(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
@@ -406,7 +406,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
 
     with pytest.raises(WarningException, match="No pin found after 5.0 seconds"):
         RE(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
@@ -433,7 +433,7 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
 
     with pytest.raises(CrystalNotFoundException):
         RE(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 composite_with_no_diffraction,
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
@@ -466,7 +466,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         pytest.raises(TimeoutError, match="Simulated timeout"),
     ):
         RE(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
