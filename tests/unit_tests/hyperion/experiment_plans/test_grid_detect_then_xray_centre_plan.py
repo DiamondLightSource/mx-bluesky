@@ -106,12 +106,8 @@ async def test_detect_grid_and_do_gridscan(
 
     RE(
         ispyb_activation_wrapper(
-            detect_grid_and_do_gridscan(
-                composite,
-                parameters=test_full_grid_scan_params,
-                oav_params=OAVParameters(
-                    "xrayCentring", test_config_files["oav_config_json"]
-                ),
+            _do_detect_grid_and_gridscan_then_wait_for_backlight(
+                composite, test_config_files, test_full_grid_scan_params
             ),
             test_full_grid_scan_params,
         )
@@ -132,6 +128,17 @@ async def test_detect_grid_and_do_gridscan(
 
     # Check we called out to underlying fast grid scan plan
     mock_flyscan.assert_called_once_with(ANY, ANY)
+
+
+def _do_detect_grid_and_gridscan_then_wait_for_backlight(
+    composite, test_config_files, test_full_grid_scan_params
+):
+    yield from detect_grid_and_do_gridscan(
+        composite,
+        parameters=test_full_grid_scan_params,
+        oav_params=OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+    )
+    yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
 
 
 @patch(
