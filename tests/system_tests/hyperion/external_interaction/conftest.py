@@ -255,12 +255,14 @@ def grid_detect_then_xray_centre_composite(
     flux,
     ophyd_pin_tip_detection,
     sample_shutter,
+    panda,
+    panda_fast_grid_scan,
 ):
     composite = GridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        panda_fast_grid_scan=None,  # type: ignore
+        panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
         synchrotron=synchrotron,
@@ -272,7 +274,7 @@ def grid_detect_then_xray_centre_composite(
         aperture_scatterguard=aperture_scatterguard,
         zebra=zebra,
         eiger=eiger,
-        panda=None,  # type: ignore
+        panda=panda,
         robot=robot,
         oav=oav_for_system_test,
         dcm=dcm,
