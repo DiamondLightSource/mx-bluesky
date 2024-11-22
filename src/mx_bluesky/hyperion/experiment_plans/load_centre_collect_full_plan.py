@@ -1,8 +1,8 @@
 from collections.abc import Sequence
 
+import pydantic
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.preprocessors import subs_wrapper
-import pydantic
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
