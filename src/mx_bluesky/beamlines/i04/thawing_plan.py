@@ -3,7 +3,7 @@ from collections.abc import Callable
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator, subs_decorator
-from dls_bluesky_core.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
 from dodal.common import inject
 from dodal.devices.oav.oav_detector import OAV

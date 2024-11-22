@@ -1,12 +1,13 @@
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
 from functools import partial
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import ispyb.sqlalchemy
 import numpy
 import pytest
+import pytest_asyncio
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -23,12 +24,16 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zocalo import ZocaloResults
 from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -211,6 +216,24 @@ def zocalo_env():
     os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
 
 
+@pytest_asyncio.fixture
+async def zocalo_for_fake_zocalo():
+    zd = ZocaloResults()
+    zd.timeout_s = 5
+    await zd.connect()
+    return zd
+
+
+@pytest.fixture
+def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
+    @AsyncStatus.wrap
+    async def mock_zocalo_complete():
+        await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 1234, "dcgid": 123})
+
+    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
+        yield zocalo
+
+
 @pytest.fixture
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
@@ -222,7 +245,7 @@ def grid_detect_then_xray_centre_composite(
     attenuator,
     xbpm_feedback,
     detector_motion,
-    zocalo,
+    zocalo_for_system_test,
     aperture_scatterguard,
     zebra,
     eiger,
@@ -232,12 +255,14 @@ def grid_detect_then_xray_centre_composite(
     flux,
     ophyd_pin_tip_detection,
     sample_shutter,
+    panda,
+    panda_fast_grid_scan,
 ):
     composite = GridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        panda_fast_grid_scan=None,  # type: ignore
+        panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
         synchrotron=synchrotron,
@@ -245,11 +270,11 @@ def grid_detect_then_xray_centre_composite(
         attenuator=attenuator,
         xbpm_feedback=xbpm_feedback,
         detector_motion=detector_motion,
-        zocalo=zocalo,
+        zocalo=zocalo_for_system_test,
         aperture_scatterguard=aperture_scatterguard,
         zebra=zebra,
         eiger=eiger,
-        panda=None,  # type: ignore
+        panda=panda,
         robot=robot,
         oav=oav_for_system_test,
         dcm=dcm,
@@ -270,15 +295,12 @@ def grid_detect_then_xray_centre_composite(
             bottom_edge_array,
         )
         set_mock_value(
-            zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
+            zocalo_for_system_test.bounding_box,
+            numpy.array([[10, 10, 10]], dtype=numpy.uint64),
         )
         set_mock_value(
             ophyd_pin_tip_detection.triggered_tip, numpy.array([tip_x_px, tip_y_px])
         )
-
-    @AsyncStatus.wrap
-    async def mock_zocalo_complete():
-        await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 0, "dcgid": 0})
 
     with (
         patch.object(eiger, "wait_on_arming_if_started"),
@@ -289,9 +311,30 @@ def grid_detect_then_xray_centre_composite(
         ),
         patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
         patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
-        patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete),
     ):
         yield composite
+
+
+@pytest.fixture
+def fgs_composite_for_fake_zocalo(
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+    zocalo_for_fake_zocalo: ZocaloResults,
+    done_status: NullStatus,
+) -> FlyScanXRayCentreComposite:
+    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
+    fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
+    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
+    callback_on_mock_put(
+        fake_fgs_composite.zebra_fast_grid_scan.run_cmd,
+        lambda *args, **kwargs: set_mock_value(
+            fake_fgs_composite.zebra_fast_grid_scan.status, 1
+        ),
+    )
+    fake_fgs_composite.zebra_fast_grid_scan.complete = MagicMock(
+        return_value=NullStatus()
+    )
+    fake_fgs_composite.zocalo = zocalo_for_fake_zocalo
+    return fake_fgs_composite
 
 
 @pytest.fixture
@@ -314,8 +357,9 @@ def composite_for_rotation_scan(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav_for_system_test.zoom_controller.zrst.sim_put("1.0x")  # type: ignore
-    oav_for_system_test.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
+    oav_for_system_test.zoom_controller.level.describe = AsyncMock(
+        return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
+    )
 
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,

@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Generator
 from typing import cast
 from unittest.mock import ANY, MagicMock, patch
@@ -13,6 +14,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    _fire_xray_centre_result_event,
+)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     OavGridDetectionComposite,
@@ -28,6 +32,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 
 from ..conftest import OavGridSnapshotTestEvents
+from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
 def _fake_grid_detection(
@@ -55,6 +60,7 @@ def _fake_grid_detection(
     yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.read(devices.smargon)
     yield from bps.save()
+    yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
 def test_full_grid_scan(
@@ -83,11 +89,11 @@ def grid_detect_devices_with_oav_config_params(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
     autospec=True,
 )
 async def test_detect_grid_and_do_gridscan(
-    mock_flyscan_xray_centre_plan: MagicMock,
+    mock_flyscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
@@ -125,7 +131,7 @@ async def test_detect_grid_and_do_gridscan(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan_xray_centre_plan.assert_called_once_with(ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY)
 
 
 @patch(
@@ -133,11 +139,11 @@ async def test_detect_grid_and_do_gridscan(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
     autospec=True,
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
-    mock_flyscan_xray_centre_plan: MagicMock,
+    mock_flyscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
@@ -158,7 +164,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         )
     )
 
-    params: HyperionThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
+    params: HyperionThreeDGridScan = mock_flyscan.call_args[0][1]
 
     assert params.detector_params.num_triggers == 50
 
@@ -174,11 +180,11 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
-    mock_flyscan_xray_centre,
+    mock_flyscan,
     mock_grid_detection_plan,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
@@ -225,24 +231,70 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 
 
 @patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+    side_effect=_fake_grid_detection,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    autospec=True,
+)
+def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
+    mock_flyscan: MagicMock,
+    mock_grid_detection_plan: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files: dict[str, str],
+    RE: RunEngine,
+):
+    RE(
+        grid_detect_then_xray_centre(
+            grid_detect_devices_with_oav_config_params,
+            test_full_grid_scan_params,
+            test_config_files["oav_config_json"],
+        )
+    )
+    mock_change_aperture_then_move_to_xtal.assert_called_once()
+    assert (
+        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
+        == FLYSCAN_RESULT_MED
+    )
+
+
+@patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
     autospec=True,
 )
 def test_grid_detect_then_xray_centre_activates_ispyb_callback(
-    mock_flyscan_xray_centre,
+    mock_flyscan,
     mock_grid_detection_plan,
     sim_run_engine: RunEngineSimulator,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
 ):
-    mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
+    mock_grid_detection_plan.return_value = iter(
+        [
+            Msg("save_oav_grids"),
+            Msg(
+                "open_run",
+                run=CONST.PLAN.FLYSCAN_RESULTS,
+                xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+            ),
+        ]
+    )
 
     sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     sim_run_engine.add_callback_handler_for_multiple(
         "save_oav_grids",
         [

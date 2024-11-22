@@ -1,7 +1,7 @@
-import dataclasses
 from datetime import datetime
 from unittest.mock import patch
 
+import pydantic
 import pytest
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -31,7 +31,7 @@ def oav_snapshot_params():
     )
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class CompositeImpl(OavSnapshotComposite):
     smargon: Smargon
     oav: OAV

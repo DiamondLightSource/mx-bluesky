@@ -13,7 +13,7 @@ from time import sleep
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
@@ -224,11 +224,11 @@ def save_screen_map() -> MsgGenerator:
     with open(litemap_path / "currentchip.map", "w") as f:
         SSX_LOGGER.debug("Printing only blocks with block_val == 1")
         for x in range(1, 82):
-            block_str = "ME14E-MO-IOC-01:GP%i" % (x + 10)
+            block_str = f"ME14E-MO-IOC-01:GP{x + 10:d}"
             block_val = int(caget(block_str))
             if block_val == 1:
-                SSX_LOGGER.info("%s %d" % (block_str, block_val))
-            line = "%02dstatus    P3%02d1 \t%s\n" % (x, x, block_val)
+                SSX_LOGGER.info(f"{block_str} {block_val:d}")
+            line = f"{x:02d}status    P3{x:02d}1 \t{block_val}\n"
             f.write(line)
     yield from bps.null()
 
@@ -515,7 +515,7 @@ def load_lite_map() -> MsgGenerator:
                     break
                 button_name = str(row) + str(column)
                 lab_num = x * 8 + z
-                label = "%02.d" % (lab_num + 1)
+                label = f"{lab_num + 1:02d}"
                 btn_names[button_name] = label
         block_dict = btn_names
     else:
@@ -673,15 +673,15 @@ def fiducial(point: int = 1, pmac: PMAC = inject("pmac")) -> MsgGenerator:
     output_param_path.mkdir(parents=True, exist_ok=True)
     SSX_LOGGER.info(f"Writing Fiducial File {output_param_path}/fiducial_{point}.txt")
     SSX_LOGGER.info("MTR\tRBV\tRAW\tCorr\tf_value")
-    SSX_LOGGER.info("MTR1\t%1.4f\t%i" % (rbv_1, mtr1_dir))
-    SSX_LOGGER.info("MTR2\t%1.4f\t%i" % (rbv_2, mtr2_dir))
-    SSX_LOGGER.info("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
+    SSX_LOGGER.info(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}")
+    SSX_LOGGER.info(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}")
+    SSX_LOGGER.info(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
 
     with open(output_param_path / f"fiducial_{point}.txt", "w") as f:
         f.write("MTR\tRBV\tCorr\n")
-        f.write("MTR1\t%1.4f\t%i\n" % (rbv_1, mtr1_dir))
-        f.write("MTR2\t%1.4f\t%i\n" % (rbv_2, mtr2_dir))
-        f.write("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
+        f.write(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}\n")
+        f.write(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}\n")
+        f.write(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
     SSX_LOGGER.info(f"Fiducial {point} set.")
     yield from bps.null()
 

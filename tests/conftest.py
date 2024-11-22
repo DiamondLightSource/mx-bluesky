@@ -8,6 +8,7 @@ import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from functools import partial
+from inspect import get_annotations
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -49,6 +50,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import ArmDemand, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.sim import NullStatus
@@ -314,6 +316,11 @@ def zebra(RE):
 
 
 @pytest.fixture
+def zebra_shutter(RE):
+    return i03.sample_shutter(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def backlight():
     backlight = i03.backlight(fake_with_ophyd_sim=True)
     backlight.TIME_TO_MOVE_S = 0.001
@@ -420,18 +427,21 @@ def xbpm_feedback(done_status):
     beamline_utils.clear_devices()
 
 
-@pytest.fixture
-def dcm(RE):
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
+def set_up_dcm(dcm):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    with (
-        oa_patch_motor(dcm.roll_in_mrad),
-        oa_patch_motor(dcm.pitch_in_mrad),
-        oa_patch_motor(dcm.offset_in_mm),
-    ):
-        yield dcm
+    oa_patch_motor(dcm.roll_in_mrad)
+    oa_patch_motor(dcm.pitch_in_mrad)
+    oa_patch_motor(dcm.offset_in_mm)
+    return dcm
+
+
+@pytest.fixture
+def dcm(RE):
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    set_up_dcm(dcm)
+    yield dcm
 
 
 @pytest.fixture
@@ -471,7 +481,7 @@ def mirror_voltages():
 @pytest.fixture
 def undulator_dcm(RE, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
-    undulator_dcm.dcm = dcm
+    set_up_dcm(undulator_dcm.dcm)
     undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
     undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
@@ -934,11 +944,11 @@ def assert_none_matching(
 
 
 def pin_tip_edge_data():
-    tip_x_px = 100
+    tip_x_px = 130
     tip_y_px = 200
     microns_per_pixel = 2.87  # from zoom levels .xml
     grid_width_px = int(400 / microns_per_pixel)
-    target_grid_height_px = 70
+    target_grid_height_px = 140
     top_edge_data = ([0] * tip_x_px) + (
         [(tip_y_px - target_grid_height_px // 2)] * grid_width_px
     )
@@ -966,3 +976,20 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
         raise excinfo.value
+
+
+def simulate_xrc_result(
+    sim_run_engine: RunEngineSimulator,
+    zocalo: ZocaloResults,
+    test_results: Sequence[dict],
+):
+    for k in test_results[0].keys():
+        sim_run_engine.add_read_handler_for(
+            getattr(zocalo, k), numpy.array([r[k] for r in test_results])
+        )
+
+
+def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
+    keys = get_annotations(XrcResult).keys()
+    results_by_key = {k: [r[k] for r in test_results] for k in keys}
+    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
