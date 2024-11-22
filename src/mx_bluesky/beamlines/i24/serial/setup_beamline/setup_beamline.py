@@ -53,6 +53,10 @@ def move_detector_stage_to_position_plan(
     yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
+def calculate_beam_center_from_lut(detector_name: str):
+    pass
+
+
 def set_detector_beam_center_plan(
     beam_center_device: DetectorBeamCenter,
     detector_name: str,

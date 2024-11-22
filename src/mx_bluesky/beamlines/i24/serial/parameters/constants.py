@@ -15,6 +15,12 @@ BEAM_CENTER_POS: dict[str, list] = {
     "pilatus": [1284.7, 1308.6],
 }
 
+LUT_FILES_PATH = Path("/dls_sw/i24/software/daq_configuration/lookup")
+
+BEAM_CENTER_LUT_FILES = {
+    "eiger": LUT_FILES_PATH / "DetDistToBeamXYConverterE9M.txt",
+    "pilatus": LUT_FILES_PATH / "DetDistToBeamXYConverterP6M.txt",
+}
 
 OAV_CONFIG_FILES = {
     "zoom_params_file": "/dls_sw/i24/software/gda_versions/gda_9_34/config/xml/jCameraManZoomLevels.xml",
