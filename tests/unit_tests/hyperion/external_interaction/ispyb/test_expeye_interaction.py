@@ -5,7 +5,9 @@ import pytest
 from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BearerAuth,
+    BLSampleStatus,
     ExpeyeCoreInteraction,
+    ExpeyeSampleHandlingInteraction,
     _get_base_url_and_token,
 )
 
@@ -138,3 +140,15 @@ def test_when_update_barcode_called_with_success_then_correct_expected_url_poste
         "xtalSnapshotAfter": "/tmp/after.jpg",
     }
     assert mock_patch.call_args.kwargs["json"] == expected_data
+
+
+@patch("mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store.patch")
+def test_update_sample_status(
+    mock_patch,
+):
+    expeye = ExpeyeSampleHandlingInteraction()
+    expected_json = {"blSampleStatus": "LOADED"}
+    expeye.update_sample_status(12345, BLSampleStatus.LOADED)
+    mock_patch.assert_called_with(
+        "http://blah/samples/12345", auth=ANY, json=expected_json
+    )

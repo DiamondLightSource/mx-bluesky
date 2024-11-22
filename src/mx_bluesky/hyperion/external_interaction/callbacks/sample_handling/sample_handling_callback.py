@@ -46,7 +46,8 @@ sample_handling_callback_decorator = make_decorator(
 
 
 class SampleHandlingCallback(PlanReactiveCallback):
-    """Intercepts"""
+    """Intercepts exceptions from experiment plans and updates the ISPyB BLSampleStatus
+    field according to the type of exception raised."""
 
     def __init__(self):
         super().__init__(log=ISPYB_LOGGER)

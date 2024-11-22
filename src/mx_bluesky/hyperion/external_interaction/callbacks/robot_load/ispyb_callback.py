@@ -81,15 +81,11 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 self.action_id is not None
             ), "ISPyB Robot load callback stop called unexpectedly"
             exit_status = doc.get("exit_status")
-            if not exit_status:
-                reason = "Exit status not available in stop document!"
-            elif not self._metadata:
-                reason = "Metadata not received before stop document."
-            else:
-                reason = doc.get("reason") or "OK"
+            assert exit_status, "Exit status not available in stop document!"
+            assert self._metadata, "Metadata not received before stop document."
+            reason = doc.get("reason") or "OK"
 
             self.expeye_core.end_load(self.action_id, exit_status, reason)
-            assert self._metadata, "Metadata was not set for robot load."
             self.expeye_sample_handling.update_sample_status(
                 self._metadata["sample_id"],
                 BLSampleStatus.LOADED

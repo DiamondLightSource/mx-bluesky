@@ -199,7 +199,7 @@ def composite_with_no_diffraction(
 
 
 @pytest.fixture(autouse=True)
-def use_real_ispyb():
+def use_dev_ispyb():
     with patch.dict(
         os.environ, values={"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
     ):
