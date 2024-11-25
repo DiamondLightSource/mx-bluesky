@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, call
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky.protocols import Movable
-from dodal.beamlines import i03
 from dodal.devices.zebra import (
     AUTO_SHUTTER_GATE,
     AUTO_SHUTTER_INPUT_1,
@@ -29,16 +28,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_gridscan,
 )
-
-
-@pytest.fixture
-def zebra(RE):
-    return i03.zebra(fake_with_ophyd_sim=True)
-
-
-@pytest.fixture
-def zebra_shutter(RE):
-    return i03.sample_shutter(fake_with_ophyd_sim=True)
 
 
 async def _get_shutter_input_2(zebra: Zebra):
