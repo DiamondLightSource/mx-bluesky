@@ -43,7 +43,7 @@ jobs:
           file: Dockerfile.release
       - name: Generate artifact attestation
         # v1.4.0
-        uses: actions/attest-build-provenance@210c1913531870065f03ce1f9440dd87bc0938cd
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
