@@ -1,4 +1,5 @@
 import json
+from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
@@ -43,17 +44,28 @@ class LaserExperiment(BaseModel):
     pre_pump_exposure_s: float | None = None  # Pre illumination, just for chip
 
 
-class ExtruderParameters(SerialExperiment, LaserExperiment):
-    """Extruder parameter model."""
-
-    num_images: int
-    pump_status: bool
-
+class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     @classmethod
     def from_file(cls, filename: str | Path):
         with open(filename) as fh:
             raw_params = json.load(fh)
         return cls(**raw_params)
+
+    @property
+    @abstractmethod
+    def experiment_type(self) -> str:
+        pass
+
+
+class ExtruderParameters(SerialAndLaserExperiment):
+    """Extruder parameter model."""
+
+    num_images: int
+    pump_status: bool
+
+    @property
+    def experiment_type(self) -> str:
+        return "extruder"
 
 
 class ChipDescription(BaseModel):
@@ -88,7 +100,7 @@ class ChipDescription(BaseModel):
             return ((self.y_num_steps - 1) * self.y_step_size) + self.b2b_vert
 
 
-class FixedTargetParameters(SerialExperiment, LaserExperiment):
+class FixedTargetParameters(SerialAndLaserExperiment):
     """Fixed target parameter model."""
 
     num_exposures: int
@@ -98,11 +110,9 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
     checker_pattern: bool = False
     total_num_images: int = 0  # Calculated in the code for now
 
-    @classmethod
-    def from_file(cls, filename: str | Path):
-        with open(filename) as fh:
-            raw_params = json.load(fh)
-        return cls(**raw_params)
+    @property
+    def experiment_type(self) -> str:
+        return "fixed-target"
 
 
 class BeamSettings(BaseModel):
