@@ -229,9 +229,7 @@ def test_run_extruder_quickshot_with_eiger(
             fake_start_time,
         )
     )
-    fake_nexgen.assert_called_once_with(
-        None, dummy_params, 0.6, [1605, 1702], "extruder"
-    )
+    fake_nexgen.assert_called_once_with(None, dummy_params, 0.6, [1605, 1702])
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
