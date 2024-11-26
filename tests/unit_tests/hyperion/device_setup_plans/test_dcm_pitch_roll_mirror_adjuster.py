@@ -1,5 +1,3 @@
-import logging
-from sys import stdout
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -21,34 +19,45 @@ from mx_bluesky.hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster impor
 )
 
 
-@pytest.fixture(autouse=True)
-def bluesky_logging():
-    logging.basicConfig(level=logging.DEBUG, stream=stdout, force=True)
-
-
-def test_when_bare_mirror_stripe_selected_then_expected_voltages_set(
-    RE: RunEngine,
+def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
+    sim_run_engine: RunEngineSimulator,
     mirror_voltages: MirrorVoltages,
 ):
-    RE(
+    messages = sim_run_engine.simulate_plan(
         dcm_pitch_roll_mirror_adjuster._apply_and_wait_for_voltages_to_settle(
             MirrorStripe.BARE, mirror_voltages
         )
     )
 
     for channel, expected_voltage in zip(
-        mirror_voltages.vertical_voltages.values(),
-        [140, 100, 70, 30, 30, -65, 24, 15],
-        strict=True,
-    ):
-        channel.set.assert_called_once_with(expected_voltage)  # type: ignore
-
-    for channel, expected_voltage in zip(
         mirror_voltages.horizontal_voltages.values(),
         [1, 107, 15, 139, 41, 165, 11, 6, 166, -65, 0, -38, 179, 128],
         strict=True,
     ):
-        channel.set.assert_called_once_with(expected_voltage)  # type: ignore
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj == channel
+            and msg.args[0] == expected_voltage,
+        )
+        messages = assert_message_and_return_remaining(
+            messages, lambda msg: msg.command == "wait"
+        )
+
+    for channel, expected_voltage in zip(
+        mirror_voltages.vertical_voltages.values(),
+        [140, 100, 70, 30, 30, -65, 24, 15],
+        strict=True,
+    ):
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj == channel
+            and msg.args[0] == expected_voltage,
+        )
+        messages = assert_message_and_return_remaining(
+            messages, lambda msg: msg.command == "wait"
+        )
 
 
 @pytest.mark.parametrize(
