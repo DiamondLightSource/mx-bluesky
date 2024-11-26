@@ -56,6 +56,10 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     pin_already_loaded,
     robot_load_and_change_energy_plan,
 )
+from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
+    SetEnergyComposite,
+    set_energy_plan,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
@@ -178,12 +182,23 @@ def robot_load_then_xray_centre(
             parameters,
         )
         LOGGER.info("Pin not loaded, loading and centring")
-    elif doing_chi_change:
-        plan = _flyscan_plan_from_robot_load_params(composite, parameters)
-        LOGGER.info("Pin already loaded but chi changed so centring")
     else:
-        LOGGER.info("Pin already loaded and chi not changed so doing nothing")
-        return
+        # Robot load normally sets the energy so we should do this explicitly if no load is
+        # being done
+        demand_energy_ev = parameters.demand_energy_ev
+        LOGGER.info(f"Setting the energy to {demand_energy_ev}eV")
+        if demand_energy_ev:
+            yield from set_energy_plan(
+                demand_energy_ev / 1000,
+                cast(SetEnergyComposite, composite),
+            )
+
+        if doing_chi_change:
+            plan = _flyscan_plan_from_robot_load_params(composite, parameters)
+            LOGGER.info("Pin already loaded but chi changed so centring")
+        else:
+            LOGGER.info("Pin already loaded and chi not changed so doing nothing")
+            return
 
     detector_params = yield from fill_in_energy_if_not_supplied(
         composite.dcm, parameters.detector_params
