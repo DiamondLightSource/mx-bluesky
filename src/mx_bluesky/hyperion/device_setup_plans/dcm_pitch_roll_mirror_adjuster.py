@@ -60,23 +60,29 @@ def adjust_mirror_stripe(
 ):
     """Feedback should be OFF prior to entry, in order to prevent
     feedback from making unnecessary corrections while beam is being adjusted."""
-    stripe, yaw, lat = mirror.energy_to_stripe(energy_kev)
+    mirror_config = mirror.energy_to_stripe(energy_kev)
 
     LOGGER.info(
-        f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
+        f"Adjusting mirror stripe for {energy_kev}keV selecting {mirror_config['stripe']} stripe"
     )
-    yield from bps.abs_set(mirror.stripe, stripe, wait=True)
+    yield from bps.abs_set(mirror.stripe, mirror_config["stripe"], wait=True)
     yield from bps.trigger(mirror.apply_stripe)
 
     # yaw, lat cannot be done simultaneously
-    LOGGER.info(f"Adjusting {mirror.name} lat to {lat}")
-    yield from bps.abs_set(mirror.x_mm, lat, wait=True, timeout=YAW_LAT_TIMEOUT_S)
+    LOGGER.info(f"Adjusting {mirror.name} lat to {mirror_config['lat_mm']}")
+    yield from bps.abs_set(
+        mirror.x_mm, mirror_config["lat_mm"], wait=True, timeout=YAW_LAT_TIMEOUT_S
+    )
 
-    LOGGER.info(f"Adjusting {mirror.name} yaw to {yaw}")
-    yield from bps.abs_set(mirror.yaw_mrad, yaw, wait=True, timeout=YAW_LAT_TIMEOUT_S)
+    LOGGER.info(f"Adjusting {mirror.name} yaw to {mirror_config['yaw_mrad']}")
+    yield from bps.abs_set(
+        mirror.yaw_mrad, mirror_config["yaw_mrad"], wait=True, timeout=YAW_LAT_TIMEOUT_S
+    )
 
     LOGGER.info("Adjusting mirror voltages...")
-    yield from _apply_and_wait_for_voltages_to_settle(stripe, mirror_voltages)
+    yield from _apply_and_wait_for_voltages_to_settle(
+        mirror_config["stripe"], mirror_voltages
+    )
 
 
 def adjust_dcm_pitch_roll_vfm_from_lut(

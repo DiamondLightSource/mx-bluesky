@@ -1,5 +1,6 @@
-from math import isclose
-from unittest.mock import MagicMock
+import logging
+from sys import stdout
+from unittest.mock import MagicMock, call
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -14,9 +15,15 @@ from ophyd_async.core import get_mock_put
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 from mx_bluesky.hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
+    YAW_LAT_TIMEOUT_S,
     adjust_dcm_pitch_roll_vfm_from_lut,
     adjust_mirror_stripe,
 )
+
+
+@pytest.fixture(autouse=True)
+def bluesky_logging():
+    logging.basicConfig(level=logging.DEBUG, stream=stdout, force=True)
 
 
 def test_when_bare_mirror_stripe_selected_then_expected_voltages_set(
@@ -45,10 +52,10 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set(
 
 
 @pytest.mark.parametrize(
-    "energy_kev, expected_stripe, first_voltage, last_voltage",
+    "energy_kev, expected_stripe, expected_lat, expected_yaw, first_voltage, last_voltage",
     [
-        (6.999, MirrorStripe.BARE, 140, 15),
-        (7.001, MirrorStripe.RHODIUM, 124, -46),
+        (6.999, MirrorStripe.BARE, 0.0, 6.2, 140, 15),
+        (7.001, MirrorStripe.RHODIUM, 10.0, 0.0, 124, -46),
     ],
 )
 def test_adjust_mirror_stripe(
@@ -57,18 +64,26 @@ def test_adjust_mirror_stripe(
     vfm: FocusingMirrorWithStripes,
     energy_kev,
     expected_stripe,
+    expected_lat,
+    expected_yaw,
     first_voltage,
     last_voltage,
 ):
     parent = MagicMock()
     parent.attach_mock(get_mock_put(vfm.stripe), "stripe_set")
     parent.attach_mock(get_mock_put(vfm.apply_stripe), "apply_stripe")
+    parent.attach_mock(get_mock_put(vfm.x_mm.user_setpoint), "lat_set")
+    parent.attach_mock(get_mock_put(vfm.yaw_mrad.user_setpoint), "yaw_mrad")
 
     RE(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
 
-    assert parent.method_calls[0][0] == "stripe_set"
-    assert parent.method_calls[0][1] == (expected_stripe,)
-    assert parent.method_calls[1][0] == "apply_stripe"
+    expected_calls = [
+        call.stripe_set(expected_stripe, wait=True),
+        call.apply_stripe(None, wait=True),
+        call.lat_set(expected_lat, wait=True),
+        call.yaw_mrad(expected_yaw, wait=True),
+    ]
+    assert parent.method_calls == expected_calls
     mirror_voltages.vertical_voltages[0].set.assert_called_once_with(  # type: ignore
         first_voltage
     )
@@ -108,10 +123,16 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
+        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm-offset_in_mm"
-        and msg.args == (25.6,)
-        and msg.kwargs["group"] == "DCM_GROUP",
+        and msg.args == (25.6,),
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:], lambda msg: msg.command == "wait"
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
@@ -126,6 +147,26 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "trigger" and msg.obj.name == "vfm-apply_stripe",
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:],
+        lambda msg: msg.command == "set"
+        and msg.obj is vfm.x_mm
+        and msg.args == (10.0,)
+        and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S,
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:], lambda msg: msg.command == "wait"
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:],
+        lambda msg: msg.command == "set"
+        and msg.obj is vfm.yaw_mrad
+        and msg.args == (0.0,)
+        and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S,
+    )
+    messages = assert_message_and_return_remaining(
+        messages[1:], lambda msg: msg.command == "wait"
     )
     for channel, expected_voltage in enumerate(
         [11, 117, 25, 149, 51, 145, -9, -14, 146, -10, 55, 17, 144, 93]
@@ -143,13 +184,3 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
             and msg.obj.name == f"mirror_voltages-vertical_voltages-{channel}"
             and msg.args == (expected_voltage,),
         )
-    messages = assert_message_and_return_remaining(
-        messages[1:],
-        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
-    )
-    messages = assert_message_and_return_remaining(
-        messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm-x_mm"
-        and isclose(msg.args[0], 10.05144, abs_tol=1e-5),
-    )
