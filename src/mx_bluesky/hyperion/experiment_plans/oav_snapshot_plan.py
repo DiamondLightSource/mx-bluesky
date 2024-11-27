@@ -3,7 +3,7 @@ from typing import Protocol
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -33,22 +33,16 @@ def setup_beamline_for_OAV(
     max_vel = yield from bps.rd(smargon.omega.max_velocity)
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
     yield from bps.abs_set(backlight, BacklightPosition.IN, group=group)
-    yield from bps.abs_set(
-        aperture_scatterguard,
-        ApertureValue.ROBOT_LOAD,
-        group=group,
-    )
+    yield from bps.trigger(aperture_scatterguard.move_out, group=group)
 
 
 def oav_snapshot_plan(
     composite: OavSnapshotComposite,
     parameters: WithSnapshot,
     oav_parameters: OAVParameters,
-    wait: bool = True,
 ) -> MsgGenerator:
     if not parameters.take_snapshots:
         return
-    yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
     yield from _setup_oav(composite, parameters, oav_parameters)
     for omega in parameters.snapshot_omegas_deg or []:
         yield from _take_oav_snapshot(composite, omega)

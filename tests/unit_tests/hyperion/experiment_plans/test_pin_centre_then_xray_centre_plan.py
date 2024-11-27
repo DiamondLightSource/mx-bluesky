@@ -4,7 +4,6 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.smargon import Smargon
@@ -292,9 +291,8 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
-        and msg.args == (ApertureValue.ROBOT_LOAD,)
+        lambda msg: msg.command == "trigger"
+        and msg.obj.name == "aperture_scatterguard-move_out"
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
 

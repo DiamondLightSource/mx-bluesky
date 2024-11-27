@@ -315,7 +315,7 @@ class TestFlyscanXrayCentrePlan:
             # fmt: on
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        "dodal.devices.aperturescatterguard._safe_move_whilst_in_beam",
         return_value=NullStatus(),
     )
     @patch(
@@ -452,7 +452,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        "dodal.devices.aperturescatterguard._safe_move_whilst_in_beam",
         return_value=NullStatus(),
     )
     @patch(

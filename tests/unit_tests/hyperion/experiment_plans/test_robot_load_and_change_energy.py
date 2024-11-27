@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
@@ -171,7 +171,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon, done_status
 ):
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
-    aperture_scatterguard.set = MagicMock(return_value=done_status)
+    aperture_scatterguard.move_out.trigger = MagicMock(return_value=done_status)
 
     set_mock_value(smargon.x.user_readback, 10)
     set_mock_value(smargon.z.user_readback, 5)
@@ -185,7 +185,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert await smargon.omega.user_readback.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(ApertureValue.ROBOT_LOAD)  # type: ignore
+    aperture_scatterguard.move_out.trigger.assert_called_once_with()  # type: ignore
 
 
 @patch(
