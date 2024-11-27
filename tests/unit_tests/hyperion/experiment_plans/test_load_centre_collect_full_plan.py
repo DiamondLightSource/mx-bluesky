@@ -44,6 +44,8 @@ from .conftest import (
     sim_fire_event_on_open_run,
 )
 
+GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION = "tests/test_data/parameter_json_files/good_test_load_centre_collect_params_multi_rotation.json"
+
 
 def find_a_pin(pin_tip_detection):
     def set_good_position():
@@ -116,6 +118,12 @@ def composite(
 
 
 @pytest.fixture
+def load_centre_collect_params_multi():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    return LoadCentreCollect(**params)
+
+
+@pytest.fixture
 def load_centre_collect_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
@@ -157,6 +165,36 @@ def grid_detection_callback_with_detected_grid():
 
 def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
     load_centre_collect_params.model_dump_json()
+
+
+def test_params_good_multi_rotation_load_centre_collect_params(
+    load_centre_collect_params_multi,
+):
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    LoadCentreCollect(**params)
+
+
+def test_params_with_varying_frames_per_rotation_is_rejected():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"]["rotation_scans"][0]["scan_width_deg"] = 180
+    params["multi_rotation_scan"]["rotation_scans"][1]["scan_width_deg"] = 90
+    with pytest.raises(
+        ValidationError,
+        match="Sweeps with different numbers of frames are not supported.",
+    ):
+        LoadCentreCollect(**params)
+
+
+def test_params_with_start_xyz_is_rejected():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 1.0
+    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 2.0
+    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 3.0
+    with pytest.raises(
+        ValidationError,
+        match="Specifying start xyz for sweeps is not supported in combination with centring.",
+    ):
+        LoadCentreCollect(**params)
 
 
 def test_can_serialize_load_centre_collect_robot_load_params(

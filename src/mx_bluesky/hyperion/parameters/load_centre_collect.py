@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import Self, TypeVar
 
 from pydantic import BaseModel, model_validator
 
@@ -53,3 +53,11 @@ class LoadCentreCollect(
         values["multi_rotation_scan"] = new_multi_rotation_scan_params
         values["robot_load_then_centre"] = new_robot_load_then_centre_params
         return values
+
+    @model_validator(mode="after")
+    def _check_rotation_start_xyz_is_not_specified(self) -> Self:
+        for scan in self.multi_rotation_scan.single_rotation_scans:
+            assert (
+                not scan.x_start_um and not scan.y_start_um and not scan.z_start_um
+            ), "Specifying start xyz for sweeps is not supported in combination with centring."
+        return self
