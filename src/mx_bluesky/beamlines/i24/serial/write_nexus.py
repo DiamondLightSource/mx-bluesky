@@ -84,7 +84,7 @@ def call_nexgen(
         "chip_info": chip_prog_dict,
         "det_dist": parameters.detector_distance_mm,
         "exp_time": parameters.exposure_time_s,
-        "expt_type": parameters.experiment_type,
+        "expt_type": parameters.nexgen_experiment_type,
         "filename": filename_prefix,
         "num_imgs": total_numb_imgs,
         "pump_status": pump_status,

@@ -53,7 +53,7 @@ class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
 
     @property
     @abstractmethod
-    def experiment_type(self) -> str:
+    def nexgen_experiment_type(self) -> str:
         pass
 
 
@@ -64,7 +64,7 @@ class ExtruderParameters(SerialAndLaserExperiment):
     pump_status: bool
 
     @property
-    def experiment_type(self) -> str:
+    def nexgen_experiment_type(self) -> str:
         return "extruder"
 
 
@@ -111,7 +111,7 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     total_num_images: int = 0  # Calculated in the code for now
 
     @property
-    def experiment_type(self) -> str:
+    def nexgen_experiment_type(self) -> str:
         return "fixed-target"
 
 
