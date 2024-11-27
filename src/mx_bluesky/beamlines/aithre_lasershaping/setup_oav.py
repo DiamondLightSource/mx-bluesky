@@ -6,10 +6,9 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
-from mx_bluesky.hyperion.parameters.constants import CONST
-
 # Helper function to make sure we set the waiting groups correctly
-set_using_group = partial(bps.abs_set, group=CONST.WAIT.READY_FOR_OAV)
+
+set_using_group = partial(bps.abs_set, group="ready for OAV")
 
 
 def setup_pin_tip_detection_params(
@@ -78,4 +77,4 @@ def pre_centring_setup_oav(
     """
     yield from setup_general_oav_params(oav, parameters)
     yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
-    yield from bps.wait(CONST.WAIT.READY_FOR_OAV)
+    yield from bps.wait("ready for OAV")
