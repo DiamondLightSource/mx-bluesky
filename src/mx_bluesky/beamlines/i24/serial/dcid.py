@@ -133,7 +133,7 @@ class DCID:
         self,
         beam_settings: BeamSettings,
         image_dir: str,
-        filetemplate: str,
+        file_template: str,
         num_images: int,
         shots_per_position: int = 1,
         start_time: datetime.datetime | None = None,
@@ -157,7 +157,6 @@ class DCID:
             elif not start_time.timetz:
                 start_time = start_time.astimezone()
 
-            # Gather data from the beamline
             resolution = get_resolution(
                 self.detector,
                 self.parameters.detector_distance_mm,
@@ -167,7 +166,6 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            fileTemplate = filetemplate
             if isinstance(self.detector, Pilatus):
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
@@ -209,7 +207,7 @@ class DCID:
                 "detectorDistance": self.parameters.detector_distance_mm,
                 "detectorId": self.detector.id,
                 "exposureTime": self.parameters.exposure_time_s,
-                "fileTemplate": fileTemplate,
+                "fileTemplate": file_template,
                 "imageDirectory": image_dir,
                 "numberOfImages": num_images,
                 "resolution": resolution,

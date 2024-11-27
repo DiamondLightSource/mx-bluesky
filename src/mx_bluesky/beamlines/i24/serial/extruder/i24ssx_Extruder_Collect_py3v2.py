@@ -344,7 +344,7 @@ def main_extruder_plan(
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
-        filetemplate=filetemplate,
+        file_template=filetemplate,
         num_images=parameters.num_images,
         start_time=start_time,
         pump_probe=parameters.pump_status,

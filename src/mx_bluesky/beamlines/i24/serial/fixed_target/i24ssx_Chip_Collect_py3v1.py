@@ -431,7 +431,7 @@ def start_i24(
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
-            filetemplate=filetemplate,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
@@ -493,7 +493,7 @@ def start_i24(
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
-            filetemplate=filetemplate,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
