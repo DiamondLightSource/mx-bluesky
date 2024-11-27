@@ -150,7 +150,7 @@ class DCID:
             shots_per_position (int, optional): Number of exposures per position in a \
                 chip. Defaults to 1, which works for extruder.
             start_time(datetime, optional): Collection start time. Defaults to None.
-            pump_probe (bool, optional): If True, a pump probe collection is runnung. \
+            pump_probe (bool, optional): If True, a pump probe collection is running. \
                 Defaults to False.
         """
         try:
