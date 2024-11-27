@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 import pydantic
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
+from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
