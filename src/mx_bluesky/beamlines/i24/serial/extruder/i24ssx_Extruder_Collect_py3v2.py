@@ -39,7 +39,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters, SSXType
+from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     PARAM_FILE_NAME,
     PARAM_FILE_PATH,
@@ -370,7 +370,7 @@ def main_extruder_plan(
             None,
             parameters,
             beam_settings.wavelength_in_a,
-            [beam_x, beam_y],
+            (beam_x, beam_y),
         )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
@@ -492,7 +492,7 @@ def run_extruder_plan(
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID - not generated yet
-    dcid = DCID(emit_errors=False, ssx_type=SSXType.EXTRUDER, expt_params=parameters)
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_extruder_plan(

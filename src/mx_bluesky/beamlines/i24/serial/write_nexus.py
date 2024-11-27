@@ -17,8 +17,8 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget
 def call_nexgen(
     chip_prog_dict: dict | None,
     parameters: ExtruderParameters | FixedTargetParameters,
-    wavelength: float,
-    beam_center: list[float],
+    wavelength_in_a: float,
+    beam_center_in_pix: tuple[float, float],
 ):
     """Call the nexus writer by sending a request to nexgen-server.
 
@@ -26,8 +26,8 @@ def call_nexgen(
         chip_prog_dict (dict | None): Dictionary containing most of the information \
             passed to the program runner for the collection. Only used for fixed target.
         parameters (SerialAndLaserExperiment): Collection parameters.
-        wavelength (float): Wavelength, in A.
-        beam_center (list[float]): Beam center position on detector, in pixels.
+        wavelength_in_a (float): Wavelength, in A.
+        beam_center_in_pix (list[float]): Beam center position on detector, in pixels.
 
     Raises:
         ValueError: For a wrong experiment type passed (either unknwon or not matched \
@@ -79,7 +79,7 @@ def call_nexgen(
 
     payload = {
         "beamline": "i24",
-        "beam_center": beam_center,
+        "beam_center": beam_center_in_pix,
         "chipmap": current_chip_map,
         "chip_info": chip_prog_dict,
         "det_dist": parameters.detector_distance_mm,
@@ -92,7 +92,7 @@ def call_nexgen(
         "pump_delay": parameters.laser_delay_s,
         "transmission": parameters.transmission,
         "visitpath": os.fspath(meta_h5.parent),
-        "wavelength": wavelength,
+        "wavelength": wavelength_in_a,
         "bit_depth": bit_depth,
     }
     SSX_LOGGER.info(f"Sending POST request to {url} with payload:")

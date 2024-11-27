@@ -41,7 +41,6 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
     ChipDescription,
     FixedTargetParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     LITEMAP_PATH,
@@ -658,7 +657,7 @@ def main_fixed_target_plan(
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
-        call_nexgen(chip_prog_dict, parameters, wavelength, [beam_x, beam_y])
+        call_nexgen(chip_prog_dict, parameters, wavelength, (beam_x, beam_y))
 
     yield from kickoff_and_complete_collection(pmac, parameters)
 
@@ -775,11 +774,7 @@ def run_fixed_target_plan(
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID instance - do not create yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.FIXED,
-        expt_params=parameters,
-    )
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(

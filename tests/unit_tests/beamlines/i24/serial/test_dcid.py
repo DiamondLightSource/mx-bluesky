@@ -13,7 +13,6 @@ from mx_bluesky.beamlines.i24.serial.dcid import (
 from mx_bluesky.beamlines.i24.serial.parameters import (
     BeamSettings,
     ExtruderParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
@@ -54,7 +53,6 @@ def test_generate_dcid_for_eiger(
     test_dcid = DCID(
         server="fake_server",
         emit_errors=False,
-        ssx_type=SSXType.EXTRUDER,
         expt_params=dummy_params_ex,
     )
 
@@ -94,7 +92,6 @@ def test_generate_dcid_for_pilatus_with_pump_probe(
     test_dcid = DCID(
         server="fake_server",
         emit_errors=False,
-        ssx_type=SSXType.EXTRUDER,
         expt_params=dummy_params_ex,
     )
 

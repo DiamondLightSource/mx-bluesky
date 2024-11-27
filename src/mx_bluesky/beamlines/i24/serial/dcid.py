@@ -20,7 +20,6 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     BeamSettings,
     ExtruderParameters,
     FixedTargetParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger, Pilatus
 
@@ -93,8 +92,6 @@ class DCID:
             stop collection if you can't get a DCID. Defaults to True.
         timeout (float, optional): Length of time in s to wait for the DB server before \
             giving up. Defaults to 10 s.
-        ssx_type (SSXType, optional): The type of SSX experiment this is for. Defaults \
-            to "Serial Fixed".
         expt_parameters (ExtruderParameters | FixedTargetParameters): Collection \
             parameters input by user.
 
@@ -110,7 +107,6 @@ class DCID:
         server: str | None = None,
         emit_errors: bool = True,
         timeout: float = 10,
-        ssx_type: SSXType = SSXType.FIXED,
         expt_params: ExtruderParameters | FixedTargetParameters,
     ):
         self.parameters = expt_params
@@ -126,7 +122,6 @@ class DCID:
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.ssx_type = ssx_type
         self.dcid = None
 
     def generate_dcid(
@@ -184,15 +179,17 @@ class DCID:
                 }
             ]
             if pump_probe:
-                if self.ssx_type is SSXType.FIXED:
-                    # pump then probe - pump_delay corresponds to time *before* first image
-                    pump_delay = (
-                        -self.parameters.laser_delay_s  # type: ignore
-                        if self.parameters.pump_repeat is not PumpProbeSetting.Short2  # type: ignore
-                        else self.parameters.laser_delay_s
-                    )  # type: ignore
-                else:
-                    pump_delay = self.parameters.laser_delay_s  # type: ignore
+                match self.parameters:
+                    case FixedTargetParameters():
+                        # pump then probe - pump_delay corresponds to time *before* first image
+                        pump_delay = (
+                            -self.parameters.laser_delay_s
+                            if self.parameters.pump_repeat
+                            is not PumpProbeSetting.Short2
+                            else self.parameters.laser_delay_s
+                        )
+                    case ExtruderParameters():
+                        pump_delay = self.parameters.laser_delay_s
                 events.append(
                     {
                         "name": "Laser probe",
@@ -216,7 +213,7 @@ class DCID:
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,
                 "wavelength": beam_settings.wavelength_in_a,
-                "group": {"experimentType": self.ssx_type.value},
+                "group": {"experimentType": self.parameters.ispyb_experiment_type},
                 "xBeam": xbeam,
                 "yBeam": ybeam,
                 "ssx": {

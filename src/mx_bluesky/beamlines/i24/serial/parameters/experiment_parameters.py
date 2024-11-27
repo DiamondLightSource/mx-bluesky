@@ -1,6 +1,5 @@
 import json
 from abc import abstractmethod
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -11,6 +10,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 
 
 class SerialExperiment(BaseModel):
@@ -67,6 +67,10 @@ class ExtruderParameters(SerialAndLaserExperiment):
     def nexgen_experiment_type(self) -> str:
         return "extruder"
 
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.EXTRUDER
+
 
 class ChipDescription(BaseModel):
     """Parameters defining the chip in use for FT collection."""
@@ -114,9 +118,13 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     def nexgen_experiment_type(self) -> str:
         return "fixed-target"
 
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.FIXED
+
 
 class BeamSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
     wavelength_in_a: float
-    beam_size_in_um: Sequence[float]
-    beam_center_in_mm: Sequence[float]
+    beam_size_in_um: tuple[float, float]
+    beam_center_in_mm: tuple[float, float]
