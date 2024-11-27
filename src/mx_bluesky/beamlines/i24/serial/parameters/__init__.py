@@ -4,6 +4,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     ChipDescription,
     ExtruderParameters,
     FixedTargetParameters,
+    SerialAndLaserExperiment,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.utils import get_chip_format
 
@@ -13,5 +14,6 @@ __all__ = [
     "ExtruderParameters",
     "ChipDescription",
     "FixedTargetParameters",
+    "SerialAndLaserExperiment",
     "get_chip_format",
 ]
