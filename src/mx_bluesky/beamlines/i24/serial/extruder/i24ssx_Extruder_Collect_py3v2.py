@@ -371,6 +371,7 @@ def main_extruder_plan(
             parameters,
             beam_settings.wavelength_in_a,
             (beam_x, beam_y),
+            start_time,
         )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10

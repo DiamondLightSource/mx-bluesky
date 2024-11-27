@@ -626,7 +626,7 @@ def main_fixed_target_plan(
         parameters.num_exposures, parameters.chip, parameters.map_type
     )
 
-    start_time = yield from start_i24(  # noqa: F841
+    start_time = yield from start_i24(
         zebra,
         aperture,
         backlight,
@@ -657,7 +657,9 @@ def main_fixed_target_plan(
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
-        call_nexgen(chip_prog_dict, parameters, wavelength, (beam_x, beam_y))
+        call_nexgen(
+            chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
+        )
 
     yield from kickoff_and_complete_collection(pmac, parameters)
 

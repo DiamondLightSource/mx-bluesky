@@ -436,6 +436,7 @@ async def test_main_fixed_target_plan(
         dummy_params_without_pp,
         0.6,
         (1600.0, 1697.4),
+        None,
     )
     mock_kickoff.assert_called_once_with(
         pmac, dummy_params_without_pp
