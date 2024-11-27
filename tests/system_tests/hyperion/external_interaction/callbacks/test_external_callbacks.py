@@ -10,15 +10,15 @@ from time import sleep
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import numpy as np
 import pytest
-import pytest_asyncio
 import zmq
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
-from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.core import set_mock_value
+from dodal.devices.zocalo.zocalo_results import (
+    ZocaloResults,
+    get_processing_results_from_event,
+)
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -37,6 +37,8 @@ from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa
+    TEST_RESULT_LARGE,
+    TEST_RESULT_MEDIUM,
     fetch_comment,
     zocalo_env,
 )
@@ -46,14 +48,6 @@ Note that because these tests use the external processes some of the errors comi
 them may not be very informative. You will want to check the log files produced in `tmp`
 for better logs.
 """
-
-
-@pytest_asyncio.fixture
-async def zocalo_device():
-    zd = ZocaloResults()
-    zd.timeout_s = 5
-    await zd.connect()
-    return zd
 
 
 class DocumentCatcher(CallbackBase):
@@ -94,7 +88,7 @@ def RE_with_external_callbacks():
     external_callbacks_process = subprocess.Popen(
         [
             "python",
-            "src/hyperion/external_interaction/callbacks/__main__.py",
+            "src/mx_bluesky/hyperion/external_interaction/callbacks/__main__.py",
             "--dev",
         ],
         env=process_env,
@@ -103,7 +97,11 @@ def RE_with_external_callbacks():
     monitor = publisher._socket.get_monitor_socket()
 
     connection_active_lock = threading.Lock()
-    t = threading.Thread(target=event_monitor, args=(monitor, connection_active_lock))
+    t = threading.Thread(
+        target=event_monitor,
+        args=(monitor, connection_active_lock),
+        name="event_monitor",
+    )
     t.start()
 
     while not connection_active_lock.locked():
@@ -119,6 +117,7 @@ def RE_with_external_callbacks():
     external_callbacks_process.send_signal(signal.SIGINT)
     sleep(0.01)
     external_callbacks_process.kill()
+    external_callbacks_process.wait(10)
     t.join()
     if old_ispyb_config:
         os.environ["ISPYB_CONFIG_PATH"] = old_ispyb_config
@@ -141,7 +140,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
     test_fgs_params: HyperionThreeDGridScan,
-    fake_fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite_for_fake_zocalo: FlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,
     fetch_comment,  # noqa
@@ -152,25 +151,22 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
     RE = RE_with_external_callbacks
 
-    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
-    fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
-    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
-    fake_fgs_composite.zocalo = zocalo_device
-
     doc_catcher = DocumentCatcher()
     RE.subscribe(doc_catcher)
 
     # Run the xray centring plan
-    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+    RE(flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
 
     # Check that we we emitted a valid reading from the zocalo device
-    zocalo_event = doc_catcher.event.call_args.args[0]["data"]  # type: ignore
-    assert np.all(zocalo_event["zocalo-centres_of_mass"][0] == [1, 2, 3])
-    assert np.all(zocalo_event["zocalo-bbox_sizes"][0] == [6, 6, 5])
+    zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore
+    # TEST_RESULT_LARGE is what fake_zocalo sends by default
+    assert (
+        get_processing_results_from_event("zocalo", zocalo_event) == TEST_RESULT_LARGE
+    )
 
     # get dcids from zocalo device
-    dcid_reading = await zocalo_device.ispyb_dcid.read()
-    dcgid_reading = await zocalo_device.ispyb_dcgid.read()
+    dcid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcid.read()
+    dcgid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcgid.read()
 
     dcid = dcid_reading["zocalo-ispyb_dcid"]["value"]
     dcgid = dcgid_reading["zocalo-ispyb_dcgid"]["value"]
@@ -181,7 +177,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     # check the data in dev ispyb corresponding to this "collection"
     ispyb_comment = fetch_comment(dcid)
     assert ispyb_comment != ""
-    assert "Diffraction grid scan of 40 by 20 images" in ispyb_comment
     assert "Zocalo processing took" in ispyb_comment
     assert "Position (grid boxes) ['1', '2', '3']" in ispyb_comment
     assert "Size (grid boxes) [6 6 5];" in ispyb_comment

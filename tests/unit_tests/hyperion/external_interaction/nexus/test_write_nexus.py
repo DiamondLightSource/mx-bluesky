@@ -10,7 +10,10 @@ from dodal.devices.detector.det_dim_constants import (
     PIXELS_X_EIGER2_X_4M,
     PIXELS_Y_EIGER2_X_4M,
 )
-from dodal.devices.fast_grid_scan import GridAxis, ZebraGridScanParams
+from dodal.devices.fast_grid_scan import (
+    GridAxis,
+    ZebraGridScanParams,
+)
 
 from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
@@ -160,7 +163,9 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_varying_axis_stride_correct(
                 sam_y[:], grid_scan_params, grid_scan_params.y_axis
             )
-            assert_axis_data_fixed(written_nexus_file, "z", grid_scan_params.z1_start)
+            assert_axis_data_fixed(
+                written_nexus_file, "z", grid_scan_params.z1_start_mm
+            )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
@@ -212,7 +217,9 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_varying_axis_stride_correct(
                 sam_z[:], grid_scan_params, grid_scan_params.z_axis
             )
-            assert_axis_data_fixed(written_nexus_file, "y", grid_scan_params.y2_start)
+            assert_axis_data_fixed(
+                written_nexus_file, "y", grid_scan_params.y2_start_mm
+            )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
@@ -234,10 +241,14 @@ def test_given_dummy_data_then_datafile_written_correctly(
     assert_data_edge_at(nexus_writer_2.nexus_file, 419)
 
 
-def assert_x_data_stride_correct(data_path, grid_scan_params, varying_axis_steps):
+def assert_x_data_stride_correct(
+    data_path, grid_scan_params: ZebraGridScanParams, varying_axis_steps
+):
     sam_x_data = data_path["sam_x"][:]
     assert len(sam_x_data) == (grid_scan_params.x_steps) * (varying_axis_steps)
-    assert sam_x_data[1] - sam_x_data[0] == pytest.approx(grid_scan_params.x_step_size)
+    assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
+        grid_scan_params.x_step_size_mm * 1000
+    )
 
 
 def assert_varying_axis_stride_correct(
@@ -245,7 +256,7 @@ def assert_varying_axis_stride_correct(
 ):
     assert len(axis_data) == (grid_scan_params.x_steps) * (varying_axis.full_steps)
     assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(
-        varying_axis.step_size
+        varying_axis.step_size_mm * 1000
     )
 
 

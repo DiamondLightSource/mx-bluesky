@@ -142,7 +142,7 @@ def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
     assert test_params.features.use_panda_for_gridscan
 
 
-@patch("mx_bluesky.hyperion.parameters.gridscan.os")
+@patch("mx_bluesky.common.parameters.components.os")
 def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_params):
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
 

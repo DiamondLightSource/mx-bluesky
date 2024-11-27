@@ -1,11 +1,7 @@
-from collections.abc import Sequence
-from inspect import get_annotations
-
-import numpy
 import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.synchrotron import SynchrotronMode
-from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME, XrcResult
+from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from mx_bluesky.common.parameters.constants import (
@@ -16,7 +12,11 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
-from .....conftest import default_raw_params, raw_params_from_file
+from .....conftest import (
+    default_raw_params,
+    generate_xrc_result_event,
+    raw_params_from_file,
+)
 from ...conftest import OavGridSnapshotTestEvents
 
 
@@ -40,12 +40,6 @@ def test_rotation_start_outer_document(dummy_rotation_params):
         "subplan_name": CONST.PLAN.ROTATION_OUTER,
         "hyperion_parameters": dummy_rotation_params.model_dump_json(),
     }
-
-
-def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
-    keys = get_annotations(XrcResult).keys()
-    results_by_key = {k: [r[k] for r in test_results] for k in keys}
-    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
 
 
 class TestData(OavGridSnapshotTestEvents):

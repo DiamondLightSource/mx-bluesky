@@ -154,6 +154,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ISPYB_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
         )
+
         raw_results = get_processing_results_from_event("zocalo", doc)
         if len(raw_results) > 0:
             for n, res in enumerate(raw_results):
