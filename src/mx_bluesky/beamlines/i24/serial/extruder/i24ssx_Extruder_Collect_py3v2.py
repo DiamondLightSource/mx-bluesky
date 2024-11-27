@@ -18,7 +18,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator_base import AttenuatorBase
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -141,7 +141,9 @@ def enter_hutch(
 
 
 @log_on_entry
-def write_parameter_file(detector_stage: DetectorMotion, attenuator: AttenuatorBase):
+def write_parameter_file(
+    detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator
+):
     """Writes a json parameter file that can later be parsed by the model."""
     param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
     SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
@@ -482,7 +484,7 @@ def run_extruder_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: AttenuatorBase = inject("attenuator"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")

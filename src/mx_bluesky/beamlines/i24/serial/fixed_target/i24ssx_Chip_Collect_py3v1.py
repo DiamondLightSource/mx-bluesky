@@ -12,7 +12,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator_base import AttenuatorBase
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -747,7 +747,7 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: AttenuatorBase = inject("attenuator"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     # in the first instance, write params here
     yield from write_parameter_file(detector_stage, attenuator)

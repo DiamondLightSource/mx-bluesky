@@ -15,7 +15,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator_base import AttenuatorBase
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -109,7 +109,7 @@ def initialise_stages(
 @log_on_entry
 def write_parameter_file(
     detector_stage: DetectorMotion,
-    attenuator: AttenuatorBase,
+    attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     param_path: Path = PARAM_FILE_PATH_FT
     # Create directory if it doesn't yet exist.
