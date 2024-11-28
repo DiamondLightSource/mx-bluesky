@@ -16,14 +16,15 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
 # NOTE On second thought, this should be used for the user log at the end instead
 # of the parameter files written/copied/moved etc at the beginning.
 # I suspect the users will expect an user log, but not the rest of it.
-class ParameterFileWriter(CallbackBase):
+class UserLogWriter(CallbackBase):
     parameters: ExtruderParameters | FixedTargetParameters
 
     def start(self, doc: dict):  # type: ignore
+        param_path = PARAM_FILE_PATH
         if doc.get("subplan_name") == "main_fixed_target_plan":
             param_path = PARAM_FILE_PATH_FT
-        elif doc.get("subplan_name") == "main_extruder_plan":
-            param_path = PARAM_FILE_PATH
+        # elif doc.get("subplan_name") == "main_extruder_plan":
+        #     param_path = PARAM_FILE_PATH
 
         json_params = self.parameters.model_dump_json()
         with open(param_path / PARAM_FILE_NAME, "w") as f:
