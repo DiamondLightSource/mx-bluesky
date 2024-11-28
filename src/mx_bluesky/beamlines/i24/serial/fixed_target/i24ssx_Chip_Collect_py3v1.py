@@ -29,6 +29,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     read_parameters,
+    upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -722,9 +723,10 @@ def run_fixed_target_plan(
     dcm: DCM = inject("dcm"),
 ) -> MsgGenerator:
     # Read the parameters
-    parameters = yield from read_parameters(detector_stage)
+    parameters: FixedTargetParameters = yield from read_parameters(detector_stage)
 
-    # TODO HERE do equivalent of upload_parameters
+    if parameters.chip_map:
+        upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
     # DCID instance - do not create yet
     dcid = DCID(

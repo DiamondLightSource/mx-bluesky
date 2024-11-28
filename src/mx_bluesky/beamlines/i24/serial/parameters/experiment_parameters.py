@@ -1,5 +1,4 @@
 import json
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -99,7 +98,7 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
     map_type: MappingType
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
-    chip_map: Sequence[int] | None = None
+    chip_map: list[int] | None = None
     total_num_images: int = 0  # Calculated in the code for now
 
     @classmethod

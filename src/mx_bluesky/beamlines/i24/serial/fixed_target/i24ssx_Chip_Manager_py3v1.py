@@ -53,6 +53,8 @@ CHIP_MOVES = {
     ChipType.Custom: 25.40,
     ChipType.Minichip: 25.40,
 }
+OXFORD_CHIP_WIDTH = 8
+PVAR_TEMPLATE = f"P3%0{2}d1"
 CHIPTYPE_PV = pv.me14e_gp1
 MAPTYPE_PV = pv.me14e_gp2
 NUM_EXPOSURES_PV = pv.me14e_gp3
@@ -242,6 +244,27 @@ def save_screen_map() -> MsgGenerator:
             line = f"{x:02d}status    P3{x:02d}1 \t{block_val}\n"
             f.write(line)
     yield from bps.null()
+
+
+@log_on_entry
+def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator:
+    """Upload the map parameters for an Oxford-type chip (width=8) to the geobrick.
+
+    Args:
+        pmac (PMAC): The PMAC device.
+        chip_map (list[int]): A list of selected blocks to be collected.
+
+    """
+    SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
+    SSX_LOGGER.info(f"Chipid {ChipType.Oxford}, width {OXFORD_CHIP_WIDTH}")
+    for block in range(1, 65):
+        value = 1 if block in chip_map else 0
+        pvar = PVAR_TEMPLATE % block
+        pvar_str = f"{pvar}={value}"
+        SSX_LOGGER.debug(f"Set {pvar_str} for block {block}")
+        yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
+        sleep(0.02)
+    SSX_LOGGER.debug("Upload parameters done.")
 
 
 @log_on_entry
