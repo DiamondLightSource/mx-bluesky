@@ -47,6 +47,9 @@ from dodal.devices.zocalo.zocalo_results import (
 from event_model import RunStart
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
@@ -72,9 +75,6 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
