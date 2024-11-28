@@ -118,10 +118,6 @@ def initialise_stages(
 def read_parameters(
     detector_stage: DetectorMotion,
 ) -> MsgGenerator:
-    param_path: Path = PARAM_FILE_PATH_FT
-    # Create directory if it doesn't yet exist.
-    param_path.mkdir(parents=True, exist_ok=True)
-
     SSX_LOGGER.info("Creating parameter model from input.")
 
     filename = caget(pv.me14e_chip_name)

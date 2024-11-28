@@ -51,21 +51,15 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_chip_format"
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.json")
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._read_visit_directory_from_file"
 )
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
-)
 def test_read_parameters(
-    fake_mkdir,
     fake_log,
     mock_read_visit,
-    mock_json,
     fake_caget,
     fake_chip,
     fake_det,
@@ -82,7 +76,6 @@ def test_read_parameters(
     ):
         RE(read_parameters(detector_stage))
 
-    fake_mkdir.assert_called_once()
     assert fake_caget.call_count == 12
     assert fake_log.info.call_count == 3
 

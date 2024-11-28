@@ -19,7 +19,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
 class UserLogWriter(CallbackBase):
     parameters: ExtruderParameters | FixedTargetParameters
 
-    def start(self, doc: dict):  # type: ignore
+    def stop(self, doc: dict):  # type: ignore
         param_path = PARAM_FILE_PATH
         if doc.get("subplan_name") == "main_fixed_target_plan":
             param_path = PARAM_FILE_PATH_FT
@@ -29,3 +29,6 @@ class UserLogWriter(CallbackBase):
         json_params = self.parameters.model_dump_json()
         with open(param_path / PARAM_FILE_NAME, "w") as f:
             json.dump(json_params, f, indent=4)
+
+
+# NOTE To finish this #575 needs to be merged
