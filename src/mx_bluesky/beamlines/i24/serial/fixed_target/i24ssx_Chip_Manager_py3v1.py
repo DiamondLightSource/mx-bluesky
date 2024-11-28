@@ -229,24 +229,6 @@ def define_current_chip(
 
 
 @log_on_entry
-def save_screen_map() -> MsgGenerator:
-    litemap_path: Path = LITEMAP_PATH
-    litemap_path.mkdir(parents=True, exist_ok=True)
-
-    SSX_LOGGER.info(f"Saving {litemap_path.as_posix()} currentchip.map")
-    with open(litemap_path / "currentchip.map", "w") as f:
-        SSX_LOGGER.debug("Printing only blocks with block_val == 1")
-        for x in range(1, 82):
-            block_str = f"ME14E-MO-IOC-01:GP{x + 10:d}"
-            block_val = int(caget(block_str))
-            if block_val == 1:
-                SSX_LOGGER.info(f"{block_str} {block_val:d}")
-            line = f"{x:02d}status    P3{x:02d}1 \t{block_val}\n"
-            f.write(line)
-    yield from bps.null()
-
-
-@log_on_entry
 def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator:
     """Upload the map parameters for an Oxford-type chip (width=8) to the geobrick.
 
@@ -265,47 +247,6 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         sleep(0.02)
     SSX_LOGGER.debug("Upload parameters done.")
-
-
-@log_on_entry
-def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
-    SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
-    caput(CHIPTYPE_PV, 0)
-    width = 8
-
-    map_file: Path = LITEMAP_PATH / "currentchip.map"
-    if not map_file.exists():
-        raise FileNotFoundError(f"The file {map_file} has not yet been created")
-
-    # NOTE: PVAR STRING TEMPLATE
-    # for i in range(1, 65):
-    #   pvar = f"P3{i:02d}1"
-    with open(map_file) as f:
-        SSX_LOGGER.info(f"Chipid {ChipType.Oxford}")
-        SSX_LOGGER.info(f"width {width}")
-        x = 1
-        for line in f.readlines()[: width**2]:
-            cols = line.split()
-            pvar = cols[1]
-            value = cols[2]
-            s = pvar + "=" + value
-            if value != "1":
-                s2 = pvar + "   "
-                sys.stdout.write(s2)
-            else:
-                sys.stdout.write(s + " ")
-            sys.stdout.flush()
-            if x == width:
-                print()
-                x = 1
-            else:
-                x += 1
-            yield from bps.abs_set(pmac.pmac_string, s, wait=True)
-            sleep(0.02)
-
-    SSX_LOGGER.warning("Automatic Setting Mapping Type to Lite has been disabled")
-    SSX_LOGGER.debug("Upload parameters done.")
-    yield from bps.null()
 
 
 @log_on_entry

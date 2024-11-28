@@ -18,8 +18,6 @@ from .fixed_target.i24ssx_Chip_Manager_py3v1 import (
     moveto,
     moveto_preset,
     pumpprobe_calc,
-    save_screen_map,
-    upload_parameters,
 )
 from .log import clean_up_log_config_at_end, setup_collection_logs
 from .setup_beamline.setup_detector import setup_detector_stage
@@ -43,8 +41,6 @@ __all__ = [
     "load_lite_map",
     "load_stock_map",
     "pumpprobe_calc",
-    "save_screen_map",
-    "upload_parameters",
     "setup_collection_logs",
     "clean_up_log_config_at_end",
 ]
