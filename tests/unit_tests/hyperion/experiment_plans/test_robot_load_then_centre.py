@@ -476,7 +476,7 @@ def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
     )
 
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11.1
+        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11100
     )
     messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "centre_plan"
@@ -504,29 +504,5 @@ def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
         )
     )
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11.1
+        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11100
     )
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    MagicMock(side_effect=mock_pin_centre_then_flyscan_plan),
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
-    MagicMock(
-        side_effect=lambda energy, _: iter([Msg("set_energy_plan", None, energy)])
-    ),
-)
-def test_robot_load_then_centre_given_no_energy_specified_and_sample_loaded_does_not_set_energy(
-    sim_run_engine: RunEngineSimulator,
-    robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sample_is_loaded,
-):
-    messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
-            robot_load_composite, robot_load_then_centre_params_no_energy
-        )
-    )
-    assert_none_matching(messages, lambda msg: msg.command == "set_energy_plan")

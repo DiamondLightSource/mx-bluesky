@@ -177,21 +177,19 @@ def robot_load_then_xray_centre(
     doing_chi_change = parameters.chi_start_deg is not None
 
     if doing_sample_load:
+        LOGGER.info("Pin not loaded, loading and centring")
         plan = _robot_load_then_flyscan_plan(
             composite,
             parameters,
         )
-        LOGGER.info("Pin not loaded, loading and centring")
     else:
         # Robot load normally sets the energy so we should do this explicitly if no load is
         # being done
         demand_energy_ev = parameters.demand_energy_ev
         LOGGER.info(f"Setting the energy to {demand_energy_ev}eV")
-        if demand_energy_ev:
-            yield from set_energy_plan(
-                demand_energy_ev / 1000,
-                cast(SetEnergyComposite, composite),
-            )
+        yield from set_energy_plan(
+            demand_energy_ev, cast(SetEnergyComposite, composite)
+        )
 
         if doing_chi_change:
             plan = _flyscan_plan_from_robot_load_params(composite, parameters)
