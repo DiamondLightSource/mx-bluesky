@@ -428,7 +428,6 @@ def collection_complete_plan(
     dcid.collection_complete(end_time, aborted=False)
     SSX_LOGGER.info(f"End Time = {end_time.ctime()}")
 
-    # NOTE no parameter file to copy anymore but should write userlog here
     yield from bps.null()
 
 

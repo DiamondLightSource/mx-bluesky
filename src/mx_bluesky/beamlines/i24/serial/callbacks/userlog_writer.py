@@ -2,32 +2,26 @@ import json
 
 from bluesky.callbacks import CallbackBase
 
-from mx_bluesky.beamlines.i24.serial.parameters import (
-    ExtruderParameters,
-    FixedTargetParameters,
-)
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH,
-    PARAM_FILE_PATH_FT,
-)
+from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
 
 
 # NOTE On second thought, this should be used for the user log at the end instead
 # of the parameter files written/copied/moved etc at the beginning.
 # I suspect the users will expect an user log, but not the rest of it.
 class UserLogWriter(CallbackBase):
-    parameters: ExtruderParameters | FixedTargetParameters
+    parameters: FixedTargetParameters
+    # beam_settings: # Need beam settings here for wavelength
 
     def stop(self, doc: dict):  # type: ignore
-        param_path = PARAM_FILE_PATH
-        if doc.get("subplan_name") == "main_fixed_target_plan":
-            param_path = PARAM_FILE_PATH_FT
-        # elif doc.get("subplan_name") == "main_extruder_plan":
-        #     param_path = PARAM_FILE_PATH
+        userlog_path = self.parameters.visit / f"processing/{self.parameters.directory}"
+        userlog_fid = f"{self.parameters.filename}"
+        SSX_LOGGER.debug(f"Write a user log in {userlog_path}")
+
+        userlog_path.mkdir(parents=True, exist_ok=True)
 
         json_params = self.parameters.model_dump_json()
-        with open(param_path / PARAM_FILE_NAME, "w") as f:
+        with open(userlog_path / userlog_fid, "w") as f:
             json.dump(json_params, f, indent=4)
 
 
