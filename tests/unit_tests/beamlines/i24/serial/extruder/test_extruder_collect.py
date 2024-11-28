@@ -304,12 +304,11 @@ def test_aborted_plan_with_pilatus(
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.shutil")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.DCID")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
 def test_collection_complete_plan_with_eiger(
-    fake_caput, fake_sleep, fake_dcid, fake_shutil, dummy_params, RE
+    fake_caput, fake_sleep, fake_dcid, dummy_params, RE
 ):
     RE(
         collection_complete_plan(

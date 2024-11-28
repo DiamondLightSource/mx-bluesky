@@ -2,7 +2,6 @@
 Fixed target data collection
 """
 
-import shutil
 from datetime import datetime
 from pathlib import Path
 from time import sleep
@@ -37,10 +36,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     SSXType,
 )
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    LITEMAP_PATH,
-    PARAM_FILE_PATH_FT,
-)
+from mx_bluesky.beamlines.i24.serial.parameters.constants import LITEMAP_PATH
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -99,19 +95,6 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
             # Long delay between pump and probe, with fast shutter opening and closing.
             timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
-
-
-def copy_files_to_data_location(
-    dest_dir: Path | str,
-    param_path: Path = PARAM_FILE_PATH_FT,
-    map_file: Path = LITEMAP_PATH,
-    map_type: MappingType = MappingType.Lite,
-):
-    if not isinstance(dest_dir, Path):
-        dest_dir = Path(dest_dir)
-    shutil.copy2(param_path / "parameters.txt", dest_dir / "parameters.txt")
-    if map_type == MappingType.Lite:
-        shutil.copy2(map_file / "currentchip.map", dest_dir / "currentchip.map")
 
 
 def write_userlog(
@@ -670,8 +653,7 @@ def collection_complete_plan(
     SSX_LOGGER.debug(f"Collection end time {end_time}")
     dcid.collection_complete(end_time, aborted=False)
 
-    # Copy parameter file and eventual chip map to collection directory
-    copy_files_to_data_location(collection_directory, map_type=map_type)
+    # NOTE no files to copy anymore but shoud write userlog here
     yield from bps.null()
 
 

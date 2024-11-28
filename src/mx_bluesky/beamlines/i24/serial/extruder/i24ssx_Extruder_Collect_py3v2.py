@@ -5,7 +5,6 @@ This version in python3 new Feb2021 by RLO
 """
 
 import re
-import shutil
 import sys
 import time
 from datetime import datetime
@@ -32,10 +31,6 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters, SSXType
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH,
-)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -433,11 +428,7 @@ def collection_complete_plan(
     dcid.collection_complete(end_time, aborted=False)
     SSX_LOGGER.info(f"End Time = {end_time.ctime()}")
 
-    # Copy parameter file
-    shutil.copy2(
-        PARAM_FILE_PATH / PARAM_FILE_NAME,
-        collection_directory / PARAM_FILE_NAME,
-    )
+    # NOTE no parameter file to copy anymore but should write userlog here
     yield from bps.null()
 
 
