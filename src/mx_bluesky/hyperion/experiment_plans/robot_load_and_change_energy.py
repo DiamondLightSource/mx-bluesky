@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
@@ -8,6 +7,7 @@ from typing import cast
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
@@ -33,7 +33,7 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class RobotLoadAndEnergyChangeComposite:
     # SetEnergyComposite fields
     vfm: FocusingMirrorWithStripes

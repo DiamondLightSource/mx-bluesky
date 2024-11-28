@@ -81,7 +81,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "param_type": MultiRotationScan,
         "callbacks_factory": create_rotation_callbacks,
     },
-    "load_centre_collect_full_plan": {
+    "load_centre_collect_full": {
         "setup": load_centre_collect_full_plan.create_devices,
         "param_type": LoadCentreCollect,
         "callbacks_factory": create_load_centre_collect_callbacks,

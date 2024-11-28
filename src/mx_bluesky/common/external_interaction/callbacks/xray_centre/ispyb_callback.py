@@ -5,8 +5,8 @@ from time import time
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
+from bluesky.utils import MsgGenerator
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     get_processing_results_from_event,
@@ -152,6 +152,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
         )
+
         raw_results = get_processing_results_from_event("zocalo", doc)
         if len(raw_results) > 0:
             for n, res in enumerate(raw_results):

@@ -6,8 +6,7 @@ from collections.abc import Generator
 from enum import IntEnum
 
 import bluesky.plan_stubs as bps
-from blueapi.core import MsgGenerator
-from bluesky.utils import Msg
+from bluesky.utils import Msg, MsgGenerator
 from dodal.common import inject
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 

@@ -86,6 +86,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             )
             parameters = RotationScan.model_validate_json(hyperion_params)
             NEXUS_LOGGER.info("Setting up nexus file...")
+
             det_size = (
                 parameters.detector_params.detector_size_constants.det_size_pixels
             )

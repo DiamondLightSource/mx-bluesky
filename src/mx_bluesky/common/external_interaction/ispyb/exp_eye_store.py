@@ -35,7 +35,7 @@ class ExpeyeInteraction:
 
     def __init__(self) -> None:
         url, token = _get_base_url_and_token()
-        self.base_url = url + "/core"
+        self.base_url = url
         self.auth = BearerAuth(token)
 
     def _send_and_get_response(self, url, data, send_func) -> dict:

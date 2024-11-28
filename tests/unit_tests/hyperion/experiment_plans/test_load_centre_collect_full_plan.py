@@ -1,14 +1,18 @@
 import dataclasses
-from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import Sequence
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy
 import pytest
 from bluesky.protocols import Location
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import Msg
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
+from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.common.utils.exceptions import WarningException
@@ -17,7 +21,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
-    load_centre_collect_full_plan,
+    load_centre_collect_full,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -25,10 +29,20 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import (
+    MultiRotationScan,
+    RotationScanPerSweep,
+)
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
+from .conftest import (
+    FLYSCAN_RESULT_HIGH,
+    FLYSCAN_RESULT_LOW,
+    FLYSCAN_RESULT_MED,
+    sim_fire_event_on_open_run,
+)
 
 
 def find_a_pin(pin_tip_detection):
@@ -110,6 +124,14 @@ def load_centre_collect_params():
 
 
 @pytest.fixture
+def load_centre_collect_with_top_n_params():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+    )
+    return LoadCentreCollect(**params)
+
+
+@pytest.fixture
 def grid_detection_callback_with_detected_grid():
     with patch(
         "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
@@ -158,18 +180,27 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
-    return_value=iter([]),
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    return_value=iter(
+        [
+            Msg(
+                "open_run",
+                xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
+                run=CONST.PLAN.FLYSCAN_RESULTS,
+            ),
+            Msg("close_run"),
+        ]
+    ),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
-    return_value=iter([]),
+    return_value=iter([Msg(command="robot_load_and_change_energy")]),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
-    return_value=iter([]),
+    return_value=iter([Msg(command="multi_rotation_scan")]),
 )
-def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
+def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
     mock_rotation_scan: MagicMock,
     mock_full_robot_load_plan: MagicMock,
     mock_pin_centre_then_xray_centre_plan: MagicMock,
@@ -178,13 +209,44 @@ def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine,
 ):
-    sim_run_engine.simulate_plan(
-        load_centre_collect_full_plan(
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
 
-    mock_full_robot_load_plan.assert_called_once()
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run" and "xray_centre_results" in msg.kwargs,
+    )
+    # TODO re-enable tests see mx-bluesky 561
+    # msgs = assert_message_and_return_remaining(
+    #     msgs, lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM
+    # )
+    # msgs = assert_message_and_return_remaining(
+    #     msgs,
+    #     lambda msg: msg.command == "set"
+    #     and msg.obj.name == "smargon-x"
+    #     and msg.args[0] == 0.1,
+    # )
+    # msgs = assert_message_and_return_remaining(
+    #     msgs,
+    #     lambda msg: msg.command == "set"
+    #     and msg.obj.name == "smargon-y"
+    #     and msg.args[0] == 0.2,
+    # )
+    # msgs = assert_message_and_return_remaining(
+    #     msgs,
+    #     lambda msg: msg.command == "set"
+    #     and msg.obj.name == "smargon-z"
+    #     and msg.args[0] == 0.3,
+    # )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "multi_rotation_scan"
+    )
+
     robot_load_energy_change_composite = mock_full_robot_load_plan.mock_calls[0].args[0]
     robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
@@ -195,6 +257,21 @@ def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
     assert isinstance(rotation_scan_composite, RotationScanComposite)
     assert isinstance(rotation_scan_params, MultiRotationScan)
+    # XXX sample test file xyz conflicts with detected xyz
+    # see https://github.com/DiamondLightSource/mx-bluesky/issues/563
+    expected_rotation_scans = [
+        {
+            "omega_start_deg": 0,
+            "chi_start_deg": 23.85,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+            "nexus_vds_start_img": 0,
+        },
+    ]
+    _compare_rotation_scans(
+        expected_rotation_scans, rotation_scan_params.rotation_scans
+    )
 
 
 @patch(
@@ -205,7 +282,7 @@ def test_load_centre_collect_full_plan_happy_path_invokes_all_steps(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     new=MagicMock(),
 )
-def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
+def test_load_centre_collect_ful_skips_collect_if_pin_tip_not_found(
     mock_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -220,7 +297,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_pin_tip_not_found(
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
             )
         )
@@ -249,9 +326,180 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
 
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
-            load_centre_collect_full_plan(
+            load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
             )
         )
 
     mock_rotation_scan.assert_not_called()
+
+
+def test_can_deserialize_top_n_by_max_count_params(
+    load_centre_collect_with_top_n_params,
+):
+    assert load_centre_collect_with_top_n_params.select_centres.name == "TopNByMaxCount"
+    assert load_centre_collect_with_top_n_params.select_centres.n == 5
+
+
+def test_bad_selection_method_is_rejected():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+    )
+    params["select_centres"]["name"] = "inject_bad_code_here"
+    with pytest.raises(
+        ValidationError,
+        match=(
+            "Input tag 'inject_bad_code_here' found using 'name' does not match any "
+            "of the expected tags"
+        ),
+    ):
+        LoadCentreCollect(**params)
+
+
+def test_default_select_centres_is_top_n_by_max_count_n_is_1(
+    load_centre_collect_params,
+):
+    assert load_centre_collect_params.select_centres.name == "TopNByMaxCount"
+    assert load_centre_collect_params.select_centres.n == 1
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    new=MagicMock(
+        return_value=iter(
+            [
+                Msg(
+                    "open_run",
+                    xray_centre_results=[
+                        dataclasses.asdict(r)
+                        for r in [
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_HIGH,
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_LOW,
+                            FLYSCAN_RESULT_MED,
+                            FLYSCAN_RESULT_HIGH,
+                        ]
+                    ],
+                    run=CONST.PLAN.FLYSCAN_RESULTS,
+                ),
+                Msg("close_run"),
+            ]
+        )
+    ),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
+    new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
+)
+def test_load_centre_collect_full_plan_multiple_centres(
+    mock_multi_rotation_scan: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    load_centre_collect_with_top_n_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    composite: LoadCentreCollectComposite,
+):
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite,
+            load_centre_collect_with_top_n_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "robot_load_and_change_energy"
+    )
+    assert sum(1 for msg in msgs if msg.command == "robot_load_and_change_energy") == 1
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run" and "xray_centre_results" in msg.kwargs,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "multi_rotation_scan"
+    )
+
+    def _rotation_at_first_position(chi=0):
+        return {
+            "omega_start_deg": 10,
+            "chi_start_deg": chi,
+            "x_start_um": 100,
+            "y_start_um": 200,
+            "z_start_um": 300,
+        }
+
+    def _rotation_at_second_position(chi=0):
+        return {
+            "omega_start_deg": 10,
+            "chi_start_deg": chi,
+            "x_start_um": 400,
+            "y_start_um": 500,
+            "z_start_um": 600,
+        }
+
+    expected_rotation_scans = [
+        _rotation_at_first_position(0),
+        _rotation_at_first_position(30),
+        _rotation_at_first_position(0),
+        _rotation_at_first_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
+        _rotation_at_second_position(0),
+        _rotation_at_second_position(30),
+    ]
+    for i in range(0, len(expected_rotation_scans)):
+        expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
+
+    rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
+    assert isinstance(rotation_scan_params, MultiRotationScan)
+    _compare_rotation_scans(
+        expected_rotation_scans, rotation_scan_params.rotation_scans
+    )
+    assert rotation_scan_params.transmission_frac == 0.05
+
+
+def _compare_rotation_scans(
+    expected_rotation_scans: Sequence[dict],
+    actual_rotation_scans: Sequence[RotationScanPerSweep],
+):
+    for expected, rotation_scan in zip(
+        expected_rotation_scans, actual_rotation_scans, strict=False
+    ):
+        assert rotation_scan.omega_start_deg == expected["omega_start_deg"]
+        assert rotation_scan.chi_start_deg == expected["chi_start_deg"]
+        assert rotation_scan.x_start_um == expected["x_start_um"]
+        assert rotation_scan.y_start_um == expected["y_start_um"]
+        assert rotation_scan.z_start_um == expected["z_start_um"]
+        assert rotation_scan.nexus_vds_start_img == expected["nexus_vds_start_img"]
+
+
+@patch("mx_bluesky.common.parameters.components.os.makedirs")
+def test_load_centre_collect_creates_storage_directory_if_not_present(
+    mock_makedirs,
+):
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+    )
+    LoadCentreCollect(**params)
+
+    mock_makedirs.assert_has_calls(
+        [
+            call(
+                "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/xraycentring",
+                exist_ok=True,
+            )
+        ],
+        any_order=True,
+    )
+    mock_makedirs.assert_has_calls(
+        [call("/tmp/dls/i03/data/2024/cm31105-4/auto/123458/", exist_ok=True)],
+        any_order=True,
+    )

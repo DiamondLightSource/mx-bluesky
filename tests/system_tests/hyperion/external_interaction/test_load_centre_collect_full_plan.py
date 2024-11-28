@@ -16,7 +16,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
-    load_centre_collect_full_plan,
+    load_centre_collect_full,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -112,16 +112,17 @@ GRID_DC_1_EXPECTED_VALUES = {
     "overlap": 0,
     "omegastart": 0,
     "startimagenumber": 1,
-    "wavelength": 0.71,
+    "wavelength": 0.976254,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
-    "xtalsnapshotfullpath1": "test_1_y",
-    "xtalsnapshotfullpath2": "test_2_y",
-    "xtalsnapshotfullpath3": "test_3_y",
+    "xtalsnapshotfullpath1": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+    "xtalsnapshotfullpath2": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_0_outer_overlay.png",
+    "xtalsnapshotfullpath3": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/robot_load_centring_file_1_0.png",
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
-    "numberofimages": 120,
+    "numberofimages": 180,
 }
 
 GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
@@ -130,14 +131,20 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
     "omegastart": 90,
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
-    "numberofimages": 90,
+    "numberofimages": 180,
+    "xtalsnapshotfullpath1": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90_grid_overlay.png",
+    "xtalsnapshotfullpath2": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "xtalsnapshotfullpath3": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots"
+    "/robot_load_centring_file_1_90.png",
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": 370,
     # "chiStart": 0, mx-bluesky 325
-    "wavelength": 0.71,
+    "wavelength": 0.976254,
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.004,
@@ -145,17 +152,23 @@ ROTATION_DC_EXPECTED_VALUES = {
     "synchrotronMode": SynchrotronMode.USER.value,
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
-    "xtalSnapshotFullPath1": "/tmp/snapshot2.png",
-    "xtalSnapshotFullPath2": "/tmp/snapshot3.png",
-    "xtalSnapshotFullPath3": "/tmp/snapshot4.png",
-    "xtalSnapshotFullPath4": "/tmp/snapshot5.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_90\\.png",
+    "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_180\\.png",
+    "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_270\\.png",
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
-    "xtalSnapshotFullPath1": "/tmp/snapshot6.png",
-    "xtalSnapshotFullPath2": "/tmp/snapshot7.png",
-    "xtalSnapshotFullPath3": "/tmp/snapshot8.png",
-    "xtalSnapshotFullPath4": "/tmp/snapshot9.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_90\\.png",
+    "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_180\\.png",
+    "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_270\\.png",
 }
 
 
@@ -175,11 +188,14 @@ def test_execute_load_centre_collect_full_plan(
     robot_load_cb = RobotLoadISPyBCallback()
     robot_load_cb.expeye = MagicMock()
     robot_load_cb.expeye.start_load.return_value = 1234
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+    )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
     RE.subscribe(robot_load_cb)
     RE(
-        load_centre_collect_full_plan(
+        load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
             oav_parameters_for_rotation,
@@ -217,16 +233,16 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 4 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,152], "
-        "bottom right (px): [844,251]. Aperture: ApertureValue.SMALL. ",
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 3 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [844,239]. Aperture: ApertureValue.SMALL. ",
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
     )
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -250,5 +266,5 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (675, 737, -381) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
     )

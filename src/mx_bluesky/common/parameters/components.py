@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import SupportsInt
+from typing import Literal, SupportsInt, cast
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -152,7 +153,9 @@ class DiffractionExperiment(
 
     @model_validator(mode="before")
     @classmethod
-    def validate_snapshot_directory(cls, values):
+    def validate_directories(cls, values):
+        os.makedirs(values["storage_directory"], exist_ok=True)
+
         values["snapshot_directory"] = values.get(
             "snapshot_directory",
             Path(values["storage_directory"], "snapshots").as_posix(),
@@ -203,6 +206,28 @@ class WithSample(BaseModel):
 
 
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
+
+
+class MultiXtalSelection(BaseModel):
+    name: str
+
+
+class TopNByMaxCountSelection(MultiXtalSelection):
+    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"  #  pyright: ignore [reportIncompatibleVariableOverride]
+    n: int
+
+
+class WithCentreSelection(BaseModel):
+    select_centres: TopNByMaxCountSelection = Field(
+        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    )
+
+    @property
+    def selection_params(self) -> MultiXtalSelection:
+        """A helper property because pydantic does not allow polymorphism with base classes
+        # only type unions"""
+        cast1 = cast(MultiXtalSelection, self.select_centres)
+        return cast1
 
 
 class OptionalXyzStarts(BaseModel):

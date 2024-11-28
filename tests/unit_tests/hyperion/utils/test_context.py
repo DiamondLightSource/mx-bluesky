@@ -1,6 +1,6 @@
-import dataclasses
 from unittest.mock import MagicMock
 
+import pydantic
 import pytest
 from ophyd.device import Device
 
@@ -52,7 +52,7 @@ def test_find_nonexistent_device_in_context_raises_error():
 def test_device_composite_from_context():
     context = MagicMock()
 
-    @dataclasses.dataclass
+    @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
     class _Composite:
         device1: _DeviceType1
         device2: _DeviceType2

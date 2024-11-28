@@ -7,9 +7,10 @@ from queue import Queue
 from traceback import format_exception
 from typing import Any
 
-from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.core import BlueskyContext
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
+from bluesky.utils import MsgGenerator
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
