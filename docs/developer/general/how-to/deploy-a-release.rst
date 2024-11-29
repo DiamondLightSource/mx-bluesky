@@ -53,5 +53,5 @@ For building and deploying a Docker image please see :doc:`../../hyperion/deploy
     .. code:: console
 
         . ./.venv/bin/activate
-        pip install -e .
         pip install -e ../dodal
+        pip install -e .
