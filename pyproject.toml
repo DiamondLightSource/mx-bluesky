@@ -94,7 +94,6 @@ hyperion = "mx_bluesky.hyperion.__main__:main"
 hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
 hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
 hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
-generate_plantuml = "mx_bluesky.hyperion.generate_plantuml:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/mx-bluesky"

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from inspect import get_annotations, getmodule, getmro, isclass
 from typing import get_type_hints
 
