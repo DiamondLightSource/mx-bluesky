@@ -321,7 +321,9 @@ def fgs_composite_for_fake_zocalo(
     zocalo_for_fake_zocalo: ZocaloResults,
     done_status: NullStatus,
 ) -> FlyScanXRayCentreComposite:
-    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
+    set_mock_value(
+        fake_fgs_composite.aperture_scatterguard._aperture.z.user_setpoint, 2
+    )
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
     callback_on_mock_put(
