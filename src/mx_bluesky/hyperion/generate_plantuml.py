@@ -39,6 +39,7 @@ set namespaceSeparator none
     types_by_package = {}
     for t in all_types:
         mod = getmodule(t)
+        assert mod
         types_by_package.setdefault(mod.__package__, []).append(t)
 
     mx_bluesky_param_types = set()
