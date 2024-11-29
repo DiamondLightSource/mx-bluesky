@@ -112,11 +112,6 @@ class FlyScanXRayCentreComposite:
     robot: BartRobot
     sample_shutter: ZebraShutter
 
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
-
 
 class XRayCentreEventHandler(CallbackBase):
     def __init__(self):
@@ -322,11 +317,9 @@ def run_gridscan(
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
-    sample_motors = fgs_composite.sample_motors
-
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
+        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the

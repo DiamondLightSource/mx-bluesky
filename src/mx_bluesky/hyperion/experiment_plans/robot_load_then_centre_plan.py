@@ -104,10 +104,6 @@ class RobotLoadThenCentreComposite:
     lower_gonio: XYZPositioner
     beamstop: Beamstop
 
-    @property
-    def sample_motors(self):
-        return self.smargon
-
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
     from mx_bluesky.hyperion.utils.context import device_composite_from_context
