@@ -298,18 +298,9 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE(flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert (
-        await fxc_composite.sample_motors.x.user_readback.get_value()
-        == pytest.approx(-1)
-    )
-    assert (
-        await fxc_composite.sample_motors.y.user_readback.get_value()
-        == pytest.approx(-1)
-    )
-    assert (
-        await fxc_composite.sample_motors.z.user_readback.get_value()
-        == pytest.approx(-1)
-    )
+    assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(-1)
+    assert await fxc_composite.smargon.y.user_readback.get_value() == pytest.approx(-1)
+    assert await fxc_composite.smargon.z.user_readback.get_value() == pytest.approx(-1)
 
 
 @pytest.mark.s03
@@ -336,15 +327,12 @@ async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE(flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert (
-        await fxc_composite.sample_motors.x.user_readback.get_value()
-        == pytest.approx(0.05)
+    assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(
+        0.05
     )
-    assert (
-        await fxc_composite.sample_motors.y.user_readback.get_value()
-        == pytest.approx(0.15)
+    assert await fxc_composite.smargon.y.user_readback.get_value() == pytest.approx(
+        0.15
     )
-    assert (
-        await fxc_composite.sample_motors.z.user_readback.get_value()
-        == pytest.approx(0.25)
+    assert await fxc_composite.smargon.z.user_readback.get_value() == pytest.approx(
+        0.25
     )

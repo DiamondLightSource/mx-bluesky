@@ -55,21 +55,21 @@ def test_results_passed_to_move_motors(
     motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
         np.array([1, 2, 3])
     )
-    RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
+    RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
     bps_abs_set.assert_has_calls(
         [
             call(
-                fake_fgs_composite.sample_motors.x,
+                fake_fgs_composite.smargon.x,
                 motor_position[0],
                 group="move_x_y_z",
             ),
             call(
-                fake_fgs_composite.sample_motors.y,
+                fake_fgs_composite.smargon.y,
                 motor_position[1],
                 group="move_x_y_z",
             ),
             call(
-                fake_fgs_composite.sample_motors.z,
+                fake_fgs_composite.smargon.z,
                 motor_position[2],
                 group="move_x_y_z",
             ),
