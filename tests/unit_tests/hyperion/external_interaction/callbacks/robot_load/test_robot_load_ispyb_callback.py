@@ -37,22 +37,15 @@ metadata = {
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
-    new=MagicMock(),
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
 )
 def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
-    start_load: MagicMock,
-    end_load: MagicMock,
+    expeye: MagicMock,
 ):
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
-    start_load.return_value = ACTION_ID
+    expeye.return_value.start_load.return_value = ACTION_ID
 
     @bpp.run_decorator(md=metadata)
     def my_plan():
@@ -60,27 +53,22 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
 
     RE(my_plan())
 
-    start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
-    end_load.assert_called_once_with(ACTION_ID, "success", "OK")
+    expeye.return_value.start_load.assert_called_once_with(
+        "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+    )
+    expeye.return_value.end_load.assert_called_once_with(ACTION_ID, "success", "OK")
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
-    new=MagicMock(),
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
 )
 def test_given_failing_plan_then_exception_detail(
-    start_load: MagicMock,
-    end_load: MagicMock,
+    expeye: MagicMock,
 ):
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
-    start_load.return_value = ACTION_ID
+    expeye.return_value.start_load.return_value = ACTION_ID
 
     class _Exception(Exception): ...
 
@@ -92,15 +80,18 @@ def test_given_failing_plan_then_exception_detail(
     with pytest.raises(_Exception):
         RE(my_plan())
 
-    start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
-    end_load.assert_called_once_with(ACTION_ID, "fail", "BAD")
+    expeye.return_value.start_load.assert_called_once_with(
+        "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+    )
+    expeye.return_value.end_load.assert_called_once_with(ACTION_ID, "fail", "BAD")
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction"
+    ".update_sample_status",
     new=MagicMock(),
 )
 def test_given_end_called_but_no_start_then_exception_raised(end_load):
@@ -127,48 +118,35 @@ def unsuccessful_robot_load_plan():
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.update_barcode_and_snapshots"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
-    new=MagicMock(),
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
 )
 def test_given_plan_reads_barcode_then_data_put_in_ispyb(
-    update_barcode_and_snapshots: MagicMock,
-    start_load: MagicMock,
-    end_load: MagicMock,
+    expeye: MagicMock,
     robot: BartRobot,
     oav: OAV,
     webcam: Webcam,
 ):
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
-    start_load.return_value = ACTION_ID
+    expeye.return_value.start_load.return_value = ACTION_ID
 
     set_mock_value(oav.snapshot.last_saved_path, "test_oav_snapshot")
     set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
 
     RE(successful_robot_load_plan(robot, oav, webcam))
 
-    start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
-    update_barcode_and_snapshots.assert_called_once_with(
+    expeye.return_value.start_load.assert_called_once_with(
+        "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+    )
+    expeye.return_value.update_barcode_and_snapshots.assert_called_once_with(
         ACTION_ID, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(ACTION_ID, "success", "OK")
+    expeye.return_value.end_load.assert_called_once_with(ACTION_ID, "success", "OK")
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction",
-    new=MagicMock(),
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction",
     autospec=True,
 )
 def test_robot_load_complete_triggers_bl_sample_status_loaded(
@@ -188,11 +166,7 @@ def test_robot_load_complete_triggers_bl_sample_status_loaded(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction",
-    new=MagicMock(),
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction",
     autospec=True,
 )
 def test_robot_load_fails_triggers_bl_sample_status_error(

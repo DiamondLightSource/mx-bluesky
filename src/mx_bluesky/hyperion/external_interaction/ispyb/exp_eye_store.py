@@ -38,7 +38,28 @@ def _send_and_get_response(auth, url, data, send_func) -> dict:
     return response.json()
 
 
-class ExpeyeCoreInteraction:
+@dataclass
+class BLSample:
+    container_id: int
+    bl_sample_id: int
+    bl_sample_status: str | None
+
+
+class BLSampleStatus(StrEnum):
+    # The sample has been loaded
+    LOADED = "LOADED"
+    # Problem with the sample e.g. pin too long/short
+    ERROR_SAMPLE = "ERROR - sample"
+    # Any other general error
+    ERROR_BEAMLINE = "ERROR - beamline"
+
+
+assert all(
+    len(value) <= 20 for value in BLSampleStatus
+), "Column size limit of 20 for BLSampleStatus"
+
+
+class ExpeyeInteraction:
     """Exposes functionality from the Expeye core API"""
 
     CREATE_ROBOT_ACTION = "/proposals/{proposal}/sessions/{visit_number}/robot-actions"
@@ -46,8 +67,8 @@ class ExpeyeCoreInteraction:
 
     def __init__(self) -> None:
         url, token = _get_base_url_and_token()
-        self.base_url = url
-        self.auth = BearerAuth(token)
+        self._base_url = url
+        self._auth = BearerAuth(token)
 
     def start_load(
         self,
@@ -71,7 +92,7 @@ class ExpeyeCoreInteraction:
         Returns:
             RobotActionID: The id of the robot load action that is created
         """
-        url = self.base_url + self.CREATE_ROBOT_ACTION.format(
+        url = self._base_url + self.CREATE_ROBOT_ACTION.format(
             proposal=proposal_reference, visit_number=visit_number
         )
 
@@ -82,7 +103,7 @@ class ExpeyeCoreInteraction:
             "containerLocation": container_location,
             "dewarLocation": dewar_location,
         }
-        response = _send_and_get_response(self.auth, url, data, post)
+        response = _send_and_get_response(self._auth, url, data, post)
         return response["robotActionId"]
 
     def update_barcode_and_snapshots(
@@ -100,14 +121,14 @@ class ExpeyeCoreInteraction:
             snapshot_before_path (str): Path to the snapshot before robot load
             snapshot_after_path (str): Path to the snapshot after robot load
         """
-        url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
+        url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         data = {
             "sampleBarcode": barcode,
             "xtalSnapshotBefore": snapshot_before_path,
             "xtalSnapshotAfter": snapshot_after_path,
         }
-        _send_and_get_response(self.auth, url, data, patch)
+        _send_and_get_response(self._auth, url, data, patch)
 
     def end_load(self, action_id: RobotActionID, status: str, reason: str):
         """Finish an existing robot action, providing final information about how it went
@@ -118,7 +139,7 @@ class ExpeyeCoreInteraction:
                           otherwise error
             reason (str): If the status is in error than the reason for that error
         """
-        url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
+        url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         run_status = "SUCCESS" if status == "success" else "ERROR"
 
@@ -127,37 +148,7 @@ class ExpeyeCoreInteraction:
             "status": run_status,
             "message": reason[:255] if reason else "",
         }
-        _send_and_get_response(self.auth, url, data, patch)
-
-
-class BLSampleStatus(StrEnum):
-    # The sample has been loaded
-    LOADED = "LOADED"
-    # Problem with the sample e.g. pin too long/short
-    ERROR_SAMPLE = "ERROR - sample"
-    # Any other general error
-    ERROR_BEAMLINE = "ERROR - beamline"
-
-
-assert all(
-    len(value) <= 20 for value in BLSampleStatus
-), "Column size limit of 20 for BLSampleStatus"
-
-
-@dataclass
-class BLSample:
-    container_id: int
-    bl_sample_id: int
-    bl_sample_status: str | None
-
-
-class ExpeyeSampleHandlingInteraction:
-    """Exposes needed functionality from the Expeye Sample Handling API"""
-
-    def __init__(self):
-        base_uri, token = _get_base_url_and_token()
-        self._uri = base_uri
-        self._auth = BearerAuth(token)
+        _send_and_get_response(self._auth, url, data, patch)
 
     def update_sample_status(
         self, bl_sample_id: int, bl_sample_status: BLSampleStatus
@@ -172,7 +163,7 @@ class ExpeyeSampleHandlingInteraction:
         """
         data = {"blSampleStatus": (str(bl_sample_status))}
         response = _send_and_get_response(
-            self._auth, self._uri + f"/samples/{bl_sample_id}", data, patch
+            self._auth, self._base_url + f"/samples/{bl_sample_id}", data, patch
         )
         return self._sample_from_json(response)
 

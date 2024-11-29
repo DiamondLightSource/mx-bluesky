@@ -7,8 +7,7 @@ from requests import get
 
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
-    ExpeyeCoreInteraction,
-    ExpeyeSampleHandlingInteraction,
+    ExpeyeInteraction,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -42,7 +41,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     """
     BARCODE = "test_barcode"
 
-    expeye = ExpeyeCoreInteraction()
+    expeye = ExpeyeInteraction()
 
     robot_action_id = expeye.start_load("cm37235", 2, SAMPLE_ID, 40, 3)
 
@@ -61,8 +60,8 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
 
     expeye.end_load(robot_action_id, "fail", message)
 
-    get_robot_data_url = f"{expeye.base_url}/robot-actions/{robot_action_id}"
-    response = get(get_robot_data_url, auth=expeye.auth)
+    get_robot_data_url = f"{expeye._base_url}/robot-actions/{robot_action_id}"
+    response = get(get_robot_data_url, auth=expeye._auth)
 
     assert response.ok
     response = response.json()
@@ -75,7 +74,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
 
 @pytest.mark.s03
 def test_update_sample_updates_the_sample_status():
-    sample_handling = ExpeyeSampleHandlingInteraction()
+    sample_handling = ExpeyeInteraction()
     output_sample = sample_handling.update_sample_status(
         SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )

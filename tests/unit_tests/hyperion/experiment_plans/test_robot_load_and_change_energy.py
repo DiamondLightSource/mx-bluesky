@@ -189,26 +189,14 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.end_load"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.update_barcode_and_snapshots"
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeCoreInteraction.start_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeSampleHandlingInteraction",
-    MagicMock(),
-)
 def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
-    start_load: MagicMock,
-    update_barcode_and_snapshots: MagicMock,
-    end_load: MagicMock,
+    exp_eye: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
@@ -228,7 +216,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
-    start_load.return_value = action_id
+    exp_eye.return_value.start_load.return_value = action_id
 
     RE(
         robot_load_and_change_energy_plan(
@@ -236,11 +224,11 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
         )
     )
 
-    start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
-    update_barcode_and_snapshots.assert_called_once_with(
+    exp_eye.return_value.start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
+    exp_eye.return_value.update_barcode_and_snapshots.assert_called_once_with(
         action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(action_id, "success", "OK")
+    exp_eye.return_value.end_load.assert_called_once_with(action_id, "success", "OK")
 
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")

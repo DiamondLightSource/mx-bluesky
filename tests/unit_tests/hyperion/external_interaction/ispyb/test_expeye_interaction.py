@@ -6,8 +6,7 @@ from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionN
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BearerAuth,
     BLSampleStatus,
-    ExpeyeCoreInteraction,
-    ExpeyeSampleHandlingInteraction,
+    ExpeyeInteraction,
     _get_base_url_and_token,
 )
 
@@ -22,7 +21,7 @@ def test_get_url_and_token_returns_expected_data():
 def test_when_start_load_called_then_correct_expected_url_posted_to_with_expected_data(
     mock_post,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.start_load("test", 3, 700, 10, 5)
 
     mock_post.assert_called_once()
@@ -43,7 +42,7 @@ def test_when_start_load_called_then_correct_expected_url_posted_to_with_expecte
 @patch("mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store.post")
 def test_when_start_called_then_returns_id(mock_post):
     mock_post.return_value.json.return_value = {"robotActionId": 190}
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     robot_id = expeye_interactor.start_load("test", 3, 700, 10, 5)
     assert robot_id == 190
 
@@ -52,7 +51,7 @@ def test_when_start_called_then_returns_id(mock_post):
 def test_when_start_load_called_then_use_correct_token(
     mock_post,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.start_load("test", 3, 700, 10, 5)
 
     assert isinstance(auth := mock_post.call_args.kwargs["auth"], BearerAuth)
@@ -63,7 +62,7 @@ def test_when_start_load_called_then_use_correct_token(
 def test_given_server_does_not_respond_when_start_load_called_then_error(mock_post):
     mock_post.return_value.ok = False
 
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
         expeye_interactor.start_load("test", 3, 700, 10, 5)
 
@@ -73,7 +72,7 @@ def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_w
     # mocks HTTP PATCH
     mock_patch,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.end_load(3, "success", "")
 
     mock_patch.assert_called_once()
@@ -90,7 +89,7 @@ def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_w
 def test_when_end_load_called_with_failure_then_correct_expected_url_posted_to_with_expected_data(
     mock_patch,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.end_load(3, "fail", "bad")
 
     mock_patch.assert_called_once()
@@ -107,7 +106,7 @@ def test_when_end_load_called_with_failure_then_correct_expected_url_posted_to_w
 def test_when_end_load_called_then_use_correct_token(
     mock_patch,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.end_load(3, "success", "")
 
     assert isinstance(auth := mock_patch.call_args.kwargs["auth"], BearerAuth)
@@ -118,7 +117,7 @@ def test_when_end_load_called_then_use_correct_token(
 def test_given_server_does_not_respond_when_end_load_called_then_error(mock_patch):
     mock_patch.return_value.ok = False
 
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
         expeye_interactor.end_load(1, "", "")
 
@@ -127,7 +126,7 @@ def test_given_server_does_not_respond_when_end_load_called_then_error(mock_patc
 def test_when_update_barcode_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
     mock_patch,
 ):
-    expeye_interactor = ExpeyeCoreInteraction()
+    expeye_interactor = ExpeyeInteraction()
     expeye_interactor.update_barcode_and_snapshots(
         3, "test", "/tmp/before.jpg", "/tmp/after.jpg"
     )
@@ -146,7 +145,7 @@ def test_when_update_barcode_called_with_success_then_correct_expected_url_poste
 def test_update_sample_status(
     mock_patch,
 ):
-    expeye = ExpeyeSampleHandlingInteraction()
+    expeye = ExpeyeInteraction()
     expected_json = {"blSampleStatus": "LOADED"}
     expeye.update_sample_status(12345, BLSampleStatus.LOADED)
     mock_patch.assert_called_with(

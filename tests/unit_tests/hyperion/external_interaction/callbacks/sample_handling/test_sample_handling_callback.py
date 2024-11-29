@@ -58,7 +58,7 @@ def test_sample_handling_callback_intercepts_general_exception(
     with (
         patch(
             "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
-            ".ExpeyeSampleHandlingInteraction",
+            ".ExpeyeInteraction",
             return_value=mock_expeye,
         ),
         pytest.raises(exception_type),

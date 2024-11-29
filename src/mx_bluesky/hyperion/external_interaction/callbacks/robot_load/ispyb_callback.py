@@ -10,8 +10,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback i
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
-    ExpeyeCoreInteraction,
-    ExpeyeSampleHandlingInteraction,
+    ExpeyeInteraction,
     RobotActionID,
 )
 from mx_bluesky.hyperion.log import ISPYB_LOGGER
@@ -29,8 +28,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         self.run_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
         self.action_id: RobotActionID | None = None
-        self.expeye_core = ExpeyeCoreInteraction()
-        self.expeye_sample_handling = ExpeyeSampleHandlingInteraction()
+        self.expeye = ExpeyeInteraction()
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.debug("ISPyB robot load callback received start document.")
@@ -42,7 +40,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             proposal, session = get_proposal_and_session_from_visit_string(
                 self._metadata["visit"]
             )
-            self.action_id = self.expeye_core.start_load(
+            self.action_id = self.expeye.start_load(
                 proposal,
                 session,
                 self._metadata["sample_id"],
@@ -68,7 +66,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             oav_snapshot = doc["data"]["oav-snapshot-last_saved_path"]
             webcam_snapshot = doc["data"]["webcam-last_saved_path"]
             # I03 uses webcam/oav snapshots in place of before/after snapshots
-            self.expeye_core.update_barcode_and_snapshots(
+            self.expeye.update_barcode_and_snapshots(
                 self.action_id, barcode, webcam_snapshot, oav_snapshot
             )
 
@@ -85,8 +83,8 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             assert self._metadata, "Metadata not received before stop document."
             reason = doc.get("reason") or "OK"
 
-            self.expeye_core.end_load(self.action_id, exit_status, reason)
-            self.expeye_sample_handling.update_sample_status(
+            self.expeye.end_load(self.action_id, exit_status, reason)
+            self.expeye.update_sample_status(
                 self._metadata["sample_id"],
                 BLSampleStatus.LOADED
                 if exit_status == "success"

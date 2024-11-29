@@ -17,7 +17,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback i
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
-    ExpeyeSampleHandlingInteraction,
+    ExpeyeInteraction,
 )
 from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -72,7 +72,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
         return doc
 
     def _record_exception(self, exception_type: str):
-        expeye = ExpeyeSampleHandlingInteraction()
+        expeye = ExpeyeInteraction()
         assert self._sample_id, "Unable to record exception due to no sample ID"
         sample_status = self._decode_sample_status(exception_type)
         expeye.update_sample_status(self._sample_id, sample_status)
