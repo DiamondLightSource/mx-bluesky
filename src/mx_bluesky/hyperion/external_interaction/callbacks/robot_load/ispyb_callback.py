@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from event_model.documents import EventDescriptor
-
 from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
@@ -11,6 +9,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback i
     PlanReactiveCallback,
 )
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
+    BLSampleStatus,
     ExpeyeInteraction,
     RobotActionID,
 )
@@ -25,6 +24,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
     def __init__(self) -> None:
         ISPYB_LOGGER.debug("Initialising ISPyB Robot Load Callback")
         super().__init__(log=ISPYB_LOGGER)
+        self._metadata: dict | None = None
         self.run_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
         self.action_id: RobotActionID | None = None
@@ -35,16 +35,17 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         if doc.get("subplan_name") == CONST.PLAN.ROBOT_LOAD:
             ISPYB_LOGGER.debug(f"ISPyB robot load callback received: {doc}")
             self.run_uid = doc.get("uid")
-            assert isinstance(metadata := doc.get("metadata"), dict)
+            self._metadata = doc.get("metadata")
+            assert isinstance(self._metadata, dict)
             proposal, session = get_proposal_and_session_from_visit_string(
-                metadata["visit"]
+                self._metadata["visit"]
             )
             self.action_id = self.expeye.start_load(
                 proposal,
                 session,
-                metadata["sample_id"],
-                metadata["sample_puck"],
-                metadata["sample_pin"],
+                self._metadata["sample_id"],
+                self._metadata["sample_puck"],
+                self._metadata["sample_pin"],
             )
         return super().activity_gated_start(doc)
 
@@ -77,10 +78,17 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             assert (
                 self.action_id is not None
             ), "ISPyB Robot load callback stop called unexpectedly"
-            exit_status = (
-                doc.get("exit_status") or "Exit status not available in stop document!"
-            )
+            exit_status = doc.get("exit_status")
+            assert exit_status, "Exit status not available in stop document!"
+            assert self._metadata, "Metadata not received before stop document."
             reason = doc.get("reason") or "OK"
+
             self.expeye.end_load(self.action_id, exit_status, reason)
+            self.expeye.update_sample_status(
+                self._metadata["sample_id"],
+                BLSampleStatus.LOADED
+                if exit_status == "success"
+                else BLSampleStatus.ERROR_BEAMLINE,
+            )
             self.action_id = None
         return super().activity_gated_stop(doc)

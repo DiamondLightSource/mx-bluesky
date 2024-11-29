@@ -1,7 +1,7 @@
-import dataclasses
 from collections.abc import Generator
 
 import bluesky.plan_stubs as bps
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.backlight import Backlight
@@ -19,7 +19,7 @@ from mx_bluesky.hyperion.device_setup_plans.setup_oav import pre_centring_setup_
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.hyperion.exceptions import SampleException
 from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -27,7 +27,7 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 DEFAULT_STEP_SIZE = 0.5
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
@@ -68,7 +68,7 @@ def move_pin_into_view(
         max_steps (int, optional): The number of steps to search with. Defaults to 2.
 
     Raises:
-        WarningException: Error if the pin tip is never found
+        SampleException: Error if the pin tip is never found
 
     Returns:
         Tuple[int, int]: The location of the pin tip in pixels
@@ -105,7 +105,7 @@ def move_pin_into_view(
     tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
     if not pin_tip_valid(tip_xy_px):
-        raise WarningException(
+        raise SampleException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
     else:

@@ -9,6 +9,9 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
+from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
+    load_centre_collect_full,
+)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
@@ -27,4 +30,5 @@ __all__ = [
     "pin_tip_centre_then_xray_centre",
     "multi_rotation_scan",
     "robot_load_then_centre",
+    "load_centre_collect_full",
 ]
