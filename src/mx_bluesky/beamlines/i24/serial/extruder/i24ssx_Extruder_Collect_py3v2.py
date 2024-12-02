@@ -474,7 +474,9 @@ def run_extruder_plan(
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
-    parameters: ExtruderParameters = yield from read_parameters(detector_stage)
+    parameters: ExtruderParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 

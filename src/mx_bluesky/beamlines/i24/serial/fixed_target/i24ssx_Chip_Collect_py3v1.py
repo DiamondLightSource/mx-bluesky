@@ -732,7 +732,9 @@ def run_fixed_target_plan(
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     # Read the parameters
-    parameters: FixedTargetParameters = yield from read_parameters(detector_stage)
+    parameters: FixedTargetParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
 
     if parameters.chip_map:
         upload_chip_map_to_geobrick(pmac, parameters.chip_map)
