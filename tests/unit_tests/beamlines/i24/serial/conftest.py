@@ -19,7 +19,32 @@ from dodal.devices.zebra import Zebra
 from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 from ophyd_async.epics.motor import Motor
 
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    ExtruderParameters,
+    FixedTargetParameters,
+    get_chip_format,
+)
+
+
+@pytest.fixture
+def dummy_params_without_pp():
+    oxford_defaults = get_chip_format(ChipType.Oxford)
+    params = {
+        "visit": "foo",
+        "directory": "bar",
+        "filename": "chip",
+        "exposure_time_s": 0.01,
+        "detector_distance_mm": 100,
+        "detector_name": "eiger",
+        "transmission": 1.0,
+        "num_exposures": 1,
+        "chip": oxford_defaults.model_dump(),
+        "map_type": 1,
+        "pump_repeat": 0,
+        "checker_pattern": False,
+    }
+    return FixedTargetParameters(**params)
 
 
 @pytest.fixture

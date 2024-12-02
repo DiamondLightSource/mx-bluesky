@@ -18,7 +18,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator_base import AttenuatorBase
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -39,7 +39,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters, SSXType
+from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     PARAM_FILE_NAME,
     PARAM_FILE_PATH,
@@ -141,7 +141,9 @@ def enter_hutch(
 
 
 @log_on_entry
-def write_parameter_file(detector_stage: DetectorMotion, attenuator: AttenuatorBase):
+def write_parameter_file(
+    detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator
+):
     """Writes a json parameter file that can later be parsed by the model."""
     param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
     SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
@@ -344,7 +346,7 @@ def main_extruder_plan(
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
-        filetemplate=filetemplate,
+        file_template=filetemplate,
         num_images=parameters.num_images,
         start_time=start_time,
         pump_probe=parameters.pump_status,
@@ -370,8 +372,8 @@ def main_extruder_plan(
             None,
             parameters,
             beam_settings.wavelength_in_a,
-            [beam_x, beam_y],
-            "extruder",
+            (beam_x, beam_y),
+            start_time,
         )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
@@ -482,7 +484,7 @@ def run_extruder_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: AttenuatorBase = inject("attenuator"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
@@ -493,7 +495,7 @@ def run_extruder_plan(
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID - not generated yet
-    dcid = DCID(emit_errors=False, ssx_type=SSXType.EXTRUDER, expt_params=parameters)
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_extruder_plan(

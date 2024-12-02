@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import dataclasses
 import math
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
+import pydantic
 from blueapi.core import BlueskyContext
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class OavGridDetectionComposite:
     """All devices which are directly or indirectly required by this plan"""
 

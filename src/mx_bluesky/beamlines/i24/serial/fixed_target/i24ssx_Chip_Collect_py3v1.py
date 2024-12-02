@@ -12,7 +12,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator_base import AttenuatorBase
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -41,7 +41,6 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
     ChipDescription,
     FixedTargetParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     LITEMAP_PATH,
@@ -377,7 +376,6 @@ def start_i24(
     beam_settings = yield from read_beam_info_from_hardware(
         dcm, mirrors, beam_center_device, parameters.detector_name
     )
-    # wavelength = yield from bps.rd(dcm.wavelength_in_a)
     SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
@@ -431,7 +429,7 @@ def start_i24(
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
-            filetemplate=filetemplate,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
@@ -493,7 +491,7 @@ def start_i24(
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
-            filetemplate=filetemplate,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
             shots_per_position=parameters.num_exposures,
             start_time=start_time,
@@ -628,7 +626,7 @@ def main_fixed_target_plan(
         parameters.num_exposures, parameters.chip, parameters.map_type
     )
 
-    start_time = yield from start_i24(  # noqa: F841
+    start_time = yield from start_i24(
         zebra,
         aperture,
         backlight,
@@ -659,7 +657,9 @@ def main_fixed_target_plan(
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
-        call_nexgen(chip_prog_dict, parameters, wavelength, [beam_x, beam_y])
+        call_nexgen(
+            chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
+        )
 
     yield from kickoff_and_complete_collection(pmac, parameters)
 
@@ -747,7 +747,7 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: AttenuatorBase = inject("attenuator"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     # in the first instance, write params here
     yield from write_parameter_file(detector_stage, attenuator)
@@ -776,11 +776,7 @@ def run_fixed_target_plan(
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID instance - do not create yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.FIXED,
-        expt_params=parameters,
-    )
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(

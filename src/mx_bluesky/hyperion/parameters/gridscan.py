@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from dodal.devices.detector import (
     DetectorParams,
 )
@@ -42,7 +40,6 @@ class HyperionGridCommon(GridCommon, WithHyperionFeatures):
         assert (
             self.detector_distance_mm is not None
         ), "Detector distance must be filled before generating DetectorParams"
-        os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
@@ -90,14 +87,14 @@ class HyperionThreeDGridScan(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,
-            x_step_size=self.x_step_size_um,
-            y_step_size=self.y_step_size_um,
-            z_step_size=self.z_step_size_um,
-            x_start=self.x_start_um,
-            y1_start=self.y_start_um,
-            z1_start=self.z_start_um,
-            y2_start=self.y2_start_um,
-            z2_start=self.z2_start_um,
+            x_step_size_mm=self.x_step_size_um / 1000,
+            y_step_size_mm=self.y_step_size_um / 1000,
+            z_step_size_mm=self.z_step_size_um / 1000,
+            x_start_mm=self.x_start_um / 1000,
+            y1_start_mm=self.y_start_um / 1000,
+            z1_start_mm=self.z_start_um / 1000,
+            y2_start_mm=self.y2_start_um / 1000,
+            z2_start_mm=self.z2_start_um / 1000,
             set_stub_offsets=self.features.set_stub_offsets,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
@@ -114,14 +111,14 @@ class HyperionThreeDGridScan(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,
-            x_step_size=self.x_step_size_um,
-            y_step_size=self.y_step_size_um,
-            z_step_size=self.z_step_size_um,
-            x_start=self.x_start_um,
-            y1_start=self.y_start_um,
-            z1_start=self.z_start_um,
-            y2_start=self.y2_start_um,
-            z2_start=self.z2_start_um,
+            x_step_size_mm=self.x_step_size_um / 1000,
+            y_step_size_mm=self.y_step_size_um / 1000,
+            z_step_size_mm=self.z_step_size_um / 1000,
+            x_start_mm=self.x_start_um / 1000,
+            y1_start_mm=self.y_start_um / 1000,
+            z1_start_mm=self.z_start_um / 1000,
+            y2_start_mm=self.y2_start_um / 1000,
+            z2_start_mm=self.z2_start_um / 1000,
             set_stub_offsets=self.features.set_stub_offsets,
             run_up_distance_mm=self.panda_runup_distance_mm,
             transmission_fraction=self.transmission_frac,

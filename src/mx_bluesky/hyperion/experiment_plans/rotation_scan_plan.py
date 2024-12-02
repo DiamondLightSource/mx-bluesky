@@ -4,6 +4,7 @@ import dataclasses
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -63,7 +64,7 @@ from mx_bluesky.hyperion.parameters.rotation import (
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 
@@ -410,6 +411,11 @@ def multi_rotation_scan(
         }
     )
     @bpp.stage_decorator([eiger])
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.xbpm_feedback,
+        composite.attenuator,
+        parameters.transmission_frac,
+    )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
@@ -419,6 +425,7 @@ def multi_rotation_scan(
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
+                    "zocalo_environment": CONST.ZOCALO_ENV,
                     "hyperion_parameters": single_scan.model_dump_json(),
                 }
             )

@@ -1,5 +1,5 @@
 import json
-from collections.abc import Sequence
+from abc import abstractmethod
 from pathlib import Path
 from typing import Literal
 
@@ -10,6 +10,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 
 
 class SerialExperiment(BaseModel):
@@ -43,17 +44,37 @@ class LaserExperiment(BaseModel):
     pre_pump_exposure_s: float | None = None  # Pre illumination, just for chip
 
 
-class ExtruderParameters(SerialExperiment, LaserExperiment):
-    """Extruder parameter model."""
-
-    num_images: int
-    pump_status: bool
-
+class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     @classmethod
     def from_file(cls, filename: str | Path):
         with open(filename) as fh:
             raw_params = json.load(fh)
         return cls(**raw_params)
+
+    @property
+    @abstractmethod
+    def nexgen_experiment_type(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def ispyb_experiment_type(self) -> SSXType:
+        pass
+
+
+class ExtruderParameters(SerialAndLaserExperiment):
+    """Extruder parameter model."""
+
+    num_images: int
+    pump_status: bool
+
+    @property
+    def nexgen_experiment_type(self) -> str:
+        return "extruder"
+
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.EXTRUDER
 
 
 class ChipDescription(BaseModel):
@@ -88,7 +109,7 @@ class ChipDescription(BaseModel):
             return ((self.y_num_steps - 1) * self.y_step_size) + self.b2b_vert
 
 
-class FixedTargetParameters(SerialExperiment, LaserExperiment):
+class FixedTargetParameters(SerialAndLaserExperiment):
     """Fixed target parameter model."""
 
     num_exposures: int
@@ -98,15 +119,17 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
     checker_pattern: bool = False
     total_num_images: int = 0  # Calculated in the code for now
 
-    @classmethod
-    def from_file(cls, filename: str | Path):
-        with open(filename) as fh:
-            raw_params = json.load(fh)
-        return cls(**raw_params)
+    @property
+    def nexgen_experiment_type(self) -> str:
+        return "fixed-target"
+
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.FIXED
 
 
 class BeamSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
     wavelength_in_a: float
-    beam_size_in_um: Sequence[float]
-    beam_center_in_mm: Sequence[float]
+    beam_size_in_um: tuple[float, float]
+    beam_center_in_mm: tuple[float, float]

@@ -20,7 +20,6 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     BeamSettings,
     ExtruderParameters,
     FixedTargetParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger, Pilatus
 
@@ -65,8 +64,6 @@ def read_beam_info_from_hardware(
     Returns:
         BeamSettings parameter model.
     """
-    # In the future this should also read the transmission from the attenuator, but no
-    # device yet. See https://github.com/DiamondLightSource/dodal/issues/889
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
     beamsize_x = yield from bps.rd(mirrors.beam_size_x)
     beamsize_y = yield from bps.rd(mirrors.beam_size_y)
@@ -95,8 +92,6 @@ class DCID:
             stop collection if you can't get a DCID. Defaults to True.
         timeout (float, optional): Length of time in s to wait for the DB server before \
             giving up. Defaults to 10 s.
-        ssx_type (SSXType, optional): The type of SSX experiment this is for. Defaults \
-            to "Serial Fixed".
         expt_parameters (ExtruderParameters | FixedTargetParameters): Collection \
             parameters input by user.
 
@@ -112,7 +107,6 @@ class DCID:
         server: str | None = None,
         emit_errors: bool = True,
         timeout: float = 10,
-        ssx_type: SSXType = SSXType.FIXED,
         expt_params: ExtruderParameters | FixedTargetParameters,
     ):
         self.parameters = expt_params
@@ -128,14 +122,13 @@ class DCID:
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.ssx_type = ssx_type
         self.dcid = None
 
     def generate_dcid(
         self,
         beam_settings: BeamSettings,
         image_dir: str,
-        filetemplate: str,
+        file_template: str,
         num_images: int,
         shots_per_position: int = 1,
         start_time: datetime.datetime | None = None,
@@ -150,7 +143,7 @@ class DCID:
             shots_per_position (int, optional): Number of exposures per position in a \
                 chip. Defaults to 1, which works for extruder.
             start_time(datetime, optional): Collection start time. Defaults to None.
-            pump_probe (bool, optional): If True, a pump probe collection is runnung. \
+            pump_probe (bool, optional): If True, a pump probe collection is running. \
                 Defaults to False.
         """
         try:
@@ -159,7 +152,6 @@ class DCID:
             elif not start_time.timetz:
                 start_time = start_time.astimezone()
 
-            # Gather data from the beamline
             resolution = get_resolution(
                 self.detector,
                 self.parameters.detector_distance_mm,
@@ -169,7 +161,6 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            fileTemplate = filetemplate
             if isinstance(self.detector, Pilatus):
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
@@ -188,15 +179,17 @@ class DCID:
                 }
             ]
             if pump_probe:
-                if self.ssx_type is SSXType.FIXED:
-                    # pump then probe - pump_delay corresponds to time *before* first image
-                    pump_delay = (
-                        -self.parameters.laser_delay_s  # type: ignore
-                        if self.parameters.pump_repeat is not PumpProbeSetting.Short2  # type: ignore
-                        else self.parameters.laser_delay_s
-                    )  # type: ignore
-                else:
-                    pump_delay = self.parameters.laser_delay_s  # type: ignore
+                match self.parameters:
+                    case FixedTargetParameters():
+                        # pump then probe - pump_delay corresponds to time *before* first image
+                        pump_delay = (
+                            -self.parameters.laser_delay_s
+                            if self.parameters.pump_repeat
+                            is not PumpProbeSetting.Short2
+                            else self.parameters.laser_delay_s
+                        )
+                    case ExtruderParameters():
+                        pump_delay = self.parameters.laser_delay_s
                 events.append(
                     {
                         "name": "Laser probe",
@@ -211,7 +204,7 @@ class DCID:
                 "detectorDistance": self.parameters.detector_distance_mm,
                 "detectorId": self.detector.id,
                 "exposureTime": self.parameters.exposure_time_s,
-                "fileTemplate": fileTemplate,
+                "fileTemplate": file_template,
                 "imageDirectory": image_dir,
                 "numberOfImages": num_images,
                 "resolution": resolution,
@@ -220,7 +213,7 @@ class DCID:
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,
                 "wavelength": beam_settings.wavelength_in_a,
-                "group": {"experimentType": self.ssx_type.value},
+                "group": {"experimentType": self.parameters.ispyb_experiment_type},
                 "xBeam": xbeam,
                 "yBeam": ybeam,
                 "ssx": {

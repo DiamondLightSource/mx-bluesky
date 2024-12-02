@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
 
+import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
@@ -37,11 +38,15 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
+from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
+)
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    flyscan_xray_centre,
+    XRayCentreEventHandler,
+    flyscan_xray_centre_no_move,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
@@ -62,7 +67,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class GridDetectThenXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 
@@ -87,6 +92,10 @@ class GridDetectThenXRayCentreComposite:
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
     sample_shutter: ZebraShutter
+
+    @property
+    def sample_motors(self):
+        return self.smargon
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
@@ -151,7 +160,7 @@ def detect_grid_and_do_gridscan(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    yield from flyscan_xray_centre(
+    yield from flyscan_xray_centre_no_move(
         FlyScanXRayCentreComposite(
             aperture_scatterguard=composite.aperture_scatterguard,
             attenuator=composite.attenuator,
@@ -194,19 +203,33 @@ def grid_detect_then_xray_centre(
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
-    plan_to_perform = ispyb_activation_wrapper(
-        detect_grid_and_do_gridscan(
-            composite,
-            parameters,
-            oav_params,
-        ),
-        parameters,
-    )
+    flyscan_event_handler = XRayCentreEventHandler()
 
-    return start_preparing_data_collection_then_do_plan(
+    @subs_decorator(flyscan_event_handler)
+    def plan_to_perform():
+        yield from ispyb_activation_wrapper(
+            detect_grid_and_do_gridscan(
+                composite,
+                parameters,
+                oav_params,
+            ),
+            parameters,
+        )
+
+    yield from start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
         parameters.detector_params.detector_distance,
-        plan_to_perform,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809 and MsgGenerator should allow for return values
+        plan_to_perform(),
         group=CONST.WAIT.GRID_READY_FOR_DC,
+    )
+
+    assert (
+        flyscan_event_handler.xray_centre_results
+    ), "Flyscan result event not received or no crystal found and exception not raised"
+
+    yield from change_aperture_then_move_to_xtal(
+        flyscan_event_handler.xray_centre_results[0],
+        composite.smargon,
+        composite.aperture_scatterguard,
     )

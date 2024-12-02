@@ -58,7 +58,7 @@ def dummy_params_pp():
 @pytest.fixture
 def dummy_beam_settings():
     return BeamSettings(
-        wavelength_in_a=0.6, beam_size_in_um=[7, 7], beam_center_in_mm=[120.4, 127.6]
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(120.4, 127.6)
     )
 
 
@@ -230,7 +230,7 @@ def test_run_extruder_quickshot_with_eiger(
         )
     )
     fake_nexgen.assert_called_once_with(
-        None, dummy_params, 0.6, [1605, 1702], "extruder"
+        None, dummy_params, 0.6, (1605, 1702), fake_start_time
     )
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1

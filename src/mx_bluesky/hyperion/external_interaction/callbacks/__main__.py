@@ -20,6 +20,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
+from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -49,6 +52,7 @@ def setup_callbacks():
         RotationISPyBCallback(emit=zocalo),
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
+        SampleHandlingCallback(),
     ]
 
 
