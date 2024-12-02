@@ -3,6 +3,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Literal
 
+from dodal.devices.detector import DetectorParams, TriggerMode
+from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -10,7 +12,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    SSXType,
+)
 
 
 class SerialExperiment(BaseModel):
@@ -56,6 +61,15 @@ class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     def nexgen_experiment_type(self) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def ispyb_experiment_type(self) -> SSXType:
+        pass
+
+    @property
+    @abstractmethod
+    def detetector_params(self) -> DetectorParams: ...
+
 
 class ExtruderParameters(SerialAndLaserExperiment):
     """Extruder parameter model."""
@@ -70,6 +84,26 @@ class ExtruderParameters(SerialAndLaserExperiment):
     @property
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.EXTRUDER
+
+    @property
+    def detector_params(self):
+        self.det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
+
+        return DetectorParams(
+            detector_size_constants=EIGER2_X_9M_SIZE,  # TODO Pilatus
+            exposure_time=self.exposure_time_s,
+            directory=self.directory,
+            prefix=self.filename,
+            detector_distance=self.detector_distance_mm,
+            omega_start=0.0,
+            omega_increment=0.0,
+            num_images_per_trigger=1,  # This and num_triggers for ft will depend on type of collection
+            num_triggers=self.num_images,
+            det_dist_to_beam_converter_path=self.det_dist_to_beam_lut,
+            use_roi_mode=False,  # Dasabled
+            trigger_mode=TriggerMode.SET_FRAMES,
+            # override_run_number=1,  # No idea what this looks like for pilatus though
+        )
 
 
 class ChipDescription(BaseModel):

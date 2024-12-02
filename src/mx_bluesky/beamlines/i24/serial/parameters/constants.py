@@ -15,6 +15,7 @@ BEAM_CENTER_POS: dict[str, list] = {
     "pilatus": [1284.7, 1308.6],
 }
 
+# TODO figue sth out for tests
 LUT_FILES_PATH = Path("/dls_sw/i24/software/daq_configuration/lookup")
 
 BEAM_CENTER_LUT_FILES = {
