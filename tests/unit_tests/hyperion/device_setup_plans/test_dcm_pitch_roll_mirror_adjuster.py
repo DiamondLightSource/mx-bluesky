@@ -129,19 +129,6 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
-    )
-    messages = assert_message_and_return_remaining(
-        messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-offset_in_mm"
-        and msg.args == (25.6,),
-    )
-    messages = assert_message_and_return_remaining(
-        messages[1:], lambda msg: msg.command == "wait"
-    )
-    messages = assert_message_and_return_remaining(
-        messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm-stripe"
         and msg.args == (MirrorStripe.RHODIUM,),

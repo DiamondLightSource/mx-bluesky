@@ -121,13 +121,6 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from dcm_roll_adjuster(DCM_GROUP)
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
-    # DCM offset
-    # wait for other DCM motions and energy change to complete before changing offset
-    yield from bps.wait(DCM_GROUP, timeout=30)
-    offset_mm = undulator_dcm.dcm_fixed_offset_mm
-    LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
-    yield from bps.abs_set(dcm.offset_in_mm, offset_mm, wait=True)
-
     #
     # Adjust vfm mirror stripe and mirror voltages
     #
