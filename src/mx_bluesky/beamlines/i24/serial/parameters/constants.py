@@ -2,12 +2,30 @@ from enum import Enum
 from os import environ
 from pathlib import Path
 
+from dodal.devices.detector.det_dim_constants import DetectorSize, DetectorSizeConstants
+
 from mx_bluesky.beamlines.i24.serial.log import _read_visit_directory_from_file
 
 
 class SSXType(Enum):
     FIXED = "Serial Fixed"
     EXTRUDER = "Serial Jet"
+
+
+PILATUS_TYPE_6M = "PILATUS_6M"
+PILATUS_6M_DIMENSION_X = 423.636
+PILATUS_6M_DIMENSION_Y = 434.644
+PILATUS_6M_DIMENSION = DetectorSize(PILATUS_6M_DIMENSION_X, PILATUS_6M_DIMENSION_Y)
+PIXELS_X_PILATUS_6M = 2463
+PIXELS_Y_PILATUS_6M = 2527
+PIXELS_PILATUS_6M = DetectorSize(PIXELS_X_PILATUS_6M, PIXELS_Y_PILATUS_6M)
+PILATUS_6M_SIZE = DetectorSizeConstants(
+    PILATUS_TYPE_6M,
+    PILATUS_6M_DIMENSION,
+    PIXELS_PILATUS_6M,
+    PILATUS_6M_DIMENSION,
+    PIXELS_PILATUS_6M,
+)
 
 
 BEAM_CENTER_POS: dict[str, list] = {
