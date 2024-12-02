@@ -100,6 +100,10 @@ def load_centre_collect_full(
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = MultiRotationScan.model_validate(multi_rotation)
 
+        assert (
+            multi_rotation.demand_energy_ev
+            == parameters.robot_load_then_centre.demand_energy_ev
+        ), "Setting a different energy for gridscan and rotation is not supported"
         yield from multi_rotation_scan(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()

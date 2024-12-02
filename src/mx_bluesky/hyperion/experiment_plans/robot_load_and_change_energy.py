@@ -128,11 +128,7 @@ def do_robot_load(
         group="robot_load",
     )
 
-    if demand_energy_ev:
-        yield from set_energy_plan(
-            demand_energy_ev / 1000,
-            cast(SetEnergyComposite, composite),
-        )
+    yield from set_energy_plan(demand_energy_ev, cast(SetEnergyComposite, composite))
 
     yield from bps.wait("robot_load")
 
