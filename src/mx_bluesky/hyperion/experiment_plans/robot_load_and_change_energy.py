@@ -218,24 +218,28 @@ def robot_load_and_change_energy_plan(
     yield from prepare_for_robot_load(
         composite.aperture_scatterguard, composite.smargon
     )
-    yield from bpp.run_wrapper(
-        robot_load_and_snapshots(
-            composite,
-            sample_location,
-            params.snapshot_directory,
-            params.thawing_time,
-            params.demand_energy_ev,
-        ),
-        md={
-            "subplan_name": CONST.PLAN.ROBOT_LOAD,
-            "metadata": {
-                "visit": params.visit,
-                "sample_id": params.sample_id,
-                "sample_puck": sample_location.puck,
-                "sample_pin": sample_location.pin,
+
+    yield from bpp.set_run_key_wrapper(
+        bpp.run_wrapper(
+            robot_load_and_snapshots(
+                composite,
+                sample_location,
+                params.snapshot_directory,
+                params.thawing_time,
+                params.demand_energy_ev,
+            ),
+            md={
+                "subplan_name": CONST.PLAN.ROBOT_LOAD,
+                "metadata": {
+                    "visit": params.visit,
+                    "sample_id": params.sample_id,
+                    "sample_puck": sample_location.puck,
+                    "sample_pin": sample_location.pin,
+                },
+                "activate_callbacks": [
+                    "RobotLoadISPyBCallback",
+                ],
             },
-            "activate_callbacks": [
-                "RobotLoadISPyBCallback",
-            ],
-        },
+        ),
+        CONST.PLAN.ROBOT_LOAD_AND_SNAPSHOTS,
     )

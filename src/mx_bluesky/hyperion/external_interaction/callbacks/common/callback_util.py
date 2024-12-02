@@ -20,6 +20,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
+from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 CallbacksFactory = Callable[[], tuple[CallbackBase, ...]]
@@ -57,6 +60,7 @@ def create_load_centre_collect_callbacks() -> (
         RobotLoadISPyBCallback,
         RotationNexusFileCallback,
         RotationISPyBCallback,
+        SampleHandlingCallback,
     ]
 ):
     return (
@@ -65,4 +69,5 @@ def create_load_centre_collect_callbacks() -> (
         RobotLoadISPyBCallback(),
         RotationNexusFileCallback(),
         RotationISPyBCallback(emit=ZocaloCallback()),
+        SampleHandlingCallback(),
     )

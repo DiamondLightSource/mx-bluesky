@@ -45,7 +45,6 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
-from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import ArmDemand, Zebra
@@ -432,9 +431,9 @@ def set_up_dcm(dcm):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    oa_patch_motor(dcm.roll_in_mrad)
-    oa_patch_motor(dcm.pitch_in_mrad)
-    oa_patch_motor(dcm.offset_in_mm)
+    patch_motor(dcm.roll_in_mrad)
+    patch_motor(dcm.pitch_in_mrad)
+    patch_motor(dcm.offset_in_mm)
     return dcm
 
 
@@ -460,9 +459,9 @@ def vfm(RE):
 def lower_gonio(RE):
     lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
     with (
-        oa_patch_motor(lower_gonio.x),
-        oa_patch_motor(lower_gonio.y),
-        oa_patch_motor(lower_gonio.z),
+        patch_motor(lower_gonio.x),
+        patch_motor(lower_gonio.y),
+        patch_motor(lower_gonio.z),
     ):
         yield lower_gonio
 

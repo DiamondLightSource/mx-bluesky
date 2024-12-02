@@ -51,7 +51,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import (
+    CrystalNotFoundException,
+    SampleException,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -81,12 +84,6 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 class SmargonSpeedException(Exception):
-    pass
-
-
-class CrystalNotFoundException(WarningException):
-    """Raised if grid detection completed normally but no crystal was found."""
-
     pass
 
 
@@ -378,7 +375,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             LOGGER.info("Gridscan scan valid and position counter reset")
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
+    raise SampleException("Scan invalid - pin too long/short/bent and out of range")
 
 
 @dataclasses.dataclass

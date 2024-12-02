@@ -1,4 +1,6 @@
 import configparser
+from dataclasses import dataclass
+from enum import StrEnum
 
 from requests import patch, post
 from requests.auth import AuthBase
@@ -29,20 +31,44 @@ def _get_base_url_and_token() -> tuple[str, str]:
     return expeye_config["url"], expeye_config["token"]
 
 
+def _send_and_get_response(auth, url, data, send_func) -> dict:
+    response = send_func(url, auth=auth, json=data)
+    if not response.ok:
+        raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {response}")
+    return response.json()
+
+
+@dataclass
+class BLSample:
+    container_id: int
+    bl_sample_id: int
+    bl_sample_status: str | None
+
+
+class BLSampleStatus(StrEnum):
+    # The sample has been loaded
+    LOADED = "LOADED"
+    # Problem with the sample e.g. pin too long/short
+    ERROR_SAMPLE = "ERROR - sample"
+    # Any other general error
+    ERROR_BEAMLINE = "ERROR - beamline"
+
+
+assert all(
+    len(value) <= 20 for value in BLSampleStatus
+), "Column size limit of 20 for BLSampleStatus"
+
+
 class ExpeyeInteraction:
+    """Exposes functionality from the Expeye core API"""
+
     CREATE_ROBOT_ACTION = "/proposals/{proposal}/sessions/{visit_number}/robot-actions"
     UPDATE_ROBOT_ACTION = "/robot-actions/{action_id}"
 
     def __init__(self) -> None:
         url, token = _get_base_url_and_token()
-        self.base_url = url
-        self.auth = BearerAuth(token)
-
-    def _send_and_get_response(self, url, data, send_func) -> dict:
-        response = send_func(url, auth=self.auth, json=data)
-        if not response.ok:
-            raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {response}")
-        return response.json()
+        self._base_url = url
+        self._auth = BearerAuth(token)
 
     def start_load(
         self,
@@ -66,7 +92,7 @@ class ExpeyeInteraction:
         Returns:
             RobotActionID: The id of the robot load action that is created
         """
-        url = self.base_url + self.CREATE_ROBOT_ACTION.format(
+        url = self._base_url + self.CREATE_ROBOT_ACTION.format(
             proposal=proposal_reference, visit_number=visit_number
         )
 
@@ -77,7 +103,7 @@ class ExpeyeInteraction:
             "containerLocation": container_location,
             "dewarLocation": dewar_location,
         }
-        response = self._send_and_get_response(url, data, post)
+        response = _send_and_get_response(self._auth, url, data, post)
         return response["robotActionId"]
 
     def update_barcode_and_snapshots(
@@ -95,14 +121,14 @@ class ExpeyeInteraction:
             snapshot_before_path (str): Path to the snapshot before robot load
             snapshot_after_path (str): Path to the snapshot after robot load
         """
-        url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
+        url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         data = {
             "sampleBarcode": barcode,
             "xtalSnapshotBefore": snapshot_before_path,
             "xtalSnapshotAfter": snapshot_after_path,
         }
-        self._send_and_get_response(url, data, patch)
+        _send_and_get_response(self._auth, url, data, patch)
 
     def end_load(self, action_id: RobotActionID, status: str, reason: str):
         """Finish an existing robot action, providing final information about how it went
@@ -113,13 +139,37 @@ class ExpeyeInteraction:
                           otherwise error
             reason (str): If the status is in error than the reason for that error
         """
-        url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
+        url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         run_status = "SUCCESS" if status == "success" else "ERROR"
 
         data = {
             "endTimestamp": get_current_time_string(),
             "status": run_status,
-            "message": reason,
+            "message": reason[:255] if reason else "",
         }
-        self._send_and_get_response(url, data, patch)
+        _send_and_get_response(self._auth, url, data, patch)
+
+    def update_sample_status(
+        self, bl_sample_id: int, bl_sample_status: BLSampleStatus
+    ) -> BLSample:
+        """Update the blSampleStatus of a sample.
+        Args:
+            bl_sample_id: The sample ID
+            bl_sample_status: The sample status
+            status_message: An optional message
+        Returns:
+             The updated sample
+        """
+        data = {"blSampleStatus": (str(bl_sample_status))}
+        response = _send_and_get_response(
+            self._auth, self._base_url + f"/samples/{bl_sample_id}", data, patch
+        )
+        return self._sample_from_json(response)
+
+    def _sample_from_json(self, response) -> BLSample:
+        return BLSample(
+            bl_sample_id=response["blSampleId"],
+            bl_sample_status=response["blSampleStatus"],
+            container_id=response["containerId"],
+        )
