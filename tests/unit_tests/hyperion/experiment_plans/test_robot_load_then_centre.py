@@ -41,6 +41,19 @@ def robot_load_then_centre_params_no_energy(robot_load_then_centre_params):
     return robot_load_then_centre_params
 
 
+@pytest.fixture
+def sample_is_loaded(sim_run_engine, robot_load_then_centre_params):
+    sample_location = SampleLocation(2, 6)
+    robot_load_then_centre_params.sample_puck = sample_location.puck
+    robot_load_then_centre_params.sample_pin = sample_location.pin
+    mock_current_sample(sim_run_engine, sample_location)
+
+
+@pytest.fixture
+def sample_is_not_loaded(sim_run_engine, sample_is_loaded):
+    mock_current_sample(sim_run_engine, SampleLocation(1, 1))
+
+
 def mock_pin_centre_then_flyscan_plan(_, __):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
@@ -251,15 +264,11 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
+    sample_is_loaded,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
-    sample_location = SampleLocation(2, 6)
-    robot_load_then_centre_params.sample_puck = sample_location.puck
-    robot_load_then_centre_params.sample_pin = sample_location.pin
     robot_load_then_centre_params.chi_start_deg = None
-
-    mock_current_sample(sim_run_engine, sample_location)
 
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -305,15 +314,11 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
+    sample_is_loaded,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
-    sample_location = SampleLocation(2, 6)
-    robot_load_then_centre_params.sample_puck = sample_location.puck
-    robot_load_then_centre_params.sample_pin = sample_location.pin
     robot_load_then_centre_params.chi_start_deg = 30
-
-    mock_current_sample(sim_run_engine, sample_location)
 
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -368,14 +373,11 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
+    sample_is_not_loaded,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
-    robot_load_then_centre_params.sample_puck = 2
-    robot_load_then_centre_params.sample_pin = 6
     robot_load_then_centre_params.chi_start_deg = None
-
-    mock_current_sample(sim_run_engine, SampleLocation(1, 1))
 
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -414,14 +416,11 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
+    sample_is_not_loaded,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
-    robot_load_then_centre_params.sample_puck = 2
-    robot_load_then_centre_params.sample_pin = 6
     robot_load_then_centre_params.chi_start_deg = 30
-
-    mock_current_sample(sim_run_engine, SampleLocation(1, 1))
 
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -442,4 +441,68 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "centre_plan",
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    MagicMock(
+        return_value=iter(
+            [
+                Msg("centre_plan"),
+            ]
+        )
+    ),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(
+        side_effect=lambda energy, _: iter([Msg("set_energy_plan", None, energy)])
+    ),
+)
+def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
+    sim_run_engine: RunEngineSimulator,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params: RobotLoadThenCentre,
+    sample_is_loaded,
+):
+    robot_load_then_centre_params.chi_start_deg = 30
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params,
+        )
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11100
+    )
+    messages = assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "centre_plan"
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(
+        side_effect=lambda energy, _: iter([Msg("set_energy_plan", None, energy)])
+    ),
+)
+def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
+    sim_run_engine: RunEngineSimulator,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params: RobotLoadThenCentre,
+    sample_is_loaded,
+):
+    robot_load_then_centre_params.chi_start_deg = None
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params,
+        )
+    )
+    messages = assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "set_energy_plan" and msg.args[0] == 11100
     )

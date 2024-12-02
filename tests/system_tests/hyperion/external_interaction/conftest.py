@@ -16,6 +16,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -25,7 +26,13 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
+from ispyb.sqlalchemy import (
+    BLSample,
+    DataCollection,
+    DataCollectionGroup,
+    GridInfo,
+    Position,
+)
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
@@ -151,6 +158,12 @@ def get_current_datacollectiongroup_attribute(
         return getattr(first_result, attr)
 
 
+def get_blsample(Session: Callable, bl_sample_id: int) -> BLSample:
+    with Session() as session:
+        query = session.query(BLSample).filter(BLSample.blSampleId == bl_sample_id)
+        return query.first()
+
+
 @pytest.fixture
 def sqlalchemy_sessionmaker() -> sessionmaker:
     url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
@@ -188,6 +201,11 @@ def fetch_datacollection_position_attribute(sqlalchemy_sessionmaker) -> Callable
 @pytest.fixture
 def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
     return partial(get_current_datacollectiongroup_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
+    return partial(get_blsample, sqlalchemy_sessionmaker)
 
 
 @pytest.fixture
@@ -335,6 +353,28 @@ def fgs_composite_for_fake_zocalo(
     )
     fake_fgs_composite.zocalo = zocalo_for_fake_zocalo
     return fake_fgs_composite
+
+
+@pytest.fixture
+def pin_tip_no_pin_found(ophyd_pin_tip_detection):
+    @AsyncStatus.wrap
+    async def no_pin_tip_found():
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
+        )
+
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_top_edge,
+            numpy.array([]),
+        )
+
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_bottom_edge,
+            numpy.array([]),
+        )
+
+    with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=no_pin_tip_found):
+        yield ophyd_pin_tip_detection
 
 
 @pytest.fixture

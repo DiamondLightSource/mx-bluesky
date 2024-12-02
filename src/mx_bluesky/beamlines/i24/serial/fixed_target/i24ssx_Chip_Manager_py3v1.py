@@ -15,6 +15,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -117,6 +118,7 @@ def initialise_stages(
 @log_on_entry
 def read_parameters(
     detector_stage: DetectorMotion,
+    attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Creating parameter model from input.")
 
@@ -146,6 +148,8 @@ def read_parameters(
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
+    transmission = yield from bps.rd(attenuator.actual_transmission)
+
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": caget(pv.me14e_filepath),
@@ -154,13 +158,14 @@ def read_parameters(
         "detector_distance_mm": caget(pv.me14e_dcdetdist),
         "detector_name": str(det_type),
         "num_exposures": int(caget(NUM_EXPOSURES_PV)),
+        "transmission": transmission,
         "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
         "chip_map": chip_map,
-        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else None,
-        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else None,
+        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
+        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
         if pump_repeat != 0
         else None,

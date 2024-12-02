@@ -3,7 +3,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3
-from ophyd_async.core import get_mock_put
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
@@ -17,7 +17,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
     read_parameters,
     tidy_up_at_collection_end_plan,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
 
@@ -30,6 +30,7 @@ def dummy_params():
         "exposure_time_s": 0.1,
         "detector_distance_mm": 100,
         "detector_name": "eiger",
+        "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
     }
@@ -45,12 +46,20 @@ def dummy_params_pp():
         "exposure_time_s": 0.1,
         "detector_distance_mm": 100,
         "detector_name": "pilatus",
+        "transmission": 1.0,
         "num_images": 10,
         "pump_status": True,
         "laser_dwell_s": 0.01,
         "laser_delay_s": 0.005,
     }
     return ExtruderParameters(**params_pp)
+
+
+@pytest.fixture
+def dummy_beam_settings():
+    return BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(120.4, 127.6)
+    )
 
 
 def fake_generator(value):
@@ -68,14 +77,23 @@ def fake_generator(value):
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
 )
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 def test_read_parameters(
-    fake_log, mock_read_visit, fake_caget, fake_det, detector_stage, RE
+    fake_rd,
+    fake_log,
+    mock_read_visit,
+    fake_caget,
+    fake_det,
+    detector_stage,
+    RE,
 ):
+    mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
+    fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
         "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.ExtruderParameters",
     ):
-        RE(read_parameters(detector_stage))
+        RE(read_parameters(detector_stage, mock_attenuator))
 
     assert fake_caget.call_count == 8
     fake_log.warning.assert_called_once()
@@ -155,7 +173,11 @@ async def test_laser_check(
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
+)
 def test_run_extruder_quickshot_with_eiger(
+    mock_read_beam_info,
     fake_mkdir,
     fake_read,
     mock_quickshot_plan,
@@ -173,11 +195,19 @@ def test_run_extruder_quickshot_with_eiger(
     beamstop,
     detector_stage,
     dcm,
+    mirrors,
+    eiger_beam_center,
     dummy_params,
+    dummy_beam_settings,
 ):
     fake_start_time = MagicMock()
+    mock_read_beam_info.side_effect = [fake_generator(dummy_beam_settings)]
     # Mock end of data collection (zebra disarmed)
-    fake_read.side_effect = [fake_generator(0.6), fake_generator(0)]
+    fake_read.side_effect = [
+        fake_generator(1605),  # beam center
+        fake_generator(1702),
+        fake_generator(0),  # zebra disarm
+    ]
     RE(
         main_extruder_plan(
             zebra,
@@ -187,18 +217,23 @@ def test_run_extruder_quickshot_with_eiger(
             detector_stage,
             shutter,
             dcm,
+            mirrors,
+            eiger_beam_center,
             dummy_params,
             fake_dcid,
             fake_start_time,
         )
     )
-    fake_nexgen.assert_called_once_with(None, ANY, dummy_params, 0.6, "extruder")
+    fake_nexgen.assert_called_once_with(
+        None, dummy_params, 0.6, (1605, 1702), fake_start_time
+    )
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
     assert fake_mkdir.call_count == 1
     fake_mkdir.assert_called_once()
+    mock_read_beam_info.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")
@@ -210,7 +245,15 @@ def test_run_extruder_quickshot_with_eiger(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_zebra_for_extruder_with_pump_probe_plan"
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_pilatus_filename_template_from_device"
+)
 def test_run_extruder_pump_probe_with_pilatus(
+    mock_pilatus_temp,
+    mock_read_beam_info,
     fake_read,
     mock_pp_plan,
     fake_sup,
@@ -226,11 +269,15 @@ def test_run_extruder_pump_probe_with_pilatus(
     beamstop,
     detector_stage,
     dcm,
+    mirrors,
+    pilatus_beam_center,
     dummy_params_pp,
 ):
     fake_start_time = MagicMock()
+    set_mock_value(dcm.wavelength_in_a, 0.6)
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [fake_generator(0)]
+    mock_pilatus_temp.side_effect = [fake_generator("test_00001_#####.cbf")]
     RE(
         main_extruder_plan(
             zebra,
@@ -240,11 +287,14 @@ def test_run_extruder_pump_probe_with_pilatus(
             detector_stage,
             shutter,
             dcm,
+            mirrors,
+            pilatus_beam_center,
             dummy_params_pp,
             fake_dcid,
             fake_start_time,
         )
     )
+    mock_pilatus_temp.assert_called_once()
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
@@ -256,6 +306,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
+    mock_read_beam_info.assert_called_once()
 
 
 @patch(

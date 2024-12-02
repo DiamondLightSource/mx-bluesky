@@ -1,14 +1,16 @@
 import json
+from abc import abstractmethod
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 
 
 class SerialExperiment(BaseModel):
@@ -20,6 +22,7 @@ class SerialExperiment(BaseModel):
     exposure_time_s: float
     detector_distance_mm: float
     detector_name: Literal["eiger", "pilatus"]
+    transmission: float
 
     @field_validator("visit", mode="before")
     @classmethod
@@ -36,22 +39,37 @@ class SerialExperiment(BaseModel):
 class LaserExperiment(BaseModel):
     """Laser settings for pump probe serial collections."""
 
-    laser_dwell_s: float | None = None  # pump exposure time
-    laser_delay_s: float | None = None  # pump delay
+    laser_dwell_s: float = 0.0  # pump exposure time
+    laser_delay_s: float = 0.0  # pump delay
     pre_pump_exposure_s: float | None = None  # Pre illumination, just for chip
 
 
-class ExtruderParameters(SerialExperiment, LaserExperiment):
-    """Extruder parameter model."""
-
-    num_images: int
-    pump_status: bool
-
+class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     @classmethod
     def from_file(cls, filename: str | Path):
         with open(filename) as fh:
             raw_params = json.load(fh)
         return cls(**raw_params)
+
+    @property
+    @abstractmethod
+    def nexgen_experiment_type(self) -> str:
+        pass
+
+
+class ExtruderParameters(SerialAndLaserExperiment):
+    """Extruder parameter model."""
+
+    num_images: int
+    pump_status: bool
+
+    @property
+    def nexgen_experiment_type(self) -> str:
+        return "extruder"
+
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.EXTRUDER
 
 
 class ChipDescription(BaseModel):
@@ -90,7 +108,7 @@ class ChipDescription(BaseModel):
         return self.x_blocks * self.y_blocks
 
 
-class FixedTargetParameters(SerialExperiment, LaserExperiment):
+class FixedTargetParameters(SerialAndLaserExperiment):
     """Fixed target parameter model."""
 
     num_exposures: int
@@ -101,8 +119,17 @@ class FixedTargetParameters(SerialExperiment, LaserExperiment):
     chip_map: list[int] | None = None
     total_num_images: int = 0  # Calculated in the code for now
 
-    @classmethod
-    def from_file(cls, filename: str | Path):
-        with open(filename) as fh:
-            raw_params = json.load(fh)
-        return cls(**raw_params)
+    @property
+    def nexgen_experiment_type(self) -> str:
+        return "fixed-target"
+
+    @property
+    def ispyb_experiment_type(self) -> SSXType:
+        return SSXType.FIXED
+
+
+class BeamSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    wavelength_in_a: float
+    beam_size_in_um: tuple[float, float]
+    beam_center_in_mm: tuple[float, float]

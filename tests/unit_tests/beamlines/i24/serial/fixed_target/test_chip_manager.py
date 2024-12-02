@@ -57,7 +57,9 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
 )
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
 def test_read_parameters(
+    fake_rd,
     fake_log,
     mock_read_visit,
     fake_caget,
@@ -70,11 +72,13 @@ def test_read_parameters(
         yield from bps.null()
         return value
 
+    mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
+    fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.FixedTargetParameters",
     ):
-        RE(read_parameters(detector_stage))
+        RE(read_parameters(detector_stage, mock_attenuator))
 
     assert fake_caget.call_count == 12
     assert fake_log.info.call_count == 3

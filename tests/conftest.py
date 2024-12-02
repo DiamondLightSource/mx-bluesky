@@ -45,7 +45,6 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
-from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import ArmDemand, Zebra
@@ -427,20 +426,21 @@ def xbpm_feedback(done_status):
     beamline_utils.clear_devices()
 
 
-def set_up_dcm(dcm):
+def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    oa_patch_motor(dcm.roll_in_mrad)
-    oa_patch_motor(dcm.pitch_in_mrad)
-    oa_patch_motor(dcm.offset_in_mm)
+    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing, 3.13475)
+    patch_motor(dcm.roll_in_mrad)
+    patch_motor(dcm.pitch_in_mrad)
+    patch_motor(dcm.offset_in_mm)
     return dcm
 
 
 @pytest.fixture
-def dcm(RE):
+def dcm(RE, sim_run_engine):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    set_up_dcm(dcm)
+    set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
@@ -459,9 +459,9 @@ def vfm(RE):
 def lower_gonio(RE):
     lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
     with (
-        oa_patch_motor(lower_gonio.x),
-        oa_patch_motor(lower_gonio.y),
-        oa_patch_motor(lower_gonio.z),
+        patch_motor(lower_gonio.x),
+        patch_motor(lower_gonio.y),
+        patch_motor(lower_gonio.z),
     ):
         yield lower_gonio
 
@@ -479,9 +479,9 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(RE, dcm):
+def undulator_dcm(RE, sim_run_engine, dcm):
     undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
-    set_up_dcm(undulator_dcm.dcm)
+    set_up_dcm(undulator_dcm.dcm, sim_run_engine)
     undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
     undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
