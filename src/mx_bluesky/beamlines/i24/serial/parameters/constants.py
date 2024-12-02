@@ -12,6 +12,7 @@ class SSXType(Enum):
     EXTRUDER = "Serial Jet"
 
 
+# NOTE TODO May as well add these to dodal ...
 PILATUS_TYPE_6M = "PILATUS_6M"
 PILATUS_6M_DIMENSION_X = 423.636
 PILATUS_6M_DIMENSION_Y = 434.644

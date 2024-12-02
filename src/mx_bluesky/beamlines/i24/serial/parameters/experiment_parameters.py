@@ -111,6 +111,8 @@ class ExtruderParameters(SerialAndLaserExperiment):
             trigger_mode=TriggerMode.SET_FRAMES,
             # override_run_number=1,  # No idea what this looks like for pilatus though
             # Probably read it from PV and pass it as run_number, somewhow
+            # I may as well just review the Eiger/Pilatus in PVabstract (and maybe DetChoice)
+            # And integrate the non-pv stuff here
         )
 
 
