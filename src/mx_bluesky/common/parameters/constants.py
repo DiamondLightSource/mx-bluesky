@@ -19,6 +19,7 @@ class DocDescriptorNames:
     OAV_GRID_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
     HARDWARE_READ_PRE = "read_hardware_for_callbacks_pre_collection"
     HARDWARE_READ_DURING = "read_hardware_for_callbacks_during_collection"
+    SAMPLE_HANDLING_EXCEPTION = "sample_handling_exception"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
     FLYSCAN_RESULTS = "flyscan_results_obtained"
 
@@ -36,6 +37,7 @@ class OavConstants:
 
 @dataclass(frozen=True)
 class PlanNameConstants:
+    LOAD_CENTRE_COLLECT = "load_centre_collect"
     # Robot load subplan
     ROBOT_LOAD = "robot_load"
     # Gridscan
@@ -45,6 +47,9 @@ class PlanNameConstants:
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
     GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
+    # IspyB callback activation
+    ISPYB_ACTIVATION = "ispyb_activation"
+    ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
@@ -91,7 +96,7 @@ class DetectorParamConstants:
     BEAM_XY_LUT_PATH = (
         "tests/test_data/test_det_dist_converter.txt"
         if TEST_MODE
-        else "/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+        else f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
     DETECTOR = EIGER2_X_16M_SIZE
 

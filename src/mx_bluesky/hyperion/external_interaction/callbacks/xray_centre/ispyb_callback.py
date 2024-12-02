@@ -53,13 +53,16 @@ if TYPE_CHECKING:
 
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
-    return bpp.run_wrapper(
-        plan_generator,
-        md={
-            "activate_callbacks": ["GridscanISPyBCallback"],
-            "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-            "hyperion_parameters": parameters.model_dump_json(),
-        },
+    return bpp.set_run_key_wrapper(
+        bpp.run_wrapper(
+            plan_generator,
+            md={
+                "activate_callbacks": ["GridscanISPyBCallback"],
+                "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+                "hyperion_parameters": parameters.model_dump_json(),
+            },
+        ),
+        CONST.PLAN.ISPYB_ACTIVATION,
     )
 
 

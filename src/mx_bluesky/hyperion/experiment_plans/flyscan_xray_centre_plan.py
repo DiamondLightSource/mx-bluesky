@@ -66,7 +66,7 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
@@ -81,12 +81,6 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 class SmargonSpeedException(Exception):
-    pass
-
-
-class CrystalNotFoundException(WarningException):
-    """Raised if grid detection completed normally but no crystal was found."""
-
     pass
 
 
@@ -378,7 +372,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             LOGGER.info("Gridscan scan valid and position counter reset")
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
+    raise SampleException("Scan invalid - pin too long/short/bent and out of range")
 
 
 @dataclasses.dataclass
