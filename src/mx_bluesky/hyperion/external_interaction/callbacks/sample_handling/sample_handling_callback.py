@@ -10,9 +10,6 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundException, SampleException
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
-# TODO remove this event-raising shenanigans once
-# https://github.com/bluesky/bluesky/issues/1829 is addressed
-
 
 class SampleHandlingCallback(PlanReactiveCallback):
     """Intercepts exceptions from experiment plans and updates the ISPyB BLSampleStatus
@@ -32,7 +29,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         if doc["exit_status"] != "success":
             exception_type, message = SampleException.type_and_message_from_reason(
-                doc["reason"]
+                doc.get("reason", "")
             )
             self.log.info(
                 f"Sample handling callback intercepted exception of type {exception_type}: {message}"
