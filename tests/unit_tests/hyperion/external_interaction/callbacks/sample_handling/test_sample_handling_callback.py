@@ -11,7 +11,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
-    sample_handling_callback_decorator,
 )
 
 TEST_SAMPLE_ID = 123456
@@ -23,7 +22,6 @@ TEST_SAMPLE_ID = 123456
         "activate_callbacks": ["SampleHandlingCallback"],
     }
 )
-@sample_handling_callback_decorator()
 def plan_with_general_exception(exception_type: type):
     yield from []
     raise exception_type("Test failure")
@@ -35,7 +33,6 @@ def plan_with_general_exception(exception_type: type):
         "activate_callbacks": ["SampleHandlingCallback"],
     }
 )
-@sample_handling_callback_decorator()
 def plan_with_normal_completion():
     yield from []
 
