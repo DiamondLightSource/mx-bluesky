@@ -9,12 +9,9 @@ from dodal.devices.fast_grid_scan import (
 )
 
 from mx_bluesky.common.parameters.components import (
-    SplitScan,
-    WithOptionalEnergyChange,
     WithPandaGridScan,
 )
 from mx_bluesky.common.parameters.gridscan import (
-    SpecifiedGrid,
     ThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
@@ -23,9 +20,6 @@ from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 
 class HyperionThreeDGridScan(
     ThreeDGridScan,
-    SpecifiedGrid,
-    SplitScan,
-    WithOptionalEnergyChange,
     WithPandaGridScan,
     WithHyperionFeatures,
 ):
