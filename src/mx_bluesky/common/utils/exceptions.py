@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable, Generator
 from typing import TypeVar
 
@@ -22,7 +23,14 @@ class ISPyBDepositionNotMade(Exception):
 class SampleException(WarningException):
     """An exception which identifies an issue relating to the sample."""
 
-    pass
+    def __str__(self):
+        class_name = type(self).__name__
+        return f"[{class_name}]: {super().__str__()}"
+
+    @classmethod
+    def type_and_message_from_reason(cls, reason: str) -> tuple[str, str]:
+        match = re.match(r"\[(\S*)?]: (.*)", reason)
+        return (match.group(1), match.group(2)) if match else (None, None)
 
 
 T = TypeVar("T")
