@@ -331,6 +331,13 @@ def _move_and_rotation(
         yield from setup_beamline_for_OAV(
             composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
+        yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
+        if params.selected_aperture:
+            yield from bps.abs_set(
+                composite.aperture_scatterguard.aperture_outside_beam,
+                params.selected_aperture,
+                group=CONST.WAIT.ROTATION_READY_FOR_DC,
+            )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(
         composite,
