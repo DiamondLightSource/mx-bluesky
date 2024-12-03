@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE
+from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, PILATUS_6M_SIZE
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -14,7 +14,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
-    PILATUS_6M_SIZE,
     SSXType,
 )
 
@@ -108,9 +107,7 @@ class ExtruderParameters(SerialAndLaserExperiment):
             num_triggers=self.num_images,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_lut.as_posix(),
             use_roi_mode=False,  # Dasabled
-            trigger_mode=TriggerMode.SET_FRAMES,
-            # override_run_number=1,  # No idea what this looks like for pilatus though
-            # Probably read it from PV and pass it as run_number, somewhow
+            trigger_mode=TriggerMode.SET_FRAMES,  # For now...
             # I may as well just review the Eiger/Pilatus in PVabstract (and maybe DetChoice)
             # And integrate the non-pv stuff here
         )
