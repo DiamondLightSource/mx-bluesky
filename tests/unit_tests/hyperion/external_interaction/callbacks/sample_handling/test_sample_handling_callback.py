@@ -22,7 +22,7 @@ TEST_SAMPLE_ID = 123456
         "activate_callbacks": ["SampleHandlingCallback"],
     }
 )
-def plan_with_general_exception(exception_type: type):
+def plan_with_general_exception(exception_type: type, msg: str):
     yield from []
     raise exception_type(msg)
 
