@@ -22,9 +22,9 @@ TEST_SAMPLE_ID = 123456
         "activate_callbacks": ["SampleHandlingCallback"],
     }
 )
-def plan_with_general_exception(exception_type: type):
+def plan_with_general_exception(exception_type: type, msg: str):
     yield from []
-    raise exception_type("Test failure")
+    raise exception_type(msg)
 
 
 @run_decorator(
@@ -38,15 +38,19 @@ def plan_with_normal_completion():
 
 
 @pytest.mark.parametrize(
-    "exception_type, expected_sample_status",
+    "exception_type, expected_sample_status, message",
     [
-        [AssertionError, BLSampleStatus.ERROR_BEAMLINE],
-        [SampleException, BLSampleStatus.ERROR_SAMPLE],
-        [CrystalNotFoundException, BLSampleStatus.ERROR_SAMPLE],
+        [AssertionError, BLSampleStatus.ERROR_BEAMLINE, "Test failure"],
+        [SampleException, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
+        [CrystalNotFoundException, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
+        [AssertionError, BLSampleStatus.ERROR_BEAMLINE, None],
     ],
 )
 def test_sample_handling_callback_intercepts_general_exception(
-    RE: RunEngine, exception_type: type, expected_sample_status: BLSampleStatus
+    RE: RunEngine,
+    exception_type: type,
+    expected_sample_status: BLSampleStatus,
+    message: str,
 ):
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
@@ -60,7 +64,7 @@ def test_sample_handling_callback_intercepts_general_exception(
         ),
         pytest.raises(exception_type),
     ):
-        RE(plan_with_general_exception(exception_type))
+        RE(plan_with_general_exception(exception_type, message))
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, expected_sample_status
     )
