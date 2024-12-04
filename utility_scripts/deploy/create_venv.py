@@ -5,11 +5,9 @@ from subprocess import PIPE, CalledProcessError, Popen
 
 def run_process_and_print_output(proc_to_run):
     with Popen(
-        proc_to_run, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True
+        proc_to_run, bufsize=1, universal_newlines=True
     ) as p:
-        if p.stdout is not None:
-            for line in p.stdout:
-                print(line, end="")
+        p.communicate()
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, p.args)
 
