@@ -4,7 +4,6 @@ import math
 import os
 import subprocess
 from functools import lru_cache
-from typing import Literal
 
 import bluesky.plan_stubs as bps
 import requests
@@ -18,6 +17,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetti
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import (
     BeamSettings,
+    DetectorName,
     ExtruderParameters,
     FixedTargetParameters,
 )
@@ -50,7 +50,7 @@ def read_beam_info_from_hardware(
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center: DetectorBeamCenter,
-    detector_name: Literal["eiger", "pilatus"],
+    detector_name: DetectorName,
 ):
     """ Read the beam information from hardware.
 
@@ -59,7 +59,7 @@ def read_beam_info_from_hardware(
         mirrors (FocusMirrorMode): The device describing the focus mirror mode settings.
         beam_center (DetectorBeamCenter): A device to set and read the beam center on \
             the detector.
-        detector_name (Literal["eiger", "pilatus"]): The detector currently in use.
+        detector_name (DetectorName): The detector currently in use.
 
     Returns:
         BeamSettings parameter model.

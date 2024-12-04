@@ -1,7 +1,6 @@
 import json
 from abc import abstractmethod
 from pathlib import Path
-from typing import Literal
 
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, PILATUS_6M_SIZE
@@ -14,6 +13,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
+    DetectorName,
     SSXType,
 )
 
@@ -26,7 +26,7 @@ class SerialExperiment(BaseModel):
     filename: str
     exposure_time_s: float
     detector_distance_mm: float
-    detector_name: Literal["eiger", "pilatus"]
+    detector_name: DetectorName
     transmission: float
 
     @field_validator("visit", mode="before")
@@ -88,7 +88,9 @@ class ExtruderParameters(SerialAndLaserExperiment):
     def _get_detector_specific_properties(self):
         self.det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
         self.det_size_constants = (
-            EIGER2_X_9M_SIZE if self.detector_name == "eiger" else PILATUS_6M_SIZE
+            EIGER2_X_9M_SIZE
+            if self.detector_name is DetectorName.EIGER
+            else PILATUS_6M_SIZE
         )
 
     @property
@@ -96,20 +98,18 @@ class ExtruderParameters(SerialAndLaserExperiment):
         self._get_detector_specific_properties()
 
         return DetectorParams(
-            detector_size_constants=self.det_size_constants,  # TODO Pilatus
+            detector_size_constants=self.det_size_constants,
             exposure_time=self.exposure_time_s,
             directory=self.directory,
             prefix=self.filename,
             detector_distance=self.detector_distance_mm,
             omega_start=0.0,
             omega_increment=0.0,
-            num_images_per_trigger=1,  # This and num_triggers for ft will depend on type of collection
+            num_images_per_trigger=1,
             num_triggers=self.num_images,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_lut.as_posix(),
             use_roi_mode=False,  # Dasabled
             trigger_mode=TriggerMode.SET_FRAMES,  # For now...
-            # I may as well just review the Eiger/Pilatus in PVabstract (and maybe DetChoice)
-            # And integrate the non-pv stuff here
         )
 
 
@@ -154,6 +154,8 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
     total_num_images: int = 0  # Calculated in the code for now
+    # NOTE Need change from 460 in here to get the tot num imgs calculated here
+    # Maybe in a property ot sth
 
     @property
     def nexgen_experiment_type(self) -> str:
@@ -162,6 +164,33 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     @property
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.FIXED
+
+    def _get_detector_specific_properties(self):
+        self.det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
+        self.det_size_constants = (
+            EIGER2_X_9M_SIZE
+            if self.detector_name is DetectorName.EIGER
+            else PILATUS_6M_SIZE
+        )
+
+    @property
+    def detector_params(self):
+        self._get_detector_specific_properties()
+
+        return DetectorParams(
+            detector_size_constants=self.det_size_constants,
+            exposure_time=self.exposure_time_s,
+            directory=self.directory,
+            prefix=self.filename,
+            detector_distance=self.detector_distance_mm,
+            omega_start=0.0,
+            omega_increment=0.0,
+            num_images_per_trigger=self.num_exposures,
+            num_triggers=self.total_num_images,
+            det_dist_to_beam_converter_path=self.det_dist_to_beam_lut.as_posix(),
+            use_roi_mode=False,  # Dasabled
+            trigger_mode=TriggerMode.SET_FRAMES,  # For now...
+        )
 
 
 class BeamSettings(BaseModel):
