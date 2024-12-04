@@ -98,7 +98,7 @@ else
     fi
   fi
 
-  NEW_PROJECTDIR=$HYPERION_BASE/hyperion
+  NEW_PROJECTDIR=$HYPERION_BASE/mx-bluesky
   echo "Changing directory to $NEW_PROJECTDIR..."
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
@@ -166,10 +166,10 @@ hyperion.externalHostname=test-hyperion.diamond.ac.uk "
   mkdir -p $PROJECTDIR/tmp/data
   DEPLOYMENT_DIR=$PROJECTDIR
 else
-  DEPLOYMENT_DIR=/dls_sw/i03/software/bluesky/mx_bluesky_${APP_VERSION}/hyperion
+  DEPLOYMENT_DIR=/dls_sw/i03/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
 fi
 
-HELM_OPTIONS+="--set hyperion.appVersion=$APP_VERSION,\
+HELM_OPTIONS+="--set hyperion.appVersion=v$APP_VERSION,\
 hyperion.projectDir=$DEPLOYMENT_DIR,\
 dodal.projectDir=$DEPLOYMENT_DIR/../dodal "
 
