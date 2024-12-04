@@ -1,12 +1,10 @@
 import os
 import sys
-from subprocess import PIPE, CalledProcessError, Popen
+from subprocess import CalledProcessError, Popen
 
 
 def run_process_and_print_output(proc_to_run):
-    with Popen(
-        proc_to_run, bufsize=1, universal_newlines=True
-    ) as p:
+    with Popen(proc_to_run, bufsize=1, universal_newlines=True) as p:
         p.communicate()
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, p.args)
