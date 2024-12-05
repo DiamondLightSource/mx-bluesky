@@ -3,7 +3,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+import numpy as np
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -54,6 +55,11 @@ class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     @property
     @abstractmethod
     def nexgen_experiment_type(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def ispyb_experiment_type(self) -> SSXType:
         pass
 
 
@@ -116,8 +122,8 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     map_type: MappingType
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
-    chip_map: list[int] | None = None
-    total_num_images: int = 0  # Calculated in the code for now
+    chip_map: list[int]
+    # total_num_images: int = 0  # Calculated in the code for now
 
     @property
     def nexgen_experiment_type(self) -> str:
@@ -126,6 +132,24 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     @property
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.FIXED
+
+    @property
+    @computed_field
+    def total_num_images(self) -> int:
+        match self.map_type:
+            case MappingType.NoMap:
+                if self.chip.chip_type is ChipType.Custom:
+                    num_images = self.chip.x_num_steps * self.chip.y_num_steps
+                else:
+                    chip_format = self.chip.chip_format[:4]
+                    num_images = int(np.prod(chip_format))
+            case MappingType.Lite:
+                chip_format = self.chip.chip_format[2:4]
+                block_count = len(self.chip_map)  # type: ignore
+                num_images = int(
+                    np.prod(chip_format) * block_count * self.num_exposures
+                )
+        return num_images
 
 
 class BeamSettings(BaseModel):

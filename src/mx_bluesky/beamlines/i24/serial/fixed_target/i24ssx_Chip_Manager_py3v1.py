@@ -132,7 +132,7 @@ def read_parameters(
     ]:
         chip_map = get_chip_map()
     else:
-        chip_map = None
+        chip_map = []
     pump_repeat = int(caget(PUMP_REPEAT_PV))
 
     # If file name ends in a digit this causes processing/pilatus pain.

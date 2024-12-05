@@ -17,7 +17,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
     PMAC_MOVE_TIME,
     calculate_collection_timeout,
-    datasetsizei24,
     finish_i24,
     get_chip_prog_values,
     get_prog_num,
@@ -25,6 +24,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     load_motion_program_data,
     main_fixed_target_plan,
     run_aborted_plan,
+    set_datasize,
     start_i24,
     tidy_up_after_collection_plan,
     write_userlog,
@@ -42,7 +42,7 @@ def fake_generator(value):
 
 
 def test_calculate_collection_timeout(dummy_params_without_pp):
-    dummy_params_without_pp.total_num_images = 400
+    assert dummy_params_without_pp.total_num_images == 400
     expected_collection_time = (
         dummy_params_without_pp.total_num_images
         * dummy_params_without_pp.exposure_time_s
@@ -54,7 +54,7 @@ def test_calculate_collection_timeout(dummy_params_without_pp):
 
 
 def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
-    dummy_params_with_pp.total_num_images = 400
+    assert dummy_params_with_pp.total_num_images == 400
     buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 600
     expected_pump_and_probe_time = 12.05
     timeout = calculate_collection_timeout(dummy_params_with_pp)
@@ -78,17 +78,20 @@ def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
     fake_log.debug.assert_called_once()
 
 
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
-def test_datasetsizei24_for_one_block_and_two_exposures(
-    fake_caput, dummy_params_without_pp
+def test_set_datasize_for_one_block_and_two_exposures(
+    fake_caput, fake_log, dummy_params_without_pp
 ):
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
-        mock_open(read_data=chipmap_str),
-    ):
-        tot_num_imgs = datasetsizei24(2, dummy_params_without_pp.chip, MappingType.Lite)
-    assert tot_num_imgs == 800
+    dummy_params_without_pp.num_exposures = 2
+    dummy_params_without_pp.chip_map = [20]
+    assert dummy_params_without_pp.total_num_images == 800
+    set_datasize(dummy_params_without_pp)
     fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP10", 800)
+    assert fake_log.info.call_count == 1
+    assert fake_log.debug.call_count == 4
 
 
 def test_get_chip_prog_values(dummy_params_without_pp):
@@ -192,7 +195,8 @@ def test_start_i24_with_eiger(
     eiger_beam_center,
     dummy_params_without_pp,
 ):
-    dummy_params_without_pp.total_num_images = 800
+    dummy_params_without_pp.chip_map = [1, 2]
+    assert dummy_params_without_pp.total_num_images == 800
     set_mock_value(dcm.wavelength_in_a, 0.6)
     RE(
         start_i24(
@@ -362,7 +366,7 @@ async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.start_i24"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datasetsizei24"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.set_datasize"
 )
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.load_motion_program_data"
