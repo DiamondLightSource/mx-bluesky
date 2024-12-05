@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
 )
 
-from ..conftest import OavGridSnapshotTestEvents
+from ....conftest import OavGridSnapshotTestEvents
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 

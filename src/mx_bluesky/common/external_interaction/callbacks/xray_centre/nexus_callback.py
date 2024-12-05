@@ -53,7 +53,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
-            parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
+            parameters = ThreeDGridScan.model_validate_json(mx_bluesky_parameters)
             d_size = parameters.detector_params.detector_size_constants.det_size_pixels
             grid_n_img_1 = parameters.scan_indices[1]
             grid_n_img_2 = parameters.num_images - grid_n_img_1

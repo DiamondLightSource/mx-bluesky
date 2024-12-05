@@ -16,7 +16,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 
-from ..conftest import (
+from ......conftest import (
+    EXPECTED_END_TIME,
+    EXPECTED_START_TIME,
     TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
@@ -27,9 +29,6 @@ from ..conftest import (
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-
-EXPECTED_START_TIME = "2024-02-08 14:03:59"
-EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
 
 @pytest.fixture

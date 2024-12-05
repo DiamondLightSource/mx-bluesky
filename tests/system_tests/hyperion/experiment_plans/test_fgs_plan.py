@@ -37,8 +37,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from tests.conftest import default_raw_gridscan_params
 
-from ....conftest import default_raw_params
 from ..external_interaction.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -47,7 +47,7 @@ from ..external_interaction.conftest import (  # noqa
 
 @pytest.fixture
 def params():
-    params = HyperionThreeDGridScan(**default_raw_params())
+    params = HyperionThreeDGridScan(**default_raw_gridscan_params())
     params.beamline = CONST.SIM.BEAMLINE
     yield params
 

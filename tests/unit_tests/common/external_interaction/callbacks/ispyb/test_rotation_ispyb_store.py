@@ -14,7 +14,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
-from ..conftest import (
+from ......conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
     TEST_BARCODE,

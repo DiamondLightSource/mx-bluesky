@@ -74,13 +74,12 @@ from tests.conftest import (
     create_dummy_scan_spec,
 )
 
-from ....conftest import simulate_xrc_result
+from ....conftest import TestData, simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
     assert_event,
     mock_zocalo_trigger,

@@ -11,15 +11,15 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
-from ...conftest import (
+from .....conftest import (
     TEST_SAMPLE_ID,
-    default_raw_params,
+    default_raw_gridscan_params,
 )
 
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(**default_raw_params())
+    dummy_params = HyperionThreeDGridScan(**default_raw_gridscan_params())
     dummy_params.sample_id = TEST_SAMPLE_ID
     dummy_params.run_number = 0
     return dummy_params

@@ -6,17 +6,17 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
     RotationISPyBCallback,
 )
 
-from ...conftest import (
+from ......conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
+    TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-from ..conftest import TestData
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,

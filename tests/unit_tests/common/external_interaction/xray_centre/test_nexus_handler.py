@@ -10,7 +10,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
-from ..conftest import TestData
+from .....conftest import TestData
 
 
 @pytest.fixture

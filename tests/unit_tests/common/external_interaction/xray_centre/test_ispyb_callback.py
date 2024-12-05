@@ -4,16 +4,16 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
 )
 
-from ...conftest import (
+from .....conftest import (
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
+    TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-from ..conftest import TestData
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "visitid": TEST_SESSION_ID,
@@ -42,6 +42,12 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
 }
+
+
+TEST_GRID_INFO_IDS = (56, 57)
+TEST_POSITION_ID = 78
+
+EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
 
 @patch(

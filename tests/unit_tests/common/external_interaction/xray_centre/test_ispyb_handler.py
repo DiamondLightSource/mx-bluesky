@@ -13,7 +13,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import setup_logging
 
-from ..conftest import TestData
+from .....conftest import TestData
 
 DC_IDS = (1, 2)
 DCG_ID = 4
