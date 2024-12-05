@@ -100,11 +100,11 @@ def move_phi_chi_omega(
     axes are optional."""
 
     LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
-    if phi:
+    if phi is not None:
         yield from bps.abs_set(smargon.phi, phi, group=group)
-    if chi:
+    if chi is not None:
         yield from bps.abs_set(smargon.chi, chi, group=group)
-    if omega:
+    if omega is not None:
         yield from bps.abs_set(smargon.omega, omega, group=group)
     if wait:
         yield from bps.wait(group)
