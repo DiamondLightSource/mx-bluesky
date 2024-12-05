@@ -2,6 +2,15 @@ from collections.abc import Callable
 
 from bluesky.callbacks import CallbackBase
 
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
@@ -14,15 +23,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
-)
+from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 CallbacksFactory = Callable[[], tuple[CallbackBase, ...]]
 
@@ -31,7 +32,7 @@ def create_robot_load_and_centre_callbacks() -> (
     tuple[GridscanNexusFileCallback, GridscanISPyBCallback, RobotLoadISPyBCallback]
 ):
     return (
-        GridscanNexusFileCallback(),
+        GridscanNexusFileCallback(HyperionThreeDGridScan),
         GridscanISPyBCallback(emit=ZocaloCallback()),
         RobotLoadISPyBCallback(),
     )
@@ -40,7 +41,10 @@ def create_robot_load_and_centre_callbacks() -> (
 def create_gridscan_callbacks() -> (
     tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
 ):
-    return (GridscanNexusFileCallback(), GridscanISPyBCallback(emit=ZocaloCallback()))
+    return (
+        GridscanNexusFileCallback(HyperionThreeDGridScan),
+        GridscanISPyBCallback(emit=ZocaloCallback()),
+    )
 
 
 def create_rotation_callbacks() -> (
@@ -60,7 +64,7 @@ def create_load_centre_collect_callbacks() -> (
     ]
 ):
     return (
-        GridscanNexusFileCallback(),
+        GridscanNexusFileCallback(HyperionThreeDGridScan),
         GridscanISPyBCallback(emit=ZocaloCallback()),
         RobotLoadISPyBCallback(),
         RotationNexusFileCallback(),

@@ -1,7 +1,7 @@
 from bluesky import plan_stubs as bps
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 
 def set_detector_z_position(

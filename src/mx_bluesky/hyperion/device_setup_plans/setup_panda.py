@@ -15,7 +15,7 @@ from ophyd_async.fastcs.panda import (
 )
 
 import mx_bluesky.hyperion.resources.panda as panda_resource
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60

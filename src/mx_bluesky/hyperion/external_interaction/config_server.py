@@ -3,7 +3,7 @@ from functools import cache
 from daq_config_server.client import ConfigServer
 
 from mx_bluesky.common.external_interaction.config_server import FeatureFlags
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 

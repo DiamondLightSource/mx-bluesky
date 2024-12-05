@@ -25,11 +25,11 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
 from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     set_energy_plan,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 

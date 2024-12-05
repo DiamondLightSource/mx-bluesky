@@ -4,7 +4,7 @@ from bluesky.utils import make_decorator
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 
 def _check_and_pause_feedback(

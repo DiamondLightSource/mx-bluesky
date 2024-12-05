@@ -6,7 +6,7 @@ from blueapi.core.bluesky_types import Device
 from dodal.utils import get_beamline_based_on_environment_variable
 
 import mx_bluesky.hyperion.experiment_plans as hyperion_plans
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 T = TypeVar("T", bound=Device)
 

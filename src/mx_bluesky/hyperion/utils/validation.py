@@ -62,7 +62,7 @@ def fake_rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
@@ -135,7 +135,7 @@ def sim_rotation_scan_to_create_nexus(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     with patch(
-        "mx_bluesky.hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
+        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
     ):
         RE(

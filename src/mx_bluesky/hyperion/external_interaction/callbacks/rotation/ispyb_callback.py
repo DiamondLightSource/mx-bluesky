@@ -3,28 +3,27 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
-from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.utils.log import set_dcgid_tag
-from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
-    populate_data_collection_info_for_rotation,
-)
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
+    populate_data_collection_info_for_rotation,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -58,10 +57,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
-            ISPYB_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters."
             )
-            hyperion_params = doc.get("hyperion_parameters")
+            hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
             self.params = RotationScan.model_validate_json(hyperion_params)
             dcgid = (
@@ -73,16 +72,18 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params.ispyb_experiment_type
                 == IspybExperimentType.CHARACTERIZATION
             ):
-                ISPYB_LOGGER.info("Screening collection - using new DCG")
+                ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+                    "Screening collection - using new DCG"
+                )
                 dcgid = None
                 self.last_sample_id = None
             else:
-                ISPYB_LOGGER.info(
+                ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                     f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
             self.ispyb = StoreInIspyb(self.ispyb_config)
-            ISPYB_LOGGER.info("Beginning ispyb deposition")
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
                 cast(RotationScan, self.params)
@@ -100,7 +101,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids = self.ispyb.begin_deposition(
                 data_collection_group_info, [scan_data_info]
             )
-        ISPYB_LOGGER.info("ISPYB handler received start document.")
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)

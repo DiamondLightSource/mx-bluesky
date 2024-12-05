@@ -9,7 +9,7 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.xspress3.xspress3 import Xspress3
 from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 

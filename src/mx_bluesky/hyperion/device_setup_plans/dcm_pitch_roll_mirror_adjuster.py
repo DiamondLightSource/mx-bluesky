@@ -12,8 +12,8 @@ from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
 )
 
-from mx_bluesky.hyperion.log import LOGGER
-from mx_bluesky.hyperion.utils.utils import (
+from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
 
