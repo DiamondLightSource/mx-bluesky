@@ -112,12 +112,6 @@ def raw_params_from_file(filename):
         return json.loads(f.read())
 
 
-def default_raw_gridscan_params(
-    json_file="tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-):
-    return raw_params_from_file(json_file)
-
-
 def default_raw_params(
     json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
 ):
@@ -319,33 +313,6 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     ):
         yield smargon
     clear_devices()
-
-
-TEST_SESSION_ID = 90
-EXPECTED_START_TIME = "2024-02-08 14:03:59"
-EXPECTED_END_TIME = "2024-02-08 14:04:01"
-TEST_DATA_COLLECTION_IDS = (12, 13)
-TEST_DATA_COLLECTION_GROUP_ID = 34
-TEST_POSITION_ID = 78
-TEST_GRID_INFO_IDS = (56, 57)
-TEST_SAMPLE_ID = 364758
-TEST_BARCODE = "12345A"
-
-
-def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
-    return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-
-
-def assert_upsert_call_with(call, param_template, expected: dict):
-    actual = remap_upsert_columns(list(param_template), call.args[0])
-    assert actual == dict(param_template | expected)
-
-
-def remap_upsert_columns(keys: Sequence[str], values: list):
-    return dict(zip(keys, values, strict=False))
-
-
-# TODO mark the parts of confest which eventually need to be moved to mx-bluesky/tests/common/external_interaction
 
 
 @pytest.fixture
@@ -1039,6 +1006,40 @@ def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) ->
     keys = get_annotations(XrcResult).keys()
     results_by_key = {k: [r[k] for r in test_results] for k in keys}
     return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
+
+
+# The remaining code in this conftest is utility for external interaction tests. See https://github.com/DiamondLightSource/mx-bluesky/issues/699 for
+# a better organisation of this
+
+
+def default_raw_gridscan_params(
+    json_file="tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+):
+    return raw_params_from_file(json_file)
+
+
+TEST_SESSION_ID = 90
+EXPECTED_START_TIME = "2024-02-08 14:03:59"
+EXPECTED_END_TIME = "2024-02-08 14:04:01"
+TEST_DATA_COLLECTION_IDS = (12, 13)
+TEST_DATA_COLLECTION_GROUP_ID = 34
+TEST_POSITION_ID = 78
+TEST_GRID_INFO_IDS = (56, 57)
+TEST_SAMPLE_ID = 364758
+TEST_BARCODE = "12345A"
+
+
+def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
+    return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+
+
+def assert_upsert_call_with(call, param_template, expected: dict):
+    actual = remap_upsert_columns(list(param_template), call.args[0])
+    assert actual == dict(param_template | expected)
+
+
+def remap_upsert_columns(keys: Sequence[str], values: list):
+    return dict(zip(keys, values, strict=False))
 
 
 class OavGridSnapshotTestEvents:
