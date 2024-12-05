@@ -132,8 +132,8 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.FIXED
 
+    @computed_field  # type: ignore   # Mypy doesn't like it
     @property
-    @computed_field
     def total_num_images(self) -> int:
         match self.map_type:
             case MappingType.NoMap:
