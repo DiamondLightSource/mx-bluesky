@@ -123,7 +123,6 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
     chip_map: list[int]
-    # total_num_images: int = 0  # Calculated in the code for now
 
     @property
     def nexgen_experiment_type(self) -> str:
