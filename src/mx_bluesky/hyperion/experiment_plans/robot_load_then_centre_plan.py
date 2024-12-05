@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from math import isclose
 from typing import cast
 
 import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
+from bluesky import plan_stubs as bps
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -174,7 +176,10 @@ def robot_load_then_xray_centre(
         yield from pin_already_loaded(composite.robot, sample_location)
     )
 
-    doing_chi_change = parameters.chi_start_deg is not None
+    current_chi = yield from bps.rd(composite.smargon.chi)
+    LOGGER.info(f"Read back current smargon chi of {current_chi} degrees.")
+    doing_chi_change = (parameters.chi_start_deg is not None and
+                        not isclose(current_chi, parameters.chi_start_deg, abs_tol=0.001))
 
     if doing_sample_load:
         LOGGER.info("Pin not loaded, loading and centring")
