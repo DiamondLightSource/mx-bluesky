@@ -15,6 +15,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -108,6 +109,7 @@ def initialise_stages(
 @log_on_entry
 def write_parameter_file(
     detector_stage: DetectorMotion,
+    attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     param_path: Path = PARAM_FILE_PATH_FT
     # Create directory if it doesn't yet exist.
@@ -136,6 +138,8 @@ def write_parameter_file(
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
+    transmission = yield from bps.rd(attenuator.actual_transmission)
+
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": caget(pv.me14e_filepath),
@@ -144,12 +148,13 @@ def write_parameter_file(
         "detector_distance_mm": caget(pv.me14e_dcdetdist),
         "detector_name": str(det_type),
         "num_exposures": int(caget(NUM_EXPOSURES_PV)),
-        "chip": chip_params.dict(),
+        "transmission": transmission,
+        "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
-        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else None,
-        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else None,
+        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
+        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
         if pump_repeat != 0
         else None,

@@ -8,25 +8,6 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
 
 
 @pytest.fixture
-def dummy_params_without_pp():
-    oxford_defaults = get_chip_format(ChipType.Oxford)
-    params = {
-        "visit": "foo",
-        "directory": "bar",
-        "filename": "chip",
-        "exposure_time_s": 0.01,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "num_exposures": 1,
-        "chip": oxford_defaults.model_dump(),
-        "map_type": 1,
-        "pump_repeat": 0,
-        "checker_pattern": False,
-    }
-    return FixedTargetParameters(**params)
-
-
-@pytest.fixture
 def dummy_params_with_pp():
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
@@ -36,6 +17,7 @@ def dummy_params_with_pp():
         "exposure_time_s": 0.01,
         "detector_distance_mm": 100,
         "detector_name": "eiger",
+        "transmission": 1.0,
         "num_exposures": 1,
         "chip": oxford_defaults.model_dump(),
         "map_type": 1,

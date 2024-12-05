@@ -23,6 +23,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     get_prog_num,
     kickoff_and_complete_collection,
     load_motion_program_data,
+    main_fixed_target_plan,
     run_aborted_plan,
     start_i24,
     tidy_up_after_collection_plan,
@@ -186,9 +187,13 @@ def test_start_i24_with_eiger(
     backlight,
     beamstop,
     detector_stage,
+    dcm,
+    mirrors,
+    eiger_beam_center,
     dummy_params_without_pp,
 ):
     dummy_params_without_pp.total_num_images = 800
+    set_mock_value(dcm.wavelength_in_a, 0.6)
     RE(
         start_i24(
             zebra,
@@ -198,6 +203,9 @@ def test_start_i24_with_eiger(
             detector_stage,
             shutter,
             dummy_params_without_pp,
+            dcm,
+            mirrors,
+            eiger_beam_center,
             fake_dcid,
         )
     )
@@ -345,3 +353,91 @@ async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
     set_mock_value(pmac.scanstatus, 0)
     with pytest.raises(FailedStatus):
         RE(kickoff_and_complete_collection(pmac, dummy_params_without_pp))
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.kickoff_and_complete_collection"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.start_i24"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datasetsizei24"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.load_motion_program_data"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.get_chip_prog_values"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.call_nexgen"
+)
+async def test_main_fixed_target_plan(
+    fake_nexgen,
+    fake_dcid,
+    mock_get_chip_prog,
+    mock_motion_program,
+    fake_datasize,
+    mock_start,
+    mock_kickoff,
+    RE,
+    zebra,
+    pmac,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    eiger_beam_center,
+    dummy_params_without_pp,
+):
+    mock_get_chip_prog.return_value = MagicMock()
+    set_mock_value(dcm.wavelength_in_a, 0.6)
+    fake_datasize.return_value = 400
+    RE(
+        main_fixed_target_plan(
+            zebra,
+            pmac,
+            aperture,
+            backlight,
+            beamstop,
+            detector_stage,
+            shutter,
+            dcm,
+            mirrors,
+            eiger_beam_center,
+            dummy_params_without_pp,
+            fake_dcid,
+        )
+    )
+
+    mock_beam_x = get_mock_put(eiger_beam_center.beam_x)
+    mock_pmac_str = get_mock_put(pmac.pmac_string)
+    mock_zebra_input = get_mock_put(zebra.inputs.soft_in_2)
+
+    mock_beam_x.assert_called_once_with(1600.0, wait=True)  # Check beam center set
+    assert dummy_params_without_pp.total_num_images == 400
+    mock_get_chip_prog.assert_called_once_with(dummy_params_without_pp)
+    mock_motion_program.asset_called_once()
+    mock_start.assert_called_once()
+    mock_pmac_str.assert_called_once_with(
+        "!x0y0z0", wait=True
+    )  # Check pmac moved to start
+    assert fake_dcid.notify_start.call_count == 1
+    mock_zebra_input.assert_called_once_with(
+        "Yes", wait=True
+    )  # Check fast shutter open
+    fake_nexgen.assert_called_once_with(
+        mock_get_chip_prog.return_value,
+        dummy_params_without_pp,
+        0.6,
+        (1600.0, 1697.4),
+        None,
+    )
+    mock_kickoff.assert_called_once_with(
+        pmac, dummy_params_without_pp
+    )  # Check collection kick off

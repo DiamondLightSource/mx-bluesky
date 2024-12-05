@@ -1,14 +1,24 @@
 from time import sleep
 
 import bluesky.plan_stubs as bps
+from dodal.beamlines import i24
 from dodal.devices.i24.aperture import Aperture, AperturePositions
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_POS
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
+
+
+def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
+    if detector_in_use == "eiger":
+        return i24.eiger_beam_center()
+    else:
+        return i24.pilatus_beam_center()
 
 
 def setup_beamline_for_collection_plan(
@@ -41,6 +51,28 @@ def move_detector_stage_to_position_plan(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
     yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+
+
+def set_detector_beam_center_plan(
+    beam_center_device: DetectorBeamCenter,
+    detector_name: str,
+    group: str = "set_beamcenter",
+    wait: bool = True,
+):
+    """A small temporary plan to set up the beam center on the detector in use."""
+    # NOTE This will be removed once the detectors are using ophyd_async devices
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/62
+    SSX_LOGGER.debug(
+        f"Set beam center on {detector_name} detector: {BEAM_CENTER_POS[detector_name]}"
+    )
+    yield from bps.abs_set(
+        beam_center_device.beam_x, BEAM_CENTER_POS[detector_name][0], group=group
+    )
+    yield from bps.abs_set(
+        beam_center_device.beam_y, BEAM_CENTER_POS[detector_name][1], group=group
+    )
+    if wait:
+        yield from bps.wait(group=group)
 
 
 def modechange(action):
@@ -232,11 +264,6 @@ def pilatus(action, args_list):
     # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
-    SSX_LOGGER.warning("WARNING: Have you set beam X and Y?")
-    # 16 Fed 2022 last change DA
-    caput(pv.pilat_beamx, 1284.7)
-    caput(pv.pilat_beamy, 1308.6)
-    sleep(0.1)
 
     # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
     if action == "fastchip":
@@ -330,11 +357,8 @@ def eiger(action, args_list):
             SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    SSX_LOGGER.warning("WARNING: Have you set header info?")
     caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_omegaincr, 0.0)
-    caput(pv.eiger_beamx, 1600.0)
-    caput(pv.eiger_beamy, 1697.4)
     sleep(0.1)
     # Setup common to all collections ###
     caput(pv.eiger_filewriter, "No")

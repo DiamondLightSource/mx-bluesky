@@ -2,29 +2,26 @@ import datetime
 import json
 import math
 import os
-import re
 import subprocess
-import warnings
 from functools import lru_cache
+from typing import Literal
 
+import bluesky.plan_stubs as bps
 import requests
+from dodal.beamlines import i24
+from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.i24.dcm import DCM
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
-from mx_bluesky.beamlines.i24.serial.parameters import SSXType
-from mx_bluesky.beamlines.i24.serial.setup_beamline import (
-    Detector,
-    Eiger,
-    Pilatus,
-    caget,
-    cagetstring,
-    pv,
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    BeamSettings,
+    ExtruderParameters,
+    FixedTargetParameters,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    pass
-
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger, Pilatus
 
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
@@ -49,19 +46,54 @@ def get_auth_header() -> dict:
     return {"Authorization": "Bearer " + token}
 
 
-class DCID:
-    """
-    Interfaces with ISPyB to allow ssx DCID/synchweb interaction.
+def read_beam_info_from_hardware(
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center: DetectorBeamCenter,
+    detector_name: Literal["eiger", "pilatus"],
+):
+    """ Read the beam information from hardware.
 
     Args:
-        server: The URL for the bridge server, if not the default.
-        emit_errors:
-            If False, errors while interacting with the DCID server will
-            not be propagated to the caller. This decides if you want to
-            stop collection if you can't get a DCID
-        timeout: Length of time to wait for the DB server before giving up
-        ssx_type: The type of SSX experiment this is for
-        detector: The detector in use for current collection.
+        dcm (DCM): The decm device.
+        mirrors (FocusMirrorMode): The device describing the focus mirror mode settings.
+        beam_center (DetectorBeamCenter): A device to set and read the beam center on \
+            the detector.
+        detector_name (Literal["eiger", "pilatus"]): The detector currently in use.
+
+    Returns:
+        BeamSettings parameter model.
+    """
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    beamsize_x = yield from bps.rd(mirrors.beam_size_x)
+    beamsize_y = yield from bps.rd(mirrors.beam_size_y)
+    pixel_size = (
+        Eiger().pixel_size_mm if detector_name == "eiger" else Pilatus().pixel_size_mm
+    )
+    beam_center_x = yield from bps.rd(beam_center.beam_x)
+    beam_center_y = yield from bps.rd(beam_center.beam_y)
+    return BeamSettings(
+        wavelength_in_a=wavelength,
+        beam_size_in_um=(beamsize_x, beamsize_y),
+        beam_center_in_mm=(
+            beam_center_x * pixel_size[0],
+            beam_center_y * pixel_size[1],
+        ),
+    )
+
+
+class DCID:
+    """ Interfaces with ISPyB to allow ssx DCID/synchweb interaction.
+
+    Args:
+        server (str, optional): The URL for the bridge server, if not the default.
+        emit_errors (bool, optional): If False, errors while interacting with the DCID \
+            server will not be propagated to the caller. This decides if you want to \
+            stop collection if you can't get a DCID. Defaults to True.
+        timeout (float, optional): Length of time in s to wait for the DB server before \
+            giving up. Defaults to 10 s.
+        expt_parameters (ExtruderParameters | FixedTargetParameters): Collection \
+            parameters input by user.
 
 
     Attributes:
@@ -75,47 +107,44 @@ class DCID:
         server: str | None = None,
         emit_errors: bool = True,
         timeout: float = 10,
-        ssx_type: SSXType = SSXType.FIXED,
-        detector: Detector | Literal["eiger", "pilatus"] | None = None,
+        expt_params: ExtruderParameters | FixedTargetParameters,
     ):
+        self.parameters = expt_params
         self.detector: Detector
         # Handle case of string literal
-        if detector == "eiger":
-            self.detector = Eiger()
-        elif detector == "pilatus":
-            self.detector = Pilatus()
-        elif detector is None:
-            self.detector = Pilatus()
-            warnings.warn(
-                "Please pass detector= to DCID. Pilatus assumed, this will be removed in the future.",
-                UserWarning,
-                stacklevel=5,
-            )
+        match expt_params.detector_name:
+            case "eiger":
+                self.detector = Eiger()
+            case "pilatus":
+                self.detector = Pilatus()
 
         self.server = server or DEFAULT_ISPYB_SERVER
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.ssx_type = SSXType(ssx_type)
         self.dcid = None
 
     def generate_dcid(
         self,
-        visit: str,
+        beam_settings: BeamSettings,
         image_dir: str,
+        file_template: str,
         num_images: int,
-        exposure_time: float,
-        start_time: datetime.datetime | None = None,
         shots_per_position: int = 1,
-        pump_exposure_time: float | None = None,
-        pump_delay: float = 0,
-        pump_status: int = 0,
+        start_time: datetime.datetime | None = None,
+        pump_probe: bool = False,
     ):
         """Generate an ispyb DCID.
 
         Args:
-            visit: The name of the visit e.g. "mx12345-4"
-            image_dir: The location the images will be written
+            beam_settings (BeamSettings): Information about the beam read from hardware.
+            image_dir (str): The location the images will be written to.
+            num_images (int): Total number of images to be collected.
+            shots_per_position (int, optional): Number of exposures per position in a \
+                chip. Defaults to 1, which works for extruder.
+            start_time(datetime, optional): Collection start time. Defaults to None.
+            pump_probe (bool, optional): If True, a pump probe collection is running. \
+                Defaults to False.
         """
         try:
             if not start_time:
@@ -123,22 +152,18 @@ class DCID:
             elif not start_time.timetz:
                 start_time = start_time.astimezone()
 
-            # Gather data from the beamline
-            detector_distance = float(caget(self.detector.pv.detector_distance))
-            wavelength = float(caget(self.detector.pv.wavelength))
-            resolution = get_resolution(self.detector, detector_distance, wavelength)
-            beamsize_x, beamsize_y = get_beamsize()
-            transmission = float(caget(self.detector.pv.transmission)) * 100
-            xbeam, ybeam = get_beam_center(self.detector)
+            resolution = get_resolution(
+                self.detector,
+                self.parameters.detector_distance_mm,
+                beam_settings.wavelength_in_a,
+            )
+            beamsize_x, beamsize_y = beam_settings.beam_size_in_um
+            transmission = self.parameters.transmission * 100
+            xbeam, ybeam = beam_settings.beam_center_in_mm
 
             if isinstance(self.detector, Pilatus):
-                # Mirror the construction that the PPU does
-                fileTemplate = get_pilatus_filename_template_from_pvs()
                 startImageNumber = 0
             elif isinstance(self.detector, Eiger):
-                # Eiger base filename is directly written to the PV
-                # Nexgen then uses this to write the .nxs file
-                fileTemplate = str(cagetstring(self.detector.pv.file_name)) + ".nxs"
                 startImageNumber = 1
             else:
                 raise ValueError("Unknown detector:", self.detector)
@@ -147,48 +172,48 @@ class DCID:
                 {
                     "name": "Xray probe",
                     "offset": 0,
-                    "duration": exposure_time,
-                    "period": exposure_time,
+                    "duration": self.parameters.exposure_time_s,
+                    "period": self.parameters.exposure_time_s,
                     "repetition": shots_per_position,
                     "eventType": "XrayDetection",
                 }
             ]
-            if pump_status > 0:
-                # https://confluence.diamond.ac.uk/pages/viewpage.action?pageId=131238829
-                # https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets
-                # pump_status = 0: no pump probe
-                # pump_status = 1: pump then probe
-                # pump_status = 2: pump within probe
-                # pump_status = 3-7: different EAVA modes (i.e. also pump then probe)
-                if pump_status != 2 and self.ssx_type is SSXType.FIXED:
-                    # Pump status could be 1 for extruder but not have this.
-                    # pump then probe - pump_delay corresponds to time *before* first image
-                    pump_delay = -pump_delay
+            if pump_probe:
+                match self.parameters:
+                    case FixedTargetParameters():
+                        # pump then probe - pump_delay corresponds to time *before* first image
+                        pump_delay = (
+                            -self.parameters.laser_delay_s
+                            if self.parameters.pump_repeat
+                            is not PumpProbeSetting.Short2
+                            else self.parameters.laser_delay_s
+                        )
+                    case ExtruderParameters():
+                        pump_delay = self.parameters.laser_delay_s
                 events.append(
                     {
                         "name": "Laser probe",
                         "offset": pump_delay,
-                        "duration": pump_exposure_time,
-                        # "period": None,
+                        "duration": self.parameters.laser_dwell_s,
                         "repetition": 1,
                         "eventType": "LaserExcitation",
                     },
                 )
 
             data = {
-                "detectorDistance": float(detector_distance),
+                "detectorDistance": self.parameters.detector_distance_mm,
                 "detectorId": self.detector.id,
-                "exposureTime": float(exposure_time),
-                "fileTemplate": fileTemplate,
-                "imageDirectory": str(image_dir),
-                "numberOfImages": int(num_images),
-                "resolution": float(resolution),
+                "exposureTime": self.parameters.exposure_time_s,
+                "fileTemplate": file_template,
+                "imageDirectory": image_dir,
+                "numberOfImages": num_images,
+                "resolution": resolution,
                 "startImageNumber": startImageNumber,
                 "startTime": start_time.isoformat(),
-                "transmission": float(transmission),
-                "visit": visit,
-                "wavelength": float(wavelength),
-                "group": {"experimentType": self.ssx_type.value},
+                "transmission": transmission,
+                "visit": self.parameters.visit.name,
+                "wavelength": beam_settings.wavelength_in_a,
+                "group": {"experimentType": self.parameters.ispyb_experiment_type},
                 "xBeam": xbeam,
                 "yBeam": ybeam,
                 "ssx": {
@@ -334,84 +359,33 @@ class DCID:
             SSX_LOGGER.warning("Error completing DCID: %s (%s)", e, resp_str)
 
 
-def get_pilatus_filename_template_from_pvs() -> str:
+def get_pilatus_filename_template_from_device():
     """
-    Get the template file path by querying the detector PVs.
-
-    Returns: A template string, with the image numbers replaced with '#'
-    """
-
-    filename = cagetstring(pv.pilat_filename)
-    filename_template = cagetstring(pv.pilat_filetemplate)
-    file_number = int(caget(pv.pilat_filenumber))
-    # Exploit fact that passing negative numbers will put the - before the 0's
-    expected_filename = str(filename_template % (filename, f"{file_number:05d}_", -9))
-    # Now, find the -09 part of this
-    numberpart = re.search(r"(-0+9)", expected_filename)
-    # Make sure this was the only one
-    if numberpart is not None:
-        assert re.search(r"(-0+9)", expected_filename[numberpart.end() :]) is None
-        template_fill = "#" * len(numberpart.group(0))
-        return (
-            expected_filename[: numberpart.start()]
-            + template_fill
-            + expected_filename[numberpart.end() :]
-        )
-    else:
-        raise ValueError(f"{filename=} did not contain the numbers for templating")
-
-
-def get_beamsize() -> tuple[float | None, float | None]:
-    """
-    Read the PVs to get the current beamsize.
+    Get the template file path by querying the detector PVs, mirror the construction \
+    that the PPU does.
 
     Returns:
-        A tuple (x, y) of beam size (in µm). These values can be 'None'
-        if the focus mode was unrecognised.
+        A template string, with the image numbers replaced with '#'
     """
-    # These I24 modes are from GDA
-    focus_modes = {
-        "focus10": ("7x7", 7, 7),
-        "focus20d": ("20x20", 20, 20),
-        "focus30d": ("30x30", 30, 30),
-        "focus50d": ("50x50", 50, 50),
-        "focus1050d": ("10x50", 10, 50),
-        "focus5010d": ("50x10", 50, 10),
-        "focus3010d": ("30x10", 30, 10),
-    }
-    v_mode = caget("BL24I-OP-MFM-01:G0:TARGETAPPLY")
-    h_mode = caget("BL24I-OP-MFM-01:G1:TARGETAPPLY")
-    # Validate these and note an error otherwise
-    if not v_mode.startswith("VMFM") or v_mode[4:] not in focus_modes:
-        SSX_LOGGER.error("Unrecognised vertical beam mode %s", v_mode)
-    if not h_mode.startswith("HMFM") or h_mode[4:] not in focus_modes:
-        SSX_LOGGER.error("Unrecognised horizontal beam mode %s", h_mode)
-    _, h, _ = focus_modes.get(h_mode[4:], (None, None, None))
-    _, _, v = focus_modes.get(v_mode[4:], (None, None, None))
+    pilatus_metadata: PilatusMetadata = i24.pilatus_metadata()
 
-    return (h, v)
+    filename_template = yield from bps.rd(pilatus_metadata.filename_template)
+    return filename_template
 
 
 def get_resolution(detector: Detector, distance: float, wavelength: float) -> float:
-    """
-    Calculate the inscribed resolution for detector.
+    """ Calculate the inscribed resolution for detector.
 
-    This assumes perfectly centered beam as I don't know where to
-    extract the beam position parameters yet.
+    This assumes perfectly centered beam as I don't know where to extract the beam \
+    position parameters yet.
 
     Args:
-        distance: Distance to detector (mm)
-        wavelength: Beam wavelength (Å)
+        detector (Detector): Detector instance, Eiger() or Pilatus().
+        distance (float): Distance to detector, in mm.
+        wavelength (float): Beam wavelength, in Å.
 
     Returns:
-        Maximum resolution (Å)
+        Maximum resolution, in Å.
     """
     width = detector.image_size_mm[0]
     return round(wavelength / (2 * math.sin(math.atan(width / (2 * distance)) / 2)), 2)
-
-
-def get_beam_center(detector: Detector) -> tuple[float, float]:
-    """Get the detector beam center, in mm"""
-    beamX = float(caget(detector.pv.beamx)) * detector.pixel_size_mm[0]
-    beamY = float(caget(detector.pv.beamy)) * detector.pixel_size_mm[1]
-    return (beamX, beamY)
