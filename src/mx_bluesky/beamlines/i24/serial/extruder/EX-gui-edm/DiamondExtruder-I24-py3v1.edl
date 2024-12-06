@@ -370,7 +370,7 @@ font "arial-medium-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan '\{\"zebra\":\"zebra\",\"aperture\":\"aperture\",\"backlight\":\"backlight\",\"beamstop\":\"beamstop\",\"detector_stage\":\"detector_motion\",\"shutter\":\"shutter\",\"dcm\":\"dcm\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan '\{\"zebra\":\"zebra\",\"aperture\":\"aperture\",\"backlight\":\"backlight\",\"beamstop\":\"beamstop\",\"detector_stage\":\"detector_motion\",\"shutter\":\"shutter\",\"dcm\":\"dcm\",\"mirrors\":\"focus_mirrors\",\"attenuator\":\"attenuator\"\}'"
 }
 endObjectProperties
 

@@ -61,7 +61,9 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
 )
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
 def test_write_parameter_file(
+    fake_rd,
     fake_mkdir,
     fake_log,
     mock_read_visit,
@@ -76,12 +78,14 @@ def test_write_parameter_file(
         yield from bps.null()
         return value
 
+    mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
+    fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
         mock_open(),
     ):
-        RE(write_parameter_file(detector_stage))
+        RE(write_parameter_file(detector_stage, mock_attenuator))
 
     fake_mkdir.assert_called_once()
     assert fake_caget.call_count == 12

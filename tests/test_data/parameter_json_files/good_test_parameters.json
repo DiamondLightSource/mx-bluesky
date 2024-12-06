@@ -16,14 +16,13 @@
     "x_steps": 40,
     "y_steps": 20,
     "z_steps": 10,
-    "x_step_size_um": 0.1,
-    "y_step_size_um": 0.1,
-    "z_step_size_um": 0.1,
+    "x_step_size_um": 100,
+    "y_step_size_um": 100,
+    "z_step_size_um": 100,
     "x_start_um": 0.0,
     "y_start_um": 0.0,
     "y2_start_um": 0.0,
     "z_start_um": 0.0,
     "z2_start_um": 0.0,
     "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/"
-    
 }

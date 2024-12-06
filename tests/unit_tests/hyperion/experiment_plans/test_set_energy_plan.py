@@ -35,7 +35,9 @@ def test_set_energy(
     sim_run_engine,
     set_energy_composite,
 ):
-    messages = sim_run_engine.simulate_plan(set_energy_plan(11.1, set_energy_composite))
+    messages = sim_run_engine.simulate_plan(
+        set_energy_plan(11100, set_energy_composite)
+    )
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
@@ -74,3 +76,16 @@ def test_set_energy(
         and msg.obj.name == "attenuator"
         and msg.args == (1.0,),
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.set_energy_plan.dcm_pitch_roll_mirror_adjuster.adjust_dcm_pitch_roll_vfm_from_lut",
+    return_value=iter([Msg("adjust_dcm_pitch_roll_vfm_from_lut")]),
+)
+def test_set_energy_does_nothing_if_no_energy_specified(
+    mock_dcm_pra,
+    sim_run_engine,
+    set_energy_composite,
+):
+    messages = sim_run_engine.simulate_plan(set_energy_plan(None, set_energy_composite))
+    assert not messages

@@ -10,18 +10,25 @@ from time import sleep
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
+    get_pilatus_filename_template_from_device,
+    read_beam_info_from_hardware,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
@@ -34,7 +41,6 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import (
     ChipDescription,
     FixedTargetParameters,
-    SSXType,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     LITEMAP_PATH,
@@ -77,7 +83,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
     Returns:
         The estimated collection time, in s.
     """
-    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 2
+    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 600
     pump_setting = parameters.pump_repeat
     collection_time = parameters.total_num_images * parameters.exposure_time_s
     if pump_setting in [
@@ -97,7 +103,7 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
         )
         if pump_setting == PumpProbeSetting.Medium1:
             # Long delay between pump and probe, with fast shutter opening and closing.
-            timeout = timeout + SHUTTER_OPEN_TIME
+            timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
 
 
@@ -234,8 +240,6 @@ def load_motion_program_data(
             SSX_LOGGER.info(f"Map type is None, setting program prefix to {prefix}")
         elif map_type == MappingType.Lite:
             prefix = 12
-        elif map_type == MappingType.Full:
-            prefix = 13
         else:
             SSX_LOGGER.warning(f"Unknown Map Type, map_type = {map_type}")
             return
@@ -301,14 +305,6 @@ def get_prog_num(
         SSX_LOGGER.info(f"Map type: {str(map_type)}")
         SSX_LOGGER.info("Program number: 12")
         return 12
-    if map_type == MappingType.Full:
-        # TODO See https://github.com/DiamondLightSource/mx-bluesky/issues/515
-        SSX_LOGGER.info(f"Map type: {str(map_type)}")
-        SSX_LOGGER.info("Program number: 13")
-        # TODO once reinstated return 13
-        msg = "Full mapping is broken and currently disabled."
-        SSX_LOGGER.error(msg)
-        raise ValueError(msg)
 
 
 @log_on_entry
@@ -352,14 +348,6 @@ def datasetsizei24(
         total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
         SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
 
-    elif map_type == MappingType.Full:
-        SSX_LOGGER.error("Not Set Up For Full Mapping")
-        raise ValueError("The beamline is currently not set for Full Mapping.")
-
-    else:
-        SSX_LOGGER.warning(f"Unknown Map Type, map_type = {str(map_type)}")
-        raise ValueError("Unknown map type")
-
     SSX_LOGGER.info("Set PV to calculated number of images.")
     caput(pv.me14e_gp10, int(total_numb_imgs))
 
@@ -375,6 +363,9 @@ def start_i24(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     dcid: DCID,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
@@ -382,6 +373,9 @@ def start_i24(
     Returns the start_time.
     """
 
+    beam_settings = yield from read_beam_info_from_hardware(
+        dcm, mirrors, beam_center_device, parameters.detector_name
+    )
     SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
@@ -431,20 +425,23 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = yield from get_pilatus_filename_template_from_device()
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            beam_settings=beam_settings,
             image_dir=filepath,
-            start_time=start_time,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,
@@ -467,7 +464,7 @@ def start_i24(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True)
+        Path(filepath).mkdir(parents=True, exist_ok=True)
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -490,20 +487,23 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = f"{parameters.filename}.nxs"
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            beam_settings=beam_settings,
             image_dir=filepath,
-            start_time=start_time,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Zebra.")
-        shutter_time_offset = SHUTTER_OPEN_TIME if PumpProbeSetting.Medium1 else 0.0
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
         yield from setup_zebra_for_fastchip_plan(
             zebra,
             parameters.detector_name,
@@ -594,10 +594,16 @@ def main_fixed_target_plan(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
+
+    yield from sup.set_detector_beam_center_plan(
+        beam_center_device, parameters.detector_name
+    )
 
     SSX_LOGGER.info("Getting Program Dictionary")
 
@@ -621,7 +627,17 @@ def main_fixed_target_plan(
     )
 
     start_time = yield from start_i24(
-        zebra, aperture, backlight, beamstop, detector_stage, shutter, parameters, dcid
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        parameters,
+        dcm,
+        mirrors,
+        beam_center_device,
+        dcid,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -636,14 +652,13 @@ def main_fixed_target_plan(
     SSX_LOGGER.debug("Notify DCID of the start of the collection.")
     dcid.notify_start()
 
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
     if parameters.detector_name == "eiger":
+        wavelength = yield from bps.rd(dcm.wavelength_in_a)
+        beam_x = yield from bps.rd(beam_center_device.beam_x)
+        beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
         call_nexgen(
-            chip_prog_dict,
-            start_time,
-            parameters,
-            wavelength,
+            chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 
     yield from kickoff_and_complete_collection(pmac, parameters)
@@ -731,9 +746,11 @@ def run_fixed_target_plan(
     detector_stage: DetectorMotion = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     # in the first instance, write params here
-    yield from write_parameter_file(detector_stage)
+    yield from write_parameter_file(detector_stage, attenuator)
 
     SSX_LOGGER.info("Getting parameters from file.")
     parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
@@ -756,12 +773,10 @@ def run_fixed_target_plan(
         """
     SSX_LOGGER.info(log_msg)
 
+    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+
     # DCID instance - do not create yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.FIXED,
-        detector=parameters.detector_name,
-    )
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
@@ -773,6 +788,8 @@ def run_fixed_target_plan(
             detector_stage,
             shutter,
             dcm,
+            mirrors,
+            beam_center_device,
             parameters,
             dcid,
         ),

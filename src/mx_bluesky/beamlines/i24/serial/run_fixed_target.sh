@@ -15,11 +15,12 @@ edm_path=$1
 # Export env variable for the stages edm to work properly
 export EDMDATAFILES="/dls_sw/prod/R3.14.12.3/support/motor/6-7-1dls14/motorApp/opi/edl"
 
+# Get the directory of this script
+current=$( realpath "$( dirname "$0" )" )
+
+
 if [[ $NO_PROCESERV_TEST == true ]]; then
     echo "Start the blueapi sever"
-
-    # Get the directory of this script
-    current=$( realpath "$( dirname "$0" )" )
 
     # Run script to start blueapi serve
     . $current/start_blueapi.sh

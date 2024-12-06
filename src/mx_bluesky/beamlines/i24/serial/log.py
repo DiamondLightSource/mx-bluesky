@@ -6,8 +6,8 @@ from os import environ
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from blueapi.core import MsgGenerator
 from bluesky.log import logger as bluesky_logger
+from bluesky.utils import MsgGenerator
 from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
 from dodal.log import LOGGER as dodal_logger
 
