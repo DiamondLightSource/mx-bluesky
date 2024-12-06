@@ -138,10 +138,14 @@ class FixedTargetParameters(SerialAndLaserExperiment):
         match self.map_type:
             case MappingType.NoMap:
                 if self.chip.chip_type is ChipType.Custom:
-                    num_images = self.chip.x_num_steps * self.chip.y_num_steps
+                    num_images = (
+                        self.chip.x_num_steps
+                        * self.chip.y_num_steps
+                        * self.num_exposures
+                    )
                 else:
                     chip_format = self.chip.chip_format[:4]
-                    num_images = int(np.prod(chip_format))
+                    num_images = int(np.prod(chip_format) * self.num_exposures)
             case MappingType.Lite:
                 chip_format = self.chip.chip_format[2:4]
                 block_count = len(self.chip_map)  # type: ignore

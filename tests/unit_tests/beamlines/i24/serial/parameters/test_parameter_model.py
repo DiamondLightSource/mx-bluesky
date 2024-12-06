@@ -84,7 +84,7 @@ def test_chip_params_with_no_mapping_for_custom_chip():
         "detector_distance_mm": 100,
         "detector_name": "eiger",
         "transmission": 1.0,
-        "num_exposures": 1,
+        "num_exposures": 2,
         "chip": ChipDescription(**custom_defaults),
         "map_type": 0,
         "pump_repeat": 0,
@@ -92,4 +92,4 @@ def test_chip_params_with_no_mapping_for_custom_chip():
         "chip_map": [],
     }
     params = FixedTargetParameters(**custom_chip)
-    assert params.total_num_images == 15
+    assert params.total_num_images == 30
