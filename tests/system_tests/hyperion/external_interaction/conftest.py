@@ -69,9 +69,9 @@ TEST_RESULT_MEDIUM = [
     {
         "centre_of_mass": [1, 2, 3],
         "max_voxel": [2, 4, 5],
-        "max_count": 105062,
+        "max_count": 50000,
         "n_voxels": 35,
-        "total_count": 2387574,
+        "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
     }
 ]
@@ -79,10 +79,20 @@ TEST_RESULT_SMALL = [
     {
         "centre_of_mass": [1, 2, 3],
         "max_voxel": [1, 2, 3],
-        "max_count": 105062,
+        "max_count": 1000,
         "n_voxels": 35,
-        "total_count": 1387574,
+        "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
     }
 ]
 
