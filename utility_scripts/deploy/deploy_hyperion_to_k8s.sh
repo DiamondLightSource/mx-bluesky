@@ -28,6 +28,10 @@ for option in "$@"; do
             LOGIN=false
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options] <release>"
@@ -40,11 +44,12 @@ the container, NOT the directory that you built the container image from.
 
   --help                  This help
   --appVersion=version    Version of the image to fetch from the repository otherwise it is deduced
-                          from the setuptools_scm
+                          from the setuptools_scm. Must be in the format x.y.z
   -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline
   --checkout-to-prod      Checkout source folders to the production folder using deploy_mx_bluesky.py
   --dev                   Install to a development kubernetes cluster (assumes project checked out under /home)
                           (default cluster is argus in user namespace)
+  --dry-run               Do everything but don't do the final deploy to k8s 
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
   --repository=REPOSITORY Override the repository to fetch the image from
 EOM
@@ -103,7 +108,7 @@ else
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
   HYPERION_BASENAME=$(basename $HYPERION_BASE)
-  CHECKED_OUT_VERSION=${HYPERION_BASENAME#mx_bluesky_}
+  CHECKED_OUT_VERSION=${HYPERION_BASENAME#mx-bluesky_v}
 fi
 
 
@@ -149,7 +154,9 @@ echo "Checked out version that will be bind-mounted in $PROJECTDIR is $CHECKED_O
 echo "Container image version that will be pulled is $APP_VERSION"
 
 if [[ $APP_VERSION != $CHECKED_OUT_VERSION ]]; then
+  echo "*****************************************************************"
   echo "WARNING: Checked out version and container image versions differ!"
+  echo "*****************************************************************"
 fi
 
 if [[ -n $DEV ]]; then
@@ -181,4 +188,6 @@ if [[ $LOGIN = true ]]; then
   module load $CLUSTER
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
-helm upgrade --install $HELM_OPTIONS $RELEASE hyperion-0.0.1.tgz
+if [[ -z $DRY_RUN ]]; then
+  helm upgrade --install $HELM_OPTIONS $RELEASE hyperion-0.0.1.tgz
+fi
