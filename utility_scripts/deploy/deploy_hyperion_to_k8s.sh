@@ -125,8 +125,8 @@ ensure_version_py() {
     module load python/3.11
     python -m venv $PROJECTDIR/.venv
     . $PROJECTDIR/.venv/bin/activate
-    pip install setuptools_scm
   fi
+  pip install setuptools_scm
 }
 
 app_version() {
