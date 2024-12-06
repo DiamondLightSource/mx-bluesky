@@ -49,7 +49,8 @@ def get_chip_format(chip_type: ChipType) -> ChipDescription:
 
 
 def get_chip_map() -> list[int]:
-    """Return a list of oxford blocks to be collected when using lite mapping."""
+    """Return a list of blocks (the 'chip map') to be collected on an Oxford type chip \
+        when using lite mapping."""
     chipmap = []
     for n, block_pv in enumerate(OXFORD_BLOCKS_PVS):
         block_val = int(caget(block_pv))

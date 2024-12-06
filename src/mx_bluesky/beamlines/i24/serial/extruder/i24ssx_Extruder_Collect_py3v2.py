@@ -136,7 +136,18 @@ def enter_hutch(
 
 @log_on_entry
 def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
-    """Writes a json parameter file that can later be parsed by the model."""
+    """ Read the parameters from user input and create the parameter model for an \
+        extruder collection.
+
+    Args:
+        detector_stage (DetectorMotion): The detector stage device.
+        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+            transmission value.
+
+    Returns:
+        ExtruderParameters: Parameter model for extruder collections
+
+    """
     SSX_LOGGER.info("Creating parameter model from input.")
 
     det_type = yield from get_detector_type(detector_stage)

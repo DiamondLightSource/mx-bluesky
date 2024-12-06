@@ -120,6 +120,18 @@ def read_parameters(
     detector_stage: DetectorMotion,
     attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
+    """ Read the parameters from user input and create the parameter model for a fixed \
+        target collection.
+
+    Args:
+        detector_stage (DetectorMotion): The detector stage device.
+        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+            transmission value.
+
+    Returns:
+        FixedTargetParameters: Parameter model for fixed target collections
+
+    """
     SSX_LOGGER.info("Creating parameter model from input.")
 
     filename = caget(pv.me14e_chip_name)
@@ -246,6 +258,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         pvar_str = f"{pvar}={value}"
         SSX_LOGGER.debug(f"Set {pvar_str} for block {block}")
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
+        # Wait for PMAC to be done processing PVAR string
         sleep(0.02)
     SSX_LOGGER.debug("Upload parameters done.")
 
