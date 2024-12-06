@@ -28,6 +28,10 @@ for option in "$@"; do
             LOGIN=false
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options] <release>"
@@ -40,11 +44,12 @@ the container, NOT the directory that you built the container image from.
 
   --help                  This help
   --appVersion=version    Version of the image to fetch from the repository otherwise it is deduced
-                          from the setuptools_scm
+                          from the setuptools_scm. Must be in the format x.y.z
   -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline
   --checkout-to-prod      Checkout source folders to the production folder using deploy_mx_bluesky.py
   --dev                   Install to a development kubernetes cluster (assumes project checked out under /home)
                           (default cluster is argus in user namespace)
+  --dry-run               Do everything but don't do the final deploy to k8s 
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
   --repository=REPOSITORY Override the repository to fetch the image from
 EOM
@@ -98,12 +103,12 @@ else
     fi
   fi
 
-  NEW_PROJECTDIR=$HYPERION_BASE/hyperion
+  NEW_PROJECTDIR=$HYPERION_BASE/mx-bluesky
   echo "Changing directory to $NEW_PROJECTDIR..."
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
   HYPERION_BASENAME=$(basename $HYPERION_BASE)
-  CHECKED_OUT_VERSION=${HYPERION_BASENAME#mx_bluesky_}
+  CHECKED_OUT_VERSION=${HYPERION_BASENAME#mx-bluesky_v}
 fi
 
 
@@ -125,8 +130,8 @@ ensure_version_py() {
     module load python/3.11
     python -m venv $PROJECTDIR/.venv
     . $PROJECTDIR/.venv/bin/activate
-    pip install setuptools_scm
   fi
+  pip install setuptools_scm
 }
 
 app_version() {
@@ -149,7 +154,9 @@ echo "Checked out version that will be bind-mounted in $PROJECTDIR is $CHECKED_O
 echo "Container image version that will be pulled is $APP_VERSION"
 
 if [[ $APP_VERSION != $CHECKED_OUT_VERSION ]]; then
+  echo "*****************************************************************"
   echo "WARNING: Checked out version and container image versions differ!"
+  echo "*****************************************************************"
 fi
 
 if [[ -n $DEV ]]; then
@@ -166,10 +173,10 @@ hyperion.externalHostname=test-hyperion.diamond.ac.uk "
   mkdir -p $PROJECTDIR/tmp/data
   DEPLOYMENT_DIR=$PROJECTDIR
 else
-  DEPLOYMENT_DIR=/dls_sw/i03/software/bluesky/mx_bluesky_${APP_VERSION}/hyperion
+  DEPLOYMENT_DIR=/dls_sw/i03/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
 fi
 
-HELM_OPTIONS+="--set hyperion.appVersion=$APP_VERSION,\
+HELM_OPTIONS+="--set hyperion.appVersion=v$APP_VERSION,\
 hyperion.projectDir=$DEPLOYMENT_DIR,\
 dodal.projectDir=$DEPLOYMENT_DIR/../dodal "
 
@@ -181,4 +188,6 @@ if [[ $LOGIN = true ]]; then
   module load $CLUSTER
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
-helm upgrade --install $HELM_OPTIONS $RELEASE hyperion-0.0.1.tgz
+if [[ -z $DRY_RUN ]]; then
+  helm upgrade --install $HELM_OPTIONS $RELEASE hyperion-0.0.1.tgz
+fi
