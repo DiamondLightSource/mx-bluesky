@@ -33,6 +33,6 @@ RUN git restore .
 RUN rm src/mx_bluesky/_version.py
 RUN pip install --no-cache-dir --no-compile --no-deps -e .
 
-ENTRYPOINT /app/hyperion/utility_scripts/docker/entrypoint.sh
+ENTRYPOINT ["/app/hyperion/utility_scripts/docker/entrypoint.sh"]
 
 EXPOSE 5005

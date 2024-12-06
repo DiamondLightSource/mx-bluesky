@@ -5,6 +5,7 @@ import pytest
 from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
     BearerAuth,
+    BLSampleStatus,
     ExpeyeInteraction,
     _get_base_url_and_token,
 )
@@ -26,7 +27,7 @@ def test_when_start_load_called_then_correct_expected_url_posted_to_with_expecte
     mock_post.assert_called_once()
     assert (
         mock_post.call_args.args[0]
-        == "http://blah/core/proposals/test/sessions/3/robot-actions"
+        == "http://blah/proposals/test/sessions/3/robot-actions"
     )
     expected_data = {
         "startTimestamp": ANY,
@@ -68,13 +69,14 @@ def test_given_server_does_not_respond_when_start_load_called_then_error(mock_po
 
 @patch("mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store.patch")
 def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
+    # mocks HTTP PATCH
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
     expeye_interactor.end_load(3, "success", "")
 
     mock_patch.assert_called_once()
-    assert mock_patch.call_args.args[0] == "http://blah/core/robot-actions/3"
+    assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
     expected_data = {
         "endTimestamp": ANY,
         "status": "SUCCESS",
@@ -91,7 +93,7 @@ def test_when_end_load_called_with_failure_then_correct_expected_url_posted_to_w
     expeye_interactor.end_load(3, "fail", "bad")
 
     mock_patch.assert_called_once()
-    assert mock_patch.call_args.args[0] == "http://blah/core/robot-actions/3"
+    assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
     expected_data = {
         "endTimestamp": ANY,
         "status": "ERROR",
@@ -130,10 +132,22 @@ def test_when_update_barcode_called_with_success_then_correct_expected_url_poste
     )
 
     mock_patch.assert_called_once()
-    assert mock_patch.call_args.args[0] == "http://blah/core/robot-actions/3"
+    assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
     expected_data = {
         "sampleBarcode": "test",
         "xtalSnapshotBefore": "/tmp/before.jpg",
         "xtalSnapshotAfter": "/tmp/after.jpg",
     }
     assert mock_patch.call_args.kwargs["json"] == expected_data
+
+
+@patch("mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store.patch")
+def test_update_sample_status(
+    mock_patch,
+):
+    expeye = ExpeyeInteraction()
+    expected_json = {"blSampleStatus": "LOADED"}
+    expeye.update_sample_status(12345, BLSampleStatus.LOADED)
+    mock_patch.assert_called_with(
+        "http://blah/samples/12345", auth=ANY, json=expected_json
+    )

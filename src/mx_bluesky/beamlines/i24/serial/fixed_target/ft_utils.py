@@ -12,7 +12,6 @@ from enum import Enum, IntEnum
 class MappingType(IntEnum):
     NoMap = 0
     Lite = 1
-    Full = 2
 
     def __str__(self) -> str:
         """Returns the mapping."""

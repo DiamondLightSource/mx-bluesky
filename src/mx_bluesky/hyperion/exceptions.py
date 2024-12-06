@@ -13,7 +13,19 @@ class WarningException(Exception):
     pass
 
 
+class SampleException(WarningException):
+    """An exception which identifies an issue relating to the sample."""
+
+    pass
+
+
 T = TypeVar("T")
+
+
+class CrystalNotFoundException(SampleException):
+    """Raised if grid detection completed normally but no crystal was found."""
+
+    pass
 
 
 def catch_exception_and_warn(
@@ -36,7 +48,7 @@ def catch_exception_and_warn(
 
     def warn_if_exception_matches(exception: Exception):
         if isinstance(exception, exception_to_catch):
-            raise WarningException(str(exception))
+            raise SampleException(str(exception)) from exception
         yield from null()
 
     return (

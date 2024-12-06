@@ -5,7 +5,6 @@ This version changed to python3 March2020 by RLO
 
 import json
 import re
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -14,25 +13,15 @@ from time import sleep
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from blueapi.core import MsgGenerator
-from dodal.beamlines import i24
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
 
-from mx_bluesky.beamlines.i24.serial.fixed_target import (
-    i24ssx_Chip_Mapping_py3v1 as mapping,
-)
-from mx_bluesky.beamlines.i24.serial.fixed_target import (
-    i24ssx_Chip_StartUp_py3v1 as startup,
-)
-from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
-    ChipType,
-    Fiducials,
-    MappingType,
-)
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, Fiducials
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
@@ -41,7 +30,6 @@ from mx_bluesky.beamlines.i24.serial.log import (
 from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     CS_FILES_PATH,
-    FULLMAP_PATH,
     LITEMAP_PATH,
     PARAM_FILE_NAME,
     PARAM_FILE_PATH_FT,
@@ -106,6 +94,9 @@ def initialise_stages(
     sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
+        if i == 100:
+            # Do not clear visit PV
+            continue
         pvar = "ME14E-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
@@ -118,6 +109,7 @@ def initialise_stages(
 @log_on_entry
 def write_parameter_file(
     detector_stage: DetectorMotion,
+    attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     param_path: Path = PARAM_FILE_PATH_FT
     # Create directory if it doesn't yet exist.
@@ -146,6 +138,8 @@ def write_parameter_file(
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
+    transmission = yield from bps.rd(attenuator.actual_transmission)
+
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": caget(pv.me14e_filepath),
@@ -154,12 +148,13 @@ def write_parameter_file(
         "detector_distance_mm": caget(pv.me14e_dcdetdist),
         "detector_name": str(det_type),
         "num_exposures": int(caget(NUM_EXPOSURES_PV)),
-        "chip": chip_params.dict(),
+        "transmission": transmission,
+        "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
-        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else None,
-        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else None,
+        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
+        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
         if pump_repeat != 0
         else None,
@@ -171,11 +166,6 @@ def write_parameter_file(
     SSX_LOGGER.info("Information written to file \n")
     SSX_LOGGER.info(pformat(params_dict))
 
-    if map_type == MappingType.Full:
-        # This step creates some header files (.addr, .spec), containing the parameters,
-        # that are only needed when full mapping is in use.
-        SSX_LOGGER.info("Full mapping in use. Running start up now.")
-        startup.run()
     yield from bps.null()
 
 
@@ -239,11 +229,11 @@ def save_screen_map() -> MsgGenerator:
     with open(litemap_path / "currentchip.map", "w") as f:
         SSX_LOGGER.debug("Printing only blocks with block_val == 1")
         for x in range(1, 82):
-            block_str = "ME14E-MO-IOC-01:GP%i" % (x + 10)
+            block_str = f"ME14E-MO-IOC-01:GP{x + 10:d}"
             block_val = int(caget(block_str))
             if block_val == 1:
-                SSX_LOGGER.info("%s %d" % (block_str, block_val))
-            line = "%02dstatus    P3%02d1 \t%s\n" % (x, x, block_val)
+                SSX_LOGGER.info(f"{block_str} {block_val:d}")
+            line = f"{x:02d}status    P3{x:02d}1 \t{block_val}\n"
             f.write(line)
     yield from bps.null()
 
@@ -283,29 +273,6 @@ def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
 
     SSX_LOGGER.warning("Automatic Setting Mapping Type to Lite has been disabled")
     SSX_LOGGER.debug("Upload parameters done.")
-    yield from bps.null()
-
-
-@log_on_entry
-def upload_full(pmac: PMAC | None = None) -> MsgGenerator:
-    if not pmac:
-        pmac = i24.pmac()
-
-    map_file: Path = FULLMAP_PATH / "currentchip.full"
-    if not map_file.exists():
-        raise FileNotFoundError(f"The file {map_file} has not yet been created")
-    with open(map_file) as fh:
-        f = fh.readlines()
-
-    for _i in range(len(f) // 2):
-        pmac_list = []
-        for _j in range(2):
-            pmac_list.append(f.pop(0).rstrip("\n"))
-        writeline = " ".join(pmac_list)
-        SSX_LOGGER.info(f"{writeline}")
-        yield from bps.abs_set(pmac.pmac_string, writeline, wait=True)
-        yield from bps.sleep(0.02)
-    SSX_LOGGER.debug("Upload fullmap done")
     yield from bps.null()
 
 
@@ -553,7 +520,7 @@ def load_lite_map() -> MsgGenerator:
                     break
                 button_name = str(row) + str(column)
                 lab_num = x * 8 + z
-                label = "%02.d" % (lab_num + 1)
+                label = f"{lab_num + 1:02d}"
                 btn_names[button_name] = label
         block_dict = btn_names
     else:
@@ -573,26 +540,6 @@ def load_lite_map() -> MsgGenerator:
         pvar = "ME14E-MO-IOC-01:GP" + str(int(block_num) + 10)
         SSX_LOGGER.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
     SSX_LOGGER.debug("Load lite map done")
-    yield from bps.null()
-
-
-@log_on_entry
-def load_full_map() -> MsgGenerator:
-    from matplotlib import pyplot as plt
-
-    params = startup.read_parameter_file()
-
-    fullmap_fid = FULLMAP_PATH / f"{caget(MAP_FILEPATH_PV)}.spec"
-    SSX_LOGGER.info(f"Opening {fullmap_fid}")
-    mapping.plot_file(plt, fullmap_fid, params.chip.chip_type.value)
-    mapping.convert_chip_to_hex(fullmap_fid, params.chip.chip_type.value)
-    shutil.copy2(fullmap_fid.with_suffix(".full"), FULLMAP_PATH / "currentchip.full")
-    SSX_LOGGER.info(
-        "Copying {} to {}".format(
-            fullmap_fid.with_suffix(".full"), FULLMAP_PATH / "currentchip.full"
-        )
-    )
-    SSX_LOGGER.debug("Load full map done")
     yield from bps.null()
 
 
@@ -731,15 +678,15 @@ def fiducial(point: int = 1, pmac: PMAC = inject("pmac")) -> MsgGenerator:
     output_param_path.mkdir(parents=True, exist_ok=True)
     SSX_LOGGER.info(f"Writing Fiducial File {output_param_path}/fiducial_{point}.txt")
     SSX_LOGGER.info("MTR\tRBV\tRAW\tCorr\tf_value")
-    SSX_LOGGER.info("MTR1\t%1.4f\t%i" % (rbv_1, mtr1_dir))
-    SSX_LOGGER.info("MTR2\t%1.4f\t%i" % (rbv_2, mtr2_dir))
-    SSX_LOGGER.info("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
+    SSX_LOGGER.info(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}")
+    SSX_LOGGER.info(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}")
+    SSX_LOGGER.info(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
 
     with open(output_param_path / f"fiducial_{point}.txt", "w") as f:
         f.write("MTR\tRBV\tCorr\n")
-        f.write("MTR1\t%1.4f\t%i\n" % (rbv_1, mtr1_dir))
-        f.write("MTR2\t%1.4f\t%i\n" % (rbv_2, mtr2_dir))
-        f.write("MTR3\t%1.4f\t%i" % (rbv_3, mtr3_dir))
+        f.write(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}\n")
+        f.write(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}\n")
+        f.write(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
     SSX_LOGGER.info(f"Fiducial {point} set.")
     yield from bps.null()
 
@@ -901,13 +848,13 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     sleep(2.5)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(0.1)
+    sleep(2.5)
     yield from bps.trigger(pmac.home, wait=True)
-    sleep(0.1)
+    sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
-        sleep(0.1)
+        sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)

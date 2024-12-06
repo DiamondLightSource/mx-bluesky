@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
+import os
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import SupportsInt
+from typing import Literal, SupportsInt, cast
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -112,11 +112,6 @@ class MxBlueskyParameters(BaseModel):
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
-    @classmethod
-    def from_json(cls, input: str | None):
-        assert input is not None
-        return cls(**json.loads(input))
-
 
 class WithSnapshot(BaseModel):
     snapshot_directory: Path
@@ -158,12 +153,12 @@ class DiffractionExperiment(
 
     @model_validator(mode="before")
     @classmethod
-    def validate_snapshot_directory(cls, values):
-        snapshot_dir = values.get(
-            "snapshot_directory", Path(values["storage_directory"], "snapshots")
-        )
-        values["snapshot_directory"] = (
-            snapshot_dir if isinstance(snapshot_dir, Path) else Path(snapshot_dir)
+    def validate_directories(cls, values):
+        os.makedirs(values["storage_directory"], exist_ok=True)
+
+        values["snapshot_directory"] = values.get(
+            "snapshot_directory",
+            Path(values["storage_directory"], "snapshots").as_posix(),
         )
         return values
 
@@ -211,6 +206,28 @@ class WithSample(BaseModel):
 
 
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
+
+
+class MultiXtalSelection(BaseModel):
+    name: str
+
+
+class TopNByMaxCountSelection(MultiXtalSelection):
+    name: Literal["TopNByMaxCount"] = "TopNByMaxCount"  #  pyright: ignore [reportIncompatibleVariableOverride]
+    n: int
+
+
+class WithCentreSelection(BaseModel):
+    select_centres: TopNByMaxCountSelection = Field(
+        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    )
+
+    @property
+    def selection_params(self) -> MultiXtalSelection:
+        """A helper property because pydantic does not allow polymorphism with base classes
+        # only type unions"""
+        cast1 = cast(MultiXtalSelection, self.select_centres)
+        return cast1
 
 
 class OptionalXyzStarts(BaseModel):
