@@ -1124,5 +1124,5 @@ class TestFlyscanXrayCentrePlan:
             )
         )
 
-        assert len(callback.xray_centre_results) == 2
+        assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]

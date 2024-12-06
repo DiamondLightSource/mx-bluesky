@@ -67,7 +67,7 @@ def test_move_x_y_z(
     motor_position: list[float],
     expected_moves: list[float | None],
 ):
-    RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
+    RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))  # type: ignore
     expected_calls = [
         call(axis, pos, group="move_x_y_z")
         for axis, pos in zip(
@@ -108,7 +108,7 @@ def test_move_phi_chi_omega(
     motor_position: list[float],
     expected_moves: list[float | None],
 ):
-    RE(move_phi_chi_omega(fake_fgs_composite.sample_motors, *motor_position))
+    RE(move_phi_chi_omega(fake_fgs_composite.sample_motors, *motor_position))  # type: ignore
     expected_calls = [
         call(axis, pos, group="move_phi_chi_omega")
         for axis, pos in zip(
