@@ -4,9 +4,7 @@ This version in python3 new Feb2021 by RLO
     - March 21 added logging and Eiger functionality
 """
 
-import json
 import re
-import shutil
 import sys
 import time
 from datetime import datetime
@@ -40,10 +38,6 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH,
-)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -141,12 +135,20 @@ def enter_hutch(
 
 
 @log_on_entry
-def write_parameter_file(
-    detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator
-):
-    """Writes a json parameter file that can later be parsed by the model."""
-    param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
-    SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
+def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
+    """ Read the parameters from user input and create the parameter model for an \
+        extruder collection.
+
+    Args:
+        detector_stage (DetectorMotion): The detector stage device.
+        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+            transmission value.
+
+    Returns:
+        ExtruderParameters: Parameter model for extruder collections
+
+    """
+    SSX_LOGGER.info("Creating parameter model from input.")
 
     det_type = yield from get_detector_type(detector_stage)
     SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
@@ -182,12 +184,11 @@ def write_parameter_file(
         "laser_dwell_s": pump_exp,
         "laser_delay_s": pump_delay,
     }
-    with open(param_file, "w") as f:
-        json.dump(params_dict, f, indent=4)
 
     SSX_LOGGER.info("Parameters \n")
     SSX_LOGGER.info(pformat(params_dict))
     yield from bps.null()
+    return ExtruderParameters(**params_dict)
 
 
 @log_on_entry
@@ -467,11 +468,6 @@ def collection_complete_plan(
     dcid.collection_complete(end_time, aborted=False)
     SSX_LOGGER.info(f"End Time = {end_time.ctime()}")
 
-    # Copy parameter file
-    shutil.copy2(
-        PARAM_FILE_PATH / PARAM_FILE_NAME,
-        collection_directory / PARAM_FILE_NAME,
-    )
     yield from bps.null()
 
 
@@ -489,8 +485,9 @@ def run_extruder_plan(
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
-    yield from write_parameter_file(detector_stage, attenuator)
-    parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)
+    parameters: ExtruderParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 

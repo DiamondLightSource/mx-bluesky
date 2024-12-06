@@ -43,6 +43,7 @@ def dummy_params_without_pp():
         "map_type": 1,
         "pump_repeat": 0,
         "checker_pattern": False,
+        "chip_map": [1],
     }
     return FixedTargetParameters(**params)
 
