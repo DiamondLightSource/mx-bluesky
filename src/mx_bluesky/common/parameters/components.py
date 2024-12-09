@@ -103,12 +103,12 @@ class MxBlueskyParameters(BaseModel):
 
     @field_validator("parameter_model_version")
     @classmethod
-    def _validate_version(cls, version: Version):
+    def _validate_version(cls, version: SemanticVersion):
         assert (
-            version >= Version(major=PARAMETER_VERSION.major)
+            version >= SemanticVersion(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
         assert (
-            version <= Version(major=PARAMETER_VERSION.major + 1)
+            version <= SemanticVersion(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
