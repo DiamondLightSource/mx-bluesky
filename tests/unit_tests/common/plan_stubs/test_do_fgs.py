@@ -13,7 +13,8 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 from event_model.documents import Event, RunStart
-from ophyd_async.core import DeviceCollector, set_mock_value
+from ophyd_async.core import DeviceCollector
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,

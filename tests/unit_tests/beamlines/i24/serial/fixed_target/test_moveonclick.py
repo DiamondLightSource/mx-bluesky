@@ -5,7 +5,7 @@ import cv2 as cv
 import pytest
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _calculate_zoom_calibrator,

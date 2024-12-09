@@ -21,8 +21,9 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus
 from ophyd_async.fastcs.panda import HDFPanda
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (

@@ -3,7 +3,7 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,

@@ -57,12 +57,11 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
-    callback_on_mock_put,
-    set_mock_value,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
+from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 

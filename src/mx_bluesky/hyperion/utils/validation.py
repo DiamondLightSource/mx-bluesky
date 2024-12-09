@@ -9,7 +9,7 @@ import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,

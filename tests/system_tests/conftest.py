@@ -6,7 +6,7 @@ import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
