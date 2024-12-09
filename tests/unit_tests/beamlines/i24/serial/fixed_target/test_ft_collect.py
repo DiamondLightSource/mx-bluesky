@@ -7,7 +7,7 @@ from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
-from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
+from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,

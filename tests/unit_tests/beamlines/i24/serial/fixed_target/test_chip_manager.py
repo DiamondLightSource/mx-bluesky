@@ -7,7 +7,7 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (

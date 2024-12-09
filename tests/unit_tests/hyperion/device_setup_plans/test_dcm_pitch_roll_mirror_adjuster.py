@@ -9,7 +9,7 @@ from dodal.devices.focusing_mirror import (
     MirrorVoltages,
 )
 from dodal.devices.undulator_dcm import UndulatorDCM
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 from mx_bluesky.hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (

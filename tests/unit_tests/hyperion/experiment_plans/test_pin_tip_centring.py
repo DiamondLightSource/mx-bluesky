@@ -11,7 +11,7 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,

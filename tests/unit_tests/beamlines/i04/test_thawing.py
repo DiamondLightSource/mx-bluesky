@@ -16,11 +16,13 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     DeviceCollector,
+)
+from ophyd_async.epics.motor import Motor
+from ophyd_async.testing import (
     callback_on_mock_put,
     get_mock_put,
     set_mock_value,
 )
-from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
 

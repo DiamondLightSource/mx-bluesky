@@ -34,7 +34,8 @@ from ispyb.sqlalchemy import (
     Position,
 )
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
