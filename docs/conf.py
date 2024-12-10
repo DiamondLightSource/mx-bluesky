@@ -49,6 +49,8 @@ extensions = [
     "sphinx_design",
     # For markdown
     "myst_parser",
+    # For plantUML diagrams
+    "plantweb.directive",
 ]
 
 myst_enable_extensions = [
