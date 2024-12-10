@@ -240,14 +240,16 @@ def save_screen_map() -> MsgGenerator:
 
     SSX_LOGGER.info(f"Saving {litemap_path.as_posix()} currentchip.map")
     with open(litemap_path / "currentchip.map", "w") as f:
+        SSX_LOGGER.debug("File opened for writing")
         SSX_LOGGER.debug("Printing only blocks with block_val == 1")
         for x in range(1, 82):
             block_str = "ME14E-MO-IOC-01:GP%i" % (x + 10)
             block_val = int(caget(block_str))
             if block_val == 1:
-                SSX_LOGGER.info("%s %d" % (block_str, block_val))
+                SSX_LOGGER.info(f"{block_str} {block_val}")
             line = "%02dstatus    P3%02d1 \t%s\n" % (x, x, block_val)
             f.write(line)
+            SSX_LOGGER.debug(f"Should have written line {line}")
     yield from bps.null()
 
 

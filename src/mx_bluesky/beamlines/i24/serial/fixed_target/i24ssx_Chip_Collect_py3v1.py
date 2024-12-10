@@ -535,6 +535,7 @@ def start_i24(
         raise ValueError(msg)
 
     # Open the hutch shutter
+    # SSX_LOGGER.warning("TESTING, not opening shutter!")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
     return start_time

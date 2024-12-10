@@ -13,6 +13,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import LITEMAP_PATH
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget, cagetstring
 
 
@@ -34,7 +35,8 @@ def call_nexgen(
         ):
             # NOTE Nexgen server is still on nexgen v0.7.2 (fully working for ssx)
             # Will need to be updated, for correctness sake map needs to be None.
-            current_chip_map = "/dls_sw/i24/scripts/fastchips/litemaps/currentchip.map"
+            current_chip_map = (LITEMAP_PATH / "currentchip.map").as_posix()
+            # current_chip_map = "/dls_sw/i24/scripts/fastchips/litemaps/currentchip.map"
         pump_status = bool(parameters.pump_repeat)
         total_numb_imgs = parameters.total_num_images
     elif expt_type == "extruder" and isinstance(parameters, ExtruderParameters):

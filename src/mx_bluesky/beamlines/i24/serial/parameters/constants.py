@@ -31,6 +31,7 @@ def _params_file_location() -> Path:
     else:
         filepath = INTERNAL_FILES_PATH
 
+    print(f"CREATING PARAM FOLDER IN: {filepath}")
     filepath.mkdir(parents=True, exist_ok=True)
 
     return filepath
