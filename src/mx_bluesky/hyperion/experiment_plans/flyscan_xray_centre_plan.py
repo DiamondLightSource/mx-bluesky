@@ -79,6 +79,8 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
+ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
+
 
 class SmargonSpeedException(Exception):
     pass
@@ -247,10 +249,20 @@ def run_gridscan_and_fetch_results(
             LOGGER.info("Zocalo triggered and read, interpreting results.")
             xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
-            if xrc_results:
+            filtered_results = [
+                result
+                for result in xrc_results
+                if result["total_count"] >= ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
+            ]
+            discarded_count = len(xrc_results) - len(filtered_results)
+            if discarded_count > 0:
+                LOGGER.info(
+                    f"Removed {discarded_count} results because below threshold"
+                )
+            if filtered_results:
                 flyscan_results = [
                     _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
-                    for xr in xrc_results
+                    for xr in filtered_results
                 ]
             else:
                 LOGGER.warning("No X-ray centre received")
