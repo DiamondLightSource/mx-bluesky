@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
-from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
+from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format, get_chip_map
+from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 
 
 @pytest.mark.parametrize(
@@ -36,3 +37,28 @@ def test_get_chip_format_for_custom_chips(fake_caget: MagicMock):
     assert test_defaults["y_num_steps"] == 2
     assert test_defaults["x_step_size"] == 0.2 and test_defaults["y_step_size"] == 0.2
     assert test_defaults["y_blocks"] == 1
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.parameters.utils.OXFORD_BLOCKS_PVS",
+    new=["block1", "block2", "block3"],
+)
+@patch("mx_bluesky.beamlines.i24.serial.parameters.utils.caget")
+def test_get_chip_map_raises_error_for_empty_map(fake_caget: MagicMock):
+    fake_caget.side_effect = [0, 0, 0]
+    with pytest.raises(EmptyMapError):
+        get_chip_map()
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.parameters.utils.OXFORD_BLOCKS_PVS",
+    new=["block1", "block2", "block3"],
+)
+@patch("mx_bluesky.beamlines.i24.serial.parameters.utils.caget")
+def test_get_chip_map(fake_caget: MagicMock):
+    fake_caget.side_effect = ["1", "0", "1"]
+
+    chip_map = get_chip_map()
+
+    assert len(chip_map) == 2
+    assert chip_map == [1, 3]

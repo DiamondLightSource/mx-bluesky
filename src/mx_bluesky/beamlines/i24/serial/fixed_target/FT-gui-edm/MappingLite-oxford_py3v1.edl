@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 1062
-y 369
+x 308
+y 339
 w 650
 h 400
 font "arial-medium-r-18.0"
@@ -177,50 +177,6 @@ toggle
 3d
 font "arial-medium-r-18.0"
 colorPv "ME14E-MO-IOC-01:GP67"
-endObjectProperties
-
-# (Shell Command)
-object shellCmdClass
-beginObjectProperties
-major 4
-minor 3
-release 0
-x 40
-y 290
-w 194
-h 40
-fgColor index 0
-bgColor index 23
-topShadowColor index 1
-botShadowColor index 11
-font "arial-medium-r-18.0"
-buttonLabel "Save Screen Map"
-numCmds 1
-command {
-  0 "blueapi -c CONFIG_LOCATION controller run save_screen_map"
-}
-endObjectProperties
-
-# (Shell Command)
-object shellCmdClass
-beginObjectProperties
-major 4
-minor 3
-release 0
-x 12
-y 337
-w 244
-h 53
-fgColor index 13
-bgColor index 49
-topShadowColor index 1
-botShadowColor index 11
-font "arial-medium-r-18.0"
-buttonLabel "Upload Parameters"
-numCmds 1
-command {
-  0 "blueapi -c CONFIG_LOCATION controller run upload_parameters '\{\"pmac\":\"pmac\"\}'"
-}
 endObjectProperties
 
 # (Message Button)

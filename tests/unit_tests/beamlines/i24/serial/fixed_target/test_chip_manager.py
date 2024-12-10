@@ -7,7 +7,7 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
@@ -18,11 +18,11 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     moveto,
     moveto_preset,
     pumpprobe_calc,
+    read_parameters,
     scrape_mtr_directions,
     scrape_mtr_fiducials,
     set_pmac_strings_for_cs,
-    upload_parameters,
-    write_parameter_file,
+    upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
@@ -51,23 +51,17 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_chip_format"
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.json")
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._read_visit_directory_from_file"
 )
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.mkdir"
-)
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
-def test_write_parameter_file(
+def test_read_parameters(
     fake_rd,
-    fake_mkdir,
     fake_log,
     mock_read_visit,
-    mock_json,
     fake_caget,
     fake_chip,
     fake_det,
@@ -82,14 +76,11 @@ def test_write_parameter_file(
     fake_det.side_effect = [fake_generator(Eiger())]
     fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
-        mock_open(),
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.FixedTargetParameters",
     ):
-        RE(write_parameter_file(detector_stage, mock_attenuator))
+        RE(read_parameters(detector_stage, mock_attenuator))
 
-    fake_mkdir.assert_called_once()
     assert fake_caget.call_count == 12
-    mock_json.dump.assert_called_once()
     assert fake_log.info.call_count == 3
 
 
@@ -123,48 +114,31 @@ async def test_initialise(
     )
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.exists"
+@pytest.mark.parametrize(
+    "fake_chip_map",
+    [[10], [1, 2, 15, 16], list(range(33, 65))],  # 1 block, 1 corner, half chip
 )
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sys.stdout"
-)
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
-def test_upload_parameters(
-    fake_caput: MagicMock,
-    fake_stdout: MagicMock,
-    fake_file_exists: MagicMock,
-    pmac: PMAC,
-    RE,
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sleep")
+def test_upload_chip_map_to_geobrick(
+    fake_sleep: MagicMock, fake_chip_map: list[int], pmac: PMAC, RE
 ):
-    fake_file_exists.return_value = True
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
-        mock_open(read_data=chipmap_str),
-    ):
-        RE(upload_parameters(pmac))
+    tot_blocks = 64
+    RE(upload_chip_map_to_geobrick(pmac, fake_chip_map))
 
     mock_pmac_str = get_mock_put(pmac.pmac_string)
-    mock_pmac_str.assert_has_calls(
-        [
-            call("P3011=1", wait=True),
-            call("P3021=0", wait=True),
-            call("P3031=0", wait=True),
-            call("P3041=0", wait=True),
-        ]
-    )
+    assert mock_pmac_str.call_count == tot_blocks
 
+    pvar_zero_calls = [
+        call(f"P3{i:02d}1=0", wait=True) for i in range(1, 65) if i not in fake_chip_map
+    ]
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.Path.exists"
-)
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
-def test_upload_parameters_fails_if_no_file(
-    fake_caput: MagicMock, fake_file_exists: MagicMock, pmac: PMAC, RE
-):
-    fake_file_exists.return_value = False
-    with pytest.raises(FileNotFoundError):
-        RE(upload_parameters(pmac))
+    pvar_one_calls = [call(f"P3{i:02d}1=1", wait=True) for i in fake_chip_map]
+
+    assert len(pvar_zero_calls) == tot_blocks - len(fake_chip_map)
+    assert len(pvar_one_calls) == len(fake_chip_map)
+
+    mock_pmac_str.assert_has_calls(pvar_one_calls, any_order=True)
+    mock_pmac_str.assert_has_calls(pvar_zero_calls, any_order=True)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")

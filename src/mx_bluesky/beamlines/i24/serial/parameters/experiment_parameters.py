@@ -2,9 +2,10 @@ import json
 from abc import abstractmethod
 from pathlib import Path
 
+import numpy as np
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, PILATUS_6M_SIZE
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -68,7 +69,7 @@ class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
 
     @property
     @abstractmethod
-    def detetector_params(self) -> DetectorParams: ...
+    def detector_params(self) -> DetectorParams: ...
 
 
 class ExtruderParameters(SerialAndLaserExperiment):
@@ -144,6 +145,10 @@ class ChipDescription(BaseModel):
         else:
             return ((self.y_num_steps - 1) * self.y_step_size) + self.b2b_vert
 
+    @property
+    def tot_num_blocks(self) -> int:
+        return self.x_blocks * self.y_blocks
+
 
 class FixedTargetParameters(SerialAndLaserExperiment):
     """Fixed target parameter model."""
@@ -153,9 +158,7 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     map_type: MappingType
     pump_repeat: PumpProbeSetting
     checker_pattern: bool = False
-    total_num_images: int = 0  # Calculated in the code for now
-    # NOTE Need change from 460 in here to get the tot num imgs calculated here
-    # Maybe in a property ot sth
+    chip_map: list[int]
 
     @property
     def nexgen_experiment_type(self) -> str:
@@ -191,6 +194,28 @@ class FixedTargetParameters(SerialAndLaserExperiment):
             use_roi_mode=False,  # Dasabled
             trigger_mode=TriggerMode.SET_FRAMES,  # For now...
         )
+
+    @computed_field  # type: ignore   # Mypy doesn't like it
+    @property
+    def total_num_images(self) -> int:
+        match self.map_type:
+            case MappingType.NoMap:
+                if self.chip.chip_type is ChipType.Custom:
+                    num_images = (
+                        self.chip.x_num_steps
+                        * self.chip.y_num_steps
+                        * self.num_exposures
+                    )
+                else:
+                    chip_format = self.chip.chip_format[:4]
+                    num_images = int(np.prod(chip_format) * self.num_exposures)
+            case MappingType.Lite:
+                chip_format = self.chip.chip_format[2:4]
+                block_count = len(self.chip_map)  # type: ignore
+                num_images = int(
+                    np.prod(chip_format) * block_count * self.num_exposures
+                )
+        return num_images
 
 
 class BeamSettings(BaseModel):

@@ -6,7 +6,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
 from dodal.devices.xbpm_feedback import Pause
 from ophyd.status import Status
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,

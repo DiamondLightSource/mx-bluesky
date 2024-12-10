@@ -1,9 +1,9 @@
-from unittest.mock import ANY, MagicMock, call, mock_open, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
@@ -14,8 +14,8 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
     initialise_extruder,
     laser_check,
     main_extruder_plan,
+    read_parameters,
     tidy_up_at_collection_end_plan,
-    write_parameter_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
@@ -71,7 +71,6 @@ def fake_generator(value):
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.json")
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._read_visit_directory_from_file"
 )
@@ -79,11 +78,10 @@ def fake_generator(value):
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
-def test_write_parameter_file(
+def test_read_parameters(
     fake_rd,
     fake_log,
     mock_read_visit,
-    mock_json,
     fake_caget,
     fake_det,
     detector_stage,
@@ -93,16 +91,13 @@ def test_write_parameter_file(
     fake_det.side_effect = [fake_generator(Eiger())]
     fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.open",
-        mock_open(),
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.ExtruderParameters",
     ):
-        RE(write_parameter_file(detector_stage, mock_attenuator))
+        RE(read_parameters(detector_stage, mock_attenuator))
 
     assert fake_caget.call_count == 8
-    mock_json.dump.assert_called_once()
-    fake_log.debug.assert_called_once()
     fake_log.warning.assert_called_once()
-    assert fake_log.info.call_count == 2
+    assert fake_log.info.call_count == 3
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
@@ -360,12 +355,11 @@ def test_aborted_plan_with_pilatus(
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.shutil")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.DCID")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sleep")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
 def test_collection_complete_plan_with_eiger(
-    fake_caput, fake_sleep, fake_dcid, fake_shutil, dummy_params, RE
+    fake_caput, fake_sleep, fake_dcid, dummy_params, RE
 ):
     RE(
         collection_complete_plan(
