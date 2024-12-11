@@ -70,6 +70,8 @@ class DataCollectionPositionInfo:
 
 @dataclass
 class DataCollectionGridInfo:
+    """This information is used by Zocalo gridscan per-image-analysis"""
+
     dx_in_mm: float
     dy_in_mm: float
     steps_x: int
