@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from typing import NamedTuple
 from uuid import uuid1
 
@@ -123,14 +124,11 @@ def _create_environment_from_control_machine(
     process = None
     try:
         # Call python script on i03-control to create the environment
-        process = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdout, stderr = process.communicate()
+        process = subprocess.Popen(cmd, shell=True, text=True, bufsize=1)
+        process.communicate()
         if process.returncode != 0:
-            print(f"Error occurred: {stderr.decode()}")
-        else:
-            print(f"Output: {stdout.decode()}")
+            print("Error occurred, exiting")
+            sys.exit(1)
     except Exception as e:
         print(f"Exception while trying to install venv on i03-control: {e}")
     finally:

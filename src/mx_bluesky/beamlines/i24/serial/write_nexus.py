@@ -45,11 +45,8 @@ def call_nexgen(
                 parameters.map_type == MappingType.NoMap
                 or parameters.chip.chip_type == ChipType.Custom
             ):
-                # NOTE Nexgen server is still on nexgen v0.7.2 (fully working for ssx)
-                # Will need to be updated, for correctness sake map needs to be None.
-                current_chip_map = (
-                    "/dls_sw/i24/scripts/fastchips/litemaps/currentchip.map"
-                )
+                # For nexgen >= 0.9.10
+                current_chip_map = parameters.chip_map
             pump_status = bool(parameters.pump_repeat)
             total_numb_imgs = parameters.total_num_images
         case ExtruderParameters():
