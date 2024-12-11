@@ -10,7 +10,7 @@ import subprocess
 from typing import NamedTuple
 from uuid import uuid1
 
-from create_venv import run_process_and_print_output
+from create_venv import run_process_and_print_output, setup_venv
 from git import Repo
 from packaging.version import VERSION_PATTERN, Version
 
@@ -231,8 +231,7 @@ def main(beamline: str, options: Options):
                     mx_repo, path_to_create_venv, path_to_dls_dev_env, beamline
                 )
             else:
-                # setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
-                pass
+                setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
 
     # If on beamline I24 also deploy the screens to run ssx collections
     if beamline == "i24":
