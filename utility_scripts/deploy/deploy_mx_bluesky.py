@@ -331,7 +331,7 @@ def _parse_options() -> tuple[str, Options]:
         "-pd",
         "--prune-deployments",
         action="store_true",
-        help="Delete non-recent deployments.",
+        help="Delete non-recent, non-symlinked deployments, if more than four found.",
     )
 
     args = parser.parse_args()
