@@ -5,11 +5,12 @@ Deploy latest release of mx-bluesky either on a beamline or in dev mode.
 import argparse
 import os
 import re
+import shutil
 import subprocess
 from typing import NamedTuple
 from uuid import uuid1
 
-from create_venv import run_process_and_print_output, setup_venv
+from create_venv import run_process_and_print_output
 from git import Repo
 from packaging.version import VERSION_PATTERN, Version
 
@@ -40,6 +41,7 @@ class Options(NamedTuple):
     quiet: bool = False
     dev_mode: bool = False
     use_control_machine: bool = True
+    prune_deployments: bool = False
     # NOTE For i24 for now will need to set it to false from the command line
 
 
@@ -136,6 +138,41 @@ def _create_environment_from_control_machine(
             process.kill()
 
 
+def _prune_old_deployments(release_area: str):
+    def get_creation_time(deployment):
+        return os.path.getctime(os.path.join(release_area, deployment))
+
+    max_deployments = 4
+    deployments = os.listdir(release_area)
+    set_of_deployments = set(deployments)
+
+    symlinks = set()
+    for item in deployments:
+        if item in ["hyperion", "hyperion_stable", "hyperion_latest"]:
+            symlinks.add(item)
+            set_of_deployments.remove(item)
+
+    sorted_deployments = sorted(set_of_deployments, key=get_creation_time, reverse=True)
+    if len(sorted_deployments) > max_deployments:
+        full_path_old_deployments = {
+            os.path.join(release_area, deployment)
+            for deployment in sorted_deployments[max_deployments:]
+        }
+
+        for link in symlinks:
+            if (
+                os.path.dirname(os.readlink(os.path.join(release_area, link)))
+                in full_path_old_deployments
+            ):
+                full_path_old_deployments.remove(
+                    os.path.dirname(os.readlink(os.path.join(release_area, link)))
+                )
+
+        for old_deployment in full_path_old_deployments:
+            print(f"Deteling old deployment {os.path.basename(old_deployment)}")
+            shutil.rmtree(old_deployment)
+
+
 def main(beamline: str, options: Options):
     release_area = options.release_dir
     this_repo_top = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -194,7 +231,8 @@ def main(beamline: str, options: Options):
                     mx_repo, path_to_create_venv, path_to_dls_dev_env, beamline
                 )
             else:
-                setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
+                # setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
+                pass
 
     # If on beamline I24 also deploy the screens to run ssx collections
     if beamline == "i24":
@@ -250,6 +288,9 @@ def main(beamline: str, options: Options):
     else:
         print("Quitting without latest version being updated")
 
+    if options.prune_deployments:
+        _prune_old_deployments(release_area)
+
 
 # Get the release directory based off the beamline and the latest mx-bluesky version
 def _parse_options() -> tuple[str, Options]:
@@ -286,6 +327,13 @@ def _parse_options() -> tuple[str, Options]:
         action="store_false",
         help="Do not create environment running from the control machine.",
     )
+    parser.add_argument(
+        "-pd",
+        "--prune-deployments",
+        action="store_true",
+        help="Delete non-recent deployments.",
+    )
+
     args = parser.parse_args()
     if args.dev:
         print("Running as dev")
@@ -300,6 +348,7 @@ def _parse_options() -> tuple[str, Options]:
         quiet=args.print_release_dir,
         dev_mode=args.dev,
         use_control_machine=args.no_control,
+        prune_deployments=args.prune_deployments,
     )
 
 
