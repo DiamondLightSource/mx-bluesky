@@ -359,7 +359,10 @@ class TestFlyscanXrayCentrePlan:
         actual = x_ray_centre_event_handler.xray_centre_results
         expected = XRayCentreResult(
             centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
-            bounding_box_mm=(np.array([0.2, 0.2, 0.2]), np.array([0.8, 0.8, 0.7])),
+            bounding_box_mm=(
+                np.array([0.15, 0.15, 0.15]),
+                np.array([0.75, 0.75, 0.65]),
+            ),
             max_count=105062,
             total_count=2387574,
         )

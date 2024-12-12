@@ -286,14 +286,18 @@ def _xrc_result_in_boxes_to_result_in_mm(
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )
+    # A correction is applied to the bounding box to map discrete grid coordinates to
+    # the corners of the box in motor-space; we do not apply this correction
+    # to the xray-centre as it is already in continuous space and the conversion has
+    # been performed already
     return XRayCentreResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][0])
+                np.array(xrc_result["bounding_box"][0]) - 0.5
             ),
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][1])
+                np.array(xrc_result["bounding_box"][1]) - 0.5
             ),
         ),
         max_count=xrc_result["max_count"],
