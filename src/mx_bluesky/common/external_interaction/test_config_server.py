@@ -13,7 +13,7 @@ class MockConfigServer:
         }
 
 
-class TestFeatureFlags(FeatureFlags):
+class FakeFeatureFlags(FeatureFlags):
     @staticmethod
     @cache
     def get_config_server() -> MockConfigServer:  # type: ignore
@@ -23,12 +23,16 @@ class TestFeatureFlags(FeatureFlags):
     feature_b: bool = False
 
 
-def test_valid_overridden_features():
-    flags = TestFeatureFlags(feature_a=True, feature_b=True)
-    assert flags.feature_a is True
-    assert flags.feature_b is True
+@pytest.fixture
+def fake_feature_flags():
+    return FakeFeatureFlags(feature_a=False, feature_b=False)
+
+
+def test_valid_overridden_features(fake_feature_flags: FakeFeatureFlags):
+    assert fake_feature_flags.feature_a is False
+    assert fake_feature_flags.feature_b is False
 
 
 def test_invalid_overridden_features():
     with pytest.raises(ValueError, match="Invalid feature toggle"):
-        TestFeatureFlags(invalid_feature=True)  # type: ignore
+        FakeFeatureFlags(feature_x=True)  # type: ignore
