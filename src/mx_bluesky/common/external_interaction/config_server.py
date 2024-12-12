@@ -29,7 +29,18 @@ class FeatureFlags(BaseModel, ABC):
     def mark_overridden_features(cls, values):
         assert isinstance(values, dict)
         values["overriden_features"] = values.copy()
+        cls.validate_overridden_features(values)
         return values
+
+    @classmethod
+    def validate_overridden_features(cls, values: dict):
+        """Validates overridden features to ensure they are defined in the model fields."""
+        defined_fields = cls.model_fields.keys()
+        invalid_features = [key for key in values.keys() if key not in defined_fields]
+
+        if invalid_features:
+            message = f"Invalid feature toggle(s) supplied: {invalid_features}. "
+            raise ValueError(message)
 
     def _get_flags(self):
         flags = type(self).get_config_server().best_effort_get_all_feature_flags()
