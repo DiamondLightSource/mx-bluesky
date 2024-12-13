@@ -16,3 +16,4 @@ class HyperionFeatureFlags(FeatureFlags):
     use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
     compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
     set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
+    omega_flip: bool = CONST.I03.OMEGA_FLIP

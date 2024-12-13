@@ -465,6 +465,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
+    feature_flags_with_omega_flip,
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()
@@ -481,8 +482,7 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid)
-        == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
+        fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
