@@ -18,7 +18,7 @@ from scanspec.core import AxesPoints
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_detector_parameters,
     create_goniometer_axes,
-    get_start_and_predicted_end_time,
+    get_start_and_predicted_end_time, AxisDirection,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 
@@ -39,7 +39,7 @@ class NexusWriter:
         # detector arming event:
         full_num_of_images: int | None = None,
         meta_data_run_number: int | None = None,
-        rotation_direction: RotationDirection = RotationDirection.NEGATIVE,
+        axis_direction: AxisDirection = AxisDirection.NEGATIVE,
     ) -> None:
         self.beam: Beam | None = None
         self.attenuator: Attenuator | None = None
@@ -69,7 +69,7 @@ class NexusWriter:
             self.scan_points,
             chi=chi_start_deg,
             phi=phi_start_deg,
-            rotation_direction=rotation_direction,
+            omega_axis_direction=axis_direction,
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

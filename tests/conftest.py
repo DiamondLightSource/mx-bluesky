@@ -61,6 +61,8 @@ from dodal.log import set_up_all_logging_handlers
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
+
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from ophyd_async.core import (
     AsyncStatus,
     Device,
@@ -224,6 +226,17 @@ def patch_async_motor(
     set_mock_value(motor.motor_done_move, 1)
     set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
+
+
+@pytest.fixture(params=[False, True])
+def feature_flags_with_omega_flip(request):
+    def update_with_overrides(self):
+        self.overriden_features["omega_flip"] = request.param
+        setattr(self, "omega_flip", request.param)
+
+    with (patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update):
+        update.side_effect = update_with_overrides
+        yield update
 
 
 @pytest.fixture

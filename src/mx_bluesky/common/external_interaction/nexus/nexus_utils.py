@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime, timedelta
+from enum import Enum
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -12,6 +13,11 @@ from numpy.typing import DTypeLike
 
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
+
+
+class AxisDirection(Enum):
+    POSITIVE = 1
+    NEGATIVE = -1
 
 
 def vds_type_based_on_bit_depth(detector_bit_depth: int) -> DTypeLike:
@@ -35,8 +41,8 @@ def create_goniometer_axes(
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
     chi: float = 0.0,
     phi: float = 0.0,
-    rotation_direction: RotationDirection = RotationDirection.NEGATIVE,
-):
+    omega_axis_direction: AxisDirection = AxisDirection.NEGATIVE,
+) -> Goniometer:
     """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
     goniometer. If scan points is provided these values will be used in preference to
     those from the params object.
@@ -50,13 +56,17 @@ def create_goniometer_axes(
         x_y_z_increments:    optionally, specify the increments between each image for
                              the x, y, and z axes. Will be ignored if scan_points
                              is provided.
+        omega_axis_direction:      The direction of the omega axis, this determines the
+                             coordinate space parity
+    Returns:
+        The created Goniometer object
     """
     gonio_axes = [
         Axis(
             "omega",
             ".",
             TransformationType.ROTATION,
-            (1.0 * rotation_direction.multiplier, 0.0, 0.0),
+            (1.0 * omega_axis_direction.value, 0.0, 0.0),
             omega_start,
         ),
         Axis(
