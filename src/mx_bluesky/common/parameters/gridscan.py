@@ -69,6 +69,7 @@ class GridCommon(
 
 class RobotLoadThenCentre(GridCommon):
     thawing_time: float = Field(default=HardwareConstants.THAWING_TIME)
+    tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
     def robot_load_params(self):
         my_params = self.model_dump()
