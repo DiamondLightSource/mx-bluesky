@@ -163,7 +163,7 @@ def _prune_old_deployments(release_area: str):
             for deployment in sorted_deployments[MAX_DEPLOYMENTS:]
         }
 
-        # Removes old deployments with symlinks
+        # Excludes deployments that are symlinked
         for link in symlinks:
             link_path = os.path.dirname(os.readlink(os.path.join(release_area, link)))
             if link_path in full_path_old_deployments:
