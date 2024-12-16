@@ -29,11 +29,11 @@ class FeatureFlags(BaseModel, ABC):
     def mark_overridden_features(cls, values):
         assert isinstance(values, dict)
         values["overriden_features"] = values.copy()
-        cls.validate_overridden_features(values)
+        cls._validate_overridden_features(values)
         return values
 
     @classmethod
-    def validate_overridden_features(cls, values: dict):
+    def _validate_overridden_features(cls, values: dict):
         """Validates overridden features to ensure they are defined in the model fields."""
         defined_fields = cls.model_fields.keys()
         invalid_features = [key for key in values.keys() if key not in defined_fields]
