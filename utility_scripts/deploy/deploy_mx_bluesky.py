@@ -25,6 +25,8 @@ VERSION_PATTERN_COMPILED = re.compile(
 
 DEV_DEPLOY_LOCATION = "/scratch/30day_tmp/mx-bluesky_release_test/bluesky"
 
+MAX_DEPLOYMENTS = 4
+
 help_message = f"""
 To deploy mx_bluesky on a specific beamline, using the control machine to create the \
 environment and without kubernetes, only the beamline argument needs to be passed.
@@ -41,9 +43,10 @@ class Options(NamedTuple):
     print_release_dir: bool = False
     quiet: bool = False
     dev_mode: bool = False
-    use_control_machine: bool = True
-    prune_deployments: bool = False
+    prune_deployments: bool = True
+
     # NOTE For i24 for now will need to set it to false from the command line
+    use_control_machine: bool = True
 
 
 class Deployment:
@@ -138,36 +141,37 @@ def _create_environment_from_control_machine(
 
 def _prune_old_deployments(release_area: str):
     def get_creation_time(deployment):
+        # Warning: getctime gives time since last metadata change, not the creation time.
         return os.path.getctime(os.path.join(release_area, deployment))
 
-    max_deployments = 4
     deployments = os.listdir(release_area)
     set_of_deployments = set(deployments)
 
+    # Seperates symlinks and deployments
     symlinks = set()
     for item in deployments:
-        if item in ["hyperion", "hyperion_stable", "hyperion_latest"]:
+        if os.path.islink(os.path.join(release_area, item)):
             symlinks.add(item)
             set_of_deployments.remove(item)
 
     sorted_deployments = sorted(set_of_deployments, key=get_creation_time, reverse=True)
-    if len(sorted_deployments) > max_deployments:
+
+    # Excludes most recent deployments
+    if len(sorted_deployments) > MAX_DEPLOYMENTS:
         full_path_old_deployments = {
             os.path.join(release_area, deployment)
-            for deployment in sorted_deployments[max_deployments:]
+            for deployment in sorted_deployments[MAX_DEPLOYMENTS:]
         }
 
+        # Removes old deployments with symlinks
         for link in symlinks:
-            if (
-                os.path.dirname(os.readlink(os.path.join(release_area, link)))
-                in full_path_old_deployments
-            ):
-                full_path_old_deployments.remove(
-                    os.path.dirname(os.readlink(os.path.join(release_area, link)))
-                )
+            link_path = os.path.dirname(os.readlink(os.path.join(release_area, link)))
+            if link_path in full_path_old_deployments:
+                full_path_old_deployments.remove(link_path)
 
+        # Deletes old deployments
         for old_deployment in full_path_old_deployments:
-            print(f"Deteling old deployment {os.path.basename(old_deployment)}")
+            print(f"Deleting old deployment {os.path.basename(old_deployment)}")
             shutil.rmtree(old_deployment)
 
 
@@ -327,8 +331,9 @@ def _parse_options() -> tuple[str, Options]:
     parser.add_argument(
         "-pd",
         "--prune-deployments",
-        action="store_true",
-        help="Delete non-recent, non-symlinked deployments, if more than four found.",
+        required=False,
+        default=True,
+        help="Delete deployments which are older than the latest four if they aren't being used in any symlinks",
     )
 
     args = parser.parse_args()
@@ -344,11 +349,12 @@ def _parse_options() -> tuple[str, Options]:
         print_release_dir=args.print_release_dir,
         quiet=args.print_release_dir,
         dev_mode=args.dev,
-        use_control_machine=args.no_control,
         prune_deployments=args.prune_deployments,
+        use_control_machine=args.no_control,
     )
 
 
 if __name__ == "__main__":
     beamline, options = _parse_options()
+    print(options.prune_deployments)
     main(beamline, options)
