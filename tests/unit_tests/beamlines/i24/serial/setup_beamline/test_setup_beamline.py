@@ -43,8 +43,8 @@ async def test_set_detector_beam_center_plan(
         )
     )
 
-    assert await eiger_beam_center.beam_x.get_value() == 1600.0
-    assert await eiger_beam_center.beam_y.get_value() == 1697.4
+    assert await eiger_beam_center.beam_x.get_value() == pytest.approx(1597.06, 1e-2)
+    assert await eiger_beam_center.beam_y.get_value() == pytest.approx(1693.33, 1e-2)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")

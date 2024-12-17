@@ -39,7 +39,9 @@ class SerialExperiment(BaseModel):
 
     @property
     def collection_directory(self) -> Path:
-        return Path(self.visit) / self.directory
+        directory = Path(self.visit) / self.directory
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory
 
 
 class LaserExperiment(BaseModel):
@@ -95,7 +97,7 @@ class ExtruderParameters(SerialAndLaserExperiment):
             else PILATUS_6M_SIZE
         )
 
-        self.collection_directory.mkdir(exist_ok=True, parents=True)
+        # self.collection_directory.mkdir(exist_ok=True, parents=True)
 
         return DetectorParams(
             detector_size_constants=det_size_constants,
@@ -176,7 +178,7 @@ class FixedTargetParameters(SerialAndLaserExperiment):
             else PILATUS_6M_SIZE
         )
 
-        self.collection_directory.mkdir(exist_ok=True, parents=True)
+        # self.collection_directory.mkdir(exist_ok=True, parents=True)
 
         return DetectorParams(
             detector_size_constants=det_size_constants,

@@ -231,8 +231,7 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
-    assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_once()
+    assert fake_mkdir.call_count == 4  # counting detector params & co
     mock_read_beam_info.assert_called_once()
 
 
