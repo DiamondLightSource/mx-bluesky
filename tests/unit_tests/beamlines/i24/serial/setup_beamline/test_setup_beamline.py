@@ -30,8 +30,18 @@ async def test_move_detector_stage_to_position_plan(detector_stage: DetectorMoti
     assert await detector_stage.z.user_readback.get_value() == det_dist
 
 
-async def test_set_detector_beam_center_plan(eiger_beam_center: DetectorBeamCenter, RE):
-    RE(setup_beamline.set_detector_beam_center_plan(eiger_beam_center, "eiger"))
+# TODO FIXME This won't work beacause of LUT file
+# Probably also other, need to figure it out
+async def test_set_detector_beam_center_plan(
+    eiger_beam_center: DetectorBeamCenter, dummy_params_ex, RE
+):
+    test_detector_distance = 100
+    test_detector_params = dummy_params_ex.detector_params
+    RE(
+        setup_beamline.set_detector_beam_center_plan(
+            eiger_beam_center, test_detector_params, test_detector_distance
+        )
+    )
 
     assert await eiger_beam_center.beam_x.get_value() == 1600.0
     assert await eiger_beam_center.beam_y.get_value() == 1697.4

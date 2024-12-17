@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.hutch_shutter import (
@@ -45,7 +47,10 @@ def dummy_params_without_pp():
         "checker_pattern": False,
         "chip_map": [1],
     }
-    return FixedTargetParameters(**params)
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
+    ):
+        return FixedTargetParameters(**params)
 
 
 @pytest.fixture
@@ -61,7 +66,10 @@ def dummy_params_ex():
         "num_images": 10,
         "pump_status": False,
     }
-    return ExtruderParameters(**params)
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
+    ):
+        return ExtruderParameters(**params)
 
 
 def patch_motor(motor: Motor, initial_position: float = 0):

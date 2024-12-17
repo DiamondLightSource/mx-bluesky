@@ -207,7 +207,9 @@ def main_extruder_plan(
     start_time: datetime,
 ) -> MsgGenerator:
     yield from sup.set_detector_beam_center_plan(
-        beam_center_device, parameters.detector_name
+        beam_center_device,
+        parameters.detector_params,
+        parameters.detector_distance_mm,
     )
 
     # Setting up the beamline

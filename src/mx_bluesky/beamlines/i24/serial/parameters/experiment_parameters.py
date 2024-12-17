@@ -86,29 +86,28 @@ class ExtruderParameters(SerialAndLaserExperiment):
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.EXTRUDER
 
-    def _get_detector_specific_properties(self):
-        self.det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
-        self.det_size_constants = (
+    @property
+    def detector_params(self):
+        det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
+        det_size_constants = (
             EIGER2_X_9M_SIZE
             if self.detector_name is DetectorName.EIGER
             else PILATUS_6M_SIZE
         )
 
-    @property
-    def detector_params(self):
-        self._get_detector_specific_properties()
+        self.collection_directory.mkdir(exist_ok=True, parents=True)
 
         return DetectorParams(
-            detector_size_constants=self.det_size_constants,
+            detector_size_constants=det_size_constants,
             exposure_time=self.exposure_time_s,
-            directory=self.directory,
+            directory=self.collection_directory.as_posix(),
             prefix=self.filename,
             detector_distance=self.detector_distance_mm,
             omega_start=0.0,
             omega_increment=0.0,
             num_images_per_trigger=1,
             num_triggers=self.num_images,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_lut.as_posix(),
+            det_dist_to_beam_converter_path=det_dist_to_beam_lut.as_posix(),
             use_roi_mode=False,  # Dasabled
             trigger_mode=TriggerMode.SET_FRAMES,  # For now...
         )
@@ -168,29 +167,28 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.FIXED
 
-    def _get_detector_specific_properties(self):
-        self.det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
-        self.det_size_constants = (
+    @property
+    def detector_params(self):
+        det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
+        det_size_constants = (
             EIGER2_X_9M_SIZE
             if self.detector_name is DetectorName.EIGER
             else PILATUS_6M_SIZE
         )
 
-    @property
-    def detector_params(self):
-        self._get_detector_specific_properties()
+        self.collection_directory.mkdir(exist_ok=True, parents=True)
 
         return DetectorParams(
-            detector_size_constants=self.det_size_constants,
+            detector_size_constants=det_size_constants,
             exposure_time=self.exposure_time_s,
-            directory=self.directory,
+            directory=self.collection_directory.as_posix(),
             prefix=self.filename,
             detector_distance=self.detector_distance_mm,
             omega_start=0.0,
             omega_increment=0.0,
             num_images_per_trigger=self.num_exposures,
             num_triggers=self.total_num_images,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_lut.as_posix(),
+            det_dist_to_beam_converter_path=det_dist_to_beam_lut.as_posix(),
             use_roi_mode=False,  # Dasabled
             trigger_mode=TriggerMode.SET_FRAMES,  # For now...
         )

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
@@ -27,4 +29,7 @@ def dummy_params_with_pp():
         "laser_dwell_s": 0.02,
         "laser_delay_s": 0.05,
     }
-    return FixedTargetParameters(**params)
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
+    ):
+        return FixedTargetParameters(**params)

@@ -15,11 +15,6 @@ class DetectorName(StrEnum):
     PILATUS = "pilatus"
 
 
-BEAM_CENTER_POS: dict[str, list] = {
-    DetectorName.EIGER: [1600.0, 1697.4],
-    DetectorName.PILATUS: [1284.7, 1308.6],
-}
-
 # TODO figue sth out for tests
 LUT_FILES_PATH = Path("/dls_sw/i24/software/daq_configuration/lookup")
 

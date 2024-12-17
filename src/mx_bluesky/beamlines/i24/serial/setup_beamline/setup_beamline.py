@@ -2,6 +2,7 @@ from time import sleep
 
 import bluesky.plan_stubs as bps
 from dodal.beamlines import i24
+from dodal.devices.detector.detector import DetectorParams
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
@@ -9,7 +10,6 @@ from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_POS
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 
@@ -55,22 +55,20 @@ def move_detector_stage_to_position_plan(
 
 def set_detector_beam_center_plan(
     beam_center_device: DetectorBeamCenter,
-    detector_name: str,
+    detector_params: DetectorParams,
+    detector_distace: float,
     group: str = "set_beamcenter",
     wait: bool = True,
 ):
     """A small temporary plan to set up the beam center on the detector in use."""
     # NOTE This will be removed once the detectors are using ophyd_async devices
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/62
-    SSX_LOGGER.debug(
-        f"Set beam center on {detector_name} detector: {BEAM_CENTER_POS[detector_name]}"
+    beam_position_x, beam_position_y = detector_params.get_beam_position_pixels(
+        detector_distace
     )
-    yield from bps.abs_set(
-        beam_center_device.beam_x, BEAM_CENTER_POS[detector_name][0], group=group
-    )
-    yield from bps.abs_set(
-        beam_center_device.beam_y, BEAM_CENTER_POS[detector_name][1], group=group
-    )
+    SSX_LOGGER.info(f"Setting beam center to: {beam_position_x}, {beam_position_y}")
+    yield from bps.abs_set(beam_center_device.beam_x, beam_position_x, group=group)
+    yield from bps.abs_set(beam_center_device.beam_y, beam_position_y, group=group)
     if wait:
         yield from bps.wait(group=group)
 

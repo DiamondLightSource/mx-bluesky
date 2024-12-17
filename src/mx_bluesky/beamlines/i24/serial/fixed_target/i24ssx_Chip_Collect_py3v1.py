@@ -548,7 +548,9 @@ def main_fixed_target_plan(
     SSX_LOGGER.info("Running a chip collection on I24")
 
     yield from sup.set_detector_beam_center_plan(
-        beam_center_device, parameters.detector_name
+        beam_center_device,
+        parameters.detector_params,
+        parameters.detector_distance_mm,
     )
 
     SSX_LOGGER.info("Getting Program Dictionary")
