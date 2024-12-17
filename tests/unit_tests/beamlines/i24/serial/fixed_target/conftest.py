@@ -36,7 +36,7 @@ def dummy_params_with_pp(tmp_path):
         "chip_map": [1],
         "laser_dwell_s": 0.02,
         "laser_delay_s": 0.05,
-        "collection_directory": str(tmp_path / "foo/bar"),
+        "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(

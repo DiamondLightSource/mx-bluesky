@@ -62,7 +62,7 @@ def dummy_params_pp(tmp_path):
         "pump_status": True,
         "laser_dwell_s": 0.01,
         "laser_delay_s": 0.005,
-        "collection_directory": str(tmp_path / "foo/bar"),
+        "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(

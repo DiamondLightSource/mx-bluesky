@@ -55,7 +55,7 @@ def dummy_params_without_pp(tmp_path):
         "pump_repeat": 0,
         "checker_pattern": False,
         "chip_map": [1],
-        "collection_directory": str(tmp_path / "foo/bar"),
+        "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(
@@ -81,7 +81,7 @@ def dummy_params_ex(tmp_path):
         "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
-        "collection_directory": str(tmp_path / "foo/bar"),
+        "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(
