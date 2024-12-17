@@ -36,14 +36,28 @@ from ..conftest import OavGridSnapshotTestEvents
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
+def fake_generator_array(values):
+    return [fake_generator(value) for value in values]
+
+
 def fake_generator(value):
     yield from bps.null()
     return value
 
 
-def get_fake_pin_values_generator(x, y):
-    yield from bps.null()
-    return np.array([x, y])
+def _setup_grid_detection(
+    mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
+):
+    mock_rd.side_effect = fake_generator_array(
+        [0.031496, 0.05, [400], [2000], 10, [400], [800], 10]
+    )
+
+    mock_pre_centring_setup_oav.side_effect = fake_generator_array(
+        None for _ in range(2)
+    )
+    mock_wait_for_tip_to_be_found.side_effect = fake_generator_array(
+        [np.array([0, 0]) for _ in range(2)]
+    )
 
 
 def _fake_grid_detection(
@@ -93,9 +107,7 @@ def grid_detect_devices_with_oav_config_params(
 ) -> GridDetectThenXRayCentreComposite:
     set_mock_value(grid_detect_devices.oav.zoom_controller.level, "7.5x")
     grid_detect_devices.pin_tip_detection.triggered_bottom_edge = MagicMock()
-    grid_detect_devices.pin_tip_detection.triggered_bottom_edge.return_value = 5
     grid_detect_devices.pin_tip_detection.triggered_top_edge = MagicMock()
-    grid_detect_devices.pin_tip_detection.triggered_top_edge.return_value = 5
     return grid_detect_devices
 
 
@@ -125,11 +137,11 @@ async def test_detect_grid_and_do_gridscan(
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
 ):
-    mock_rd.side_effect = [fake_generator(0.5) for i in range(15)]
-    mock_pre_centring_setup_oav.side_effect = [fake_generator(None) for i in range(2)]
-    mock_wait_for_tip_to_be_found.side_effect = [
-        get_fake_pin_values_generator(100, 100) for i in range(2)
-    ]
+    _setup_grid_detection(
+        mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
+    )
+
+    test_full_grid_scan_params.grid_width_um = 200
 
     composite = grid_detect_devices_with_oav_config_params
 
@@ -142,7 +154,7 @@ async def test_detect_grid_and_do_gridscan(
         )
     )
     # Verify we called the grid detection plan
-    # mock_grid_detection_plan.assert_called_once()
+    mock_pre_centring_setup_oav.assert_called_once()
 
     # Check backlight was moved OUT
     get_mock_put(composite.backlight.position).assert_called_once_with(
@@ -171,7 +183,15 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.bps.rd",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.wait_for_tip_to_be_found",
     autospec=True,
 )
 @patch(
@@ -180,7 +200,9 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan: MagicMock,
-    mock_grid_detection_plan: MagicMock,
+    mock_wait_for_tip_to_be_found: MagicMock,
+    mock_pre_centring_setup_oav: MagicMock,
+    mock_rd: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
@@ -188,7 +210,12 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
-    mock_grid_detection_plan.side_effect = _fake_grid_detection
+    _setup_grid_detection(
+        mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
+    )
+
+    test_full_grid_scan_params.grid_width_um = 200
+
     RE(
         ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
