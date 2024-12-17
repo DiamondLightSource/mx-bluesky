@@ -36,14 +36,14 @@ def dummy_params(tmp_path):
         "pump_status": False,
         #  "collection_directory": tmp_path / "foo/bar",
     }
-    with (
-        patch(
-            "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
-        ),
-        patch(
-            "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-            new=TEST_LUT,
-        ),
+    # with (
+    #     patch(
+    #         "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
+    #     ),
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+        # ),
     ):
         yield ExtruderParameters(**params)
 
@@ -64,14 +64,9 @@ def dummy_params_pp():
         "laser_delay_s": 0.005,
         #  "collection_directory": tmp_path / "foo/bar",
     }
-    with (
-        patch(
-            "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
-        ),
-        patch(
-            "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-            new=TEST_LUT,
-        ),
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
     ):
         yield ExtruderParameters(**params_pp)
 
