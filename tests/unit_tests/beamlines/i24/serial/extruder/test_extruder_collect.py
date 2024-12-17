@@ -34,7 +34,7 @@ def dummy_params(tmp_path):
         "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
-        "collection_directory": str(tmp_path / "foo/bar"),
+        "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(
@@ -252,7 +252,7 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
-    assert fake_mkdir.call_count == 4  # counting detector params & co
+    assert fake_mkdir.call_count == 6  # counting detector params & co
     mock_read_beam_info.assert_called_once()
 
 

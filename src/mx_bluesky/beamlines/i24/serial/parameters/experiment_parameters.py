@@ -97,7 +97,7 @@ class ExtruderParameters(SerialAndLaserExperiment):
             else PILATUS_6M_SIZE
         )
 
-        # self.collection_directory.mkdir(exist_ok=True, parents=True)
+        self.collection_directory.mkdir(parents=True, exist_ok=True)
 
         return DetectorParams(
             detector_size_constants=det_size_constants,
@@ -178,7 +178,7 @@ class FixedTargetParameters(SerialAndLaserExperiment):
             else PILATUS_6M_SIZE
         )
 
-        # self.collection_directory.mkdir(exist_ok=True, parents=True)
+        self.collection_directory.mkdir(parents=True, exist_ok=True)
 
         return DetectorParams(
             detector_size_constants=det_size_constants,
