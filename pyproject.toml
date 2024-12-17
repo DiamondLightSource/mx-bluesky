@@ -25,11 +25,11 @@ dependencies = [
     "matplotlib",
     "nexgen",
     "numpy",
-    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
+    "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
-    "pydantic-extra-types",
+    "pydantic-extra-types >= 2.10.1",
     "pyepics",
     "pyzmq",
     "requests",
@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.8a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@317b15e07b7ff1055207c398d0fcf635ac68915a",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@a0077625f9383e691e1b59cc3041038efd9ae268",
 ]
 
 

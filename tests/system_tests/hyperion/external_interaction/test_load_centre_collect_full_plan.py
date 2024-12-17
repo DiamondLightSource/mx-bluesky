@@ -226,7 +226,7 @@ def test_execute_load_centre_collect_full(
     robot_load_cb.expeye.end_load = MagicMock()
     robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
-        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
