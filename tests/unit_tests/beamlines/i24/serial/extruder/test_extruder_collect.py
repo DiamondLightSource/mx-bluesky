@@ -25,7 +25,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 @pytest.fixture
 def dummy_params(tmp_path):
     params = {
-        "visit": "foo",
+        "visit": "/tmp/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -34,7 +34,7 @@ def dummy_params(tmp_path):
         "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
-        "collection_directory": tmp_path / "foo/bar",
+        #  "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(
@@ -49,9 +49,9 @@ def dummy_params(tmp_path):
 
 
 @pytest.fixture
-def dummy_params_pp(tmp_path):
+def dummy_params_pp():
     params_pp = {
-        "visit": "foo",
+        "visit": "/tmp/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -62,7 +62,7 @@ def dummy_params_pp(tmp_path):
         "pump_status": True,
         "laser_dwell_s": 0.01,
         "laser_delay_s": 0.005,
-        "collection_directory": tmp_path / "foo/bar",
+        #  "collection_directory": tmp_path / "foo/bar",
     }
     with (
         patch(
