@@ -92,9 +92,7 @@ class RotationExperiment(DiffractionExperimentWithSample, WithHyperionFeatures):
             return aperture_position
 
 
-class RotationScan(
-    WithScan, RotationScanPerSweep, RotationExperiment
-):
+class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
     @property
     def detector_params(self):
         return self._detector_params(self.omega_start_deg)
