@@ -6,7 +6,6 @@ from enum import Enum
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
-from dodal.devices.zebra import RotationDirection
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
 from nexgen.nxs_utils.axes import TransformationType
 from numpy.typing import DTypeLike

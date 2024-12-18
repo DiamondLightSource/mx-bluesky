@@ -53,8 +53,6 @@ from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.sim import NullStatus
-
-from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from ophyd_async.core import (
     AsyncStatus,
     Device,
@@ -67,6 +65,7 @@ from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import _get_logging_dir, do_default_logging_setup
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -214,12 +213,12 @@ def patch_async_motor(
 
 
 @pytest.fixture(params=[False, True])
-def feature_flags_with_omega_flip(request):
+def feature_flags_update_with_omega_flip(request):
     def update_with_overrides(self):
         self.overriden_features["omega_flip"] = request.param
-        setattr(self, "omega_flip", request.param)
+        self.omega_flip = request.param
 
-    with (patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update):
+    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
         update.side_effect = update_with_overrides
         yield update
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-from dodal.devices.zebra import RotationDirection
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
@@ -17,9 +16,10 @@ from scanspec.core import AxesPoints
 
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
+    AxisDirection,
     create_detector_parameters,
     create_goniometer_axes,
-    get_start_and_predicted_end_time, AxisDirection,
+    get_start_and_predicted_end_time,
 )
 
 
