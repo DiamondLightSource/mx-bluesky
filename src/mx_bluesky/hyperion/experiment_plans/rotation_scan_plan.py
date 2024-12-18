@@ -139,7 +139,11 @@ def calculate_motion_profile(
         start_scan_deg = -start_scan_deg
         # start_motion_deg = -start_motion_deg
         # distance_to_move_deg = -distance_to_move_deg
-        direction = direction.POSITIVE if direction == direction.NEGATIVE else direction.NEGATIVE
+        direction = (
+            direction.POSITIVE
+            if direction == direction.NEGATIVE
+            else direction.NEGATIVE
+        )
 
     num_images = params.num_images
     shutter_time_s = params.shutter_opening_time_s
