@@ -29,7 +29,7 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
-    "pydantic-extra-types",
+    "pydantic-extra-types >= 2.10.1",
     "pyepics",
     "pyzmq",
     "requests",
@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.8a5",
     "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@4349f34577671c0090a843ccfde8af5f1657bb7b",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@987bc78925685dfa7237c58fd36e74060d73dbd4",
 ]
 
 
