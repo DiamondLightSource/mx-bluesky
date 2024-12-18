@@ -61,8 +61,6 @@ from dodal.log import set_up_all_logging_handlers
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
-
-from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from ophyd_async.core import (
     AsyncStatus,
     Device,
@@ -78,6 +76,7 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -229,12 +228,12 @@ def patch_async_motor(
 
 
 @pytest.fixture(params=[False, True])
-def feature_flags_with_omega_flip(request):
+def feature_flags_update_with_omega_flip(request):
     def update_with_overrides(self):
         self.overriden_features["omega_flip"] = request.param
-        setattr(self, "omega_flip", request.param)
+        self.omega_flip = request.param
 
-    with (patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update):
+    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
         update.side_effect = update_with_overrides
         yield update
 

@@ -17,7 +17,8 @@ from dodal.devices.fast_grid_scan import (
 )
 
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
-    create_beam_and_attenuator_parameters, AxisDirection,
+    AxisDirection,
+    create_beam_and_attenuator_parameters,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
@@ -242,19 +243,20 @@ def test_given_dummy_data_then_datafile_written_correctly(
     assert_data_edge_at(nexus_writer_2.nexus_file, 419)
 
 
-@pytest.mark.parametrize("axis_direction, expected_vector",
-                         [
-                             [AxisDirection.NEGATIVE, [-1, 0, 0]],
-                             [AxisDirection.POSITIVE, [1, 0, 0]]
-                         ])
+@pytest.mark.parametrize(
+    "axis_direction, expected_vector",
+    [[AxisDirection.NEGATIVE, [-1, 0, 0]], [AxisDirection.POSITIVE, [1, 0, 0]]],
+)
 def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_direction(
-        test_rotation_params,
-        axis_direction: AxisDirection,
-        expected_vector: list[float],
-        tmp_path: Path,
+    test_rotation_params,
+    axis_direction: AxisDirection,
+    expected_vector: list[float],
+    tmp_path: Path,
 ):
     test_rotation_params.storage_directory = str(tmp_path)
-    det_size = test_rotation_params.detector_params.detector_size_constants.det_size_pixels
+    det_size = (
+        test_rotation_params.detector_params.detector_size_constants.det_size_pixels
+    )
     shape = (test_rotation_params.num_images, det_size.width, det_size.height)
     nexus_writer = NexusWriter(
         test_rotation_params,
@@ -265,7 +267,7 @@ def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_dire
         phi_start_deg=test_rotation_params.phi_start_deg or 0,
         vds_start_index=0,
         meta_data_run_number=1,
-        axis_direction=axis_direction
+        axis_direction=axis_direction,
     )
     nexus_writer.beam, nexus_writer.attenuator = create_beam_and_attenuator_parameters(
         20, TEST_FLUX, 0.5
@@ -273,8 +275,10 @@ def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_dire
 
     nexus_writer.create_nexus_file(np.uint16)
     with h5py.File(nexus_writer.nexus_file, "r") as nexus_file:
-        assert all(nexus_file["/entry/data/omega"].attrs.get("vector") == expected_vector)
-        data = nexus_file["/entry/data/omega"][:]
+        assert all(
+            nexus_file["/entry/data/omega"].attrs.get("vector") == expected_vector
+        )
+        data = nexus_file["/entry/data/omega"][:]  # type: ignore
         assert all(data == test_rotation_params.scan_points["omega"])
 
 

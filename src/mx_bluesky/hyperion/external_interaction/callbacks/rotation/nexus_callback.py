@@ -9,8 +9,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callb
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
+    AxisDirection,
     create_beam_and_attenuator_parameters,
-    vds_type_based_on_bit_depth, AxisDirection,
+    vds_type_based_on_bit_depth,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
@@ -101,5 +102,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 vds_start_index=parameters.nexus_vds_start_img,
                 full_num_of_images=self.full_num_of_images,
                 meta_data_run_number=self.meta_data_run_number,
-                axis_direction=AxisDirection.NEGATIVE if parameters.features.omega_flip else AxisDirection.POSITIVE,
+                axis_direction=AxisDirection.NEGATIVE
+                if parameters.features.omega_flip
+                else AxisDirection.POSITIVE,
             )

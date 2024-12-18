@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from itertools import takewhile, dropwhile
+from itertools import dropwhile, takewhile
 from typing import Any
-from unittest.mock import MagicMock, call, patch, ANY, Mock
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -15,7 +15,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
-from dodal.devices.zebra import PC_GATE, SOFT_IN1, Zebra, RotationDirection
+from dodal.devices.zebra import PC_GATE, SOFT_IN1, RotationDirection, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
@@ -136,6 +136,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
 
 
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
+    test_rotation_params.features.omega_flip = False
     test_rotation_params.exposure_time_s = 0.2
     test_rotation_params.omega_start_deg = 10
 
@@ -725,38 +726,41 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
         )
 
 
-@pytest.mark.parametrize("omega_flip, rotation_direction, expected_start_angle, "
-                         "expected_start_angle_with_runup, expected_zebra_direction", [
-    # see https://github.com/DiamondLightSource/mx-bluesky/issues/247
-    # GDA behaviour is such that positive angles in the request result in 
-    # negative motor angles, but positive angles in the resulting nexus file
-    # Should replicate GDA Output exactly
-    [True, RotationDirection.POSITIVE, -30, -29.85, RotationDirection.NEGATIVE],
-    # Should replicate GDA Output, except with /entry/data/transformation/omega 
-    # +1, 0, 0 instead of -1, 0, 0
-    [False, RotationDirection.NEGATIVE, 30, 30.15, RotationDirection.NEGATIVE],
-    [True, RotationDirection.NEGATIVE, -30, -30.15, RotationDirection.POSITIVE],
-    [False, RotationDirection.POSITIVE, 30, 29.85, RotationDirection.POSITIVE],
-    
-])
+@pytest.mark.parametrize(
+    "omega_flip, rotation_direction, expected_start_angle, "
+    "expected_start_angle_with_runup, expected_zebra_direction",
+    [
+        # see https://github.com/DiamondLightSource/mx-bluesky/issues/247
+        # GDA behaviour is such that positive angles in the request result in
+        # negative motor angles, but positive angles in the resulting nexus file
+        # Should replicate GDA Output exactly
+        [True, RotationDirection.POSITIVE, -30, -29.85, RotationDirection.NEGATIVE],
+        # Should replicate GDA Output, except with /entry/data/transformation/omega
+        # +1, 0, 0 instead of -1, 0, 0
+        [False, RotationDirection.NEGATIVE, 30, 30.15, RotationDirection.NEGATIVE],
+        [True, RotationDirection.NEGATIVE, -30, -30.15, RotationDirection.POSITIVE],
+        [False, RotationDirection.POSITIVE, 30, 29.85, RotationDirection.POSITIVE],
+    ],
+)
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger", MagicMock()
+    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    MagicMock(),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
 )
-def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_event_params(mock_setup_zebra_for_rotation: 
-            MagicMock,
-            omega_flip: bool,
-            rotation_direction: RotationDirection,
-            expected_start_angle: float,
-            expected_start_angle_with_runup: float,
-            expected_zebra_direction: RotationDirection,
-            test_rotation_params: RotationScan,
-            fake_create_rotation_devices:
-            RotationScanComposite,
-            oav_parameters_for_rotation:
-            OAVParameters, RE: RunEngine):
+def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_event_params(
+    mock_setup_zebra_for_rotation: MagicMock,
+    omega_flip: bool,
+    rotation_direction: RotationDirection,
+    expected_start_angle: float,
+    expected_start_angle_with_runup: float,
+    expected_zebra_direction: RotationDirection,
+    test_rotation_params: RotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+):
     test_rotation_params.features.omega_flip = omega_flip
     test_rotation_params.rotation_direction = rotation_direction
     test_rotation_params.omega_start_deg = 30
@@ -780,11 +784,12 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         )
 
     assert omega_put.mock_calls[0:5] == [
-            call(0, wait=True),
-            call(90, wait=True),
-            call(180, wait=True),
-            call(270, wait=True),
-            call(expected_start_angle_with_runup, wait=True)]
+        call(0, wait=True),
+        call(90, wait=True),
+        call(180, wait=True),
+        call(270, wait=True),
+        call(expected_start_angle_with_runup, wait=True),
+    ]
     mock_setup_zebra_for_rotation.assert_called_once_with(
         fake_create_rotation_devices.zebra,
         fake_create_rotation_devices.sample_shutter,
@@ -793,11 +798,18 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         direction=expected_zebra_direction,
         shutter_opening_deg=ANY,
         shutter_opening_s=ANY,
-        group="setup_zebra"
+        group="setup_zebra",
     )
-    rotation_outer_start_event = next(dropwhile(lambda _: _.args[0] != "start" or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER, 
-                                 mock_callback.mock_calls))
-    event_params = RotationScan.model_validate_json(rotation_outer_start_event.args[1]["hyperion_parameters"])
+    rotation_outer_start_event = next(
+        dropwhile(
+            lambda _: _.args[0] != "start"
+            or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
+            mock_callback.mock_calls,
+        )
+    )
+    event_params = RotationScan.model_validate_json(
+        rotation_outer_start_event.args[1]["hyperion_parameters"]
+    )
     # event params are not transformed
     assert event_params.omega_start_deg == 30
     assert event_params.rotation_direction == rotation_direction
