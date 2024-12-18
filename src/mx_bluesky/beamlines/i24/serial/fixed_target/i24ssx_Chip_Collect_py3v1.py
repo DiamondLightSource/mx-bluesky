@@ -410,7 +410,7 @@ def start_i24(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True, exist_ok=True)
+        # NOTE Directory now created by the parameter model
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -548,7 +548,9 @@ def main_fixed_target_plan(
     SSX_LOGGER.info("Running a chip collection on I24")
 
     yield from sup.set_detector_beam_center_plan(
-        beam_center_device, parameters.detector_name
+        beam_center_device,
+        parameters.detector_params,
+        parameters.detector_distance_mm,
     )
 
     SSX_LOGGER.info("Getting Program Dictionary")

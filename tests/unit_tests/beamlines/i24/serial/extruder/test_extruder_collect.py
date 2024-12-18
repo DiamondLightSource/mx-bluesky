@@ -4,6 +4,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3
 from ophyd_async.testing import get_mock_put, set_mock_value
+from tests.unit_tests.beamlines.i24.serial.conftest import TEST_LUT
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
@@ -24,7 +25,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 @pytest.fixture
 def dummy_params():
     params = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -34,13 +35,17 @@ def dummy_params():
         "num_images": 10,
         "pump_status": False,
     }
-    return ExtruderParameters(**params)
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+    ):
+        yield ExtruderParameters(**params)
 
 
 @pytest.fixture
 def dummy_params_pp():
     params_pp = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -52,7 +57,11 @@ def dummy_params_pp():
         "laser_dwell_s": 0.01,
         "laser_delay_s": 0.005,
     }
-    return ExtruderParameters(**params_pp)
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+    ):
+        yield ExtruderParameters(**params_pp)
 
 
 @pytest.fixture
@@ -171,14 +180,10 @@ async def test_laser_check(
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
-)
-@patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
 )
 def test_run_extruder_quickshot_with_eiger(
     mock_read_beam_info,
-    fake_mkdir,
     fake_read,
     mock_quickshot_plan,
     fake_sup,
@@ -231,8 +236,6 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
-    assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_once()
     mock_read_beam_info.assert_called_once()
 
 

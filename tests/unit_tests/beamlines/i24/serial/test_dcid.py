@@ -12,6 +12,7 @@ from mx_bluesky.beamlines.i24.serial.dcid import (
 )
 from mx_bluesky.beamlines.i24.serial.parameters import (
     BeamSettings,
+    DetectorName,
     ExtruderParameters,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
@@ -25,7 +26,9 @@ def test_read_beam_info_from_hardware(
     expected_beam_y = 1702 * 0.075
 
     res = RE(
-        read_beam_info_from_hardware(dcm, mirrors, eiger_beam_center, "eiger")
+        read_beam_info_from_hardware(
+            dcm, mirrors, eiger_beam_center, DetectorName.EIGER
+        )
     ).plan_result  # type: ignore
 
     assert res.wavelength_in_a == 0.6
