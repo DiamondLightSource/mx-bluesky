@@ -290,6 +290,8 @@ def _xrc_result_in_boxes_to_result_in_mm(
     # the corners of the box in motor-space; we do not apply this correction
     # to the xray-centre as it is already in continuous space and the conversion has
     # been performed already
+    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
+    # so we subtract half a box to get the corner of the box
     return XRayCentreResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
