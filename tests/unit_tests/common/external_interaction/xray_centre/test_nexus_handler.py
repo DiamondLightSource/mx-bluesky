@@ -8,7 +8,6 @@ from numpy.typing import DTypeLike
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 
 from .....conftest import TestData
 
@@ -24,7 +23,7 @@ def nexus_writer():
 def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
     nexus_writer: MagicMock,
 ):
-    nexus_handler = GridscanNexusFileCallback(HyperionThreeDGridScan)
+    nexus_handler = GridscanNexusFileCallback()
     nexus_writer.assert_not_called()
     nexus_handler.activity_gated_start(TestData.test_start_document)
     nexus_writer.assert_not_called()
@@ -37,7 +36,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
-    nexus_handler = GridscanNexusFileCallback(HyperionThreeDGridScan)
+    nexus_handler = GridscanNexusFileCallback()
 
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
@@ -74,7 +73,7 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
     vds_type: DTypeLike,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
-    nexus_handler = GridscanNexusFileCallback(HyperionThreeDGridScan)
+    nexus_handler = GridscanNexusFileCallback()
 
     nexus_handler.activity_gated_start(TestData.test_start_document)
     nexus_handler.activity_gated_descriptor(
@@ -102,7 +101,7 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
     mock_nexus_writer: MagicMock,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
-    nexus_handler = GridscanNexusFileCallback(HyperionThreeDGridScan)
+    nexus_handler = GridscanNexusFileCallback()
 
     nexus_handler.activity_gated_start(TestData.test_start_document)
     nexus_handler.activity_gated_descriptor(
@@ -121,7 +120,7 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
 def test_sensible_error_if_writing_triggered_before_params_received(
     nexus_writer: MagicMock,
 ):
-    nexus_handler = GridscanNexusFileCallback(HyperionThreeDGridScan)
+    nexus_handler = GridscanNexusFileCallback()
     with pytest.raises(AssertionError) as excinfo:
         nexus_handler.activity_gated_descriptor(
             TestData.test_descriptor_document_during_data_collection

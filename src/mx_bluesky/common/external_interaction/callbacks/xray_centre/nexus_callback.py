@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -16,8 +16,6 @@ from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
-
-T = TypeVar("T", bound="ThreeDGridScan")
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -37,9 +35,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, param_type: type[T]) -> None:
+    def __init__(self) -> None:
         super().__init__(NEXUS_LOGGER)
-        self.param_type = param_type
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
