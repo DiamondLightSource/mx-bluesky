@@ -17,7 +17,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.utils import get_chip_format
 
 def test_extruder_params(dummy_params_ex):
     assert isinstance(dummy_params_ex, ExtruderParameters)
-    assert dummy_params_ex.collection_directory == Path("/tmp/foo/bar")
+    assert dummy_params_ex.collection_directory == Path("/tmp/dls/i24/extruder/foo/bar")
     assert dummy_params_ex.nexgen_experiment_type == "extruder"
     assert dummy_params_ex.ispyb_experiment_type is SSXType.EXTRUDER
 

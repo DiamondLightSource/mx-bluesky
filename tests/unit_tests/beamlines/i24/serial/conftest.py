@@ -42,7 +42,7 @@ TEST_LUT = {
 def dummy_params_without_pp(tmp_path):
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
-        "visit": "/tmp/foo",
+        "visit": "/tmp/dls/i24/fixed/foo",
         "directory": "bar",
         "filename": "chip",
         "exposure_time_s": 0.01,
@@ -68,7 +68,7 @@ def dummy_params_without_pp(tmp_path):
 @pytest.fixture
 def dummy_params_ex(tmp_path):
     params = {
-        "visit": "/tmp/foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,

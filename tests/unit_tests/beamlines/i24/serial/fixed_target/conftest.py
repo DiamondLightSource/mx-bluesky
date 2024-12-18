@@ -21,7 +21,7 @@ TEST_LUT = {
 def dummy_params_with_pp(tmp_path):
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
-        "visit": "/tmp/foo",
+        "visit": "/tmp/dls/i24/fixed/foo",
         "directory": "bar",
         "filename": "chip",
         "exposure_time_s": 0.01,
