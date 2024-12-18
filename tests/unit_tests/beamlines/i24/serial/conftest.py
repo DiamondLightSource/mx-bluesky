@@ -39,7 +39,7 @@ TEST_LUT = {
 
 
 @pytest.fixture
-def dummy_params_without_pp(tmp_path):
+def dummy_params_without_pp():
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
         "visit": "/tmp/dls/i24/fixed/foo",
@@ -55,18 +55,16 @@ def dummy_params_without_pp(tmp_path):
         "pump_repeat": 0,
         "checker_pattern": False,
         "chip_map": [1],
-        #  "collection_directory": tmp_path / "foo/bar",
     }
     with patch(
         "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
-        # ),
     ):
         yield FixedTargetParameters(**params)
 
 
 @pytest.fixture
-def dummy_params_ex(tmp_path):
+def dummy_params_ex():
     params = {
         "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
@@ -77,17 +75,11 @@ def dummy_params_ex(tmp_path):
         "transmission": 1.0,
         "num_images": 10,
         "pump_status": False,
-        # "collection_directory": tmp_path / "foo/bar",
     }
-    # with (
-    # patch(
-    #     "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.Path.mkdir"
-    # ),
     with patch(
         "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
-        # ):
         yield ExtruderParameters(**params)
 
 
