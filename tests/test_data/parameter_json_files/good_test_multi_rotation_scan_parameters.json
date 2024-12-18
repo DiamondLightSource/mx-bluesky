@@ -28,7 +28,7 @@
     },{
         "rotation_axis": "omega",
         "rotation_direction": "Negative",
-        "scan_width_deg": 90.0,
+        "scan_width_deg": 180.0,
         "omega_start_deg": 180.0,
         "phi_start_deg": 0.47,
         "chi_start_deg": 4.7,
@@ -38,7 +38,7 @@
     },{
         "rotation_axis": "omega",
         "rotation_direction": "Positive",
-        "scan_width_deg": 360.0,
+        "scan_width_deg": 180.0,
         "omega_start_deg": 270.0,
         "phi_start_deg": 0.47,
         "chi_start_deg": 45,

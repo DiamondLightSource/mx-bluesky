@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from itertools import accumulate
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
 from annotated_types import Len
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -140,6 +140,17 @@ class MultiRotationScan(RotationExperiment, SplitScan):
             scan.nexus_vds_start_img = int(start_img)
             start_img += scan.scan_width_deg / values.rotation_increment_deg
         return values
+
+    @model_validator(mode="after")
+    def _check_valid_for_single_arm_multiple_sweep(self) -> Self:
+        if len(self.rotation_scans) > 0:
+            scan_width = self.rotation_scans[0].scan_width_deg
+            for scan in self.rotation_scans[1:]:
+                assert (
+                    scan.scan_width_deg == scan_width
+                ), "Sweeps with different numbers of frames are not supported."
+
+        return self
 
     @property
     def single_rotation_scans(self) -> Iterator[RotationScan]:
