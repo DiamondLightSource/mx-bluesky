@@ -65,6 +65,7 @@ from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import _get_logging_dir, do_default_logging_setup
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -209,6 +210,17 @@ def patch_async_motor(
     set_mock_value(motor.motor_done_move, 1)
     set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
+
+
+@pytest.fixture(params=[False, True])
+def feature_flags_update_with_omega_flip(request):
+    def update_with_overrides(self):
+        self.overriden_features["omega_flip"] = request.param
+        self.omega_flip = request.param
+
+    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
+        update.side_effect = update_with_overrides
+        yield update
 
 
 @pytest.fixture

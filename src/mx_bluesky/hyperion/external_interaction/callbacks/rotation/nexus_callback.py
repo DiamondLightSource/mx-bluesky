@@ -6,6 +6,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback i
     PlanReactiveCallback,
 )
 from mx_bluesky.hyperion.external_interaction.nexus.nexus_utils import (
+    AxisDirection,
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
 )
@@ -100,5 +101,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 vds_start_index=parameters.nexus_vds_start_img,
                 full_num_of_images=self.full_num_of_images,
                 meta_data_run_number=self.meta_data_run_number,
-                rotation_direction=parameters.rotation_direction,
+                axis_direction=AxisDirection.NEGATIVE
+                if parameters.features.omega_flip
+                else AxisDirection.POSITIVE,
             )
