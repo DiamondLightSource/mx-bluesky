@@ -20,7 +20,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
-    OavGridDetectionComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
@@ -36,11 +35,15 @@ from ..conftest import OavGridSnapshotTestEvents
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
-def fake_generator_array(values):
-    return [fake_generator(value) for value in values]
+def _fake_flyscan(*args):
+    yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
-def fake_generator(value):
+def _fake_generator_array(values):
+    return [_fake_generator(value) for value in values]
+
+
+def _fake_generator(value):
     yield from bps.null()
     return value
 
@@ -48,44 +51,16 @@ def fake_generator(value):
 def _setup_grid_detection(
     mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
 ):
-    mock_rd.side_effect = fake_generator_array(
+    mock_rd.side_effect = _fake_generator_array(
         [0.031496, 0.05, [0], [1600], 10, [0], [400], 10]
     )
 
-    mock_pre_centring_setup_oav.side_effect = fake_generator_array(
+    mock_pre_centring_setup_oav.side_effect = _fake_generator_array(
         None for _ in range(2)
     )
-    mock_wait_for_tip_to_be_found.side_effect = fake_generator_array(
+    mock_wait_for_tip_to_be_found.side_effect = _fake_generator_array(
         [np.array([0, 0]) for _ in range(2)]
     )
-
-
-def _fake_grid_detection(
-    devices: OavGridDetectionComposite,
-    parameters: OAVParameters,
-    snapshot_template: str,
-    snapshot_dir: str,
-    grid_width_microns: float = 0,
-    box_size_um: float = 0.0,
-):
-    oav = devices.oav
-    set_mock_value(oav.grid_snapshot.box_width, 635)
-    # first grid detection: x * y
-    set_mock_value(oav.grid_snapshot.num_boxes_x, 10)
-    set_mock_value(oav.grid_snapshot.num_boxes_y, 4)
-    yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    yield from bps.read(devices.smargon)
-    yield from bps.save()
-
-    # second grid detection: x * z, so num_boxes_y refers to smargon z
-    set_mock_value(oav.grid_snapshot.num_boxes_x, 10)
-    set_mock_value(oav.grid_snapshot.num_boxes_y, 1)
-    yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    yield from bps.read(devices.smargon)
-    yield from bps.save()
-    yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
 def test_full_grid_scan(
@@ -140,8 +115,6 @@ async def test_detect_grid_and_do_gridscan(
     _setup_grid_detection(
         mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
     )
-
-    test_full_grid_scan_params.grid_width_um = 200
 
     composite = grid_detect_devices_with_oav_config_params
 
@@ -312,13 +285,14 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
     autospec=True,
+    side_effect=_fake_flyscan,
 )
 def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     mock_flyscan: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_wait_for_tip_to_be_found: MagicMock,
     mock_pre_centring_setup_oav: MagicMock,
     mock_rd: MagicMock,
-    mock_change_aperture_then_move_to_xtal: MagicMock,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
@@ -327,6 +301,7 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     _setup_grid_detection(
         mock_rd, mock_pre_centring_setup_oav, mock_wait_for_tip_to_be_found
     )
+
     RE(
         grid_detect_then_xray_centre(
             grid_detect_devices_with_oav_config_params,
@@ -335,6 +310,7 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
         )
     )
     mock_change_aperture_then_move_to_xtal.assert_called_once()
+
     assert (
         mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
         == FLYSCAN_RESULT_MED
