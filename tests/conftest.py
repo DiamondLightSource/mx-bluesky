@@ -30,7 +30,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
 )
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -632,7 +632,7 @@ def fake_create_rotation_devices(
     zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     flux: Flux,
     undulator: Undulator,
     aperture_scatterguard: ApertureScatterguard,

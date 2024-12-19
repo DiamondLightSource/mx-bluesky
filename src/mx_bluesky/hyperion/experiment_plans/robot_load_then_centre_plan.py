@@ -9,7 +9,7 @@ from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -69,7 +69,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 class RobotLoadThenCentreComposite:
     # common fields
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
     # GridDetectThenXRayCentreComposite fields
     aperture_scatterguard: ApertureScatterguard
