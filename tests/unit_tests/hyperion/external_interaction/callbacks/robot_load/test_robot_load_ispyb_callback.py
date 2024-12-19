@@ -9,10 +9,10 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.webcam import Webcam
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 VISIT = "cm31105-4"

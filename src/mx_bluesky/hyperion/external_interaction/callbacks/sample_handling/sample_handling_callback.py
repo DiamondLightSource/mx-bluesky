@@ -8,18 +8,18 @@ from bluesky.preprocessors import contingency_wrapper
 from bluesky.utils import Msg, make_decorator
 from event_model import Event, EventDescriptor, RunStart
 
-from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
-from mx_bluesky.hyperion.external_interaction.callbacks.common.abstract_event import (
+from mx_bluesky.common.external_interaction.callbacks.common.abstract_event import (
     AbstractEvent,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundException, SampleException
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 # TODO remove this event-raising shenanigans once
@@ -47,7 +47,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
     field according to the type of exception raised."""
 
     def __init__(self):
-        super().__init__(log=ISPYB_LOGGER)
+        super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
         self._sample_id: int | None = None
         self._descriptor: str | None = None
 
