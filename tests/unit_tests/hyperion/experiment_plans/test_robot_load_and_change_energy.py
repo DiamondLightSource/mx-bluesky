@@ -30,16 +30,6 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def fake_composite_device():
-    return RobotLoadAndEnergyChangeComposite
-
-
-@pytest.fixture
-def fake_sample_location():
-    return SampleLocation(puck=0, pin=0)
-
-
-@pytest.fixture
 def robot_load_and_energy_change_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
