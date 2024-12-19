@@ -26,8 +26,9 @@ def change_aperture_then_move_to_xtal(
             best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
         )
         with TRACER.start_span("change_aperture"):
-            yield from _set_aperture_for_bbox_mm(
-                aperture_scatterguard, bounding_box_size
+            yield from set_aperture_for_bbox_size(
+                aperture_scatterguard,
+                bounding_box_size,
             )
     else:
         LOGGER.warning("No bounding box size received")
@@ -49,22 +50,13 @@ def change_aperture_then_move_to_xtal(
         )
 
 
-def _set_aperture_for_bbox_mm(
-    aperture_device: ApertureScatterguard, bbox_size_mm: list[float] | numpy.ndarray
-):
-    # TODO confirm correction factor see https://github.com/DiamondLightSource/mx-bluesky/issues/618
-    ASSUMED_BOX_SIZE_MM = 0.020
-    bbox_size_boxes = [round(mm / ASSUMED_BOX_SIZE_MM) for mm in bbox_size_mm]
-    yield from set_aperture_for_bbox_size(aperture_device, bbox_size_boxes)
-
-
 def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
-    bbox_size: list[int] | numpy.ndarray,
+    bbox_size: list[float] | numpy.ndarray,
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
     new_selected_aperture = (
-        ApertureValue.MEDIUM if bbox_size[0] < 2 else ApertureValue.LARGE
+        ApertureValue.MEDIUM if bbox_size[0] < 0.05 else ApertureValue.LARGE
     )
     LOGGER.info(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
