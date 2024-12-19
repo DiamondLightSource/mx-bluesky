@@ -7,7 +7,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot
 from dodal.devices.webcam import Webcam
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (

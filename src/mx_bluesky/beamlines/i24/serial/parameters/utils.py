@@ -6,6 +6,12 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, pv
 
+OXFORD_BLOCKS_PVS = [f"ME14E-MO-IOC-01:GP{i}" for i in range(11, 75)]
+
+
+class EmptyMapError(Exception):
+    pass
+
 
 def get_chip_format(chip_type: ChipType) -> ChipDescription:
     """Default parameter values."""
@@ -40,3 +46,16 @@ def get_chip_format(chip_type: ChipType) -> ChipDescription:
             defaults["b2b_horz"] = defaults["b2b_vert"] = 0.0
     chip_params: dict[str, Any] = {"chip_type": chip_type, **defaults}
     return ChipDescription(**chip_params)
+
+
+def get_chip_map() -> list[int]:
+    """Return a list of blocks (the 'chip map') to be collected on an Oxford type chip \
+        when using lite mapping."""
+    chipmap = []
+    for n, block_pv in enumerate(OXFORD_BLOCKS_PVS):
+        block_val = int(caget(block_pv))
+        if block_val == 1:
+            chipmap.append(n + 1)
+    if len(chipmap) == 0:
+        raise EmptyMapError("No blocks selected for Lite map.")
+    return chipmap

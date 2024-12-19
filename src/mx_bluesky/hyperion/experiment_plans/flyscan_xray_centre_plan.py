@@ -82,6 +82,8 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
+ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
+
 
 class SmargonSpeedException(Exception):
     pass
@@ -250,10 +252,20 @@ def run_gridscan_and_fetch_results(
             LOGGER.info("Zocalo triggered and read, interpreting results.")
             xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
-            if xrc_results:
+            filtered_results = [
+                result
+                for result in xrc_results
+                if result["total_count"] >= ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
+            ]
+            discarded_count = len(xrc_results) - len(filtered_results)
+            if discarded_count > 0:
+                LOGGER.info(
+                    f"Removed {discarded_count} results because below threshold"
+                )
+            if filtered_results:
                 flyscan_results = [
                     _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
-                    for xr in xrc_results
+                    for xr in filtered_results
                 ]
             else:
                 LOGGER.warning("No X-ray centre received")
@@ -277,14 +289,20 @@ def _xrc_result_in_boxes_to_result_in_mm(
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )
+    # A correction is applied to the bounding box to map discrete grid coordinates to
+    # the corners of the box in motor-space; we do not apply this correction
+    # to the xray-centre as it is already in continuous space and the conversion has
+    # been performed already
+    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
+    # so we subtract half a box to get the corner of the box
     return XRayCentreResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][0])
+                np.array(xrc_result["bounding_box"][0]) - 0.5
             ),
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][1])
+                np.array(xrc_result["bounding_box"][1]) - 0.5
             ),
         ),
         max_count=xrc_result["max_count"],

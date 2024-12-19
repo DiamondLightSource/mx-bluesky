@@ -5,7 +5,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,

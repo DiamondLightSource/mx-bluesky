@@ -6,7 +6,7 @@ import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -154,6 +154,10 @@ def oav_for_system_test(test_config_files):
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
         set_mock_value(oav.zoom_controller.level, "1.0")
+        zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
+        oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
+            return_value=zoom_levels_list
+        )
         yield oav
 
 

@@ -9,6 +9,24 @@ from mx_bluesky.common.utils.log import LOGGER
 
 
 class GridParamUpdate(TypedDict):
+    """
+    Grid parameters extracted from the grid detection.
+    Positions are in motor-space.
+
+    Attributes:
+        x_start_um: x position of the centre of the first xy-gridscan box in microns
+        y_start_um: y position of the centre of the first xy-gridscan box in microns
+        y2_start_um: y position of the centre of the first xz-gridscan box in microns
+        z_start_um: z position of the centre of the first xy-gridscan box in microns
+        z2_start_um: z position of the centre of the first xz-gridscan box in microns
+        x_steps: Number of grid boxes in x-direction for xy- and xz- gridscans
+        y_steps: Number of grid boxes in y-direction for xy-gridscan
+        z_steps: Number of grid boxes in z-direction for xz-gridscan
+        x_step_size_um: x-dimension of the grid box
+        y_step_size_um: y-dimension of the grid box
+        z_step_size_um: z-dimension of the grid box
+    """
+
     x_start_um: float
     y_start_um: float
     y2_start_um: float

@@ -21,17 +21,24 @@ from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
 
-from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, Fiducials
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
+    ChipType,
+    Fiducials,
+    MappingType,
+)
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    FixedTargetParameters,
+    get_chip_format,
+    get_chip_map,
+)
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     CS_FILES_PATH,
     LITEMAP_PATH,
-    PARAM_FILE_NAME,
     PARAM_FILE_PATH_FT,
     PVAR_FILE_PATH,
 )
@@ -47,6 +54,8 @@ CHIP_MOVES = {
     ChipType.Custom: 25.40,
     ChipType.Minichip: 25.40,
 }
+OXFORD_CHIP_WIDTH = 8
+PVAR_TEMPLATE = f"P3%0{2}d1"
 CHIPTYPE_PV = pv.me14e_gp1
 MAPTYPE_PV = pv.me14e_gp2
 NUM_EXPOSURES_PV = pv.me14e_gp3
@@ -107,22 +116,35 @@ def initialise_stages(
 
 
 @log_on_entry
-def write_parameter_file(
+def read_parameters(
     detector_stage: DetectorMotion,
     attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
-    param_path: Path = PARAM_FILE_PATH_FT
-    # Create directory if it doesn't yet exist.
-    param_path.mkdir(parents=True, exist_ok=True)
+    """ Read the parameters from user input and create the parameter model for a fixed \
+        target collection.
 
-    SSX_LOGGER.info(
-        f"Writing Parameter File: {(param_path / PARAM_FILE_NAME).as_posix()}"
-    )
+    Args:
+        detector_stage (DetectorMotion): The detector stage device.
+        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+            transmission value.
+
+    Returns:
+        FixedTargetParameters: Parameter model for fixed target collections
+
+    """
+    SSX_LOGGER.info("Creating parameter model from input.")
 
     filename = caget(pv.me14e_chip_name)
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType(int(caget(CHIPTYPE_PV))))
     map_type = int(caget(MAPTYPE_PV))
+    if map_type == MappingType.Lite and chip_params.chip_type in [
+        ChipType.Oxford,
+        ChipType.OxfordInner,
+    ]:
+        chip_map = get_chip_map()
+    else:
+        chip_map = []
     pump_repeat = int(caget(PUMP_REPEAT_PV))
 
     # If file name ends in a digit this causes processing/pilatus pain.
@@ -153,6 +175,7 @@ def write_parameter_file(
         "map_type": map_type,
         "pump_repeat": pump_repeat,
         "checker_pattern": bool(caget(pv.me14e_gp111)),
+        "chip_map": chip_map,
         "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
         "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
         "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
@@ -160,13 +183,11 @@ def write_parameter_file(
         else None,
     }
 
-    with open(param_path / PARAM_FILE_NAME, "w") as f:
-        json.dump(params_dict, f, indent=4)
-
-    SSX_LOGGER.info("Information written to file \n")
+    SSX_LOGGER.info("Parameters for I24 serial collection: \n")
     SSX_LOGGER.info(pformat(params_dict))
 
     yield from bps.null()
+    return FixedTargetParameters(**params_dict)
 
 
 def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):
@@ -221,59 +242,25 @@ def define_current_chip(
 
 
 @log_on_entry
-def save_screen_map() -> MsgGenerator:
-    litemap_path: Path = LITEMAP_PATH
-    litemap_path.mkdir(parents=True, exist_ok=True)
+def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator:
+    """Upload the map parameters for an Oxford-type chip (width=8) to the geobrick.
 
-    SSX_LOGGER.info(f"Saving {litemap_path.as_posix()} currentchip.map")
-    with open(litemap_path / "currentchip.map", "w") as f:
-        SSX_LOGGER.debug("Printing only blocks with block_val == 1")
-        for x in range(1, 82):
-            block_str = f"ME14E-MO-IOC-01:GP{x + 10:d}"
-            block_val = int(caget(block_str))
-            if block_val == 1:
-                SSX_LOGGER.info(f"{block_str} {block_val:d}")
-            line = f"{x:02d}status    P3{x:02d}1 \t{block_val}\n"
-            f.write(line)
-    yield from bps.null()
+    Args:
+        pmac (PMAC): The PMAC device.
+        chip_map (list[int]): A list of selected blocks to be collected.
 
-
-@log_on_entry
-def upload_parameters(pmac: PMAC = inject("pmac")) -> MsgGenerator:
+    """
     SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
-    caput(CHIPTYPE_PV, 0)
-    width = 8
-
-    map_file: Path = LITEMAP_PATH / "currentchip.map"
-    if not map_file.exists():
-        raise FileNotFoundError(f"The file {map_file} has not yet been created")
-
-    with open(map_file) as f:
-        SSX_LOGGER.info(f"Chipid {ChipType.Oxford}")
-        SSX_LOGGER.info(f"width {width}")
-        x = 1
-        for line in f.readlines()[: width**2]:
-            cols = line.split()
-            pvar = cols[1]
-            value = cols[2]
-            s = pvar + "=" + value
-            if value != "1":
-                s2 = pvar + "   "
-                sys.stdout.write(s2)
-            else:
-                sys.stdout.write(s + " ")
-            sys.stdout.flush()
-            if x == width:
-                print()
-                x = 1
-            else:
-                x += 1
-            yield from bps.abs_set(pmac.pmac_string, s, wait=True)
-            sleep(0.02)
-
-    SSX_LOGGER.warning("Automatic Setting Mapping Type to Lite has been disabled")
+    SSX_LOGGER.info(f"Chipid {ChipType.Oxford}, width {OXFORD_CHIP_WIDTH}")
+    for block in range(1, 65):
+        value = 1 if block in chip_map else 0
+        pvar = PVAR_TEMPLATE % block
+        pvar_str = f"{pvar}={value}"
+        SSX_LOGGER.debug(f"Set {pvar_str} for block {block}")
+        yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
+        # Wait for PMAC to be done processing PVAR string
+        sleep(0.02)
     SSX_LOGGER.debug("Upload parameters done.")
-    yield from bps.null()
 
 
 @log_on_entry

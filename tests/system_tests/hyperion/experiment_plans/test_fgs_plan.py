@@ -11,7 +11,7 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,

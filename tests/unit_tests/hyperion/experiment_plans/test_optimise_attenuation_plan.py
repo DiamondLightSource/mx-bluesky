@@ -7,7 +7,8 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan

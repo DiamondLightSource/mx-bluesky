@@ -16,8 +16,8 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
-from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 from ophyd_async.epics.motor import Motor
+from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -43,6 +43,7 @@ def dummy_params_without_pp():
         "map_type": 1,
         "pump_repeat": 0,
         "checker_pattern": False,
+        "chip_map": [1],
     }
     return FixedTargetParameters(**params)
 
@@ -173,6 +174,6 @@ def pilatus_beam_center(RE) -> DetectorBeamCenter:
 @pytest.fixture
 def mirrors(RE) -> FocusMirrorsMode:
     mirrors: FocusMirrorsMode = i24.focus_mirrors(fake_with_ophyd_sim=True)
-    set_mock_value(mirrors.horizontal, HFocusMode.focus10)
-    set_mock_value(mirrors.vertical, VFocusMode.focus10)
+    set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
+    set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors

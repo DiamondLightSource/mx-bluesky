@@ -98,9 +98,11 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     feedback from making unnecessary corrections while beam is being adjusted."""
 
     # Adjust DCM Pitch
-    dcm = undulator_dcm.dcm
+    dcm = undulator_dcm.dcm_ref()
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
-    d_spacing_a: float = yield from bps.rd(undulator_dcm.dcm.crystal_metadata_d_spacing)
+    d_spacing_a: float = yield from bps.rd(
+        undulator_dcm.dcm_ref().crystal_metadata_d_spacing
+    )
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(

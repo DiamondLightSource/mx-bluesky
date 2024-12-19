@@ -16,7 +16,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra import PC_GATE, SOFT_IN1, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
-from ophyd_async.core import get_mock_put
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,

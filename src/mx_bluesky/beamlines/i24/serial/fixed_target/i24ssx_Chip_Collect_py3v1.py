@@ -2,14 +2,12 @@
 Fixed target data collection
 """
 
-import shutil
 from datetime import datetime
 from pathlib import Path
 from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator import ReadOnlyAttenuator
@@ -35,18 +33,11 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
-    write_parameter_file,
+    read_parameters,
+    upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
-from mx_bluesky.beamlines.i24.serial.parameters import (
-    ChipDescription,
-    FixedTargetParameters,
-)
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    LITEMAP_PATH,
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH_FT,
-)
+from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -105,19 +96,6 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
             # Long delay between pump and probe, with fast shutter opening and closing.
             timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
-
-
-def copy_files_to_data_location(
-    dest_dir: Path | str,
-    param_path: Path = PARAM_FILE_PATH_FT,
-    map_file: Path = LITEMAP_PATH,
-    map_type: MappingType = MappingType.Lite,
-):
-    if not isinstance(dest_dir, Path):
-        dest_dir = Path(dest_dir)
-    shutil.copy2(param_path / "parameters.txt", dest_dir / "parameters.txt")
-    if map_type == MappingType.Lite:
-        shutil.copy2(map_file / "currentchip.map", dest_dir / "currentchip.map")
 
 
 def write_userlog(
@@ -308,50 +286,18 @@ def get_prog_num(
 
 
 @log_on_entry
-def datasetsizei24(
-    n_exposures: int,
-    chip_params: ChipDescription,
-    map_type: MappingType,
-) -> int:
-    # Calculates how many images will be collected based on map type and N repeats
-    SSX_LOGGER.info("Calculate total number of images expected in data collection.")
+def set_datasize(
+    parameters: FixedTargetParameters,
+):
+    SSX_LOGGER.info("Setting PV to calculated total number of images")
 
-    if map_type == MappingType.NoMap:
-        if chip_params.chip_type == ChipType.Custom:
-            total_numb_imgs = chip_params.x_num_steps * chip_params.y_num_steps
-            SSX_LOGGER.info(
-                f"Map type: None \tCustom chip \tNumber of images {total_numb_imgs}"
-            )
-        else:
-            chip_format = chip_params.chip_format[:4]
-            total_numb_imgs = int(np.prod(chip_format))
-            SSX_LOGGER.info(
-                f"""Map type: None \tOxford chip {chip_params.chip_type} \t \
-                    Number of images {total_numb_imgs}"""
-            )
+    SSX_LOGGER.debug(f"Map type: {parameters.map_type}")
+    SSX_LOGGER.debug(f"Chip type: {parameters.chip.chip_type}")
+    if parameters.map_type == MappingType.Lite:
+        SSX_LOGGER.debug(f"Num exposures: {parameters.num_exposures}")
+        SSX_LOGGER.debug(f"Block count: {len(parameters.chip_map)}")
 
-    elif map_type == MappingType.Lite:
-        SSX_LOGGER.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
-        chip_format = chip_params.chip_format[2:4]
-        block_count = 0
-        with open(LITEMAP_PATH / "currentchip.map") as f:
-            for line in f.readlines():
-                entry = line.split()
-                if entry[2] == "1":
-                    block_count += 1
-
-        SSX_LOGGER.info(f"Block count={block_count}")
-        SSX_LOGGER.info(f"Chip format={chip_format}")
-
-        SSX_LOGGER.info(f"Number of exposures={n_exposures}")
-
-        total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
-        SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
-
-    SSX_LOGGER.info("Set PV to calculated number of images.")
-    caput(pv.me14e_gp10, int(total_numb_imgs))
-
-    return int(total_numb_imgs)
+    caput(pv.me14e_gp10, parameters.total_num_images)
 
 
 @log_on_entry
@@ -622,9 +568,7 @@ def main_fixed_target_plan(
         parameters.checker_pattern,
     )
 
-    parameters.total_num_images = datasetsizei24(
-        parameters.num_exposures, parameters.chip, parameters.map_type
-    )
+    set_datasize(parameters)
 
     start_time = yield from start_i24(
         zebra,
@@ -695,8 +639,7 @@ def collection_complete_plan(
     SSX_LOGGER.debug(f"Collection end time {end_time}")
     dcid.collection_complete(end_time, aborted=False)
 
-    # Copy parameter file and eventual chip map to collection directory
-    copy_files_to_data_location(collection_directory, map_type=map_type)
+    # NOTE no files to copy anymore but shoud write userlog here
     yield from bps.null()
 
 
@@ -749,29 +692,13 @@ def run_fixed_target_plan(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
-    # in the first instance, write params here
-    yield from write_parameter_file(detector_stage, attenuator)
+    # Read the parameters
+    parameters: FixedTargetParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
 
-    SSX_LOGGER.info("Getting parameters from file.")
-    parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
-
-    log_msg = f"""
-            Parameters for I24 serial collection: \n
-                Chip name is {parameters.filename}
-                visit = {parameters.visit}
-                sub_dir = {parameters.directory}
-                n_exposures = {parameters.num_exposures}
-                chip_type = {str(parameters.chip.chip_type)}
-                map_type = {str(parameters.map_type)}
-                dcdetdist = {parameters.detector_distance_mm}
-                exptime = {parameters.exposure_time_s}
-                det_type = {parameters.detector_name}
-                pump_repeat = {str(parameters.pump_repeat)}
-                pumpexptime = {parameters.laser_dwell_s}
-                pumpdelay = {parameters.laser_delay_s}
-                prepumpexptime = {parameters.pre_pump_exposure_s}
-        """
-    SSX_LOGGER.info(log_msg)
+    if parameters.chip_map:
+        upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 

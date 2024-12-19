@@ -12,7 +12,8 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -225,7 +226,7 @@ def test_execute_load_centre_collect_full(
     robot_load_cb.expeye.end_load = MagicMock()
     robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
-        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
