@@ -56,6 +56,10 @@ def set_aperture_for_bbox_mm(
 ):
     """Sets aperture size based on bbox_size.
 
+    This function determines the aperture size needed to accomodate the bounding box
+    of a crystal. The x-axis length of the bounding box is used, setting the aperture
+    to Medium if this is less than 50um, and Large otherwise.
+
     Args:
         aperture_device: The aperture scatter gaurd device we are controlling.
         bbox_size_mm: The [x,y,z] lengths, in mm, of a bounding box
@@ -64,6 +68,9 @@ def set_aperture_for_bbox_mm(
         * The maximum height a crystal occupies
         * The maximum depth a crystal occupies
         constructing a three dimensional cuboid, completely encapsulating the crystal.
+
+    Yields:
+        Iterator[MsgGenerator]
     """
 
     # bbox_size is [x,y,z], for i03 we only care about x
