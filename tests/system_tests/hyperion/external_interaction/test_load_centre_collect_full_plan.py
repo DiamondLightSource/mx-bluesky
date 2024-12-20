@@ -273,14 +273,14 @@ def test_execute_load_centre_collect_full(
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
         "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
         "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -304,7 +304,7 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: Small. ",
     )
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
 
