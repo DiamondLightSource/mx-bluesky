@@ -52,21 +52,24 @@ def change_aperture_then_move_to_xtal(
 
 def set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard,
-    bbox_size: list[float] | numpy.ndarray,
+    bbox_size_mm: list[float] | numpy.ndarray,
 ):
-    """bbox_size represents the [x,y,z] lengths, in mm, of a bounding box
-    containing a crystal. This discribes (in no particular order):
+    """Sets aperture size based on bbox_size.
+
+    bbox_size represents the [x,y,z] lengths, in mm, of a bounding box
+    containing a crystal. This describes (in no particular order):
     * The maximum width a crystal occupies
     * The maximum height a crystal occupies
     * The maximum depth a crystal occupies
-    Constructing a three dimensional cuboid, completely encapsulating the crystal."""
+    Constructing a three dimensional cuboid, completely encapsulating the crystal.
+    """
 
     # bbox_size is [x,y,z], for i03 we only care about x
     new_selected_aperture = (
-        ApertureValue.MEDIUM if bbox_size[0] < 0.05 else ApertureValue.LARGE
+        ApertureValue.MEDIUM if bbox_size_mm[0] < 0.05 else ApertureValue.LARGE
     )
     LOGGER.info(
-        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")
