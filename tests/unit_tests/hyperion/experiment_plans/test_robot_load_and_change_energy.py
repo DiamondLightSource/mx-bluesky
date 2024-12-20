@@ -175,7 +175,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.bps.trigger",
 )
 async def test_when_error_40_reset_robot_before_load(
-    mock_trigger: MagicMock,
+    mock_reset_error: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
@@ -193,12 +193,13 @@ async def test_when_error_40_reset_robot_before_load(
 
     RE = RunEngine()
     RE(
+        # Thawing time set to arbitrary value
         do_robot_load(
             robot_load_and_energy_change_composite, sample_location, demand_energy_ev, 0
         )
     )
 
-    mock_trigger.assert_called()
+    mock_reset_error.assert_called_once()
 
 
 @patch(
