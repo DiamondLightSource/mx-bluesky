@@ -481,8 +481,7 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid)
-        == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
+        fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
