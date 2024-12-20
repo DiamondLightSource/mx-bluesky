@@ -26,7 +26,7 @@ def change_aperture_then_move_to_xtal(
             best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
         )
         with TRACER.start_span("change_aperture"):
-            yield from set_aperture_for_bbox_size(
+            yield from set_aperture_for_bbox_mm(
                 aperture_scatterguard,
                 bounding_box_size,
             )
@@ -50,10 +50,17 @@ def change_aperture_then_move_to_xtal(
         )
 
 
-def set_aperture_for_bbox_size(
+def set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard,
     bbox_size: list[float] | numpy.ndarray,
 ):
+    """bbox_size represents the [x,y,z] lengths, in mm, of a bounding box
+    containing a crystal. This discribes:
+    * The maximum width a crystal occupies
+    * The maximum height a crystal occupies
+    * The maximum depth a crystal occupies
+    Constructing a three dimensional cuboid, completely encapsulating the crystal."""
+
     # bbox_size is [x,y,z], for i03 we only care about x
     new_selected_aperture = (
         ApertureValue.MEDIUM if bbox_size[0] < 0.05 else ApertureValue.LARGE
