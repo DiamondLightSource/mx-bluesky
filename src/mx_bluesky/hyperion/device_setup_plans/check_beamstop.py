@@ -1,7 +1,7 @@
 import bluesky.plan_stubs as bps
 from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 
 class BeamstopException(Exception):
