@@ -55,7 +55,7 @@ def set_aperture_for_bbox_mm(
     bbox_size: list[float] | numpy.ndarray,
 ):
     """bbox_size represents the [x,y,z] lengths, in mm, of a bounding box
-    containing a crystal. This discribes:
+    containing a crystal. This discribes (in no particular order):
     * The maximum width a crystal occupies
     * The maximum height a crystal occupies
     * The maximum depth a crystal occupies
