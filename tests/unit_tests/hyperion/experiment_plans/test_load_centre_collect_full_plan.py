@@ -7,6 +7,7 @@ import pytest
 from bluesky.protocols import Location
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -15,6 +16,7 @@ from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
@@ -332,6 +334,24 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
         )
 
     mock_rotation_scan.assert_not_called()
+
+
+def test_load_centre_collect_fails_with_exception_when_no_beamstop(
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    sim_run_engine: RunEngineSimulator,
+):
+    sim_run_engine.add_read_handler_for(
+        composite.beamstop.pos_select, BeamstopPositions.UNKNOWN
+    )
+
+    with pytest.raises(BeamstopException):
+        sim_run_engine.simulate_plan(
+            load_centre_collect_full(
+                composite, load_centre_collect_params, oav_parameters_for_rotation
+            )
+        )
 
 
 def test_can_deserialize_top_n_by_max_count_params(

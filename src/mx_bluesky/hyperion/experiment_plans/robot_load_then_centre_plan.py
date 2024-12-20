@@ -17,6 +17,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -37,6 +38,7 @@ from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
@@ -101,6 +103,7 @@ class RobotLoadThenCentreComposite:
     robot: BartRobot
     webcam: Webcam
     lower_gonio: XYZPositioner
+    beamstop: Beamstop
 
     @property
     def sample_motors(self):
@@ -169,6 +172,8 @@ def robot_load_then_xray_centre(
     # TODO: get these from one source of truth #254
     assert parameters.sample_puck is not None
     assert parameters.sample_pin is not None
+
+    yield from check_beamstop(composite.beamstop)
 
     sample_location = SampleLocation(parameters.sample_puck, parameters.sample_pin)
 

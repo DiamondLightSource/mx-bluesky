@@ -37,6 +37,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -428,6 +429,27 @@ def attenuator(RE):
     attenuator.set = MagicMock(side_effect=fake_attenuator_set)
 
     yield attenuator
+
+
+@pytest.fixture
+def beamstop(
+    beamline_parameters: GDABeamlineParameters, sim_run_engine: RunEngineSimulator
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+    ):
+        beamstop = i03.beamstop(fake_with_ophyd_sim=True)
+        patch_motor(beamstop.x)
+        patch_motor(beamstop.y)
+        patch_motor(beamstop.z)
+        set_mock_value(beamstop.x.user_readback, 1.52)
+        set_mock_value(beamstop.y.user_readback, 44.78)
+        set_mock_value(beamstop.z.user_readback, 30.0)
+        sim_run_engine.add_read_handler_for(
+            beamstop.pos_select, BeamstopPositions.DATA_COLLECTION
+        )
+        yield beamstop
+        beamline_utils.clear_devices()
 
 
 @pytest.fixture

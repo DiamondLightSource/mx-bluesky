@@ -15,6 +15,7 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -57,6 +58,7 @@ def load_centre_collect_params():
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
+    beamstop,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -69,6 +71,7 @@ def load_centre_collect_composite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
+        beamstop=beamstop,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
@@ -368,6 +371,30 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
         )
 
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(sample_handling_cb)
+    set_mock_value(load_centre_collect_composite.beamstop.x.user_readback, 1)
+
+    with pytest.raises(BeamstopException, match="Beamstop is not DATA_COLLECTION"):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
 
 
 @pytest.mark.s03
