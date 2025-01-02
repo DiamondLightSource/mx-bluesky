@@ -4,14 +4,10 @@ from typing import cast
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import numpy
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from ophyd.sim import NullStatus
-
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -34,7 +30,6 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
 )
-from tests.conftest import pin_tip_edge_data
 
 from ..conftest import OavGridSnapshotTestEvents
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
@@ -42,36 +37,6 @@ from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_
 
 def _fake_flyscan(*args):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
-
-
-def _fake_generator_array(values):
-    return [_fake_generator(value) for value in values]
-
-
-def _fake_generator(value):
-    yield from bps.null()
-    return value
-
-# Try to move all this into conftest, so that other tests can use it
-# refactor the other tests in test_load_centre_collect_full_plan.py to also use
-# (where I pinched this code from)
-def find_a_pin(pin_tip_detection):
-    def set_good_position():
-        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
-        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
-        return NullStatus()
-
-    return set_good_position
-
-
-@pytest.fixture
-def pin_tip_detection_with_found_pin(
-        ophyd_pin_tip_detection
-):
-    with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=find_a_pin(ophyd_pin_tip_detection)):
-        yield ophyd_pin_tip_detection
 
 
 def test_full_grid_scan(
@@ -118,13 +83,6 @@ async def test_detect_grid_and_do_gridscan(
         )
     )
 
-    # Verify we called the grid detection plan
-    # Don't assert this - instead verify that the flyscan was called with the expected
-    # parameters of the grid that we detected. In fact this check is the same as the
-    # test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected
-    # so you may as well just remove this assert completely
-    # mock_pre_centring_setup_oav.assert_called_once()
-
     # Check backlight was moved OUT
     get_mock_put(composite.backlight.position).assert_called_once_with(
         BacklightPosition.OUT, wait=ANY
@@ -165,8 +123,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
-    test_full_grid_scan_params.grid_width_um = 200
-
     RE(
         ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
@@ -182,9 +138,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     # Need to twiddle these values, or the values in the pin_tip_detection_with_found_pin
     # fixture, so that they match up
-    assert params.detector_params.num_triggers == 50
-    assert params.FGS_params.x_axis.full_steps == 10
-    assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
+    assert params.detector_params.num_triggers == 180
+    assert params.FGS_params.x_axis.full_steps == 15
+    assert params.FGS_params.y_axis.end == pytest.approx(-0.0649, 0.001)
 
     # Parameters can be serialized
     params.model_dump_json()

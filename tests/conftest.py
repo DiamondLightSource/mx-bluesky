@@ -38,6 +38,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -957,6 +958,27 @@ def pin_tip_edge_data():
     top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
     bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+def find_a_pin(pin_tip_detection):
+    def set_good_position():
+        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([x, y]))
+        set_mock_value(pin_tip_detection.triggered_top_edge, top_edge_array)
+        set_mock_value(pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+        return NullStatus()
+
+    return set_good_position
+
+
+@pytest.fixture
+def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
+    with patch.object(
+        ophyd_pin_tip_detection,
+        "trigger",
+        side_effect=find_a_pin(ophyd_pin_tip_detection),
+    ):
+        yield ophyd_pin_tip_detection
 
 
 # Prevent pytest from catching exceptions when debugging in vscode so that break on
