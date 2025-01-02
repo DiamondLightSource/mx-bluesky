@@ -431,8 +431,9 @@ def robot(done_status):
 
 
 @pytest.fixture
-def attenuator(RE):
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+async def attenuator(RE):
+    attenuator = i03.attenuator()
+    await attenuator.connect(mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
     @AsyncStatus.wrap
@@ -554,7 +555,7 @@ def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
+async def aperture_scatterguard(RE):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -605,7 +606,8 @@ def aperture_scatterguard(RE):
             ),
         ),
     ):
-        ap_sg = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
+        ap_sg = i03.aperture_scatterguard()
+        await ap_sg.connect(mock=True)
     with (
         patch_async_motor(ap_sg.aperture.x),
         patch_async_motor(ap_sg.aperture.y),

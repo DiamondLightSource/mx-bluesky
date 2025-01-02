@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from collections.abc import Callable
 from unittest.mock import MagicMock, patch
@@ -5,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -66,7 +66,7 @@ def reset_positions(smargon: Smargon):
     yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def fxc_composite():
     with (
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
@@ -94,6 +94,11 @@ async def fxc_composite():
         zebra=i03.zebra(),
         zocalo=zocalo,
         sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+    )
+
+    await asyncio.gather(
+        composite.aperture_scatterguard.connect(mock=True),
+        composite.attenuator.connect(mock=True),
     )
 
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore
