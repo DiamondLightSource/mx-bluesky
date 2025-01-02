@@ -40,12 +40,11 @@ def mock_emit():
 
 
 @pytest.fixture
-def fake_composite() -> OptimizeAttenuationComposite:
+async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
     sample_shutter = i03.sample_shutter(
         fake_with_ophyd_sim=True, wait_for_connection=True
     )
     xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True, wait_for_connection=True)
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True, wait_for_connection=True)
 
     return OptimizeAttenuationComposite(
         sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator
