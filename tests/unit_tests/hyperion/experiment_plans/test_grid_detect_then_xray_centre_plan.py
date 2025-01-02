@@ -14,6 +14,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
@@ -23,15 +26,12 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
 )
 
-from ..conftest import OavGridSnapshotTestEvents
+from ....conftest import OavGridSnapshotTestEvents
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 

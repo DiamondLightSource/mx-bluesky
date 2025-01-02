@@ -2,7 +2,7 @@ import numpy as np
 from bluesky import plan_stubs as bps
 from dodal.devices.smargon import Smargon
 
-from mx_bluesky.hyperion.exceptions import SampleException
+from mx_bluesky.common.utils.exceptions import SampleException
 
 
 def move_smargon_warn_on_out_of_range(

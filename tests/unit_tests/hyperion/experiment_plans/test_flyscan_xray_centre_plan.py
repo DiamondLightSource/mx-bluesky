@@ -24,11 +24,31 @@ from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
+    VerbosePlanExecutionLoggingCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+    ispyb_activation_wrapper,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+)
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
@@ -47,27 +67,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    ispyb_activation_wrapper,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback import (
-    ZocaloCallback,
-)
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-)
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from tests.conftest import (
@@ -75,14 +75,13 @@ from tests.conftest import (
     create_dummy_scan_spec,
 )
 
-from ....conftest import simulate_xrc_result
+from ....conftest import TestData, simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_BELOW_THRESHOLD,
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
     assert_event,
     mock_zocalo_trigger,
@@ -129,7 +128,7 @@ def ispyb_plan(test_fgs_params: HyperionThreeDGridScan):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": test_fgs_params.model_dump_json(),
+            "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
@@ -169,7 +168,7 @@ def _custom_msg(command_name: str):
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -266,7 +265,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
 
-        test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
+        test_ispyb_callback = PlanReactiveCallback(ISPYB_ZOCALO_CALLBACK_LOGGER)
         test_ispyb_callback.active = True
 
         with patch.multiple(
@@ -359,7 +358,10 @@ class TestFlyscanXrayCentrePlan:
         actual = x_ray_centre_event_handler.xray_centre_results
         expected = XRayCentreResult(
             centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
-            bounding_box_mm=(np.array([0.2, 0.2, 0.2]), np.array([0.8, 0.8, 0.7])),
+            bounding_box_mm=(
+                np.array([0.15, 0.15, 0.15]),
+                np.array([0.75, 0.75, 0.65]),
+            ),
             max_count=105062,
             total_count=2387574,
         )
@@ -471,7 +473,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -755,7 +757,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.nexus.write_nexus.NexusWriter",
+        "mx_bluesky.common.external_interaction.nexus.write_nexus.NexusWriter",
         autospec=True,
         spec_set=True,
     )
@@ -796,11 +798,11 @@ class TestFlyscanXrayCentrePlan:
 
         with (
             patch(
-                "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+                "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
                 autospec=True,
             ),
             patch(
-                "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+                "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
                 lambda _: modified_interactor_mock(mock_parent.run_end),
             ),
         ):
@@ -969,7 +971,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
     @patch(

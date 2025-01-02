@@ -11,7 +11,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
