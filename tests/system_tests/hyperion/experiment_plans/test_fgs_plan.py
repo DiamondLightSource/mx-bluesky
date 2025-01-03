@@ -79,18 +79,20 @@ async def fxc_composite():
         aperture_scatterguard=i03.aperture_scatterguard(
             connect_immediately=True, mock=True
         ),
-        backlight=i03.backlight(),
+        backlight=i03.backlight(mock=True),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
         panda=i03.panda(fake_with_ophyd_sim=True),
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
         s4_slit_gaps=i03.s4_slit_gaps(),
         smargon=i03.smargon(),
         undulator=i03.undulator(),
-        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        synchrotron=i03.synchrotron(connect_immediately=True, mock=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
         zocalo=zocalo,
