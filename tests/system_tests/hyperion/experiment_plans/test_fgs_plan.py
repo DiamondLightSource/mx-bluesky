@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from collections.abc import Callable
 from unittest.mock import MagicMock, patch
@@ -76,8 +75,10 @@ async def fxc_composite():
         zocalo = i03.zocalo()
 
     composite = FlyScanXRayCentreComposite(
-        attenuator=i03.attenuator(),
-        aperture_scatterguard=i03.aperture_scatterguard(),
+        attenuator=i03.attenuator(connect_immediately=True, mock=True),
+        aperture_scatterguard=i03.aperture_scatterguard(
+            connect_immediately=True, mock=True
+        ),
         backlight=i03.backlight(),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
@@ -94,11 +95,6 @@ async def fxc_composite():
         zebra=i03.zebra(),
         zocalo=zocalo,
         sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
-    )
-
-    await asyncio.gather(
-        composite.aperture_scatterguard.connect(mock=True),
-        composite.attenuator.connect(mock=True),
     )
 
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore

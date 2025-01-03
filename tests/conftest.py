@@ -432,8 +432,7 @@ def robot(done_status):
 
 @pytest.fixture
 async def attenuator(RE):
-    attenuator = i03.attenuator()
-    await attenuator.connect(mock=True)
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
     @AsyncStatus.wrap
@@ -487,7 +486,7 @@ def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
 
 @pytest.fixture
 def dcm(RE, sim_run_engine):
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
@@ -606,8 +605,7 @@ async def aperture_scatterguard(RE):
             ),
         ),
     ):
-        ap_sg = i03.aperture_scatterguard()
-        await ap_sg.connect(mock=True)
+        ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
     with (
         patch_async_motor(ap_sg.aperture.x),
         patch_async_motor(ap_sg.aperture.y),
