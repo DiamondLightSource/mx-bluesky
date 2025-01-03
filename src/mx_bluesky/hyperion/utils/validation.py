@@ -1,4 +1,3 @@
-import asyncio
 import gzip
 import json
 import os
@@ -86,13 +85,15 @@ def fake_create_rotation_devices():
     zebra = i03.zebra(fake_with_ophyd_sim=True)
     detector_motion = i03.detector_motion(fake_with_ophyd_sim=True)
     backlight = i03.backlight(fake_with_ophyd_sim=True)
-    attenuator = i03.attenuator()
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
     flux = i03.flux(fake_with_ophyd_sim=True)
     undulator = i03.undulator(fake_with_ophyd_sim=True)
-    aperture_scatterguard = i03.aperture_scatterguard()
+    aperture_scatterguard = i03.aperture_scatterguard(
+        connect_immediately=True, mock=True
+    )
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm = i03.dcm(connect_immediately=True, mock=True)
     robot = i03.robot(fake_with_ophyd_sim=True)
     oav = i03.oav(
         fake_with_ophyd_sim=True,
@@ -105,13 +106,6 @@ def fake_create_rotation_devices():
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
 
-    async def connect_all():
-        await asyncio.gather(
-            aperture_scatterguard.connect(mock=True),
-            attenuator.connect(mock=True),
-        )
-
-    asyncio.run(connect_all())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,

@@ -4,6 +4,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import asdict
 from queue import Queue
+from sys import argv
 from traceback import format_exception
 from typing import Any
 
@@ -352,6 +353,7 @@ def create_targets():
     )
     if not args.use_external_callbacks:
         setup_callback_logging(args.dev_mode)
+    LOGGER.info(f"Hyperion launched with args:{argv}")
     app, runner = create_app(
         skip_startup_connection=args.skip_startup_connection,
         use_external_callbacks=args.use_external_callbacks,
