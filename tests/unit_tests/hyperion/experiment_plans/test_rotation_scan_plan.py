@@ -702,3 +702,17 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
             ),
         )
     mock_zocalo_interactor.return_value.run_start.assert_called_once()
+
+
+def test_rotation_scan_set_undulator_gap_after_xbpm_stable(
+    rotation_scan_simulated_messages,
+    test_rotation_params: RotationScan,
+):
+    msgs = assert_message_and_return_remaining(
+        rotation_scan_simulated_messages,
+        lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
+    )

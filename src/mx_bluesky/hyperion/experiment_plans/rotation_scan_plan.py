@@ -305,6 +305,10 @@ def _move_and_rotation(
     params: RotationScan,
     oav_params: OAVParameters,
 ):
+    if params.demand_energy_ev:
+        yield from bps.abs_set(
+            composite.undulator, params.demand_energy_ev / 1000, wait=True
+        )
     motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
     max_vel = yield from bps.rd(composite.smargon.omega.max_velocity)
     motion_values = calculate_motion_profile(params, motor_time_to_speed, max_vel)
