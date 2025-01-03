@@ -10,7 +10,6 @@ from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.aperturescatterguard import AperturePosition, ApertureValue
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
@@ -605,8 +604,7 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        clear_device("zebra_fast_grid_scan")
-        fgs = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        fgs = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_mock_value(fgs.motion_program.running, 1)
@@ -632,7 +630,6 @@ class TestFlyscanXrayCentrePlan:
 
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
-        clear_device("zebra_fast_grid_scan")
 
     @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
@@ -718,7 +715,9 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        )
 
         set_mock_value(test_fgs.position_counter, 0)
         set_mock_value(test_fgs.scan_invalid, False)
@@ -734,7 +733,9 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        )
 
         set_mock_value(test_fgs.scan_invalid, True)
         set_mock_value(test_fgs.position_counter, 0)

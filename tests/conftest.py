@@ -303,7 +303,7 @@ def eiger(done_status):
 
 @pytest.fixture
 def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
+    smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
     set_mock_value(smargon.x.user_readback, 0.0)
@@ -330,7 +330,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def zebra(RE):
-    zebra = i03.zebra(fake_with_ophyd_sim=True)
+    zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
         set_mock_value(zebra.pc.arm.armed, demand.value)
@@ -347,26 +347,26 @@ def zebra_shutter(RE):
 
 @pytest.fixture
 def backlight():
-    backlight = i03.backlight(fake_with_ophyd_sim=True)
+    backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
 def fast_grid_scan():
-    return i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def detector_motion(RE):
-    det = i03.detector_motion(fake_with_ophyd_sim=True)
+    det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_async_motor(det.z):
         yield det
 
 
 @pytest.fixture
 def undulator():
-    return i03.undulator(fake_with_ophyd_sim=True)
+    return i03.undulator(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -376,7 +376,7 @@ def s4_slit_gaps():
 
 @pytest.fixture
 def synchrotron(RE):
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
     return synchrotron
@@ -387,7 +387,7 @@ def oav(test_config_files, RE):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
 
     zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
@@ -411,14 +411,13 @@ def flux():
 
 @pytest.fixture
 def pin_tip():
-    return i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def ophyd_pin_tip_detection():
     RunEngine()  # A RE is needed to start the bluesky loop
-    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
-    return pin_tip_detection
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -493,7 +492,7 @@ def dcm(RE, sim_run_engine):
 
 @pytest.fixture
 def vfm(RE):
-    vfm = i03.vfm(fake_with_ophyd_sim=True)
+    vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
@@ -515,7 +514,7 @@ def lower_gonio(RE):
 
 @pytest.fixture
 def mirror_voltages():
-    voltages = i03.mirror_voltages(fake_with_ophyd_sim=True)
+    voltages = i03.mirror_voltages(mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(return_value=NullStatus())
@@ -528,7 +527,8 @@ def mirror_voltages():
 @pytest.fixture
 def undulator_dcm(RE, sim_run_engine, dcm):
     undulator_dcm = i03.undulator_dcm(
-        fake_with_ophyd_sim=True,
+        connect_immediately=True,
+        mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
@@ -788,7 +788,7 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 @pytest.fixture
 def panda_fast_grid_scan(RE):
-    return i03.panda_fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -813,17 +813,21 @@ async def fake_fgs_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
         smargon=smargon,
-        undulator=i03.undulator(fake_with_ophyd_sim=True),
+        undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,
-        zebra=i03.zebra(fake_with_ophyd_sim=True),
+        zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
         panda=panda,
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
         robot=i03.robot(fake_with_ophyd_sim=True),
         sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
     )

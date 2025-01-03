@@ -3,8 +3,22 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from dodal.beamlines import i03
+from dodal.utils import collect_factories
 
 BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
+
+
+@pytest.fixture(scope="session")
+def i03_device_factories():
+    return [f for f in collect_factories(i03).values() if hasattr(f, "cache_clear")]
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(i03_device_factories):
+    yield None
+    for f in i03_device_factories:
+        f.cache_clear()  # type: ignore
 
 
 @pytest.fixture(autouse=True)
