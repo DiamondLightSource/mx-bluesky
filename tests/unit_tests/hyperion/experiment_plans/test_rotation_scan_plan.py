@@ -16,6 +16,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra import PC_GATE, SOFT_IN1, Zebra
 from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
+from ophyd.sim import NullStatus
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
@@ -60,6 +61,10 @@ def do_rotation_main_plan_for_tests(
         )
 
 
+def _fake_undulator_set(composite: RotationScanComposite):
+    composite.undulator.set = MagicMock(return_value=NullStatus())
+
+
 @pytest.fixture
 def run_full_rotation_plan(
     RE: RunEngine,
@@ -71,6 +76,7 @@ def run_full_rotation_plan(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
+        _fake_undulator_set(fake_create_rotation_devices)
         RE(
             rotation_scan(
                 fake_create_rotation_devices,
@@ -175,6 +181,7 @@ def test_rotation_scan(
     oav_parameters_for_rotation: OAVParameters,
 ):
     composite = fake_create_rotation_devices
+    _fake_undulator_set(composite)
     RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
 
     composite.eiger.do_arm.set.assert_called()  # type: ignore
