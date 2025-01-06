@@ -84,7 +84,7 @@ async def fxc_composite():
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
-        robot=i03.robot(fake_with_ophyd_sim=True),
+        robot=i03.robot(connect_immediately=True, mock=True),
         panda=i03.panda(connect_immediately=True, mock=True),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(
             connect_immediately=True, mock=True
@@ -93,7 +93,7 @@ async def fxc_composite():
         smargon=i03.smargon(),
         undulator=i03.undulator(),
         synchrotron=i03.synchrotron(connect_immediately=True, mock=True),
-        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
+        xbpm_feedback=i03.xbpm_feedback(connect_immediately=True, mock=True),
         zebra=i03.zebra(),
         zocalo=zocalo,
         sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
