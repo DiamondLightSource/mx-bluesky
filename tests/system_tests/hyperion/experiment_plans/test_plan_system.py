@@ -46,7 +46,7 @@ async def test_getting_data_for_ispyb():
     await slit_gaps.connect()
     await flux.connect()
     await aperture_scatterguard.connect()
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
 
     RE = RunEngine()
 

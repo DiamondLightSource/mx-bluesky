@@ -423,7 +423,7 @@ def ophyd_pin_tip_detection():
 @pytest.fixture
 def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
     return robot
@@ -466,7 +466,7 @@ def beamstop_i03(
 
 @pytest.fixture
 def xbpm_feedback(done_status):
-    xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
     yield xbpm
     beamline_utils.clear_devices()
@@ -538,14 +538,14 @@ def undulator_dcm(RE, sim_run_engine, dcm):
 
 @pytest.fixture
 def webcam(RE) -> Generator[Webcam, Any, Any]:
-    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
 def thawer(RE) -> Generator[Thawer, Any, Any]:
-    yield i03.thawer(fake_with_ophyd_sim=True)
+    yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -708,7 +708,7 @@ def fake_create_rotation_devices(
 
 @pytest.fixture
 def zocalo(done_status):
-    zoc = i03.zocalo(fake_with_ophyd_sim=True)
+    zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
     return zoc
@@ -828,7 +828,7 @@ async def fake_fgs_composite(
         panda_fast_grid_scan=i03.panda_fast_grid_scan(
             connect_immediately=True, mock=True
         ),
-        robot=i03.robot(fake_with_ophyd_sim=True),
+        robot=i03.robot(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 

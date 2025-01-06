@@ -94,7 +94,7 @@ def fake_create_rotation_devices():
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
     dcm = i03.dcm(connect_immediately=True, mock=True)
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
     oav = i03.oav(
         connect_immediately=True,
         mock=True,
@@ -102,7 +102,7 @@ def fake_create_rotation_devices():
             zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
         ),
     )
-    xbpm_feedback = i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
