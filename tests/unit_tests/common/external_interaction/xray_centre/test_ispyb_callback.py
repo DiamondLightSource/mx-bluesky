@@ -98,8 +98,8 @@ class TestXrayCentreISPyBCallback:
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "resolution": 1.1830593328548429,
-            "wavelength": 1.1164718451643736,
+            "resolution": 1.1830593331191241,
+            "wavelength": 1.11647184541378,
         }
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
@@ -136,10 +136,10 @@ class TestXrayCentreISPyBCallback:
             {
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "id": TEST_DATA_COLLECTION_IDS[0],
-                "wavelength": 1.1164718451643736,
+                "wavelength": 1.11647184541378,
                 "transmission": 100,
                 "flux": 10,
-                "resolution": 1.1830593328548429,
+                "resolution": 1.1830593331191241,
                 "focal_spot_size_at_samplex": 0.05,
                 "focal_spot_size_at_sampley": 0.02,
                 "beamsize_at_samplex": 0.05,
@@ -152,10 +152,10 @@ class TestXrayCentreISPyBCallback:
             {
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "id": TEST_DATA_COLLECTION_IDS[1],
-                "wavelength": 1.1164718451643736,
+                "wavelength": 1.11647184541378,
                 "transmission": 100,
                 "flux": 10,
-                "resolution": 1.1830593328548429,
+                "resolution": 1.1830593331191241,
                 "focal_spot_size_at_samplex": 0.05,
                 "focal_spot_size_at_sampley": 0.02,
                 "beamsize_at_samplex": 0.05,
