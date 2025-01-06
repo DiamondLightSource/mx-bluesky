@@ -4,9 +4,7 @@ This version in python3 new Feb2021 by RLO
     - March 21 added logging and Eiger functionality
 """
 
-import json
 import re
-import shutil
 import sys
 import time
 from datetime import datetime
@@ -18,25 +16,28 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
+    get_pilatus_filename_template_from_device,
+    read_beam_info_from_hardware,
+)
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
     _read_visit_directory_from_file,
     log_on_entry,
 )
-from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters, SSXType
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH,
-)
+from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -134,10 +135,20 @@ def enter_hutch(
 
 
 @log_on_entry
-def write_parameter_file(detector_stage: DetectorMotion):
-    """Writes a json parameter file that can later be parsed by the model."""
-    param_file: Path = PARAM_FILE_PATH / PARAM_FILE_NAME
-    SSX_LOGGER.debug(f"Writing Parameter File to: {param_file}\n")
+def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
+    """ Read the parameters from user input and create the parameter model for an \
+        extruder collection.
+
+    Args:
+        detector_stage (DetectorMotion): The detector stage device.
+        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+            transmission value.
+
+    Returns:
+        ExtruderParameters: Parameter model for extruder collections
+
+    """
+    SSX_LOGGER.info("Creating parameter model from input.")
 
     det_type = yield from get_detector_type(detector_stage)
     SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
@@ -154,9 +165,11 @@ def write_parameter_file(detector_stage: DetectorMotion):
                 f"Requested filename ends in a number. Appended dash: {filename}"
             )
 
+    transmission = yield from bps.rd(attenuator.actual_transmission)
+
     pump_status = bool(int(caget(pv.ioc12_gp6)))
-    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else None
-    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else None
+    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
+    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
 
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -165,17 +178,17 @@ def write_parameter_file(detector_stage: DetectorMotion):
         "exposure_time_s": float(caget(pv.ioc12_gp5)),
         "detector_distance_mm": float(caget(pv.ioc12_gp7)),
         "detector_name": str(det_type),
+        "transmission": transmission,
         "num_images": int(caget(pv.ioc12_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
         "laser_delay_s": pump_delay,
     }
-    with open(param_file, "w") as f:
-        json.dump(params_dict, f, indent=4)
 
     SSX_LOGGER.info("Parameters \n")
     SSX_LOGGER.info(pformat(params_dict))
     yield from bps.null()
+    return ExtruderParameters(**params_dict)
 
 
 @log_on_entry
@@ -187,10 +200,16 @@ def main_extruder_plan(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     parameters: ExtruderParameters,
     dcid: DCID,
     start_time: datetime,
 ) -> MsgGenerator:
+    yield from sup.set_detector_beam_center_plan(
+        beam_center_device, parameters.detector_name
+    )
+
     # Setting up the beamline
     SSX_LOGGER.info("Open hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
@@ -316,16 +335,22 @@ def main_extruder_plan(
         SSX_LOGGER.error(err)
         raise UnknownDetectorType(err)
 
+    beam_settings = yield from read_beam_info_from_hardware(
+        dcm, mirrors, beam_center_device, parameters.detector_name
+    )
+
     # Do DCID creation BEFORE arming the detector
+    if parameters.detector_name == "eiger":
+        filetemplate = f"{parameters.filename}.nxs"
+    else:
+        filetemplate = yield from get_pilatus_filename_template_from_device()
     dcid.generate_dcid(
-        visit=parameters.visit.name,
+        beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
-        start_time=start_time,
+        file_template=filetemplate,
         num_images=parameters.num_images,
-        exposure_time=parameters.exposure_time_s,
-        pump_exposure_time=parameters.laser_dwell_s,
-        pump_delay=parameters.laser_delay_s or 0,
-        pump_status=int(parameters.pump_status),
+        start_time=start_time,
+        pump_probe=parameters.pump_status,
     )
 
     # Collect
@@ -341,9 +366,16 @@ def main_extruder_plan(
     dcid.notify_start()
 
     if parameters.detector_name == "eiger":
-        wavelength = yield from bps.rd(dcm.wavelength_in_a)
         SSX_LOGGER.debug("Call nexgen server for nexus writing.")
-        call_nexgen(None, start_time, parameters, wavelength, "extruder")
+        beam_x = yield from bps.rd(beam_center_device.beam_x)
+        beam_y = yield from bps.rd(beam_center_device.beam_y)
+        call_nexgen(
+            None,
+            parameters,
+            beam_settings.wavelength_in_a,
+            (beam_x, beam_y),
+            start_time,
+        )
 
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
@@ -436,11 +468,6 @@ def collection_complete_plan(
     dcid.collection_complete(end_time, aborted=False)
     SSX_LOGGER.info(f"End Time = {end_time.ctime()}")
 
-    # Copy parameter file
-    shutil.copy2(
-        PARAM_FILE_PATH / PARAM_FILE_NAME,
-        collection_directory / PARAM_FILE_NAME,
-    )
     yield from bps.null()
 
 
@@ -452,19 +479,20 @@ def run_extruder_plan(
     detector_stage: DetectorMotion = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
-    yield from write_parameter_file(detector_stage)
-    parameters = ExtruderParameters.from_file(PARAM_FILE_PATH / PARAM_FILE_NAME)
+    parameters: ExtruderParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
+
+    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID - not generated yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.EXTRUDER,
-        detector=parameters.detector_name,
-    )
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_extruder_plan(
@@ -475,6 +503,8 @@ def run_extruder_plan(
             detector_stage=detector_stage,
             shutter=shutter,
             dcm=dcm,
+            mirrors=mirrors,
+            beam_center_device=beam_center_device,
             parameters=parameters,
             dcid=dcid,
             start_time=start_time,

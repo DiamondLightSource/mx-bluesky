@@ -15,10 +15,12 @@ from unittest.mock import MagicMock, patch
 import flask
 import pytest
 from blueapi.core import BlueskyContext
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -27,14 +29,13 @@ from mx_bluesky.hyperion.__main__ import (
     create_targets,
     setup_context,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
+from ..conftest import mock_beamline_module_filepaths
 
 FGS_ENDPOINT = "/flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -428,7 +429,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
 )
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():
     zebra = MagicMock(spec=Zebra)
-    attenuator = MagicMock(spec=Attenuator)
+    attenuator = MagicMock(spec=BinaryFilterAttenuator)
 
     context = BlueskyContext()
     context.register_device(zebra, "zebra")
@@ -436,7 +437,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
     @dataclass
     class FakeComposite:
-        attenuator: Attenuator
+        attenuator: BinaryFilterAttenuator
         zebra: Zebra
 
     # A fake setup for a plan that uses two devices: attenuator and zebra.
@@ -565,7 +566,14 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 def test_when_context_created_then_contains_expected_number_of_plans(
     get_beamline_parameters,
 ):
-    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
+    from dodal.beamlines import i03
+
+    mock_beamline_module_filepaths("i03", i03)
+
+    with patch.dict(
+        os.environ,
+        {"BEAMLINE": "i03"},
+    ):
         context = setup_context(wait_for_connection=False)
 
         plan_names = context.plans.keys()

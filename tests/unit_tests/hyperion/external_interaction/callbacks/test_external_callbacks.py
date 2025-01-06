@@ -7,13 +7,13 @@ import pytest
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as DODAL_LOGGER
 
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     main,
     setup_callbacks,
     setup_logging,
     setup_threads,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
 
 
 @patch(
@@ -50,15 +50,15 @@ def test_setup_callbacks():
     return_value=True,
 )
 def test_setup_logging(parse_callback_cli_args):
-    assert DODAL_LOGGER.parent != ISPYB_LOGGER
-    assert len(ISPYB_LOGGER.handlers) == 0
+    assert DODAL_LOGGER.parent != ISPYB_ZOCALO_CALLBACK_LOGGER
+    assert len(ISPYB_ZOCALO_CALLBACK_LOGGER.handlers) == 0
     assert len(NEXUS_LOGGER.handlers) == 0
     setup_logging(parse_callback_cli_args())
-    assert len(ISPYB_LOGGER.handlers) == 4
+    assert len(ISPYB_ZOCALO_CALLBACK_LOGGER.handlers) == 4
     assert len(NEXUS_LOGGER.handlers) == 4
-    assert DODAL_LOGGER.parent == ISPYB_LOGGER
+    assert DODAL_LOGGER.parent == ISPYB_ZOCALO_CALLBACK_LOGGER
     setup_logging(parse_callback_cli_args())
-    assert len(ISPYB_LOGGER.handlers) == 4
+    assert len(ISPYB_ZOCALO_CALLBACK_LOGGER.handlers) == 4
     assert len(NEXUS_LOGGER.handlers) == 4
 
 

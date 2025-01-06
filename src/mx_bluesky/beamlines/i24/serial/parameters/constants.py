@@ -10,6 +10,12 @@ class SSXType(Enum):
     EXTRUDER = "Serial Jet"
 
 
+BEAM_CENTER_POS: dict[str, list] = {
+    "eiger": [1600.0, 1697.4],
+    "pilatus": [1284.7, 1308.6],
+}
+
+
 OAV_CONFIG_FILES = {
     "zoom_params_file": "/dls_sw/i24/software/gda_versions/gda_9_34/config/xml/jCameraManZoomLevels.xml",
     "oav_config_json": "/dls_sw/i24/software/daq_configuration/json/OAVCentring.json",

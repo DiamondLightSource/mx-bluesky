@@ -2,45 +2,42 @@
 Fixed target data collection
 """
 
-import shutil
 from datetime import datetime
 from pathlib import Path
 from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra import Zebra
 
-from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.dcid import (
+    DCID,
+    get_pilatus_filename_template_from_device,
+    read_beam_info_from_hardware,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
-    write_parameter_file,
+    read_parameters,
+    upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
-from mx_bluesky.beamlines.i24.serial.parameters import (
-    ChipDescription,
-    FixedTargetParameters,
-    SSXType,
-)
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    LITEMAP_PATH,
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH_FT,
-)
+from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -99,19 +96,6 @@ def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
             # Long delay between pump and probe, with fast shutter opening and closing.
             timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
     return timeout
-
-
-def copy_files_to_data_location(
-    dest_dir: Path | str,
-    param_path: Path = PARAM_FILE_PATH_FT,
-    map_file: Path = LITEMAP_PATH,
-    map_type: MappingType = MappingType.Lite,
-):
-    if not isinstance(dest_dir, Path):
-        dest_dir = Path(dest_dir)
-    shutil.copy2(param_path / "parameters.txt", dest_dir / "parameters.txt")
-    if map_type == MappingType.Lite:
-        shutil.copy2(map_file / "currentchip.map", dest_dir / "currentchip.map")
 
 
 def write_userlog(
@@ -302,50 +286,18 @@ def get_prog_num(
 
 
 @log_on_entry
-def datasetsizei24(
-    n_exposures: int,
-    chip_params: ChipDescription,
-    map_type: MappingType,
-) -> int:
-    # Calculates how many images will be collected based on map type and N repeats
-    SSX_LOGGER.info("Calculate total number of images expected in data collection.")
+def set_datasize(
+    parameters: FixedTargetParameters,
+):
+    SSX_LOGGER.info("Setting PV to calculated total number of images")
 
-    if map_type == MappingType.NoMap:
-        if chip_params.chip_type == ChipType.Custom:
-            total_numb_imgs = chip_params.x_num_steps * chip_params.y_num_steps
-            SSX_LOGGER.info(
-                f"Map type: None \tCustom chip \tNumber of images {total_numb_imgs}"
-            )
-        else:
-            chip_format = chip_params.chip_format[:4]
-            total_numb_imgs = int(np.prod(chip_format))
-            SSX_LOGGER.info(
-                f"""Map type: None \tOxford chip {chip_params.chip_type} \t \
-                    Number of images {total_numb_imgs}"""
-            )
+    SSX_LOGGER.debug(f"Map type: {parameters.map_type}")
+    SSX_LOGGER.debug(f"Chip type: {parameters.chip.chip_type}")
+    if parameters.map_type == MappingType.Lite:
+        SSX_LOGGER.debug(f"Num exposures: {parameters.num_exposures}")
+        SSX_LOGGER.debug(f"Block count: {len(parameters.chip_map)}")
 
-    elif map_type == MappingType.Lite:
-        SSX_LOGGER.info(f"Using Mapping Lite on chip type {chip_params.chip_type}")
-        chip_format = chip_params.chip_format[2:4]
-        block_count = 0
-        with open(LITEMAP_PATH / "currentchip.map") as f:
-            for line in f.readlines():
-                entry = line.split()
-                if entry[2] == "1":
-                    block_count += 1
-
-        SSX_LOGGER.info(f"Block count={block_count}")
-        SSX_LOGGER.info(f"Chip format={chip_format}")
-
-        SSX_LOGGER.info(f"Number of exposures={n_exposures}")
-
-        total_numb_imgs = int(np.prod(chip_format) * block_count * n_exposures)
-        SSX_LOGGER.info(f"Calculated number of images: {total_numb_imgs}")
-
-    SSX_LOGGER.info("Set PV to calculated number of images.")
-    caput(pv.me14e_gp10, int(total_numb_imgs))
-
-    return int(total_numb_imgs)
+    caput(pv.me14e_gp10, parameters.total_num_images)
 
 
 @log_on_entry
@@ -357,6 +309,9 @@ def start_i24(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     dcid: DCID,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
@@ -364,6 +319,9 @@ def start_i24(
     Returns the start_time.
     """
 
+    beam_settings = yield from read_beam_info_from_hardware(
+        dcm, mirrors, beam_center_device, parameters.detector_name
+    )
     SSX_LOGGER.info("Start I24 data collection.")
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time {start_time.ctime()}")
@@ -413,16 +371,15 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = yield from get_pilatus_filename_template_from_device()
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            beam_settings=beam_settings,
             image_dir=filepath,
-            start_time=start_time,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
@@ -476,16 +433,15 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
+        filetemplate = f"{parameters.filename}.nxs"
         dcid.generate_dcid(
-            visit=parameters.visit.name,
+            beam_settings=beam_settings,
             image_dir=filepath,
-            start_time=start_time,
+            file_template=filetemplate,
             num_images=parameters.total_num_images,
-            exposure_time=parameters.exposure_time_s,
             shots_per_position=parameters.num_exposures,
-            pump_exposure_time=parameters.laser_dwell_s,
-            pump_delay=parameters.laser_delay_s or 0,
-            pump_status=parameters.pump_repeat.value,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
         )
 
         SSX_LOGGER.debug("Arm Zebra.")
@@ -584,10 +540,16 @@ def main_fixed_target_plan(
     detector_stage: DetectorMotion,
     shutter: HutchShutter,
     dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
+
+    yield from sup.set_detector_beam_center_plan(
+        beam_center_device, parameters.detector_name
+    )
 
     SSX_LOGGER.info("Getting Program Dictionary")
 
@@ -606,12 +568,20 @@ def main_fixed_target_plan(
         parameters.checker_pattern,
     )
 
-    parameters.total_num_images = datasetsizei24(
-        parameters.num_exposures, parameters.chip, parameters.map_type
-    )
+    set_datasize(parameters)
 
     start_time = yield from start_i24(
-        zebra, aperture, backlight, beamstop, detector_stage, shutter, parameters, dcid
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        parameters,
+        dcm,
+        mirrors,
+        beam_center_device,
+        dcid,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -626,14 +596,13 @@ def main_fixed_target_plan(
     SSX_LOGGER.debug("Notify DCID of the start of the collection.")
     dcid.notify_start()
 
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
     if parameters.detector_name == "eiger":
+        wavelength = yield from bps.rd(dcm.wavelength_in_a)
+        beam_x = yield from bps.rd(beam_center_device.beam_x)
+        beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
         call_nexgen(
-            chip_prog_dict,
-            start_time,
-            parameters,
-            wavelength,
+            chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 
     yield from kickoff_and_complete_collection(pmac, parameters)
@@ -670,8 +639,7 @@ def collection_complete_plan(
     SSX_LOGGER.debug(f"Collection end time {end_time}")
     dcid.collection_complete(end_time, aborted=False)
 
-    # Copy parameter file and eventual chip map to collection directory
-    copy_files_to_data_location(collection_directory, map_type=map_type)
+    # NOTE no files to copy anymore but shoud write userlog here
     yield from bps.null()
 
 
@@ -721,37 +689,21 @@ def run_fixed_target_plan(
     detector_stage: DetectorMotion = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
-    # in the first instance, write params here
-    yield from write_parameter_file(detector_stage)
+    # Read the parameters
+    parameters: FixedTargetParameters = yield from read_parameters(
+        detector_stage, attenuator
+    )
 
-    SSX_LOGGER.info("Getting parameters from file.")
-    parameters = FixedTargetParameters.from_file(PARAM_FILE_PATH_FT / PARAM_FILE_NAME)
+    if parameters.chip_map:
+        upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    log_msg = f"""
-            Parameters for I24 serial collection: \n
-                Chip name is {parameters.filename}
-                visit = {parameters.visit}
-                sub_dir = {parameters.directory}
-                n_exposures = {parameters.num_exposures}
-                chip_type = {str(parameters.chip.chip_type)}
-                map_type = {str(parameters.map_type)}
-                dcdetdist = {parameters.detector_distance_mm}
-                exptime = {parameters.exposure_time_s}
-                det_type = {parameters.detector_name}
-                pump_repeat = {str(parameters.pump_repeat)}
-                pumpexptime = {parameters.laser_dwell_s}
-                pumpdelay = {parameters.laser_delay_s}
-                prepumpexptime = {parameters.pre_pump_exposure_s}
-        """
-    SSX_LOGGER.info(log_msg)
+    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
     # DCID instance - do not create yet
-    dcid = DCID(
-        emit_errors=False,
-        ssx_type=SSXType.FIXED,
-        detector=parameters.detector_name,
-    )
+    dcid = DCID(emit_errors=False, expt_params=parameters)
 
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
@@ -763,6 +715,8 @@ def run_fixed_target_plan(
             detector_stage,
             shutter,
             dcm,
+            mirrors,
+            beam_center_device,
             parameters,
             dcid,
         ),

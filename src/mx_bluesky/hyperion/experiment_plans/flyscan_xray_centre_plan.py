@@ -16,7 +16,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
@@ -47,7 +47,15 @@ from dodal.devices.zocalo.zocalo_results import (
 from event_model import RunStart
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.utils.exceptions import (
+    CrystalNotFoundException,
+    SampleException,
+)
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
@@ -66,18 +74,15 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
+
+ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
 
 class SmargonSpeedException(Exception):
@@ -89,7 +94,7 @@ class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
     dcm: DCM
     eiger: EigerDetector
@@ -147,7 +152,7 @@ def flyscan_xray_centre_no_move(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],
@@ -247,10 +252,20 @@ def run_gridscan_and_fetch_results(
             LOGGER.info("Zocalo triggered and read, interpreting results.")
             xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
-            if xrc_results:
+            filtered_results = [
+                result
+                for result in xrc_results
+                if result["total_count"] >= ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
+            ]
+            discarded_count = len(xrc_results) - len(filtered_results)
+            if discarded_count > 0:
+                LOGGER.info(
+                    f"Removed {discarded_count} results because below threshold"
+                )
+            if filtered_results:
                 flyscan_results = [
                     _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
-                    for xr in xrc_results
+                    for xr in filtered_results
                 ]
             else:
                 LOGGER.warning("No X-ray centre received")
@@ -274,14 +289,20 @@ def _xrc_result_in_boxes_to_result_in_mm(
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )
+    # A correction is applied to the bounding box to map discrete grid coordinates to
+    # the corners of the box in motor-space; we do not apply this correction
+    # to the xray-centre as it is already in continuous space and the conversion has
+    # been performed already
+    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
+    # so we subtract half a box to get the corner of the box
     return XRayCentreResult(
         centre_of_mass_mm=xray_centre,
         bounding_box_mm=(
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][0])
+                np.array(xrc_result["bounding_box"][0]) - 0.5
             ),
             fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][1])
+                np.array(xrc_result["bounding_box"][1]) - 0.5
             ),
         ),
         max_count=xrc_result["max_count"],

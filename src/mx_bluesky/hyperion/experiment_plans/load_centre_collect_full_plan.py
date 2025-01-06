@@ -10,6 +10,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
 import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     XRayCentreEventHandler,
 )
@@ -25,7 +26,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     sample_handling_callback_decorator,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -103,6 +103,10 @@ def load_centre_collect_full(
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = MultiRotationScan.model_validate(multi_rotation)
 
+        assert (
+            multi_rotation.demand_energy_ev
+            == parameters.robot_load_then_centre.demand_energy_ev
+        ), "Setting a different energy for gridscan and rotation is not supported"
         yield from multi_rotation_scan(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()

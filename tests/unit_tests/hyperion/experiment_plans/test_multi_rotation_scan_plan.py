@@ -15,8 +15,9 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
@@ -28,7 +29,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -36,10 +36,10 @@ from ....conftest import (
     DocumentCapturer,
     extract_metafile,
     fake_read,
+    mx_acquisition_from_conn,
     raw_params_from_file,
 )
 from ..external_interaction.conftest import *  # noqa # for fixtures
-from ..external_interaction.conftest import mx_acquisition_from_conn
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -202,9 +202,9 @@ def test_full_multi_rotation_plan_docs_emitted(
         assert DocumentCapturer.is_match(
             scan_docs[0],
             "start",
-            has_fields=["trigger_zocalo_on", "hyperion_parameters"],
+            has_fields=["trigger_zocalo_on", "mx_bluesky_parameters"],
         )
-        params = RotationScan(**json.loads(scan_docs[0][1]["hyperion_parameters"]))
+        params = RotationScan(**json.loads(scan_docs[0][1]["mx_bluesky_parameters"]))
         assert params == scan
         assert len(events := DocumentCapturer.get_matches(scan_docs, "event")) == 3
         DocumentCapturer.assert_events_and_data_in_order(

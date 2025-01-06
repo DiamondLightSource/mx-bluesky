@@ -1,27 +1,36 @@
 from unittest.mock import patch
 
+from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.i24.dcm import DCM
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from ophyd_async.testing import set_mock_value
+
 from mx_bluesky.beamlines.i24.serial.dcid import (
-    get_beam_center,
-    get_beamsize,
-    get_pilatus_filename_template_from_pvs,
+    DCID,
     get_resolution,
+    read_beam_info_from_hardware,
+)
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    BeamSettings,
+    ExtruderParameters,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
 
-@patch("mx_bluesky.beamlines.i24.serial.dcid.caget")
-def test_beamsize(fake_caget):
-    beam_size = get_beamsize()
-    assert type(beam_size) is tuple
-    assert fake_caget.call_count == 2
+def test_read_beam_info_from_hardware(
+    dcm: DCM, mirrors: FocusMirrorsMode, eiger_beam_center: DetectorBeamCenter, RE
+):
+    set_mock_value(dcm.wavelength_in_a, 0.6)
+    expected_beam_x = 1605 * 0.075
+    expected_beam_y = 1702 * 0.075
 
+    res = RE(
+        read_beam_info_from_hardware(dcm, mirrors, eiger_beam_center, "eiger")
+    ).plan_result  # type: ignore
 
-@patch("mx_bluesky.beamlines.i24.serial.dcid.caget")
-def test_beam_center(fake_caget):
-    beam_center = get_beam_center(Eiger())
-    assert type(beam_center) is tuple
-    assert len(beam_center) == 2
-    assert fake_caget.call_count == 2
+    assert res.wavelength_in_a == 0.6
+    assert res.beam_size_in_um == (7, 7)
+    assert res.beam_center_in_mm == (expected_beam_x, expected_beam_y)
 
 
 def test_get_resolution():
@@ -35,12 +44,73 @@ def test_get_resolution():
     assert pilatus_resolution == 0.61
 
 
-@patch("mx_bluesky.beamlines.i24.serial.dcid.cagetstring")
-@patch("mx_bluesky.beamlines.i24.serial.dcid.caget")
-def test_get_pilatus_filename_from_pvs(fake_caget, fake_caget_str):
-    fake_caget_str.side_effect = ["test_", "%s%s%05d.cbf"]
-    fake_caget.return_value = 2
+@patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.json")
+def test_generate_dcid_for_eiger(
+    fake_json, fake_log, patch_resolution, dummy_params_ex, RE
+):
+    test_dcid = DCID(
+        server="fake_server",
+        emit_errors=False,
+        expt_params=dummy_params_ex,
+    )
 
-    expected_template = "test_00002_#####.cbf"
-    res = get_pilatus_filename_template_from_pvs()
-    assert res == expected_template
+    assert isinstance(test_dcid.detector, Eiger)
+    assert isinstance(test_dcid.parameters, ExtruderParameters)
+
+    beam_settings = BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(100, 100)
+    )
+
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.dcid.requests") as patch_request,
+        patch("mx_bluesky.beamlines.i24.serial.dcid.get_auth_header") as fake_auth,
+    ):
+        test_dcid.generate_dcid(beam_settings, "", "protein.nxs", 10)
+        patch_resolution.assert_called_once_with(
+            test_dcid.detector,
+            dummy_params_ex.detector_distance_mm,
+            beam_settings.wavelength_in_a,
+        )
+        fake_auth.assert_called_once()
+        fake_json.dumps.assert_called_once()
+        patch_request.post.assert_called_once()
+
+
+@patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
+@patch("mx_bluesky.beamlines.i24.serial.dcid.json")
+def test_generate_dcid_for_pilatus_with_pump_probe(
+    fake_json, fake_log, patch_resolution, dummy_params_ex, RE
+):
+    dummy_params_ex.detector_name = "pilatus"
+    dummy_params_ex.pump_status = True
+    dummy_params_ex.laser_dwell_s = 0.01
+    dummy_params_ex.laser_delay_s = 0.02
+
+    test_dcid = DCID(
+        server="fake_server",
+        emit_errors=False,
+        expt_params=dummy_params_ex,
+    )
+
+    assert isinstance(test_dcid.detector, Pilatus)
+
+    beam_settings = BeamSettings(
+        wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(100, 100)
+    )
+
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.dcid.requests") as patch_request,
+        patch("mx_bluesky.beamlines.i24.serial.dcid.get_auth_header") as fake_auth,
+    ):
+        test_dcid.generate_dcid(beam_settings, "", "test_00001_#####.cbf", 10)
+        patch_resolution.assert_called_once_with(
+            test_dcid.detector,
+            dummy_params_ex.detector_distance_mm,
+            beam_settings.wavelength_in_a,
+        )
+        fake_auth.assert_called_once()
+        fake_json.dumps.assert_called_once()
+        patch_request.post.assert_called_once()

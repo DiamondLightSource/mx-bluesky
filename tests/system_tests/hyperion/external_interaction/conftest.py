@@ -9,7 +9,7 @@ import numpy
 import pytest
 import pytest_asyncio
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -34,10 +34,13 @@ from ispyb.sqlalchemy import (
     Position,
 )
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
@@ -47,10 +50,8 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
 
@@ -68,9 +69,9 @@ TEST_RESULT_MEDIUM = [
     {
         "centre_of_mass": [1, 2, 3],
         "max_voxel": [2, 4, 5],
-        "max_count": 105062,
+        "max_count": 50000,
         "n_voxels": 35,
-        "total_count": 2387574,
+        "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
     }
 ]
@@ -78,10 +79,20 @@ TEST_RESULT_SMALL = [
     {
         "centre_of_mass": [1, 2, 3],
         "max_voxel": [1, 2, 3],
-        "max_count": 105062,
+        "max_count": 1000,
         "n_voxels": 35,
-        "total_count": 1387574,
+        "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
     }
 ]
 
@@ -384,7 +395,7 @@ def composite_for_rotation_scan(
     zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     flux: Flux,
     undulator_for_system_test: Undulator,
     aperture_scatterguard: ApertureScatterguard,

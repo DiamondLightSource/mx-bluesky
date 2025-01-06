@@ -9,7 +9,7 @@ from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import Smargon
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
@@ -78,11 +78,11 @@ def move_x_y_z(
     axes are optional."""
 
     LOGGER.info(f"Moving smargon to x, y, z: {(x_mm, y_mm, z_mm)}")
-    if x_mm:
+    if x_mm is not None:
         yield from bps.abs_set(smargon.x, x_mm, group=group)
-    if y_mm:
+    if y_mm is not None:
         yield from bps.abs_set(smargon.y, y_mm, group=group)
-    if z_mm:
+    if z_mm is not None:
         yield from bps.abs_set(smargon.z, z_mm, group=group)
     if wait:
         yield from bps.wait(group)
@@ -100,11 +100,11 @@ def move_phi_chi_omega(
     axes are optional."""
 
     LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
-    if phi:
+    if phi is not None:
         yield from bps.abs_set(smargon.phi, phi, group=group)
-    if chi:
+    if chi is not None:
         yield from bps.abs_set(smargon.chi, chi, group=group)
-    if omega:
+    if omega is not None:
         yield from bps.abs_set(smargon.omega, omega, group=group)
     if wait:
         yield from bps.wait(group)

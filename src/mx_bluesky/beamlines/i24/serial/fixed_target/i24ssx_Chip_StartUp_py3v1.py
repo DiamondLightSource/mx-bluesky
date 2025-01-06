@@ -3,28 +3,10 @@ Startup utilities for chip
 """
 
 import string
-from pathlib import Path
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
-from mx_bluesky.beamlines.i24.serial.parameters import (
-    FixedTargetParameters,
-    get_chip_format,
-)
-from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    PARAM_FILE_NAME,
-    PARAM_FILE_PATH_FT,
-)
-
-
-def read_parameter_file(
-    param_path: Path | str = PARAM_FILE_PATH_FT,
-) -> FixedTargetParameters:
-    if not isinstance(param_path, Path):
-        param_path = Path(param_path)
-    params_file = param_path / PARAM_FILE_NAME
-    params = FixedTargetParameters.from_file(params_file)
-    return params
+from mx_bluesky.beamlines.i24.serial.parameters import get_chip_format
 
 
 @log_on_entry

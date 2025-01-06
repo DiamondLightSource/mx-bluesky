@@ -12,9 +12,13 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
 )
@@ -30,9 +34,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -225,7 +226,7 @@ def test_execute_load_centre_collect_full(
     robot_load_cb.expeye.end_load = MagicMock()
     robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
-        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
@@ -270,14 +271,14 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
     )
