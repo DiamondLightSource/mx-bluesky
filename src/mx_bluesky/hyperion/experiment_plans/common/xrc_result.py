@@ -14,7 +14,16 @@ from mx_bluesky.common.parameters.components import (
 
 @dataclasses.dataclass
 class XRayCentreResult:
-    """Represents information about a hit from an X-ray centring."""
+    """
+    Represents information about a hit from an X-ray centring.
+
+    Attributes:
+        centre_of_mass_mm: coordinates in mm of the centre of mass
+        bounding_box_mm: coordinates in mm of opposite corners of the bounding box
+            containing the crystal
+        max_count: The maximum spot count encountered in any one grid box in the crystal
+        total_count: The total count across all boxes in the crystal.
+    """
 
     centre_of_mass_mm: np.ndarray
     bounding_box_mm: tuple[np.ndarray, np.ndarray]

@@ -10,6 +10,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
 import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     XRayCentreEventHandler,
 )
@@ -25,7 +26,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     sample_handling_callback_decorator,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context

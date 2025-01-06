@@ -1,7 +1,10 @@
 import pytest
 from bluesky.plan_stubs import null
 
-from mx_bluesky.hyperion.exceptions import WarningException, catch_exception_and_warn
+from mx_bluesky.common.utils.exceptions import (
+    WarningException,
+    catch_exception_and_warn,
+)
 
 
 class _TestException(Exception):

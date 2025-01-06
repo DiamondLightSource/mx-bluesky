@@ -83,6 +83,7 @@ class IspybExperimentType(StrEnum):
     STILL = "Still"
     SSX_CHIP = "SSX-Chip"
     SSX_JET = "SSX-Jet"
+    METAL_ID = "Metal ID"
 
     # Aliases for historic hyperion experiment type mapping
     ROTATION = "SAD"
