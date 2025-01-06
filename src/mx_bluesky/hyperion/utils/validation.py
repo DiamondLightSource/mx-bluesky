@@ -123,7 +123,7 @@ def fake_create_rotation_devices():
         zebra=zebra,
         robot=robot,
         oav=oav,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
         xbpm_feedback=xbpm_feedback,
     )
 

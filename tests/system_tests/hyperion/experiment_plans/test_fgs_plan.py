@@ -85,7 +85,7 @@ async def fxc_composite():
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
-        panda=i03.panda(fake_with_ophyd_sim=True),
+        panda=i03.panda(connect_immediately=True, mock=True),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(
             connect_immediately=True, mock=True
         ),
@@ -96,7 +96,7 @@ async def fxc_composite():
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
         zocalo=zocalo,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore

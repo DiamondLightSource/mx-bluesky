@@ -342,7 +342,7 @@ def zebra(RE):
 
 @pytest.fixture
 def zebra_shutter(RE):
-    return i03.sample_shutter(fake_with_ophyd_sim=True)
+    return i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -550,7 +550,7 @@ def thawer(RE) -> Generator[Thawer, Any, Any]:
 
 @pytest.fixture
 def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
-    yield i03.sample_shutter(fake_with_ophyd_sim=True)
+    yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -748,7 +748,7 @@ async def panda(RE: RunEngine):
                 await sig.connect(mock=True)
                 setattr(device, name, sig)
 
-    panda = i03.panda(fake_with_ophyd_sim=True)
+    panda = i03.panda(connect_immediately=True, mock=True)
     await set_mock_blocks(
         panda,
         {
@@ -829,7 +829,7 @@ async def fake_fgs_composite(
             connect_immediately=True, mock=True
         ),
         robot=i03.robot(fake_with_ophyd_sim=True),
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
