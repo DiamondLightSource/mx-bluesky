@@ -49,7 +49,7 @@ def run_simulating_setup_panda_functions(
             setup_panda_for_flyscan(
                 panda,
                 PandAGridScanParams(transmission_fraction=0.01),
-                1,
+                np.array([1, 1, 1]),
                 0.1,
                 100.1,
                 smargon_speed,
@@ -67,8 +67,8 @@ def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine, pa
         "setup", panda, sim_run_engine, mock_load_device
     )
     mock_load_device.assert_called_once()
-    assert num_of_sets == 8
-    assert num_of_waits == 3
+    assert num_of_sets == 10
+    assert num_of_waits == 5
 
 
 @pytest.mark.parametrize(
@@ -105,7 +105,7 @@ def test_setup_panda_correctly_configures_table(
         setup_panda_for_flyscan(
             panda,
             params,
-            0,
+            np.array([0, 0, 0]),
             exposure_time_s,
             time_between_x_steps_ms,
             sample_velocity_mm_per_s,
@@ -211,7 +211,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
             setup_panda_for_flyscan(
                 panda,
                 PandAGridScanParams(transmission_fraction=0.01),
-                1,
+                np.array([1, 1, 1]),
                 0.1,
                 101.1,
                 get_smargon_speed(0.1, 1),

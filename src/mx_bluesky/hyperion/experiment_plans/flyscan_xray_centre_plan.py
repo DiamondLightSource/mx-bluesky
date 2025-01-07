@@ -524,7 +524,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         parameters.panda_FGS_params,
-        initial_xyz[0],
+        initial_xyz,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,

@@ -7,6 +7,7 @@ import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
+from numpy.typing import NDArray
 from ophyd_async.core import load_device
 from ophyd_async.fastcs.panda import (
     HDFPanda,
@@ -114,7 +115,7 @@ def _get_seq_table(
 def setup_panda_for_flyscan(
     panda: HDFPanda,
     parameters: PandAGridScanParams,
-    initial_x: float,
+    initial_xyz: NDArray,
     exposure_time_s: float,
     time_between_x_steps_ms: float,
     sample_velocity_mm_per_s: float,
@@ -127,7 +128,7 @@ def setup_panda_for_flyscan(
     Args:
         panda (HDFPanda): The PandA Ophyd device
         parameters (PandAGridScanParams): Grid parameters
-        initial_x (float): Motor positions at time of PandA setup
+        initial_xyz (NDarray): Float motor positions at time of PandA setup
         exposure_time_s (float): Detector exposure time per trigger
         time_between_x_steps_ms (float): Time, in ms, between each trigger. Equal to deadtime + exposure time
         sample_velocity_mm_per_s (float): Velocity of the sample in mm/s = x_step_size_mm * 1000 /
@@ -152,7 +153,21 @@ def setup_panda_for_flyscan(
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
         panda.inenc[1].setp,  # type: ignore
-        initial_x * MM_TO_ENCODER_COUNTS,
+        initial_xyz[0] * MM_TO_ENCODER_COUNTS,
+        wait=True,
+    )
+
+    # Home the PandA Y encoder using current motor position
+    yield from bps.abs_set(
+        panda.inenc[2].setp,  # type: ignore
+        initial_xyz[1] * MM_TO_ENCODER_COUNTS,
+        wait=True,
+    )
+
+    # Home the PandA Z encoder using current motor position
+    yield from bps.abs_set(
+        panda.inenc[3].setp,  # type: ignore
+        initial_xyz[2] * MM_TO_ENCODER_COUNTS,
         wait=True,
     )
 
