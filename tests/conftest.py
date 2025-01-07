@@ -503,7 +503,7 @@ def vfm(RE):
 
 @pytest.fixture
 def lower_gonio(RE):
-    lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
+    lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
