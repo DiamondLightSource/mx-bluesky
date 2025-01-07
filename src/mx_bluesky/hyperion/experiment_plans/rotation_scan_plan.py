@@ -8,7 +8,7 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -69,7 +69,7 @@ class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
     dcm: DCM
     detector_motion: DetectorMotion
