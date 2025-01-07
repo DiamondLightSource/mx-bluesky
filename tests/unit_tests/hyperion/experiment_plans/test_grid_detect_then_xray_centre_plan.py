@@ -136,8 +136,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     params: HyperionThreeDGridScan = mock_flyscan.call_args[0][1]
 
-    # Need to twiddle these values, or the values in the pin_tip_detection_with_found_pin
-    # fixture, so that they match up
     assert params.detector_params.num_triggers == 180
     assert params.FGS_params.x_axis.full_steps == 15
     assert params.FGS_params.y_axis.end == pytest.approx(-0.0649, 0.001)
