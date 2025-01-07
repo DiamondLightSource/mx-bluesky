@@ -9,7 +9,7 @@ import numpy
 import pytest
 import pytest_asyncio
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -395,7 +395,7 @@ def composite_for_rotation_scan(
     zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     flux: Flux,
     undulator_for_system_test: Undulator,
     aperture_scatterguard: ApertureScatterguard,

@@ -141,8 +141,8 @@ def test_hardware_read_events(
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
             "comments": "Sample position (µm): (158, 24, 3) test ",
-            "resolution": 1.1830593328548429,
-            "wavelength": 1.1164718451643736,
+            "resolution": 1.1830593331191241,
+            "wavelength": 1.11647184541378,
         },
     )
     expected_data = TestData.test_event_document_pre_data_collection["data"]
@@ -195,10 +195,10 @@ def test_flux_read_events(
             "focal_spot_size_at_sampley": 0.02,
             "beamsize_at_samplex": 0.05,
             "beamsize_at_sampley": 0.02,
-            "wavelength": 1.1164718451643736,
+            "wavelength": 1.11647184541378,
             "transmission": 98,
             "flux": 9.81,
-            "resolution": 1.1830593328548429,
+            "resolution": 1.1830593331191241,
         },
     )
 
@@ -320,7 +320,7 @@ def test_comment_correct_after_hardware_read(
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
             "comments": "Sample position (µm): (158, 24, 3) a lovely unit test ",
-            "resolution": 1.1830593328548429,
-            "wavelength": 1.1164718451643736,
+            "resolution": 1.1830593331191241,
+            "wavelength": 1.11647184541378,
         },
     )

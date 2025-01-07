@@ -15,7 +15,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
