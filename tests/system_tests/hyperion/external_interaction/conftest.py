@@ -15,6 +15,7 @@ from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -267,6 +268,7 @@ def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
+    beamstop_i03,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -291,6 +293,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
+        beamstop=beamstop_i03,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -390,6 +393,7 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 @pytest.fixture
 def composite_for_rotation_scan(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -415,6 +419,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

@@ -38,7 +38,6 @@ from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
@@ -173,8 +172,6 @@ def robot_load_then_xray_centre(
     assert parameters.sample_puck is not None
     assert parameters.sample_pin is not None
 
-    yield from check_beamstop(composite.beamstop)
-
     sample_location = SampleLocation(parameters.sample_puck, parameters.sample_pin)
 
     doing_sample_load = not (
@@ -216,6 +213,7 @@ def robot_load_then_xray_centre(
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,

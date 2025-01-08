@@ -624,6 +624,7 @@ def test_full_grid_scan_params():
 
 @pytest.fixture()
 def fake_create_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -637,6 +638,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
+        "beamstop": beamstop_i03,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -649,6 +651,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -671,6 +674,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

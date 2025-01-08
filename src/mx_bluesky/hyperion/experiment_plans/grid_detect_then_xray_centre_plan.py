@@ -16,6 +16,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -74,6 +75,7 @@ class GridDetectThenXRayCentreComposite:
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
@@ -217,6 +219,7 @@ def grid_detect_then_xray_centre(
         )
 
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_params.detector_distance,
