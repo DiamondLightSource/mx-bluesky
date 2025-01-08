@@ -719,7 +719,7 @@ def test_rotation_scan_set_undulator_gap_after_xbpm_stable(
         msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
     )
 
-    
+
 def test_rotation_scan_fails_with_exception_when_no_beamstop(
     sim_run_engine: RunEngineSimulator,
     fake_create_rotation_devices: RotationScanComposite,
