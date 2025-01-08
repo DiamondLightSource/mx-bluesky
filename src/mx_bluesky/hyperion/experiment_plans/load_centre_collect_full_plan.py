@@ -9,7 +9,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
-import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
+import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     XRayCentreEventHandler,

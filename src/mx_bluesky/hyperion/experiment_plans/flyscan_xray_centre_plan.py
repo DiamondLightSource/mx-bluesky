@@ -11,7 +11,6 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
-from bluesky.callbacks import CallbackBase
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
@@ -44,7 +43,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_full_processing_results,
 )
-from event_model import RunStart
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -57,6 +55,7 @@ from mx_bluesky.common.utils.exceptions import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -77,7 +76,6 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -116,20 +114,6 @@ class FlyScanXRayCentreComposite:
     def sample_motors(self) -> Smargon:
         """Convenience alias with a more user-friendly name"""
         return self.smargon
-
-
-class XRayCentreEventHandler(CallbackBase):
-    def __init__(self):
-        super().__init__()
-        self.xray_centre_results: Sequence[XRayCentreResult] | None = None
-
-    def start(self, doc: RunStart) -> RunStart | None:
-        if "xray_centre_results" in doc:
-            self.xray_centre_results = [
-                XRayCentreResult(**result_dict)
-                for result_dict in doc["xray_centre_results"]  # type: ignore
-            ]
-        return doc
 
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:

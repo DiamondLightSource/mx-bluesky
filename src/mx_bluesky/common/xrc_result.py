@@ -5,6 +5,8 @@ from collections.abc import Callable, Sequence
 from functools import partial
 
 import numpy as np
+from bluesky.callbacks import CallbackBase
+from event_model import RunStart
 
 from mx_bluesky.common.parameters.components import (
     MultiXtalSelection,
@@ -54,3 +56,17 @@ def resolve_selection_fn(
     if isinstance(params, TopNByMaxCountSelection):
         return partial(top_n_by_max_count, n=params.n)
     raise ValueError(f"Invalid selection function {params.name}")
+
+
+class XRayCentreEventHandler(CallbackBase):
+    def __init__(self):
+        super().__init__()
+        self.xray_centre_results: Sequence[XRayCentreResult] | None = None
+
+    def start(self, doc: RunStart) -> RunStart | None:
+        if "xray_centre_results" in doc:
+            self.xray_centre_results = [
+                XRayCentreResult(**result_dict)
+                for result_dict in doc["xray_centre_results"]  # type: ignore
+            ]
+        return doc
