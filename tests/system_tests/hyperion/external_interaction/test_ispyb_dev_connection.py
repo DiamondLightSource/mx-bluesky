@@ -380,7 +380,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[0],
         "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 12 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
-        "bottom right (px): [239,244]. ApertureValue.SMALL. ",
+        "bottom right (px): [239,244]. Small. ",
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
@@ -434,7 +434,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[1],
         "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 11 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [239,241]. ApertureValue.SMALL. ",
+        "bottom right (px): [239,241]. Small. ",
     )
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
@@ -481,8 +481,7 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid)
-        == "Sample position (µm): (1, 2, 3) test  Aperture: ApertureValue.SMALL. "
+        fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {

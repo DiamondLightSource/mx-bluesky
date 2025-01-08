@@ -12,6 +12,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -107,6 +108,7 @@ BASIC_POST_SETUP_DOC = {
 def grid_detect_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
+    beamstop_i03: Beamstop,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -127,6 +129,7 @@ def grid_detect_devices(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -279,6 +282,7 @@ def robot_load_composite(
     eiger,
     xbpm_feedback,
     attenuator,
+    beamstop_i03,
     fast_grid_scan,
     undulator,
     undulator_dcm,
@@ -304,6 +308,7 @@ def robot_load_composite(
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
+        beamstop=beamstop_i03,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,

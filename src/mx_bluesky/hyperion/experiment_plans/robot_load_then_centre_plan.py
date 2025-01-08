@@ -17,6 +17,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -101,10 +102,7 @@ class RobotLoadThenCentreComposite:
     robot: BartRobot
     webcam: Webcam
     lower_gonio: XYZPositioner
-
-    @property
-    def sample_motors(self):
-        return self.smargon
+    beamstop: Beamstop
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
@@ -211,6 +209,7 @@ def robot_load_then_xray_centre(
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,
