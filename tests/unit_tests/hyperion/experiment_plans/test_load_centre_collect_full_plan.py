@@ -343,7 +343,7 @@ def test_load_centre_collect_fails_with_exception_when_no_beamstop(
     sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_read_handler_for(
-        composite.beamstop.pos_select, BeamstopPositions.UNKNOWN
+        composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
     )
 
     with pytest.raises(BeamstopException):

@@ -17,7 +17,7 @@ def check_beamstop(beamstop: Beamstop):
     Raises:
         BeamstopException: If the beamstop is in any other position than DATA_COLLECTION
     """
-    current_pos = yield from bps.rd(beamstop.pos_select)
+    current_pos = yield from bps.rd(beamstop.selected_pos)
     if current_pos != BeamstopPositions.DATA_COLLECTION:
         LOGGER.info(f"Beamstop check failed: position {current_pos}")
         raise BeamstopException(

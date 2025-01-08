@@ -516,7 +516,7 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
     robot_load_then_centre_params: RobotLoadThenCentre,
 ):
     sim_run_engine.add_read_handler_for(
-        robot_load_composite.beamstop.pos_select, BeamstopPositions.UNKNOWN
+        robot_load_composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
     )
     with pytest.raises(BeamstopException):
         sim_run_engine.simulate_plan(

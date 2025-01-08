@@ -58,7 +58,7 @@ def load_centre_collect_params():
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
-    beamstop,
+    beamstop_i03,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -71,7 +71,7 @@ def load_centre_collect_composite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
-        beamstop=beamstop,
+        beamstop=beamstop_i03,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
@@ -383,7 +383,7 @@ def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
 ):
     sample_handling_cb = SampleHandlingCallback()
     RE.subscribe(sample_handling_cb)
-    set_mock_value(load_centre_collect_composite.beamstop.x.user_readback, 1)
+    set_mock_value(load_centre_collect_composite.beamstop.x_mm.user_readback, 1)
 
     with pytest.raises(BeamstopException, match="Beamstop is not DATA_COLLECTION"):
         RE(
