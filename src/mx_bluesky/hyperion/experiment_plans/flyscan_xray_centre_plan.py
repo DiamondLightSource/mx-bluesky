@@ -473,8 +473,6 @@ def _panda_triggering_setup(
 
     time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
 
-    current_x = yield from bps.rd(fgs_composite.smargon.x.user_readback)
-
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x.max_velocity
     )
@@ -507,7 +505,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         parameters.panda_FGS_params,
-        current_x,
+        fgs_composite.smargon,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,
