@@ -8,12 +8,13 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -29,6 +30,7 @@ from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_phi_chi_omega,
@@ -55,7 +57,6 @@ from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     oav_snapshot_plan,
     setup_beamline_for_OAV,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,
@@ -69,8 +70,9 @@ class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
@@ -353,7 +355,7 @@ def rotation_scan(
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
             "zocalo_environment": CONST.ZOCALO_ENV,
-            "hyperion_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
@@ -377,6 +379,7 @@ def rotation_scan(
 
         LOGGER.info("setting up and staging eiger...")
         yield from start_preparing_data_collection_then_do_plan(
+            composite.beamstop,
             eiger,
             composite.detector_motion,
             params.detector_distance_mm,
@@ -425,8 +428,7 @@ def multi_rotation_scan(
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-                    "zocalo_environment": CONST.ZOCALO_ENV,
-                    "hyperion_parameters": single_scan.model_dump_json(),
+                    "mx_bluesky_parameters": single_scan.model_dump_json(),
                 }
             )
             def rotation_scan_core(
@@ -438,6 +440,7 @@ def multi_rotation_scan(
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,

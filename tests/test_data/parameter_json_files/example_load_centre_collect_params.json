@@ -19,7 +19,7 @@
     "comment": "Hyperion Rotation Scan - ",
     "file_name": "protk",
     "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/",
-    "demand_energy_ev": 11200,
+    "demand_energy_ev": 11100,
     "exposure_time_s": 0.004,
     "rotation_increment_deg": 0.1,
     "snapshot_omegas_deg": [

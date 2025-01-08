@@ -10,7 +10,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter

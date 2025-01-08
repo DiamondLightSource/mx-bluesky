@@ -35,10 +35,7 @@
             "scan_width_deg": 180.0,
             "omega_start_deg": 0,
             "phi_start_deg": 0.47,
-            "chi_start_deg": 23.85,
-            "x_start_um": 1.0,
-            "y_start_um": 2.0,
-            "z_start_um": 3.0
+            "chi_start_deg": 23.85
         }]
     }
 }

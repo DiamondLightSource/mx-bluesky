@@ -9,12 +9,13 @@ import numpy
 import pytest
 import pytest_asyncio
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -39,6 +40,8 @@ from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
@@ -48,10 +51,8 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
 
@@ -267,6 +268,7 @@ def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
+    beamstop_i03,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -291,6 +293,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
+        beamstop=beamstop_i03,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -390,12 +393,13 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 @pytest.fixture
 def composite_for_rotation_scan(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     flux: Flux,
     undulator_for_system_test: Undulator,
     aperture_scatterguard: ApertureScatterguard,
@@ -415,6 +419,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

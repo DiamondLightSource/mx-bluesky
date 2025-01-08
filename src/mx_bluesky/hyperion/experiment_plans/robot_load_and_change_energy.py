@@ -11,7 +11,7 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.motors import XYZPositioner
@@ -25,11 +25,11 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
 from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     set_energy_plan,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 
@@ -41,7 +41,7 @@ class RobotLoadAndEnergyChangeComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
     # RobotLoad fields
     robot: BartRobot
@@ -122,6 +122,11 @@ def do_robot_load(
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
+    error_code = yield from bps.rd(composite.robot.error_code)
+    # Reset robot if light curtains were tripped
+    if error_code == 40:
+        yield from bps.trigger(composite.robot.reset, wait=True)
+
     yield from bps.abs_set(
         composite.robot,
         sample_location,

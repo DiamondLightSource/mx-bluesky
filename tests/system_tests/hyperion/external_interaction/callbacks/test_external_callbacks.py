@@ -21,6 +21,8 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
@@ -29,11 +31,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
-from mx_bluesky.hyperion.utils.utils import convert_angstrom_to_eV
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa
@@ -213,6 +213,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
+        beamstop=fake_create_devices["beamstop"],
         dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],
