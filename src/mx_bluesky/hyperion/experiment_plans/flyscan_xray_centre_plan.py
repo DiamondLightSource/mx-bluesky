@@ -112,11 +112,6 @@ class FlyScanXRayCentreComposite:
     robot: BartRobot
     sample_shutter: ZebraShutter
 
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
-
 
 class XRayCentreEventHandler(CallbackBase):
     def __init__(self):
@@ -225,16 +220,7 @@ def run_gridscan_and_fetch_results(
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
-
-    yield from feature_controlled.setup_trigger(fgs_composite, parameters, initial_xyz)
+    yield from feature_controlled.setup_trigger(fgs_composite, parameters)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -331,11 +317,9 @@ def run_gridscan(
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
-    sample_motors = fgs_composite.sample_motors
-
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
+        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the
@@ -408,7 +392,6 @@ class _FeatureControlled:
             self,
             fgs_composite: FlyScanXRayCentreComposite,
             parameters: HyperionThreeDGridScan,
-            initial_xyz: np.ndarray,
         ) -> MsgGenerator: ...
 
     setup_trigger: _ExtraSetup
@@ -469,7 +452,6 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
 def _zebra_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
 ):
     yield from setup_zebra_for_gridscan(
         fgs_composite.zebra, fgs_composite.sample_shutter, wait=True
@@ -479,7 +461,6 @@ def _zebra_triggering_setup(
 def _panda_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
 ):
     LOGGER.info("Setting up Panda for flyscan")
 

@@ -95,10 +95,6 @@ class GridDetectThenXRayCentreComposite:
     robot: BartRobot
     sample_shutter: ZebraShutter
 
-    @property
-    def sample_motors(self):
-        return self.smargon
-
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
     return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
