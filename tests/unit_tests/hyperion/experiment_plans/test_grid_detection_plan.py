@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Literal
 from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
@@ -223,6 +224,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     RE: RunEngine,
     test_config_files: dict[str, str],
     test_fgs_params: HyperionThreeDGridScan,
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
@@ -250,9 +252,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
-                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_0_grid_overlay.png",
-                "oav-grid_snapshot-last_path_outer": "tmp/test_0_outer_overlay.png",
-                "oav-grid_snapshot-last_saved_path": "tmp/test_0.png",
+                "oav-grid_snapshot-last_path_full_overlay": f"{tmp_path}/test_0_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": f"{tmp_path}/test_0_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": f"{tmp_path}/test_0.png",
             },
         )
         assert_event(
@@ -265,9 +267,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
-                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_90_grid_overlay.png",
-                "oav-grid_snapshot-last_path_outer": "tmp/test_90_outer_overlay.png",
-                "oav-grid_snapshot-last_saved_path": "tmp/test_90.png",
+                "oav-grid_snapshot-last_path_full_overlay": f"{tmp_path}/test_90_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": f"{tmp_path}/test_90_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": f"{tmp_path}/test_90.png",
             },
         )
 
