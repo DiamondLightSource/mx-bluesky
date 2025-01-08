@@ -16,7 +16,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
@@ -94,7 +94,7 @@ class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
     dcm: DCM
     eiger: EigerDetector
@@ -111,11 +111,6 @@ class FlyScanXRayCentreComposite:
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
     sample_shutter: ZebraShutter
-
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
 
 
 class XRayCentreEventHandler(CallbackBase):
@@ -225,16 +220,7 @@ def run_gridscan_and_fetch_results(
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
-
-    yield from feature_controlled.setup_trigger(fgs_composite, parameters, initial_xyz)
+    yield from feature_controlled.setup_trigger(fgs_composite, parameters)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -331,11 +317,9 @@ def run_gridscan(
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
-    sample_motors = fgs_composite.sample_motors
-
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
+        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the
@@ -408,7 +392,6 @@ class _FeatureControlled:
             self,
             fgs_composite: FlyScanXRayCentreComposite,
             parameters: HyperionThreeDGridScan,
-            initial_xyz: np.ndarray,
         ) -> MsgGenerator: ...
 
     setup_trigger: _ExtraSetup
@@ -469,7 +452,6 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
 def _zebra_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
 ):
     yield from setup_zebra_for_gridscan(
         fgs_composite.zebra, fgs_composite.sample_shutter, wait=True
@@ -479,7 +461,6 @@ def _zebra_triggering_setup(
 def _panda_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
 ):
     LOGGER.info("Setting up Panda for flyscan")
 
@@ -491,6 +472,8 @@ def _panda_triggering_setup(
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
     time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
+
+    current_x = yield from bps.rd(fgs_composite.smargon.x.user_readback)
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x.max_velocity
@@ -524,7 +507,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         parameters.panda_FGS_params,
-        initial_xyz[0],
+        current_x,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,

@@ -8,12 +8,13 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -69,8 +70,9 @@ class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
@@ -377,6 +379,7 @@ def rotation_scan(
 
         LOGGER.info("setting up and staging eiger...")
         yield from start_preparing_data_collection_then_do_plan(
+            composite.beamstop,
             eiger,
             composite.detector_motion,
             params.detector_distance_mm,
@@ -437,6 +440,7 @@ def multi_rotation_scan(
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,
