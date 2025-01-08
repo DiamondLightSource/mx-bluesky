@@ -79,6 +79,7 @@ def fake_rotation_scan(
 
 
 def fake_create_rotation_devices():
+    beamstop = i03.beamstop(fake_with_ophyd_sim=True)
     eiger = i03.eiger(fake_with_ophyd_sim=True)
     smargon = i03.smargon(fake_with_ophyd_sim=True)
     zebra = i03.zebra(fake_with_ophyd_sim=True)
@@ -106,6 +107,7 @@ def fake_create_rotation_devices():
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

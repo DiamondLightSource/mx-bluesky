@@ -37,6 +37,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -431,6 +432,27 @@ def attenuator(RE):
 
 
 @pytest.fixture
+def beamstop_i03(
+    beamline_parameters: GDABeamlineParameters, sim_run_engine: RunEngineSimulator
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+    ):
+        beamstop = i03.beamstop(fake_with_ophyd_sim=True)
+        patch_motor(beamstop.x_mm)
+        patch_motor(beamstop.y_mm)
+        patch_motor(beamstop.z_mm)
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+        sim_run_engine.add_read_handler_for(
+            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        )
+        yield beamstop
+        beamline_utils.clear_devices()
+
+
+@pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
     xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
@@ -602,6 +624,7 @@ def test_full_grid_scan_params():
 
 @pytest.fixture()
 def fake_create_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -615,6 +638,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
+        "beamstop": beamstop_i03,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -627,6 +651,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -649,6 +674,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

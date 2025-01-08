@@ -201,9 +201,7 @@ class TestFlyscanXrayCentrePlan:
 
         error = None
         with pytest.raises(FailedStatus) as exc:
-            with patch.object(
-                fake_fgs_composite.sample_motors.omega, "set"
-            ) as mock_set:
+            with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
                 error = AssertionError("Test Exception")
                 mock_set.return_value = FailedStatus(error)
 
@@ -415,7 +413,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture.assert_has_calls([ap_call_large, ap_call_large, ap_call_medium])
 
         mv_to_centre = call(
-            fgs_composite_with_panda_pcap.sample_motors,
+            fgs_composite_with_panda_pcap.smargon,
             0.05,
             pytest.approx(0.15),
             0.25,
@@ -438,21 +436,21 @@ class TestFlyscanXrayCentrePlan:
         motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
             np.array([1, 2, 3])
         )
-        RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
+        RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
         bps_abs_set.assert_has_calls(
             [
                 call(
-                    fake_fgs_composite.sample_motors.x,
+                    fake_fgs_composite.smargon.x,
                     motor_position[0],
                     group="move_x_y_z",
                 ),
                 call(
-                    fake_fgs_composite.sample_motors.y,
+                    fake_fgs_composite.smargon.y,
                     motor_position[1],
                     group="move_x_y_z",
                 ),
                 call(
-                    fake_fgs_composite.sample_motors.z,
+                    fake_fgs_composite.smargon.z,
                     motor_position[2],
                     group="move_x_y_z",
                 ),
