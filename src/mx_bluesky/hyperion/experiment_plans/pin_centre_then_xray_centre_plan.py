@@ -121,6 +121,7 @@ def pin_tip_centre_then_xray_centre(
     @bpp.subs_decorator(flyscan_event_handler)
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
         yield from start_preparing_data_collection_then_do_plan(
+            composite.beamstop,
             eiger,
             composite.detector_motion,
             parameters.detector_params.detector_distance,
