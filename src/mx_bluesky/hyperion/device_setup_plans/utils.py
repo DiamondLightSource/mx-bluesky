@@ -9,7 +9,9 @@ from dodal.devices.detector import (
 )
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.i03.beamstop import Beamstop
 
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
 from mx_bluesky.hyperion.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
@@ -24,6 +26,7 @@ def fill_in_energy_if_not_supplied(dcm: DCM, detector_params: DetectorParams):
 
 
 def start_preparing_data_collection_then_do_plan(
+    beamstop: Beamstop,
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     detector_distance_mm: float | None,
@@ -49,6 +52,7 @@ def start_preparing_data_collection_then_do_plan(
         yield from set_shutter(detector_motion, ShutterState.OPEN, group)
         yield from plan_to_run
 
+    yield from check_beamstop(beamstop)
     yield from bpp.contingency_wrapper(
         wrapped_plan(),
         except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
