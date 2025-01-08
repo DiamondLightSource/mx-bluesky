@@ -186,11 +186,17 @@ def test_params_with_varying_frames_per_rotation_is_rejected():
         LoadCentreCollect(**params)
 
 
-def test_params_with_start_xyz_is_rejected():
+@pytest.mark.parametrize(
+    "param, value",
+    [
+        ["x_start_um", 1.0],
+        ["y_start_um", 2.0],
+        ["z_start_um", 3.0],
+    ],
+)
+def test_params_with_start_xyz_is_rejected(param: str, value: float):
     params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
-    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 1.0
-    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 2.0
-    params["multi_rotation_scan"]["rotation_scans"][1]["x_start_um"] = 3.0
+    params["multi_rotation_scan"]["rotation_scans"][1][param] = value
     with pytest.raises(
         ValidationError,
         match="Specifying start xyz for sweeps is not supported in combination with centring.",

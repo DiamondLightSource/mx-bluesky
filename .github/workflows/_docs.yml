@@ -22,9 +22,6 @@ jobs:
       - name: Install python packages
         uses: ./.github/actions/install_requirements
 
-      - name: Generate plantuml
-        run: ./utility_scripts/generate_plantuml.py > docs/developer/hyperion/reference/param_hierarchy.puml
-
       - name: Build docs
         run: tox -e docs
 
