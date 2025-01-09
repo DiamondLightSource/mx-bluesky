@@ -8,6 +8,10 @@ from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.util.lookup_tables import (
+    linear_interpolation_lut,
+    parse_lookup_table,
+)
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
@@ -19,6 +23,24 @@ def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
         return i24.eiger_beam_center()
     else:
         return i24.pilatus_beam_center()
+
+
+def compute_beam_center_position_mm(
+    lut_path: str, det_dist: float
+) -> tuple[float, float]:
+    lut_values = parse_lookup_table(lut_path)
+
+    calc_x = linear_interpolation_lut(lut_values[0], lut_values[1])
+    beam_x = calc_x(det_dist)
+
+    calc_y = linear_interpolation_lut(lut_values[0], lut_values[2])
+    beam_y = calc_y(det_dist)
+
+    return beam_x, beam_y
+
+
+# for now in mm, should probably be passed to det params like tyhis
+# and the conversion to pixels there
 
 
 def setup_beamline_for_collection_plan(
