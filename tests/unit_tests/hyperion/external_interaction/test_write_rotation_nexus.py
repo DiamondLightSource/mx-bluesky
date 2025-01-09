@@ -458,11 +458,14 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                     assert actual_class == expected_class, (
                         f"{item_path_str} Actual and expected class don't match {actual_class}, {expected_class}"
                     )
+                    # fmt: off
                     assert (
                         actual_value[()] == expected_value[()]  # type: ignore
                     ), (
-                        f"Actual and expected values differ for {item_path_str}: {actual_value[()]} != {expected_value[()]}"
-                    )  # type: ignore
+                        f"Actual and expected values differ for {item_path_str}: "
+                        f"{actual_value[()]} != {expected_value[()]}"  # type: ignore
+                    )
+                    # fmt: on
             else:
                 actual_value_str = np.array2string(actual_value, threshold=10)
                 expected_value_str = np.array2string(expected_value, threshold=10)  # type: ignore
