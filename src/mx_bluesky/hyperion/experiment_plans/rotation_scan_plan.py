@@ -137,8 +137,6 @@ def calculate_motion_profile(
         # If omega_flip is True then the motor omega axis is inverted with respect to the
         # hyperion coordinate system.
         start_scan_deg = -start_scan_deg
-        # start_motion_deg = -start_motion_deg
-        # distance_to_move_deg = -distance_to_move_deg
         direction = (
             direction.POSITIVE
             if direction == direction.NEGATIVE

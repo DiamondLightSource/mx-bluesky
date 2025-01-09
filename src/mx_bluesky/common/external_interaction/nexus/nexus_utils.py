@@ -15,6 +15,12 @@ from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
 
 
 class AxisDirection(Enum):
+    """
+    Identifies whether the omega axis of rotation is on the positive x-axis or
+    negative x-axis as per the Nexus standard:
+    https://journals.iucr.org/m/issues/2020/05/00/ti5018/ti5018.pdf
+    """
+
     POSITIVE = 1
     NEGATIVE = -1
 

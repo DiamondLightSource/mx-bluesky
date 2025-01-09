@@ -34,6 +34,18 @@ from mx_bluesky.hyperion.parameters.constants import (
 
 
 class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
+    """
+    Describes a rotation scan about the specified axis.
+
+    Attributes:
+        rotation_axis: The rotation axis, by default this is the omega axis
+        omega_start_deg: The initial angle of the rotation in degrees (default 0)
+        scan_width_deg: The sweep of the rotation in degrees, this must be positive (default 360)
+        rotation_direction: Indicates the direction of rotation, if RotationDirection.POSITIVE
+            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE)
+        nexus_vds_start_img: The frame number of the first frame captured during the rotation
+    """
+
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)

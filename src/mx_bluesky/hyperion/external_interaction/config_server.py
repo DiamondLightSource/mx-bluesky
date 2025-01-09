@@ -8,6 +8,19 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 
 
 class HyperionFeatureFlags(FeatureFlags):
+    """
+    Feature flags specific to Hyperion.
+
+    Attributes:
+        use_panda_for_gridscan:         If True then the PandA is used for gridscans, otherwise the zebra is used
+        compare_cpu_and_gpu_zocalo:     If True then GPU result processing is enabled alongside CPU, if False then
+            CPU only is used.
+        set_stub_offsets:               If True then set the stub offsets after moving to the crystal (ignored for
+            multi-centre)
+        omega_flip:                     If True then invert the smargon omega motor rotation commands with respect to
+         the hyperion request.
+    """
+
     @staticmethod
     @cache
     def get_config_server() -> ConfigServer:
