@@ -112,9 +112,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
         event_sourced_position_info: DataCollectionPositionInfo | None,
         params,
     ) -> Sequence[ScanDataInfo]:
-        assert (
-            self.ispyb_ids.data_collection_ids
-        ), "Expect an existing DataCollection to update"
+        assert self.ispyb_ids.data_collection_ids, (
+            "Expect an existing DataCollection to update"
+        )
 
         return [
             ScanDataInfo(
@@ -132,9 +132,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
             doc["data"]["smargon-y"],
             doc["data"]["smargon-z"],
         ]
-        assert (
-            self.params
-        ), "handle_ispyb_hardware_read triggered before activity_gated_start"
+        assert self.params, (
+            "handle_ispyb_hardware_read triggered before activity_gated_start"
+        )
         motor_positions_um = [position * 1000 for position in motor_positions_mm]
         comment = f"Sample position (µm): ({motor_positions_um[0]:.0f}, {motor_positions_um[1]:.0f}, {motor_positions_um[2]:.0f}) {self.params.comment} "
         scan_data_infos[0].data_collection_info.comments = comment

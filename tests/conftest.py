@@ -977,9 +977,9 @@ class DocumentCapturer:
         for event_data_keys in match_data_keys_list:
             docs = DocumentCapturer.get_docs_from(docs, "event")
             doc = docs.pop(0)[1]["data"]
-            assert all(
-                k in doc.keys() for k in event_data_keys
-            ), f"One of {event_data_keys=} not in {doc}"
+            assert all(k in doc.keys() for k in event_data_keys), (
+                f"One of {event_data_keys=} not in {doc}"
+            )
 
 
 @pytest.fixture

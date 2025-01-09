@@ -325,7 +325,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
         f"{tmpdir}/{meta_filename}",
     )
     for i, scan in enumerate(multi_params.single_rotation_scans):
-        with h5py.File(f"{tmpdir}/{prefix}_{i+1}.nxs", "r") as written_nexus_file:
+        with h5py.File(f"{tmpdir}/{prefix}_{i + 1}.nxs", "r") as written_nexus_file:
             # check links go to the right file:
             detector_specific = written_nexus_file[
                 "entry/instrument/detector/detectorSpecific"

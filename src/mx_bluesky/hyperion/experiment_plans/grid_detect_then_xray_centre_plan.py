@@ -223,9 +223,9 @@ def grid_detect_then_xray_centre(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    assert (
-        flyscan_event_handler.xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert flyscan_event_handler.xray_centre_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],
