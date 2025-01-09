@@ -28,6 +28,9 @@ def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
 def compute_beam_center_position_mm(
     lut_path: str, det_dist: float
 ) -> tuple[float, float]:
+    """Calculate the beam center position for the detector distance \
+    using the values in the lookup table for the conversion.
+    """
     lut_values = parse_lookup_table(lut_path)
 
     calc_x = linear_interpolation_lut(lut_values[0], lut_values[1])
