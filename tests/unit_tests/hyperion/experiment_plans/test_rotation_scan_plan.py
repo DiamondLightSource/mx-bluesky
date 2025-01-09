@@ -743,7 +743,7 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
     ],
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     MagicMock(),
 )
 @patch(
@@ -808,7 +808,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         )
     )
     event_params = RotationScan.model_validate_json(
-        rotation_outer_start_event.args[1]["hyperion_parameters"]
+        rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
     )
     # event params are not transformed
     assert event_params.omega_start_deg == 30
