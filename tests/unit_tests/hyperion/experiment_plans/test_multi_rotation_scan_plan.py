@@ -18,6 +18,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
@@ -257,7 +258,8 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        assert call.args[0] == rotation_params
+        callback_params = call.args[0]
+        assert callback_params == rotation_params
         assert call.kwargs == {
             "omega_start_deg": rotation_params.omega_start_deg,
             "chi_start_deg": rotation_params.chi_start_deg,
@@ -265,7 +267,9 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "vds_start_index": rotation_params.nexus_vds_start_img,
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
-            "rotation_direction": rotation_params.rotation_direction,
+            "axis_direction": AxisDirection.NEGATIVE
+            if rotation_params.features.omega_flip
+            else AxisDirection.POSITIVE,
         }
 
 
@@ -276,6 +280,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
+    feature_flags_update_with_omega_flip: MagicMock,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -385,7 +390,10 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 h5py.Dataset,
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
-            assert tuple(omega_vec) == (1.0 * scan.rotation_direction.multiplier, 0, 0)
+            omega_flip = (
+                feature_flags_update_with_omega_flip.mock_calls[0].args[0].omega_flip
+            )
+            assert tuple(omega_vec) == (-1.0 if omega_flip else 1.0, 0, 0)
 
 
 @patch(

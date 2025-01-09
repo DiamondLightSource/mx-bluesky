@@ -1,7 +1,7 @@
 from bluesky import plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper
 from bluesky.utils import make_decorator
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -9,7 +9,7 @@ from mx_bluesky.common.utils.log import LOGGER
 
 def _check_and_pause_feedback(
     xbpm_feedback: XBPMFeedback,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     desired_transmission_fraction: float,
 ):
     """Checks that the xbpm is in position before then turning it off and setting a new
@@ -18,7 +18,7 @@ def _check_and_pause_feedback(
     Args:
         xbpm_feedback (XBPMFeedback): The XBPM device that is responsible for keeping
                                       the beam in position
-        attenuator (Attenuator): The attenuator used to set transmission
+        attenuator (BinaryFilterAttenuator): The attenuator used to set transmission
         desired_transmission_fraction (float): The desired transmission to set after
                                                turning XBPM feedback off.
 
@@ -34,7 +34,7 @@ def _check_and_pause_feedback(
 
 
 def _unpause_xbpm_feedback_and_set_transmission_to_1(
-    xbpm_feedback: XBPMFeedback, attenuator: Attenuator
+    xbpm_feedback: XBPMFeedback, attenuator: BinaryFilterAttenuator
 ):
     """Turns the XBPM feedback back on and sets transmission to 1 so that it keeps the
     beam aligned whilst not collecting.
@@ -42,7 +42,7 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
     Args:
         xbpm_feedback (XBPMFeedback): The XBPM device that is responsible for keeping
                                       the beam in position
-        attenuator (Attenuator): The attenuator used to set transmission
+        attenuator (BinaryFilterAttenuator): The attenuator used to set transmission
     """
     yield from bps.mv(xbpm_feedback.pause_feedback, Pause.RUN, attenuator, 1.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
@@ -50,7 +50,7 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
 def transmission_and_xbpm_feedback_for_collection_wrapper(
     plan,
     xbpm_feedback: XBPMFeedback,
-    attenuator: Attenuator,
+    attenuator: BinaryFilterAttenuator,
     desired_transmission_fraction: float,
 ):
     """Sets the transmission for the data collection, ensuring the xbpm feedback is valid
@@ -70,7 +70,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         plan: The plan performing the data collection
         xbpm_feedback (XBPMFeedback): The XBPM device that is responsible for keeping
                                       the beam in position
-        attenuator (Attenuator): The attenuator used to set transmission
+        attenuator (BinaryFilterAttenuator): The attenuator used to set transmission
         desired_transmission_fraction (float): The desired transmission for the collection
     """
 

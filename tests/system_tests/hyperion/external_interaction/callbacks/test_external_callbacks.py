@@ -213,6 +213,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
+        beamstop=fake_create_devices["beamstop"],
         dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],

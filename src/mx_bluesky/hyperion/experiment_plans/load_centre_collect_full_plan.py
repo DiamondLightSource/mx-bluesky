@@ -7,7 +7,6 @@ from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.smargon import Smargon
 
 import mx_bluesky.hyperion.experiment_plans.common.xrc_result as flyscan_result
 from mx_bluesky.common.utils.log import LOGGER
@@ -23,9 +22,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     multi_rotation_scan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    sample_handling_callback_decorator,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -34,10 +30,6 @@ from mx_bluesky.hyperion.utils.context import device_composite_from_context
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
     """Composite that provides access to the required devices."""
-
-    @property
-    def sample_motors(self) -> Smargon:
-        return self.smargon
 
 
 def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
@@ -67,7 +59,6 @@ def load_centre_collect_full(
             "activate_callbacks": ["SampleHandlingCallback"],
         }
     )
-    @sample_handling_callback_decorator()
     def plan_with_callback_subs():
         flyscan_event_handler = XRayCentreEventHandler()
         yield from subs_wrapper(

@@ -11,7 +11,7 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.motors import XYZPositioner
@@ -41,7 +41,7 @@ class RobotLoadAndEnergyChangeComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
     # RobotLoad fields
     robot: BartRobot
