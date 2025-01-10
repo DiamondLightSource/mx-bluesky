@@ -38,6 +38,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -206,10 +207,14 @@ def main_extruder_plan(
     dcid: DCID,
     start_time: datetime,
 ) -> MsgGenerator:
+    beam_center_pixels = sup.compute_beam_center_position_from_lut(
+        BEAM_CENTER_LUT_FILES[parameters.detector_name],
+        parameters.detector_distance_mm,
+        parameters.detector_size_constants,
+    )
     yield from sup.set_detector_beam_center_plan(
         beam_center_device,
-        parameters.detector_params,
-        parameters.detector_distance_mm,
+        beam_center_pixels,
     )
 
     # Setting up the beamline
@@ -283,7 +288,6 @@ def main_extruder_plan(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        # NOTE Directory now created by the parameter model
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
         SSX_LOGGER.info(f"Eiger quickshot setup: filepath {filepath}")
@@ -490,6 +494,8 @@ def run_extruder_plan(
     parameters: ExtruderParameters = yield from read_parameters(
         detector_stage, attenuator
     )
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 
