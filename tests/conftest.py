@@ -450,7 +450,7 @@ def beamstop_i03(
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
     ):
-        beamstop = i03.beamstop(fake_with_ophyd_sim=True)
+        beamstop = i03.beamstop(connect_immediately=True, mock=True)
         patch_motor(beamstop.x_mm)
         patch_motor(beamstop.y_mm)
         patch_motor(beamstop.z_mm)
