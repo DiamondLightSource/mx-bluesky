@@ -11,7 +11,11 @@ BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
 
 @pytest.fixture(scope="session")
 def i03_device_factories():
-    return [f for f in collect_factories(i03).values() if hasattr(f, "cache_clear")]
+    return [
+        f
+        for f in collect_factories(i03, include_skipped=True).values()
+        if hasattr(f, "cache_clear")
+    ]
 
 
 @pytest.fixture(scope="function", autouse=True)
