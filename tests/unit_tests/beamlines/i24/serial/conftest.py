@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from dodal.beamlines import i24
@@ -56,11 +55,7 @@ def dummy_params_without_pp():
         "checker_pattern": False,
         "chip_map": [1],
     }
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-        new=TEST_LUT,
-    ):
-        yield FixedTargetParameters(**params)
+    return FixedTargetParameters(**params)
 
 
 @pytest.fixture
@@ -76,11 +71,7 @@ def dummy_params_ex():
         "num_images": 10,
         "pump_status": False,
     }
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-        new=TEST_LUT,
-    ):
-        yield ExtruderParameters(**params)
+    return ExtruderParameters(**params)
 
 
 def patch_motor(motor: Motor, initial_position: float = 0):

@@ -9,6 +9,8 @@ from dodal.devices.i24.i24_detector_motion import DetectorMotion
 
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline
 
+from ..conftest import TEST_LUT
+
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
 async def test_setup_beamline_for_collection_plan(
@@ -30,16 +32,35 @@ async def test_move_detector_stage_to_position_plan(detector_stage: DetectorMoti
     assert await detector_stage.z.user_readback.get_value() == det_dist
 
 
-# TODO FIXME This won't work beacause of LUT file
-# Probably also other, need to figure it out
+def test_compute_beam_center_position_from_lut(dummy_params_ex):
+    lut_path = TEST_LUT[dummy_params_ex.detector_name]
+
+    expected_beam_x = 1597.06
+    expected_beam_y = 1693.33
+
+    beam_center_pos = setup_beamline.compute_beam_center_position_from_lut(
+        lut_path,
+        dummy_params_ex.detector_distance_mm,
+        dummy_params_ex.detector_size_constants,
+    )
+    assert beam_center_pos[0] == pytest.approx(expected_beam_x, 1e-2)
+    assert beam_center_pos[1] == pytest.approx(expected_beam_y, 1e-2)
+
+
 async def test_set_detector_beam_center_plan(
     eiger_beam_center: DetectorBeamCenter, dummy_params_ex, RE
 ):
-    test_detector_distance = 100
-    test_detector_params = dummy_params_ex.detector_params
+    beam_center_pos = setup_beamline.compute_beam_center_position_from_lut(
+        TEST_LUT[dummy_params_ex.detector_name],
+        dummy_params_ex.detector_distance_mm,  # 100
+        dummy_params_ex.detector_size_constants,
+    )
+    # test_detector_distance = 100
+    # test_detector_params = dummy_params_ex.detector_params
     RE(
         setup_beamline.set_detector_beam_center_plan(
-            eiger_beam_center, test_detector_params, test_detector_distance
+            eiger_beam_center,
+            beam_center_pos,  # test_detector_params, test_detector_distance
         )
     )
 

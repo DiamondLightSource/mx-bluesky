@@ -4,7 +4,6 @@ import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.zebra import DISCONNECT, SOFT_IN3
 from ophyd_async.testing import get_mock_put, set_mock_value
-from tests.unit_tests.beamlines.i24.serial.conftest import TEST_LUT
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
     TTL_EIGER,
@@ -35,11 +34,7 @@ def dummy_params():
         "num_images": 10,
         "pump_status": False,
     }
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-        new=TEST_LUT,
-    ):
-        yield ExtruderParameters(**params)
+    return ExtruderParameters(**params)
 
 
 @pytest.fixture
@@ -57,11 +52,7 @@ def dummy_params_pp():
         "laser_dwell_s": 0.01,
         "laser_delay_s": 0.005,
     }
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-        new=TEST_LUT,
-    ):
-        yield ExtruderParameters(**params_pp)
+    return ExtruderParameters(**params_pp)
 
 
 @pytest.fixture
