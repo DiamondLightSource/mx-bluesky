@@ -73,9 +73,14 @@ def test_sample_handling_callback_intercepts_general_exception(
 def test_sample_handling_callback_closes_run_normally(RE: RunEngine):
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
-
+    mock_expeye = MagicMock()
     with (
         patch.object(callback, "_record_exception") as record_exception,
+        patch(
+            "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+            ".ExpeyeInteraction",
+            return_value=mock_expeye,
+        ),
     ):
         RE(plan_with_normal_completion())
 

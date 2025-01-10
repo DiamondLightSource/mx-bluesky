@@ -68,3 +68,7 @@ def create_load_centre_collect_callbacks() -> tuple[
         RotationISPyBCallback(emit=ZocaloCallback()),
         SampleHandlingCallback(),
     )
+
+
+def create_sample_status_callbacks() -> tuple[SampleHandlingCallback]:
+    return (SampleHandlingCallback(),)
