@@ -4,27 +4,17 @@ from functools import wraps
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
-from dodal.devices.zebra import (
-    AUTO_SHUTTER_GATE,
-    AUTO_SHUTTER_INPUT_1,
-    AUTO_SHUTTER_INPUT_2,
-    DISCONNECT,
-    IN1_TTL,
-    IN3_TTL,
-    IN4_TTL,
-    PC_GATE,
-    PC_PULSE,
-    SOFT_IN1,
-    TTL_DETECTOR,
-    TTL_PANDA,
-    TTL_XSPRESS3,
+from dodal.devices.zebra.zebra import (
     ArmDemand,
     EncEnum,
     I03Axes,
     RotationDirection,
     Zebra,
 )
-from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterControl
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    ZebraShutter,
+    ZebraShutterControl,
+)
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -79,10 +69,10 @@ def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"
     Zebra's AND2 gate for this input. ZebraShutter control mode must be in auto for this input to take control
 
     For more details see the ZebraShutter device."""
-    auto_shutter_control = zebra.logic_gates.and_gates[AUTO_SHUTTER_GATE]
-    yield from bps.abs_set(
-        auto_shutter_control.sources[AUTO_SHUTTER_INPUT_2], input, group
-    )
+    auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
+    assert auto_gate
+    auto_shutter_control = zebra.logic_gates.and_gates[auto_gate]
+    yield from bps.abs_set(auto_shutter_control.sources[2], input, group)
 
 
 def configure_zebra_and_shutter_for_auto_shutter(
@@ -102,11 +92,14 @@ def configure_zebra_and_shutter_for_auto_shutter(
         zebra_shutter.control_mode, ZebraShutterControl.AUTO, group=group
     )
 
+    auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
+    assert auto_gate
+
     # Set first input of AND2 gate to SOFT_IN1, which is high when shutter is in auto mode
     # Note the Zebra should ALWAYS be setup this way. See https://github.com/DiamondLightSource/mx-bluesky/issues/551
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[AUTO_SHUTTER_GATE].sources[AUTO_SHUTTER_INPUT_1],
-        SOFT_IN1,
+        zebra.logic_gates.and_gates[auto_gate].sources[1],
+        zebra.mapping.sources.SOFT_IN1,
         group=group,
     )
 
@@ -147,6 +140,8 @@ def setup_zebra_for_rotation(
         group:              A name for the group of statuses generated
         wait:               Block until all the settings have completed
     """
+    assert zebra.mapping.outputs.TTL_DETECTOR and zebra.mapping.outputs.TTL_XSPRESS3
+
     if not isinstance(direction, RotationDirection):
         raise ValueError(
             "Disallowed rotation direction provided to Zebra setup plan. "
@@ -171,13 +166,23 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
     # Set shutter to automatic and to trigger via PC_GATE
     yield from configure_zebra_and_shutter_for_auto_shutter(
-        zebra, zebra_shutter, PC_GATE, group=group
+        zebra, zebra_shutter, zebra.mapping.sources.PC_GATE, group=group
     )
     # Trigger the detector with a pulse
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
+        zebra.mapping.sources.PC_PULSE,
+        group=group,
+    )
     # Don't use the fluorescence detector
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_XSPRESS3],
+        zebra.mapping.sources.DISCONNECT,
+        group=group,
+    )
+    yield from bps.abs_set(
+        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
+    )
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
@@ -190,14 +195,26 @@ def setup_zebra_for_gridscan(
     group="setup_zebra_for_gridscan",
     wait=True,
 ):
+    assert zebra.mapping.outputs.TTL_DETECTOR and zebra.mapping.outputs.TTL_XSPRESS3
+
     # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
     yield from configure_zebra_and_shutter_for_auto_shutter(
-        zebra, zebra_shutter, IN4_TTL, group=group
+        zebra, zebra_shutter, zebra.mapping.sources.IN4_TTL, group=group
     )
 
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
+        zebra.mapping.sources.IN3_TTL,
+        group=group,
+    )
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_XSPRESS3],
+        zebra.mapping.sources.DISCONNECT,
+        group=group,
+    )
+    yield from bps.abs_set(
+        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
+    )
 
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
@@ -210,11 +227,17 @@ def tidy_up_zebra_after_gridscan(
     group="tidy_up_zebra_after_gridscan",
     wait=True,
 ) -> MsgGenerator:
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
+    assert zebra.mapping.outputs.TTL_DETECTOR
+
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
+        zebra.mapping.sources.PC_PULSE,
+        group=group,
+    )
     yield from bps.abs_set(
         zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
     )
-    yield from set_shutter_auto_input(zebra, PC_GATE, group=group)
+    yield from set_shutter_auto_input(zebra, zebra.mapping.sources.PC_GATE, group=group)
 
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
@@ -227,18 +250,35 @@ def setup_zebra_for_panda_flyscan(
     group="setup_zebra_for_panda_flyscan",
     wait=True,
 ):
+    # It would be nice for the function to be able to typecheck for the below instead but not sure if there is a clean way to do this
+    assert (
+        zebra.mapping.outputs.TTL_DETECTOR
+        and zebra.mapping.outputs.TTL_XSPRESS3
+        and zebra.mapping.outputs.TTL_PANDA
+    )
+
     # Forwards eiger trigger signal from panda
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
+        zebra.mapping.sources.IN1_TTL,
+        group=group,
+    )
 
     # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
     yield from configure_zebra_and_shutter_for_auto_shutter(
-        zebra, zebra_shutter, IN4_TTL, group=group
+        zebra, zebra_shutter, zebra.mapping.sources.IN4_TTL, group=group
     )
 
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_XSPRESS3],
+        zebra.mapping.sources.DISCONNECT,
+        group=group,
+    )
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_PANDA], IN3_TTL, group=group
+        zebra.output.out_pvs[zebra.mapping.outputs.TTL_PANDA],
+        zebra.mapping.sources.IN3_TTL,
+        group=group,
     )  # Tells panda that motion is beginning/changing direction
 
     if wait:

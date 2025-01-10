@@ -2,12 +2,10 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from dodal.devices.zebra import DISCONNECT, SOFT_IN3
+from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
-    TTL_EIGER,
-    TTL_PILATUS,
     collection_aborted_plan,
     collection_complete_plan,
     enter_hutch,
@@ -131,10 +129,10 @@ async def test_enterhutch(detector_stage, RE):
 @pytest.mark.parametrize(
     "laser_mode, det_type, expected_in1, expected_out",
     [
-        ("laseron", Eiger(), "Yes", SOFT_IN3),
-        ("laseroff", Eiger(), "No", DISCONNECT),
-        ("laseron", Pilatus(), "Yes", SOFT_IN3),
-        ("laseroff", Pilatus(), "No", DISCONNECT),
+        ("laseron", Eiger(), "Yes", I24_ZEBRA_MAPPING.sources.SOFT_IN3),
+        ("laseroff", Eiger(), "No", I24_ZEBRA_MAPPING.sources.DISCONNECT),
+        ("laseron", Pilatus(), "Yes", I24_ZEBRA_MAPPING.sources.SOFT_IN3),
+        ("laseroff", Pilatus(), "No", I24_ZEBRA_MAPPING.sources.DISCONNECT),
     ],
 )
 @patch(
@@ -153,7 +151,11 @@ async def test_laser_check(
     fake_det.side_effect = [fake_generator(det_type)]
     RE(laser_check(laser_mode, zebra, detector_stage))
 
-    TTL = TTL_EIGER if isinstance(det_type, Pilatus) else TTL_PILATUS
+    TTL = (
+        I24_ZEBRA_MAPPING.outputs.TTL_EIGER
+        if isinstance(det_type, Pilatus)
+        else I24_ZEBRA_MAPPING.outputs.TTL_PILATUS
+    )
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
     assert await zebra.output.out_pvs[TTL].get_value() == expected_out
 

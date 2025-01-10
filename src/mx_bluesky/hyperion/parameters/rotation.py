@@ -8,7 +8,7 @@ from typing import Annotated, Any, Self
 from annotated_types import Len
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
-from dodal.devices.zebra import (
+from dodal.devices.zebra.zebra import (
     RotationDirection,
 )
 from dodal.log import LOGGER

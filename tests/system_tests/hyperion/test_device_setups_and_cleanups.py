@@ -1,12 +1,7 @@
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.zebra import (
-    IN3_TTL,
-    IN4_TTL,
-    OR1,
-    PC_PULSE,
-    TTL_DETECTOR,
-    TTL_SHUTTER,
+from dodal.beamlines.i03 import I03_ZEBRA_MAPPING
+from dodal.devices.zebra.zebra import (
     I03Axes,
     Zebra,
 )
@@ -21,7 +16,7 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 @pytest.fixture
 async def connected_zebra():
     RunEngine()
-    zebra = Zebra(name="zebra", prefix="BL03S-EA-ZEBRA-01:")
+    zebra = Zebra(name="zebra", prefix="BL03S-EA-ZEBRA-01:", mapping=I03_ZEBRA_MAPPING)
     await zebra.connect()
     return zebra
 
@@ -29,8 +24,22 @@ async def connected_zebra():
 @pytest.mark.s03
 async def test_zebra_set_up_for_gridscan(RE, connected_zebra: Zebra):
     RE(setup_zebra_for_gridscan(connected_zebra, wait=True))
-    assert await connected_zebra.output.out_pvs[TTL_DETECTOR].get_value() == IN3_TTL
-    assert await connected_zebra.output.out_pvs[TTL_SHUTTER].get_value() == IN4_TTL
+    assert (
+        connected_zebra.mapping.outputs.TTL_DETECTOR
+        and connected_zebra.mapping.outputs.TTL_SHUTTER
+    )
+    assert (
+        await connected_zebra.output.out_pvs[
+            connected_zebra.mapping.outputs.TTL_DETECTOR
+        ].get_value()
+        == connected_zebra.mapping.sources.IN3_TTL
+    )
+    assert (
+        await connected_zebra.output.out_pvs[
+            connected_zebra.mapping.outputs.TTL_SHUTTER
+        ].get_value()
+        == connected_zebra.mapping.sources.IN4_TTL
+    )
 
 
 @pytest.mark.s03
@@ -42,6 +51,21 @@ async def test_zebra_set_up_for_rotation(RE, connected_zebra: Zebra):
 
 @pytest.mark.s03
 async def test_zebra_cleanup(RE, connected_zebra: Zebra):
+    assert (
+        connected_zebra.mapping.outputs.TTL_DETECTOR
+        and connected_zebra.mapping.outputs.TTL_SHUTTER
+    )
+
     RE(tidy_up_zebra_after_gridscan(connected_zebra, wait=True))
-    assert await connected_zebra.output.out_pvs[TTL_DETECTOR].get_value() == PC_PULSE
-    assert await connected_zebra.output.out_pvs[TTL_SHUTTER].get_value() == OR1
+    assert (
+        await connected_zebra.output.out_pvs[
+            connected_zebra.mapping.outputs.TTL_DETECTOR
+        ].get_value()
+        == connected_zebra.mapping.sources.PC_PULSE
+    )
+    assert (
+        await connected_zebra.output.out_pvs[
+            connected_zebra.mapping.outputs.TTL_SHUTTER
+        ].get_value()
+        == connected_zebra.mapping.sources.OR1
+    )
