@@ -35,8 +35,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
@@ -199,9 +199,9 @@ def flyscan_xray_centre(
     yield from flyscan_and_fetch_results()
 
     xray_centre_results = xrc_event_handler.xray_centre_results
-    assert xray_centre_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
+    assert (
+        xray_centre_results
+    ), "Flyscan result event not received or no crystal found and exception not raised"
     yield from change_aperture_then_move_to_xtal(
         xray_centre_results[0],
         composite.smargon,

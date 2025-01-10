@@ -26,8 +26,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
@@ -223,9 +223,9 @@ def grid_detect_then_xray_centre(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    assert flyscan_event_handler.xray_centre_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
+    assert (
+        flyscan_event_handler.xray_centre_results
+    ), "Flyscan result event not received or no crystal found and exception not raised"
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],
