@@ -10,6 +10,27 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_group,
+    populate_remaining_data_collection_info,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+    construct_comment_for_gridscan,
+    populate_xy_data_collection_info,
+    populate_xz_data_collection_info,
+)
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
+    Orientation,
+    ScanDataInfo,
+)
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+    StoreInIspyb,
+)
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -20,29 +41,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    populate_data_collection_group,
-    populate_remaining_data_collection_info,
-)
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
-)
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
-    DataCollectionGridInfo,
-    Orientation,
-    ScanDataInfo,
-)
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-    StoreInIspyb,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -249,11 +249,11 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
         fetch_comment(dcid2)
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -291,11 +291,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     expected_comments = [
         (
-            "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
         ),
         (
-            "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
+            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
         ),
     ]
@@ -378,9 +378,9 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 20 by 12 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 12 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
-        "bottom right (px): [239,244]. ApertureValue.SMALL. ",
+        "bottom right (px): [239,244]. Small. ",
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
@@ -432,9 +432,9 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 20 by 11 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 11 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [239,241]. ApertureValue.SMALL. ",
+        "bottom right (px): [239,241]. Small. ",
     )
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
@@ -465,6 +465,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
+    feature_flags_update_with_omega_flip,
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()
@@ -481,8 +482,7 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid)
-        == "Sample position (µm): (1, 2, 3) test  Aperture: ApertureValue.SMALL. "
+        fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {

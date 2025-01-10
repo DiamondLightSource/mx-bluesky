@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import DataCollectionInfo
+from mx_bluesky.common.external_interaction.ispyb.data_model import DataCollectionInfo
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 

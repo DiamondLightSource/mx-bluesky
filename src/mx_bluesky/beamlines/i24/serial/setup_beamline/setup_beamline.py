@@ -1,13 +1,18 @@
+from pathlib import Path
 from time import sleep
 
 import bluesky.plan_stubs as bps
 from dodal.beamlines import i24
-from dodal.devices.detector.detector import DetectorParams
+from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.util.lookup_tables import (
+    linear_interpolation_lut,
+    parse_lookup_table,
+)
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
@@ -19,6 +24,35 @@ def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
         return i24.eiger_beam_center()
     else:
         return i24.pilatus_beam_center()
+
+
+def compute_beam_center_position_from_lut(
+    lut_path: Path,
+    detector_distance_mm: float,
+    det_size_constants: DetectorSizeConstants,
+) -> tuple[float, float]:
+    """Calculate the beam center position for the detector distance \
+    using the values in the lookup table for the conversion.
+    """
+    lut_values = parse_lookup_table(lut_path.as_posix())
+
+    calc_x = linear_interpolation_lut(lut_values[0], lut_values[1])
+    beam_x_mm = calc_x(detector_distance_mm)
+    beam_x = (
+        beam_x_mm
+        * det_size_constants.det_size_pixels.width
+        / det_size_constants.det_dimension.width
+    )
+
+    calc_y = linear_interpolation_lut(lut_values[0], lut_values[2])
+    beam_y_mm = calc_y(detector_distance_mm)
+    beam_y = (
+        beam_y_mm
+        * det_size_constants.det_size_pixels.height
+        / det_size_constants.det_dimension.height
+    )
+
+    return beam_x, beam_y
 
 
 def setup_beamline_for_collection_plan(
@@ -55,17 +89,14 @@ def move_detector_stage_to_position_plan(
 
 def set_detector_beam_center_plan(
     beam_center_device: DetectorBeamCenter,
-    detector_params: DetectorParams,
-    detector_distace: float,
+    beam_center_pixels: tuple[float, float],
     group: str = "set_beamcenter",
     wait: bool = True,
 ):
     """A small temporary plan to set up the beam center on the detector in use."""
     # NOTE This will be removed once the detectors are using ophyd_async devices
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/62
-    beam_position_x, beam_position_y = detector_params.get_beam_position_pixels(
-        detector_distace
-    )
+    beam_position_x, beam_position_y = beam_center_pixels
     SSX_LOGGER.info(f"Setting beam center to: {beam_position_x}, {beam_position_y}")
     yield from bps.abs_set(beam_center_device.beam_x, beam_position_x, group=group)
     yield from bps.abs_set(beam_center_device.beam_y, beam_position_y, group=group)

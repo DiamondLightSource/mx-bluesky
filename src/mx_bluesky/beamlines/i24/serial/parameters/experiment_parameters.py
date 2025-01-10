@@ -3,8 +3,11 @@ from abc import abstractmethod
 from pathlib import Path
 
 import numpy as np
-from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, PILATUS_6M_SIZE
+from dodal.devices.detector.det_dim_constants import (
+    EIGER2_X_9M_SIZE,
+    PILATUS_6M_SIZE,
+    DetectorSizeConstants,
+)
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -13,7 +16,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
-    BEAM_CENTER_LUT_FILES,
     DetectorName,
     SSXType,
 )
@@ -40,8 +42,15 @@ class SerialExperiment(BaseModel):
     @property
     def collection_directory(self) -> Path:
         directory = Path(self.visit) / self.directory
-        directory.mkdir(parents=True, exist_ok=True)
         return directory
+
+    @property
+    def detector_size_constants(self) -> DetectorSizeConstants:
+        return (
+            EIGER2_X_9M_SIZE
+            if self.detector_name is DetectorName.EIGER
+            else PILATUS_6M_SIZE
+        )
 
 
 class LaserExperiment(BaseModel):
@@ -69,10 +78,6 @@ class SerialAndLaserExperiment(SerialExperiment, LaserExperiment):
     def ispyb_experiment_type(self) -> SSXType:
         pass
 
-    @property
-    @abstractmethod
-    def detector_params(self) -> DetectorParams: ...
-
 
 class ExtruderParameters(SerialAndLaserExperiment):
     """Extruder parameter model."""
@@ -87,32 +92,6 @@ class ExtruderParameters(SerialAndLaserExperiment):
     @property
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.EXTRUDER
-
-    @property
-    def detector_params(self):
-        det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
-        det_size_constants = (
-            EIGER2_X_9M_SIZE
-            if self.detector_name is DetectorName.EIGER
-            else PILATUS_6M_SIZE
-        )
-
-        self.collection_directory.mkdir(parents=True, exist_ok=True)
-
-        return DetectorParams(
-            detector_size_constants=det_size_constants,
-            exposure_time=self.exposure_time_s,
-            directory=self.collection_directory.as_posix(),
-            prefix=self.filename,
-            detector_distance=self.detector_distance_mm,
-            omega_start=0.0,
-            omega_increment=0.0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            det_dist_to_beam_converter_path=det_dist_to_beam_lut.as_posix(),
-            use_roi_mode=False,  # Dasabled
-            trigger_mode=TriggerMode.SET_FRAMES,  # For now...
-        )
 
 
 class ChipDescription(BaseModel):
@@ -168,32 +147,6 @@ class FixedTargetParameters(SerialAndLaserExperiment):
     @property
     def ispyb_experiment_type(self) -> SSXType:
         return SSXType.FIXED
-
-    @property
-    def detector_params(self):
-        det_dist_to_beam_lut = BEAM_CENTER_LUT_FILES[self.detector_name]
-        det_size_constants = (
-            EIGER2_X_9M_SIZE
-            if self.detector_name is DetectorName.EIGER
-            else PILATUS_6M_SIZE
-        )
-
-        self.collection_directory.mkdir(parents=True, exist_ok=True)
-
-        return DetectorParams(
-            detector_size_constants=det_size_constants,
-            exposure_time=self.exposure_time_s,
-            directory=self.collection_directory.as_posix(),
-            prefix=self.filename,
-            detector_distance=self.detector_distance_mm,
-            omega_start=0.0,
-            omega_increment=0.0,
-            num_images_per_trigger=self.num_exposures,
-            num_triggers=self.total_num_images,
-            det_dist_to_beam_converter_path=det_dist_to_beam_lut.as_posix(),
-            use_roi_mode=False,  # Dasabled
-            trigger_mode=TriggerMode.SET_FRAMES,  # For now...
-        )
 
     @computed_field  # type: ignore   # Mypy doesn't like it
     @property

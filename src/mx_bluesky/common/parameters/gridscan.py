@@ -6,12 +6,19 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
     DetectorParams,
 )
-from pydantic import Field
+from dodal.devices.fast_grid_scan import (
+    ZebraGridScanParams,
+)
+from pydantic import Field, PrivateAttr
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line, Static
 
 from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
+    SplitScan,
+    WithOptionalEnergyChange,
     WithScan,
     XyzStarts,
 )
@@ -45,9 +52,9 @@ class GridCommon(
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
-        assert (
-            self.detector_distance_mm is not None
-        ), "Detector distance must be filled before generating DetectorParams"
+        assert self.detector_distance_mm is not None, (
+            "Detector distance must be filled before generating DetectorParams"
+        )
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
@@ -69,6 +76,7 @@ class GridCommon(
 
 class RobotLoadThenCentre(GridCommon):
     thawing_time: float = Field(default=HardwareConstants.THAWING_TIME)
+    tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
     def robot_load_params(self):
         my_params = self.model_dump()
@@ -92,3 +100,98 @@ class SpecifiedGrid(XyzStarts, WithScan):
     """A specified grid is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
+
+
+class ThreeDGridScan(
+    GridCommon,
+    SpecifiedGrid,
+    SplitScan,
+    WithOptionalEnergyChange,
+):
+    """Parameters representing a so-called 3D grid scan, which consists of doing a
+    gridscan in X and Y, followed by one in X and Z."""
+
+    grid1_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_1)  # type: ignore
+    grid2_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_2)
+    x_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    y_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    z_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    y2_start_um: float
+    z2_start_um: float
+    x_steps: int = Field(gt=0)
+    y_steps: int = Field(gt=0)
+    z_steps: int = Field(gt=0)
+    _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
+
+    @property
+    def FGS_params(self) -> ZebraGridScanParams:
+        return ZebraGridScanParams(
+            x_steps=self.x_steps,
+            y_steps=self.y_steps,
+            z_steps=self.z_steps,
+            x_step_size_mm=self.x_step_size_um / 1000,
+            y_step_size_mm=self.y_step_size_um / 1000,
+            z_step_size_mm=self.z_step_size_um / 1000,
+            x_start_mm=self.x_start_um / 1000,
+            y1_start_mm=self.y_start_um / 1000,
+            z1_start_mm=self.z_start_um / 1000,
+            y2_start_mm=self.y2_start_um / 1000,
+            z2_start_mm=self.z2_start_um / 1000,
+            set_stub_offsets=self._set_stub_offsets,
+            dwell_time_ms=self.exposure_time_s * 1000,
+            transmission_fraction=self.transmission_frac,
+        )
+
+    def do_set_stub_offsets(self, value: bool):
+        self._set_stub_offsets = value
+
+    @property
+    def grid_1_spec(self):
+        x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
+        y1_end = self.y_start_um + self.y_step_size_um * (self.y_steps - 1)
+        grid_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        grid_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
+        grid_1_z = Static("sam_z", self.z_start_um)
+        return grid_1_y.zip(grid_1_z) * ~grid_1_x
+
+    @property
+    def grid_2_spec(self):
+        x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
+        z2_end = self.z2_start_um + self.z_step_size_um * (self.z_steps - 1)
+        grid_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        grid_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
+        grid_2_y = Static("sam_y", self.y2_start_um)
+        return grid_2_z.zip(grid_2_y) * ~grid_2_x
+
+    @property
+    def scan_indices(self):
+        """The first index of each gridscan, useful for writing nexus files/VDS"""
+        return [
+            0,
+            len(ScanPath(self.grid_1_spec.calculate()).consume().midpoints["sam_x"]),
+        ]
+
+    @property
+    def scan_spec(self):
+        """A fully specified ScanSpec object representing both grids, with x, y, z and
+        omega positions."""
+        return self.grid_1_spec.concat(self.grid_2_spec)
+
+    @property
+    def scan_points(self):
+        """A list of all the points in the scan_spec."""
+        return ScanPath(self.scan_spec.calculate()).consume().midpoints
+
+    @property
+    def scan_points_first_grid(self):
+        """A list of all the points in the first grid scan."""
+        return ScanPath(self.grid_1_spec.calculate()).consume().midpoints
+
+    @property
+    def scan_points_second_grid(self):
+        """A list of all the points in the second grid scan."""
+        return ScanPath(self.grid_2_spec.calculate()).consume().midpoints
+
+    @property
+    def num_images(self) -> int:
+        return len(self.scan_points["sam_x"])

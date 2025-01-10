@@ -15,7 +15,11 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
 )
@@ -31,9 +35,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -57,6 +58,7 @@ def load_centre_collect_params():
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
+    beamstop_i03,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -69,6 +71,7 @@ def load_centre_collect_composite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
+        beamstop=beamstop_i03,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
@@ -271,16 +274,16 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -304,7 +307,7 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: Small. ",
     )
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
 
@@ -368,6 +371,30 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
         )
 
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(sample_handling_cb)
+    set_mock_value(load_centre_collect_composite.beamstop.x_mm.user_readback, 1)
+
+    with pytest.raises(BeamstopException, match="Beamstop is not DATA_COLLECTION"):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
 
 
 @pytest.mark.s03

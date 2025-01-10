@@ -11,7 +11,7 @@ from dodal.devices.aperturescatterguard import (
 from ophyd_async.core import DeviceCollector
 
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    set_aperture_for_bbox_size,
+    set_aperture_for_bbox_mm,
 )
 
 
@@ -29,7 +29,17 @@ def ap_sg():
 
 
 @pytest.mark.s03()
-def test_aperture_change_callback(ap_sg: ApertureScatterguard):
+@pytest.mark.parametrize(
+    "bbox, expected_aperture",
+    [
+        ([0.05, 0.05, 0.05], "LARGE_APERTURE"),
+        ([0.02, 0.02, 0.02], "MEDIUM_APERTURE"),
+    ],
+    ids=["large_aperture", "medium_aperture"],
+)
+def test_aperture_change_callback(
+    ap_sg: ApertureScatterguard, bbox: list[float], expected_aperture: str
+):
     from bluesky.run_engine import RunEngine
 
     from mx_bluesky.hyperion.external_interaction.callbacks.aperture_change_callback import (
@@ -39,5 +49,5 @@ def test_aperture_change_callback(ap_sg: ApertureScatterguard):
     cb = ApertureChangeCallback()
     RE = RunEngine({})
     RE.subscribe(cb)
-    RE(set_aperture_for_bbox_size(ap_sg, [2, 2, 2]))
-    assert cb.last_selected_aperture == "LARGE_APERTURE"
+    RE(set_aperture_for_bbox_mm(ap_sg, bbox))
+    assert cb.last_selected_aperture == expected_aperture

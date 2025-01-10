@@ -9,7 +9,7 @@ from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -17,6 +17,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -69,7 +70,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 class RobotLoadThenCentreComposite:
     # common fields
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
     # GridDetectThenXRayCentreComposite fields
     aperture_scatterguard: ApertureScatterguard
@@ -101,10 +102,7 @@ class RobotLoadThenCentreComposite:
     robot: BartRobot
     webcam: Webcam
     lower_gonio: XYZPositioner
-
-    @property
-    def sample_motors(self):
-        return self.smargon
+    beamstop: Beamstop
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
@@ -211,6 +209,7 @@ def robot_load_then_xray_centre(
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,

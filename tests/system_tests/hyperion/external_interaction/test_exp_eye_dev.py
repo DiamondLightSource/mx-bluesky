@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from requests import get
 
-from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
 )

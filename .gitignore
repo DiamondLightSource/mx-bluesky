@@ -172,3 +172,6 @@ edm_serial/
 **/parameters/fixed_target/*/*.map
 # idea project files
 .idea/
+
+# Generated PlantUML diagrams
+docs/developer/hyperion/reference/param_hierarchy.puml

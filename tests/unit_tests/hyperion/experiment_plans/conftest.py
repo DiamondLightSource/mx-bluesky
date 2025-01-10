@@ -12,6 +12,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -25,6 +26,13 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+    StoreInIspyb,
+)
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -37,13 +45,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-    StoreInIspyb,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
@@ -107,10 +108,12 @@ BASIC_POST_SETUP_DOC = {
 def grid_detect_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
+    beamstop_i03: Beamstop,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
     oav: OAV,
+    ophyd_pin_tip_detection: PinTipDetection,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
     fast_grid_scan: ZebraFastGridScan,
@@ -126,12 +129,13 @@ def grid_detect_devices(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
         flux=MagicMock(spec=Flux),
         oav=oav,
-        pin_tip_detection=MagicMock(spec=PinTipDetection),
+        pin_tip_detection=ophyd_pin_tip_detection,
         smargon=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=MagicMock(spec=S4SlitGaps),
@@ -184,7 +188,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_parameters": params.model_dump_json(),
+            "mx_bluesky_parameters": params.model_dump_json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
@@ -229,14 +233,14 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 def mock_subscriptions(test_fgs_params):
     with (
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+            "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
             modified_interactor_mock,
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0), data_collection_group_id=0
@@ -244,7 +248,7 @@ def mock_subscriptions(test_fgs_params):
             ),
         ),
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0),
@@ -278,6 +282,7 @@ def robot_load_composite(
     eiger,
     xbpm_feedback,
     attenuator,
+    beamstop_i03,
     fast_grid_scan,
     undulator,
     undulator_dcm,
@@ -303,6 +308,7 @@ def robot_load_composite(
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
+        beamstop=beamstop_i03,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,

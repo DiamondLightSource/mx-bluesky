@@ -4,7 +4,15 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    ScanDataInfo,
+)
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+    StoreInIspyb,
+)
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_rotation_callbacks,
@@ -14,14 +22,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
-)
-from mx_bluesky.hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.external_interaction.ispyb.data_model import (
-    ScanDataInfo,
-)
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-    StoreInIspyb,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
@@ -99,7 +99,7 @@ def test_nexus_handler_only_writes_once(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -133,7 +133,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -172,7 +172,7 @@ def test_ispyb_triggered_before_zocalo(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -293,7 +293,7 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images
     doc["subplan_name"] = CONST.PLAN.ROTATION_OUTER  # type: ignore
-    doc["hyperion_parameters"] = params.model_dump_json()  # type: ignore
+    doc["mx_bluesky_parameters"] = params.model_dump_json()  # type: ignore
 
     cb.start(doc)
     assert (cb.last_sample_id == 987678) is store_id

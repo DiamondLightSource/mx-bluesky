@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -37,8 +36,4 @@ def dummy_params_with_pp():
         "laser_dwell_s": 0.02,
         "laser_delay_s": 0.05,
     }
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters.BEAM_CENTER_LUT_FILES",
-        new=TEST_LUT,
-    ):
-        yield FixedTargetParameters(**params)
+    return FixedTargetParameters(**params)

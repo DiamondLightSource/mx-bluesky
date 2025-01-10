@@ -10,7 +10,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -38,6 +38,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
+from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -410,7 +411,6 @@ def start_i24(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        # NOTE Directory now created by the parameter model
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -547,10 +547,14 @@ def main_fixed_target_plan(
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
+    beam_center_pixels = sup.compute_beam_center_position_from_lut(
+        BEAM_CENTER_LUT_FILES[parameters.detector_name],
+        parameters.detector_distance_mm,
+        parameters.detector_size_constants,
+    )
     yield from sup.set_detector_beam_center_plan(
         beam_center_device,
-        parameters.detector_params,
-        parameters.detector_distance_mm,
+        beam_center_pixels,
     )
 
     SSX_LOGGER.info("Getting Program Dictionary")
@@ -698,6 +702,9 @@ def run_fixed_target_plan(
     parameters: FixedTargetParameters = yield from read_parameters(
         detector_stage, attenuator
     )
+
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
     if parameters.chip_map:
         upload_chip_map_to_geobrick(pmac, parameters.chip_map)

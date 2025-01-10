@@ -8,6 +8,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
+from dodal.devices.smargon import Smargon
 from ophyd_async.fastcs.panda import HDFPanda, SeqTable, SeqTrigger
 
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
@@ -26,6 +27,7 @@ def get_smargon_speed(x_step_size_mm: float, time_between_x_steps_ms: float) -> 
 def run_simulating_setup_panda_functions(
     plan: str,
     panda: HDFPanda,
+    smargon: Smargon,
     sim_run_engine: RunEngineSimulator,
     mock_load_device=MagicMock,
 ):
@@ -49,7 +51,7 @@ def run_simulating_setup_panda_functions(
             setup_panda_for_flyscan(
                 panda,
                 PandAGridScanParams(transmission_fraction=0.01),
-                1,
+                smargon,
                 0.1,
                 100.1,
                 smargon_speed,
@@ -62,13 +64,15 @@ def run_simulating_setup_panda_functions(
 
 
 @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_device")
-def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine, panda):
+def test_setup_panda_performs_correct_plans(
+    mock_load_device, sim_run_engine, panda, smargon
+):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "setup", panda, sim_run_engine, mock_load_device
+        "setup", panda, smargon, sim_run_engine, mock_load_device
     )
     mock_load_device.assert_called_once()
-    assert num_of_sets == 8
-    assert num_of_waits == 3
+    assert num_of_sets == 10
+    assert num_of_waits == 5
 
 
 @pytest.mark.parametrize(
@@ -89,6 +93,7 @@ def test_setup_panda_correctly_configures_table(
     exposure_time_s: float,
     sim_run_engine: RunEngineSimulator,
     panda,
+    smargon,
 ):
     sample_velocity_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
@@ -105,7 +110,7 @@ def test_setup_panda_correctly_configures_table(
         setup_panda_for_flyscan(
             panda,
             params,
-            0,
+            smargon,
             exposure_time_s,
             time_between_x_steps_ms,
             sample_velocity_mm_per_s,
@@ -183,7 +188,7 @@ def test_setup_panda_correctly_configures_table(
         )
 
 
-def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
+def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smargon):
     bps_wait_done = False
 
     def handle_wait(*args, **kwargs):
@@ -211,7 +216,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
             setup_panda_for_flyscan(
                 panda,
                 PandAGridScanParams(transmission_fraction=0.01),
-                1,
+                smargon,
                 0.1,
                 101.1,
                 get_smargon_speed(0.1, 1),
@@ -223,9 +228,9 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda):
 
 # It also would be useful to have some system tests which check that (at least)
 # all the blocks which were enabled on setup are also disabled on tidyup
-def test_disarm_panda_disables_correct_blocks(sim_run_engine, panda):
+def test_disarm_panda_disables_correct_blocks(sim_run_engine, panda, smargon):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "disarm", panda, sim_run_engine
+        "disarm", panda, sim_run_engine, smargon
     )
     assert num_of_sets == 5
     assert num_of_waits == 1

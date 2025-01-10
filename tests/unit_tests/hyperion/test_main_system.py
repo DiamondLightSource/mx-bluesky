@@ -15,10 +15,12 @@ from unittest.mock import MagicMock, patch
 import flask
 import pytest
 from blueapi.core import BlueskyContext
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -27,9 +29,7 @@ from mx_bluesky.hyperion.__main__ import (
     create_targets,
     setup_context,
 )
-from mx_bluesky.hyperion.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -429,7 +429,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
 )
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():
     zebra = MagicMock(spec=Zebra)
-    attenuator = MagicMock(spec=Attenuator)
+    attenuator = MagicMock(spec=BinaryFilterAttenuator)
 
     context = BlueskyContext()
     context.register_device(zebra, "zebra")
@@ -437,7 +437,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
     @dataclass
     class FakeComposite:
-        attenuator: Attenuator
+        attenuator: BinaryFilterAttenuator
         zebra: Zebra
 
     # A fake setup for a plan that uses two devices: attenuator and zebra.

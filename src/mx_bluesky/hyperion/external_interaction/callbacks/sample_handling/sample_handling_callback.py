@@ -1,45 +1,14 @@
-import dataclasses
-from collections.abc import Generator
-from functools import partial
-from typing import Any
+from event_model import RunStart, RunStop
 
-import bluesky.plan_stubs as bps
-from bluesky.preprocessors import contingency_wrapper
-from bluesky.utils import Msg, make_decorator
-from event_model import Event, EventDescriptor, RunStart
-
-from mx_bluesky.hyperion.exceptions import CrystalNotFoundException, SampleException
-from mx_bluesky.hyperion.external_interaction.callbacks.common.abstract_event import (
-    AbstractEvent,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.plan_reactive_callback import (
+from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.exp_eye_store import (
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
 )
-from mx_bluesky.hyperion.log import ISPYB_LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST
-
-# TODO remove this event-raising shenanigans once
-# https://github.com/bluesky/bluesky/issues/1829 is addressed
-
-
-@dataclasses.dataclass(frozen=True)
-class _ExceptionEvent(AbstractEvent):
-    exception_type: str
-
-
-def _exception_interceptor(exception: Exception) -> Generator[Msg, Any, Any]:
-    yield from bps.create(CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION)
-    yield from bps.read(_ExceptionEvent(type(exception).__name__))
-    yield from bps.save()
-
-
-sample_handling_callback_decorator = make_decorator(
-    partial(contingency_wrapper, except_plan=_exception_interceptor)
-)
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundException, SampleException
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 
 class SampleHandlingCallback(PlanReactiveCallback):
@@ -47,7 +16,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
     field according to the type of exception raised."""
 
     def __init__(self):
-        super().__init__(log=ISPYB_LOGGER)
+        super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
         self._sample_id: int | None = None
         self._descriptor: str | None = None
 
@@ -57,16 +26,13 @@ class SampleHandlingCallback(PlanReactiveCallback):
             self.log.info(f"Recording sample ID at run start {sample_id}")
             self._sample_id = sample_id
 
-    def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        if doc.get("name") == CONST.DESCRIPTORS.SAMPLE_HANDLING_EXCEPTION:
-            self._descriptor = doc["uid"]
-        return super().activity_gated_descriptor(doc)
-
-    def activity_gated_event(self, doc: Event) -> Event | None:
-        if doc["descriptor"] == self._descriptor:
-            exception_type = doc["data"]["exception_type"]
+    def activity_gated_stop(self, doc: RunStop) -> RunStop:
+        if doc["exit_status"] != "success":
+            exception_type, message = SampleException.type_and_message_from_reason(
+                doc.get("reason", "")
+            )
             self.log.info(
-                f"Sample handling callback intercepted exception of type {exception_type}"
+                f"Sample handling callback intercepted exception of type {exception_type}: {message}"
             )
             self._record_exception(exception_type)
         return doc

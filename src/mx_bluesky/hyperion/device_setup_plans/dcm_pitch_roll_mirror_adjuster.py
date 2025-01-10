@@ -10,10 +10,11 @@ from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
+    parse_lookup_table,
 )
 
-from mx_bluesky.hyperion.log import LOGGER
-from mx_bluesky.hyperion.utils.utils import (
+from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
 
@@ -106,7 +107,9 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(undulator_dcm.pitch_energy_table_path),
+        linear_interpolation_lut(
+            *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
+        ),
         dcm.pitch_in_mrad,
         bragg_deg,
     )
@@ -116,7 +119,9 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # DCM Roll
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(undulator_dcm.roll_energy_table_path),
+        linear_interpolation_lut(
+            *parse_lookup_table(undulator_dcm.roll_energy_table_path)
+        ),
         dcm.roll_in_mrad,
         bragg_deg,
     )
