@@ -73,6 +73,7 @@ class HardwareConstants:
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
     THAWING_TIME = 20
+    TIP_OFFSET_UM = 0
 
 
 @dataclass(frozen=True)

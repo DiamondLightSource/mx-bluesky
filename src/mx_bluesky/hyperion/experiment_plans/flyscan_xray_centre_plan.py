@@ -199,9 +199,9 @@ def flyscan_xray_centre(
     yield from flyscan_and_fetch_results()
 
     xray_centre_results = xrc_event_handler.xray_centre_results
-    assert (
-        xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert xray_centre_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
     yield from change_aperture_then_move_to_xtal(
         xray_centre_results[0],
         composite.smargon,

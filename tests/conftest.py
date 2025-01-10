@@ -76,6 +76,7 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -224,6 +225,17 @@ def patch_async_motor(
     set_mock_value(motor.motor_done_move, 1)
     set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
+
+
+@pytest.fixture(params=[False, True])
+def feature_flags_update_with_omega_flip(request):
+    def update_with_overrides(self):
+        self.overriden_features["omega_flip"] = request.param
+        self.omega_flip = request.param
+
+    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
+        update.side_effect = update_with_overrides
+        yield update
 
 
 @pytest.fixture
@@ -965,9 +977,9 @@ class DocumentCapturer:
         for event_data_keys in match_data_keys_list:
             docs = DocumentCapturer.get_docs_from(docs, "event")
             doc = docs.pop(0)[1]["data"]
-            assert all(
-                k in doc.keys() for k in event_data_keys
-            ), f"One of {event_data_keys=} not in {doc}"
+            assert all(k in doc.keys() for k in event_data_keys), (
+                f"One of {event_data_keys=} not in {doc}"
+            )
 
 
 @pytest.fixture

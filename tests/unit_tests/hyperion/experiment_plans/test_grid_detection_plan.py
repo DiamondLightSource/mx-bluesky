@@ -384,7 +384,7 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
 
     if odd:
         fake_logger.debug.assert_called_once_with(
-            f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+            f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels / 2}"
         )
     else:
         fake_logger.debug.assert_not_called()

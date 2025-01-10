@@ -22,9 +22,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     multi_rotation_scan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    sample_handling_callback_decorator,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
@@ -62,7 +59,6 @@ def load_centre_collect_full(
             "activate_callbacks": ["SampleHandlingCallback"],
         }
     )
-    @sample_handling_callback_decorator()
     def plan_with_callback_subs():
         flyscan_event_handler = XRayCentreEventHandler()
         yield from subs_wrapper(
@@ -70,7 +66,9 @@ def load_centre_collect_full(
             flyscan_event_handler,
         )
 
-        assert flyscan_event_handler.xray_centre_results, "Flyscan result event not received or no crystal found and exception not raised"
+        assert flyscan_event_handler.xray_centre_results, (
+            "Flyscan result event not received or no crystal found and exception not raised"
+        )
 
         selection_func = flyscan_result.resolve_selection_fn(
             parameters.selection_params
