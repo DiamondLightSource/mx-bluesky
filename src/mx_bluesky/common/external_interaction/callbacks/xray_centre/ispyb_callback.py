@@ -174,9 +174,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 )
         else:
             crystal_summary += "Zocalo found no crystals in this gridscan."
-        assert self.ispyb_ids.data_collection_ids, (
-            "No data collection to add results to"
-        )
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "No data collection to add results to"
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -245,9 +245,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         event_sourced_position_info: DataCollectionPositionInfo | None,
         params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
-        assert self.ispyb_ids.data_collection_ids, (
-            "Expect at least one valid data collection to record scan data"
-        )
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "Expect at least one valid data collection to record scan data"
         xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
             data_collection_id=self.ispyb_ids.data_collection_ids[0],

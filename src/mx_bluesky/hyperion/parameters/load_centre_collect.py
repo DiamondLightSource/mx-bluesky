@@ -41,9 +41,9 @@ class LoadCentreCollect(
         )
 
         disallowed_keys = values.keys() - allowed_keys
-        assert disallowed_keys == set(), (
-            f"Unexpected fields found in LoadCentreCollect {disallowed_keys}"
-        )
+        assert (
+            disallowed_keys == set()
+        ), f"Unexpected fields found in LoadCentreCollect {disallowed_keys}"
 
         keys_from_outer_load_centre_collect = (
             MxBlueskyParameters.model_fields.keys()
@@ -54,16 +54,16 @@ class LoadCentreCollect(
             keys_from_outer_load_centre_collect
             & values["robot_load_then_centre"].keys()
         )
-        assert not (duplicated_robot_load_then_centre_keys), (
-            f"Unexpected keys in robot_load_then_centre: {', '.join(duplicated_robot_load_then_centre_keys)}"
-        )
+        assert not (
+            duplicated_robot_load_then_centre_keys
+        ), f"Unexpected keys in robot_load_then_centre: {', '.join(duplicated_robot_load_then_centre_keys)}"
 
         duplicated_multi_rotation_scan_keys = (
             keys_from_outer_load_centre_collect & values["multi_rotation_scan"].keys()
         )
-        assert not (duplicated_multi_rotation_scan_keys), (
-            f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
-        )
+        assert not (
+            duplicated_multi_rotation_scan_keys
+        ), f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
 
         new_robot_load_then_centre_params = construct_from_values(
             values, values["robot_load_then_centre"], RobotLoadThenCentre
@@ -80,9 +80,7 @@ class LoadCentreCollect(
         for scan in self.multi_rotation_scan.single_rotation_scans:
             assert (
                 not scan.x_start_um and not scan.y_start_um and not scan.z_start_um
-            ), (
-                "Specifying start xyz for sweeps is not supported in combination with centring."
-            )
+            ), "Specifying start xyz for sweeps is not supported in combination with centring."
         return self
 
     @model_validator(mode="after")

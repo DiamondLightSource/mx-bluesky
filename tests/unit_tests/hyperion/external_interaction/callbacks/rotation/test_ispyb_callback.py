@@ -292,9 +292,9 @@ def test_comment_correct_after_hardware_read(
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["mx_bluesky_parameters"] = (
-        test_rotation_start_outer_document["mx_bluesky_parameters"].replace(
-            '"comment":"test"', '"comment":"a lovely unit test"'
-        )
+        test_rotation_start_outer_document[
+            "mx_bluesky_parameters"
+        ].replace('"comment":"test"', '"comment":"a lovely unit test"')
     )
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(

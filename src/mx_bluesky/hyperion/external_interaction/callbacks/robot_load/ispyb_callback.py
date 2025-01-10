@@ -64,9 +64,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             event_descriptor
             and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_LOAD
         ):
-            assert self.action_id is not None, (
-                "ISPyB Robot load callback event called unexpectedly"
-            )
+            assert (
+                self.action_id is not None
+            ), "ISPyB Robot load callback event called unexpectedly"
             barcode = doc["data"]["robot-barcode"]
             oav_snapshot = doc["data"]["oav-snapshot-last_saved_path"]
             webcam_snapshot = doc["data"]["webcam-last_saved_path"]
@@ -82,9 +82,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             "ISPyB robot load callback received stop document."
         )
         if doc.get("run_start") == self.run_uid:
-            assert self.action_id is not None, (
-                "ISPyB Robot load callback stop called unexpectedly"
-            )
+            assert (
+                self.action_id is not None
+            ), "ISPyB Robot load callback stop called unexpectedly"
             exit_status = doc.get("exit_status")
             assert exit_status, "Exit status not available in stop document!"
             assert self._metadata, "Metadata not received before stop document."
