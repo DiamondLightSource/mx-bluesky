@@ -52,9 +52,9 @@ class GridCommon(
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
-        assert (
-            self.detector_distance_mm is not None
-        ), "Detector distance must be filled before generating DetectorParams"
+        assert self.detector_distance_mm is not None, (
+            "Detector distance must be filled before generating DetectorParams"
+        )
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,

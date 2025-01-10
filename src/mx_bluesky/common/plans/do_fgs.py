@@ -89,9 +89,9 @@ def kickoff_and_complete_gridscan(
         zocalo_environment (Optional, str)      Used for zocalo connection
     """
 
-    assert len(scan_points) == len(
-        scan_start_indices
-    ), "scan_points and scan_start_indices must be lists of the same length!"
+    assert len(scan_points) == len(scan_start_indices), (
+        "scan_points and scan_start_indices must be lists of the same length!"
+    )
 
     plan_name = PlanNameConstants.DO_FGS
 

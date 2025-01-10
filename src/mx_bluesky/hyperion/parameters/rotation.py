@@ -160,9 +160,9 @@ class MultiRotationScan(RotationExperiment, SplitScan):
         if len(self.rotation_scans) > 0:
             scan_width = self.rotation_scans[0].scan_width_deg
             for scan in self.rotation_scans[1:]:
-                assert (
-                    scan.scan_width_deg == scan_width
-                ), "Sweeps with different numbers of frames are not supported."
+                assert scan.scan_width_deg == scan_width, (
+                    "Sweeps with different numbers of frames are not supported."
+                )
 
         return self
 

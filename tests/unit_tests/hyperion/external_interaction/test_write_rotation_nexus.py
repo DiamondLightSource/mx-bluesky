@@ -386,9 +386,9 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
     keys_not_in_actual = (
         expected.keys() - actual.keys() - exceptions.get("_missing", set())
     )
-    assert (
-        len(keys_not_in_actual) == 0
-    ), f"Missing entries in group {path_str}, {keys_not_in_actual}"
+    assert len(keys_not_in_actual) == 0, (
+        f"Missing entries in group {path_str}, {keys_not_in_actual}"
+    )
 
     keys_to_compare = actual.keys()
     keys_to_ignore = exceptions.get("_ignore", set())
@@ -409,9 +409,9 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
         if isinstance(actual_link, ExternalLink):
             if exception:
                 actual_link_path = f"{actual_link.filename}//{actual_link.path}"
-                assert (
-                    actual_link_path == exception
-                ), f"Actual and expected external links differ {actual_link_path}, {exception}"
+                assert actual_link_path == exception, (
+                    f"Actual and expected external links differ {actual_link_path}, {exception}"
+                )
             else:
                 LOGGER.debug(
                     f"Skipping external link {item_path_str} -> {actual_link.path}"
@@ -438,26 +438,26 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
         elif (expected_class == Dataset) and key not in keys_to_ignore:
             if isinstance(expected_value, Dataset):
                 # Only check shape if we didn't override the expected value
-                assert (
-                    actual_value.shape == expected_value.shape
-                ), f"Actual and expected shapes differ for {item_path_str}: {actual_value.shape}, {expected_value.shape}"
+                assert actual_value.shape == expected_value.shape, (
+                    f"Actual and expected shapes differ for {item_path_str}: {actual_value.shape}, {expected_value.shape}"
+                )
             else:
                 assert hasattr(actual_value, "shape"), f"No shape for {item_path_str}"
                 expected_shape = np.shape(expected_value)  # type: ignore
-                assert (
-                    actual_value.shape == expected_shape
-                ), f"{item_path_str} data shape not expected shape{actual_value.shape}, {expected_shape}"
+                assert actual_value.shape == expected_shape, (
+                    f"{item_path_str} data shape not expected shape{actual_value.shape}, {expected_shape}"
+                )
             if actual_value.shape == ():
                 if callable(exception):
                     assert exceptions.get(key)(actual_value, expected_value)  # type: ignore
                 elif np.isscalar(exception):
-                    assert (
-                        actual_value[()] == exception
-                    ), f"{item_path_str} actual and expected did not match {actual_value[()]}, {exception}."
+                    assert actual_value[()] == exception, (
+                        f"{item_path_str} actual and expected did not match {actual_value[()]}, {exception}."
+                    )
                 else:
-                    assert (
-                        actual_class == expected_class
-                    ), f"{item_path_str} Actual and expected class don't match {actual_class}, {expected_class}"
+                    assert actual_class == expected_class, (
+                        f"{item_path_str} Actual and expected class don't match {actual_class}, {expected_class}"
+                    )
                     # fmt: off
                     assert (
                         actual_value[()] == expected_value[()]  # type: ignore
@@ -470,14 +470,16 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                 actual_value_str = np.array2string(actual_value, threshold=10)
                 expected_value_str = np.array2string(expected_value, threshold=10)  # type: ignore
                 if callable(exception):
-                    assert exception(
-                        actual_value, expected_value
-                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}, according to {exception}"
+                    assert exception(actual_value, expected_value), (
+                        f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}, according to {exception}"
+                    )
                 else:
                     assert np.array_equal(
                         actual_value,
                         expected_value,  # type: ignore
-                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}"
+                    ), (
+                        f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}"
+                    )
 
 
 def test_override_parameters_override(test_params: RotationScan):
