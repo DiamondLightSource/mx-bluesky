@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.hutch_shutter import (
@@ -21,17 +23,25 @@ from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_val
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.parameters import (
+    DetectorName,
     ExtruderParameters,
     FixedTargetParameters,
     get_chip_format,
 )
+
+TEST_PATH = Path("tests/test_data/test_daq_configuration")
+
+TEST_LUT = {
+    DetectorName.EIGER: TEST_PATH / "lookup/test_det_dist_converter.txt",
+    DetectorName.PILATUS: TEST_PATH / "lookup/test_det_dist_converter.txt",
+}
 
 
 @pytest.fixture
 def dummy_params_without_pp():
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/fixed/foo",
         "directory": "bar",
         "filename": "chip",
         "exposure_time_s": 0.01,
@@ -51,7 +61,7 @@ def dummy_params_without_pp():
 @pytest.fixture
 def dummy_params_ex():
     params = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
