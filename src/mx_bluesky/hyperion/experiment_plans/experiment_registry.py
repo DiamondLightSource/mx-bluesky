@@ -10,6 +10,8 @@ from mx_bluesky.common.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
     RobotLoadThenCentre,
 )
+from mx_bluesky.common.plans import write_sample_status
+from mx_bluesky.common.plans.write_sample_status import WriteSampleStatus
 from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
@@ -22,6 +24,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
     create_load_centre_collect_callbacks,
     create_robot_load_and_centre_callbacks,
     create_rotation_callbacks,
+    create_sample_status_callbacks,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -46,6 +49,7 @@ class ExperimentRegistryEntry(TypedDict):
         | PinTipCentreThenXrayCentre
         | RobotLoadThenCentre
         | LoadCentreCollect
+        | WriteSampleStatus
     ]
     callbacks_factory: CallbacksFactory
 
@@ -85,6 +89,11 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": load_centre_collect_full_plan.create_devices,
         "param_type": LoadCentreCollect,
         "callbacks_factory": create_load_centre_collect_callbacks,
+    },
+    "deposit_sample_error": {
+        "setup": write_sample_status.create_devices,
+        "param_type": WriteSampleStatus,
+        "callbacks_factory": create_sample_status_callbacks,
     },
 }
 
