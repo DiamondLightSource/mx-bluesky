@@ -125,7 +125,7 @@ def test_initialise_extruder(
 
 async def test_enterhutch(detector_stage, RE):
     RE(enter_hutch(detector_stage))
-    assert await detector_stage.z.user_readback.get_value() == 1480
+    assert await detector_stage.z.user_setpoint.get_value() == 1480
 
 
 @pytest.mark.parametrize(

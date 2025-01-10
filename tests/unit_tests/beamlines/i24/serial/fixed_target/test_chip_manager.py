@@ -146,8 +146,8 @@ async def test_moveto_oxford_origin(fake_caget: MagicMock, pmac: PMAC, RE):
     fake_caget.return_value = 0
     RE(moveto(Fiducials.origin, pmac))
     assert fake_caget.call_count == 1
-    assert await pmac.x.user_readback.get_value() == 0.0
-    assert await pmac.y.user_readback.get_value() == 0.0
+    assert await pmac.x.user_setpoint.get_value() == 0.0
+    assert await pmac.y.user_setpoint.get_value() == 0.0
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
@@ -155,8 +155,8 @@ async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, RE):
     fake_caget.return_value = 1
     RE(moveto(Fiducials.fid1, pmac))
     assert fake_caget.call_count == 1
-    assert await pmac.x.user_readback.get_value() == 24.60
-    assert await pmac.y.user_readback.get_value() == 0.0
+    assert await pmac.x.user_setpoint.get_value() == 24.60
+    assert await pmac.y.user_setpoint.get_value() == 0.0
 
 
 async def test_moveto_chip_aspecific(pmac: PMAC, RE):
@@ -179,7 +179,7 @@ async def test_moveto_preset(
     RE(moveto_preset("load_position", pmac, beamstop, backlight, detector_stage))
     assert await beamstop.pos_select.get_value() == "Robot"
     assert await backlight.backlight_position.pos_level.get_value() == "Out"
-    assert await detector_stage.z.user_readback.get_value() == 1300
+    assert await detector_stage.z.user_setpoint.get_value() == 1300
 
 
 @pytest.mark.parametrize(
@@ -205,9 +205,9 @@ async def test_moveto_preset_with_pmac_move(
     RE(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))
     assert fake_caput.call_count == expected_num_caput
 
-    assert await pmac.x.user_readback.get_value() == expected_pmac_move[0]
-    assert await pmac.y.user_readback.get_value() == expected_pmac_move[1]
-    assert await pmac.z.user_readback.get_value() == expected_pmac_move[2]
+    assert await pmac.x.user_setpoint.get_value() == expected_pmac_move[0]
+    assert await pmac.y.user_setpoint.get_value() == expected_pmac_move[1]
+    assert await pmac.z.user_setpoint.get_value() == expected_pmac_move[2]
 
     if other_devices:
         assert await beamstop.pos_select.get_value() == "Data Collection"
