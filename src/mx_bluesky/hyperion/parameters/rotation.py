@@ -26,6 +26,7 @@ from mx_bluesky.common.parameters.components import (
     SplitScan,
     WithScan,
 )
+from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
 from mx_bluesky.hyperion.parameters.constants import (
     CONST,
     I03Constants,
@@ -33,6 +34,18 @@ from mx_bluesky.hyperion.parameters.constants import (
 
 
 class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
+    """
+    Describes a rotation scan about the specified axis.
+
+    Attributes:
+        rotation_axis: The rotation axis, by default this is the omega axis
+        omega_start_deg: The initial angle of the rotation in degrees (default 0)
+        scan_width_deg: The sweep of the rotation in degrees, this must be positive (default 360)
+        rotation_direction: Indicates the direction of rotation, if RotationDirection.POSITIVE
+            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE)
+        nexus_vds_start_img: The frame number of the first frame captured during the rotation
+    """
+
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
@@ -40,7 +53,7 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
     nexus_vds_start_img: int = Field(default=0, ge=0)
 
 
-class RotationExperiment(DiffractionExperimentWithSample):
+class RotationExperiment(DiffractionExperimentWithSample, WithHyperionFeatures):
     shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     rotation_increment_deg: float = Field(default=0.1, gt=0)
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -98,6 +111,7 @@ class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
 
     @property
     def scan_points(self) -> AxesPoints:
+        """The scan points are defined in application space"""
         scan_spec = Line(
             axis="omega",
             start=self.omega_start_deg,
@@ -146,9 +160,9 @@ class MultiRotationScan(RotationExperiment, SplitScan):
         if len(self.rotation_scans) > 0:
             scan_width = self.rotation_scans[0].scan_width_deg
             for scan in self.rotation_scans[1:]:
-                assert (
-                    scan.scan_width_deg == scan_width
-                ), "Sweeps with different numbers of frames are not supported."
+                assert scan.scan_width_deg == scan_width, (
+                    "Sweeps with different numbers of frames are not supported."
+                )
 
         return self
 

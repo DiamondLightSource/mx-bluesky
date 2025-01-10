@@ -7,6 +7,7 @@ import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
+from dodal.devices.smargon import Smargon
 from ophyd_async.core import load_device
 from ophyd_async.fastcs.panda import (
     HDFPanda,
@@ -114,7 +115,7 @@ def _get_seq_table(
 def setup_panda_for_flyscan(
     panda: HDFPanda,
     parameters: PandAGridScanParams,
-    initial_x: float,
+    smargon: Smargon,
     exposure_time_s: float,
     time_between_x_steps_ms: float,
     sample_velocity_mm_per_s: float,
@@ -127,7 +128,7 @@ def setup_panda_for_flyscan(
     Args:
         panda (HDFPanda): The PandA Ophyd device
         parameters (PandAGridScanParams): Grid parameters
-        initial_x (float): Motor positions at time of PandA setup
+        smargon (Smargon): The Smargon Ophyd device
         exposure_time_s (float): Detector exposure time per trigger
         time_between_x_steps_ms (float): Time, in ms, between each trigger. Equal to deadtime + exposure time
         sample_velocity_mm_per_s (float): Velocity of the sample in mm/s = x_step_size_mm * 1000 /
@@ -149,10 +150,26 @@ def setup_panda_for_flyscan(
     ) as config_yaml_path:
         yield from load_device(panda, str(config_yaml_path))
 
-    # Home the PandA X encoder using current motor position
+    initial_x = yield from bps.rd(smargon.x.user_readback)
+    initial_y = yield from bps.rd(smargon.y.user_readback)
+    initial_z = yield from bps.rd(smargon.z.user_readback)
+
+    # Home the PandA X, Y, and Z encoders using current motor position
     yield from bps.abs_set(
         panda.inenc[1].setp,  # type: ignore
         initial_x * MM_TO_ENCODER_COUNTS,
+        wait=True,
+    )
+
+    yield from bps.abs_set(
+        panda.inenc[2].setp,  # type: ignore
+        initial_y * MM_TO_ENCODER_COUNTS,
+        wait=True,
+    )
+
+    yield from bps.abs_set(
+        panda.inenc[3].setp,  # type: ignore
+        initial_z * MM_TO_ENCODER_COUNTS,
         wait=True,
     )
 

@@ -115,9 +115,9 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
                     continue
                 if HEADER_PATTERN.match(actual_line):
                     break
-                assert (
-                    actual_line == expected_line
-                ), f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
+                assert actual_line == expected_line, (
+                    f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
+                )
 
             while True:
                 i += 1
@@ -125,9 +125,9 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
                 actual_line = next(it_actual_lines)
                 if DATE_PATTERN.match(actual_line):
                     continue
-                assert (
-                    actual_line == expected_line
-                ), f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
+                assert actual_line == expected_line, (
+                    f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
+                )
 
     except StopIteration:
         pass
@@ -140,9 +140,9 @@ def _run_imginfo(filename):
         ["utility_scripts/run_imginfo.sh", filename], text=True, capture_output=True
     )
     assert process.returncode != 2, "imginfo is not available"
-    assert (
-        process.returncode == 0
-    ), f"imginfo failed with returncode {process.returncode}"
+    assert process.returncode == 0, (
+        f"imginfo failed with returncode {process.returncode}"
+    )
 
     return process.stdout, process.stderr
 

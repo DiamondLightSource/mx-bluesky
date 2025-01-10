@@ -510,6 +510,16 @@ def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
     )
 
 
+def test_tip_offset_um_passed_to_pin_tip_centre_plan(
+    robot_load_then_centre_params: RobotLoadThenCentre,
+):
+    robot_load_then_centre_params.tip_offset_um = 100
+    assert (
+        robot_load_then_centre_params.pin_centre_then_xray_centre_params().tip_offset_um
+        == 100
+    )
+
+
 def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,

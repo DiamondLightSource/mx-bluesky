@@ -77,7 +77,7 @@ set namespaceSeparator none
 
 
 def generate_class(t):
-    print(f"class {t.__name__}" "{")
+    print(f"class {t.__name__}{{")
     for field_name, field_type in get_annotations(t).items():
         print(f"\t{generate_type(field_type)} {field_name}")
     print("}")

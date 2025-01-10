@@ -66,7 +66,9 @@ def load_centre_collect_full(
             flyscan_event_handler,
         )
 
-        assert flyscan_event_handler.xray_centre_results, "Flyscan result event not received or no crystal found and exception not raised"
+        assert flyscan_event_handler.xray_centre_results, (
+            "Flyscan result event not received or no crystal found and exception not raised"
+        )
 
         selection_func = flyscan_result.resolve_selection_fn(
             parameters.selection_params

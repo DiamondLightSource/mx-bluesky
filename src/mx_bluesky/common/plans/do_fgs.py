@@ -59,7 +59,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     yield from bps.complete(grid_scan_device, wait=True)
     # Remove this logging statement once metrics have been added
     LOGGER.info(
-        f"Grid scan motion program took {round(time()-gridscan_start_time,2)} to complete"
+        f"Grid scan motion program took {round(time() - gridscan_start_time, 2)} to complete"
     )
 
 
@@ -89,9 +89,9 @@ def kickoff_and_complete_gridscan(
         zocalo_environment (Optional, str)      Used for zocalo connection
     """
 
-    assert len(scan_points) == len(
-        scan_start_indices
-    ), "scan_points and scan_start_indices must be lists of the same length!"
+    assert len(scan_points) == len(scan_start_indices), (
+        "scan_points and scan_start_indices must be lists of the same length!"
+    )
 
     plan_name = PlanNameConstants.DO_FGS
 

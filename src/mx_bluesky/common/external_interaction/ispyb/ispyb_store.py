@@ -62,12 +62,12 @@ class StoreInIspyb:
         ispyb_ids,
         scan_data_infos: Sequence[ScanDataInfo],
     ) -> IspybIds:
-        assert (
-            ispyb_ids.data_collection_group_id
-        ), "Attempted to store scan data without a collection group"
-        assert (
-            ispyb_ids.data_collection_ids
-        ), "Attempted to store scan data without a collection"
+        assert ispyb_ids.data_collection_group_id, (
+            "Attempted to store scan data without a collection group"
+        )
+        assert ispyb_ids.data_collection_ids, (
+            "Attempted to store scan data without a collection"
+        )
         return self._begin_or_update_deposition(ispyb_ids, None, scan_data_infos)
 
     def _begin_or_update_deposition(
@@ -87,7 +87,9 @@ class StoreInIspyb:
                     )
                 )
             else:
-                assert ispyb_ids.data_collection_group_id, "Attempt to update data collection without a data collection group ID"
+                assert ispyb_ids.data_collection_group_id, (
+                    "Attempt to update data collection without a data collection group ID"
+                )
 
             grid_ids = list(ispyb_ids.grid_ids)
             data_collection_ids_out = list(ispyb_ids.data_collection_ids)
@@ -116,12 +118,12 @@ class StoreInIspyb:
         return ispyb_ids
 
     def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
-        assert (
-            ispyb_ids.data_collection_ids
-        ), "Can't end ISPyB deposition, data_collection IDs are missing"
-        assert (
-            ispyb_ids.data_collection_group_id is not None
-        ), "Cannot end ISPyB deposition without data collection group ID"
+        assert ispyb_ids.data_collection_ids, (
+            "Can't end ISPyB deposition, data_collection IDs are missing"
+        )
+        assert ispyb_ids.data_collection_group_id is not None, (
+            "Cannot end ISPyB deposition without data collection group ID"
+        )
 
         for id_ in ispyb_ids.data_collection_ids:
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
