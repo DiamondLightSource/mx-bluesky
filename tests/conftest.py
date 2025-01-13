@@ -830,7 +830,7 @@ async def fake_fgs_composite(
             connect_immediately=True, mock=True
         ),
         flux=i03.flux(connect_immediately=True, mock=True),
-        s4_slit_gaps=i03.s4_slit_gaps(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
         undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,

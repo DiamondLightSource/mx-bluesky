@@ -83,7 +83,7 @@ async def fxc_composite():
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
-        flux=i03.flux(fake_with_ophyd_sim=True),
+        flux=i03.flux(connect_immediately=True, mock=True),
         robot=i03.robot(connect_immediately=True, mock=True),
         panda=i03.panda(connect_immediately=True, mock=True),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(
