@@ -24,7 +24,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
-from dodal.common.beamlines.beamline_utils import clear_devices, device_instantiation
+from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -382,7 +382,7 @@ def undulator():
 
 
 @pytest.fixture
-def s4_slit_gaps():
+def s4_slit_gaps() -> S4SlitGaps:
     return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
