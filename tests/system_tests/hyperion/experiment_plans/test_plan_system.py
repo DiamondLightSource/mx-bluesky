@@ -32,7 +32,7 @@ async def test_getting_data_for_ispyb():
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     slit_gaps = S4SlitGaps(f"{CONST.SIM.BEAMLINE}-AL-SLITS-04:", name="slits")
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
-    flux = i03.flux(fake_with_ophyd_sim=True)
+    flux = i03.flux(connect_immediately=True, mock=True)
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     aperture_scatterguard = ApertureScatterguard(
         prefix="BL03S",
@@ -41,7 +41,7 @@ async def test_getting_data_for_ispyb():
         tolerances=AperturePosition.tolerances_from_gda_params(params),
     )
     smargon = i03.smargon(connect_immediately=True, mock=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger = i03.eiger(mock=True)
     await undulator.connect()
     slit_gaps.wait_for_connection()
     flux.wait_for_connection()

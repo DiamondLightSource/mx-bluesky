@@ -294,7 +294,7 @@ def done_status():
 
 @pytest.fixture
 def eiger(done_status):
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
     eiger.unstage = MagicMock(return_value=done_status)
@@ -370,8 +370,8 @@ def undulator():
 
 
 @pytest.fixture
-def s4_slit_gaps():
-    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+def s4_slit_gaps() -> S4SlitGaps:
+    return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -406,7 +406,7 @@ def oav(test_config_files, RE):
 
 @pytest.fixture
 def flux():
-    return i03.flux(fake_with_ophyd_sim=True)
+    return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -803,6 +803,7 @@ async def fake_fgs_composite(
     dcm,
     panda,
     backlight,
+    s4_slit_gaps,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -810,12 +811,12 @@ async def fake_fgs_composite(
         backlight=backlight,
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger(fake_with_ophyd_sim=True),
+        eiger=i03.eiger(connect_immediately=True, mock=True),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         ),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
         undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
