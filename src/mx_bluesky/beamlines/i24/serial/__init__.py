@@ -4,6 +4,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_set_parameters,
     gui_sleep,
     gui_stage_move_on_click,
+    gui_use_jungfrau,
 )
 
 from .extruder.i24ssx_Extruder_Collect_py3v2 import (
@@ -57,4 +58,5 @@ __all__ = [
     "gui_sleep",
     "gui_move_detector",
     "gui_set_parameters",
+    "gui_use_jungfrau",
 ]

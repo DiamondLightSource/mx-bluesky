@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Literal
 
 import bluesky.plan_stubs as bps
@@ -5,10 +6,20 @@ import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
 
+from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
+    ChipType,
+    PumpProbeSetting,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _move_on_mouse_click_plan,
 )
 from mx_bluesky.beamlines.i24.serial.log import _read_visit_directory_from_file
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    FixedTargetParameters,
+    get_chip_format,
+)
+from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
+from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
@@ -49,6 +60,14 @@ def gui_move_detector(det: Literal["eiger", "pilatus"]) -> MsgGenerator:
     detector_stage = i24.detector_motion()
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
+    caput(pv.me14e_gp101, det)
+
+
+@bpp.run_decorator()
+def gui_use_jungfrau() -> MsgGenerator:
+    print("Set to use jungfrau detector")
+    caput(pv.me14e_gp101, "jungfrau")
+    yield from bps.null()
 
 
 @bpp.run_decorator()
@@ -59,9 +78,17 @@ def gui_set_parameters(
     det_dist: float,
     transmission: float,
     n_shots: int,
+    chip_type: str,
+    pump_settings: Sequence,
 ):
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
+    chip_params = get_chip_format(ChipType[chip_type])
+    pump_repeat = (
+        PumpProbeSetting.NoPP
+        if not pump_settings[0]
+        else PumpProbeSetting[pump_settings[0]]
+    )
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": sub_dir,
@@ -71,12 +98,21 @@ def gui_set_parameters(
         "detector_name": str(det_type),
         "num_exposures": n_shots,
         "transmission": transmission,
+        "chip": chip_params,
+        "map_type": None,
+        "chip_map": [],
+        "pump_repeat": pump_repeat,
+        "laser_dwell_s": pump_settings[1]
+        if pump_repeat != PumpProbeSetting.NoPP
+        else 0.0,
+        "laser_delay_s": pump_settings[2]
+        if pump_repeat != PumpProbeSetting.NoPP
+        else 0.0,
+        "checker_pattern": pump_settings[3],
+        "pre_pump_exposure_s": None,
     }
     # At some point it will use FixedTargetParameters to create the parameters model
     # For now not doing that because:
     # a- not all data in
-    # b - detectorParams will create a directory and we do not want that unless testing
-    # on beamline
-    # FixedTargetParameters(**params)
-    print(params)
+    print(FixedTargetParameters(**params))
     yield from bps.sleep(0.5)
