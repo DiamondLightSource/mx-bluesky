@@ -130,7 +130,7 @@ def oav_for_system_test(test_config_files):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
     set_mock_value(oav.cam.array_size_y, 768)
 
