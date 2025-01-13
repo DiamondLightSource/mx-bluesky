@@ -80,7 +80,7 @@ def fake_rotation_scan(
 
 def fake_create_rotation_devices():
     beamstop = i03.beamstop(connect_immediately=True, mock=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger = i03.eiger(connect_immediately=True, mock=True)
     smargon = i03.smargon(connect_immediately=True, mock=True)
     zebra = i03.zebra(connect_immediately=True, mock=True)
     detector_motion = i03.detector_motion(connect_immediately=True, mock=True)

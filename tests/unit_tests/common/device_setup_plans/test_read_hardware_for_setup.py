@@ -12,7 +12,7 @@ from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
 
 @pytest.fixture
 def fake_eiger() -> EigerDetector:
-    return eiger(fake_with_ophyd_sim=True)
+    return eiger(mock=True)
 
 
 def test_read_hardware_for_zocalo_in_RE(fake_eiger, RE: RunEngine):
