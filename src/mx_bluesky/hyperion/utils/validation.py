@@ -8,7 +8,9 @@ from unittest.mock import patch
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import device_instantiation
 from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -92,7 +94,13 @@ def fake_create_rotation_devices():
         connect_immediately=True, mock=True
     )
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
-    s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+    s4_slit_gaps = device_instantiation(
+        S4SlitGaps,
+        "s4_slit_gaps",
+        "-AL-SLITS-04:",
+        True,
+        True,
+    )
     dcm = i03.dcm(connect_immediately=True, mock=True)
     robot = i03.robot(connect_immediately=True, mock=True)
     oav = i03.oav(

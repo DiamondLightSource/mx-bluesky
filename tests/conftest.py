@@ -24,7 +24,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
-from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.beamline_utils import clear_devices, device_instantiation
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -370,8 +370,8 @@ def undulator():
 
 
 @pytest.fixture
-def s4_slit_gaps():
-    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+def s4_slit_gaps() -> S4SlitGaps:
+    return device_instantiation(S4SlitGaps, "s4_slit_gaps", "", True, True)
 
 
 @pytest.fixture
@@ -803,6 +803,7 @@ async def fake_fgs_composite(
     dcm,
     panda,
     backlight,
+    s4_slit_gaps,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -815,7 +816,7 @@ async def fake_fgs_composite(
             connect_immediately=True, mock=True
         ),
         flux=i03.flux(fake_with_ophyd_sim=True),
-        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
+        s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
         undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
