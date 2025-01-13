@@ -41,7 +41,7 @@ async def test_getting_data_for_ispyb():
         tolerances=AperturePosition.tolerances_from_gda_params(params),
     )
     smargon = i03.smargon(connect_immediately=True, mock=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger = i03.eiger(mock=True)
     await undulator.connect()
     await slit_gaps.connect()
     await flux.connect()
