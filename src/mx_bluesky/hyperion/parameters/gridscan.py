@@ -8,21 +8,16 @@ from dodal.devices.fast_grid_scan import (
     ZebraGridScanParams,
 )
 
-from mx_bluesky.common.parameters.components import (
-    WithPandaGridScan,
-)
 from mx_bluesky.common.parameters.gridscan import (
+    GridScanWithEdgeDetect,
+    PinTipCentreThenXrayCentre,
     ThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
+from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 
 
-class HyperionThreeDGridScan(
-    ThreeDGridScan,
-    WithPandaGridScan,
-    WithHyperionFeatures,
-):
+class HyperionThreeDGridScan(ThreeDGridScan, WithHyperionUDCFeatures):
     """Hyperion's 3D grid scan varies from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
@@ -103,3 +98,13 @@ class HyperionThreeDGridScan(
 
 
 class OddYStepsException(Exception): ...
+
+
+class HyperionPinTipCentreThenXrayCentre(
+    PinTipCentreThenXrayCentre, WithHyperionUDCFeatures
+): ...
+
+
+class HyperionGridScanWithEdgeDetect(
+    GridScanWithEdgeDetect, WithHyperionUDCFeatures
+): ...

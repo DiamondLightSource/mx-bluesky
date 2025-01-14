@@ -37,7 +37,6 @@ from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
@@ -64,6 +63,7 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.robot_load import HyperionRobotLoadThenCentre
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -113,7 +113,7 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 
 def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
-    params: RobotLoadThenCentre,
+    params: HyperionRobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_flyscan_plan(
@@ -124,7 +124,7 @@ def _flyscan_plan_from_robot_load_params(
 
 def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
-    params: RobotLoadThenCentre,
+    params: HyperionRobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
@@ -137,7 +137,7 @@ def _robot_load_then_flyscan_plan(
 
 def robot_load_then_centre(
     composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentre,
+    parameters: HyperionRobotLoadThenCentre,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary. Centre on the best diffracting centre.
@@ -158,7 +158,7 @@ def robot_load_then_centre(
 
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentre,
+    parameters: HyperionRobotLoadThenCentre,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary."""

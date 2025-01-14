@@ -10,7 +10,6 @@ from dodal.devices.robot import SampleLocation
 
 from mx_bluesky.common.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
-    RobotLoadThenCentre,
 )
 from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -24,6 +23,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.robot_load import HyperionRobotLoadThenCentre
 
 from ....conftest import assert_none_matching, raw_params_from_file
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
@@ -34,7 +34,7 @@ def robot_load_then_centre_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json"
     )
-    return RobotLoadThenCentre(**params)
+    return HyperionRobotLoadThenCentre(**params)
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_robot_load_then_centre_centres_on_the_first_flyscan_result(
     mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
 ):
     RE = RunEngine()
 
@@ -100,7 +100,7 @@ def test_robot_load_then_centre_centres_on_the_first_flyscan_result(
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
 ):
     RE = RunEngine()
 
@@ -129,7 +129,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
     robot_load_composite.eiger.set_detector_parameters = MagicMock()
@@ -154,7 +154,7 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
 )
 def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set_on_eiger(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    robot_load_then_centre_params_no_energy: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
     robot_load_composite.eiger.set_detector_parameters = MagicMock()
@@ -216,7 +216,7 @@ def dummy_robot_load_plan(*args, **kwargs):
 )
 def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
@@ -264,7 +264,7 @@ def mock_current_sample(sim_run_engine: RunEngineSimulator, sample: SampleLocati
 )
 def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_then_eiger_not_staged_and_centring_not_run(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
     sample_is_loaded,
 ):
@@ -314,7 +314,7 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
 )
 def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_then_eiger_staged_and_centring_run(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
     sample_is_loaded,
 ):
@@ -373,7 +373,7 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
 )
 def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then_eiger_staged_before_robot_and_centring_run_after(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
     sample_is_not_loaded,
 ):
@@ -416,7 +416,7 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
 )
 def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eiger_staged_before_robot_and_centring_run(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
     sample_is_not_loaded,
 ):
@@ -465,7 +465,7 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
 def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sample_is_loaded,
 ):
     robot_load_then_centre_params.chi_start_deg = 30
@@ -494,7 +494,7 @@ def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
 def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
     sample_is_loaded,
 ):
     robot_load_then_centre_params.chi_start_deg = None
@@ -511,7 +511,7 @@ def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
 
 
 def test_tip_offset_um_passed_to_pin_tip_centre_plan(
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
 ):
     robot_load_then_centre_params.tip_offset_um = 100
     assert (
@@ -523,7 +523,7 @@ def test_tip_offset_um_passed_to_pin_tip_centre_plan(
 def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
+    robot_load_then_centre_params: HyperionRobotLoadThenCentre,
 ):
     sim_run_engine.add_read_handler_for(
         robot_load_composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN

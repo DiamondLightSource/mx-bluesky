@@ -29,7 +29,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 
-PARAMETER_VERSION = Version.parse("5.2.0")
+PARAMETER_VERSION = Version.parse("5.3.0")
 
 
 class RotationAxis(StrEnum):
