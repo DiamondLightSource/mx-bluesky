@@ -7,11 +7,11 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
-from mx_bluesky.common.parameters.gridscan import RobotLoadThenCentre
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
     OddYStepsException,
 )
+from mx_bluesky.hyperion.parameters.robot_load import HyperionRobotLoadThenCentre
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import raw_params_from_file
@@ -84,7 +84,7 @@ def test_robot_load_then_centre_params():
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     }
     params["detector_distance_mm"] = 200
-    test_params = RobotLoadThenCentre(**params)
+    test_params = HyperionRobotLoadThenCentre(**params)
     assert test_params.detector_params
 
 

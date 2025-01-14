@@ -8,8 +8,8 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
-from mx_bluesky.common.parameters.gridscan import (
-    RobotLoadThenCentre,
+from mx_bluesky.hyperion.parameters.robot_load import (
+    HyperionRobotLoadThenCentre,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
@@ -28,7 +28,7 @@ class LoadCentreCollect(
     """Experiment parameters to perform the combined robot load,
     pin-tip centre and rotation scan operations."""
 
-    robot_load_then_centre: RobotLoadThenCentre
+    robot_load_then_centre: HyperionRobotLoadThenCentre
     multi_rotation_scan: MultiRotationScan
 
     @model_validator(mode="before")
@@ -36,7 +36,7 @@ class LoadCentreCollect(
     def validate_model(cls, values):
         allowed_keys = (
             LoadCentreCollect.model_fields.keys()
-            | RobotLoadThenCentre.model_fields.keys()
+            | HyperionRobotLoadThenCentre.model_fields.keys()
             | MultiRotationScan.model_fields.keys()
         )
 
@@ -66,7 +66,7 @@ class LoadCentreCollect(
         )
 
         new_robot_load_then_centre_params = construct_from_values(
-            values, values["robot_load_then_centre"], RobotLoadThenCentre
+            values, values["robot_load_then_centre"], HyperionRobotLoadThenCentre
         )
         new_multi_rotation_scan_params = construct_from_values(
             values, values["multi_rotation_scan"], MultiRotationScan
