@@ -18,6 +18,7 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
+from dodal.utils import AnyDeviceFactory
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
@@ -28,6 +29,12 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
 )
+from unit_tests.conftest import device_factories_for_beamline
+
+
+@pytest.fixture(scope="session")
+def active_device_factories(active_device_factories) -> set[AnyDeviceFactory]:
+    return active_device_factories | device_factories_for_beamline(i24)
 
 TEST_PATH = Path("tests/test_data/test_daq_configuration")
 
@@ -88,7 +95,7 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 
 @pytest.fixture
 def zebra(RE) -> Zebra:
-    zebra = i24.zebra(fake_with_ophyd_sim=True, wait_for_connection=True)
+    zebra = i24.zebra(connect_immediately=True, mock=True)
 
     def mock_disarm(_, wait):
         set_mock_value(zebra.pc.arm.armed, 0)
@@ -103,7 +110,7 @@ def zebra(RE) -> Zebra:
 
 @pytest.fixture
 def shutter(RE) -> HutchShutter:
-    shutter = i24.shutter(fake_with_ophyd_sim=True)
+    shutter = i24.shutter(connect_immediately=True, mock=True)
     set_mock_value(shutter.interlock.status, HUTCH_SAFE_FOR_OPERATIONS)
 
     def set_status(value: ShutterDemand, *args, **kwargs):
@@ -116,7 +123,7 @@ def shutter(RE) -> HutchShutter:
 
 @pytest.fixture
 def detector_stage(RE):
-    detector_motion = i24.detector_motion(fake_with_ophyd_sim=True)
+    detector_motion = i24.detector_motion(connect_immediately=True, mock=True)
 
     with patch_motor(detector_motion.y), patch_motor(detector_motion.z):
         yield detector_motion
@@ -124,20 +131,20 @@ def detector_stage(RE):
 
 @pytest.fixture
 def aperture(RE):
-    aperture: Aperture = i24.aperture(fake_with_ophyd_sim=True)
+    aperture: Aperture = i24.aperture(connect_immediately=True, mock=True)
     with patch_motor(aperture.x), patch_motor(aperture.y):
         yield aperture
 
 
 @pytest.fixture
 def backlight(RE) -> DualBacklight:
-    backlight = i24.backlight(fake_with_ophyd_sim=True)
+    backlight = i24.backlight(connect_immediately=True, mock=True)
     return backlight
 
 
 @pytest.fixture
 def beamstop(RE):
-    beamstop: Beamstop = i24.beamstop(fake_with_ophyd_sim=True)
+    beamstop: Beamstop = i24.beamstop(connect_immediately=True, mock=True)
 
     with (
         patch_motor(beamstop.x),
@@ -150,7 +157,7 @@ def beamstop(RE):
 
 @pytest.fixture
 def pmac(RE):
-    pmac: PMAC = i24.pmac(fake_with_ophyd_sim=True)
+    pmac: PMAC = i24.pmac(connect_immediately=True, mock=True)
     with (
         patch_motor(pmac.x),
         patch_motor(pmac.y),
@@ -161,13 +168,13 @@ def pmac(RE):
 
 @pytest.fixture
 def dcm(RE) -> DCM:
-    dcm = i24.dcm(fake_with_ophyd_sim=True)
+    dcm = i24.dcm(connect_immediately=True, mock=True)
     return dcm
 
 
 @pytest.fixture
 def eiger_beam_center(RE) -> DetectorBeamCenter:
-    bc: DetectorBeamCenter = i24.eiger_beam_center(fake_with_ophyd_sim=True)
+    bc: DetectorBeamCenter = i24.eiger_beam_center(connect_immediately=True, mock=True)
     set_mock_value(bc.beam_x, 1605)
     set_mock_value(bc.beam_y, 1702)
     return bc
@@ -175,7 +182,9 @@ def eiger_beam_center(RE) -> DetectorBeamCenter:
 
 @pytest.fixture
 def pilatus_beam_center(RE) -> DetectorBeamCenter:
-    bc: DetectorBeamCenter = i24.pilatus_beam_center(fake_with_ophyd_sim=True)
+    bc: DetectorBeamCenter = i24.pilatus_beam_center(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(bc.beam_x, 1298)
     set_mock_value(bc.beam_y, 1307)
     return bc
@@ -183,7 +192,7 @@ def pilatus_beam_center(RE) -> DetectorBeamCenter:
 
 @pytest.fixture
 def mirrors(RE) -> FocusMirrorsMode:
-    mirrors: FocusMirrorsMode = i24.focus_mirrors(fake_with_ophyd_sim=True)
+    mirrors: FocusMirrorsMode = i24.focus_mirrors(connect_immediately=True, mock=True)
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors

@@ -58,6 +58,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
+from dodal.utils import AnyDeviceFactory
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
@@ -103,10 +104,20 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
+from unit_tests.conftest import device_factories_for_beamline
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
+
+
+@pytest.fixture(scope="session")
+def active_device_factories() -> set[AnyDeviceFactory]:
+    """Obtain the set of device factories that should have their caches cleared
+    after every test invocation.
+
+    Override this in sub-packages for the specific beamlines under test."""
+    return device_factories_for_beamline(i03)
 
 
 def raw_params_from_file(filename):
