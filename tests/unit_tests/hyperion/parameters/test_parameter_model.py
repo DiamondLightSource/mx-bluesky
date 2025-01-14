@@ -6,15 +6,34 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
+    GridParamUpdate,
+)
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    create_parameters_for_flyscan_xray_centre,
+)
+from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
+    create_parameters_for_grid_detection,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionThreeDGridScan,
     OddYStepsException,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import HyperionRobotLoadThenCentre
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import raw_params_from_file
+
+
+@pytest.fixture
+def load_centre_collect_params_with_panda():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+    )
+    params["robot_load_then_centre"]["features"]["use_panda_for_gridscan"] = True
+    return LoadCentreCollect(**params)
 
 
 @pytest.fixture
@@ -33,6 +52,22 @@ def minimal_3d_gridscan_params():
         "y_steps": 7,
         "z_steps": 9,
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
+    }
+
+
+def get_empty_grid_parameters() -> GridParamUpdate:
+    return {
+        "x_start_um": 1,
+        "y_start_um": 1,
+        "y2_start_um": 1,
+        "z_start_um": 1,
+        "z2_start_um": 1,
+        "x_steps": 1,
+        "y_steps": 1,
+        "z_steps": 1,
+        "x_step_size_um": 1,
+        "y_step_size_um": 1,
+        "z_step_size_um": 1,
     }
 
 
@@ -154,3 +189,23 @@ def test_gpu_enabled_if_use_gpu_or_compare_gpu_enabled(_, minimal_3d_gridscan_pa
     }
     grid_scan = HyperionThreeDGridScan(**minimal_3d_gridscan_params)
     assert grid_scan.detector_params.enable_dev_shm
+
+
+def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
+    load_centre_collect_params_with_panda: LoadCentreCollect,
+):
+    robot_load_then_centre_params = (
+        load_centre_collect_params_with_panda.robot_load_then_centre
+    )
+    pin_tip_then_xrc_params = (
+        robot_load_then_centre_params.pin_centre_then_xray_centre_params()
+    )
+    grid_detect_then_xrc_params = create_parameters_for_grid_detection(
+        pin_tip_then_xrc_params
+    )
+    flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
+        grid_detect_then_xrc_params, get_empty_grid_parameters()
+    )
+    assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
+    assert flyscan_xrc_params.features.use_panda_for_gridscan
+    assert flyscan_xrc_params.features.compare_cpu_and_gpu_zocalo
