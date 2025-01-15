@@ -183,7 +183,7 @@ def flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (SpecifiedThreeDGridScan): The parameters to run the scan.
+        parameters (HyperionSpecifiedThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
