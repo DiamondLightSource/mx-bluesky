@@ -104,7 +104,8 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
-from unit_tests.conftest import device_factories_for_beamline
+
+from .unit_tests.conftest import device_factories_for_beamline
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
