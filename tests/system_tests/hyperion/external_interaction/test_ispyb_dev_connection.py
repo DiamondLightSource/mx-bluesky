@@ -32,7 +32,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -46,6 +45,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
+    GridCommonWithHyperionDetectorParams,
+    GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
@@ -334,7 +335,9 @@ def test_ispyb_deposition_in_gridscan(
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)  # type: ignore
     grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)  # type: ignore
-    ispyb_callback = GridscanISPyBCallback()
+    ispyb_callback = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     RE.subscribe(ispyb_callback)
     RE(
         grid_detect_then_xray_centre(
