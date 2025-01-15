@@ -197,15 +197,19 @@ def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
     robot_load_then_centre_params = (
         load_centre_collect_params_with_panda.robot_load_then_centre
     )
+    assert robot_load_then_centre_params.detector_params.enable_dev_shm
     pin_tip_then_xrc_params = (
         robot_load_then_centre_params.pin_centre_then_xray_centre_params
     )
+    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
     grid_detect_then_xrc_params = create_parameters_for_grid_detection(
         pin_tip_then_xrc_params
     )
+    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
     flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
         grid_detect_then_xrc_params, get_empty_grid_parameters()
     )
+    assert flyscan_xrc_params.detector_params.enable_dev_shm
     assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
     assert flyscan_xrc_params.features.use_panda_for_gridscan
     assert flyscan_xrc_params.features.compare_cpu_and_gpu_zocalo
