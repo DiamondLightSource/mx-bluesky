@@ -83,7 +83,6 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
     TriggerConstants,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -100,7 +99,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -247,7 +247,7 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return HyperionThreeDGridScan(
+    return HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
@@ -255,7 +255,7 @@ def test_fgs_params():
 
 
 @pytest.fixture
-def test_panda_fgs_params(test_fgs_params: HyperionThreeDGridScan):
+def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
     test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
@@ -793,7 +793,7 @@ def panda_fast_grid_scan(RE):
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
@@ -1160,7 +1160,7 @@ class OavGridSnapshotTestEvents:
 
 
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(**default_raw_gridscan_params())
+    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
     return dummy_params
 
 
@@ -1169,7 +1169,7 @@ def dummy_params_2d():
         "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
     raw_params["z_steps"] = 1
-    return HyperionThreeDGridScan(**raw_params)
+    return HyperionSpecifiedThreeDGridScan(**raw_params)
 
 
 class TestData(OavGridSnapshotTestEvents):

@@ -46,7 +46,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -125,7 +125,7 @@ def grid_detect_then_xray_centre_parameters():
 
 def scan_xy_data_info_for_update(
     data_collection_group_id,
-    dummy_params: HyperionThreeDGridScan,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
     scan_data_info_for_begin,
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
@@ -153,7 +153,9 @@ def scan_xy_data_info_for_update(
 
 
 def scan_data_infos_for_update_3d(
-    ispyb_ids, scan_xy_data_info_for_update, dummy_params: HyperionThreeDGridScan
+    ispyb_ids,
+    scan_xy_data_info_for_update,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
         dummy_params.detector_params

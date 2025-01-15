@@ -63,7 +63,7 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.robot_load import HyperionRobotLoadThenCentre
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -113,23 +113,23 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 
 def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
-    params: HyperionRobotLoadThenCentre,
+    params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_flyscan_plan(
         cast(GridDetectThenXRayCentreComposite, composite),
-        params.pin_centre_then_xray_centre_params(),
+        params.pin_centre_then_xray_centre_params,
     )
 
 
 def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
-    params: HyperionRobotLoadThenCentre,
+    params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
         cast(RobotLoadAndEnergyChangeComposite, composite),
-        params.robot_load_params(),
+        params.robot_load_params,
     )
 
     yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
@@ -137,7 +137,7 @@ def _robot_load_then_flyscan_plan(
 
 def robot_load_then_centre(
     composite: RobotLoadThenCentreComposite,
-    parameters: HyperionRobotLoadThenCentre,
+    parameters: RobotLoadThenCentre,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary. Centre on the best diffracting centre.
@@ -158,7 +158,7 @@ def robot_load_then_centre(
 
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
-    parameters: HyperionRobotLoadThenCentre,
+    parameters: RobotLoadThenCentre,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary."""

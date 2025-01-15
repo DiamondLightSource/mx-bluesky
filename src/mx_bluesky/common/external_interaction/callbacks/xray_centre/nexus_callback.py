@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -11,11 +11,15 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import ThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
+
+T = TypeVar("T", bound="SpecifiedThreeDGridScan")
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -35,8 +39,9 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self) -> None:
+    def __init__(self, param_type: type[T]) -> None:
         super().__init__(NEXUS_LOGGER)
+        self.param_type = param_type
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
@@ -50,7 +55,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
-            parameters = ThreeDGridScan.model_validate_json(mx_bluesky_parameters)
+            parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
             d_size = parameters.detector_params.detector_size_constants.det_size_pixels
             grid_n_img_1 = parameters.scan_indices[1]
             grid_n_img_2 = parameters.num_images - grid_n_img_1

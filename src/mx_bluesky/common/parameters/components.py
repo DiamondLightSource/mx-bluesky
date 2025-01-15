@@ -151,6 +151,7 @@ class DiffractionExperiment(
     transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
 
     @model_validator(mode="before")
     @classmethod
