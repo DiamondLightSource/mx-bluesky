@@ -18,7 +18,7 @@ async def test_setup_beamline_for_collection_plan(
 
     assert await aperture.position.get_value() == "In"
     assert await beamstop.pos_select.get_value() == "Data Collection"
-    assert await beamstop.y_rotation.user_readback.get_value() == 0
+    assert await beamstop.y_rotation.user_setpoint.get_value() == 0
 
     assert await backlight.backlight_position.pos_level.get_value() == "Out"
 
@@ -27,7 +27,7 @@ async def test_move_detector_stage_to_position_plan(detector_stage: DetectorMoti
     det_dist = 100
     RE(setup_beamline.move_detector_stage_to_position_plan(detector_stage, det_dist))
 
-    assert await detector_stage.z.user_readback.get_value() == det_dist
+    assert await detector_stage.z.user_setpoint.get_value() == det_dist
 
 
 async def test_set_detector_beam_center_plan(eiger_beam_center: DetectorBeamCenter, RE):

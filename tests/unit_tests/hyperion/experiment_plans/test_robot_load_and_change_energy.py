@@ -152,16 +152,16 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
     aperture_scatterguard.set = MagicMock(return_value=done_status)
 
-    set_mock_value(smargon.x.user_readback, 10)
-    set_mock_value(smargon.z.user_readback, 5)
-    set_mock_value(smargon.omega.user_readback, 90)
+    set_mock_value(smargon.x.user_setpoint, 10)
+    set_mock_value(smargon.z.user_setpoint, 5)
+    set_mock_value(smargon.omega.user_setpoint, 90)
 
     RE = RunEngine()
     RE(prepare_for_robot_load(aperture_scatterguard, smargon))
 
-    assert await smargon.x.user_readback.get_value() == 0
-    assert await smargon.z.user_readback.get_value() == 0
-    assert await smargon.omega.user_readback.get_value() == 0
+    assert await smargon.x.user_setpoint.get_value() == 0
+    assert await smargon.z.user_setpoint.get_value() == 0
+    assert await smargon.omega.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.set.assert_called_once_with(ApertureValue.ROBOT_LOAD)  # type: ignore

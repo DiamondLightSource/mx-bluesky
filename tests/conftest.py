@@ -50,8 +50,8 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import ArmDemand, Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,

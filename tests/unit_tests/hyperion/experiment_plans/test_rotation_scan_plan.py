@@ -15,8 +15,8 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
-from dodal.devices.zebra import PC_GATE, SOFT_IN1, RotationDirection, Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
+from dodal.devices.zebra.zebra import RotationDirection, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
@@ -216,11 +216,11 @@ async def test_full_rotation_plan_smargon_settings(
     omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
-    assert await smargon.phi.user_readback.get_value() == params.phi_start_deg
-    assert await smargon.chi.user_readback.get_value() == params.chi_start_deg
-    assert await smargon.x.user_readback.get_value() == params.x_start_um / 1000  # type: ignore
-    assert await smargon.y.user_readback.get_value() == params.y_start_um / 1000  # type: ignore
-    assert await smargon.z.user_readback.get_value() == params.z_start_um / 1000  # type: ignore
+    assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
+    assert await smargon.chi.user_setpoint.get_value() == params.chi_start_deg
+    assert await smargon.x.user_setpoint.get_value() == params.x_start_um / 1000  # type: ignore
+    assert await smargon.y.user_setpoint.get_value() == params.y_start_um / 1000  # type: ignore
+    assert await smargon.z.user_setpoint.get_value() == params.z_start_um / 1000  # type: ignore
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
         omega_set.call_count == 4 + 1 + 1
@@ -259,7 +259,6 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     assert params.y_start_um is None
     assert params.z_start_um is None
     for motor in [smargon.phi, smargon.chi, smargon.x, smargon.y, smargon.z]:
-        assert await motor.user_readback.get_value() == 0
         get_mock_put(motor.user_setpoint).assert_not_called()  # type: ignore
 
 
@@ -603,14 +602,14 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-1"
-        and msg.args[0] == SOFT_IN1,  # type:ignore
+        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.SOFT_IN1,  # type:ignore
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-2"
-        and msg.args[0] == PC_GATE,  # type:ignore
+        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.PC_GATE,  # type:ignore
     )
 
     msgs = assert_message_and_return_remaining(
