@@ -15,8 +15,8 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
-from dodal.devices.zebra import PC_GATE, SOFT_IN1, RotationDirection, Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutterControl
+from dodal.devices.zebra.zebra import RotationDirection, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
@@ -603,14 +603,14 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-1"
-        and msg.args[0] == SOFT_IN1,  # type:ignore
+        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.SOFT_IN1,  # type:ignore
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-2"
-        and msg.args[0] == PC_GATE,  # type:ignore
+        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.PC_GATE,  # type:ignore
     )
 
     msgs = assert_message_and_return_remaining(
