@@ -84,7 +84,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     nexus_writer.attenuator,
                 ) = create_beam_and_attenuator_parameters(
                     data["dcm-energy_in_kev"],
-                    data["flux_flux_reading"],
+                    data["flux-flux_reading"],
                     data["attenuator-actual_transmission"],
                 )
                 vds_data_type = vds_type_based_on_bit_depth(
