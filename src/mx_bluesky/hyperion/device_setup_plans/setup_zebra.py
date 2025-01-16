@@ -70,7 +70,6 @@ def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"
 
     For more details see the ZebraShutter device."""
     auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
-    assert auto_gate
     auto_shutter_control = zebra.logic_gates.and_gates[auto_gate]
     yield from bps.abs_set(auto_shutter_control.sources[2], input, group)
 
@@ -93,7 +92,6 @@ def configure_zebra_and_shutter_for_auto_shutter(
     )
 
     auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
-    assert auto_gate
 
     # Set first input of AND2 gate to SOFT_IN1, which is high when shutter is in auto mode
     # Note the Zebra should ALWAYS be setup this way. See https://github.com/DiamondLightSource/mx-bluesky/issues/551
@@ -140,7 +138,6 @@ def setup_zebra_for_rotation(
         group:              A name for the group of statuses generated
         wait:               Block until all the settings have completed
     """
-    assert zebra.mapping.outputs.TTL_DETECTOR and zebra.mapping.outputs.TTL_XSPRESS3
 
     if not isinstance(direction, RotationDirection):
         raise ValueError(
@@ -195,8 +192,6 @@ def setup_zebra_for_gridscan(
     group="setup_zebra_for_gridscan",
     wait=True,
 ):
-    assert zebra.mapping.outputs.TTL_DETECTOR and zebra.mapping.outputs.TTL_XSPRESS3
-
     # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
     yield from configure_zebra_and_shutter_for_auto_shutter(
         zebra, zebra_shutter, zebra.mapping.sources.IN4_TTL, group=group
@@ -227,8 +222,6 @@ def tidy_up_zebra_after_gridscan(
     group="tidy_up_zebra_after_gridscan",
     wait=True,
 ) -> MsgGenerator:
-    assert zebra.mapping.outputs.TTL_DETECTOR
-
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
         zebra.mapping.sources.PC_PULSE,
@@ -250,13 +243,6 @@ def setup_zebra_for_panda_flyscan(
     group="setup_zebra_for_panda_flyscan",
     wait=True,
 ):
-    # It would be nice for the function to be able to typecheck for the below instead but not sure if there is a clean way to do this
-    assert (
-        zebra.mapping.outputs.TTL_DETECTOR
-        and zebra.mapping.outputs.TTL_XSPRESS3
-        and zebra.mapping.outputs.TTL_PANDA
-    )
-
     # Forwards eiger trigger signal from panda
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],

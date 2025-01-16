@@ -118,7 +118,6 @@ def laser_check(
         if isinstance(det_type, Pilatus)
         else zebra.mapping.outputs.TTL_PILATUS
     )
-    assert LASER_TTL
 
     if mode == "laseron":
         yield from bps.abs_set(

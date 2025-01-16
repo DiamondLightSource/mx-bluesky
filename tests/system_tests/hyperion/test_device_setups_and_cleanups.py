@@ -24,10 +24,7 @@ async def connected_zebra():
 @pytest.mark.s03
 async def test_zebra_set_up_for_gridscan(RE, connected_zebra: Zebra):
     RE(setup_zebra_for_gridscan(connected_zebra, wait=True))
-    assert (
-        connected_zebra.mapping.outputs.TTL_DETECTOR
-        and connected_zebra.mapping.outputs.TTL_SHUTTER
-    )
+
     assert (
         await connected_zebra.output.out_pvs[
             connected_zebra.mapping.outputs.TTL_DETECTOR
@@ -51,11 +48,6 @@ async def test_zebra_set_up_for_rotation(RE, connected_zebra: Zebra):
 
 @pytest.mark.s03
 async def test_zebra_cleanup(RE, connected_zebra: Zebra):
-    assert (
-        connected_zebra.mapping.outputs.TTL_DETECTOR
-        and connected_zebra.mapping.outputs.TTL_SHUTTER
-    )
-
     RE(tidy_up_zebra_after_gridscan(connected_zebra, wait=True))
     assert (
         await connected_zebra.output.out_pvs[

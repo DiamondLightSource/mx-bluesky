@@ -23,7 +23,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 
 
 async def _get_shutter_input_2(zebra: Zebra):
-    assert zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
     return (
         await zebra.logic_gates.and_gates[zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER]
         .sources[2]
@@ -32,7 +31,6 @@ async def _get_shutter_input_2(zebra: Zebra):
 
 
 async def _get_shutter_input_1(zebra: Zebra):
-    assert zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
     return (
         await zebra.logic_gates.and_gates[zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER]
         .sources[1]
@@ -43,8 +41,6 @@ async def _get_shutter_input_1(zebra: Zebra):
 async def test_zebra_set_up_for_panda_gridscan(
     RE, zebra: Zebra, zebra_shutter: ZebraShutter
 ):
-    assert zebra.mapping.outputs.TTL_DETECTOR and zebra.mapping.outputs.TTL_PANDA
-
     RE(setup_zebra_for_panda_flyscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
@@ -60,7 +56,6 @@ async def test_zebra_set_up_for_panda_gridscan(
 
 
 async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    assert zebra.mapping.outputs.TTL_DETECTOR
     RE(setup_zebra_for_gridscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
@@ -80,7 +75,6 @@ async def test_zebra_set_up_for_rotation(RE, zebra: Zebra, zebra_shutter: ZebraS
 
 
 async def test_zebra_cleanup(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    assert zebra.mapping.outputs.TTL_DETECTOR
     RE(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
