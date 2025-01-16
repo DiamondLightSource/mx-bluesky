@@ -25,7 +25,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
-from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
+from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
@@ -46,8 +46,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     GATE_START,
-    TTL_EIGER,
-    TTL_PILATUS,
     arm_zebra,
     disarm_zebra,
     open_fast_shutter,
@@ -115,13 +113,22 @@ def laser_check(
 
     det_type = yield from get_detector_type(detector_stage)
 
-    LASER_TTL = TTL_EIGER if isinstance(det_type, Pilatus) else TTL_PILATUS
+    LASER_TTL = (
+        zebra.mapping.outputs.TTL_EIGER
+        if isinstance(det_type, Pilatus)
+        else zebra.mapping.outputs.TTL_PILATUS
+    )
+
     if mode == "laseron":
-        yield from bps.abs_set(zebra.output.out_pvs[LASER_TTL], SOFT_IN3)
+        yield from bps.abs_set(
+            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.SOFT_IN3
+        )
         yield from set_shutter_mode(zebra, "auto")
 
     if mode == "laseroff":
-        yield from bps.abs_set(zebra.output.out_pvs[LASER_TTL], DISCONNECT)
+        yield from bps.abs_set(
+            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.DISCONNECT
+        )
         yield from set_shutter_mode(zebra, "manual")
 
 
