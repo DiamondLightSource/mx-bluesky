@@ -9,6 +9,7 @@ from time import sleep
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
+from dodal.beamlines import i24
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
@@ -19,6 +20,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.jungfrau import JungFrau1M
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
 
@@ -37,10 +39,17 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
-from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
+from mx_bluesky.beamlines.i24.serial.parameters import (
+    DetectorName,
+    FixedTargetParameters,
+)
 from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_jungfrau_plans import (
+    jungfrau_return_to_normal_plan,
+    setup_jungfrau_for_fixed_target_plan,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     SHUTTER_OPEN_TIME,
     arm_zebra,
@@ -314,6 +323,7 @@ def start_i24(
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
     dcid: DCID,
+    jungfrau: JungFrau1M | None = None,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
     the hutch shutter.
@@ -332,9 +342,10 @@ def start_i24(
         aperture, backlight, beamstop, wait=True
     )
 
-    yield from sup.move_detector_stage_to_position_plan(
-        detector_stage, parameters.detector_distance_mm
-    )
+    if parameters.detector_name is not DetectorName.JUNGFRAU:
+        yield from sup.move_detector_stage_to_position_plan(
+            detector_stage, parameters.detector_distance_mm
+        )
 
     SSX_LOGGER.debug("Set up beamline DONE")
 
@@ -349,7 +360,7 @@ def start_i24(
     SSX_LOGGER.info(f"Number of exposures: {parameters.num_exposures}")
     SSX_LOGGER.info(f"Number of gates (=Total images/N exposures): {num_gates:.4f}")
 
-    if parameters.detector_name == "pilatus":
+    if parameters.detector_name is DetectorName.PILATUS:
         SSX_LOGGER.info("Using Pilatus detector")
         SSX_LOGGER.info(f"Fastchip Pilatus setup: filepath {filepath}")
         SSX_LOGGER.info(f"Fastchip Pilatus setup: filename {filename}")
@@ -407,10 +418,8 @@ def start_i24(
         caput(pv.pilat_filename, filename)
         sleep(1.5)
 
-    elif parameters.detector_name == "eiger":
+    elif parameters.detector_name is DetectorName.EIGER:
         SSX_LOGGER.info("Using Eiger detector")
-
-        SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
 
         SSX_LOGGER.info(f"Triggered Eiger setup: filepath {filepath}")
         SSX_LOGGER.info(f"Triggered Eiger setup: filename {filename}")
@@ -467,6 +476,55 @@ def start_i24(
 
         sleep(1.5)
 
+    elif parameters.detector_name is DetectorName.JUNGFRAU:
+        # Do darks (plan to be added) TODO
+
+        SSX_LOGGER.info("Using Jungfrau detector")
+
+        SSX_LOGGER.info(f"Triggered Jungfrau setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Triggered Jungfrau setup: filename {filename}")
+        SSX_LOGGER.info(
+            f"Triggered Jungfrau setup: number of images {parameters.total_num_images}"
+        )
+        SSX_LOGGER.info(
+            f"Triggered Jungfrau setup: exposure time {parameters.exposure_time_s}"
+        )
+
+        yield from setup_jungfrau_for_fixed_target_plan(
+            jungfrau,  # type: ignore
+            filepath,
+            filename,
+            parameters.total_num_images,
+            parameters.exposure_time_s,
+        )
+
+        # DCID process depends on detector PVs being set up already
+        SSX_LOGGER.debug("Start DCID process")
+        filetemplate = f"{parameters.filename}.nxs"
+        dcid.generate_dcid(
+            beam_settings=beam_settings,
+            image_dir=filepath,
+            file_template=filetemplate,
+            num_images=parameters.total_num_images,
+            shots_per_position=parameters.num_exposures,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
+        )
+
+        SSX_LOGGER.debug("Arm Zebra.")
+        yield from setup_zebra_for_fastchip_plan(
+            zebra,
+            parameters.detector_name,
+            num_gates,
+            parameters.num_exposures,
+            parameters.exposure_time_s,
+            0.0,
+            wait=True,
+        )
+        yield from arm_zebra(zebra)
+
+        sleep(1.5)
+
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
         SSX_LOGGER.error(msg)
@@ -485,6 +543,7 @@ def finish_i24(
     shutter: HutchShutter,
     dcm: DCM,
     parameters: FixedTargetParameters,
+    jungfrau: JungFrau1M | None = None,
 ):
     SSX_LOGGER.info(
         f"Finish I24 data collection with {parameters.detector_name} detector."
@@ -494,17 +553,21 @@ def finish_i24(
     transmission = float(caget(pv.pilat_filtertrasm))
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
 
-    if parameters.detector_name == "pilatus":
+    if parameters.detector_name is DetectorName.PILATUS:
         SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
         sup.pilatus("return-to-normal", None)
         sleep(0.2)
-    elif parameters.detector_name == "eiger":
+    elif parameters.detector_name is DetectorName.EIGER:
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         sup.eiger("return-to-normal", None)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
+    elif parameters.detector_name is DetectorName.JUNGFRAU:
+        SSX_LOGGER.debug("Finish I24 Jungfrau")
+        yield from reset_zebra_when_collection_done_plan(zebra)
+        yield from jungfrau_return_to_normal_plan(jungfrau)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")
 
@@ -544,6 +607,7 @@ def main_fixed_target_plan(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    jungfrau: JungFrau1M | None = None,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -588,6 +652,7 @@ def main_fixed_target_plan(
         mirrors,
         beam_center_device,
         dcid,
+        jungfrau,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -602,7 +667,7 @@ def main_fixed_target_plan(
     SSX_LOGGER.debug("Notify DCID of the start of the collection.")
     dcid.notify_start()
 
-    if parameters.detector_name == "eiger":
+    if parameters.detector_name is DetectorName.EIGER:
         wavelength = yield from bps.rd(dcm.wavelength_in_a)
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
@@ -657,6 +722,7 @@ def tidy_up_after_collection_plan(
     dcm: DCM,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    jungfrau: JungFrau1M | None = None,
 ) -> MsgGenerator:
     """A plan to be run to tidy things up at the end af a fixed target collection, \
     both successful or aborted.
@@ -666,16 +732,19 @@ def tidy_up_after_collection_plan(
     sleep(2.0)
 
     # This probably should go in main then
-    if parameters.detector_name == "pilatus":
+    if parameters.detector_name is DetectorName.PILATUS:
         SSX_LOGGER.debug("Pilatus Acquire STOP")
         caput(pv.pilat_acquire, 0)
-    elif parameters.detector_name == "eiger":
+    elif parameters.detector_name is DetectorName.EIGER:
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
+    elif parameters.detector_name is DetectorName.JUNGFRAU:
+        SSX_LOGGER.debug("Jungfrau Acquire STOP")
+        yield from bps.abs_set(jungfrau.acquire_start, 0)  # type: ignore
     sleep(0.5)
 
-    yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
+    yield from finish_i24(zebra, pmac, shutter, dcm, parameters, jungfrau)
 
     SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
@@ -698,9 +767,18 @@ def run_fixed_target_plan(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
+    # Horrible workaround for jungfrau
+    _det = caget(pv.me14e_gp101)
+    if _det == "jungfrau":
+        use_jungfrau = True
+        jungfrau_device = i24.jungfrau()
+    else:
+        use_jungfrau = False
+        jungfrau_device = None
+
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
-        detector_stage, attenuator
+        detector_stage, attenuator, use_jungfrau
     )
 
     # Create collection directory
@@ -728,11 +806,12 @@ def run_fixed_target_plan(
             beam_center_device,
             parameters,
             dcid,
+            jungfrau_device,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
-                zebra, pmac, shutter, dcm, parameters, dcid
+                zebra, pmac, shutter, dcm, parameters, dcid, jungfrau_device
             )
         ),
         auto_raise=False,
