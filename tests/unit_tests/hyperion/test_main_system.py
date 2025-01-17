@@ -16,7 +16,7 @@ import flask
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
 from mx_bluesky.common.utils.exceptions import WarningException

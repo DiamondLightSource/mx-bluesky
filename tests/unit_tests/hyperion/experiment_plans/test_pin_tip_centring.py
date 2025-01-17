@@ -47,7 +47,6 @@ def mock_pin_tip(pin_tip: PinTipDetection):
 async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
-    set_mock_value(smargon.x.user_readback, 0)
     set_mock_value(mock_pin_tip.triggered_tip, np.array([100, 200]))
 
     mock_pin_tip.trigger = MagicMock(return_value=NullStatus())
@@ -55,7 +54,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
     mock_pin_tip.trigger.assert_called_once()
-    assert await smargon.x.user_readback.get_value() == 0
+    assert await smargon.x.user_setpoint.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
     assert all(type(_) is int for _ in result.plan_result)
@@ -69,7 +68,6 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
     set_mock_value(mock_pin_tip.validity_timeout, 0.015)
-    set_mock_value(smargon.x.user_readback, 0)
 
     def set_pin_tip_when_x_moved(f, *args, **kwargs):
         mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
@@ -84,7 +82,7 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
 
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
-    assert await smargon.x.user_readback.get_value() == DEFAULT_STEP_SIZE
+    assert await smargon.x.user_setpoint.get_value() == DEFAULT_STEP_SIZE
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
@@ -97,7 +95,6 @@ async def test_tip_found_only_after_all_iterations_exhausted_then_tip_returned(
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
     set_mock_value(mock_pin_tip.validity_timeout, 0.015)
-    set_mock_value(smargon.x.user_readback, 0)
 
     iterations = 0
 
@@ -137,8 +134,6 @@ async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_s
     )
     set_mock_value(mock_pin_tip.validity_timeout, 0.15)
 
-    set_mock_value(smargon.x.user_readback, 0)
-
     def set_pin_tip_when_x_moved(f, *args, **kwargs):
         mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
             100, 200, *FAKE_EDGE_ARRAYS
@@ -152,7 +147,7 @@ async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_s
 
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
-    assert await smargon.x.user_readback.get_value() == -DEFAULT_STEP_SIZE
+    assert await smargon.x.user_setpoint.get_value() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)  # type: ignore
 
 
@@ -203,7 +198,7 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
 
-    assert await smargon.x.user_readback.get_value() == -2
+    assert await smargon.x.user_setpoint.get_value() == -2
 
 
 @patch(
@@ -234,7 +229,7 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
 
-    assert await smargon.x.user_readback.get_value() == 2
+    assert await smargon.x.user_setpoint.get_value() == 2
 
 
 @patch(
@@ -247,12 +242,10 @@ async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved
     set_mock_value(pin_tip.triggered_tip, pin_tip.INVALID_POSITION)
     set_mock_value(pin_tip.validity_timeout, 0.01)
 
-    set_mock_value(smargon.x.user_readback, 0)
-
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon))
 
-    assert await smargon.x.user_readback.get_value() == 1
+    assert await smargon.x.user_setpoint.get_value() == 1
 
 
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
@@ -303,7 +296,6 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     test_config_files: dict[str, str],
     RE: RunEngine,
 ):
-    set_mock_value(smargon.omega.user_readback, 0)
     set_mock_value(oav.zoom_controller.level, "1.0")
     composite = PinTipCentringComposite(
         backlight=MagicMock(spec=Backlight),
@@ -320,7 +312,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     args, _ = get_move.call_args_list[0]
     assert args[1] == (117, 100)
 
-    assert await smargon.omega.user_readback.get_value() == 90
+    assert await smargon.omega.user_setpoint.get_value() == 90
 
     args, _ = get_move.call_args_list[1]
     assert args[1] == (217, 200)

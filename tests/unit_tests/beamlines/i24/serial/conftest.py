@@ -17,7 +17,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra.zebra import Zebra
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
