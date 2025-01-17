@@ -27,7 +27,10 @@ RUN apt-get install -y --no-install-recommends \
 COPY start.sh /home/docker/actions-runner/start.sh
 
 RUN chown -R docker ~docker
-USER docker
 
+# Needed for fetching live registration tokens
+RUN apt install -y jq 
+
+USER docker
 WORKDIR /home/docker/actions-runner
 ENTRYPOINT ["./start.sh"]
