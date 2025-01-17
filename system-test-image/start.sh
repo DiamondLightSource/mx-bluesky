@@ -11,15 +11,9 @@ REG_TOKEN=$(curl -X POST \
   --url https://github.com/DiamondLightSource/mx-bluesky \
   --token ${REG_TOKEN} \
   --labels system-tests \
+  --replace \
   --name "mx-bluesky-system-test" && \
   echo "Registered successfully"
+  
 
-cleanup() {
-  echo "Removing runner.."
-  ./config.sh remove --token ${TOKEN}
-}
-
-trap 'cleanup; exit 130' INT
-trap 'cleanup; exit 143' TERM
-
-./run.sh & wait $!
+./run.sh
