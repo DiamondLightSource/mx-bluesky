@@ -21,6 +21,7 @@ from dodal.devices.zebra.zebra import (
 )
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 
 # Detector specific outs
 TTL_EIGER = 1
@@ -158,7 +159,7 @@ def set_logic_gates_for_porto_triggering(
 
 def setup_zebra_for_extruder_with_pump_probe_plan(
     zebra: Zebra,
-    det_type: str,
+    det_type: DetectorName,
     exp_time: float,
     num_images: int,
     pump_exp: float | None,
@@ -191,7 +192,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
 
     Args:
         zebra (Zebra): The zebra ophyd device.
-        det_type (str): Detector in use, current choices are Eiger or Pilatus.
+        det_type (DetectorName): Detector in use, current choices are Eiger or Pilatus.
         exp_time (float): Collection exposure time, in s.
         num_images (int): Number of images to be collected.
         pump_exp (float): Laser dwell, in s.
@@ -269,7 +270,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
 
 def setup_zebra_for_fastchip_plan(
     zebra: Zebra,
-    det_type: str,
+    det_type: DetectorName,
     num_gates: int,
     num_exposures: int,
     exposure_time: float,
@@ -300,7 +301,8 @@ def setup_zebra_for_fastchip_plan(
 
     Args:
         zebra (Zebra): The zebra ophyd device.
-        det_type (str): Detector in use, current choices are Eiger or Pilatus.
+        det_type (DetectorName): Detector in use, current choices are Eiger, Pilatus \
+            or Jungfrau.
         num_gates (int): Number of apertures to visit in a chip.
         num_exposures (int): Number of times data is collected in each aperture.
         exposure_time (float): Exposure time for each shot.
@@ -331,7 +333,7 @@ def setup_zebra_for_fastchip_plan(
 
     # Set TTL out depending on detector type
     # And calculate some of the other settings
-    if det_type == "eiger":
+    if det_type == "eiger" or det_type == "jungfrau":
         yield from bps.abs_set(
             zebra.output.out_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
         )
@@ -344,7 +346,9 @@ def setup_zebra_for_fastchip_plan(
     pulse_width = exposure_time - 0.0001 if det_type == "eiger" else exposure_time / 2
 
     # 100us buffer needed to avoid missing some of the triggers
-    exptime_buffer = exposure_time + 0.0001
+    exptime_buffer = (
+        exposure_time + 0.0001 if det_type != "jungfrau" else exposure_time + 0.0002
+    )
 
     # Number of gates is the number of windows collected
     yield from bps.abs_set(zebra.pc.num_gates, num_gates, group=group)
