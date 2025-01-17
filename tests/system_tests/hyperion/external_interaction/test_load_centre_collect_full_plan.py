@@ -211,7 +211,7 @@ def use_dev_ispyb():
         yield
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -315,7 +315,7 @@ def test_execute_load_centre_collect_full(
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -346,7 +346,7 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -378,7 +378,7 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -402,7 +402,7 @@ def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_not_found(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -452,7 +452,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     composite_with_no_diffraction: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -481,7 +481,7 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
