@@ -48,6 +48,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, c
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_jungfrau_plans import (
     jungfrau_return_to_normal_plan,
+    setup_and_run_jungfrau_for_darks_plan,
     setup_jungfrau_for_fixed_target_plan,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -477,7 +478,13 @@ def start_i24(
         sleep(1.5)
 
     elif parameters.detector_name is DetectorName.JUNGFRAU:
-        # Do darks (plan to be added) TODO
+        SSX_LOGGER.debug("Do darks.")
+        yield from setup_and_run_jungfrau_for_darks_plan(
+            jungfrau,  # type: ignore
+            filepath,
+            filename,
+            parameters.exposure_time_s,
+        )
 
         SSX_LOGGER.info("Using Jungfrau detector")
 
