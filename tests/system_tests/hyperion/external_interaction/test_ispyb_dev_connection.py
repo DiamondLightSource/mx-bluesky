@@ -9,6 +9,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -330,8 +331,12 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)  # type: ignore
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)  # type: ignore
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
+    )
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
+    )
     ispyb_callback = GridscanISPyBCallback()
     RE.subscribe(ispyb_callback)
     RE(

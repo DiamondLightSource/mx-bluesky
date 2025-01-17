@@ -215,7 +215,7 @@ def test_full_multi_rotation_plan_docs_emitted(
                 ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon-x"],
                 [
                     "attenuator-actual_transmission",
-                    "flux_flux_reading",
+                    "flux-flux_reading",
                     "dcm-energy_in_kev",
                     "eiger_bit_depth",
                 ],
