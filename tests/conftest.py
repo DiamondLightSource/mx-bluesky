@@ -50,8 +50,8 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import ArmDemand, Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
@@ -83,7 +83,6 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
     TriggerConstants,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -100,7 +99,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -247,7 +247,7 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return HyperionThreeDGridScan(
+    return HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
@@ -255,7 +255,7 @@ def test_fgs_params():
 
 
 @pytest.fixture
-def test_panda_fgs_params(test_fgs_params: HyperionThreeDGridScan):
+def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
     test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
@@ -793,7 +793,7 @@ def panda_fast_grid_scan(RE):
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
@@ -1160,7 +1160,7 @@ class OavGridSnapshotTestEvents:
 
 
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(**default_raw_gridscan_params())
+    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
     return dummy_params
 
 
@@ -1169,7 +1169,7 @@ def dummy_params_2d():
         "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
     raw_params["z_steps"] = 1
-    return HyperionThreeDGridScan(**raw_params)
+    return HyperionSpecifiedThreeDGridScan(**raw_params)
 
 
 class TestData(OavGridSnapshotTestEvents):
@@ -1236,7 +1236,7 @@ class TestData(OavGridSnapshotTestEvents):
             "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
             "aperture_scatterguard-radius": 50,
             "attenuator-actual_transmission": 0.98,
-            "flux_flux_reading": 9.81,
+            "flux-flux_reading": 9.81,
             "dcm-energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
@@ -1303,8 +1303,8 @@ class TestData(OavGridSnapshotTestEvents):
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
-            "s4_slit_gaps_xgap": 0.1234,
-            "s4_slit_gaps_ygap": 0.2345,
+            "s4_slit_gaps-xgap": 0.1234,
+            "s4_slit_gaps-ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
             "smargon-x": 0.158435435,
@@ -1329,7 +1329,7 @@ class TestData(OavGridSnapshotTestEvents):
             "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
             "aperture_scatterguard-radius": 50,
             "attenuator-actual_transmission": 1,
-            "flux_flux_reading": 10,
+            "flux-flux_reading": 10,
             "dcm-energy_in_kev": 11.105,
             "eiger_bit_depth": "16",
         },

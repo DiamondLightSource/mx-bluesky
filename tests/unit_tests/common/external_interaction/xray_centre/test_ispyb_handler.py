@@ -12,6 +12,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import setup_logging
+from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import TestData
 
@@ -52,7 +53,9 @@ class TestXrayCentreIspybHandler:
     def test_fgs_failing_results_in_bad_run_status_in_ispyb(
         self,
     ):
-        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -79,7 +82,9 @@ class TestXrayCentreIspybHandler:
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         self,
     ):
-        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -111,12 +116,14 @@ class TestXrayCentreIspybHandler:
         gelf_handler: MagicMock = next(
             filter(
                 lambda h: isinstance(h, GELFTCPHandler),
-                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
-            )  # type: ignore
+                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,  # type: ignore
+            )
         )
         gelf_handler.emit = MagicMock()
 
-        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -141,12 +148,14 @@ class TestXrayCentreIspybHandler:
         gelf_handler: MagicMock = next(
             filter(
                 lambda h: isinstance(h, GELFTCPHandler),
-                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
-            )  # type: ignore
+                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,  # type: ignore
+            )
         )
         gelf_handler.emit = MagicMock()
 
-        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -171,7 +180,9 @@ class TestXrayCentreIspybHandler:
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
         self, mock_time
     ):
-        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
 
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)  # type:ignore
 

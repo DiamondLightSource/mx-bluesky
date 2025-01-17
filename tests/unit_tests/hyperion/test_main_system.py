@@ -16,7 +16,7 @@ import flask
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
 from mx_bluesky.common.utils.exceptions import WarningException
@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.__main__ import (
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
@@ -125,7 +125,7 @@ TEST_EXPTS = {
     },
     "fgs_real_params": {
         "setup": MagicMock(),
-        "param_type": HyperionThreeDGridScan,
+        "param_type": HyperionSpecifiedThreeDGridScan,
         "experiment_param_type": MagicMock(),
         "callback_collection_type": MagicMock(),
     },
@@ -474,7 +474,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, test_fgs_params: HyperionThreeDGridScan
+    mock_setup, test_fgs_params: HyperionSpecifiedThreeDGridScan
 ):
     mock_setup = MagicMock()
     with patch.dict(

@@ -8,10 +8,6 @@ from bluesky.utils import Msg
 from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
-from mx_bluesky.common.parameters.gridscan import (
-    PinTipCentreThenXrayCentre,
-    RobotLoadThenCentre,
-)
 from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
@@ -24,6 +20,10 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+)
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 from ....conftest import assert_none_matching, raw_params_from_file
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
@@ -515,7 +515,7 @@ def test_tip_offset_um_passed_to_pin_tip_centre_plan(
 ):
     robot_load_then_centre_params.tip_offset_um = 100
     assert (
-        robot_load_then_centre_params.pin_centre_then_xray_centre_params().tip_offset_um
+        robot_load_then_centre_params.pin_centre_then_xray_centre_params.tip_offset_um
         == 100
     )
 

@@ -39,6 +39,10 @@ from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_h
 )
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GridCommonWithHyperionDetectorParams,
+    HyperionSpecifiedThreeDGridScan,
+)
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
@@ -47,8 +51,10 @@ ERROR_LOG_BUFFER_LINES = 5000
 def setup_callbacks():
     zocalo = ZocaloCallback()
     return [
-        GridscanNexusFileCallback(),
-        GridscanISPyBCallback(emit=zocalo),
+        GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams, emit=zocalo
+        ),
         RotationNexusFileCallback(),
         RotationISPyBCallback(emit=zocalo),
         LogUidTaggingCallback(),

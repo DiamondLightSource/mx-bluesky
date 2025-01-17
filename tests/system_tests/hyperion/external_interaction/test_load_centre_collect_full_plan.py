@@ -37,6 +37,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_h
     SampleHandlingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 from ...conftest import (
@@ -221,7 +222,9 @@ def test_execute_load_centre_collect_full(
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
     fetch_blsample: Callable[[int], BLSample],
 ):
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     ispyb_rotation_cb = RotationISPyBCallback()
     robot_load_cb = RobotLoadISPyBCallback()
     # robot_load_cb.expeye = MagicMock()
@@ -353,7 +356,9 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     sample_handling_cb = SampleHandlingCallback()
     RE.subscribe(robot_load_cb)
     RE.subscribe(ispyb_gridscan_cb)
@@ -406,7 +411,9 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     sample_handling_cb = SampleHandlingCallback()
     RE.subscribe(robot_load_cb)
     RE.subscribe(ispyb_gridscan_cb)
@@ -454,7 +461,9 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     sample_handling_cb = SampleHandlingCallback()
     RE.subscribe(robot_load_cb)
     RE.subscribe(ispyb_gridscan_cb)
@@ -481,7 +490,9 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     sample_handling_cb = SampleHandlingCallback()
     RE.subscribe(robot_load_cb)
     RE.subscribe(ispyb_gridscan_cb)

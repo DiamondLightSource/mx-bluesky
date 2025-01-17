@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
     EXPECTED_START_TIME,
@@ -56,7 +57,9 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 )
 class TestXrayCentreISPyBCallback:
     def test_activity_gated_start_3d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
@@ -82,7 +85,9 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
@@ -113,7 +118,9 @@ class TestXrayCentreISPyBCallback:
         )
 
     def test_flux_read_events_3d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
@@ -166,7 +173,9 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_dc_grid.assert_not_called()
 
     def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
         callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()

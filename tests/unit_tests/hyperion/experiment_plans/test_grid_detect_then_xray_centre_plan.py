@@ -17,7 +17,6 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
@@ -28,7 +27,8 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 
 from ....conftest import OavGridSnapshotTestEvents
@@ -40,7 +40,7 @@ def _fake_flyscan(*args):
 
 
 def test_full_grid_scan(
-    test_fgs_params: HyperionThreeDGridScan, test_config_files: dict[str, str]
+    test_fgs_params: HyperionSpecifiedThreeDGridScan, test_config_files: dict[str, str]
 ):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
@@ -134,7 +134,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         )
     )
 
-    params: HyperionThreeDGridScan = mock_flyscan.call_args[0][1]
+    params: HyperionSpecifiedThreeDGridScan = mock_flyscan.call_args[0][1]
 
     assert params.detector_params.num_triggers == 180
     assert params.FGS_params.x_axis.full_steps == 15

@@ -11,9 +11,6 @@ from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.parameters.gridscan import (
-    PinTipCentreThenXrayCentre,
-)
 from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
@@ -27,6 +24,9 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan impor
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+)
 
 from ....conftest import raw_params_from_file, simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (

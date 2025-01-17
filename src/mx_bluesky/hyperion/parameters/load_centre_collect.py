@@ -8,7 +8,8 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
-from mx_bluesky.common.parameters.gridscan import (
+from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
+from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
@@ -23,7 +24,11 @@ def construct_from_values(parent_context: dict, child_dict: dict, t: type[T]) ->
 
 
 class LoadCentreCollect(
-    MxBlueskyParameters, WithVisit, WithSample, WithCentreSelection
+    MxBlueskyParameters,
+    WithVisit,
+    WithSample,
+    WithCentreSelection,
+    WithHyperionUDCFeatures,
 ):
     """Experiment parameters to perform the combined robot load,
     pin-tip centre and rotation scan operations."""

@@ -2,12 +2,10 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from dodal.devices.zebra import DISCONNECT, SOFT_IN3
+from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
-    TTL_EIGER,
-    TTL_PILATUS,
     collection_aborted_plan,
     collection_complete_plan,
     enter_hutch,
@@ -20,11 +18,13 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
+from ..conftest import TEST_LUT
+
 
 @pytest.fixture
 def dummy_params():
     params = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -40,7 +40,7 @@ def dummy_params():
 @pytest.fixture
 def dummy_params_pp():
     params_pp = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/extruder/foo",
         "directory": "bar",
         "filename": "protein",
         "exposure_time_s": 0.1,
@@ -125,16 +125,16 @@ def test_initialise_extruder(
 
 async def test_enterhutch(detector_stage, RE):
     RE(enter_hutch(detector_stage))
-    assert await detector_stage.z.user_readback.get_value() == 1480
+    assert await detector_stage.z.user_setpoint.get_value() == 1480
 
 
 @pytest.mark.parametrize(
     "laser_mode, det_type, expected_in1, expected_out",
     [
-        ("laseron", Eiger(), "Yes", SOFT_IN3),
-        ("laseroff", Eiger(), "No", DISCONNECT),
-        ("laseron", Pilatus(), "Yes", SOFT_IN3),
-        ("laseroff", Pilatus(), "No", DISCONNECT),
+        ("laseron", Eiger(), "Yes", I24_ZEBRA_MAPPING.sources.SOFT_IN3),
+        ("laseroff", Eiger(), "No", I24_ZEBRA_MAPPING.sources.DISCONNECT),
+        ("laseron", Pilatus(), "Yes", I24_ZEBRA_MAPPING.sources.SOFT_IN3),
+        ("laseroff", Pilatus(), "No", I24_ZEBRA_MAPPING.sources.DISCONNECT),
     ],
 )
 @patch(
@@ -153,7 +153,11 @@ async def test_laser_check(
     fake_det.side_effect = [fake_generator(det_type)]
     RE(laser_check(laser_mode, zebra, detector_stage))
 
-    TTL = TTL_EIGER if isinstance(det_type, Pilatus) else TTL_PILATUS
+    TTL = (
+        I24_ZEBRA_MAPPING.outputs.TTL_EIGER
+        if isinstance(det_type, Pilatus)
+        else I24_ZEBRA_MAPPING.outputs.TTL_PILATUS
+    )
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
     assert await zebra.output.out_pvs[TTL].get_value() == expected_out
 
@@ -171,14 +175,10 @@ async def test_laser_check(
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
-)
-@patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
 )
 def test_run_extruder_quickshot_with_eiger(
     mock_read_beam_info,
-    fake_mkdir,
     fake_read,
     mock_quickshot_plan,
     fake_sup,
@@ -208,22 +208,26 @@ def test_run_extruder_quickshot_with_eiger(
         fake_generator(1702),
         fake_generator(0),  # zebra disarm
     ]
-    RE(
-        main_extruder_plan(
-            zebra,
-            aperture,
-            backlight,
-            beamstop,
-            detector_stage,
-            shutter,
-            dcm,
-            mirrors,
-            eiger_beam_center,
-            dummy_params,
-            fake_dcid,
-            fake_start_time,
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+    ):
+        RE(
+            main_extruder_plan(
+                zebra,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                eiger_beam_center,
+                dummy_params,
+                fake_dcid,
+                fake_start_time,
+            )
         )
-    )
     fake_nexgen.assert_called_once_with(
         None, dummy_params, 0.6, (1605, 1702), fake_start_time
     )
@@ -231,8 +235,6 @@ def test_run_extruder_quickshot_with_eiger(
     assert fake_dcid.notify_start.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     mock_quickshot_plan.assert_called_once()
-    assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_once()
     mock_read_beam_info.assert_called_once()
 
 
@@ -278,22 +280,26 @@ def test_run_extruder_pump_probe_with_pilatus(
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [fake_generator(0)]
     mock_pilatus_temp.side_effect = [fake_generator("test_00001_#####.cbf")]
-    RE(
-        main_extruder_plan(
-            zebra,
-            aperture,
-            backlight,
-            beamstop,
-            detector_stage,
-            shutter,
-            dcm,
-            mirrors,
-            pilatus_beam_center,
-            dummy_params_pp,
-            fake_dcid,
-            fake_start_time,
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+    ):
+        RE(
+            main_extruder_plan(
+                zebra,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                pilatus_beam_center,
+                dummy_params_pp,
+                fake_dcid,
+                fake_start_time,
+            )
         )
-    )
     mock_pilatus_temp.assert_called_once()
     assert fake_dcid.generate_dcid.call_count == 1
     assert fake_dcid.notify_start.call_count == 1
