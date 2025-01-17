@@ -29,7 +29,6 @@ EXPT_TYPE_DETECTOR_PVS = {
 class DetRequest(IntEnum):
     eiger = 0
     pilatus = 1
-    jungfrau = 2
 
     def __str__(self) -> str:
         return self.name
@@ -90,13 +89,17 @@ def setup_detector_stage(
     det_type_pv = EXPT_TYPE_DETECTOR_PVS[expt_type]
     requested_detector = _get_requested_detector(det_type_pv)
     SSX_LOGGER.info(f"Requested detector: {requested_detector}.")
-    if requested_detector != "jungfrau":
-        det_y_target = (
-            Eiger.det_y_target
-            if requested_detector == "eiger"
-            else Pilatus.det_y_target
-        )
-        yield from _move_detector_stage(detector_stage, det_y_target)
+    det_y_target = (
+        Eiger.det_y_target if requested_detector == "eiger" else Pilatus.det_y_target
+    )
+    yield from _move_detector_stage(detector_stage, det_y_target)
     # Reset pv to read a string just to make it readable in edm
     caput(EXPT_TYPE_DETECTOR_PVS[expt_type], requested_detector)
     SSX_LOGGER.info("Detector setup done.")
+
+
+# TODO add button to run this in edm
+def set_jungfrau_detector() -> MsgGenerator:
+    caput(EXPT_TYPE_DETECTOR_PVS[SSXType.FIXED], "jungfrau")
+    SSX_LOGGER.info("Detector type set as jungfrau.")
+    yield from bps.null()
