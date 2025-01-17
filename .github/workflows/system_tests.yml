@@ -31,4 +31,4 @@ jobs:
           pip-install: ".[dev]"
 
       - name: Run tests
-        run: tox -e system-tests
+        run: tox -e systemtests
