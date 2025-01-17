@@ -1,17 +1,26 @@
+from pathlib import Path
+
 import pytest
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.parameters import (
+    DetectorName,
     FixedTargetParameters,
     get_chip_format,
 )
+
+TEST_PATH = Path("tests/test_data/test_daq_configuration")
+
+TEST_LUT = {
+    DetectorName.EIGER: TEST_PATH / "lookup/test_det_dist_converter.txt",
+}
 
 
 @pytest.fixture
 def dummy_params_with_pp():
     oxford_defaults = get_chip_format(ChipType.Oxford)
     params = {
-        "visit": "foo",
+        "visit": "/tmp/dls/i24/fixed/foo",
         "directory": "bar",
         "filename": "chip",
         "exposure_time_s": 0.01,

@@ -49,8 +49,8 @@ async def test_setup_detector_stage(
 ):
     fake_caget.return_value = DetRequest.eiger.value
     RE(setup_detector_stage(SSXType.FIXED, detector_stage))
-    assert await detector_stage.y.user_readback.get_value() == Eiger.det_y_target
+    assert await detector_stage.y.user_setpoint.get_value() == Eiger.det_y_target
 
     fake_caget.return_value = DetRequest.pilatus.value
     RE(setup_detector_stage(SSXType.EXTRUDER, detector_stage))
-    assert await detector_stage.y.user_readback.get_value() == Pilatus.det_y_target
+    assert await detector_stage.y.user_setpoint.get_value() == Pilatus.det_y_target
