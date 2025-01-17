@@ -10,7 +10,7 @@ on:
           type: string
 jobs:
   run-system-tests:
-    runs-on: self-hosted
+    runs-on: system-tests
 
     steps:
       - name: Checkout
