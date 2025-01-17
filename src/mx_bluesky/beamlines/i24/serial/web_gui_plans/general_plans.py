@@ -8,6 +8,7 @@ from dodal.beamlines import i24
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
+    MappingType,
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
@@ -80,6 +81,8 @@ def gui_set_parameters(
     n_shots: int,
     chip_type: str,
     pump_settings: Sequence,
+    use_mapping_lite: bool,
+    chipmap: Sequence = (),
 ):
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
@@ -89,6 +92,12 @@ def gui_set_parameters(
         if not pump_settings[0]
         else PumpProbeSetting[pump_settings[0]]
     )
+    map_type = MappingType.Lite if use_mapping_lite else MappingType.NoMap
+
+    if chip_params.chip_type is ChipType.Oxford:
+        if use_mapping_lite and len(chipmap) == 0:
+            raise ValueError("Mapping lite chosen but no chipmap")
+
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": sub_dir,
@@ -99,8 +108,8 @@ def gui_set_parameters(
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
-        "map_type": None,
-        "chip_map": [],
+        "map_type": map_type,
+        "chip_map": list(chipmap),
         "pump_repeat": pump_repeat,
         "laser_dwell_s": pump_settings[1]
         if pump_repeat != PumpProbeSetting.NoPP
