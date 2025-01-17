@@ -8,6 +8,10 @@ on:
           required: true
           default: "3.11"
           type: string
+env:
+  # https://github.com/pytest-dev/pytest/issues/2042
+  PY_IGNORE_IMPORTMISMATCH: "1"
+
 jobs:
   run-system-tests:
     runs-on: system-tests
