@@ -32,6 +32,10 @@ RUN chown -R docker ~docker
 RUN apt install -y jq
 # Needed for decent version of git for actions/checkout github action
 RUN apt install -y git 
+# Needed for pytest coverage
+RUN apt install -y libsqlite3-0
+# Needed for python cv2 dependency
+RUN apt install -y libgl1 libglib2.0-0
 
 USER docker
 WORKDIR /home/docker/actions-runner
