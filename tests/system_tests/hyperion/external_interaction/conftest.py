@@ -449,12 +449,8 @@ def composite_for_rotation_scan(
         fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
-        0.123
-    )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
-        0.234
-    )
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
 
     with (
         patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),
