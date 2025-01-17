@@ -13,7 +13,7 @@ from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
-from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget
+from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
     Detector,
     Eiger,
@@ -29,6 +29,7 @@ EXPT_TYPE_DETECTOR_PVS = {
 class DetRequest(IntEnum):
     eiger = 0
     pilatus = 1
+    jungfrau = 2
 
     def __str__(self) -> str:
         return self.name
@@ -71,7 +72,7 @@ def _get_requested_detector(det_type_pv: str) -> str:
         str: The detector name as a string, currently "eiger" or "pilatus".
     """
     det_type = caget(det_type_pv)
-    if det_type in ["pilatus", "eiger"]:
+    if det_type in ["pilatus", "eiger", "jungfrau"]:
         return det_type
     else:
         try:
@@ -89,8 +90,13 @@ def setup_detector_stage(
     det_type_pv = EXPT_TYPE_DETECTOR_PVS[expt_type]
     requested_detector = _get_requested_detector(det_type_pv)
     SSX_LOGGER.info(f"Requested detector: {requested_detector}.")
-    det_y_target = (
-        Eiger.det_y_target if requested_detector == "eiger" else Pilatus.det_y_target
-    )
-    yield from _move_detector_stage(detector_stage, det_y_target)
+    if requested_detector != "jungfrau":
+        det_y_target = (
+            Eiger.det_y_target
+            if requested_detector == "eiger"
+            else Pilatus.det_y_target
+        )
+        yield from _move_detector_stage(detector_stage, det_y_target)
+    # Reset pv to read a string just to make it readable in edm
+    caput(EXPT_TYPE_DETECTOR_PVS[expt_type], requested_detector)
     SSX_LOGGER.info("Detector setup done.")

@@ -44,6 +44,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
+    Detector,
     get_detector_type,
 )
 
@@ -119,6 +120,7 @@ def initialise_stages(
 def read_parameters(
     detector_stage: DetectorMotion,
     attenuator: ReadOnlyAttenuator,
+    use_jungfrau: bool = False,
 ) -> MsgGenerator:
     """ Read the parameters from user input and create the parameter model for a fixed \
         target collection.
@@ -127,6 +129,8 @@ def read_parameters(
         detector_stage (DetectorMotion): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
+        use_jungfrau (bool, optional): If True, collection with jungfrau detector.
+        Temporary workaround for it not yet being on detector stage.
 
     Returns:
         FixedTargetParameters: Parameter model for fixed target collections
@@ -135,7 +139,11 @@ def read_parameters(
     SSX_LOGGER.info("Creating parameter model from input.")
 
     filename = caget(pv.me14e_chip_name)
-    det_type = yield from get_detector_type(detector_stage)
+    det_type: Detector | str
+    if not use_jungfrau:
+        det_type = yield from get_detector_type(detector_stage)
+    else:
+        det_type = "jungfrau"
     chip_params = get_chip_format(ChipType(int(caget(CHIPTYPE_PV))))
     map_type = int(caget(MAPTYPE_PV))
     if map_type == MappingType.Lite and chip_params.chip_type in [
