@@ -1,0 +1,13 @@
+{
+    "rotation_axis": "omega",
+    "scan_width_deg": 10.0,
+    "image_width_deg": 0.01,
+    "omega_start_deg": 0.0,
+    "exposure_time_s": 0.001,
+    "acquire_time_s":  0.001,
+    "rotation_direction": "NEGATIVE",
+    "offset_deg": 10.0,
+    "shutter_opening_time_s": 0.25,
+    "storage_directory": "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning",
+    "nexus_filename": "glass"
+}
