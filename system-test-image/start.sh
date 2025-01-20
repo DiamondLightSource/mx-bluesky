@@ -14,6 +14,13 @@ REG_TOKEN=$(curl -X POST \
   --replace \
   --name "mx-bluesky-system-test" && \
   echo "Registered successfully"
-  
 
-./run.sh
+cleanup() {
+  echo "Removing runner.."
+  ./config.sh remove --token ${TOKEN}
+}
+
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
+
+./run.sh & wait $!
