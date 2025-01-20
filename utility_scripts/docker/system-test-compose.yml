@@ -24,4 +24,4 @@ services:
       - actionsRunnerToken
 secrets:
   actionsRunnerToken:
-    environment: "TOKEN"
+    file: ${SECRETS_DIR}/actions-runner-token
