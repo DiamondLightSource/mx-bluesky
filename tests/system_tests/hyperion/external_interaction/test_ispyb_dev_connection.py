@@ -9,6 +9,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -32,7 +33,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre,
@@ -46,7 +46,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -125,7 +126,7 @@ def grid_detect_then_xray_centre_parameters():
 
 def scan_xy_data_info_for_update(
     data_collection_group_id,
-    dummy_params: HyperionThreeDGridScan,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
     scan_data_info_for_begin,
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
@@ -153,7 +154,9 @@ def scan_xy_data_info_for_update(
 
 
 def scan_data_infos_for_update_3d(
-    ispyb_ids, scan_xy_data_info_for_update, dummy_params: HyperionThreeDGridScan
+    ispyb_ids,
+    scan_xy_data_info_for_update,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
         dummy_params.detector_params
@@ -330,9 +333,13 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)  # type: ignore
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)  # type: ignore
-    ispyb_callback = GridscanISPyBCallback()
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
+    )
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
+    )
+    ispyb_callback = GridscanISPyBCallback(HyperionSpecifiedThreeDGridScan)
     RE.subscribe(ispyb_callback)
     RE(
         grid_detect_then_xray_centre(
@@ -465,6 +472,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
+    feature_flags_update_with_omega_flip,
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()

@@ -9,6 +9,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callb
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
+    AxisDirection,
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
 )
@@ -65,7 +66,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.writer.attenuator,
             ) = create_beam_and_attenuator_parameters(
                 data["dcm-energy_in_kev"],
-                data["flux_flux_reading"],
+                data["flux-flux_reading"],
                 data["attenuator-actual_transmission"],
             )
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
@@ -101,5 +102,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 vds_start_index=parameters.nexus_vds_start_img,
                 full_num_of_images=self.full_num_of_images,
                 meta_data_run_number=self.meta_data_run_number,
-                rotation_direction=parameters.rotation_direction,
+                axis_direction=AxisDirection.NEGATIVE
+                if parameters.features.omega_flip
+                else AxisDirection.POSITIVE,
             )

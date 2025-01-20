@@ -23,48 +23,56 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GridCommonWithHyperionDetectorParams,
+    HyperionSpecifiedThreeDGridScan,
+)
 
 CallbacksFactory = Callable[[], tuple[CallbackBase, ...]]
 
 
-def create_robot_load_and_centre_callbacks() -> (
-    tuple[GridscanNexusFileCallback, GridscanISPyBCallback, RobotLoadISPyBCallback]
-):
+def create_robot_load_and_centre_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback, RobotLoadISPyBCallback
+]:
     return (
-        GridscanNexusFileCallback(),
-        GridscanISPyBCallback(emit=ZocaloCallback()),
+        GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+        ),
         RobotLoadISPyBCallback(),
     )
 
 
-def create_gridscan_callbacks() -> (
-    tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-):
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
     return (
-        GridscanNexusFileCallback(),
-        GridscanISPyBCallback(emit=ZocaloCallback()),
+        GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+        ),
     )
 
 
-def create_rotation_callbacks() -> (
-    tuple[RotationNexusFileCallback, RotationISPyBCallback]
-):
+def create_rotation_callbacks() -> tuple[
+    RotationNexusFileCallback, RotationISPyBCallback
+]:
     return (RotationNexusFileCallback(), RotationISPyBCallback(emit=ZocaloCallback()))
 
 
-def create_load_centre_collect_callbacks() -> (
-    tuple[
-        GridscanNexusFileCallback,
-        GridscanISPyBCallback,
-        RobotLoadISPyBCallback,
-        RotationNexusFileCallback,
-        RotationISPyBCallback,
-        SampleHandlingCallback,
-    ]
-):
+def create_load_centre_collect_callbacks() -> tuple[
+    GridscanNexusFileCallback,
+    GridscanISPyBCallback,
+    RobotLoadISPyBCallback,
+    RotationNexusFileCallback,
+    RotationISPyBCallback,
+    SampleHandlingCallback,
+]:
     return (
-        GridscanNexusFileCallback(),
-        GridscanISPyBCallback(emit=ZocaloCallback()),
+        GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+        ),
         RobotLoadISPyBCallback(),
         RotationNexusFileCallback(),
         RotationISPyBCallback(emit=ZocaloCallback()),

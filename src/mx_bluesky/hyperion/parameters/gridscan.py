@@ -7,23 +7,19 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
+from pydantic import Field
 
-from mx_bluesky.common.parameters.components import (
-    WithPandaGridScan,
-)
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.gridscan import (
-    ThreeDGridScan,
+    GridCommon,
+    SpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.components import WithHyperionFeatures
+from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 
 
-class HyperionThreeDGridScan(
-    ThreeDGridScan,
-    WithPandaGridScan,
-    WithHyperionFeatures,
-):
-    """Hyperion's 3D grid scan varies from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
+class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
+    """Used by models which require detector parameters but have no specifications of the grid"""
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
     # https://github.com/DiamondLightSource/hyperion/issues/1395"""
@@ -36,9 +32,45 @@ class HyperionThreeDGridScan(
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
-        assert (
-            self.detector_distance_mm is not None
-        ), "Detector distance must be filled before generating DetectorParams"
+        assert self.detector_distance_mm is not None, (
+            "Detector distance must be filled before generating DetectorParams"
+        )
+        return DetectorParams(
+            detector_size_constants=I03Constants.DETECTOR,
+            expected_energy_ev=self.demand_energy_ev,
+            exposure_time=self.exposure_time_s,
+            directory=self.storage_directory,
+            prefix=self.file_name,
+            detector_distance=self.detector_distance_mm,
+            omega_start=self.omega_start_deg or 0,
+            omega_increment=0,
+            num_images_per_trigger=1,
+            num_triggers=self.num_images,
+            use_roi_mode=self.use_roi_mode,
+            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            trigger_mode=self.trigger_mode,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
+            **optional_args,
+        )
+
+
+class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFeatures):
+    """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
+
+    # These detector params only exist so that we can properly select enable_dev_shm. Remove in
+    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
+    @property
+    def detector_params(self):
+        self.det_dist_to_beam_converter_path = (
+            self.det_dist_to_beam_converter_path
+            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+        )
+        optional_args = {}
+        if self.run_number:
+            optional_args["run_number"] = self.run_number
+        assert self.detector_distance_mm is not None, (
+            "Detector distance must be filled before generating DetectorParams"
+        )
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
@@ -103,3 +135,15 @@ class HyperionThreeDGridScan(
 
 
 class OddYStepsException(Exception): ...
+
+
+class PinTipCentreThenXrayCentre(
+    GridCommonWithHyperionDetectorParams, WithHyperionUDCFeatures
+):
+    tip_offset_um: float = 0
+
+
+class GridScanWithEdgeDetect(
+    GridCommonWithHyperionDetectorParams, WithHyperionUDCFeatures
+):
+    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)

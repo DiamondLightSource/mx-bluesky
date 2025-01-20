@@ -12,10 +12,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    PinTipCentreThenXrayCentre,
-)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_chi_omega
 from mx_bluesky.hyperion.device_setup_plans.utils import (
@@ -39,6 +35,10 @@ from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
     pin_tip_centre_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GridScanWithEdgeDetect,
+    PinTipCentreThenXrayCentre,
+)
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
@@ -131,9 +131,9 @@ def pin_tip_centre_then_xray_centre(
 
     yield from pin_centre_flyscan_then_fetch_results()
     flyscan_results = flyscan_event_handler.xray_centre_results
-    assert (
-        flyscan_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert flyscan_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
     yield from change_aperture_then_move_to_xtal(
         flyscan_results[0], composite.smargon, composite.aperture_scatterguard
     )

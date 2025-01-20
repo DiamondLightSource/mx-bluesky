@@ -26,8 +26,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
@@ -39,7 +39,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -63,7 +62,8 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -103,10 +103,10 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetect,
     grid_parameters: GridParamUpdate,
-) -> HyperionThreeDGridScan:
+) -> HyperionSpecifiedThreeDGridScan:
     params_json = grid_scan_with_edge_params.model_dump()
     params_json.update(grid_parameters)
-    flyscan_xray_centre_parameters = HyperionThreeDGridScan(**params_json)
+    flyscan_xray_centre_parameters = HyperionSpecifiedThreeDGridScan(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
 
@@ -223,9 +223,9 @@ def grid_detect_then_xray_centre(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    assert (
-        flyscan_event_handler.xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert flyscan_event_handler.xray_centre_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],

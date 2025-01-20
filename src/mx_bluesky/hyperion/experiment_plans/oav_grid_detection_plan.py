@@ -139,7 +139,7 @@ def grid_detection_plan(
         # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
         if y_steps % 2 and angle == 0:
             LOGGER.debug(
-                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels / 2}"
             )
             y_steps += 1
             min_y -= box_size_y_pixels / 2
