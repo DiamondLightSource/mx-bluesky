@@ -93,7 +93,6 @@ class IspybExperimentType(StrEnum):
 
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
         extra="allow",
     )
 
