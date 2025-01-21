@@ -2,6 +2,7 @@ from bluesky import plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper
 from bluesky.utils import make_decorator
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -49,6 +50,8 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
     plan,
+    energy_ev: float,
+    undulator_dcm: UndulatorDCM,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
     desired_transmission_fraction: float,
@@ -78,6 +81,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         yield from _check_and_pause_feedback(
             xbpm_feedback, attenuator, desired_transmission_fraction
         )
+        yield from bps.abs_set(undulator_dcm, energy_ev / 1000, wait=True)
         return (yield from plan)
 
     return (
