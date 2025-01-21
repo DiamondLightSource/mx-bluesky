@@ -1,5 +1,5 @@
 #!/bin/bash
-TOKEN=$(cat /run/secrets/actionsRunnerToken)
+TOKEN=$(cat /secrets/actionsRunnerToken)
 echo "Fetching token"
 REG_TOKEN=$(curl -X POST \
   -H "Authorization: token ${TOKEN}" \
