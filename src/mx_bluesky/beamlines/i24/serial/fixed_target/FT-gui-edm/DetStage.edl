@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 1205
-y 579
+y 616
 w 450
 h 180
 font "arial-medium-r-18.0"
@@ -71,7 +71,7 @@ major 4
 minor 0
 release 0
 x 35
-y 59
+y 39
 w 160
 h 42
 fgColour index 14
@@ -101,8 +101,8 @@ beginObjectProperties
 major 4
 minor 3
 release 0
-x 251
-y 59
+x 250
+y 39
 w 160
 h 42
 fgColor index 14
@@ -135,4 +135,26 @@ value {
   "Detector Stage"
 }
 autoSize
+endObjectProperties
+
+# (Shell Command)
+object shellCmdClass
+beginObjectProperties
+major 4
+minor 3
+release 0
+x 139
+y 94
+w 156
+h 32
+fgColor index 14
+bgColor index 49
+topShadowColor index 1
+botShadowColor index 11
+font "arial-medium-r-18.0"
+buttonLabel "Use Jungfrau"
+numCmds 1
+command {
+  0 "blueapi -c CONFIG_LOCATION controller run set_jungfrau_detector"
+}
 endObjectProperties

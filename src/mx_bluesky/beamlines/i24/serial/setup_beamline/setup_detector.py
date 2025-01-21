@@ -98,7 +98,6 @@ def setup_detector_stage(
     SSX_LOGGER.info("Detector setup done.")
 
 
-# TODO add button to run this in edm
 def set_jungfrau_detector() -> MsgGenerator:
     caput(EXPT_TYPE_DETECTOR_PVS[SSXType.FIXED], "jungfrau")
     SSX_LOGGER.info("Detector type set as jungfrau.")
