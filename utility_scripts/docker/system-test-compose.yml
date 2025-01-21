@@ -1,13 +1,9 @@
 name: mx-bluesky-system-test
 services:
   hyperion-common:
-    image: localhost/mx-bluesky-st
+    image: localhost/mx-bluesky-st-runner
     pull_policy: never
     volumes:
-#      - type: bind
-#        source: /dls_sw/i03
-#        target: /dls_sw/i03
-#        read-only: true
       - type: bind
         source: /dls_sw/apps
         target: /dls_sw/apps
@@ -16,12 +12,12 @@ services:
         source: /dls_sw/dasc
         target: /dls_sw/dasc
         read-only: true
-#    network_mode: "host"
     annotations:
       # Required in order to read config files readable by dls_dasc
       - run.oci.keep_original_groups=1
     secrets:
-      - actionsRunnerToken
+      - source: actionsRunnerToken
+        target: /secrets/actionsRunnerToken
 secrets:
   actionsRunnerToken:
     file: ${SECRETS_DIR}/actions-runner-token
