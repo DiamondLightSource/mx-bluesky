@@ -24,10 +24,6 @@ RUN apt-get install -y --no-install-recommends \
     libstdc++6 \
     zlib1g
 
-COPY start.sh /home/docker/actions-runner/start.sh
-
-RUN chown -R docker ~docker
-
 # Needed for fetching live registration tokens
 RUN apt install -y jq
 # Needed for decent version of git for actions/checkout github action
@@ -36,6 +32,10 @@ RUN apt install -y git
 RUN apt install -y libsqlite3-0
 # Needed for python cv2 dependency
 RUN apt install -y libgl1 libglib2.0-0
+
+COPY start.sh /home/docker/actions-runner/start.sh
+
+RUN chown -R docker ~docker
 
 USER docker
 WORKDIR /home/docker/actions-runner
