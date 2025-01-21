@@ -50,7 +50,7 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
     plan,
-    energy_ev: float,
+    energy_ev: float | None,
     undulator: Undulator,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
@@ -84,7 +84,8 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         yield from _check_and_pause_feedback(
             xbpm_feedback, attenuator, desired_transmission_fraction
         )
-        yield from bps.abs_set(undulator, energy_ev / 1000, wait=True)
+        if energy_ev:
+            yield from bps.abs_set(undulator, energy_ev / 1000, wait=True)
         return (yield from plan)
 
     return (
