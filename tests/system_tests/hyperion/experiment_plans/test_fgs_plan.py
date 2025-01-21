@@ -159,6 +159,8 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        params.demand_energy_ev,
+        fxc_composite.undulator,
         fxc_composite.xbpm_feedback,
         fxc_composite.attenuator,
         params.transmission_frac,

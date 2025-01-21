@@ -378,6 +378,8 @@ def rotation_scan(
         }
     )
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        parameters.demand_energy_ev,
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
         parameters.transmission_frac,
@@ -431,6 +433,8 @@ def multi_rotation_scan(
     )
     @bpp.stage_decorator([eiger])
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        parameters.demand_energy_ev,
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
         parameters.transmission_frac,
