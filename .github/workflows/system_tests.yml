@@ -1,6 +1,5 @@
 name: System Tests
 on:
-  pull_request:
   workflow_dispatch:
       inputs:
         python-version:
