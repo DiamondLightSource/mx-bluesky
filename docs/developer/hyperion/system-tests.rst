@@ -30,7 +30,7 @@ kubernetes cluster:
 
     module load argus
     module load helm
-    helm upgrade mx-bluesky-system-test-runner ./helmchart --install 
+    helm upgrade mx-bluesky-system-test-runner ./helmchart --install  --namespace mx-bluesky
 
 Rebuilding the kubernetes secrets
 ---------------------------------
@@ -44,5 +44,5 @@ These can be refreshed using the following:
 
 ::
 
-    kubectl create secret generic ispyb-credentials --from-file=/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg
-    kubectl create secret generic tokens --from-literal=actionsRunnerToken=<your_PAT>
+    kubectl create secret --namespace=mx-blueskygeneric ispyb-credentials --from-file=/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg
+    kubectl create secret --namespace=mx-bluesky generic tokens --from-literal=actionsRunnerToken=<your_PAT>
