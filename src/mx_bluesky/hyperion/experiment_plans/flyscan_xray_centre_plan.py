@@ -155,10 +155,10 @@ def flyscan_xray_centre_no_move(
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        parameters.demand_energy_ev,
         composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
+        parameters.demand_energy_ev,
         parameters.transmission_frac,
     )
     def run_gridscan_and_fetch_and_tidy(

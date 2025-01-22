@@ -50,10 +50,10 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
     plan,
-    energy_ev: float | None,
     undulator: Undulator,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
+    energy_ev: float | None,
     desired_transmission_fraction: float,
 ):
     """Sets the transmission for the data collection, ensuring the xbpm feedback is valid

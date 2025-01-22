@@ -706,6 +706,12 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
+def fake_undulator_set(undulator, done_status):
+    undulator.set = MagicMock(return_value=done_status)
+    return undulator
+
+
+@pytest.fixture
 def zocalo(done_status):
     zoc = i03.zocalo(fake_with_ophyd_sim=True)
     zoc.stage = MagicMock(return_value=done_status)
