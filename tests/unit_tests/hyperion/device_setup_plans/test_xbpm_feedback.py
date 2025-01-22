@@ -13,6 +13,12 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 )
 
 
+@pytest.fixture
+def fake_undulator_set(undulator, done_status):
+    undulator.set = MagicMock(return_value=done_status)
+    return undulator
+
+
 async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
     RE,
     xbpm_feedback,
