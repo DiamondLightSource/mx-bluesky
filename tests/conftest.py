@@ -559,15 +559,15 @@ def aperture_scatterguard(RE):
     ):
         ap_sg = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
     with (
-        patch_async_motor(ap_sg._aperture.x),
-        patch_async_motor(ap_sg._aperture.y),
-        patch_async_motor(ap_sg._aperture.z, 2),
-        patch_async_motor(ap_sg._scatterguard.x),
-        patch_async_motor(ap_sg._scatterguard.y),
+        patch_async_motor(ap_sg.aperture().x),
+        patch_async_motor(ap_sg.aperture().y),
+        patch_async_motor(ap_sg.aperture().z, 2),
+        patch_async_motor(ap_sg.scatterguard.x),
+        patch_async_motor(ap_sg.scatterguard.y),
     ):
         RE(bps.abs_set(ap_sg, ApertureValue.SMALL))
 
-        set_mock_value(ap_sg._aperture.small, 1)
+        set_mock_value(ap_sg.aperture().small, 1)
         yield ap_sg
 
 
@@ -926,9 +926,9 @@ class DocumentCapturer:
         for event_data_keys in match_data_keys_list:
             docs = DocumentCapturer.get_docs_from(docs, "event")
             doc = docs.pop(0)[1]["data"]
-            assert all(
-                k in doc.keys() for k in event_data_keys
-            ), f"One of {event_data_keys=} not in {doc}"
+            assert all(k in doc.keys() for k in event_data_keys), (
+                f"One of {event_data_keys=} not in {doc}"
+            )
 
 
 @pytest.fixture
