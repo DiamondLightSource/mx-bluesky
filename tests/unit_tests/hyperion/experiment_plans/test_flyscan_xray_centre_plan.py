@@ -193,8 +193,13 @@ class TestFlyscanXrayCentrePlan:
         plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
+    @patch(
+        "dodal.devices.undulator.Undulator.set",
+        return_value=NullStatus(),
+    )
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
+        move_undulator: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
@@ -469,6 +474,10 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
+        "dodal.devices.undulator.Undulator.set",
+        return_value=NullStatus(),
+    )
+    @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
         return_value=NullStatus(),
     )
@@ -489,6 +498,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
+        move_undulator: MagicMock,
         RE_with_subs: ReWithSubs,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
