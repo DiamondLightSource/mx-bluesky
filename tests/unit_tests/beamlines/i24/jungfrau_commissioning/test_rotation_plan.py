@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.i24_vgonio import VGonio
-from dodal.devices.zebra import RotationDirection, Zebra
+from dodal.devices.i24.vgonio import VerticalGoniometer
+from dodal.devices.zebra.zebra import RotationDirection, Zebra
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans import (
     JfDevices,
@@ -62,14 +62,14 @@ async def test_cleanup_plan(bps_wait, fake_devices: JfDevices, RE: RunEngine):
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
-def test_move_to_start(
+async def test_move_to_start(
     nexus_callback: MagicMock,
     bps_wait: MagicMock,
     fake_devices: JfDevices,
     RE: RunEngine,
     params: RotationScanParameters,
 ):
-    gonio: VGonio = fake_devices["gonio"]
+    gonio: VerticalGoniometer = fake_devices["gonio"]
     RE(
         move_to_start_w_buffer(
             gonio.omega,
@@ -79,7 +79,7 @@ def test_move_to_start(
             direction=RotationDirection.POSITIVE,
         )
     )
-    assert gonio.omega.user_readback.get() == -2
+    assert await gonio.omega.user_readback.get_value() == -2
 
 
 @patch(
@@ -92,7 +92,7 @@ def test_move_to_start(
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.rotation_scan_plans.JsonMetadataWriter",
 )
-def test_rotation_scan_do_plan(
+async def test_rotation_scan_do_plan(
     nexus_callback: MagicMock,
     bps_wait: MagicMock,
     fake_create_devices_function: Callable[..., JfDevices],
@@ -107,5 +107,5 @@ def test_rotation_scan_do_plan(
 
     RE(plan)
     devices = fake_create_devices_function()
-    gonio: VGonio = devices["gonio"]
-    assert gonio.omega.user_readback.get() == -367.6
+    gonio: VerticalGoniometer = devices["gonio"]
+    assert await gonio.omega.user_readback.get_value() == -367.6

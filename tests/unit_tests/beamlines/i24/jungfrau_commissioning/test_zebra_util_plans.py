@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import pytest
-from dodal.devices.zebra import I24Axes, TrigSource, Zebra
+from dodal.devices.zebra.zebra import I24Axes, TrigSource, Zebra
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import (
     setup_zebra_for_rotation,

@@ -62,7 +62,7 @@ def do_darks(
 
     # Gain 0
     yield from set_gain_mode(
-        jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
+        jungfrau, GainMode.DYNAMIC, check_for_errors=check_for_errors
     )
     yield from abs_set(
         jungfrau.file_directory,
@@ -72,7 +72,7 @@ def do_darks(
 
     # Gain 1
     yield from set_gain_mode(
-        jungfrau, GainMode.forceswitchg1, check_for_errors=check_for_errors
+        jungfrau, GainMode.FORCESWITCHG1, check_for_errors=check_for_errors
     )
     yield from abs_set(
         jungfrau.file_directory,
@@ -82,7 +82,7 @@ def do_darks(
 
     # Gain 2
     yield from set_gain_mode(
-        jungfrau, GainMode.forceswitchg2, check_for_errors=check_for_errors
+        jungfrau, GainMode.FORCESWITCHG2, check_for_errors=check_for_errors
     )
     yield from abs_set(
         jungfrau.file_directory,

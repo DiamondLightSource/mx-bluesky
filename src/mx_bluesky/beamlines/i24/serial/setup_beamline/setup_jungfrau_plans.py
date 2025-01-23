@@ -25,7 +25,7 @@ def setup_and_run_jungfrau_for_darks_plan(
     SSX_LOGGER.debug("Collect G0")
     dark_acquire_period = exposure_time * DARK_MULTIPLIER["G0"]
     timeout_factor = max(10, timeout_factor * 0.001 / dark_acquire_period)
-    yield from bps.abs_set(jungfrau.gain_mode, GainMode.dynamic, wait=True)
+    yield from bps.abs_set(jungfrau.gain_mode, GainMode.DYNAMIC, wait=True)
     yield from bps.abs_set(jungfrau.file_directory, filepath, wait=True)
     yield from bps.abs_set(jungfrau.file_name, f"{filename}_dark_G0", wait=True)
     yield from do_manual_acquisition(
@@ -39,7 +39,7 @@ def setup_and_run_jungfrau_for_darks_plan(
 
     SSX_LOGGER.debug("Collect G1")
     dark_acquire_period = exposure_time * DARK_MULTIPLIER["G1"]
-    yield from bps.abs_set(jungfrau.gain_mode, GainMode.forceswitchg1, wait=True)
+    yield from bps.abs_set(jungfrau.gain_mode, GainMode.FORCESWITCHG1, wait=True)
     yield from bps.abs_set(jungfrau.file_directory, filepath, wait=True)
     yield from bps.abs_set(jungfrau.file_name, f"{filename}_dark_G1", wait=True)
     yield from do_manual_acquisition(
@@ -52,7 +52,7 @@ def setup_and_run_jungfrau_for_darks_plan(
     yield from bps.sleep(0.3)
 
     SSX_LOGGER.debug("Collect G2")
-    yield from bps.abs_set(jungfrau.gain_mode, GainMode.forceswitchg2, wait=True)
+    yield from bps.abs_set(jungfrau.gain_mode, GainMode.FORCESWITCHG2, wait=True)
     yield from bps.abs_set(jungfrau.file_directory, filepath, wait=True)
     yield from bps.abs_set(jungfrau.file_name, f"{filename}_dark_G2", wait=True)
     yield from do_manual_acquisition(
@@ -79,7 +79,7 @@ def setup_jungfrau_for_fixed_target_plan(
 ):
     SSX_LOGGER.info("Setup JF for fixed-target collection.")
     yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.HARDWARE, group=group)
-    yield from bps.abs_set(jungfrau.gain_mode, GainMode.dynamic, group=group)
+    yield from bps.abs_set(jungfrau.gain_mode, GainMode.DYNAMIC, group=group)
 
     yield from bps.abs_set(jungfrau.file_directory, filepath, group=group)
     yield from bps.abs_set(jungfrau.file_name, filename, group=group)

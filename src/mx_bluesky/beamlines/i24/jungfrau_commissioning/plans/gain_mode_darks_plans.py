@@ -68,7 +68,7 @@ def do_darks(
 
     # Gain 0
     yield from set_gain_mode(
-        jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
+        jungfrau, GainMode.DYNAMIC, check_for_errors=check_for_errors
     )
     yield from abs_set(jungfrau.file_directory, directory_prefix.as_posix(), wait=True)
     yield from abs_set(jungfrau.file_name, "G0", wait=True)
@@ -79,7 +79,7 @@ def do_darks(
 
     # Gain 1
     yield from set_gain_mode(
-        jungfrau, GainMode.forceswitchg1, check_for_errors=check_for_errors
+        jungfrau, GainMode.FORCESWITCHG1, check_for_errors=check_for_errors
     )
     yield from abs_set(jungfrau.file_name, "G1", wait=True)
     yield from do_manual_acquisition(
@@ -89,7 +89,7 @@ def do_darks(
 
     # Gain 2
     yield from set_gain_mode(
-        jungfrau, GainMode.forceswitchg2, check_for_errors=check_for_errors
+        jungfrau, GainMode.FORCESWITCHG2, check_for_errors=check_for_errors
     )
     yield from abs_set(jungfrau.file_name, "G2", wait=True)
     yield from do_manual_acquisition(
@@ -99,7 +99,7 @@ def do_darks(
 
     # Leave on dynamic after finishing
     yield from set_gain_mode(
-        jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
+        jungfrau, GainMode.DYNAMIC, check_for_errors=check_for_errors
     )
 
 
@@ -130,7 +130,7 @@ def do_pedestal_darks(
     )
 
     yield from set_gain_mode(
-        jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
+        jungfrau, GainMode.DYNAMIC, check_for_errors=check_for_errors
     )
     yield from abs_set(jungfrau.file_directory, directory_prefix.as_posix(), wait=True)
     yield from abs_set(jungfrau.file_name, "Pedestal", wait=True)

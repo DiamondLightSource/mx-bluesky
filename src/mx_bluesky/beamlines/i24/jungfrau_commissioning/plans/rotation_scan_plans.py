@@ -176,7 +176,7 @@ def rotation_scan_plan(
         params.get_num_images(),
         wait=True,
     )
-    yield from set_gain_mode(jungfrau, GainMode.dynamic)
+    yield from set_gain_mode(jungfrau, GainMode.DYNAMIC)
     yield from bps.abs_set(jungfrau.file_directory, directory.as_posix(), wait=True)
     yield from bps.abs_set(jungfrau.file_name, params.data_filename, wait=True)
     LOGGER.info("Setting Acquire to arm detector")
