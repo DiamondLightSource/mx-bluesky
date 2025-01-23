@@ -47,7 +47,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
     centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
@@ -181,7 +181,7 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridscanISPyBCallback,
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""

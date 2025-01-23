@@ -29,7 +29,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 
-PARAMETER_VERSION = Version.parse("5.2.0")
+PARAMETER_VERSION = Version.parse("5.3.0")
 
 
 class RotationAxis(StrEnum):
@@ -93,7 +93,6 @@ class IspybExperimentType(StrEnum):
 
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
         extra="allow",
     )
 
@@ -151,6 +150,7 @@ class DiffractionExperiment(
     transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
 
     @model_validator(mode="before")
     @classmethod

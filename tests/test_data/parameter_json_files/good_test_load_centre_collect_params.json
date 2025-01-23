@@ -15,7 +15,9 @@
         "exposure_time_s": 0.004,
         "use_roi_mode": false,
         "demand_energy_ev": 11100,
-        "run_number": 0
+        "run_number": 0,
+        "features": {"use_panda_for_gridscan": false, "compare_cpu_and_gpu_zocalo": true},
+        "panda_runup_distance_mm": 0.17
     },
     "multi_rotation_scan": {
         "comment": "Rotation",

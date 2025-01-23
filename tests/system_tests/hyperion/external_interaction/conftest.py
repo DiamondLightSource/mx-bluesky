@@ -52,7 +52,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
 
@@ -222,7 +222,7 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(
+    dummy_params = HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
