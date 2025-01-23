@@ -1,32 +1,23 @@
 import os
-from enum import Enum
 from pathlib import Path
 
 from bluesky.plan_stubs import abs_set, rd, sleep
+from dodal.beamlines import i24
+from dodal.devices.i24.jungfrau import GainMode, JungFrau1M
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.jungfrau_plans import (
     check_and_clear_errors,
     do_manual_acquisition,
     set_software_trigger,
+    setup_detector,
     wait_for_writing,
-    setup_detector
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
-    JungfrauM1,
-)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
-
-
-class GainMode(str, Enum):
-    dynamic = "dynamic"
-    forceswitchg1 = "forceswitchg1"
-    forceswitchg2 = "forceswitchg2"
 
 
 def set_gain_mode(
-    jungfrau: JungfrauM1,
+    jungfrau: JungFrau1M,
     gain_mode: GainMode,
     wait=True,
     check_for_errors=True,
@@ -47,7 +38,7 @@ def set_gain_mode(
 
 
 def do_darks(
-    jungfrau: JungfrauM1,
+    jungfrau: JungFrau1M,
     directory: str = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/",
     check_for_errors=True,
     exp_time_s=0.001,
@@ -112,8 +103,8 @@ def do_darks(
     )
 
 
-def do_pedestal_darks(    
-    jungfrau: JungfrauM1,
+def do_pedestal_darks(
+    jungfrau: JungFrau1M,
     directory: str = "/dls/i24/data/2024/cm37275-4/jungfrau_commissioning/",
     check_for_errors=True,
     exp_time_s=0.001,
@@ -122,8 +113,8 @@ def do_pedestal_darks(
     num_images=1000,
     timeout_factor=6,
     pedestal_frames=20,
-    pedestal_loops=200):
-
+    pedestal_loops=200,
+):
     directory_prefix = (
         Path(directory)
         / f"{run_number(Path(directory)):05d}_darks_{acq_time_s}s_per_frame_pedestal"
@@ -134,7 +125,9 @@ def do_pedestal_darks(
 
     yield from set_software_trigger(jungfrau)
 
-    yield from setup_detector(jungfrau, exp_time_s, acq_time_s, pedestal_frames*pedestal_loops*2)
+    yield from setup_detector(
+        jungfrau, exp_time_s, acq_time_s, pedestal_frames * pedestal_loops * 2
+    )
 
     yield from set_gain_mode(
         jungfrau, GainMode.dynamic, check_for_errors=check_for_errors
@@ -156,7 +149,7 @@ def do_pedestal_darks(
 
 
 def take_darks():
-    """"Take darks in pedestal and old style, at 1kHz and 2kHz"""
+    """ "Take darks in pedestal and old style, at 1kHz and 2kHz"""
     jf = i24.jungfrau()
     for time in [0.001, 0.0005]:
         LOGGER.info(f"Taking data at exposure time = {time}")

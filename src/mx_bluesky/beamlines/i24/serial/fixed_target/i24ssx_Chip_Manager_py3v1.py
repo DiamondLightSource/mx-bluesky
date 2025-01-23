@@ -15,7 +15,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
@@ -119,7 +119,7 @@ def initialise_stages(
 @log_on_entry
 def read_parameters(
     detector_stage: DetectorMotion,
-    attenuator: ReadOnlyAttenuator,
+    attenuator: EnumFilterAttenuator,
     use_jungfrau: bool = False,
 ) -> MsgGenerator:
     """ Read the parameters from user input and create the parameter model for a fixed \
@@ -127,7 +127,7 @@ def read_parameters(
 
     Args:
         detector_stage (DetectorMotion): The detector stage device.
-        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+        attenuator (EnumFilterAttenuator): A read-only attenuator device to get the \
             transmission value.
         use_jungfrau (bool, optional): If True, collection with jungfrau detector.
         Temporary workaround for it not yet being on detector stage.

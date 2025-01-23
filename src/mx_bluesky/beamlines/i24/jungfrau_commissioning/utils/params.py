@@ -1,6 +1,6 @@
 import json
 
-from dodal.devices.zebra import RotationDirection
+from dodal.devices.zebra.zebra import RotationDirection
 from pydantic import BaseModel, ValidationInfo, field_validator
 
 EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
@@ -37,9 +37,9 @@ class RotationScanParameters(BaseModel):
     @field_validator("acquire_time_s", mode="after")
     @classmethod
     def _validate_acq_time(cls, acq_time_s: float, info: ValidationInfo):
-        assert (
-            acq_time_s >= info.data["exposure_time_s"]
-        ), "Acquisition time must not be shorter than exposure time!"
+        assert acq_time_s >= info.data["exposure_time_s"], (
+            "Acquisition time must not be shorter than exposure time!"
+        )
         return acq_time_s
 
     def print(self):

@@ -16,7 +16,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -143,13 +143,13 @@ def enter_hutch(
 
 
 @log_on_entry
-def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
+def read_parameters(detector_stage: DetectorMotion, attenuator: EnumFilterAttenuator):
     """ Read the parameters from user input and create the parameter model for an \
         extruder collection.
 
     Args:
         detector_stage (DetectorMotion): The detector stage device.
-        attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
+        attenuator (EnumFilterAttenuator): A read-only attenuator device to get the \
             transmission value.
 
     Returns:
@@ -493,7 +493,7 @@ def run_extruder_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")

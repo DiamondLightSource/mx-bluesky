@@ -8,10 +8,15 @@ from typing import TypedDict
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.i24_vgonio import VGonio
-from dodal.devices.zebra import RotationDirection, Zebra
-from ophyd.epics_motor import EpicsMotor
+from dodal.beamlines import i24
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
+from dodal.devices.i24.beam_params import ReadOnlyEnergyAndAttenuator
+from dodal.devices.i24.jungfrau import JungFrau1M
+from dodal.devices.i24.vgonio import VerticalGoniometer
+from dodal.devices.zebra.zebra import RotationDirection, Zebra
+from ophyd_async.epics.motor import Motor
 
+# from ophyd.epics_motor import EpicsMotor
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
 )
@@ -32,12 +37,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.utility_plans import 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans.zebra_plans import (
     setup_zebra_for_rotation,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24, run_number
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
-    JungfrauM1,
-    ReadOnlyEnergyAndAttenuator,
-    SetAttenuator,
-)
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import run_number
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.params import (
     EXPERIMENT_PARAM_DUMP_FILENAME,
@@ -50,17 +50,17 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
 
 
 class JfDevices(TypedDict):
-    jungfrau: JungfrauM1
-    gonio: VGonio
+    jungfrau: JungFrau1M
+    gonio: VerticalGoniometer
     zebra: Zebra
     beam_params: ReadOnlyEnergyAndAttenuator
-    attenuator: SetAttenuator
+    attenuator: EnumFilterAttenuator
 
 
 def create_rotation_scan_devices() -> JfDevices:
     """Ensures necessary devices have been instantiated and returns a dict with
     references to them"""
-    RE = RunEngine()
+    RE = RunEngine()  # noqa: F841
     LOGGER.info("Making jungfrau")
     jf = i24.jungfrau()
     LOGGER.info("Making gonio")
@@ -86,7 +86,7 @@ SHUTTER_OPENING_TIME = 0.5
 
 
 def move_to_start_w_buffer(
-    axis: EpicsMotor,
+    axis: Motor,
     start_angle: float,
     offset: float,
     wait: bool = True,
@@ -106,7 +106,7 @@ def move_to_start_w_buffer(
 
 
 def move_to_end_w_buffer(
-    axis: EpicsMotor,
+    axis: Motor,
     scan_width: float,
     offset: float,
     shutter_opening_degrees: float = 2.5,  # default for 100 deg/s
@@ -127,8 +127,8 @@ def move_to_end_w_buffer(
 @bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
     params: RotationScanParameters,
-    jungfrau: JungfrauM1,
-    gonio: VGonio,
+    jungfrau: JungFrau1M,
+    gonio: VerticalGoniometer,
     zebra: Zebra,
     beam_params: ReadOnlyEnergyAndAttenuator,
     attenuator,
@@ -213,7 +213,7 @@ def rotation_scan_plan(
 
     LOGGER.info(
         f"setting rotation speed for image_width, exposure_time"
-        f" {image_width, exposure_time} to {image_width/exposure_time}"
+        f" {image_width, exposure_time} to {image_width / exposure_time}"
     )
     yield from bps.abs_set(
         gonio.omega.velocity, speed_for_rotation_deg_s, group="set_speed", wait=True
@@ -266,8 +266,8 @@ def get_rotation_scan_plan(params: RotationScanParameters):
             see "example_params.json" for an example."""
     devices = create_rotation_scan_devices()
     beam: ReadOnlyEnergyAndAttenuator = devices["beam_params"]
-    transmission = beam.transmission.get()
-    hutch_shutter_state = beam.shutter.get()
+    transmission = yield from bps.rd(beam.transmission)
+    hutch_shutter_state = yield from bps.rd(beam.shutter)
     LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
     if hutch_shutter_state != 0:
         LOGGER.error("Hutch shutter is not open!!!")

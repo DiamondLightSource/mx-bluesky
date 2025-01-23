@@ -4,6 +4,7 @@ from collections.abc import Callable
 from inspect import getmembers, isgeneratorfunction, signature
 
 import IPython
+from dodal.beamlines import i24
 from dodal.utils import collect_factories
 from traitlets.config import Config
 
@@ -14,7 +15,8 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plans import (
     utility_plans,
     zebra_plans,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
+
+# from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import i24
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import (
     text_colors as col,
 )
@@ -75,7 +77,7 @@ def pretty_print_module_functions(mod, indent=0):
     ]:
         print(
             " " * indent
-            + f"{col.CYAN}{name}({col.GREEN}{str(signature(function)).replace(sq,'')[1:-1]}{col.CYAN}){col.ENDC}"  # noqa
+            + f"{col.CYAN}{name}({col.GREEN}{str(signature(function)).replace(sq, '')[1:-1]}{col.CYAN}){col.ENDC}"  # noqa
         )
 
 
@@ -100,7 +102,7 @@ def hlp(arg: Callable | None = None):
     else:
         sq = "'"
         print(
-            f"{col.CYAN}{arg.__name__}({col.GREEN}{str(signature(arg)).replace(sq,'')[1:-1]}{col.CYAN}){col.ENDC}"  # noqa
+            f"{col.CYAN}{arg.__name__}({col.GREEN}{str(signature(arg)).replace(sq, '')[1:-1]}{col.CYAN}){col.ENDC}"  # noqa
         )
         print(inspect.getdoc(arg))
 

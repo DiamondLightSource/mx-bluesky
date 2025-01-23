@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
-from dodal.devices.i24.i24_vgonio import VGonio
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
+from dodal.devices.i24.beam_params import ReadOnlyEnergyAndAttenuator
+from dodal.devices.i24.vgonio import VerticalGoniometer
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.jf_commissioning_devices import (
-    ReadOnlyEnergyAndAttenuator,
-    SetAttenuator,
-)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 
 
-def rd_x_y_z(vgonio: VGonio):
+def rd_x_y_z(vgonio: VerticalGoniometer):
     """Returns a tuple of current (x, y, z) read from EPICS"""
     x = yield from bps.rd(vgonio.x)
     y = yield from bps.rd(vgonio.yh)
@@ -19,7 +17,7 @@ def rd_x_y_z(vgonio: VGonio):
     return (x, y, z)
 
 
-def read_x_y_z(vgonio: VGonio):
+def read_x_y_z(vgonio: VerticalGoniometer):
     yield from bps.create(name="gonio xyz")  # gives name to event *descriptor* document
     yield from bps.read(vgonio.x)
     yield from bps.read(vgonio.yh)
@@ -59,15 +57,17 @@ def read_beam_parameters(ro_energ_atten: ReadOnlyEnergyAndAttenuator):
     yield from bps.save()
 
 
-def set_transmission(set_attenuator: SetAttenuator, transmission_fraction: float):
+def set_transmission(
+    set_attenuator: EnumFilterAttenuator, transmission_fraction: float
+):
     LOGGER.info(f"Setting transmission to {transmission_fraction:.3f}")
     yield from bps.abs_set(
         set_attenuator.transmission_setpoint, transmission_fraction, wait=True
     )
-    f1_inpos = yield from bps.rd(set_attenuator.filter_1_moving)
-    f2_inpos = yield from bps.rd(set_attenuator.filter_2_moving)
+    f1_inpos = yield from bps.rd(set_attenuator.filters[0])
+    f2_inpos = yield from bps.rd(set_attenuator.filters[1])
     while not (f1_inpos and f2_inpos):
         LOGGER.info(f"Waiting for filters: {f1_inpos=}, {f2_inpos=}...")
-        f1_inpos = yield from bps.rd(set_attenuator.filter_1_moving)
-        f2_inpos = yield from bps.rd(set_attenuator.filter_2_moving)
+        f1_inpos = yield from bps.rd(set_attenuator.filters[0])
+        f2_inpos = yield from bps.rd(set_attenuator.filters[1])
         yield from bps.sleep(0.5)

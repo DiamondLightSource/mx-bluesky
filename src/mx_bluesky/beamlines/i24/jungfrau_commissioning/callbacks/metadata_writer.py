@@ -52,9 +52,9 @@ class JsonMetadataWriter(CallbackBase):
             assert self.parameters is not None
             data: dict | None = doc.get("data")
             assert data is not None
-            self.parameters.x_start_um = data.get("vgonio_x")
-            self.parameters.y_start_um = data.get("vgonio_yh")
-            self.parameters.z_start_um = data.get("vgonio_z")
+            self.parameters.x_start_um = data.get("vgonio-x")
+            self.parameters.y_start_um = data.get("vgonio-yh")
+            self.parameters.z_start_um = data.get("vgonio-z")
             pos = (
                 self.parameters.x_start_um,
                 self.parameters.y_start_um,
@@ -65,13 +65,13 @@ class JsonMetadataWriter(CallbackBase):
             assert self.parameters is not None
             data = doc.get("data")
             assert data is not None
-            self.transmission = data.get("beam_params_transmission")
-            self.flux = data.get("beam_params_intensity")
-            self.flux_xbpm2 = data.get("beam_params_flux_xbpm2")
-            self.flux_xbpm3 = data.get("beam_params_flux_xbpm3")
-            self.wavelength = data.get("beam_params_wavelength")
-            self.energy_kev = data.get("beam_params_energy")
-            self.detector_distance = data.get("beam_params_det_distance")
+            self.transmission = data.get("beam_params-transmission")
+            self.flux = data.get("beam_params-intensity")
+            self.flux_xbpm2 = data.get("beam_params-flux_xbpm2")
+            self.flux_xbpm3 = data.get("beam_params-flux_xbpm3")
+            self.wavelength = data.get("beam_params-wavelength")
+            self.energy_kev = data.get("beam_params-energy")
+            self.detector_distance = data.get("beam_params-det_distance")
             LOGGER.info(
                 f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance}."  # noqa
             )

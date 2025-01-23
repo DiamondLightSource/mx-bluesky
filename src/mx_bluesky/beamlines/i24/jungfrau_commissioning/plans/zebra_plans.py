@@ -1,10 +1,5 @@
 import bluesky.plan_stubs as bps
-from dodal.devices.zebra import (
-    DISCONNECT,
-    OR1,
-    PC_PULSE,
-    TTL_DETECTOR,
-    TTL_XSPRESS3,
+from dodal.devices.zebra.zebra import (
     EncEnum,
     I24Axes,
     RotationDirection,
@@ -14,6 +9,8 @@ from dodal.devices.zebra import (
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils.log import LOGGER
 
+TTL_DETECTOR = 1
+TTL_XSPRESS3 = 3
 TTL_SHUTTER = 4
 
 
@@ -84,12 +81,22 @@ def setup_zebra_for_rotation(
     # Set pulse width lower than exposure time
     yield from bps.abs_set(zebra.pc.pulse_width, 0.0005, group=group)
     # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_SHUTTER], zebra.mapping.sources.OR1, group=group
+    )
     # Trigger the detector with a pulse
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_DETECTOR], zebra.mapping.sources.PC_PULSE, group=group
+    )
     # Don't use the fluorescence detector
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_XSPRESS3],
+        zebra.mapping.sources.DISCONNECT,
+        group=group,
+    )
+    yield from bps.abs_set(
+        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
+    )
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)
@@ -98,8 +105,12 @@ def setup_zebra_for_rotation(
 def set_zebra_shutter_to_manual(
     zebra: Zebra, group="set_zebra_shutter_to_manual", wait=False
 ):
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_DETECTOR], zebra.mapping.sources.PC_PULSE, group=group
+    )
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_SHUTTER], zebra.mapping.sources.OR1, group=group
+    )
 
     if wait:
         yield from bps.wait(group)
@@ -128,12 +139,22 @@ def setup_zebra_for_darks(
     # Set gate position to be angle of interest
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
     # Don't trigger the shutter
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_SHUTTER], zebra.mapping.sources.DISCONNECT, group=group
+    )
     # Trigger the detector with a pulse
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_DETECTOR], zebra.mapping.sources.PC_PULSE, group=group
+    )
     # Don't use the fluorescence detector
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[TTL_XSPRESS3],
+        zebra.mapping.sources.DISCONNECT,
+        group=group,
+    )
+    yield from bps.abs_set(
+        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
+    )
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)

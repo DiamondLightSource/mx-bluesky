@@ -11,7 +11,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
-from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -772,7 +772,7 @@ def run_fixed_target_plan(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     # Horrible workaround for jungfrau
     _det = caget(pv.me14e_gp101)
