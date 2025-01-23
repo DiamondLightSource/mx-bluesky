@@ -8,7 +8,8 @@ from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     simple_flyscan_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
     set_stub_offsets: bool,
 ):
     test_fgs_params.features.set_stub_offsets = set_stub_offsets

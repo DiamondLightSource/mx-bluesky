@@ -6,7 +6,7 @@ import pytest
 from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra.zebra import Zebra
 from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -29,6 +29,8 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     tidy_up_after_collection_plan,
     write_userlog,
 )
+
+from ..conftest import TEST_LUT
 
 chipmap_str = """01status    P3011       1
 02status    P3021       0
@@ -74,7 +76,6 @@ def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
         mock_open(),
     ):
         write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
-    fake_mkdir.assert_called_once()
     fake_log.debug.assert_called_once()
 
 
@@ -173,11 +174,7 @@ def test_load_motion_program_data(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
-)
 def test_start_i24_with_eiger(
-    fake_mkdir,
     fake_sleep,
     fake_sup,
     fake_caget,
@@ -217,8 +214,6 @@ def test_start_i24_with_eiger(
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
     assert fake_dcid.generate_dcid.call_count == 1
-    assert fake_mkdir.call_count == 1
-    fake_mkdir.assert_called_once()
 
     shutter_call_list = [
         call("Reset", wait=True),
@@ -402,28 +397,34 @@ async def test_main_fixed_target_plan(
     mock_get_chip_prog.return_value = MagicMock()
     set_mock_value(dcm.wavelength_in_a, 0.6)
     fake_datasize.return_value = 400
-    RE(
-        main_fixed_target_plan(
-            zebra,
-            pmac,
-            aperture,
-            backlight,
-            beamstop,
-            detector_stage,
-            shutter,
-            dcm,
-            mirrors,
-            eiger_beam_center,
-            dummy_params_without_pp,
-            fake_dcid,
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",
+        new=TEST_LUT,
+    ):
+        RE(
+            main_fixed_target_plan(
+                zebra,
+                pmac,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                eiger_beam_center,
+                dummy_params_without_pp,
+                fake_dcid,
+            )
         )
-    )
 
     mock_beam_x = get_mock_put(eiger_beam_center.beam_x)
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_zebra_input = get_mock_put(zebra.inputs.soft_in_2)
 
-    mock_beam_x.assert_called_once_with(1600.0, wait=True)  # Check beam center set
+    mock_beam_x.assert_called_once_with(
+        pytest.approx(1597.06, 1e-2), wait=True
+    )  # Check beam center set
     assert dummy_params_without_pp.total_num_images == 400
     mock_get_chip_prog.assert_called_once_with(dummy_params_without_pp)
     mock_motion_program.asset_called_once()
@@ -439,7 +440,7 @@ async def test_main_fixed_target_plan(
         mock_get_chip_prog.return_value,
         dummy_params_without_pp,
         0.6,
-        (1600.0, 1697.4),
+        (ANY, ANY),
         None,
     )
     mock_kickoff.assert_called_once_with(

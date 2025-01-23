@@ -37,8 +37,10 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -48,8 +50,8 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import ArmDemand, Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
@@ -74,13 +76,13 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     PlanNameConstants,
     TriggerConstants,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -97,7 +99,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -224,6 +227,17 @@ def patch_async_motor(
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
+@pytest.fixture(params=[False, True])
+def feature_flags_update_with_omega_flip(request):
+    def update_with_overrides(self):
+        self.overriden_features["omega_flip"] = request.param
+        self.omega_flip = request.param
+
+    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
+        update.side_effect = update_with_overrides
+        yield update
+
+
 @pytest.fixture
 def beamline_parameters():
     return GDABeamlineParameters.from_file(
@@ -233,7 +247,7 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return HyperionThreeDGridScan(
+    return HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
@@ -241,7 +255,7 @@ def test_fgs_params():
 
 
 @pytest.fixture
-def test_panda_fgs_params(test_fgs_params: HyperionThreeDGridScan):
+def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
     test_fgs_params.features.use_panda_for_gridscan = True
     return test_fgs_params
 
@@ -431,6 +445,27 @@ def attenuator(RE):
 
 
 @pytest.fixture
+def beamstop_i03(
+    beamline_parameters: GDABeamlineParameters, sim_run_engine: RunEngineSimulator
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+    ):
+        beamstop = i03.beamstop(fake_with_ophyd_sim=True)
+        patch_motor(beamstop.x_mm)
+        patch_motor(beamstop.y_mm)
+        patch_motor(beamstop.z_mm)
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+        sim_run_engine.add_read_handler_for(
+            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        )
+        yield beamstop
+        beamline_utils.clear_devices()
+
+
+@pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
     xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
@@ -602,6 +637,7 @@ def test_full_grid_scan_params():
 
 @pytest.fixture()
 def fake_create_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -615,6 +651,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
+        "beamstop": beamstop_i03,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -627,6 +664,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -649,6 +687,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
@@ -754,7 +793,7 @@ def panda_fast_grid_scan(RE):
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
@@ -938,9 +977,9 @@ class DocumentCapturer:
         for event_data_keys in match_data_keys_list:
             docs = DocumentCapturer.get_docs_from(docs, "event")
             doc = docs.pop(0)[1]["data"]
-            assert all(
-                k in doc.keys() for k in event_data_keys
-            ), f"One of {event_data_keys=} not in {doc}"
+            assert all(k in doc.keys() for k in event_data_keys), (
+                f"One of {event_data_keys=} not in {doc}"
+            )
 
 
 @pytest.fixture
@@ -970,6 +1009,27 @@ def pin_tip_edge_data():
     top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
     bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+def find_a_pin(pin_tip_detection):
+    def set_good_position():
+        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([x, y]))
+        set_mock_value(pin_tip_detection.triggered_top_edge, top_edge_array)
+        set_mock_value(pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+        return NullStatus()
+
+    return set_good_position
+
+
+@pytest.fixture
+def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
+    with patch.object(
+        ophyd_pin_tip_detection,
+        "trigger",
+        side_effect=find_a_pin(ophyd_pin_tip_detection),
+    ):
+        yield ophyd_pin_tip_detection
 
 
 # Prevent pytest from catching exceptions when debugging in vscode so that break on
@@ -1100,7 +1160,7 @@ class OavGridSnapshotTestEvents:
 
 
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(**default_raw_gridscan_params())
+    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
     return dummy_params
 
 
@@ -1109,7 +1169,7 @@ def dummy_params_2d():
         "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
     raw_params["z_steps"] = 1
-    return HyperionThreeDGridScan(**raw_params)
+    return HyperionSpecifiedThreeDGridScan(**raw_params)
 
 
 class TestData(OavGridSnapshotTestEvents):
@@ -1176,7 +1236,7 @@ class TestData(OavGridSnapshotTestEvents):
             "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
             "aperture_scatterguard-radius": 50,
             "attenuator-actual_transmission": 0.98,
-            "flux_flux_reading": 9.81,
+            "flux-flux_reading": 9.81,
             "dcm-energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
@@ -1243,8 +1303,8 @@ class TestData(OavGridSnapshotTestEvents):
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
-            "s4_slit_gaps_xgap": 0.1234,
-            "s4_slit_gaps_ygap": 0.2345,
+            "s4_slit_gaps-xgap": 0.1234,
+            "s4_slit_gaps-ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
             "smargon-x": 0.158435435,
@@ -1269,7 +1329,7 @@ class TestData(OavGridSnapshotTestEvents):
             "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
             "aperture_scatterguard-radius": 50,
             "attenuator-actual_transmission": 1,
-            "flux_flux_reading": 10,
+            "flux-flux_reading": 10,
             "dcm-energy_in_kev": 11.105,
             "eiger_bit_depth": "16",
         },

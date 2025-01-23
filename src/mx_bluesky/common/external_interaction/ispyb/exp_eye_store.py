@@ -54,9 +54,9 @@ class BLSampleStatus(StrEnum):
     ERROR_BEAMLINE = "ERROR - beamline"
 
 
-assert all(
-    len(value) <= 20 for value in BLSampleStatus
-), "Column size limit of 20 for BLSampleStatus"
+assert all(len(value) <= 20 for value in BLSampleStatus), (
+    "Column size limit of 20 for BLSampleStatus"
+)
 
 
 class ExpeyeInteraction:

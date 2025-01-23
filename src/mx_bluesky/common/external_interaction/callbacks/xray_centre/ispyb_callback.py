@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from time import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 from bluesky import preprocessors as bpp
@@ -64,6 +64,9 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     )
 
 
+T = TypeVar("T", bound="GridCommon")
+
+
 class GridscanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -81,12 +84,14 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def __init__(
         self,
+        param_type: type[T],
         *,
         emit: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__(emit=emit)
         self.ispyb: StoreInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
+        self.param_type = param_type
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
 
@@ -101,7 +106,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
             assert isinstance(mx_bluesky_parameters, str)
-            self.params = GridCommon.model_validate_json(mx_bluesky_parameters)
+            self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
             self.ispyb = StoreInIspyb(self.ispyb_config)
             data_collection_group_info = populate_data_collection_group(self.params)
 
@@ -174,9 +179,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 )
         else:
             crystal_summary += "Zocalo found no crystals in this gridscan."
-        assert (
-            self.ispyb_ids.data_collection_ids
-        ), "No data collection to add results to"
+        assert self.ispyb_ids.data_collection_ids, (
+            "No data collection to add results to"
+        )
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -245,9 +250,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         event_sourced_position_info: DataCollectionPositionInfo | None,
         params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
-        assert (
-            self.ispyb_ids.data_collection_ids
-        ), "Expect at least one valid data collection to record scan data"
+        assert self.ispyb_ids.data_collection_ids, (
+            "Expect at least one valid data collection to record scan data"
+        )
         xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
             data_collection_id=self.ispyb_ids.data_collection_ids[0],

@@ -25,7 +25,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
-from dodal.devices.zebra import DISCONNECT, SOFT_IN3, Zebra
+from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
@@ -38,6 +38,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -46,8 +47,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     GATE_START,
-    TTL_EIGER,
-    TTL_PILATUS,
     arm_zebra,
     disarm_zebra,
     open_fast_shutter,
@@ -115,13 +114,22 @@ def laser_check(
 
     det_type = yield from get_detector_type(detector_stage)
 
-    LASER_TTL = TTL_EIGER if isinstance(det_type, Pilatus) else TTL_PILATUS
+    LASER_TTL = (
+        zebra.mapping.outputs.TTL_EIGER
+        if isinstance(det_type, Pilatus)
+        else zebra.mapping.outputs.TTL_PILATUS
+    )
+
     if mode == "laseron":
-        yield from bps.abs_set(zebra.output.out_pvs[LASER_TTL], SOFT_IN3)
+        yield from bps.abs_set(
+            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.SOFT_IN3
+        )
         yield from set_shutter_mode(zebra, "auto")
 
     if mode == "laseroff":
-        yield from bps.abs_set(zebra.output.out_pvs[LASER_TTL], DISCONNECT)
+        yield from bps.abs_set(
+            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.DISCONNECT
+        )
         yield from set_shutter_mode(zebra, "manual")
 
 
@@ -206,8 +214,14 @@ def main_extruder_plan(
     dcid: DCID,
     start_time: datetime,
 ) -> MsgGenerator:
+    beam_center_pixels = sup.compute_beam_center_position_from_lut(
+        BEAM_CENTER_LUT_FILES[parameters.detector_name],
+        parameters.detector_distance_mm,
+        parameters.detector_size_constants,
+    )
     yield from sup.set_detector_beam_center_plan(
-        beam_center_device, parameters.detector_name
+        beam_center_device,
+        beam_center_pixels,
     )
 
     # Setting up the beamline
@@ -281,7 +295,6 @@ def main_extruder_plan(
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
-        Path(filepath).mkdir(parents=True, exist_ok=True)
 
         caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
         SSX_LOGGER.info(f"Eiger quickshot setup: filepath {filepath}")
@@ -488,6 +501,8 @@ def run_extruder_plan(
     parameters: ExtruderParameters = yield from read_parameters(
         detector_stage, attenuator
     )
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 

@@ -36,7 +36,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import default_raw_gridscan_params
 
 from ..external_interaction.conftest import (  # noqa
@@ -47,7 +47,7 @@ from ..external_interaction.conftest import (  # noqa
 
 @pytest.fixture
 def params():
-    params = HyperionThreeDGridScan(**default_raw_gridscan_params())
+    params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
     params.beamline = CONST.SIM.BEAMLINE
     yield params
 
@@ -151,7 +151,7 @@ def test_read_hardware_pre_collection(
 async def test_xbpm_feedback_decorator(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     # This test is currently kind of more a unit test since we are faking XBPM feedback
@@ -189,7 +189,7 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
@@ -224,7 +224,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
 ):
     class _Exception(Exception): ...
@@ -244,7 +244,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,  # noqa
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     _, ispyb_cb = callbacks
@@ -274,7 +274,7 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     callbacks,
     done_status,
 ):
@@ -298,18 +298,9 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE(flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert (
-        await fxc_composite.sample_motors.x.user_readback.get_value()
-        == pytest.approx(-1)
-    )
-    assert (
-        await fxc_composite.sample_motors.y.user_readback.get_value()
-        == pytest.approx(-1)
-    )
-    assert (
-        await fxc_composite.sample_motors.z.user_readback.get_value()
-        == pytest.approx(-1)
-    )
+    assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(-1)
+    assert await fxc_composite.smargon.y.user_readback.get_value() == pytest.approx(-1)
+    assert await fxc_composite.smargon.z.user_readback.get_value() == pytest.approx(-1)
 
 
 @pytest.mark.s03
@@ -317,7 +308,7 @@ async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
-    params: HyperionThreeDGridScan,
+    params: HyperionSpecifiedThreeDGridScan,
     callbacks,
     done_status,
 ):
@@ -336,15 +327,12 @@ async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE(flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert (
-        await fxc_composite.sample_motors.x.user_readback.get_value()
-        == pytest.approx(0.05)
+    assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(
+        0.05
     )
-    assert (
-        await fxc_composite.sample_motors.y.user_readback.get_value()
-        == pytest.approx(0.15)
+    assert await fxc_composite.smargon.y.user_readback.get_value() == pytest.approx(
+        0.15
     )
-    assert (
-        await fxc_composite.sample_motors.z.user_readback.get_value()
-        == pytest.approx(0.25)
+    assert await fxc_composite.smargon.z.user_readback.get_value() == pytest.approx(
+        0.25
     )

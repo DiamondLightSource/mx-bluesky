@@ -25,7 +25,7 @@ dependencies = [
     "matplotlib",
     "nexgen",
     "numpy",
-    "opencv-python",               # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
+    "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
@@ -45,8 +45,8 @@ dependencies = [
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.8a5",
-    "bluesky >= 1.13.0a4",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@6ef9288cb6cc122723747fd03f9770b55fb56d51",
+    "bluesky >= 1.13",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -79,7 +79,6 @@ dev = [
     "ruff",
     "sphinx-autobuild",
     "sphinx-copybutton",
-    "sphinxcontrib-plantuml",
     "sphinx-design",
     "tox-direct",
     "tox",
@@ -181,6 +180,9 @@ commands =
     type-checking: pyright src tests {posargs}
     tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+commands_pre =
+    docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
+        docs/developer/hyperion/reference/param_hierarchy.puml"
 """
 
 [tool.ruff]

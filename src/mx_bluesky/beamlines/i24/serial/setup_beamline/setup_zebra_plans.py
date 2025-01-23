@@ -118,7 +118,9 @@ def setup_zebra_for_quickshot_plan(
     yield from bps.abs_set(zebra.pc.gate_start, GATE_START, group=group)
     yield from bps.abs_set(zebra.pc.gate_width, gate_width, group=group)
 
-    yield from bps.abs_set(zebra.pc.gate_input, zebra.mapping.SOFT_IN2, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_input, zebra.mapping.sources.SOFT_IN2, group=group
+    )
     yield from bps.sleep(0.1)
 
     if wait:
@@ -131,17 +133,25 @@ def set_logic_gates_for_porto_triggering(
 ):
     # To OUT2_TTL
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[1], zebra.mapping.SOFT_IN2, group=group
+        zebra.logic_gates.and_gates[3].sources[1],
+        zebra.mapping.sources.SOFT_IN2,
+        group=group,
     )
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[2], zebra.mapping.PULSE1, group=group
+        zebra.logic_gates.and_gates[3].sources[2],
+        zebra.mapping.sources.PULSE1,
+        group=group,
     )
     # To OUT1_TTL
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[4].sources[1], zebra.mapping.SOFT_IN2, group=group
+        zebra.logic_gates.and_gates[4].sources[1],
+        zebra.mapping.sources.SOFT_IN2,
+        group=group,
     )
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[4].sources[2], zebra.mapping.PULSE2, group=group
+        zebra.logic_gates.and_gates[4].sources[2],
+        zebra.mapping.sources.PULSE2,
+        group=group,
     )
     yield from bps.wait(group=group)
 
@@ -203,13 +213,15 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     DET_TTL = TTL_EIGER if det_type == "eiger" else TTL_PILATUS
     LASER_TTL = TTL_PILATUS if det_type == "eiger" else TTL_EIGER
     yield from bps.abs_set(
-        zebra.output.out_pvs[DET_TTL], zebra.mapping.AND4, group=group
+        zebra.output.out_pvs[DET_TTL], zebra.mapping.sources.AND4, group=group
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[LASER_TTL], zebra.mapping.AND3, group=group
+        zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.AND3, group=group
     )
 
-    yield from bps.abs_set(zebra.pc.gate_input, zebra.mapping.SOFT_IN2, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_input, zebra.mapping.sources.SOFT_IN2, group=group
+    )
 
     assert pump_exp and pump_delay, "Must supply pump_exp and pump_delay!"
     gate_width, gate_step = get_zebra_settings_for_extruder(
@@ -234,7 +246,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
         f"Pulse1 starting at {pulse1_delay} with width set to laser dwell {pump_exp}."
     )
     yield from bps.abs_set(
-        zebra.output.pulse_1.input, zebra.mapping.PC_GATE, group=group
+        zebra.output.pulse_1.input, zebra.mapping.sources.PC_GATE, group=group
     )
     yield from bps.abs_set(zebra.output.pulse_1.delay, pulse1_delay, group=group)
     yield from bps.abs_set(zebra.output.pulse_1.width, pump_exp, group=group)
@@ -245,7 +257,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
         """
     )
     yield from bps.abs_set(
-        zebra.output.pulse_2.input, zebra.mapping.PC_GATE, group=group
+        zebra.output.pulse_2.input, zebra.mapping.sources.PC_GATE, group=group
     )
     yield from bps.abs_set(zebra.output.pulse_2.delay, pump_delay, group=group)
     yield from bps.abs_set(zebra.output.pulse_2.width, exp_time, group=group)
@@ -303,23 +315,29 @@ def setup_zebra_for_fastchip_plan(
 
     # Logic Gates
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[1], zebra.mapping.SOFT_IN2, group=group
+        zebra.logic_gates.and_gates[3].sources[1],
+        zebra.mapping.sources.SOFT_IN2,
+        group=group,
     )
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[2], zebra.mapping.PC_PULSE, group=group
+        zebra.logic_gates.and_gates[3].sources[2],
+        zebra.mapping.sources.PC_PULSE,
+        group=group,
     )
 
-    yield from bps.abs_set(zebra.pc.gate_input, zebra.mapping.IN3_TTL, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_input, zebra.mapping.sources.IN3_TTL, group=group
+    )
 
     # Set TTL out depending on detector type
     # And calculate some of the other settings
     if det_type == "eiger":
         yield from bps.abs_set(
-            zebra.output.out_pvs[TTL_EIGER], zebra.mapping.AND3, group=group
+            zebra.output.out_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
         )
     if det_type == "pilatus":
         yield from bps.abs_set(
-            zebra.output.out_pvs[TTL_PILATUS], zebra.mapping.AND3, group=group
+            zebra.output.out_pvs[TTL_PILATUS], zebra.mapping.sources.AND3, group=group
         )
 
     # Square wave - needs a small drop to make it work for eiger
@@ -374,7 +392,7 @@ def open_fast_shutter_at_each_position_plan(
     SSX_LOGGER.debug("Controlling the fast shutter on PULSE2.")
     # Output panel pulse_2 settings
     yield from bps.abs_set(
-        zebra.output.pulse_2.input, zebra.mapping.PC_GATE, group=group
+        zebra.output.pulse_2.input, zebra.mapping.sources.PC_GATE, group=group
     )
     yield from bps.abs_set(zebra.output.pulse_2.delay, 0.0, group=group)
     pulse2_width = num_exposures * exposure_time + SHUTTER_OPEN_TIME
@@ -382,7 +400,9 @@ def open_fast_shutter_at_each_position_plan(
 
     # Fast shutter
     yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_FAST_SHUTTER], zebra.mapping.PULSE2, group=group
+        zebra.output.out_pvs[TTL_FAST_SHUTTER],
+        zebra.mapping.sources.PULSE2,
+        group=group,
     )
 
     if wait:
@@ -399,17 +419,21 @@ def reset_pc_gate_and_pulse(zebra: Zebra, group: str = "reset_pc"):
 
 def reset_output_panel(zebra: Zebra, group: str = "reset_zebra_outputs"):
     # Reset TTL out
-    yield from bps.abs_set(zebra.output.out_pvs[2], zebra.mapping.PC_GATE, group=group)
     yield from bps.abs_set(
-        zebra.output.out_pvs[3], zebra.mapping.DISCONNECT, group=group
+        zebra.output.out_pvs[2], zebra.mapping.sources.PC_GATE, group=group
     )
-    yield from bps.abs_set(zebra.output.out_pvs[4], zebra.mapping.OR1, group=group)
+    yield from bps.abs_set(
+        zebra.output.out_pvs[3], zebra.mapping.sources.DISCONNECT, group=group
+    )
+    yield from bps.abs_set(
+        zebra.output.out_pvs[4], zebra.mapping.sources.OR1, group=group
+    )
 
     yield from bps.abs_set(
-        zebra.output.pulse_1.input, zebra.mapping.DISCONNECT, group=group
+        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
     )
     yield from bps.abs_set(
-        zebra.output.pulse_2.input, zebra.mapping.DISCONNECT, group=group
+        zebra.output.pulse_2.input, zebra.mapping.sources.DISCONNECT, group=group
     )
 
     yield from bps.wait(group=group)
@@ -427,16 +451,24 @@ def zebra_return_to_normal_plan(
     # Reset PC_GATE and PC_SOURCE to "Position"
     yield from setup_pc_sources(zebra, TrigSource.POSITION, TrigSource.POSITION)
 
-    yield from bps.abs_set(zebra.pc.gate_input, zebra.mapping.SOFT_IN3, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_input, zebra.mapping.sources.SOFT_IN3, group=group
+    )
     yield from bps.abs_set(zebra.pc.num_gates, 1, group=group)
-    yield from bps.abs_set(zebra.pc.pulse_input, zebra.mapping.DISCONNECT, group=group)
+    yield from bps.abs_set(
+        zebra.pc.pulse_input, zebra.mapping.sources.DISCONNECT, group=group
+    )
 
     # Logic Gates
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[1], zebra.mapping.PC_ARM, group=group
+        zebra.logic_gates.and_gates[3].sources[1],
+        zebra.mapping.sources.PC_ARM,
+        group=group,
     )
     yield from bps.abs_set(
-        zebra.logic_gates.and_gates[3].sources[2], zebra.mapping.IN1_TTL, group=group
+        zebra.logic_gates.and_gates[3].sources[2],
+        zebra.mapping.sources.IN1_TTL,
+        group=group,
     )
 
     # Reset TTL out

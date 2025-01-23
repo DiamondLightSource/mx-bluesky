@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Literal
 from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
@@ -30,7 +31,10 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     get_min_and_max_y_of_pin,
     grid_detection_plan,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GridCommonWithHyperionDetectorParams,
+    HyperionSpecifiedThreeDGridScan,
+)
 
 from .conftest import assert_event
 
@@ -88,11 +92,11 @@ def fake_devices(
         yield composite, mock_save_image
 
 
-def do_grid_and_edge_detect(composite, parameters):
+def do_grid_and_edge_detect(composite, parameters, tmp_dir):
     yield from grid_detection_plan(
         composite,
         parameters=parameters,
-        snapshot_dir="tmp",
+        snapshot_dir=f"{tmp_dir}",
         snapshot_template="test_{angle}",
         grid_width_microns=161.2,
         box_size_um=20,
@@ -108,13 +112,14 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE: RunEngine,
     test_config_files: dict[str, str],
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, image_save = fake_devices
 
     composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
 
-    RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params)))
+    RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
 
     assert image_save.await_count == 4
     assert mock_save.call_count == 2
@@ -129,6 +134,7 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     RE: RunEngine,
     test_config_files: dict[str, str],
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
+    tmp_path: Path,
 ):
     composite, _ = fake_devices
 
@@ -145,7 +151,7 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     with pytest.raises(WarningException) as excinfo:
-        RE(do_grid_and_edge_detect(composite, params))
+        RE(do_grid_and_edge_detect(composite, params, tmp_path))
 
     assert "No pin found" in excinfo.value.args[0]
 
@@ -159,6 +165,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     box_size_um = 0.2
@@ -174,7 +181,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
         yield from grid_detection_plan(
             composite,
             parameters=params,
-            snapshot_dir="tmp",
+            snapshot_dir=f"{tmp_path}",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
             box_size_um=box_size_um,
@@ -204,13 +211,14 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
 
     for _ in range(2):
-        RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params)))
+        RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
 
 
 @patch(
@@ -222,17 +230,18 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback()
+    cb = GridscanISPyBCallback(param_type=GridCommonWithHyperionDetectorParams)
     RE.subscribe(cb)
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
         RE(
             ispyb_activation_wrapper(
-                do_grid_and_edge_detect(composite, params), test_fgs_params
+                do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
             )
         )
 
@@ -250,9 +259,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
-                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_0_grid_overlay.png",
-                "oav-grid_snapshot-last_path_outer": "tmp/test_0_outer_overlay.png",
-                "oav-grid_snapshot-last_saved_path": "tmp/test_0.png",
+                "oav-grid_snapshot-last_path_full_overlay": f"{tmp_path}/test_0_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": f"{tmp_path}/test_0_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": f"{tmp_path}/test_0.png",
             },
         )
         assert_event(
@@ -265,9 +274,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
-                "oav-grid_snapshot-last_path_full_overlay": "tmp/test_90_grid_overlay.png",
-                "oav-grid_snapshot-last_path_outer": "tmp/test_90_outer_overlay.png",
-                "oav-grid_snapshot-last_saved_path": "tmp/test_90.png",
+                "oav-grid_snapshot-last_path_full_overlay": f"{tmp_path}/test_90_grid_overlay.png",
+                "oav-grid_snapshot-last_path_outer": f"{tmp_path}/test_90_outer_overlay.png",
+                "oav-grid_snapshot-last_saved_path": f"{tmp_path}/test_90.png",
             },
         )
 
@@ -281,7 +290,8 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionThreeDGridScan,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
@@ -291,7 +301,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 
     RE(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
         )
     )
 
@@ -327,6 +337,7 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
     sim_run_engine: RunEngineSimulator,
     test_config_files: dict[str, str],
     odd: bool,
+    tmp_path: Path,
 ):
     composite, _ = fake_devices
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
@@ -367,14 +378,16 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
 
-    msgs = sim_run_engine.simulate_plan(do_grid_and_edge_detect(composite, params))
+    msgs = sim_run_engine.simulate_plan(
+        do_grid_and_edge_detect(composite, params, tmp_path)
+    )
 
     expected_min_y = initial_min_y - box_size_y_pixels / 2 if odd else initial_min_y
     expected_y_steps = 2
 
     if odd:
         fake_logger.debug.assert_called_once_with(
-            f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+            f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels / 2}"
         )
     else:
         fake_logger.debug.assert_not_called()

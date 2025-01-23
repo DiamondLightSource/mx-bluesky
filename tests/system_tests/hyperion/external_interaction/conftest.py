@@ -15,6 +15,7 @@ from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -23,8 +24,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ispyb.sqlalchemy import (
     BLSample,
@@ -51,7 +52,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
 
@@ -221,7 +222,7 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = HyperionThreeDGridScan(
+    dummy_params = HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
@@ -267,6 +268,7 @@ def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
+    beamstop_i03,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -291,6 +293,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
+        beamstop=beamstop_i03,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -390,6 +393,7 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 @pytest.fixture
 def composite_for_rotation_scan(
+    beamstop_i03: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -415,6 +419,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamstop=beamstop_i03,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
@@ -444,12 +449,8 @@ def composite_for_rotation_scan(
         fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
-        0.123
-    )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
-        0.234
-    )
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
 
     with (
         patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),

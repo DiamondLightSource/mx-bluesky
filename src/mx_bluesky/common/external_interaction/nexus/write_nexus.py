@@ -8,7 +8,6 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-from dodal.devices.zebra import RotationDirection
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
@@ -16,6 +15,7 @@ from numpy.typing import DTypeLike
 from scanspec.core import AxesPoints
 
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
+    AxisDirection,
     create_detector_parameters,
     create_goniometer_axes,
     get_start_and_predicted_end_time,
@@ -39,7 +39,7 @@ class NexusWriter:
         # detector arming event:
         full_num_of_images: int | None = None,
         meta_data_run_number: int | None = None,
-        rotation_direction: RotationDirection = RotationDirection.NEGATIVE,
+        axis_direction: AxisDirection = AxisDirection.NEGATIVE,
     ) -> None:
         self.beam: Beam | None = None
         self.attenuator: Attenuator | None = None
@@ -69,7 +69,7 @@ class NexusWriter:
             self.scan_points,
             chi=chi_start_deg,
             phi=phi_start_deg,
-            rotation_direction=rotation_direction,
+            omega_axis_direction=axis_direction,
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

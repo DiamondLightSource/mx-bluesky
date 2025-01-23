@@ -34,8 +34,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
@@ -77,7 +77,7 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
@@ -110,11 +110,6 @@ class FlyScanXRayCentreComposite:
     robot: BartRobot
     sample_shutter: ZebraShutter
 
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
-
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
@@ -122,7 +117,7 @@ def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
 
 
 def flyscan_xray_centre_no_move(
-    composite: FlyScanXRayCentreComposite, parameters: HyperionThreeDGridScan
+    composite: FlyScanXRayCentreComposite, parameters: HyperionSpecifiedThreeDGridScan
 ) -> MsgGenerator:
     """Perform a flyscan and determine the centres of interest"""
     parameters.features.update_self_from_server()
@@ -150,7 +145,7 @@ def flyscan_xray_centre_no_move(
     )
     def run_gridscan_and_fetch_and_tidy(
         fgs_composite: FlyScanXRayCentreComposite,
-        params: HyperionThreeDGridScan,
+        params: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
     ) -> MsgGenerator:
         yield from run_gridscan_and_fetch_results(
@@ -164,7 +159,7 @@ def flyscan_xray_centre_no_move(
 
 def flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
+    parameters: HyperionSpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -172,7 +167,7 @@ def flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (ThreeDGridScan): The parameters to run the scan.
+        parameters (HyperionSpecifiedThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -188,9 +183,9 @@ def flyscan_xray_centre(
     yield from flyscan_and_fetch_results()
 
     xray_centre_results = xrc_event_handler.xray_centre_results
-    assert (
-        xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert xray_centre_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
     yield from change_aperture_then_move_to_xtal(
         xray_centre_results[0],
         composite.smargon,
@@ -203,22 +198,13 @@ def flyscan_xray_centre(
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_fetch_results(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
+    parameters: HyperionSpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
 ) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
-
-    yield from feature_controlled.setup_trigger(fgs_composite, parameters, initial_xyz)
+    yield from feature_controlled.setup_trigger(fgs_composite, parameters)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -267,7 +253,7 @@ def run_gridscan_and_fetch_results(
 
 
 def _xrc_result_in_boxes_to_result_in_mm(
-    xrc_result: XrcResult, parameters: HyperionThreeDGridScan
+    xrc_result: XrcResult, parameters: HyperionSpecifiedThreeDGridScan
 ) -> XRayCentreResult:
     fgs_params = parameters.FGS_params
     xray_centre = fgs_params.grid_position_to_motor_position(
@@ -309,17 +295,15 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
+    parameters: HyperionSpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
     md={  # noqa
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
-    sample_motors = fgs_composite.sample_motors
-
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
+        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the
@@ -391,8 +375,7 @@ class _FeatureControlled:
         def __call__(
             self,
             fgs_composite: FlyScanXRayCentreComposite,
-            parameters: HyperionThreeDGridScan,
-            initial_xyz: np.ndarray,
+            parameters: HyperionSpecifiedThreeDGridScan,
         ) -> MsgGenerator: ...
 
     setup_trigger: _ExtraSetup
@@ -403,7 +386,7 @@ class _FeatureControlled:
 
 def _get_feature_controlled(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
+    parameters: HyperionSpecifiedThreeDGridScan,
 ):
     if parameters.features.use_panda_for_gridscan:
         return _FeatureControlled(
@@ -452,8 +435,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
 
 def _zebra_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
+    parameters: HyperionSpecifiedThreeDGridScan,
 ):
     yield from setup_zebra_for_gridscan(
         fgs_composite.zebra, fgs_composite.sample_shutter, wait=True
@@ -462,8 +444,7 @@ def _zebra_triggering_setup(
 
 def _panda_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: HyperionThreeDGridScan,
-    initial_xyz: np.ndarray,
+    parameters: HyperionSpecifiedThreeDGridScan,
 ):
     LOGGER.info("Setting up Panda for flyscan")
 
@@ -508,7 +489,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         parameters.panda_FGS_params,
-        initial_xyz[0],
+        fgs_composite.smargon,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,

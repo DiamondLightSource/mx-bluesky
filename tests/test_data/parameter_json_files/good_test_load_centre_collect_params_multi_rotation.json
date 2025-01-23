@@ -15,9 +15,7 @@
         "exposure_time_s": 0.004,
         "use_roi_mode": false,
         "demand_energy_ev": 11100,
-        "run_number": 0,
-        "features": {"use_panda_for_gridscan": false, "compare_cpu_and_gpu_zocalo": true},
-        "panda_runup_distance_mm": 0.17
+        "run_number": 0
     },
     "multi_rotation_scan": {
         "comment": "Rotation",
@@ -31,13 +29,23 @@
         "shutter_opening_time_s": 0.6,
         "snapshot_omegas_deg": [0, 90, 180, 270],
         "run_number": 1,
-        "rotation_scans": [{
-            "rotation_axis": "omega",
-            "rotation_direction": "Negative",
-            "scan_width_deg": 180.0,
-            "omega_start_deg": 0,
-            "phi_start_deg": 0.47,
-            "chi_start_deg": 23.85
-        }]
+        "rotation_scans": [
+            {
+                "rotation_axis": "omega",
+                "rotation_direction": "Negative",
+                "scan_width_deg": 180.0,
+                "omega_start_deg": 0,
+                "phi_start_deg": 0.47,
+                "chi_start_deg": 23.85
+            },
+            {
+                "rotation_axis": "omega",
+                "rotation_direction": "Positive",
+                "scan_width_deg": 180.0,
+                "omega_start_deg": 0,
+                "phi_start_deg": 0.47,
+                "chi_start_deg": 0
+            }
+        ]
     }
 }

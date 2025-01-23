@@ -129,8 +129,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
-            slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
-            slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
+            slitgap_horizontal=doc["data"]["s4_slit_gaps-xgap"],
+            slitgap_vertical=doc["data"]["s4_slit_gaps-ygap"],
         )
         hwscan_data_collection_info = _update_based_on_energy(
             doc, self.params.detector_params, hwscan_data_collection_info
@@ -160,7 +160,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             beamsize_at_sampley=beamsize_y_mm,
             focal_spot_size_at_samplex=beamsize_x_mm,
             focal_spot_size_at_sampley=beamsize_y_mm,
-            flux=doc["data"]["flux_flux_reading"],
+            flux=doc["data"]["flux-flux_reading"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
@@ -189,9 +189,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
-        assert (
-            self.ispyb is not None
-        ), "ISPyB handler received stop document, but deposition object doesn't exist!"
+        assert self.ispyb is not None, (
+            "ISPyB handler received stop document, but deposition object doesn't exist!"
+        )
         ISPYB_ZOCALO_CALLBACK_LOGGER.debug("ISPyB handler received stop document.")
         exit_status = (
             doc.get("exit_status") or "Exit status not available in stop document!"

@@ -1,9 +1,13 @@
 import json
 from abc import abstractmethod
 from pathlib import Path
-from typing import Literal
 
 import numpy as np
+from dodal.devices.detector.det_dim_constants import (
+    EIGER2_X_9M_SIZE,
+    PILATUS_6M_SIZE,
+    DetectorSizeConstants,
+)
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -11,7 +15,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    DetectorName,
+    SSXType,
+)
 
 
 class SerialExperiment(BaseModel):
@@ -22,7 +29,7 @@ class SerialExperiment(BaseModel):
     filename: str
     exposure_time_s: float
     detector_distance_mm: float
-    detector_name: Literal["eiger", "pilatus"]
+    detector_name: DetectorName
     transmission: float
 
     @field_validator("visit", mode="before")
@@ -34,7 +41,16 @@ class SerialExperiment(BaseModel):
 
     @property
     def collection_directory(self) -> Path:
-        return Path(self.visit) / self.directory
+        directory = Path(self.visit) / self.directory
+        return directory
+
+    @property
+    def detector_size_constants(self) -> DetectorSizeConstants:
+        return (
+            EIGER2_X_9M_SIZE
+            if self.detector_name is DetectorName.EIGER
+            else PILATUS_6M_SIZE
+        )
 
 
 class LaserExperiment(BaseModel):

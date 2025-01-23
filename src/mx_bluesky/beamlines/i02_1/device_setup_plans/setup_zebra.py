@@ -7,13 +7,9 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.zebra import (
     AUTO_SHUTTER_GATE,
     AUTO_SHUTTER_INPUT_2,
-    DISCONNECT,
-    IN3_TTL,
-    IN4_TTL,
     PC_GATE,
     PC_PULSE,
     TTL_DETECTOR,
-    TTL_XSPRESS3,
     ArmDemand,
     Zebra,
 )
@@ -90,7 +86,8 @@ def setup_zebra_for_gridscan(
     zebra_shutter: ZebraShutter,
     group="setup_zebra_for_gridscan",
     wait=True,
-):
+): ...
+
 
 @bluesky_retry
 def tidy_up_zebra_after_gridscan(
