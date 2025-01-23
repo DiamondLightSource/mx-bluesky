@@ -29,7 +29,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 
-PARAMETER_VERSION = Version.parse("5.2.0")
+PARAMETER_VERSION = Version.parse("5.3.0")
 
 
 class RotationAxis(StrEnum):
@@ -83,6 +83,7 @@ class IspybExperimentType(StrEnum):
     STILL = "Still"
     SSX_CHIP = "SSX-Chip"
     SSX_JET = "SSX-Jet"
+    METAL_ID = "Metal ID"
 
     # Aliases for historic hyperion experiment type mapping
     ROTATION = "SAD"
@@ -92,7 +93,6 @@ class IspybExperimentType(StrEnum):
 
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
         extra="allow",
     )
 
@@ -103,13 +103,13 @@ class MxBlueskyParameters(BaseModel):
 
     @field_validator("parameter_model_version")
     @classmethod
-    def _validate_version(cls, version: Version):
-        assert (
-            version >= Version(major=PARAMETER_VERSION.major)
-        ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert (
-            version <= Version(major=PARAMETER_VERSION.major + 1)
-        ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
+    def _validate_version(cls, version: SemanticVersion):
+        assert version >= SemanticVersion(major=PARAMETER_VERSION.major), (
+            f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
+        )
+        assert version <= SemanticVersion(major=PARAMETER_VERSION.major + 1), (
+            f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
+        )
         return version
 
 
@@ -150,6 +150,7 @@ class DiffractionExperiment(
     transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
 
     @model_validator(mode="before")
     @classmethod

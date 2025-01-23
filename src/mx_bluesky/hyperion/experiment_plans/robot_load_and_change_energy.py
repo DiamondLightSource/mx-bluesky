@@ -11,7 +11,7 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.motors import XYZPositioner
@@ -24,13 +24,13 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
-from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     set_energy_plan,
 )
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -41,7 +41,7 @@ class RobotLoadAndEnergyChangeComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
     # RobotLoad fields
     robot: BartRobot
@@ -118,17 +118,18 @@ def do_robot_load(
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
+    error_code = yield from bps.rd(composite.robot.error_code)
+    # Reset robot if light curtains were tripped
+    if error_code == 40:
+        yield from bps.trigger(composite.robot.reset, wait=True)
+
     yield from bps.abs_set(
         composite.robot,
         sample_location,
         group="robot_load",
     )
 
-    if demand_energy_ev:
-        yield from set_energy_plan(
-            demand_energy_ev / 1000,
-            cast(SetEnergyComposite, composite),
-        )
+    yield from set_energy_plan(demand_energy_ev, cast(SetEnergyComposite, composite))
 
     yield from bps.wait("robot_load")
 
@@ -214,24 +215,28 @@ def robot_load_and_change_energy_plan(
     yield from prepare_for_robot_load(
         composite.aperture_scatterguard, composite.smargon
     )
-    yield from bpp.run_wrapper(
-        robot_load_and_snapshots(
-            composite,
-            sample_location,
-            params.snapshot_directory,
-            params.thawing_time,
-            params.demand_energy_ev,
-        ),
-        md={
-            "subplan_name": CONST.PLAN.ROBOT_LOAD,
-            "metadata": {
-                "visit": params.visit,
-                "sample_id": params.sample_id,
-                "sample_puck": sample_location.puck,
-                "sample_pin": sample_location.pin,
+
+    yield from bpp.set_run_key_wrapper(
+        bpp.run_wrapper(
+            robot_load_and_snapshots(
+                composite,
+                sample_location,
+                params.snapshot_directory,
+                params.thawing_time,
+                params.demand_energy_ev,
+            ),
+            md={
+                "subplan_name": CONST.PLAN.ROBOT_LOAD,
+                "metadata": {
+                    "visit": params.visit,
+                    "sample_id": params.sample_id,
+                    "sample_puck": sample_location.puck,
+                    "sample_pin": sample_location.pin,
+                },
+                "activate_callbacks": [
+                    "RobotLoadISPyBCallback",
+                ],
             },
-            "activate_callbacks": [
-                "RobotLoadISPyBCallback",
-            ],
-        },
+        ),
+        CONST.PLAN.ROBOT_LOAD_AND_SNAPSHOTS,
     )

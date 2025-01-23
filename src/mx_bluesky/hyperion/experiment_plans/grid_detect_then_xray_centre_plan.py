@@ -9,13 +9,14 @@ from bluesky import preprocessors as bpp
 from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -25,13 +26,20 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from dodal.devices.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
+    GridDetectionCallback,
+    GridParamUpdate,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import GridScanWithEdgeDetect
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -52,17 +60,10 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.grid_detection_callback import (
-    GridDetectionCallback,
-    GridParamUpdate,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionThreeDGridScan,
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -72,8 +73,9 @@ class GridDetectThenXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
@@ -93,10 +95,6 @@ class GridDetectThenXRayCentreComposite:
     robot: BartRobot
     sample_shutter: ZebraShutter
 
-    @property
-    def sample_motors(self):
-        return self.smargon
-
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
     return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
@@ -105,10 +103,10 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetect,
     grid_parameters: GridParamUpdate,
-) -> HyperionThreeDGridScan:
+) -> HyperionSpecifiedThreeDGridScan:
     params_json = grid_scan_with_edge_params.model_dump()
     params_json.update(grid_parameters)
-    flyscan_xray_centre_parameters = HyperionThreeDGridScan(**params_json)
+    flyscan_xray_centre_parameters = HyperionSpecifiedThreeDGridScan(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
 
@@ -225,6 +223,7 @@ def grid_detect_then_xray_centre(
         )
 
     yield from start_preparing_data_collection_then_do_plan(
+        composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_params.detector_distance,
@@ -232,9 +231,9 @@ def grid_detect_then_xray_centre(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    assert (
-        flyscan_event_handler.xray_centre_results
-    ), "Flyscan result event not received or no crystal found and exception not raised"
+    assert flyscan_event_handler.xray_centre_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],

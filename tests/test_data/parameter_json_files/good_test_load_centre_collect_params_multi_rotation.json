@@ -1,0 +1,51 @@
+{
+    "parameter_model_version": "5.0.0",
+    "beamline": "BL03S",
+    "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
+    "insertion_prefix": "SR03S",
+    "visit": "cm31105-4",
+    "detector_distance_mm": 255,
+    "sample_id": 12345,
+    "sample_puck": 40,
+    "sample_pin": 3,
+    "robot_load_then_centre": {
+        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/xraycentring",
+        "file_name": "robot_load_centring_file",
+        "comment": "Robot load and centre",
+        "exposure_time_s": 0.004,
+        "use_roi_mode": false,
+        "demand_energy_ev": 11100,
+        "run_number": 0
+    },
+    "multi_rotation_scan": {
+        "comment": "Rotation",
+        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/",
+        "file_name": "file_name",
+        "exposure_time_s": 0.004,
+        "selected_aperture": "SMALL_APERTURE",
+        "transmission_frac": 1.0,
+        "demand_energy_ev": 11100,
+        "rotation_increment_deg": 0.1,
+        "shutter_opening_time_s": 0.6,
+        "snapshot_omegas_deg": [0, 90, 180, 270],
+        "run_number": 1,
+        "rotation_scans": [
+            {
+                "rotation_axis": "omega",
+                "rotation_direction": "Negative",
+                "scan_width_deg": 180.0,
+                "omega_start_deg": 0,
+                "phi_start_deg": 0.47,
+                "chi_start_deg": 23.85
+            },
+            {
+                "rotation_axis": "omega",
+                "rotation_direction": "Positive",
+                "scan_width_deg": 180.0,
+                "omega_start_deg": 0,
+                "phi_start_deg": 0.47,
+                "chi_start_deg": 0
+            }
+        ]
+    }
+}

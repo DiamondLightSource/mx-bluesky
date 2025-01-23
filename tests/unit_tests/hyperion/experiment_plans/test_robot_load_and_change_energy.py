@@ -11,11 +11,12 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
+    SampleLocation,
+    do_robot_load,
     prepare_for_robot_load,
     robot_load_and_change_energy_plan,
     take_robot_snapshots,
@@ -23,6 +24,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 
 from ....conftest import raw_params_from_file
 
@@ -67,29 +69,6 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([Msg("set_energy_plan")])),
-)
-def test_robot_load_and_energy_change_doesnt_set_energy_if_not_specified(
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
-    sim_run_engine: RunEngineSimulator,
-):
-    sim_run_engine.add_handler(
-        "locate",
-        lambda msg: {"readback": 11.105},
-        "dcm-energy_in_kev",
-    )
-    messages = sim_run_engine.simulate_plan(
-        robot_load_and_change_energy_plan(
-            robot_load_and_energy_change_composite,
-            robot_load_and_energy_change_params_no_energy,
-        )
-    )
-    assert not any(msg for msg in messages if msg.command == "set_energy_plan")
 
 
 def run_simulating_smargon_wait(
@@ -173,38 +152,65 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
     aperture_scatterguard.move_out.trigger = MagicMock(return_value=done_status)
 
-    set_mock_value(smargon.x.user_readback, 10)
-    set_mock_value(smargon.z.user_readback, 5)
-    set_mock_value(smargon.omega.user_readback, 90)
+    set_mock_value(smargon.x.user_setpoint, 10)
+    set_mock_value(smargon.z.user_setpoint, 5)
+    set_mock_value(smargon.omega.user_setpoint, 90)
 
     RE = RunEngine()
     RE(prepare_for_robot_load(aperture_scatterguard, smargon))
 
-    assert await smargon.x.user_readback.get_value() == 0
-    assert await smargon.z.user_readback.get_value() == 0
-    assert await smargon.omega.user_readback.get_value() == 0
+    assert await smargon.x.user_setpoint.get_value() == 0
+    assert await smargon.z.user_setpoint.get_value() == 0
+    assert await smargon.omega.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.move_out.trigger.assert_called_once_with()  # type: ignore
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
+    MagicMock(return_value=iter([])),
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode_and_snapshots"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.bps.trigger",
 )
+async def test_when_error_40_reset_robot_before_load(
+    mock_reset_error: MagicMock,
+    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
+    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
+):
+    assert robot_load_and_energy_change_params.sample_puck is not None
+    assert robot_load_and_energy_change_params.sample_pin is not None
+
+    sample_location = SampleLocation(
+        robot_load_and_energy_change_params.sample_puck,
+        robot_load_and_energy_change_params.sample_pin,
+    )
+
+    demand_energy_ev = robot_load_and_energy_change_params.demand_energy_ev
+
+    set_mock_value(robot_load_and_energy_change_composite.robot.error_code, 40)
+
+    RE = RunEngine()
+    RE(
+        # Thawing time set to arbitrary value
+        do_robot_load(
+            robot_load_and_energy_change_composite, sample_location, demand_energy_ev, 0
+        )
+    )
+
+    mock_reset_error.assert_called_once()
+
+
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
 def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
-    start_load: MagicMock,
-    update_barcode_and_snapshots: MagicMock,
-    end_load: MagicMock,
+    exp_eye: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
@@ -224,7 +230,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
-    start_load.return_value = action_id
+    exp_eye.return_value.start_load.return_value = action_id
 
     RE(
         robot_load_and_change_energy_plan(
@@ -232,11 +238,11 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
         )
     )
 
-    start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
-    update_barcode_and_snapshots.assert_called_once_with(
+    exp_eye.return_value.start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
+    exp_eye.return_value.update_barcode_and_snapshots.assert_called_once_with(
         action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(action_id, "success", "OK")
+    exp_eye.return_value.end_load.assert_called_once_with(action_id, "success", "OK")
 
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")

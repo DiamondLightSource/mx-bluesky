@@ -1,13 +1,27 @@
-from enum import Enum
+from enum import StrEnum
 from os import environ
 from pathlib import Path
 
 from mx_bluesky.beamlines.i24.serial.log import _read_visit_directory_from_file
 
 
-class SSXType(Enum):
+class SSXType(StrEnum):
     FIXED = "Serial Fixed"
     EXTRUDER = "Serial Jet"
+
+
+class DetectorName(StrEnum):
+    EIGER = "eiger"
+    PILATUS = "pilatus"
+
+
+# TODO figue sth out for tests
+LUT_FILES_PATH = Path("/dls_sw/i24/software/daq_configuration/lookup")
+
+BEAM_CENTER_LUT_FILES = {
+    DetectorName.EIGER: LUT_FILES_PATH / "DetDistToBeamXYConverterE9M.txt",
+    DetectorName.PILATUS: LUT_FILES_PATH / "DetDistToBeamXYConverterP6M.txt",
+}
 
 
 OAV_CONFIG_FILES = {

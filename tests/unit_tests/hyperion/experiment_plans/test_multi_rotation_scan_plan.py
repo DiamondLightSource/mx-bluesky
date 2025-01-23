@@ -15,8 +15,10 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
@@ -28,7 +30,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -36,10 +37,10 @@ from ....conftest import (
     DocumentCapturer,
     extract_metafile,
     fake_read,
+    mx_acquisition_from_conn,
     raw_params_from_file,
 )
 from ..external_interaction.conftest import *  # noqa # for fixtures
-from ..external_interaction.conftest import mx_acquisition_from_conn
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -202,9 +203,9 @@ def test_full_multi_rotation_plan_docs_emitted(
         assert DocumentCapturer.is_match(
             scan_docs[0],
             "start",
-            has_fields=["trigger_zocalo_on", "hyperion_parameters"],
+            has_fields=["trigger_zocalo_on", "mx_bluesky_parameters"],
         )
-        params = RotationScan(**json.loads(scan_docs[0][1]["hyperion_parameters"]))
+        params = RotationScan(**json.loads(scan_docs[0][1]["mx_bluesky_parameters"]))
         assert params == scan
         assert len(events := DocumentCapturer.get_matches(scan_docs, "event")) == 3
         DocumentCapturer.assert_events_and_data_in_order(
@@ -214,7 +215,7 @@ def test_full_multi_rotation_plan_docs_emitted(
                 ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon-x"],
                 [
                     "attenuator-actual_transmission",
-                    "flux_flux_reading",
+                    "flux-flux_reading",
                     "dcm-energy_in_kev",
                     "eiger_bit_depth",
                 ],
@@ -257,7 +258,8 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        assert call.args[0] == rotation_params
+        callback_params = call.args[0]
+        assert callback_params == rotation_params
         assert call.kwargs == {
             "omega_start_deg": rotation_params.omega_start_deg,
             "chi_start_deg": rotation_params.chi_start_deg,
@@ -265,7 +267,9 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "vds_start_index": rotation_params.nexus_vds_start_img,
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
-            "rotation_direction": rotation_params.rotation_direction,
+            "axis_direction": AxisDirection.NEGATIVE
+            if rotation_params.features.omega_flip
+            else AxisDirection.POSITIVE,
         }
 
 
@@ -276,6 +280,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
+    feature_flags_update_with_omega_flip: MagicMock,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -320,7 +325,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
         f"{tmpdir}/{meta_filename}",
     )
     for i, scan in enumerate(multi_params.single_rotation_scans):
-        with h5py.File(f"{tmpdir}/{prefix}_{i+1}.nxs", "r") as written_nexus_file:
+        with h5py.File(f"{tmpdir}/{prefix}_{i + 1}.nxs", "r") as written_nexus_file:
             # check links go to the right file:
             detector_specific = written_nexus_file[
                 "entry/instrument/detector/detectorSpecific"
@@ -385,7 +390,10 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 h5py.Dataset,
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
-            assert tuple(omega_vec) == (1.0 * scan.rotation_direction.multiplier, 0, 0)
+            omega_flip = (
+                feature_flags_update_with_omega_flip.mock_calls[0].args[0].omega_flip
+            )
+            assert tuple(omega_vec) == (-1.0 if omega_flip else 1.0, 0, 0)
 
 
 @patch(

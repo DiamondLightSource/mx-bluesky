@@ -7,7 +7,7 @@
 
 import pydantic
 from bluesky import plan_stubs as bps
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.undulator_dcm import UndulatorDCM
@@ -30,7 +30,7 @@ class SetEnergyComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
     xbpm_feedback: XBPMFeedback
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
 
 
 def _set_energy_plan(
@@ -48,12 +48,13 @@ def _set_energy_plan(
 
 
 def set_energy_plan(
-    energy_kev,
+    energy_ev: float | None,
     composite: SetEnergyComposite,
 ):
-    yield from transmission_and_xbpm_feedback_for_collection_wrapper(
-        _set_energy_plan(energy_kev, composite),
-        composite.xbpm_feedback,
-        composite.attenuator,
-        DESIRED_TRANSMISSION_FRACTION,
-    )
+    if energy_ev:
+        yield from transmission_and_xbpm_feedback_for_collection_wrapper(
+            _set_energy_plan(energy_ev / 1000, composite),
+            composite.xbpm_feedback,
+            composite.attenuator,
+            DESIRED_TRANSMISSION_FRACTION,
+        )

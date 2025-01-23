@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
@@ -49,8 +49,8 @@ async def test_setup_detector_stage(
 ):
     fake_caget.return_value = DetRequest.eiger.value
     RE(setup_detector_stage(SSXType.FIXED, detector_stage))
-    assert await detector_stage.y.user_readback.get_value() == Eiger.det_y_target
+    assert await detector_stage.y.user_setpoint.get_value() == Eiger.det_y_target
 
     fake_caget.return_value = DetRequest.pilatus.value
     RE(setup_detector_stage(SSXType.EXTRUDER, detector_stage))
-    assert await detector_stage.y.user_readback.get_value() == Pilatus.det_y_target
+    assert await detector_stage.y.user_setpoint.get_value() == Pilatus.det_y_target

@@ -1,5 +1,6 @@
 import dataclasses
 from collections.abc import Sequence
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy
@@ -7,15 +8,16 @@ import pytest
 from bluesky.protocols import Location
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.hyperion.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
 )
@@ -31,6 +33,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScanPerSweep,
@@ -44,6 +47,8 @@ from .conftest import (
     sim_fire_event_on_open_run,
 )
 
+GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION = "tests/test_data/parameter_json_files/good_test_load_centre_collect_params_multi_rotation.json"
+
 
 def find_a_pin(pin_tip_detection):
     def set_good_position():
@@ -55,7 +60,10 @@ def find_a_pin(pin_tip_detection):
 
 @pytest.fixture
 def composite(
-    robot_load_composite, fake_create_rotation_devices, sim_run_engine
+    robot_load_composite,
+    fake_create_rotation_devices,
+    pin_tip_detection_with_found_pin,
+    sim_run_engine,
 ) -> LoadCentreCollectComposite:
     rlaec_args = {
         field.name: getattr(robot_load_composite, field.name)
@@ -67,6 +75,7 @@ def composite(
     }
 
     composite = LoadCentreCollectComposite(**(rlaec_args | rotation_args))
+    composite.pin_tip_detection = pin_tip_detection_with_found_pin
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
@@ -109,10 +118,13 @@ def composite(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
     )
-    composite.pin_tip_detection.trigger = MagicMock(
-        side_effect=find_a_pin(composite.pin_tip_detection)
-    )
     return composite
+
+
+@pytest.fixture
+def load_centre_collect_params_multi():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    return LoadCentreCollect(**params)
 
 
 @pytest.fixture
@@ -157,6 +169,105 @@ def grid_detection_callback_with_detected_grid():
 
 def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
     load_centre_collect_params.model_dump_json()
+
+
+def test_params_good_multi_rotation_load_centre_collect_params(
+    load_centre_collect_params_multi,
+):
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    LoadCentreCollect(**params)
+
+
+def test_params_with_varying_frames_per_rotation_is_rejected():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"]["rotation_scans"][0]["scan_width_deg"] = 180
+    params["multi_rotation_scan"]["rotation_scans"][1]["scan_width_deg"] = 90
+    with pytest.raises(
+        ValidationError,
+        match="Sweeps with different numbers of frames are not supported.",
+    ):
+        LoadCentreCollect(**params)
+
+
+@pytest.mark.parametrize(
+    "param, value",
+    [
+        ["x_start_um", 1.0],
+        ["y_start_um", 2.0],
+        ["z_start_um", 3.0],
+    ],
+)
+def test_params_with_start_xyz_is_rejected(param: str, value: float):
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"]["rotation_scans"][1][param] = value
+    with pytest.raises(
+        ValidationError,
+        match="Specifying start xyz for sweeps is not supported in combination with centring.",
+    ):
+        LoadCentreCollect(**params)
+
+
+def test_params_with_different_energy_for_rotation_gridscan_rejected():
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"]["demand_energy_ev"] = 11000
+    params["robot_load_then_centre"]["demand_energy_ev"] = 11100
+    with pytest.raises(
+        ValidationError,
+        match="Setting a different energy for gridscan and rotation is not supported.",
+    ):
+        LoadCentreCollect(**params)
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        # MxBlueskyParameters
+        ["parameter_model_version", "1.2.3"],
+        # WithSample
+        ["sample_id", 12345],
+        ["sample_puck", 1],
+        ["sample_pin", 2],
+        # WithVisit
+        ["beamline", "i03"],
+        ["visit", "cm12345"],
+        ["insertion_prefix", "SR03"],
+        ["detector_distance_mm", 123],
+        ["det_dist_to_beam_converter_path", "/foo/bar"],
+    ],
+)
+def test_params_with_unexpected_info_in_robot_load_rejected(key: str, value: Any):
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["robot_load_then_centre"][key] = value
+    with pytest.raises(
+        ValidationError, match="Unexpected keys in robot_load_then_centre"
+    ):
+        LoadCentreCollect(**params)
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        # MxBlueskyParameters
+        ["parameter_model_version", "1.2.3"],
+        # WithSample
+        ["sample_id", 12345],
+        ["sample_puck", 1],
+        ["sample_pin", 2],
+        # WithVisit
+        ["beamline", "i03"],
+        ["visit", "cm12345"],
+        ["insertion_prefix", "SR03"],
+        ["detector_distance_mm", 123],
+        ["det_dist_to_beam_converter_path", "/foo/bar"],
+    ],
+)
+def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
+    key: str, value: Any
+):
+    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params["multi_rotation_scan"][key] = value
+    with pytest.raises(ValidationError, match="Unexpected keys in multi_rotation_scan"):
+        LoadCentreCollect(**params)
 
 
 def test_can_serialize_load_centre_collect_robot_load_params(
@@ -332,6 +443,24 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
         )
 
     mock_rotation_scan.assert_not_called()
+
+
+def test_load_centre_collect_fails_with_exception_when_no_beamstop(
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    sim_run_engine: RunEngineSimulator,
+):
+    sim_run_engine.add_read_handler_for(
+        composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    )
+
+    with pytest.raises(BeamstopException):
+        sim_run_engine.simulate_plan(
+            load_centre_collect_full(
+                composite, load_centre_collect_params, oav_parameters_for_rotation
+            )
+        )
 
 
 def test_can_deserialize_top_n_by_max_count_params(

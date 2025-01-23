@@ -12,7 +12,17 @@ from dodal.log import (
 )
 from dodal.log import LOGGER as dodal_logger
 
-LOGGER = logging.getLogger("mx-bluesky")
+LOGGER = logging.getLogger("MX-Bluesky")
+LOGGER.setLevel("DEBUG")
+LOGGER.parent = dodal_logger
+
+ISPYB_ZOCALO_CALLBACK_LOGGER = logging.getLogger("ISPyB and Zocalo callbacks")
+ISPYB_ZOCALO_CALLBACK_LOGGER.setLevel(logging.DEBUG)
+
+NEXUS_LOGGER = logging.getLogger("NeXus callbacks")
+NEXUS_LOGGER.setLevel(logging.DEBUG)
+
+ALL_LOGGERS = [LOGGER, ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER]
 
 __logger_handlers: DodalLogHandlers | None = None
 
@@ -76,18 +86,18 @@ def do_default_logging_setup(
 
 
 def _get_debug_handler() -> CircularMemoryHandler:
-    assert (
-        __logger_handlers is not None
-    ), "You can only use this after running the default logging setup"
+    assert __logger_handlers is not None, (
+        "You can only use this after running the default logging setup"
+    )
     return __logger_handlers["debug_memory_handler"]
 
 
 def flush_debug_handler() -> str:
     """Writes the contents of the circular debug log buffer to disk and returns the written filename"""
     handler = _get_debug_handler()
-    assert isinstance(
-        handler.target, TimedRotatingFileHandler
-    ), "Circular memory handler doesn't have an appropriate fileHandler target"
+    assert isinstance(handler.target, TimedRotatingFileHandler), (
+        "Circular memory handler doesn't have an appropriate fileHandler target"
+    )
     handler.flush()
     return handler.target.baseFilename
 

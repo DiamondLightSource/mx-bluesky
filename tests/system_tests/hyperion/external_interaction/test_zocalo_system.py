@@ -8,6 +8,9 @@ import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
@@ -15,11 +18,8 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 """
@@ -60,7 +60,7 @@ def fake_fgs_plan():
 
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(
-    dummy_params: HyperionThreeDGridScan,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
     dummy_ispyb_3d,
     RE: RunEngine,
     zocalo_device: ZocaloResults,
@@ -80,7 +80,7 @@ def run_zocalo_with_dev_ispyb(
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
                     CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
                     "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-                    "hyperion_parameters": dummy_params.model_dump_json(),
+                    "mx_bluesky_parameters": dummy_params.model_dump_json(),
                 }
             )
             def inner_plan():

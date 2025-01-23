@@ -1,16 +1,28 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd_async.core import set_mock_value
+from ispyb.sqlalchemy import BLSample
+from ophyd.sim import NullStatus
+from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    CrystalNotFoundException,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
@@ -21,10 +33,11 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 from ...conftest import (
@@ -46,6 +59,7 @@ def load_centre_collect_params():
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
+    beamstop_i03,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -58,6 +72,7 @@ def load_centre_collect_composite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
+        beamstop=beamstop_i03,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
@@ -171,9 +186,33 @@ ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "6}_oav_snapshot_270\\.png",
 }
 
+SAMPLE_ID = 5461074
+
+
+@pytest.fixture
+def composite_with_no_diffraction(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+) -> Generator[LoadCentreCollectComposite, Any, None]:
+    zocalo = load_centre_collect_composite.zocalo
+
+    @AsyncStatus.wrap
+    async def mock_zocalo_complete():
+        await zocalo._put_results([], {"dcid": 0, "dcgid": 0})
+
+    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
+        yield load_centre_collect_composite
+
+
+@pytest.fixture(autouse=True)
+def use_dev_ispyb():
+    with patch.dict(
+        os.environ, values={"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
+    ):
+        yield
+
 
 @pytest.mark.s03
-def test_execute_load_centre_collect_full_plan(
+def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -181,15 +220,19 @@ def test_execute_load_centre_collect_full_plan(
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
 ):
-    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    ispyb_gridscan_cb = GridscanISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
     ispyb_rotation_cb = RotationISPyBCallback()
     robot_load_cb = RobotLoadISPyBCallback()
-    robot_load_cb.expeye = MagicMock()
-    robot_load_cb.expeye.start_load.return_value = 1234
+    # robot_load_cb.expeye = MagicMock()
+    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
-        load_centre_collect_composite.undulator_dcm.undulator.current_gap, 1.11
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
@@ -202,14 +245,15 @@ def test_execute_load_centre_collect_full_plan(
         )
     )
 
-    assert robot_load_cb.expeye.start_load.called_once_with("cm37235", 4, 5461074, 2, 6)
-    assert robot_load_cb.expeye.update_barcode_and_snapshots(
-        1234,
-        "BARCODE",
-        "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/160705_webcam_after_load.png",
-        "/tmp/snapshot1.png",
-    )
-    assert robot_load_cb.expeye.end_load(1234, "success", "OK")
+    robot_load_cb.expeye.start_load.assert_called_once_with("cm37235", 4, 5461074, 2, 6)
+    # TODO re-enable this https://github.com/DiamondLightSource/mx-bluesky/issues/690
+    # robot_load_cb.expeye.update_barcode_and_snapshots.assert_called_once_with(
+    #     1234,
+    #     "BARCODE",
+    #     "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/160705_webcam_after_load.png",
+    #     "/tmp/snapshot1.png",
+    # )
+    robot_load_cb.expeye.end_load.assert_called_once_with(1234, "success", "OK")
 
     # Compare gridscan collection
     compare_actual_and_expected(
@@ -233,16 +277,16 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "Hyperion: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-        "bottom right (px): [874,278]. Aperture: ApertureValue.SMALL. ",
+        "bottom right (px): [874,278]. Aperture: Small. ",
     )
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -266,5 +310,207 @@ def test_execute_load_centre_collect_full_plan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: ApertureValue.SMALL. ",
+        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: Small. ",
     )
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with (
+        patch(
+            "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.wait_for_smargon_not_disabled",
+            side_effect=TimeoutError("Simulated timeout"),
+        ),
+        pytest.raises(TimeoutError, match="Simulated timeout"),
+    ):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    pin_tip_no_pin_found: PinTipDetection,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with pytest.raises(
+        WarningException, match="Pin tip centring failed - pin too long/short.*"
+    ):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(sample_handling_cb)
+    set_mock_value(load_centre_collect_composite.beamstop.x_mm.user_readback, 1)
+
+    with pytest.raises(BeamstopException, match="Beamstop is not DATA_COLLECTION"):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_not_found(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    descriptor = None
+
+    def wait_for_first_oav_grid(name: str, doc: dict):
+        nonlocal descriptor
+        if (
+            name == "descriptor"
+            and doc["name"] == CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED
+        ):
+            descriptor = doc["uid"]
+        if name == "event" and doc["descriptor"] == descriptor:
+            # Trigger a fail to find the pin at 2nd grid detect
+            set_mock_value(
+                load_centre_collect_composite.pin_tip_detection.triggered_tip,
+                PinTipDetection.INVALID_POSITION,
+            )
+            trigger = load_centre_collect_composite.pin_tip_detection.trigger
+            trigger.return_value = NullStatus()  # type:ignore
+            trigger.side_effect = None  # type: ignore
+
+    RE.subscribe(wait_for_first_oav_grid)
+
+    with pytest.raises(WarningException, match="No pin found after 5.0 seconds"):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
+    composite_with_no_diffraction: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with pytest.raises(CrystalNotFoundException):
+        RE(
+            load_centre_collect_full(
+                composite_with_no_diffraction,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+
+
+@pytest.mark.s03
+def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_blsample: Callable[..., Any],
+):
+    robot_load_cb = RobotLoadISPyBCallback()
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(sample_handling_cb)
+
+    with (
+        patch(
+            "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.arm_zebra",
+            side_effect=TimeoutError("Simulated timeout"),
+        ),
+        pytest.raises(TimeoutError, match="Simulated timeout"),
+    ):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"

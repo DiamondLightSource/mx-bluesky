@@ -51,6 +51,7 @@ jobs:
         # Docker cache and publish it
         with:
           context: .
+          file: Dockerfile.release
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -4,18 +4,18 @@ import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
 
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.log import LOGGER
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    parameters: HyperionThreeDGridScan | None = None,
+    parameters: HyperionSpecifiedThreeDGridScan | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
@@ -26,8 +26,9 @@ def change_aperture_then_move_to_xtal(
             best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
         )
         with TRACER.start_span("change_aperture"):
-            yield from _set_aperture_for_bbox_mm(
-                aperture_scatterguard, bounding_box_size
+            yield from set_aperture_for_bbox_mm(
+                aperture_scatterguard,
+                bounding_box_size,
             )
     else:
         LOGGER.warning("No bounding box size received")
@@ -49,25 +50,35 @@ def change_aperture_then_move_to_xtal(
         )
 
 
-def _set_aperture_for_bbox_mm(
-    aperture_device: ApertureScatterguard, bbox_size_mm: list[float] | numpy.ndarray
-):
-    # TODO confirm correction factor see https://github.com/DiamondLightSource/mx-bluesky/issues/618
-    ASSUMED_BOX_SIZE_MM = 0.020
-    bbox_size_boxes = [round(mm / ASSUMED_BOX_SIZE_MM) for mm in bbox_size_mm]
-    yield from set_aperture_for_bbox_size(aperture_device, bbox_size_boxes)
-
-
-def set_aperture_for_bbox_size(
+def set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard,
-    bbox_size: list[int] | numpy.ndarray,
+    bbox_size_mm: list[float] | numpy.ndarray,
 ):
+    """Sets aperture size based on bbox_size.
+
+    This function determines the aperture size needed to accomodate the bounding box
+    of a crystal. The x-axis length of the bounding box is used, setting the aperture
+    to Medium if this is less than 50um, and Large otherwise.
+
+    Args:
+        aperture_device: The aperture scatter gaurd device we are controlling.
+        bbox_size_mm: The [x,y,z] lengths, in mm, of a bounding box
+        containing a crystal. This describes (in no particular order):
+        * The maximum width a crystal occupies
+        * The maximum height a crystal occupies
+        * The maximum depth a crystal occupies
+        constructing a three dimensional cuboid, completely encapsulating the crystal.
+
+    Yields:
+        Iterator[MsgGenerator]
+    """
+
     # bbox_size is [x,y,z], for i03 we only care about x
     new_selected_aperture = (
-        ApertureValue.MEDIUM if bbox_size[0] < 2 else ApertureValue.LARGE
+        ApertureValue.MEDIUM if bbox_size_mm[0] < 0.05 else ApertureValue.LARGE
     )
     LOGGER.info(
-        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")

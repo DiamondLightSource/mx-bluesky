@@ -14,11 +14,11 @@ from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
 from dodal.devices.oav.utils import PinNotFoundException, wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
-from mx_bluesky.hyperion.exceptions import catch_exception_and_warn
-from mx_bluesky.hyperion.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -139,7 +139,7 @@ def grid_detection_plan(
         # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
         if y_steps % 2 and angle == 0:
             LOGGER.debug(
-                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels / 2}"
             )
             y_steps += 1
             min_y -= box_size_y_pixels / 2

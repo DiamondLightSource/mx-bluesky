@@ -5,11 +5,11 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
-from dodal.devices.attenuator import Attenuator
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.xspress3.xspress3 import Xspress3
-from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 
-from mx_bluesky.hyperion.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
@@ -26,7 +26,7 @@ class Direction(Enum):
 class OptimizeAttenuationComposite:
     """All devices which are directly or indirectly required by this plan"""
 
-    attenuator: Attenuator
+    attenuator: BinaryFilterAttenuator
     sample_shutter: ZebraShutter
     xspress3mini: Xspress3
 
@@ -197,11 +197,7 @@ def deadtime_optimisation(
     cycles to complete.
 
     Args:
-        attenuator: (Attenuator) Ophyd device
-
-        xspress3mini: (Xspress3Mini) Ophyd device
-
-        sample_shutter: (ZebraShutter) Ophyd_async device for the fast shutter
+        composite: (OptimizeAttenuationComposite) Devices required to optimise attenuation
 
         transmission: (float)
         The initial transmission value to use for the optimising
@@ -302,11 +298,7 @@ def total_counts_optimisation(
     defined by the lower and upper limit. To protect the sample, the transmission has a maximum value of 10%.
 
     Args:
-        attenuator: (Attenuator) Ophyd device
-
-        xspress3mini: (Xspress3Mini) Ophyd device
-
-        sample_shutter: (ZebraShutter) Ophyd_async device for the fast shutter
+        composite: (OptimizeAttenuationComposite) Devices required to optimise attenuation
 
         transmission: (float)
         The initial transmission value to use for the optimising

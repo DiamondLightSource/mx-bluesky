@@ -10,15 +10,17 @@ from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
+    parse_lookup_table,
 )
 
-from mx_bluesky.hyperion.log import LOGGER
-from mx_bluesky.hyperion.utils.utils import (
+from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
+YAW_LAT_TIMEOUT_S = 30
 
 
 def _apply_and_wait_for_voltages_to_settle(
@@ -46,14 +48,12 @@ def _apply_and_wait_for_voltages_to_settle(
         for voltage_channel, required_voltage in zip(
             channels.values(), required_voltages, strict=True
         ):
-            LOGGER.debug(
+            LOGGER.info(
                 f"Applying and waiting for voltage {voltage_channel.name} = {required_voltage}"
             )
             yield from bps.abs_set(
-                voltage_channel, required_voltage, group=MIRROR_VOLTAGE_GROUP
+                voltage_channel, required_voltage, group=MIRROR_VOLTAGE_GROUP, wait=True
             )
-
-    yield from bps.wait(group=MIRROR_VOLTAGE_GROUP)
 
 
 def adjust_mirror_stripe(
@@ -61,16 +61,29 @@ def adjust_mirror_stripe(
 ):
     """Feedback should be OFF prior to entry, in order to prevent
     feedback from making unnecessary corrections while beam is being adjusted."""
-    stripe = mirror.energy_to_stripe(energy_kev)
+    mirror_config = mirror.energy_to_stripe(energy_kev)
 
     LOGGER.info(
-        f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
+        f"Adjusting mirror stripe for {energy_kev}keV selecting {mirror_config['stripe']} stripe"
     )
-    yield from bps.abs_set(mirror.stripe, stripe, wait=True)
+    yield from bps.abs_set(mirror.stripe, mirror_config["stripe"], wait=True)
     yield from bps.trigger(mirror.apply_stripe)
 
+    # yaw, lat cannot be done simultaneously
+    LOGGER.info(f"Adjusting {mirror.name} lat to {mirror_config['lat_mm']}")
+    yield from bps.abs_set(
+        mirror.x_mm, mirror_config["lat_mm"], wait=True, timeout=YAW_LAT_TIMEOUT_S
+    )
+
+    LOGGER.info(f"Adjusting {mirror.name} yaw to {mirror_config['yaw_mrad']}")
+    yield from bps.abs_set(
+        mirror.yaw_mrad, mirror_config["yaw_mrad"], wait=True, timeout=YAW_LAT_TIMEOUT_S
+    )
+
     LOGGER.info("Adjusting mirror voltages...")
-    yield from _apply_and_wait_for_voltages_to_settle(stripe, mirror_voltages)
+    yield from _apply_and_wait_for_voltages_to_settle(
+        mirror_config["stripe"], mirror_voltages
+    )
 
 
 def adjust_dcm_pitch_roll_vfm_from_lut(
@@ -86,13 +99,17 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     feedback from making unnecessary corrections while beam is being adjusted."""
 
     # Adjust DCM Pitch
-    dcm = undulator_dcm.dcm
+    dcm = undulator_dcm.dcm_ref()
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
-    d_spacing_a: float = yield from bps.rd(undulator_dcm.dcm.crystal_metadata_d_spacing)
+    d_spacing_a: float = yield from bps.rd(
+        undulator_dcm.dcm_ref().crystal_metadata_d_spacing
+    )
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(undulator_dcm.pitch_energy_table_path),
+        linear_interpolation_lut(
+            *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
+        ),
         dcm.pitch_in_mrad,
         bragg_deg,
     )
@@ -102,38 +119,18 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # DCM Roll
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(undulator_dcm.roll_energy_table_path),
+        linear_interpolation_lut(
+            *parse_lookup_table(undulator_dcm.roll_energy_table_path)
+        ),
         dcm.roll_in_mrad,
         bragg_deg,
     )
     yield from dcm_roll_adjuster(DCM_GROUP)
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
-    # DCM Perp pitch
-    offset_mm = undulator_dcm.dcm_fixed_offset_mm
-    LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
-    yield from bps.abs_set(dcm.offset_in_mm, offset_mm, group=DCM_GROUP)
-
     #
-    # Adjust mirrors
+    # Adjust vfm mirror stripe and mirror voltages
     #
-
-    # No need to change HFM
-
-    # Assumption is focus mode is already set to "sample"
-    # not sure how we check this
 
     # VFM Stripe selection
     yield from adjust_mirror_stripe(energy_kev, vfm, mirror_voltages)
-    yield from bps.wait(DCM_GROUP)
-
-    # VFM Adjust - for I03 this table always returns the same value
-    vfm_lut = vfm.bragg_to_lat_lookup_table_path
-    assert vfm_lut is not None
-    vfm_x_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(vfm_lut),
-        vfm.x_mm,
-        bragg_deg,
-    )
-    LOGGER.info("Waiting for VFM Lat (Horizontal Translation) to complete...")
-    yield from vfm_x_adjuster()

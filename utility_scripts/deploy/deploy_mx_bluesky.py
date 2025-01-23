@@ -5,7 +5,9 @@ Deploy latest release of mx-bluesky either on a beamline or in dev mode.
 import argparse
 import os
 import re
+import shutil
 import subprocess
+import sys
 from typing import NamedTuple
 from uuid import uuid1
 
@@ -23,6 +25,8 @@ VERSION_PATTERN_COMPILED = re.compile(
 
 DEV_DEPLOY_LOCATION = "/scratch/30day_tmp/mx-bluesky_release_test/bluesky"
 
+MAX_DEPLOYMENTS = 4
+
 help_message = f"""
 To deploy mx_bluesky on a specific beamline, using the control machine to create the \
 environment and without kubernetes, only the beamline argument needs to be passed.
@@ -39,8 +43,10 @@ class Options(NamedTuple):
     print_release_dir: bool = False
     quiet: bool = False
     dev_mode: bool = False
-    use_control_machine: bool = True
+    prune_deployments: bool = True
+
     # NOTE For i24 for now will need to set it to false from the command line
+    use_control_machine: bool = True
 
 
 class Deployment:
@@ -121,19 +127,52 @@ def _create_environment_from_control_machine(
     process = None
     try:
         # Call python script on i03-control to create the environment
-        process = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdout, stderr = process.communicate()
+        process = subprocess.Popen(cmd, shell=True, text=True, bufsize=1)
+        process.communicate()
         if process.returncode != 0:
-            print(f"Error occurred: {stderr.decode()}")
-        else:
-            print(f"Output: {stdout.decode()}")
+            print("Error occurred, exiting")
+            sys.exit(1)
     except Exception as e:
         print(f"Exception while trying to install venv on i03-control: {e}")
     finally:
         if process:
             process.kill()
+
+
+def _prune_old_deployments(release_area: str):
+    def get_creation_time(deployment):
+        # Warning: getctime gives time since last metadata change, not the creation time.
+        return os.path.getctime(os.path.join(release_area, deployment))
+
+    deployments = os.listdir(release_area)
+    set_of_deployments = set(deployments)
+
+    # Seperates symlinks and deployments
+    symlinks = set()
+    for item in deployments:
+        if os.path.islink(os.path.join(release_area, item)):
+            symlinks.add(item)
+            set_of_deployments.remove(item)
+
+    sorted_deployments = sorted(set_of_deployments, key=get_creation_time, reverse=True)
+
+    # Excludes most recent deployments
+    if len(sorted_deployments) > MAX_DEPLOYMENTS:
+        full_path_old_deployments = {
+            os.path.join(release_area, deployment)
+            for deployment in sorted_deployments[MAX_DEPLOYMENTS:]
+        }
+
+        # Excludes deployments that are symlinked
+        for link in symlinks:
+            link_path = os.path.dirname(os.readlink(os.path.join(release_area, link)))
+            if link_path in full_path_old_deployments:
+                full_path_old_deployments.remove(link_path)
+
+        # Deletes old deployments
+        for old_deployment in full_path_old_deployments:
+            print(f"Deleting old deployment {os.path.basename(old_deployment)}")
+            shutil.rmtree(old_deployment)
 
 
 def main(beamline: str, options: Options):
@@ -250,6 +289,9 @@ def main(beamline: str, options: Options):
     else:
         print("Quitting without latest version being updated")
 
+    if options.prune_deployments:
+        _prune_old_deployments(release_area)
+
 
 # Get the release directory based off the beamline and the latest mx-bluesky version
 def _parse_options() -> tuple[str, Options]:
@@ -286,6 +328,14 @@ def _parse_options() -> tuple[str, Options]:
         action="store_false",
         help="Do not create environment running from the control machine.",
     )
+    parser.add_argument(
+        "-pd",
+        "--prune-deployments",
+        required=False,
+        default=True,
+        help="Delete deployments which are older than the latest four if they aren't being used in any symlinks",
+    )
+
     args = parser.parse_args()
     if args.dev:
         print("Running as dev")
@@ -299,10 +349,12 @@ def _parse_options() -> tuple[str, Options]:
         print_release_dir=args.print_release_dir,
         quiet=args.print_release_dir,
         dev_mode=args.dev,
+        prune_deployments=args.prune_deployments,
         use_control_machine=args.no_control,
     )
 
 
 if __name__ == "__main__":
     beamline, options = _parse_options()
+    print(options.prune_deployments)
     main(beamline, options)

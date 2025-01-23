@@ -1,14 +1,58 @@
+from pathlib import Path
 from time import sleep
 
 import bluesky.plan_stubs as bps
+from dodal.beamlines import i24
+from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.util.lookup_tables import (
+    linear_interpolation_lut,
+    parse_lookup_table,
+)
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
+
+
+def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
+    if detector_in_use == "eiger":
+        return i24.eiger_beam_center()
+    else:
+        return i24.pilatus_beam_center()
+
+
+def compute_beam_center_position_from_lut(
+    lut_path: Path,
+    detector_distance_mm: float,
+    det_size_constants: DetectorSizeConstants,
+) -> tuple[float, float]:
+    """Calculate the beam center position for the detector distance \
+    using the values in the lookup table for the conversion.
+    """
+    lut_values = parse_lookup_table(lut_path.as_posix())
+
+    calc_x = linear_interpolation_lut(lut_values[0], lut_values[1])
+    beam_x_mm = calc_x(detector_distance_mm)
+    beam_x = (
+        beam_x_mm
+        * det_size_constants.det_size_pixels.width
+        / det_size_constants.det_dimension.width
+    )
+
+    calc_y = linear_interpolation_lut(lut_values[0], lut_values[2])
+    beam_y_mm = calc_y(detector_distance_mm)
+    beam_y = (
+        beam_y_mm
+        * det_size_constants.det_size_pixels.height
+        / det_size_constants.det_dimension.height
+    )
+
+    return beam_x, beam_y
 
 
 def setup_beamline_for_collection_plan(
@@ -41,6 +85,23 @@ def move_detector_stage_to_position_plan(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
     yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+
+
+def set_detector_beam_center_plan(
+    beam_center_device: DetectorBeamCenter,
+    beam_center_pixels: tuple[float, float],
+    group: str = "set_beamcenter",
+    wait: bool = True,
+):
+    """A small temporary plan to set up the beam center on the detector in use."""
+    # NOTE This will be removed once the detectors are using ophyd_async devices
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/62
+    beam_position_x, beam_position_y = beam_center_pixels
+    SSX_LOGGER.info(f"Setting beam center to: {beam_position_x}, {beam_position_y}")
+    yield from bps.abs_set(beam_center_device.beam_x, beam_position_x, group=group)
+    yield from bps.abs_set(beam_center_device.beam_y, beam_position_y, group=group)
+    if wait:
+        yield from bps.wait(group=group)
 
 
 def modechange(action):
@@ -232,11 +293,6 @@ def pilatus(action, args_list):
     # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
-    SSX_LOGGER.warning("WARNING: Have you set beam X and Y?")
-    # 16 Fed 2022 last change DA
-    caput(pv.pilat_beamx, 1284.7)
-    caput(pv.pilat_beamy, 1308.6)
-    sleep(0.1)
 
     # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
     if action == "fastchip":
@@ -330,11 +386,8 @@ def eiger(action, args_list):
             SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    SSX_LOGGER.warning("WARNING: Have you set header info?")
     caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_omegaincr, 0.0)
-    caput(pv.eiger_beamx, 1600.0)
-    caput(pv.eiger_beamy, 1697.4)
     sleep(0.1)
     # Setup common to all collections ###
     caput(pv.eiger_filewriter, "No")
