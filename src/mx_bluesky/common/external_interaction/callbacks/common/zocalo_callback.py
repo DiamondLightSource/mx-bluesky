@@ -72,7 +72,6 @@ class ZocaloCallback(CallbackBase):
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename
-                assert self.zocalo_interactor is not None
                 self.zocalo_interactor.run_start(start_info)
         return doc
 
