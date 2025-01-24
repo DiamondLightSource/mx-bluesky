@@ -135,8 +135,6 @@ ensure_version_py() {
 }
 
 app_version() {
-  ensure_version_py
-
   . $PROJECTDIR/.venv/bin/activate
   python -m setuptools_scm --force-write-version-files | sed -e 's/[^a-zA-Z0-9._-]/_/g'
 }
