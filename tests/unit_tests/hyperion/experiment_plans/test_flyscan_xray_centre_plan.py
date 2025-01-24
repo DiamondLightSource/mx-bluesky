@@ -88,7 +88,6 @@ from ....system_tests.hyperion.external_interaction.conftest import (
 from .conftest import (
     assert_event,
     mock_zocalo_trigger,
-    modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
@@ -482,10 +481,11 @@ class TestFlyscanXrayCentrePlan:
     )
     @patch(
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-        modified_interactor_mock,
+        autospec=True,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
+        mock_zocalo_trigger: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
@@ -793,6 +793,8 @@ class TestFlyscanXrayCentrePlan:
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
+        assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
+        ispyb_cb.emit_cb.zocalo_interactor.run_end = mock_parent.run_end
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()  # type: ignore
         fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock(
@@ -804,15 +806,9 @@ class TestFlyscanXrayCentrePlan:
         )
         set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
-        with (
-            patch(
-                "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
-                autospec=True,
-            ),
-            patch(
-                "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-                lambda _: modified_interactor_mock(mock_parent.run_end),
-            ),
+        with patch(
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+            autospec=True,
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
@@ -1003,9 +999,8 @@ class TestFlyscanXrayCentrePlan:
         ispyb_cb.params = MagicMock()
         ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
-        zocalo_env = "dev_env"
 
-        mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+        mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
 
         fake_fgs_composite.eiger.unstage = MagicMock()
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
@@ -1021,10 +1016,8 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.synchrotron,
                 scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
                 scan_start_indices=[0, x_steps * y_steps],
-                zocalo_environment=zocalo_env,
             )
         )
-        mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
         expected_start_infos = [
             ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
@@ -1038,11 +1031,11 @@ class TestFlyscanXrayCentrePlan:
             call(expected_start_infos[1]),
         ]
 
-        assert mock_zocalo_trigger.run_start.call_count == 2
-        assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+        assert mock_zocalo_trigger.run_start.call_count == 2  # type: ignore
+        assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls  # type: ignore
 
-        assert mock_zocalo_trigger.run_end.call_count == 2
-        assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
+        assert mock_zocalo_trigger.run_end.call_count == 2  # type: ignore
+        assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]  # type: ignore
 
     @patch(
         "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",

@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -19,7 +18,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from dodal.devices.zocalo import ZocaloResults
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
@@ -213,13 +212,6 @@ def run_generic_ispyb_handler_setup(
     )
 
 
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
-
-
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
     mock = MagicMock(spec=StoreInIspyb)
     mock.begin_deposition.return_value = IspybIds(
@@ -236,7 +228,7 @@ def mock_subscriptions(test_fgs_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
+            autospec=True,
         ),
         patch(
             "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"

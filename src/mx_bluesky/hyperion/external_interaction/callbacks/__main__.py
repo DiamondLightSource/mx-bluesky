@@ -49,7 +49,7 @@ ERROR_LOG_BUFFER_LINES = 5000
 
 
 def setup_callbacks():
-    zocalo = ZocaloCallback()
+    zocalo = ZocaloCallback("", "")
     return [
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(

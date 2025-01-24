@@ -23,6 +23,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
@@ -37,7 +38,8 @@ def create_robot_load_and_centre_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+            param_type=GridCommonWithHyperionDetectorParams,
+            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
         RobotLoadISPyBCallback(),
     )
@@ -49,7 +51,8 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+            param_type=GridCommonWithHyperionDetectorParams,
+            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
     )
 
@@ -57,7 +60,12 @@ def create_gridscan_callbacks() -> tuple[
 def create_rotation_callbacks() -> tuple[
     RotationNexusFileCallback, RotationISPyBCallback
 ]:
-    return (RotationNexusFileCallback(), RotationISPyBCallback(emit=ZocaloCallback()))
+    return (
+        RotationNexusFileCallback(),
+        RotationISPyBCallback(
+            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
+        ),
+    )
 
 
 def create_load_centre_collect_callbacks() -> tuple[
@@ -71,10 +79,13 @@ def create_load_centre_collect_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams, emit=ZocaloCallback()
+            param_type=GridCommonWithHyperionDetectorParams,
+            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
         RobotLoadISPyBCallback(),
         RotationNexusFileCallback(),
-        RotationISPyBCallback(emit=ZocaloCallback()),
+        RotationISPyBCallback(
+            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
+        ),
         SampleHandlingCallback(),
     )
