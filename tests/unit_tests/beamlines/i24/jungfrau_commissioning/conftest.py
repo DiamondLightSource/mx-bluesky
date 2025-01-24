@@ -6,7 +6,7 @@ import pytest
 from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.i24.beam_params import ReadOnlyEnergyAndAttenuator
-from dodal.devices.i24.jungfrau import AcquireState, JungFrau1M, WriteState
+from dodal.devices.i24.jungfrau import JungFrau1M
 from dodal.devices.i24.vgonio import VerticalGoniometer
 from ophyd.status import Status
 from ophyd_async.epics.motor import Motor
@@ -75,14 +75,14 @@ def fake_jungfrau(RE) -> JungFrau1M:
     JF: JungFrau1M = i24.jungfrau(fake_with_ophyd_sim=True)
 
     def set_acquire_side_effect(_, wait):
-        set_mock_value(JF.acquire_rbv, AcquireState.ACQUIRE)
-        set_mock_value(JF.writing_rbv, WriteState.WRITE)
+        set_mock_value(JF.acquire_rbv, 1)
+        set_mock_value(JF.writing_rbv, 1)
 
         def go_low():
             time.sleep(1)
-            set_mock_value(JF.acquire_rbv, AcquireState.DONE)
+            set_mock_value(JF.acquire_rbv, 0)
             time.sleep(0.5)
-            set_mock_value(JF.writing_rbv, WriteState.DONE)
+            set_mock_value(JF.writing_rbv, 0)
 
         threading.Thread(target=go_low, daemon=True).start()
         # return completed_status

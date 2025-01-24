@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from dodal.devices.i24.jungfrau import JungFrau1M, TriggerMode
+from dodal.devices.i24.jungfrau import BurstMode, JungFrau1M, TriggerMode
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utils import (
     date_time_string,
@@ -120,12 +120,12 @@ def do_burst_mode(
     yield from bps.abs_set(
         jungfrau.file_directory, directory_prefix.as_posix(), wait=True
     )
-    yield from bps.abs_set(jungfrau.burst_mode, 1)
+    yield from bps.abs_set(jungfrau.burst_mode, BurstMode.ON.value)
     yield from bps.sleep(0.2)
     yield from do_manual_acquisition(
         jungfrau, exp_time_s, acq_time_s, n_frames, timeout_times
     )
-    yield from bps.abs_set(jungfrau.burst_mode, 0)
+    yield from bps.abs_set(jungfrau.burst_mode, BurstMode.OFF.value)
 
 
 def setup_detector(

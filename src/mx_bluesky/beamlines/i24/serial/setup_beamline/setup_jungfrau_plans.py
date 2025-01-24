@@ -19,7 +19,7 @@ def setup_and_run_jungfrau_for_darks_plan(
     SSX_LOGGER.info("Jungfrau - collect dark images")
     # NOTE for now just got what was in old scripts on beamline but reuse the do_manual
     # from jungfrau commissioning
-    yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.SOFTWARE, wait=True)
+    yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.SOFTWARE.value, wait=True)
 
     # TODO Type ignore until new device in use
     SSX_LOGGER.debug("Collect G0")
@@ -78,7 +78,9 @@ def setup_jungfrau_for_fixed_target_plan(
     wait: bool = True,
 ):
     SSX_LOGGER.info("Setup JF for fixed-target collection.")
-    yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.HARDWARE, group=group)
+    yield from bps.abs_set(
+        jungfrau.trigger_mode, TriggerMode.HARDWARE.value, group=group
+    )
     yield from bps.abs_set(jungfrau.gain_mode, GainMode.DYNAMIC, group=group)
 
     yield from bps.abs_set(jungfrau.file_directory, filepath, group=group)
@@ -100,4 +102,4 @@ def setup_jungfrau_for_fixed_target_plan(
 def jungfrau_return_to_normal_plan(jungfrau: JungFrau1M):
     # According to manual, sls_detector_put stop
     yield from bps.abs_set(jungfrau.trigger_count, 1, wait=True)
-    yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.SOFTWARE, wait=True)
+    yield from bps.abs_set(jungfrau.trigger_mode, TriggerMode.SOFTWARE.value, wait=True)
