@@ -8,6 +8,7 @@ import ispyb.sqlalchemy
 import numpy
 import pytest
 import pytest_asyncio
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
@@ -39,6 +40,7 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
@@ -228,13 +230,33 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 
 
 @pytest.fixture
-def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
+def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
+    zocalo = i03.zocalo(fake_with_ophyd_sim=True)
+    old_zocalo_trigger = zocalo.trigger
+    zocalo.my_zocalo_result = TEST_RESULT_MEDIUM
+
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
-        await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 1234, "dcgid": 123})
+        fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
+        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        message = {
+            "results": zocalo.my_zocalo_result  # type: ignore
+        }
+        header = {}
+        zocalo.my_callback(fake_recipe_wrapper, header, message)  # type: ignore
+        await old_zocalo_trigger()
 
-    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-        yield zocalo
+    def mock_worfklow_subscribe(transport, channel, callback, **kwargs):
+        if channel == "xrc.i03":
+            zocalo.my_callback = callback
+
+    with (
+        patch("dodal.devices.zocalo.zocalo_results.workflows") as workflows,
+        patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
+    ):
+        workflows.recipe.wrap_subscribe.side_effect = mock_worfklow_subscribe
+        with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
+            yield zocalo
 
 
 @pytest.fixture
