@@ -10,7 +10,7 @@ import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
@@ -94,7 +94,9 @@ def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
 def prepare_for_robot_load(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon
 ):
-    yield from bps.trigger(aperture_scatterguard.move_out, group="prepare_robot_load")
+    yield from bps.abs_set(
+        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group="prepare_robot_load"
+    )
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 

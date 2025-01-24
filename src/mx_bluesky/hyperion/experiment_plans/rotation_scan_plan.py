@@ -348,8 +348,8 @@ def _move_and_rotation(
         )
         yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
         if params.selected_aperture:
-            yield from bps.abs_set(
-                composite.aperture_scatterguard.aperture_outside_beam,
+            yield from bps.prepare(
+                composite.aperture_scatterguard,
                 params.selected_aperture,
                 group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )

@@ -509,8 +509,9 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "trigger"
-        and msg.obj.name == "aperture_scatterguard-move_out"
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(

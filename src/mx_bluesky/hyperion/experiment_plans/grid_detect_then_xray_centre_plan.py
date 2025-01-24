@@ -144,8 +144,8 @@ def detect_grid_and_do_gridscan(
 
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in
-        yield from bps.abs_set(
-            composite.aperture_scatterguard.aperture_outside_beam,
+        yield from bps.prepare(
+            composite.aperture_scatterguard,
             parameters.selected_aperture,
             group=CONST.WAIT.GRID_READY_FOR_DC,
         )
