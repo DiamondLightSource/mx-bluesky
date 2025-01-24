@@ -579,7 +579,7 @@ def aperture_scatterguard(RE):
             scatterguard_y=14,
             radius=20,
         ),
-        ApertureValue.ROBOT_LOAD: AperturePosition(
+        ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
             aperture_y=16,
             aperture_z=2,

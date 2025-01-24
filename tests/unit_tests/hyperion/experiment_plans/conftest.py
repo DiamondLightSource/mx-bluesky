@@ -91,7 +91,7 @@ BASIC_PRE_SETUP_DOC = {
 }
 
 BASIC_POST_SETUP_DOC = {
-    "aperture_scatterguard-selected_aperture": ApertureValue.ROBOT_LOAD,
+    "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
     "aperture_scatterguard-radius": None,
     "aperture_scatterguard-aperture-x": 15,
     "aperture_scatterguard-aperture-y": 16,

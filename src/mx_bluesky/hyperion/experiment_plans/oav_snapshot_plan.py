@@ -34,9 +34,7 @@ def setup_beamline_for_OAV(
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
     yield from bps.abs_set(backlight, BacklightPosition.IN, group=group)
     yield from bps.abs_set(
-        aperture_scatterguard,
-        ApertureValue.ROBOT_LOAD,
-        group=group,
+        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group=group
     )
 
 
@@ -44,11 +42,9 @@ def oav_snapshot_plan(
     composite: OavSnapshotComposite,
     parameters: WithSnapshot,
     oav_parameters: OAVParameters,
-    wait: bool = True,
 ) -> MsgGenerator:
     if not parameters.take_snapshots:
         return
-    yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
     yield from _setup_oav(composite, parameters, oav_parameters)
     for omega in parameters.snapshot_omegas_deg or []:
         yield from _take_oav_snapshot(composite, omega)
