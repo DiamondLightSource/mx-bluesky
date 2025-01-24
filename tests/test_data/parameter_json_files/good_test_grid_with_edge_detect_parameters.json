@@ -13,5 +13,6 @@
     "omega_start_deg": 0.0,
     "grid_width_um": 290.6,
     "transmission_frac": 1.0,
-    "visit": "cm31105-4"
+    "visit": "cm31105-4",
+    "box_size_um": 20
 }

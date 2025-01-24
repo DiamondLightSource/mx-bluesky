@@ -193,7 +193,9 @@ def wait_for_run_engine_status(
 
 def check_status_in_response(response_object, expected_result: Status):
     response_json = json.loads(response_object.data)
-    assert response_json["status"] == expected_result.value
+    assert response_json["status"] == expected_result.value, (
+        f"{response_json['status']} != {expected_result.value}: {response_json.get('message')}"
+    )
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):
@@ -290,14 +292,53 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
-def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
+@pytest.mark.parametrize(
+    "endpoint, test_file",
+    [
+        [
+            START_ENDPOINT,
+            "tests/test_data/parameter_json_files/good_test_parameters.json",
+        ],
+        [
+            "/grid_detect_then_xray_centre/start",
+            "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters"
+            ".json",
+        ],
+        [
+            "/rotation_scan/start",
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters"
+            ".json",
+        ],
+        [
+            "/pin_tip_centre_then_xray_centre/start",
+            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters"
+            ".json",
+        ],
+        [
+            "/robot_load_then_centre/start",
+            "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params"
+            ".json",
+        ],
+        [
+            "/multi_rotation_scan/start",
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters"
+            ".json",
+        ],
+        [
+            "/load_centre_collect_full/start",
+            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params"
+            ".json",
+        ],
+    ],
+)
+def test_start_with_json_file_gives_success(
+    test_env: ClientAndRunEngine, endpoint: str, test_file: str
+):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
-    ) as test_params_file:
+    with open(test_file) as test_params_file:
         test_params = test_params_file.read()
-    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(endpoint, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
