@@ -19,7 +19,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 """
@@ -60,7 +60,7 @@ def fake_fgs_plan():
 
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(
-    dummy_params: HyperionThreeDGridScan,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
     dummy_ispyb_3d,
     RE: RunEngine,
     zocalo_device: ZocaloResults,

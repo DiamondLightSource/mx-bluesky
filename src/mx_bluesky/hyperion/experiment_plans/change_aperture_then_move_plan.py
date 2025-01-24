@@ -8,14 +8,14 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.parameters.gridscan import HyperionThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    parameters: HyperionThreeDGridScan | None = None,
+    parameters: HyperionSpecifiedThreeDGridScan | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
