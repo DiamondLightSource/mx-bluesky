@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
+PERMITTED_PATHS = [Path("/tmp")]
 
 
 @pytest.fixture(autouse=True)
@@ -17,8 +17,8 @@ def patch_open_to_prevent_dls_reads_in_tests():
     def patched_open(*args, **kwargs):
         requested_path = Path(args[0])
         if requested_path.is_absolute():
-            for p in BANNED_PATHS:
-                assert not requested_path.is_relative_to(
+            for p in PERMITTED_PATHS:
+                assert requested_path.is_relative_to(
                     p
                 ) or requested_path.is_relative_to(project_folder), (
                     f"Attempt to open {requested_path} from inside a unit test"
