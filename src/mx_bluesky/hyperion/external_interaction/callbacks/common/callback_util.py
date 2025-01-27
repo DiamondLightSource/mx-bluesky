@@ -35,6 +35,7 @@ CallbacksFactory = Callable[[], tuple[CallbackBase, ...]]
 def create_robot_load_and_centre_callbacks() -> tuple[
     GridscanNexusFileCallback, GridscanISPyBCallback, RobotLoadISPyBCallback
 ]:
+    """Note: This is not actually used in production, see https://github.com/DiamondLightSource/mx-bluesky/issues/516"""
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
@@ -48,6 +49,7 @@ def create_robot_load_and_centre_callbacks() -> tuple[
 def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridscanISPyBCallback
 ]:
+    """Note: This is not actually used in production, see https://github.com/DiamondLightSource/mx-bluesky/issues/516"""
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
@@ -60,6 +62,7 @@ def create_gridscan_callbacks() -> tuple[
 def create_rotation_callbacks() -> tuple[
     RotationNexusFileCallback, RotationISPyBCallback
 ]:
+    """Note: This is not actually used in production, see https://github.com/DiamondLightSource/mx-bluesky/issues/516"""
     return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
@@ -76,6 +79,7 @@ def create_load_centre_collect_callbacks() -> tuple[
     RotationISPyBCallback,
     SampleHandlingCallback,
 ]:
+    """Note: This is not actually used in production, see https://github.com/DiamondLightSource/mx-bluesky/issues/516"""
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
