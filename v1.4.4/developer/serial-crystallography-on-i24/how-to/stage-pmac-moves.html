@@ -1,0 +1,705 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Stage motor moves using the PMAC device &#8212; mx-bluesky 1.4.4 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=6d0302ba"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/serial-crystallography-on-i24/how-to/stage-pmac-moves';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.4.4';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Architectural Decision Records" href="../explanations/decisions.html" />
+    <link rel="prev" title="Run a collection" href="run-a-collection.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.4.4" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">mx-bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../general/index.html">General MX-Bluesky Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../general/tutorials/profile-tests.html">Unit test performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/contribute.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/create-a-release.html">Create a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/deploy-a-release.html">Deploy a New Release</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/update-tools.html">Update the tools</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/reference/standards.html">Standards</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../hyperion/index.html">Hyperion Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/readme.html">hyperion</a></li>
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/deploying-hyperion.html">Building a deployable Docker image</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Serial Crystallography on I24</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">I24 Serial Crystallography</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../project-planning/roadmap.html">Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environment-setup.html">Set up for serial experiments on I24</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run-a-collection.html">Run a collection</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Stage motor moves using the PMAC device</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Murko Integration</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../murko-integration/index.html">Murko Integration</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../murko-integration/explanations/architecture.html">Murko Architecture</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">I24 Serial Crystallography</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Stage motor moves using the PMAC device</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="stage-motor-moves-using-the-pmac-device">
+<h1>Stage motor moves using the PMAC device<a class="headerlink" href="#stage-motor-moves-using-the-pmac-device" title="Link to this heading">#</a></h1>
+<section id="notes-on-pmac-coordinate-system-and-motors">
+<h2>Notes on PMAC coordinate system and motors<a class="headerlink" href="#notes-on-pmac-coordinate-system-and-motors" title="Link to this heading">#</a></h2>
+<p>In a PMAC, motors that should move in a coordinated fashion ware put
+into the same coordinate system that can run a motion program. Motors
+that should move independently of each other should go into a separate
+coordinate system. A coordinate system is established by assigning axes
+to motors. The axes allocations defined for the chip stages set up are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#1-&gt;X</span>
+<span class="c1">#2-&gt;Y</span>
+<span class="c1">#3-&gt;Z</span>
+</pre></div>
+</div>
+<p>When an X-axis move is executed, the #1 motor will make the move.</p>
+<p>When running chip collections, the stage motors are moved via the <a class="reference external" href="https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i24/pmac.py">PMAC
+device</a>
+in a couple of different ways.</p>
+<ol class="arabic">
+<li><p>In most cases, the {x,y,z} motors are moved by sending a command to
+the PMAC as a <code class="docutils literal notranslate"><span class="pre">PMAC_STRING</span></code>.</p>
+<ul class="simple">
+<li><p>Using a JOG command <code class="docutils literal notranslate"><span class="pre">J:{const}</span></code>, to jog the motor a specified
+distance from the current position. For example, this will move
+motor Y by 10 motor steps:
+<code class="docutils literal notranslate"><span class="pre">python</span>&#160;&#160;&#160;&#160;&#160; <span class="pre">yield</span> <span class="pre">from</span> <span class="pre">bps.abs_set(pmac.pmac_string,</span> <span class="pre">&quot;#2J:10&quot;)</span></code></p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">hmz</span></code> strings are homing commands which will reset the
+encoders counts to 0 for the axis. All three motors are homed by
+sending the string: <code class="docutils literal notranslate"><span class="pre">#1hmz#2hmz#3hmz</span></code>. In the plans this is done
+by triggering the home move:
+<code class="docutils literal notranslate"><span class="pre">python</span>&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">yield</span> <span class="pre">from</span> <span class="pre">bps.trigger(pmac.home)</span></code></p></li>
+<li><p>Another pmac_string that can start a move has the format
+<code class="docutils literal notranslate"><span class="pre">!x..y..</span></code>. This is a command designed to blend any ongoing move
+into a new position. A common one through the serial collection
+code is <code class="docutils literal notranslate"><span class="pre">!x0y0z0</span></code>, which will start a move to 0 for all motors.
+<code class="docutils literal notranslate"><span class="pre">python</span>&#160;&#160;&#160;&#160;&#160; <span class="pre">yield</span> <span class="pre">from</span> <span class="pre">bps.trigger(pmac.to_xyz_zero)</span></code></p></li>
+</ul>
+</li>
+<li><p>The stage motors can also be moved directly through the existing PVs
+<code class="docutils literal notranslate"><span class="pre">ME14E-MO-CHIP-01:{X,Y,Z}</span></code>, for example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">pmac</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pmac</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="notes-on-the-coordinate-system-for-a-fixed-target-collection">
+<h2>Notes on the coordinate system for a fixed-target collection<a class="headerlink" href="#notes-on-the-coordinate-system-for-a-fixed-target-collection" title="Link to this heading">#</a></h2>
+<section id="cs-maker-oxford-type-chips-oxford-oxford-inner-minichip">
+<h3>CS_MAKER: Oxford-type chips (Oxford, Oxford-Inner, Minichip)<a class="headerlink" href="#cs-maker-oxford-type-chips-oxford-oxford-inner-minichip" title="Link to this heading">#</a></h3>
+<p>Generally, the first step before a chip collection is to create the
+coordinate system. This is done by first selecting the 3 fiducials on
+the and then clicking the <code class="docutils literal notranslate"><span class="pre">Make</span> <span class="pre">co-ordinate</span> <span class="pre">system</span></code> button. This
+button runs the <code class="docutils literal notranslate"><span class="pre">cs_maker</span></code> plan, which computes the correct
+pmac_strings to assign axes values to each motors.</p>
+<p>Theory for this computation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Rx</span><span class="p">:</span> <span class="n">rotation</span> <span class="n">about</span> <span class="n">X</span><span class="o">-</span><span class="n">axis</span><span class="p">,</span> <span class="n">pitch</span>
+<span class="n">Ry</span><span class="p">:</span> <span class="n">rotation</span> <span class="n">about</span> <span class="n">Y</span><span class="o">-</span><span class="n">axis</span><span class="p">,</span> <span class="n">yaw</span>
+<span class="n">Rz</span><span class="p">:</span> <span class="n">rotation</span> <span class="n">about</span> <span class="n">Z</span><span class="o">-</span><span class="n">axis</span><span class="p">,</span> <span class="n">roll</span>
+<span class="n">The</span> <span class="n">order</span> <span class="n">of</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="n">Roll</span><span class="o">-&gt;</span><span class="n">Yaw</span><span class="o">-&gt;</span><span class="n">Pitch</span> <span class="p">(</span><span class="n">Rx</span><span class="o">*</span><span class="n">Ry</span><span class="o">*</span><span class="n">Rz</span><span class="p">)</span>
+<span class="n">Rx</span>           <span class="n">Ry</span>          <span class="n">Rz</span>
+<span class="o">|</span><span class="mi">1</span>  <span class="mi">0</span>   <span class="mi">0</span><span class="o">|</span> <span class="o">|</span> <span class="n">Cy</span>  <span class="mi">0</span> <span class="n">Sy</span><span class="o">|</span> <span class="o">|</span><span class="n">Cz</span> <span class="o">-</span><span class="n">Sz</span> <span class="mi">0</span><span class="o">|</span>   <span class="o">|</span> <span class="n">CyCz</span>        <span class="o">-</span><span class="n">CxSz</span>         <span class="n">Sy</span>  <span class="o">|</span>
+<span class="o">|</span><span class="mi">0</span> <span class="n">Cx</span> <span class="o">-</span><span class="n">Sx</span><span class="o">|*|</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">0</span><span class="o">|*|</span><span class="n">Sz</span>  <span class="n">Cz</span> <span class="mi">0</span><span class="o">|</span> <span class="o">=</span> <span class="o">|</span> <span class="n">SxSyCz</span><span class="o">+</span><span class="n">CxSz</span> <span class="o">-</span><span class="n">SxSySz</span><span class="o">+</span><span class="n">CxCz</span> <span class="o">-</span><span class="n">SxCy</span><span class="o">|</span>
+<span class="o">|</span><span class="mi">0</span> <span class="n">Sx</span>  <span class="n">Cx</span><span class="o">|</span> <span class="o">|-</span><span class="n">Sy</span>  <span class="mi">0</span> <span class="n">Cy</span><span class="o">|</span> <span class="o">|</span> <span class="mi">0</span>   <span class="mi">0</span> <span class="mi">1</span><span class="o">|</span>   <span class="o">|-</span><span class="n">CxSyCz</span><span class="o">+</span><span class="n">SxSz</span>  <span class="n">CxSySz</span><span class="o">+</span><span class="n">SxCz</span>  <span class="n">CxCy</span><span class="o">|</span>
+
+<span class="n">Skew</span><span class="p">:</span>
+<span class="n">Skew</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">difference</span> <span class="n">between</span> <span class="n">the</span> <span class="n">Sz1</span> <span class="ow">and</span> <span class="n">Sz2</span> <span class="n">after</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="n">taken</span> <span class="n">out</span><span class="o">.</span>
+<span class="n">This</span> <span class="n">should</span> <span class="n">be</span> <span class="n">measured</span> <span class="ow">in</span> <span class="n">situ</span> <span class="n">prior</span> <span class="n">to</span> <span class="n">expriment</span><span class="p">,</span> <span class="n">ie</span><span class="o">.</span> <span class="n">measure</span> <span class="n">by</span> <span class="n">hand</span> <span class="n">using</span>
+<span class="n">opposite</span> <span class="ow">and</span> <span class="n">adjacent</span> <span class="n">RBV</span> <span class="n">after</span> <span class="n">calibration</span> <span class="n">of</span> <span class="n">scale</span> <span class="n">factors</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The plan needs information stored in a few files:</p>
+<ul class="simple">
+<li><p>The motor directions are stored in <code class="docutils literal notranslate"><span class="pre">src/mx_bluesky/i24/serial/parameters/fixed_target/cs/motor_directions.txt.</span></code> The motor number multiplied by the motor direction should give the positive chip direction.</p></li>
+<li><p>The scale values for x,y,z, the skew value and the sign of Sx, Sy, Sz are all stored in <code class="docutils literal notranslate"><span class="pre">src/mx_bluesky/i24/serial/parameters/fixed_target/cs/cs_maker.json</span></code></p></li>
+<li><p>The fiducials 1 and 2 positions are written to file when selecting the fiducials (Setting fiducial 0 instead sends a homing command directly to the pmac_string PV)</p></li>
+</ul>
+<p>NOTE. The <code class="docutils literal notranslate"><span class="pre">motor_direction.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">cs_maker.json</span></code> files should
+only be modified by staff when needed (usually when the stages have been
+off for awhile).</p>
+</section>
+<section id="cs-reset-custom-chips">
+<h3>CS_RESET: Custom chips<a class="headerlink" href="#cs-reset-custom-chips" title="Link to this heading">#</a></h3>
+<p>When using a Custom chip, open the <code class="docutils literal notranslate"><span class="pre">Custom</span> <span class="pre">chip</span></code> edm and before doing
+anything else click the <code class="docutils literal notranslate"><span class="pre">Clear</span> <span class="pre">coordinate</span> <span class="pre">system</span></code> button. This will
+ensure that any pre-existing coordinate system from pre-vious chip
+experiments is wiped and reset.</p>
+<p>This operation is done by the <code class="docutils literal notranslate"><span class="pre">cs_reset</span></code> plan, which sends
+instructions to the PMAC device to assign coordinates to each motor via
+the following pmac_strings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;#1-&gt;10000X+0Y+0Z&quot;</span>
+<span class="s2">&quot;#2-&gt;+0X-10000Y+0Z&quot;</span>
+<span class="s2">&quot;#3-&gt;0X+0Y-10000Z&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="run-a-collection.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Run a collection</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../explanations/decisions.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Architectural Decision Records</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-pmac-coordinate-system-and-motors">Notes on PMAC coordinate system and motors</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-coordinate-system-for-a-fixed-target-collection">Notes on the coordinate system for a fixed-target collection</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cs-maker-oxford-type-chips-oxford-oxford-inner-minichip">CS_MAKER: Oxford-type chips (Oxford, Oxford-Inner, Minichip)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cs-reset-custom-chips">CS_RESET: Custom chips</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/1.4.4/docs/developer/serial-crystallography-on-i24/how-to/stage-pmac-moves.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/developer/serial-crystallography-on-i24/how-to/stage-pmac-moves.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
