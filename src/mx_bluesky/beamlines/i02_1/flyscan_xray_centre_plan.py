@@ -32,7 +32,7 @@ from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -42,9 +42,7 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import (
-    ThreeDGridScan,
-)
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import setup_zebra_for_gridscan
@@ -66,7 +64,6 @@ class FlyScanXRayCentreComposite:
     zebra: Zebra
     zocalo: ZocaloResults
     smargon: Smargon
-    # sample_shutter: ZebraShutter
 
     @property
     def sample_motors(self) -> Smargon:
@@ -75,7 +72,7 @@ class FlyScanXRayCentreComposite:
 
 
 def flyscan_xray_centre(
-    parameters: ThreeDGridScan,
+    parameters: SpecifiedThreeDGridScan,
     attenuator: EnumFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
     eiger: EigerDetector = inject("eiger"),
@@ -86,6 +83,7 @@ def flyscan_xray_centre(
     zocalo: ZocaloResults = inject("zocalo"),
     smargon: Smargon = inject("smargon"),
 ):
+    """Add a docstring"""
     # Composites have to be made this way until https://github.com/DiamondLightSource/dodal/issues/874
     # is done and we can properly use composite devices in BlueAPI
     composite = FlyScanXRayCentreComposite(
@@ -107,9 +105,12 @@ def flyscan_xray_centre(
             flyscan_xray_centre_no_move(composite, parameters), parameters
         )
 
+    yield from flyscan_and_fetch_results()
+    # other stuff goes here
+
 
 def flyscan_xray_centre_no_move(
-    composite: FlyScanXRayCentreComposite, parameters: ThreeDGridScan
+    composite: FlyScanXRayCentreComposite, parameters: SpecifiedThreeDGridScan
 ):
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = EnvironmentConstants.ZOCALO_ENV
@@ -119,6 +120,9 @@ def flyscan_xray_centre_no_move(
         md={
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "mx_bluesky_parameters": parameters.model_dump_json(),
+            "activate_callbacks": [
+                "GridscanNexusFileCallback",
+            ],
         }
     )
     @bpp.finalize_decorator(lambda: tidy(composite))
@@ -129,7 +133,7 @@ def flyscan_xray_centre_no_move(
     )
     def run_gridscan_and_fetch_results_and_tidy(
         fgs_composite: FlyScanXRayCentreComposite,
-        params: ThreeDGridScan,
+        params: SpecifiedThreeDGridScan,
     ) -> MsgGenerator:
         yield from run_gridscan_and_fetch_results(composite, parameters)
 
@@ -140,7 +144,7 @@ def flyscan_xray_centre_no_move(
 @bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_fetch_results(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
+    parameters: SpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
@@ -154,7 +158,7 @@ def run_gridscan_and_fetch_results(
         ]
     )
 
-    # setup zebra!
+    # TODO setup zebra!
     yield from setup_zebra_for_gridscan(
         fgs_composite.zebra, fgs_composite.sample_shutter, wait=True
     )
