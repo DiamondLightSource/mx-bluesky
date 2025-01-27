@@ -3,16 +3,15 @@ from collections.abc import Sequence
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
-import numpy
 import pytest
 from bluesky.protocols import Location
+from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
@@ -48,14 +47,6 @@ from .conftest import (
 )
 
 GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION = "tests/test_data/parameter_json_files/good_test_load_centre_collect_params_multi_rotation.json"
-
-
-def find_a_pin(pin_tip_detection):
-    def set_good_position():
-        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([100, 110]))
-        return NullStatus()
-
-    return set_good_position
 
 
 @pytest.fixture
@@ -141,30 +132,6 @@ def load_centre_collect_with_top_n_params():
         "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
     )
     return LoadCentreCollect(**params)
-
-
-@pytest.fixture
-def grid_detection_callback_with_detected_grid():
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
-        autospec=True,
-    ) as callback:
-        callback.return_value.get_grid_parameters.return_value = {
-            "transmission_frac": 1.0,
-            "exposure_time_s": 0,
-            "x_start_um": 0,
-            "y_start_um": 0,
-            "y2_start_um": 0,
-            "z_start_um": 0,
-            "z2_start_um": 0,
-            "x_steps": 10,
-            "y_steps": 10,
-            "z_steps": 10,
-            "x_step_size_um": 0.1,
-            "y_step_size_um": 0.1,
-            "z_step_size_um": 0.1,
-        }
-        yield callback
 
 
 def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
@@ -632,3 +599,24 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
         [call("/tmp/dls/i03/data/2024/cm31105-4/auto/123458/", exist_ok=True)],
         any_order=True,
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+def test_box_size_passed_through_to_gridscan(
+    mock_detect_grid: MagicMock,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+):
+    load_centre_collect_params.robot_load_then_centre.box_size_um = 25
+    with pytest.raises(AssertionError, match="Flyscan result event not received.*"):
+        RE(
+            load_centre_collect_full(
+                composite, load_centre_collect_params, oav_parameters_for_rotation
+            )
+        )
+    detect_grid_call = mock_detect_grid.mock_calls[0]
+    assert detect_grid_call.args[1].box_size_um == 25

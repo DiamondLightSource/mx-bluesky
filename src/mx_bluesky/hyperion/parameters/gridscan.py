@@ -7,9 +7,7 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field
 
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
     SpecifiedThreeDGridScan,
@@ -146,4 +144,4 @@ class PinTipCentreThenXrayCentre(
 class GridScanWithEdgeDetect(
     GridCommonWithHyperionDetectorParams, WithHyperionUDCFeatures
 ):
-    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    pass
