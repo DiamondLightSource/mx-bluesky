@@ -49,14 +49,16 @@ ERROR_LOG_BUFFER_LINES = 5000
 
 
 def setup_callbacks():
-    zocalo = ZocaloCallback("", "")
     return [
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams, emit=zocalo
+            param_type=GridCommonWithHyperionDetectorParams,
+            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
         RotationNexusFileCallback(),
-        RotationISPyBCallback(emit=zocalo),
+        RotationISPyBCallback(
+            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
+        ),
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),
