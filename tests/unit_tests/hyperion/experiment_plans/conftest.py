@@ -286,7 +286,7 @@ def robot_load_composite(
     backlight,
     detector_motion,
     flux,
-    ophyd_pin_tip_detection,
+    pin_tip_detection_with_found_pin,
     zocalo,
     synchrotron,
     sample_shutter,
@@ -297,6 +297,7 @@ def robot_load_composite(
     set_mock_value(dcm.energy_in_kev.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    set_mock_value(smargon.omega.max_velocity, 131)
     return RobotLoadThenCentreComposite(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,
@@ -308,7 +309,7 @@ def robot_load_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
-        pin_tip_detection=ophyd_pin_tip_detection,
+        pin_tip_detection=pin_tip_detection_with_found_pin,
         smargon=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
@@ -368,3 +369,27 @@ def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str
         return msg.run == run_name
 
     sim_run_engine.add_handler("open_run", fire_event, msg_maches_run)
+
+
+@pytest.fixture
+def grid_detection_callback_with_detected_grid():
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        autospec=True,
+    ) as callback:
+        callback.return_value.get_grid_parameters.return_value = {
+            "transmission_frac": 1.0,
+            "exposure_time_s": 0,
+            "x_start_um": 0,
+            "y_start_um": 0,
+            "y2_start_um": 0,
+            "z_start_um": 0,
+            "z2_start_um": 0,
+            "x_steps": 10,
+            "y_steps": 10,
+            "z_steps": 10,
+            "x_step_size_um": 0.1,
+            "y_step_size_um": 0.1,
+            "z_step_size_um": 0.1,
+        }
+        yield callback

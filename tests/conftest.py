@@ -527,10 +527,11 @@ def mirror_voltages():
 
 @pytest.fixture
 def undulator_dcm(RE, sim_run_engine, dcm):
-    undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
+    undulator_dcm = i03.undulator_dcm(
+        fake_with_ophyd_sim=True,
+        daq_configuration_path="tests/test_data/test_daq_configuration",
+    )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
-    undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
-    undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
     yield undulator_dcm
     beamline_utils.clear_devices()
 
