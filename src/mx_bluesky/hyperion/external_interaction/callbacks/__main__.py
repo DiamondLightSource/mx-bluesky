@@ -61,13 +61,21 @@ def create_gridscan_callbacks() -> tuple[
     )
 
 
-def setup_callbacks() -> list[CallbackBase]:
-    return [
-        *create_gridscan_callbacks(),
+def create_rotation_callbacks() -> tuple[
+    RotationNexusFileCallback, RotationISPyBCallback
+]:
+    return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
             emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
         ),
+    )
+
+
+def setup_callbacks() -> list[CallbackBase]:
+    return [
+        *create_gridscan_callbacks(),
+        *create_rotation_callbacks(),
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),

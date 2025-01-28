@@ -4,9 +4,6 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
-    ZocaloCallback,
-)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
@@ -17,6 +14,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
+    create_rotation_callbacks,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -27,18 +27,6 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import raw_params_from_file
-
-
-def create_rotation_callbacks() -> tuple[
-    RotationNexusFileCallback, RotationISPyBCallback
-]:
-    """Note: This is not actually used in production, see https://github.com/DiamondLightSource/mx-bluesky/issues/516"""
-    return (
-        RotationNexusFileCallback(),
-        RotationISPyBCallback(
-            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
-        ),
-    )
 
 
 @pytest.fixture
