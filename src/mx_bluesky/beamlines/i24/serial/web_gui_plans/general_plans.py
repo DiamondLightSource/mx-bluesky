@@ -35,15 +35,6 @@ def gui_stage_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     yield from _move_on_mouse_click_plan(oav, pmac, position_px)
 
 
-# Just a try for reading
-@bpp.run_decorator()
-def gui_read_beam_pos_from_oav() -> MsgGenerator:
-    oav = i24.oav()
-    beam_x = yield from bps.rd(oav.beam_centre_i)
-    beam_y = yield from bps.rd(oav.beam_centre_j)
-    return beam_x, beam_y
-
-
 @bpp.run_decorator()
 def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     oav = i24.oav()

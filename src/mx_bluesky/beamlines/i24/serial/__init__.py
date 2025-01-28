@@ -1,7 +1,6 @@
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_detector,
-    gui_read_beam_pos_from_oav,
     gui_set_parameters,
     gui_sleep,
     gui_stage_move_on_click,
@@ -60,5 +59,4 @@ __all__ = [
     "gui_move_detector",
     "gui_set_parameters",
     "gui_use_jungfrau",
-    "gui_read_beam_pos_from_oav",
 ]
