@@ -7,7 +7,7 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.common.device_setup_plans.setup_panda import load_panda_from_yaml
 
 
-def get_test_plan(*args):
+def test_plan(*args):
     yield from null()
     return "retrieved_settings"
 
@@ -25,7 +25,7 @@ def test_load_panda_from_yaml(
 ):
     test_file = "test"
     mock_settings_provider.return_value = (mock_settings_return := MagicMock())
-    mock_retrieve_settings.side_effect = get_test_plan
+    mock_retrieve_settings.side_effect = test_plan
 
     RE(
         load_panda_from_yaml(
