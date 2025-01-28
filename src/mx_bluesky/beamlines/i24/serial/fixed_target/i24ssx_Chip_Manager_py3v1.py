@@ -665,15 +665,15 @@ def fiducial(point: int = 1, pmac: PMAC = inject("pmac")) -> MsgGenerator:
     output_param_path.mkdir(parents=True, exist_ok=True)
     SSX_LOGGER.info(f"Writing Fiducial File {output_param_path}/fiducial_{point}.txt")
     SSX_LOGGER.info("MTR\tRBV\tRAW\tCorr\tf_value")
-    SSX_LOGGER.info(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}")
-    SSX_LOGGER.info(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}")
-    SSX_LOGGER.info(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
+    SSX_LOGGER.info(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:f}")
+    SSX_LOGGER.info(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:f}")
+    SSX_LOGGER.info(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:f}")
 
     with open(output_param_path / f"fiducial_{point}.txt", "w") as f:
         f.write("MTR\tRBV\tCorr\n")
-        f.write(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:d}\n")
-        f.write(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:d}\n")
-        f.write(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:d}")
+        f.write(f"MTR1\t{rbv_1:1.4f}\t{mtr1_dir:f}\n")
+        f.write(f"MTR2\t{rbv_2:1.4f}\t{mtr2_dir:f}\n")
+        f.write(f"MTR3\t{rbv_3:1.4f}\t{mtr3_dir:f}")
     SSX_LOGGER.info(f"Fiducial {point} set.")
     yield from bps.null()
 
