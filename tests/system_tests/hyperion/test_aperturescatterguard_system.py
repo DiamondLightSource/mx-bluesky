@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     load_positions_from_beamline_parameters,
 )
-from ophyd_async.core import DeviceCollector
+from ophyd_async.core import init_devices
 
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     set_aperture_for_bbox_mm,
@@ -18,7 +18,7 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
 @pytest.fixture
 def ap_sg():
     params = GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
-    with DeviceCollector():
+    with init_devices():
         ap_sg = ApertureScatterguard(
             prefix="BL03S",
             name="ap_sg",

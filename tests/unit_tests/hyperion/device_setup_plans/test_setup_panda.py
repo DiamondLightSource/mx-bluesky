@@ -28,8 +28,6 @@ def run_simulating_setup_panda_functions(
     plan: str,
     panda: HDFPanda,
     smargon: Smargon,
-    sim_run_engine: RunEngineSimulator,
-    mock_load_device=MagicMock,
 ):
     num_of_sets = 0
     num_of_waits = 0
@@ -45,32 +43,32 @@ def run_simulating_setup_panda_functions(
     sim = RunEngineSimulator()
     sim.add_handler(["set", "wait"], count_commands)
 
-    if plan == "setup":
-        smargon_speed = get_smargon_speed(0.1, 1)
-        sim.simulate_plan(
-            setup_panda_for_flyscan(
-                panda,
-                PandAGridScanParams(transmission_fraction=0.01),
-                smargon,
-                0.1,
-                100.1,
-                smargon_speed,
+    with patch(
+        "mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml"
+    ) as mock_load_panda:
+        if plan == "setup":
+            smargon_speed = get_smargon_speed(0.1, 1)
+            sim.simulate_plan(
+                setup_panda_for_flyscan(
+                    panda,
+                    PandAGridScanParams(transmission_fraction=0.01),
+                    smargon,
+                    0.1,
+                    100.1,
+                    smargon_speed,
+                )
             )
-        )
-    elif plan == "disarm":
-        sim.simulate_plan(disarm_panda_for_gridscan(panda))
+            mock_load_panda.assert_called_once()
+        elif plan == "disarm":
+            sim.simulate_plan(disarm_panda_for_gridscan(panda))
 
     return num_of_sets, num_of_waits
 
 
-@patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_device")
-def test_setup_panda_performs_correct_plans(
-    mock_load_device, sim_run_engine, panda, smargon
-):
+def test_setup_panda_performs_correct_plans(sim_run_engine, panda, smargon):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "setup", panda, smargon, sim_run_engine, mock_load_device
+        "setup", panda, smargon
     )
-    mock_load_device.assert_called_once()
     assert num_of_sets == 10
     assert num_of_waits == 5
 
@@ -84,7 +82,9 @@ def test_setup_panda_performs_correct_plans(
         (10, 2, -0.5, 3, 101, 0.1),
     ],
 )
+@patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
 def test_setup_panda_correctly_configures_table(
+    mock_load_panda,
     x_steps: int,
     x_step_size: float,
     x_start: float,
@@ -209,8 +209,13 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smarg
             "mx_bluesky.hyperion.device_setup_plans.setup_panda.bps.wait",
             MagicMock(side_effect=handle_wait),
         ),
-        patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_device"),
+        patch(
+            "mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml"
+        ),
         patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.bps.abs_set"),
+        patch(
+            "mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml"
+        ),
     ):
         RE(
             setup_panda_for_flyscan(
@@ -230,7 +235,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smarg
 # all the blocks which were enabled on setup are also disabled on tidyup
 def test_disarm_panda_disables_correct_blocks(sim_run_engine, panda, smargon):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "disarm", panda, sim_run_engine, smargon
+        "disarm", panda, smargon
     )
     assert num_of_sets == 5
     assert num_of_waits == 1
