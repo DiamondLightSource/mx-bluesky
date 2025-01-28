@@ -86,13 +86,13 @@ def fake_create_rotation_devices():
     detector_motion = i03.detector_motion(connect_immediately=True, mock=True)
     backlight = i03.backlight(mock=True)
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
-    flux = i03.flux(fake_with_ophyd_sim=True)
+    flux = i03.flux(connect_immediately=True, mock=True)
     undulator = i03.undulator(connect_immediately=True, mock=True)
     aperture_scatterguard = i03.aperture_scatterguard(
         connect_immediately=True, mock=True
     )
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
-    s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+    s4_slit_gaps = i03.s4_slit_gaps(connect_immediately=True, mock=True)
     dcm = i03.dcm(connect_immediately=True, mock=True)
     robot = i03.robot(connect_immediately=True, mock=True)
     oav = i03.oav(

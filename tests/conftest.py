@@ -371,7 +371,7 @@ def undulator():
 
 @pytest.fixture
 def s4_slit_gaps():
-    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+    return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -406,7 +406,7 @@ def oav(test_config_files, RE):
 
 @pytest.fixture
 def flux():
-    return i03.flux(fake_with_ophyd_sim=True)
+    return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -816,8 +816,8 @@ async def fake_fgs_composite(
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         ),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        s4_slit_gaps=i03.s4_slit_gaps(connect_immediately=True, mock=True),
         smargon=smargon,
         undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
