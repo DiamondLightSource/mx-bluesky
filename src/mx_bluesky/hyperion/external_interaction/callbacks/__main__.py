@@ -3,6 +3,7 @@ from collections.abc import Callable, Sequence
 from threading import Thread
 from time import sleep
 
+from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -48,13 +49,21 @@ LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
 
 
-def setup_callbacks():
-    return [
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
+    return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams,
             emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
+    )
+
+
+def setup_callbacks() -> list[CallbackBase]:
+    return [
+        *create_gridscan_callbacks(),
         RotationNexusFileCallback(),
         RotationISPyBCallback(
             emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
