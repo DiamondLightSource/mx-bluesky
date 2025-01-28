@@ -218,6 +218,18 @@ def test_gpu_enabled_if_use_gpu_results_or_compare_gpu_enabled(
     assert grid_scan.detector_params.enable_dev_shm == expected_dev_shm
 
 
+@patch("mx_bluesky.common.parameters.components.os")
+def test_if_use_gpu_results_and_compare_gpu_enabled_then_validation_error(
+    _, minimal_3d_gridscan_params
+):
+    minimal_3d_gridscan_params["features"] = {
+        "compare_cpu_and_gpu_zocalo": True,
+        "use_gpu_results": True,
+    }
+    with pytest.raises(ValidationError):
+        HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+
+
 def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
     load_centre_collect_params_with_panda: LoadCentreCollect,
 ):
