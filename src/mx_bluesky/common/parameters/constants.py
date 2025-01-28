@@ -123,9 +123,9 @@ class PlanGroupCheckpointConstants:
 
 @dataclass(frozen=True)
 class DeviceSettingsConstants:
-    PANDA_FLYSCAN_SETTINGS_FILENAME = "panda-gridscan-yaml"
-    PANDA_FLYSCAN_SETTINGS_DIR = os.path.relpath(
-        ROOT_DIR, PANDA_FLYSCAN_SETTINGS_FILENAME
+    PANDA_FLYSCAN_SETTINGS_FILENAME = "panda-gridscan"
+    PANDA_FLYSCAN_SETTINGS_DIR = os.path.abspath(
+        f"{ROOT_DIR}/hyperion/resources/panda/{PANDA_FLYSCAN_SETTINGS_FILENAME}"
     )
 
 

@@ -43,6 +43,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
+from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -869,6 +870,11 @@ class TestFlyscanXrayCentrePlan:
 
         mock_set_panda_directory.assert_called_with(
             Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
+        )
+        mock_load_panda.assert_called_once_with(
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME,
+            fgs_composite_with_panda_pcap.panda,
         )
 
         msgs = assert_message_and_return_remaining(
