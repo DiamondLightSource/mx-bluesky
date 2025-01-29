@@ -37,6 +37,7 @@ from ....conftest import device_factories_for_beamline
 def active_device_factories(active_device_factories) -> set[AnyDeviceFactory]:
     return active_device_factories | device_factories_for_beamline(i24)
 
+
 TEST_PATH = Path("tests/test_data/test_daq_configuration")
 
 TEST_LUT = {
