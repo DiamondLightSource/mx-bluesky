@@ -55,3 +55,6 @@ class FeatureFlags(BaseModel, ABC):
                 else self.overriden_features[flag]
             )
             setattr(self, flag, updated_value)
+
+    @abstractmethod
+    def feature_dependant_config(self): ...

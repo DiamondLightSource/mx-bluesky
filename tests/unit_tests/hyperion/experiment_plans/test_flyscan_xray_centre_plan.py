@@ -51,11 +51,11 @@ from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
     CrystalNotFoundException,
     FlyScanXRayCentreComposite,
     SmargonSpeedException,
     XRayCentreEventHandler,
-    _FeatureControlled,
     _get_feature_controlled,
     flyscan_xray_centre,
     flyscan_xray_centre_no_move,
@@ -163,7 +163,7 @@ def mock_ispyb():
 def feature_controlled(
     fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-) -> _FeatureControlled:
+) -> BeamlineSpecificFGSFeatures:
     return _get_feature_controlled(fake_fgs_composite, test_fgs_params_panda_zebra)
 
 
@@ -345,7 +345,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
         RE_with_subs: ReWithSubs,
     ):
         RE, _ = RE_with_subs
@@ -525,7 +525,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         test_fgs_params_panda_zebra.features.set_stub_offsets = True
@@ -567,7 +567,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -649,7 +649,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -691,7 +691,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -906,7 +906,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         RE: RunEngine,
         done_status: Status,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         RE(
@@ -942,7 +942,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         RE: RunEngine,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         class CompleteException(Exception):
             pass
@@ -1053,7 +1053,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         sim_run_engine.add_handler(
             "read",
@@ -1092,7 +1092,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff_and_complete: MagicMock,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
         test_fgs_params_panda_zebra.x_step_size_um = 10000
@@ -1118,7 +1118,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        feature_controlled: _FeatureControlled,
+        feature_controlled: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
         callback = XRayCentreEventHandler()

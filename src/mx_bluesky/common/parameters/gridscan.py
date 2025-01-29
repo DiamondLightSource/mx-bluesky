@@ -8,6 +8,7 @@ from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
+from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -68,6 +69,7 @@ class SpecifiedThreeDGridScan(
     y_steps: int = Field(gt=0)
     z_steps: int = Field(gt=0)
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
+    features: FeatureFlags | None = None
 
     @property
     def FGS_params(self) -> ZebraGridScanParams:
