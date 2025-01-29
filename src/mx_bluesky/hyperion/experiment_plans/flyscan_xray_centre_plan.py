@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from functools import partial
 from pathlib import Path
-from typing import Protocol
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -48,6 +47,10 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    FlyScanEssentialDevices,
+    _FeatureControlled,
+)
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -88,7 +91,7 @@ class SmargonSpeedException(Exception):
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanXRayCentreComposite:
+class FlyScanXRayCentreComposite(FlyScanEssentialDevices):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -364,32 +367,12 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
     raise SampleException("Scan invalid - pin too long/short/bent and out of range")
 
 
-@dataclasses.dataclass
-class _FeatureControlled:
-    class _ZebraSetup(Protocol):
-        def __call__(
-            self, zebra: Zebra, group="setup_zebra_for_gridscan", wait=True
-        ) -> MsgGenerator: ...
-
-    class _ExtraSetup(Protocol):
-        def __call__(
-            self,
-            fgs_composite: FlyScanXRayCentreComposite,
-            parameters: HyperionSpecifiedThreeDGridScan,
-        ) -> MsgGenerator: ...
-
-    setup_trigger: _ExtraSetup
-    tidy_plan: Callable[[FlyScanXRayCentreComposite], MsgGenerator]
-    set_flyscan_params: Callable[[], MsgGenerator]
-    fgs_motors: FastGridScanCommon
-
-
 def _get_feature_controlled(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
 ):
     if parameters.features.use_panda_for_gridscan:
-        return _FeatureControlled(
+        return _FeatureControlled[FlyScanXRayCentreComposite](
             setup_trigger=_panda_triggering_setup,
             tidy_plan=_panda_tidy,
             set_flyscan_params=partial(
@@ -400,7 +383,7 @@ def _get_feature_controlled(
             fgs_motors=fgs_composite.panda_fast_grid_scan,
         )
     else:
-        return _FeatureControlled(
+        return _FeatureControlled[FlyScanXRayCentreComposite](
             setup_trigger=_zebra_triggering_setup,
             tidy_plan=partial(_generic_tidy, group="flyscan_zebra_tidy", wait=True),
             set_flyscan_params=partial(

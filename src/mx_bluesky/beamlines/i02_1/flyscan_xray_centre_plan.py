@@ -21,7 +21,6 @@ Create common interface for all this stuff so that all this shared logic between
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -34,7 +33,16 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_READING_PLAN_NAME,
+    ZOCALO_STAGE_GROUP,
+    ZocaloResults,
+    get_full_processing_results,
+)
 
+from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
+    setup_zebra_for_xrc_flyscan,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -45,10 +53,20 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
-from mx_bluesky.hyperion.device_setup_plans.setup_zebra import setup_zebra_for_gridscan
 from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+
+# TODO: identify the differences:
+"""
+in VMXM: We don't need the aperture scatterguard - don't move aperture
+Slit gaps and dcm and undulator may not be needed to be read, so different read hardware plan
+Don't use panda - different setup and tidy
+Sample shutter - unclear how this works for vmxm
+
+
+
+"""
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -149,19 +167,7 @@ def run_gridscan_and_fetch_results(
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
-
-    # TODO setup zebra!
-    yield from setup_zebra_for_gridscan(
-        fgs_composite.zebra, fgs_composite.sample_shutter, wait=True
-    )
+    yield from setup_zebra_for_xrc_flyscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
