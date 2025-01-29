@@ -64,7 +64,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     run_gridscan_and_fetch_results,
     wait_for_gridscan_valid,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags

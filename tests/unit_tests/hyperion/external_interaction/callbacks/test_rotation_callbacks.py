@@ -14,7 +14,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (

@@ -8,7 +8,6 @@ from mx_bluesky._version import version
 @dataclass
 class HyperionArgs:
     dev_mode: bool = False
-    use_external_callbacks: bool = False
     verbose_event_logging: bool = False
     skip_startup_connection: bool = False
 
@@ -64,5 +63,4 @@ def parse_cli_args() -> HyperionArgs:
         verbose_event_logging=args.verbose_event_logging or False,
         dev_mode=args.dev or False,
         skip_startup_connection=args.skip_startup_connection or False,
-        use_external_callbacks=args.external_callbacks or False,
     )
