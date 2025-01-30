@@ -31,6 +31,7 @@ for option in "$@"; do
       ;;
     --push)
       PUSH=1
+      shift
       ;;
   esac
 done
@@ -41,7 +42,7 @@ IMAGE=mx-bluesky-st-runner
 NAMESPACE=diamondlightsource
 podman build -f Dockerfile -t $IMAGE
 
-if [[ $PUSH=1 ]]; then
+if [[ $PUSH = 1 ]]; then
   login_to_ghcr_io
   podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:latest
 fi
