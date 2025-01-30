@@ -29,7 +29,7 @@ def fgs_devices(RE):
         grid_scan_device = ZebraFastGridScan("zebra_fgs")
 
     # Eiger done separately as not ophyd-async yet
-    detector = eiger(fake_with_ophyd_sim=True)
+    detector = eiger(mock=True)
 
     return {
         "synchrotron": synchrotron,

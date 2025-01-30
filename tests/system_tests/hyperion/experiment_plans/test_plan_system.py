@@ -29,10 +29,10 @@ async def test_getting_data_for_ispyb():
         name="undulator",
         id_gap_lookup_table_path="/dls_sw/i03/software/daq_configuration/lookup/BeamLine_Undulator_toGap.txt",
     )
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     slit_gaps = S4SlitGaps(f"{CONST.SIM.BEAMLINE}-AL-SLITS-04:", name="slits")
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-    flux = i03.flux(fake_with_ophyd_sim=True)
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
+    flux = i03.flux(connect_immediately=True, mock=True)
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     aperture_scatterguard = ApertureScatterguard(
         prefix="BL03S",
@@ -40,16 +40,13 @@ async def test_getting_data_for_ispyb():
         loaded_positions=load_positions_from_beamline_parameters(params),
         tolerances=AperturePosition.tolerances_from_gda_params(params),
     )
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    smargon = i03.smargon(connect_immediately=True, mock=True)
+    eiger = i03.eiger(mock=True)
     await undulator.connect()
-    await synchrotron.connect()
     await slit_gaps.connect()
-    await attenuator.connect()
     await flux.connect()
     await aperture_scatterguard.connect()
-    await smargon.connect()
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
 
     RE = RunEngine()
 
