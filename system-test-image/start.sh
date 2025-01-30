@@ -1,27 +1,40 @@
 #!/bin/bash
-TOKEN=$(cat /secrets/actionsRunnerToken)
-echo "Fetching token"
-REG_TOKEN=$(curl -X POST \
-  -H "Authorization: token ${TOKEN}" \
-  -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/DiamondLightSource/mx-bluesky/actions/runners/registration-token | \
-  jq .token --raw-output)
+# This is run inside the system tests container image
+REPO=https://github.com/DiamondLightSource/mx-bluesky.git
+BRANCH=main
 
-./config.sh  \
-  --unattended \
-  --url https://github.com/DiamondLightSource/mx-bluesky \
-  --token ${REG_TOKEN} \
-  --labels system-tests \
-  --replace \
-  --name "mx-bluesky-system-test" && \
-  echo "Registered successfully"
-
-cleanup() {
-  echo "Removing runner.."
-  ./config.sh remove --token ${TOKEN}
+show_help() {
+    echo "$(basename $0) [options...]"
+cat <<END
+Run the mx-bluesky system tests
+  --help                  This help
+  --repo=<repo_url>       Specify the URL of the repo to fetch.
+                          Default is ${REPO}
+  --branch=<branch>       Specify the branch to check out
+                          Default is ${BRANCH}
+END
+    exit 0
 }
 
-trap 'cleanup; exit 130' INT
-trap 'cleanup; exit 143' TERM
+for option in "$@"; do
+  case $option in
+    --help)
+      show_help
+      ;;
+    --repo=*)
+      REPO="${option#*=}"
+      shift
+      ;;
+    --branch=*)
+      BRANCH="${option#*=}"
+      shift
+      ;;
+  esac
+done
 
-./run.sh & wait $!
+set -e
+git clone ${REPO}
+cd mx-bluesky
+git checkout ${BRANCH}
+pip install -e .[dev]
+tox -e systemtests
