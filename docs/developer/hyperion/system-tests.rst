@@ -1,6 +1,18 @@
 Containerised System Tests
 ==========================
 
+   * Use GitLab Argus runner
+   * kubernetes executor
+   * pipeline image - mx-bluesky-st-runner
+      * Image is configured with default test secrets to access test services
+      * Entrypoint of the image does the following:
+          * checks out main
+          * pip install
+          * tox -e system-tests
+   * pipeline schedule - configured in UI to run nightly
+   * run pipeline manually through the UI
+
+
 System Test Runner
 ------------------
 
