@@ -12,7 +12,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, caget, cagetstring
 
 
 def call_nexgen(
@@ -53,7 +53,7 @@ def call_nexgen(
             total_numb_imgs = parameters.num_images
             pump_status = parameters.pump_status
 
-    filename_prefix = parameters.filename
+    filename_prefix = cagetstring(Eiger.pv.filenameRBV)
     meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()
     max_wait = 60  # seconds

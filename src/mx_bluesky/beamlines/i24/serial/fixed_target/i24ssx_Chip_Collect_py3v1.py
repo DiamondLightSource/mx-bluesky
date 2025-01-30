@@ -290,7 +290,9 @@ def get_prog_num(
 def set_datasize(
     parameters: FixedTargetParameters,
 ):
-    SSX_LOGGER.info("Setting PV to calculated total number of images")
+    SSX_LOGGER.info(
+        f"Setting PV to calculated total number of images: {parameters.total_num_images}"
+    )
 
     SSX_LOGGER.debug(f"Map type: {parameters.map_type}")
     SSX_LOGGER.debug(f"Chip type: {parameters.chip.chip_type}")
@@ -433,7 +435,8 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
-        filetemplate = f"{parameters.filename}.nxs"
+        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)
+        filetemplate = f"{complete_filename}.nxs"
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
@@ -707,7 +710,7 @@ def run_fixed_target_plan(
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
     if parameters.chip_map:
-        upload_chip_map_to_geobrick(pmac, parameters.chip_map)
+        yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
     beam_center_device = sup.get_beam_center_device(parameters.detector_name)
 

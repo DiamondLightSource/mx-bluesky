@@ -15,6 +15,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     DetectorName,
     ExtruderParameters,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
 
@@ -80,6 +81,26 @@ def test_generate_dcid_for_eiger(
         fake_json.dumps.assert_called_once()
         patch_request.post.assert_called_once()
 
+        expt_type = patch_request.post.call_args.kwargs["json"]["group"][
+            "experimentType"
+        ]
+        assert (
+            not isinstance(expt_type, SSXType)  # needs to be serialisable
+            and expt_type == dummy_params_ex.ispyb_experiment_type.value
+        )
+        assert patch_request.post.call_args.kwargs["json"]["detectorId"] == 94
+        assert "beamSizeAtSampleX" in list(
+            patch_request.post.call_args.kwargs["json"].keys()
+        )
+        assert (
+            len(
+                patch_request.post.call_args.kwargs["json"]["ssx"]["eventChain"][
+                    "events"
+                ]
+            )
+            == 1
+        )  # no pump probe
+
 
 @patch("mx_bluesky.beamlines.i24.serial.dcid.get_resolution")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
@@ -108,7 +129,9 @@ def test_generate_dcid_for_pilatus_with_pump_probe(
         patch("mx_bluesky.beamlines.i24.serial.dcid.requests") as patch_request,
         patch("mx_bluesky.beamlines.i24.serial.dcid.get_auth_header") as fake_auth,
     ):
-        test_dcid.generate_dcid(beam_settings, "", "test_00001_#####.cbf", 10)
+        test_dcid.generate_dcid(
+            beam_settings, "", "test_00001_#####.cbf", 10, pump_probe=True
+        )
         patch_resolution.assert_called_once_with(
             test_dcid.detector,
             dummy_params_ex.detector_distance_mm,
@@ -117,3 +140,13 @@ def test_generate_dcid_for_pilatus_with_pump_probe(
         fake_auth.assert_called_once()
         fake_json.dumps.assert_called_once()
         patch_request.post.assert_called_once()
+
+        assert patch_request.post.call_args.kwargs["json"]["detectorId"] == 58
+        assert (
+            patch_request.post.call_args.kwargs["json"]["group"]["experimentType"]
+            == "Serial Jet"
+        )
+        events = patch_request.post.call_args.kwargs["json"]["ssx"]["eventChain"][
+            "events"
+        ]
+        assert events[1]["eventType"] == "LaserExcitation"

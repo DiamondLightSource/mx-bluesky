@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import bluesky.plan_stubs as bps
@@ -13,6 +14,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     cs_maker,
     cs_reset,
+    fiducial,
     initialise_stages,
     laser_control,
     moveto,
@@ -259,6 +261,47 @@ def test_scrape_mtr_directions():
     res = scrape_mtr_directions()
     assert len(res) == 3
     assert res == (1.0, -1.0, -1.0)
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_directions"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.PARAM_FILE_PATH_FT"
+)
+def test_fiducial(fake_param_path, patch_read, patch_mtr, pmac, RE):
+    fake_param_path.return_value = Path("/tmp/params")
+    mtr_values = (1.0, -1.0, -1.0)
+    patch_mtr.return_value = mtr_values
+
+    pos = (1.02, 4.5, 0.0)
+
+    def fake_generator(value):
+        yield from bps.null()
+        return value
+
+    patch_read.side_effect = [
+        fake_generator(pos[0]),
+        fake_generator(pos[1]),
+        fake_generator(pos[2]),
+    ]
+
+    expected_write_calls = [
+        call(fake_param_path / "fiducial_1.txt", "w"),
+        call().write("MTR\tRBV\tCorr\n"),
+        call().write(f"MTR1\t{pos[0]:1.4f}\t{mtr_values[0]:f}\n"),
+        call().write(f"MTR2\t{pos[1]:1.4f}\t{mtr_values[1]:f}\n"),
+        call().write(f"MTR3\t{pos[2]:1.4f}\t{mtr_values[2]:f}"),
+    ]
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+        mock_open(),
+    ) as mock_file:
+        RE(fiducial(1, pmac))
+
+        mock_file.assert_has_calls(expected_write_calls, any_order=True)
+        fake_param_path.mkdir.assert_called_once()
 
 
 @patch(
