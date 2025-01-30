@@ -35,7 +35,8 @@ def test_call_nexgen_for_fixed_target(
     fake_log,
     dummy_params_without_pp,
 ):
-    fake_caget_str.return_value = f"{dummy_params_without_pp.filename}_5002"
+    expected_filename = f"{dummy_params_without_pp.filename}_5002"
+    fake_caget_str.return_value = expected_filename
     fake_caget.return_value = 32
     fake_path.return_value = True
     fake_read_text.return_value = ""
@@ -44,3 +45,4 @@ def test_call_nexgen_for_fixed_target(
         patch_request.post.assert_called_once()
 
     assert patch_request.post.call_args.kwargs["json"]["expt_type"] == "fixed-target"
+    assert patch_request.post.call_args.kwargs["json"]["filename"] == expected_filename
