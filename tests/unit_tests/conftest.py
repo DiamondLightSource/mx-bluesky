@@ -57,13 +57,6 @@ def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceF
     }
 
 
-@pytest.fixture(scope="function", autouse=True)
-def clear_device_factory_caches_after_every_test(active_device_factories):
-    yield None
-    for f in active_device_factories:
-        f.cache_clear()  # type: ignore
-
-
 def modified_interactor_mock(assign_run_end: Callable | None = None):
     mock = MagicMock(spec=ZocaloTrigger)
     if assign_run_end:
