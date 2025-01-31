@@ -1,0 +1,31 @@
+insert into Detector (
+    detectorId,
+    detectorType,
+    detectorManufacturer,
+    detectorModel, 
+    detectorPixelSizeHorizontal, 
+    detectorPixelSizeVertical, 
+    detectorSerialNumber,
+    detectorDistanceMin,
+    detectorDistanceMax,
+    sensorThickness, 
+    numberOfPixelsX,
+    numberOfPixelsY,
+    numberOfROIPixelsX,
+    numberOfROIPixelsY
+) values (
+    78,
+    'Photon Counting',
+    'Dectris',
+    'Eiger2 X 16M',
+    75,
+    75,
+    'E-32-0117',
+    174,
+    1010,
+    450,
+    4148,
+    4362,
+    2068,
+    2162
+);
