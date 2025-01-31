@@ -1,10 +1,10 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -22,22 +22,13 @@ from ophyd.sim import NullStatus
 from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-    StoreInIspyb,
-)
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.device_composites import (
     GridDetectThenXRayCentreComposite,
+    RobotLoadThenCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
-)
-from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
-    RobotLoadThenCentreComposite,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
 )
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -58,30 +49,6 @@ FLYSCAN_RESULT_LOW = XRayCentreResult(
     max_count=10,
     total_count=140,
 )
-
-
-BASIC_PRE_SETUP_DOC = {
-    "undulator-current_gap": 0,
-    "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps-xgap": 0,
-    "s4_slit_gaps-ygap": 0,
-    "smargon-x": 10.0,
-    "smargon-y": 20.0,
-    "smargon-z": 30.0,
-}
-
-BASIC_POST_SETUP_DOC = {
-    "aperture_scatterguard-selected_aperture": ApertureValue.ROBOT_LOAD,
-    "aperture_scatterguard-radius": None,
-    "aperture_scatterguard-aperture-x": 15,
-    "aperture_scatterguard-aperture-y": 16,
-    "aperture_scatterguard-aperture-z": 2,
-    "aperture_scatterguard-scatterguard-x": 18,
-    "aperture_scatterguard-scatterguard-y": 19,
-    "attenuator-actual_transmission": 0,
-    "flux-flux_reading": 10,
-    "dcm-energy_in_kev": 11.105,
-}
 
 
 @pytest.fixture
@@ -149,41 +116,6 @@ def sim_run_engine_for_rotation(sim_run_engine):
         "read", lambda msg: {"values": {"value": -1}}, "smargon_omega"
     )
     return sim_run_engine
-
-
-@pytest.fixture
-def mock_subscriptions(test_fgs_params):
-    with (
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0), data_collection_group_id=0
-                )
-            ),
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0),
-                    data_collection_group_id=0,
-                    grid_ids=(0, 0),
-                )
-            ),
-        ),
-    ):
-        nexus_callback, ispyb_callback = create_gridscan_callbacks()
-        ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-
-    return (nexus_callback, ispyb_callback)
 
 
 def fake_read(obj, initial_positions, _):

@@ -3,6 +3,9 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from dodal.devices.zocalo import ZocaloStartInfo
 
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -10,11 +13,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.parameters.constants import TriggerConstants
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 from .....conftest import TestData
 
@@ -30,7 +30,7 @@ td = TestData()
 
 
 def start_dict(plan_name: str = "test_plan_name", env: str = "test_env"):
-    return {CONST.TRIGGER.ZOCALO: plan_name, "zocalo_environment": env}
+    return {TriggerConstants.ZOCALO: plan_name, "zocalo_environment": env}
 
 
 class TestZocaloHandler:

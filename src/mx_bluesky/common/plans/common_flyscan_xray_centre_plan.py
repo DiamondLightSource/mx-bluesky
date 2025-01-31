@@ -206,7 +206,7 @@ def flyscan_xray_centre_no_move(
 
     # Do initialisation which dependant on FeatureFlags
     if parameters.features:
-        parameters.features.feature_dependant_config()
+        parameters.features.feature_dependant_config(composite)
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = EnvironmentConstants.ZOCALO_ENV

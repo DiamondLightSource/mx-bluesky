@@ -2,15 +2,23 @@ import asyncio
 import time
 from collections.abc import Callable
 from functools import partial
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines import i03
 from dodal.common.beamlines import beamline_parameters
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model.documents import Event
 from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -20,6 +28,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    FlyScanEssentialDevices,
+)
+from tests.conftest import raw_params_from_file
 
 
 @pytest.fixture
@@ -51,6 +63,29 @@ mock_attributes_table = {
     "i24": mock_paths,
 }
 
+BASIC_PRE_SETUP_DOC = {
+    "undulator-current_gap": 0,
+    "synchrotron-synchrotron_mode": SynchrotronMode.USER,
+    "s4_slit_gaps-xgap": 0,
+    "s4_slit_gaps-ygap": 0,
+    "smargon-x": 10.0,
+    "smargon-y": 20.0,
+    "smargon-z": 30.0,
+}
+
+BASIC_POST_SETUP_DOC = {
+    "aperture_scatterguard-selected_aperture": ApertureValue.ROBOT_LOAD,
+    "aperture_scatterguard-radius": None,
+    "aperture_scatterguard-aperture-x": 15,
+    "aperture_scatterguard-aperture-y": 16,
+    "aperture_scatterguard-aperture-z": 2,
+    "aperture_scatterguard-scatterguard-x": 18,
+    "aperture_scatterguard-scatterguard-y": 19,
+    "attenuator-actual_transmission": 0,
+    "flux-flux_reading": 10,
+    "dcm-energy_in_kev": 11.105,
+}
+
 
 def mock_beamline_module_filepaths(bl_name, bl_module):
     if mock_attributes := mock_attributes_table.get(bl_name):
@@ -58,6 +93,50 @@ def mock_beamline_module_filepaths(bl_name, bl_module):
         beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
             "tests/test_data/i04_beamlineParameters"
         )
+
+
+@pytest.fixture
+def mock_subscriptions(test_fgs_params):
+    with (
+        patch(
+            "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
+            modified_interactor_mock,
+        ),
+        patch(
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
+        ),
+        patch(
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
+            new=MagicMock(
+                return_value=IspybIds(
+                    data_collection_ids=(0, 0), data_collection_group_id=0
+                )
+            ),
+        ),
+        patch(
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
+            new=MagicMock(
+                return_value=IspybIds(
+                    data_collection_ids=(0, 0),
+                    data_collection_group_id=0,
+                    grid_ids=(0, 0),
+                )
+            ),
+        ),
+    ):
+        nexus_callback, ispyb_callback = create_gridscan_callbacks()
+        ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
+
+    return (nexus_callback, ispyb_callback)
+
+
+@pytest.fixture
+def test_fgs_params():
+    return SpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
+        )
+    )
 
 
 def assert_event(mock_call, expected):
@@ -129,7 +208,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING}  # type: ignore
+        {"uid": "abc123", "name": DocDescriptorNames.HARDWARE_READ_DURING}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -137,3 +216,61 @@ def run_generic_ispyb_handler_setup(
             descriptor="abc123",
         )
     )
+
+
+@pytest.fixture
+async def fake_fgs_composite(
+    smargon: Smargon,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    RE: RunEngine,
+    done_status,
+    attenuator,
+    xbpm_feedback,
+    synchrotron,
+    aperture_scatterguard,
+    zocalo,
+    dcm,
+    panda,
+    backlight,
+):
+    fake_composite = FlyScanEssentialDevices(
+        attenuator=attenuator,
+        backlight=backlight,
+        # We don't use the eiger fixture here because .unstage() is used in some tests
+        eiger=i03.eiger(fake_with_ophyd_sim=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True),
+        smargon=smargon,
+        synchrotron=synchrotron,
+        xbpm_feedback=xbpm_feedback,
+        zebra=i03.zebra(fake_with_ophyd_sim=True),
+        zocalo=zocalo,
+    )
+
+    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    # unstage should be mocked on a per-test basis because several rely on unstage
+    fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
+    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
+
+    test_result = {
+        "centre_of_mass": [6, 6, 6],
+        "max_voxel": [5, 5, 5],
+        "max_count": 123456,
+        "n_voxels": 321,
+        "total_count": 999999,
+        "bounding_box": [[3, 3, 3], [9, 9, 9]],
+    }
+
+    @AsyncStatus.wrap
+    async def mock_complete(result):
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
+    fake_composite.zocalo.timeout_s = 3
+    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
+    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
+
+    return fake_composite

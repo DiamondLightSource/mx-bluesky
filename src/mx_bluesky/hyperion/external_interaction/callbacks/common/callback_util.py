@@ -43,7 +43,7 @@ def create_robot_load_and_centre_callbacks() -> tuple[
     )
 
 
-def create_gridscan_callbacks() -> tuple[
+def create_hyperion_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridscanISPyBCallback
 ]:
     return (

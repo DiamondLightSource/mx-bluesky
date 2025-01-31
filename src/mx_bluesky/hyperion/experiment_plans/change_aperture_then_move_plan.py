@@ -11,6 +11,7 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.hyperion.experiment_plans.device_composites import (
     GridDetectThenXRayCentreComposite,
     HyperionFlyScanXRayCentreComposite,
+    RobotLoadThenCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
@@ -18,7 +19,8 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
     composite: HyperionFlyScanXRayCentreComposite
-    | GridDetectThenXRayCentreComposite,  # Need both types - Hyperion can enter this plan from grid detect or from flyscan depending on entry point
+    | GridDetectThenXRayCentreComposite
+    | RobotLoadThenCentreComposite,  # Basically anything with a smargon and aperture - could use a protocol for this?
     parameters: HyperionSpecifiedThreeDGridScan | None = None,
 ):
     """For the given x-ray centring result,

@@ -21,12 +21,12 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
 )
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.hyperion.experiment_plans.device_composites import (
+    RobotLoadThenCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
-)
-from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
-    RobotLoadThenCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,

@@ -56,5 +56,5 @@ class FeatureFlags(BaseModel, ABC):
             )
             setattr(self, flag, updated_value)
 
-    @abstractmethod
-    def feature_dependant_config(self): ...
+    def feature_dependant_config(self, *args):
+        pass

@@ -13,7 +13,7 @@ from mx_bluesky.hyperion.experiment_plans import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     CallbacksFactory,
-    create_gridscan_callbacks,
+    create_hyperion_gridscan_callbacks,
     create_load_centre_collect_callbacks,
     create_robot_load_and_centre_callbacks,
     create_rotation_callbacks,
@@ -54,12 +54,12 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
         "param_type": HyperionSpecifiedThreeDGridScan,
-        "callbacks_factory": create_gridscan_callbacks,
+        "callbacks_factory": create_hyperion_gridscan_callbacks,
     },
     "grid_detect_then_xray_centre": {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "param_type": GridScanWithEdgeDetect,
-        "callbacks_factory": create_gridscan_callbacks,
+        "callbacks_factory": create_hyperion_gridscan_callbacks,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
@@ -69,7 +69,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,
-        "callbacks_factory": create_gridscan_callbacks,
+        "callbacks_factory": create_hyperion_gridscan_callbacks,
     },
     "robot_load_then_centre": {
         "setup": robot_load_then_centre_plan.create_devices,

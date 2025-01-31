@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.parameters.constants import SimConstants
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
@@ -45,6 +47,12 @@ def test_fgs_params(request):
     )
     params.file_name = "dummy"
     yield params
+
+
+@pytest.fixture
+def dummy_rotation_ispyb(dummy_rotation_params):
+    store_in_ispyb = StoreInIspyb(SimConstants.ISPYB_CONFIG)
+    return store_in_ispyb
 
 
 def default_raw_params(

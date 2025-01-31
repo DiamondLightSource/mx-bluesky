@@ -1,5 +1,4 @@
 import types
-from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -22,6 +21,9 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -38,39 +40,29 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     CrystalNotFoundException,
     FlyScanEssentialDevices,
+    ReadHardwareTime,
     XRayCentreEventHandler,
-    flyscan_xray_centre_no_move,
     highest_level_flyscan_xray_centre,
     kickoff_and_complete_gridscan,
+    read_hardware_plan,
     run_gridscan,
     run_gridscan_and_fetch_results,
     wait_for_gridscan_valid,
 )
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
-    HyperionSpecifiedThreeDGridScan,
-)
 from tests.conftest import (
     RunEngineSimulator,
     create_dummy_scan_spec,
 )
 
-from ....conftest import TestData, simulate_xrc_result
+from ....conftest import TestData
 from ...conftest import (
     mock_zocalo_trigger,
     modified_interactor_mock,
@@ -82,19 +74,23 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 
 
 @pytest.fixture
-def ispyb_plan(test_fgs_params: HyperionSpecifiedThreeDGridScan):
-    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
+def ispyb_plan(test_fgs_params: SpecifiedThreeDGridScan):
+    @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
         und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
     ):
-        yield from read_hardware_pre_collection(und, syn, slits, dcm, sm)
-        yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
+        yield from read_hardware_plan(
+            [und, syn, slits, dcm, sm], ReadHardwareTime.PRE_COLLECTION
+        )
+        yield from read_hardware_plan(
+            [ap_sg, attn, fl, dcm, det], ReadHardwareTime.DURING_COLLECTION
+        )
 
     return standalone_read_hardware_for_ispyb
 
@@ -150,7 +146,7 @@ class TestFlyscanXrayCentrePlan:
 
     def test_eiger2_x_16_detector_specified(
         self,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
     ):
         assert (
             test_fgs_params.detector_params.detector_size_constants.det_type_string
@@ -167,13 +163,11 @@ class TestFlyscanXrayCentrePlan:
         self,
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         mock_ispyb: MagicMock,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
-        ispyb_callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
+        ispyb_callback = GridscanISPyBCallback(param_type=GridCommon)
         RE.subscribe(ispyb_callback)
 
         error = None
@@ -199,7 +193,7 @@ class TestFlyscanXrayCentrePlan:
     # def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     #     self,
     #     fake_fgs_composite: FlyScanEssentialDevices,
-    #     test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    #     test_fgs_params: SpecifiedThreeDGridScan,
     #     RE: RunEngine,
     #     ispyb_plan,
     # ):
@@ -312,15 +306,15 @@ class TestFlyscanXrayCentrePlan:
         return_value=NullStatus(),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     async def test_results_adjusted_and_event_raised(
         self,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        test_fgs_params: SpecifiedThreeDGridScan,
         feature_controlled: BeamlineSpecificFGSFeatures,
         RE_with_subs: ReWithSubs,
     ):
@@ -328,14 +322,12 @@ class TestFlyscanXrayCentrePlan:
 
         x_ray_centre_event_handler = XRayCentreEventHandler()
         RE.subscribe(x_ray_centre_event_handler)
-        mock_zocalo_trigger(
-            fgs_composite_with_panda_pcap.zocalo, TestData.test_result_large
-        )
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, TestData.test_result_large)
 
         def plan():
             yield from run_gridscan_and_fetch_results(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
+                fake_fgs_composite,
+                test_fgs_params,
                 feature_controlled,
             )
 
@@ -362,7 +354,7 @@ class TestFlyscanXrayCentrePlan:
     #     return_value=NullStatus(),
     # )
     # @patch(
-    #     "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
     #     autospec=True,
     # )
     # @patch(
@@ -377,8 +369,8 @@ class TestFlyscanXrayCentrePlan:
     #     move_x_y_z: MagicMock,
     #     run_gridscan: MagicMock,
     #     move_aperture: MagicMock,
-    #     fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
-    #     test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+    #     fake_fgs_composite: FlyScanEssentialDevices,
+    #     test_fgs_params: SpecifiedThreeDGridScan,
     #     RE_with_subs: ReWithSubs,
     #     feature_controlled: BeamlineSpecificFGSFeatures,
     # ):
@@ -390,16 +382,16 @@ class TestFlyscanXrayCentrePlan:
     #         TestData.test_result_medium,
     #         TestData.test_result_small,
     #     ]:
-    #         mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, result)
+    #         mock_zocalo_trigger(fake_fgs_composite.zocalo, result)
     #         RE(
     #             highest_level_flyscan_xray_centre(
-    #                 fgs_composite_with_panda_pcap,
-    #                 test_fgs_params_panda_zebra,
+    #                 fake_fgs_composite,
+    #                 test_fgs_params,
     #                 feature_controlled,
     #             )
     #         )
 
-    #     aperture_scatterguard = fgs_composite_with_panda_pcap.aperture_scatterguard
+    #     aperture_scatterguard = fake_fgs_composite.aperture_scatterguard
     #     large = aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
     #     medium = aperture_scatterguard._loaded_positions[ApertureValue.MEDIUM]
     #     ap_call_large = call(large, ApertureValue.LARGE)
@@ -408,7 +400,7 @@ class TestFlyscanXrayCentrePlan:
     #     move_aperture.assert_has_calls([ap_call_large, ap_call_large, ap_call_medium])
 
     #     mv_to_centre = call(
-    #         fgs_composite_with_panda_pcap.smargon,
+    #         fake_fgs_composite.smargon,
     #         0.05,
     #         pytest.approx(0.15),
     #         0.25,
@@ -422,7 +414,7 @@ class TestFlyscanXrayCentrePlan:
     def test_results_passed_to_move_motors(
         self,
         bps_abs_set: MagicMock,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         RE: RunEngine,
     ):
@@ -458,11 +450,7 @@ class TestFlyscanXrayCentrePlan:
         return_value=NullStatus(),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     @patch(
@@ -471,108 +459,98 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
-        move_xyz: MagicMock,
+        zocalo_trigger: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         RE_with_subs: ReWithSubs,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        test_fgs_params: SpecifiedThreeDGridScan,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (_, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
             yield from highest_level_flyscan_xray_centre(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
+                fake_fgs_composite,
+                test_fgs_params,
                 feature_controlled,
             )
 
         RE(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
-        move_xyz.assert_called_once()
+
+    # TODO move to hyperion as testing devshm
+    # @patch(
+    #     "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
+    #     return_value=NullStatus(),
+    # )
+    # @patch(
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+    #     autospec=True,
+    # )
+    # @patch(
+    #     "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+    #     autospec=True,
+    # )
+    # async def test_when_gridscan_finished_then_dev_shm_disabled(
+    #     self,
+    #     move_xyz: MagicMock,
+    #     run_gridscan: MagicMock,
+    #     aperture_set: MagicMock,
+    #     RE_with_subs: ReWithSubs,
+    #     test_fgs_params: SpecifiedThreeDGridScan,
+    #     fake_fgs_composite: FlyScanEssentialDevices,
+    #     feature_controlled: BeamlineSpecificFGSFeatures,
+    # ):
+    #     RE, (nexus_cb, ispyb_cb) = RE_with_subs
+    #     test_fgs_params.features.set_stub_offsets = True
+
+    #     fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
+
+    #     def wrapped_gridscan_and_move():
+    #         run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
+    #         yield from run_gridscan_and_fetch_results(
+    #             fake_fgs_composite,
+    #             test_fgs_params,
+    #             feature_controlled,
+    #         )
+
+    #     RE(
+    #         ispyb_activation_wrapper(
+    #             wrapped_gridscan_and_move(), test_fgs_params
+    #         )
+    #     )
+    #     assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
         return_value=NullStatus(),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
-        autospec=True,
-    )
-    async def test_when_gridscan_finished_then_dev_shm_disabled(
-        self,
-        move_xyz: MagicMock,
-        run_gridscan: MagicMock,
-        aperture_set: MagicMock,
-        RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
-    ):
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs
-        test_fgs_params_panda_zebra.features.set_stub_offsets = True
-
-        fgs_composite_with_panda_pcap.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
-
-        def wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
-            yield from run_gridscan_and_fetch_results(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
-                feature_controlled,
-            )
-
-        RE(
-            ispyb_activation_wrapper(
-                wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
-            )
-        )
-        assert fgs_composite_with_panda_pcap.eiger.odin.fan.dev_shm_enable.get() == 0
-
-    @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        return_value=NullStatus(),
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_succeeds_ispyb_comment_appended_to(
         self,
-        move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
+        test_fgs_params: SpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
         def _wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
+            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_fetch_results(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
+                fake_fgs_composite,
+                test_fgs_params,
                 feature_controlled,
             )
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        RE(
-            ispyb_activation_wrapper(
-                _wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
-            )
-        )
+        RE(ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params))
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         append_aperture_call = app_to_comment.call_args_list[0].args[1]
@@ -587,7 +565,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         check_topup_and_wait,
         RE: RunEngine,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         done_status: Status,
     ):
@@ -622,39 +600,30 @@ class TestFlyscanXrayCentrePlan:
         clear_device("zebra_fast_grid_scan")
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_finds_no_xtal_ispyb_comment_appended_to(
         self,
-        move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
+        test_fgs_params: SpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
+            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_fetch_results(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
+                fake_fgs_composite,
+                test_fgs_params,
                 feature_controlled,
             )
 
-        mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, [])
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         with pytest.raises(CrystalNotFoundException):
-            RE(
-                ispyb_activation_wrapper(
-                    wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
-                )
-            )
+            RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
 
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
@@ -664,42 +633,33 @@ class TestFlyscanXrayCentrePlan:
         assert "Zocalo found no crystals in this gridscan" in append_zocalo_call
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_finds_no_xtal_exception_is_raised(
         self,
-        move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
+        test_fgs_params: SpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
+            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_fetch_results(
-                fgs_composite_with_panda_pcap,
-                test_fgs_params_panda_zebra,
+                fake_fgs_composite,
+                test_fgs_params,
                 feature_controlled,
             )
 
-        mock_zocalo_trigger(fgs_composite_with_panda_pcap.zocalo, [])
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         with pytest.raises(CrystalNotFoundException):
-            RE(
-                ispyb_activation_wrapper(
-                    wrapped_gridscan_and_move(), test_fgs_params_panda_zebra
-                )
-            )
+            RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.sleep",
         autospec=True,
     )
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
@@ -715,7 +675,7 @@ class TestFlyscanXrayCentrePlan:
         patch_sleep.assert_not_called()
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.sleep",
         autospec=True,
     )
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
@@ -732,23 +692,23 @@ class TestFlyscanXrayCentrePlan:
         patch_sleep.assert_called()
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.abs_set",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.abs_set",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.mv",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.mv",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.wait_for_gridscan_valid",
         autospec=True,
     )
     @patch(
@@ -770,7 +730,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         RE_with_subs: ReWithSubs,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
@@ -811,80 +771,81 @@ class TestFlyscanXrayCentrePlan:
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.set_panda_directory",
-        side_effect=_custom_msg("set_panda_directory"),
-    )
-    @patch(
-        "mx_bluesky.hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
-        new=MagicMock(side_effect=_custom_msg("arm_panda")),
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.disarm_panda_for_gridscan",
-        new=MagicMock(side_effect=_custom_msg("disarm_panda")),
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
-        new=MagicMock(side_effect=_custom_msg("do_gridscan")),
-    )
-    def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
-        self,
-        mock_set_panda_directory: MagicMock,
-        done_status: Status,
-        fgs_composite_with_panda_pcap: FlyScanEssentialDevices,
-        fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
-        sim_run_engine: RunEngineSimulator,
-        feature_controlled: BeamlineSpecificFGSFeatures,
-    ):
-        sim_run_engine.add_handler("unstage", lambda _: done_status)
-        sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
-        )
-        simulate_xrc_result(
-            sim_run_engine,
-            fgs_composite_with_panda_pcap.zocalo,
-            TestData.test_result_large,
-        )
+    # panda: move to hyperion
+    # @patch(
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.set_panda_directory",
+    #     side_effect=_custom_msg("set_panda_directory"),
+    # )
+    # @patch(
+    #     "mx_bluesky.hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
+    #     new=MagicMock(side_effect=_custom_msg("arm_panda")),
+    # )
+    # @patch(
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.disarm_panda_for_gridscan",
+    #     new=MagicMock(side_effect=_custom_msg("disarm_panda")),
+    # )
+    # @patch(
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+    #     new=MagicMock(side_effect=_custom_msg("do_gridscan")),
+    # )
+    # def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
+    #     self,
+    #     mock_set_panda_directory: MagicMock,
+    #     done_status: Status,
+    #     fake_fgs_composite: FlyScanEssentialDevices,
+    #     fgs_params_use_panda: SpecifiedThreeDGridScan,
+    #     sim_run_engine: RunEngineSimulator,
+    #     feature_controlled: BeamlineSpecificFGSFeatures,
+    # ):
+    #     sim_run_engine.add_handler("unstage", lambda _: done_status)
+    #     sim_run_engine.add_read_handler_for(
+    #         fake_fgs_composite.smargon.x.max_velocity, 10
+    #     )
+    #     simulate_xrc_result(
+    #         sim_run_engine,
+    #         fake_fgs_composite.zocalo,
+    #         TestData.test_result_large,
+    #     )
 
-        msgs = sim_run_engine.simulate_plan(
-            flyscan_xray_centre_no_move(
-                fgs_composite_with_panda_pcap, fgs_params_use_panda, feature_controlled
-            )
-        )
+    #     msgs = sim_run_engine.simulate_plan(
+    #         flyscan_xray_centre_no_move(
+    #             fake_fgs_composite, fgs_params_use_panda, feature_controlled
+    #         )
+    #     )
 
-        mock_set_panda_directory.assert_called_with(
-            Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
-        )
+    #     mock_set_panda_directory.assert_called_with(
+    #         Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
+    #     )
 
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "set_panda_directory"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "stage" and msg.obj.name == "panda"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "arm_panda"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "do_gridscan"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "disarm_panda"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "unstage" and msg.obj.name == "panda"
-        )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "set_panda_directory"
+    #     )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "stage" and msg.obj.name == "panda"
+    #     )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "arm_panda"
+    #     )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "do_gridscan"
+    #     )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "disarm_panda"
+    #     )
+    #     msgs = assert_message_and_return_remaining(
+    #         msgs, lambda msg: msg.command == "unstage" and msg.obj.name == "panda"
+    #     )
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
@@ -898,30 +859,26 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
         done_status: Status,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        RE(
-            run_gridscan(
-                fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
-            )
-        )
+        RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
@@ -935,7 +892,7 @@ class TestFlyscanXrayCentrePlan:
         mock_wait,
         mock_kickoff,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
@@ -956,21 +913,17 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
         with pytest.raises(CompleteException):
-            RE(
-                run_gridscan(
-                    fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
-                )
-            )
+            RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
@@ -1046,7 +999,7 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
@@ -1056,9 +1009,7 @@ class TestFlyscanXrayCentrePlan:
             "synchrotron-synchrotron_mode",
         )
         msgs = sim_run_engine.simulate_plan(
-            run_gridscan(
-                fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
-            )
+            run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled)
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
@@ -1081,39 +1032,39 @@ class TestFlyscanXrayCentrePlan:
 
     # TODO: This is a hyperion specific test as it uses panda bits
     # @patch(
-    #     "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+    #     "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
     # )
     # def test_if_smargon_speed_over_limit_then_log_error(
     #     self,
     #     mock_kickoff_and_complete: MagicMock,
-    #     test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
+    #     test_fgs_params: SpecifiedThreeDGridScan,
     #     fake_fgs_composite: FlyScanEssentialDevices,
     #     feature_controlled: BeamlineSpecificFGSFeatures,
     #     RE: RunEngine,
     # ):
-    #     test_fgs_params_panda_zebra.x_step_size_um = 10000
-    #     test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
+    #     test_fgs_params.x_step_size_um = 10000
+    #     test_fgs_params.detector_params.exposure_time = 0.01
 
     #     # this exception should only be raised if we're using the panda
     #     try:
     #         RE(
     #             run_gridscan_and_fetch_results(
-    #                 fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
+    #                 fake_fgs_composite, test_fgs_params, feature_controlled
     #             )
     #         )
     #     except SmargonSpeedException:
-    #         assert test_fgs_params_panda_zebra.features.use_panda_for_gridscan
+    #         assert test_fgs_params.features.use_panda_for_gridscan
     #     else:
-    #         assert not test_fgs_params_panda_zebra.features.use_panda_for_gridscan
+    #         assert not test_fgs_params.features.use_panda_for_gridscan
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
         MagicMock(),
     )
     def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
         self,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params_panda_zebra: SpecifiedThreeDGridScan,
+        test_fgs_params: SpecifiedThreeDGridScan,
         feature_controlled: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
@@ -1128,7 +1079,7 @@ class TestFlyscanXrayCentrePlan:
         )
         RE(
             run_gridscan_and_fetch_results(
-                fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
         )
 

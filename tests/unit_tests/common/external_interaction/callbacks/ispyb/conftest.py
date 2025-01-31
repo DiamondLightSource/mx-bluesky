@@ -9,8 +9,8 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.constants import SimConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 from ......conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
@@ -22,7 +22,7 @@ from ......conftest import (
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
+    dummy_params = SpecifiedThreeDGridScan(**default_raw_gridscan_params())
     dummy_params.sample_id = TEST_SAMPLE_ID
     dummy_params.run_number = 0
     return dummy_params
@@ -30,19 +30,13 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_3d_gridscan_ispyb():
-    store_in_ispyb_3d = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
+    store_in_ispyb_3d = StoreInIspyb(SimConstants.ISPYB_CONFIG)
     return store_in_ispyb_3d
 
 
 @pytest.fixture
-def dummy_rotation_ispyb(dummy_rotation_params):
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
-    return store_in_ispyb
-
-
-@pytest.fixture
 def dummy_2d_gridscan_ispyb():
-    return StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
+    return StoreInIspyb(SimConstants.ISPYB_CONFIG)
 
 
 @pytest.fixture
