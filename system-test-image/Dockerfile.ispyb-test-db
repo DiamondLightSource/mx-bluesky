@@ -1,0 +1,9 @@
+FROM ghcr.io/diamondlightsource/ispyb-database:latest AS build
+
+# This is defined in the base image, needed here to run scripts
+ENV MARIADB_ROOT_PASSWORD=rootpassword
+ENV MARIADB_DATABASE=ispyb_build
+
+# Insert additional data - files are run in alphabetical order and this
+# needs to be after the main build.sh script
+COPY extra-data.sql /docker-entrypoint-initdb.d/zz-build-extra-data.sql

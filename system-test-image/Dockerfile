@@ -14,5 +14,4 @@ RUN apt install -y libgl1 libglib2.0-0
 COPY start.sh /build/start.sh
 COPY ispyb-test-credentials.cfg /dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg
 
-#WORKDIR /home/docker/actions-runner
 ENTRYPOINT ["/bin/bash"]

@@ -1,6 +1,4 @@
-import os
 from time import sleep
-from unittest.mock import patch
 
 import pytest
 from requests import get
@@ -9,18 +7,9 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 CONTAINER_ID = 288588
 SAMPLE_ID = 5289780
-
-
-@pytest.fixture(autouse=True)
-def use_dev_ispyb():
-    with patch.dict(
-        os.environ, {"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
-    ):
-        yield
 
 
 @pytest.mark.s03

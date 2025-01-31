@@ -1,11 +1,15 @@
 #!/bin/bash
 
+IMAGE=mx-bluesky-st-runner
+DOCKERFILE=Dockerfile
+
 show_help() {
     echo "$(basename $0) [options...]"
 cat <<END
 Build and optionally push the GitHub actions runner for the mx-bluesky system tests
   --help                  This help
   --push                  Push the image to ghcr.io
+  --ispyb-test-db         Build the ispyb-test-db image
 END
     exit 0
 }
@@ -33,14 +37,16 @@ for option in "$@"; do
       PUSH=1
       shift
       ;;
+    --ispyb-test-db)
+      IMAGE=mx-bluesky-test-db
+      DOCKERFILE=Dockerfile.ispyb-test-db
   esac
 done
 
 
 # Build the system test docker image
-IMAGE=mx-bluesky-st-runner
 NAMESPACE=diamondlightsource
-podman build -f Dockerfile -t $IMAGE
+podman build -f ${DOCKERFILE} -t $IMAGE
 
 if [[ $PUSH = 1 ]]; then
   login_to_ghcr_io

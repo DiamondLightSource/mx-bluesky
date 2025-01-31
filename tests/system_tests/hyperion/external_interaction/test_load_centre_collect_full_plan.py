@@ -53,6 +53,8 @@ def load_centre_collect_params():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
+    json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
+    json_dict["sample_id"] = os.environ.get("ST_SAMPLE_ID", 5461074)
     return LoadCentreCollect(**json_dict)
 
 
@@ -201,14 +203,6 @@ def composite_with_no_diffraction(
 
     with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
         yield load_centre_collect_composite
-
-
-@pytest.fixture(autouse=True)
-def use_dev_ispyb():
-    with patch.dict(
-        os.environ, values={"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
-    ):
-        yield
 
 
 @pytest.mark.system_test
