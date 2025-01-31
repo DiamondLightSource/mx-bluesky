@@ -12,16 +12,17 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.xrc_result import (
+    XRayCentreEventHandler,
+)
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_phi_chi_omega
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
-)
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -39,7 +40,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     PinTipCentreThenXrayCentre,
 )
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:

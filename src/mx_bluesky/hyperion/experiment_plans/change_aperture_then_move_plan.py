@@ -2,25 +2,33 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import StubPosition
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
+from mx_bluesky.hyperion.experiment_plans.device_composites import (
+    GridDetectThenXRayCentreComposite,
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
-    smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    composite: HyperionFlyScanXRayCentreComposite
+    | GridDetectThenXRayCentreComposite,  # Need both types - Hyperion can enter this plan from grid detect or from flyscan depending on entry point
     parameters: HyperionSpecifiedThreeDGridScan | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
     * Centre on the centre-of-mass
     * Reset the stub offsets if specified by params"""
+
+    smargon = composite.smargon
+    aperture_scatterguard = composite.aperture_scatterguard
+
     if best_hit.bounding_box_mm is not None:
         bounding_box_size = numpy.abs(
             best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]

@@ -11,10 +11,10 @@ from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -30,7 +30,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 
 from ....conftest import raw_params_from_file, simulate_xrc_result
 from ....system_tests.hyperion.external_interaction.conftest import (
-    TEST_RESULT_LARGE,
+    TestData,
 )
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
@@ -165,7 +165,9 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         lambda msg_: {"values": {"value": SynchrotronMode.SHUTDOWN}},
         "synchrotron-synchrotron_mode",
     )
-    simulate_xrc_result(sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE)
+    simulate_xrc_result(
+        sim_run_engine, grid_detect_devices.zocalo, TestData.test_result_large
+    )
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
         sim_run_engine.add_handler(
@@ -184,7 +186,9 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    simulate_xrc_result(sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE)
+    simulate_xrc_result(
+        sim_run_engine, grid_detect_devices.zocalo, TestData.test_result_large
+    )
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             grid_detect_devices,

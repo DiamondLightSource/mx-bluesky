@@ -23,9 +23,11 @@ from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.hyperion.experiment_plans.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-    flyscan_xray_centre,
+    hyperion_flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -37,8 +39,7 @@ from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa
-    TEST_RESULT_LARGE,
-    TEST_RESULT_MEDIUM,
+    TestData,
     fetch_comment,
     zocalo_env,
 )
@@ -140,7 +141,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fgs_composite_for_fake_zocalo: FlyScanXRayCentreComposite,
+    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,
     fetch_comment,  # noqa
@@ -155,13 +156,14 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE.subscribe(doc_catcher)
 
     # Run the xray centring plan
-    RE(flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
+    RE(hyperion_flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
 
     # Check that we we emitted a valid reading from the zocalo device
     zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore
-    # TEST_RESULT_LARGE is what fake_zocalo sends by default
+    # TestData.test_result_large is what fake_zocalo sends by default
     assert (
-        get_processing_results_from_event("zocalo", zocalo_event) == TEST_RESULT_LARGE
+        get_processing_results_from_event("zocalo", zocalo_event)
+        == TestData.test_result_large
     )
 
     # get dcids from zocalo device

@@ -33,6 +33,7 @@ from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
@@ -62,7 +63,6 @@ from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScan,
 )
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

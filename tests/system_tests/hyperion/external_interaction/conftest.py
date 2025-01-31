@@ -43,7 +43,7 @@ from sqlalchemy.orm import sessionmaker
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
+    HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -54,48 +54,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
-from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
-
-TEST_RESULT_LARGE = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [1, 2, 3],
-        "max_count": 105062,
-        "n_voxels": 35,
-        "total_count": 2387574,
-        "bounding_box": [[2, 2, 2], [8, 8, 7]],
-    }
-]
-TEST_RESULT_MEDIUM = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [2, 4, 5],
-        "max_count": 50000,
-        "n_voxels": 35,
-        "total_count": 100000,
-        "bounding_box": [[1, 2, 3], [3, 4, 4]],
-    }
-]
-TEST_RESULT_SMALL = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [1, 2, 3],
-        "max_count": 1000,
-        "n_voxels": 35,
-        "total_count": 1000,
-        "bounding_box": [[2, 2, 2], [3, 3, 3]],
-    }
-]
-TEST_RESULT_BELOW_THRESHOLD = [
-    {
-        "centre_of_mass": [2, 3, 4],
-        "max_voxel": [2, 3, 4],
-        "max_count": 2,
-        "n_voxels": 1,
-        "total_count": 2,
-        "bounding_box": [[1, 2, 3], [2, 3, 4]],
-    }
-]
+from ....conftest import TestData, fake_read, pin_tip_edge_data, raw_params_from_file
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
@@ -258,7 +217,9 @@ async def zocalo_for_fake_zocalo():
 def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
-        await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 1234, "dcgid": 123})
+        await zocalo._put_results(
+            TestData.test_result_medium, {"dcid": 1234, "dcgid": 123}
+        )
 
     with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
         yield zocalo
@@ -349,10 +310,10 @@ def grid_detect_then_xray_centre_composite(
 
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
-    fake_fgs_composite: FlyScanXRayCentreComposite,
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
     done_status: NullStatus,
-) -> FlyScanXRayCentreComposite:
+) -> HyperionFlyScanXRayCentreComposite:
     set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore

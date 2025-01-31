@@ -1,5 +1,3 @@
-from collections.abc import Callable
-from functools import partial
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -19,16 +17,11 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
-from event_model import Event
+from dodal.devices.zocalo import ZocaloResults
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus
 from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -46,8 +39,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
     centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
@@ -67,17 +58,6 @@ FLYSCAN_RESULT_LOW = XRayCentreResult(
     max_count=10,
     total_count=140,
 )
-
-
-def make_event_doc(data, descriptor="abc123") -> Event:
-    return {
-        "time": 0,
-        "timestamps": {"a": 0},
-        "seq_num": 0,
-        "uid": "not so random uid",
-        "descriptor": descriptor,
-        "data": data,
-    }
 
 
 BASIC_PRE_SETUP_DOC = {
@@ -169,66 +149,6 @@ def sim_run_engine_for_rotation(sim_run_engine):
         "read", lambda msg: {"values": {"value": -1}}, "smargon_omega"
     )
     return sim_run_engine
-
-
-def mock_zocalo_trigger(zocalo: ZocaloResults, result):
-    @AsyncStatus.wrap
-    async def mock_complete(results):
-        await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
-
-    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def run_generic_ispyb_handler_setup(
-    ispyb_handler: GridscanISPyBCallback,
-    params: HyperionSpecifiedThreeDGridScan,
-):
-    """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
-    happens at the start of the outer plan."""
-
-    ispyb_handler.active = True
-    ispyb_handler.activity_gated_start(
-        {
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": params.model_dump_json(),
-        }  # type: ignore
-    )
-    ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": CONST.DESCRIPTORS.HARDWARE_READ_PRE}  # type: ignore
-    )
-    ispyb_handler.activity_gated_event(
-        make_event_doc(
-            BASIC_PRE_SETUP_DOC,
-            descriptor="123abc",
-        )
-    )
-    ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING}  # type: ignore
-    )
-    ispyb_handler.activity_gated_event(
-        make_event_doc(
-            BASIC_POST_SETUP_DOC,
-            descriptor="abc123",
-        )
-    )
-
-
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
-
-
-def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
-    mock = MagicMock(spec=StoreInIspyb)
-    mock.begin_deposition.return_value = IspybIds(
-        data_collection_ids=dcids, data_collection_group_id=dcgid
-    )
-    mock.update_deposition.return_value = IspybIds(
-        data_collection_ids=dcids, data_collection_group_id=dcgid, grid_ids=(0, 0)
-    )
-    return mock
 
 
 @pytest.fixture
@@ -355,14 +275,6 @@ def robot_load_and_energy_change_composite(
     composite.thawer = thawer
     composite.eiger = eiger
     return composite
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
 def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str):

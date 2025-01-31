@@ -4,8 +4,8 @@ from daq_config_server.client import ConfigServer
 
 from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -29,7 +29,9 @@ class HyperionFeatureFlags(FeatureFlags):
     def get_config_server() -> ConfigServer:
         return ConfigServer(CONST.CONFIG_SERVER_URL, LOGGER)
 
-    def feature_dependant_config(self, gridscan_composite: FlyScanXRayCentreComposite):
+    def feature_dependant_config(
+        self, gridscan_composite: HyperionFlyScanXRayCentreComposite
+    ):
         self.update_self_from_server()
         gridscan_composite.zocalo.use_cpu_and_gpu = self.use_panda_for_gridscan
 

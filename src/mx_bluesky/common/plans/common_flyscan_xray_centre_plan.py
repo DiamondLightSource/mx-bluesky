@@ -31,7 +31,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
     XrcResult,
-    ZocaloResults,
     get_full_processing_results,
 )
 
@@ -50,6 +49,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
@@ -57,7 +57,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 # Saves needing to write 'assert not None' everywhere
@@ -88,33 +87,47 @@ class ReadHardwareTime(StrEnum):
     PRE_COLLECTION = "pre collection"
 
 
+# TODO: Think about proper typing for all these
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures(Generic[D, P]):
-    setup_trigger: Callable[[D, P], MsgGenerator]
+    setup_trigger_plan: Callable[[D, P], MsgGenerator]
     tidy_plan: Callable[[D], MsgGenerator]
-    set_flyscan_params: Callable[[], MsgGenerator]
+    set_flyscan_params_plan: Callable[[], MsgGenerator]
     fgs_motors: FastGridScanCommon
-    read_pre_collection_plan: Callable[[], MsgGenerator]
+    read_pre_flyscan_plan: Callable[[], MsgGenerator]
     read_during_collection_plan: Callable[[], MsgGenerator]
-    plan_using_xrc_results: Callable[[D, P, XRayCentreResult], MsgGenerator] = null_plan
+    plan_after_getting_xrc_results: Callable[..., MsgGenerator] = null_plan
 
 
 def construct_beamline_specific_FGS_features(
-    self,
-    setup_trigger: Callable[[D, P], MsgGenerator],
+    setup_trigger_plan: Callable[[D, P], MsgGenerator],
     tidy_plan: Callable[[D], MsgGenerator],
-    set_flyscan_params: Callable[[], MsgGenerator],
+    set_flyscan_params_plan: Callable[[], MsgGenerator],
     fgs_motors: FastGridScanCommon,
-    signals_to_read_pre_collection: list[Readable],
+    signals_to_read_pre_flyscan: list[Readable],
     signals_to_read_during_collection: list[Readable],
-    plan_using_xrc_results: Callable[
-        [D, P, XRayCentreResult], MsgGenerator
-    ] = null_plan,
+    plan_after_getting_xrc_results=null_plan,
 ) -> BeamlineSpecificFGSFeatures:
-    """Construct the class needed to do beamline-specific parts of the XRC FGS"""
-    read_pre_collection_plan = partial(
+    """Construct the class needed to do beamline-specific parts of the XRC FGS
+
+    Args:
+        setup_trigger_plan: Configure any triggering, for example with the Zebra or PandA device. Ran directly before kicking off the gridscan.
+
+        tidy_plan: Tidy up states of devices. Ran at the end of the flyscan, regardless of whether or not it finished successfully.
+
+        set_flyscan_params_plan: TODO this one and Make better type hints for it
+
+        fgs_motors: Composite device representing the fast grid scan's motion program parameters.
+
+        signals_to_read_pre_flyscan: Signals which will be read and saved as a bluesky event document after all configuration, but before the gridscan.
+
+        signals_to_read_during_collection: Signals which will be read and saved as a bluesky event document whilst the gridscan motion is in progress
+
+        plan_after_getting_xrc_results: Optional plan which is ran after x-ray centring results have been retrieved from Zocalo.
+    """
+    read_pre_flyscan_plan = partial(
         read_hardware_plan,
-        signals_to_read_pre_collection,
+        signals_to_read_pre_flyscan,
         ReadHardwareTime.DURING_COLLECTION,
     )
 
@@ -124,13 +137,13 @@ def construct_beamline_specific_FGS_features(
         ReadHardwareTime.DURING_COLLECTION,
     )
     return BeamlineSpecificFGSFeatures(
-        setup_trigger,
+        setup_trigger_plan,
         tidy_plan,
-        set_flyscan_params,
+        set_flyscan_params_plan,
         fgs_motors,
-        read_pre_collection_plan,
+        read_pre_flyscan_plan,
         read_during_collection_plan,
-        plan_using_xrc_results,
+        plan_after_getting_xrc_results,
     )
 
 
@@ -148,6 +161,7 @@ def read_hardware_plan(
     yield from bps.create(name=event_name)
     for signal in signals:
         yield from bps.read(signal)
+    yield from bps.save()
 
 
 def create_devices(context: BlueskyContext) -> FlyScanEssentialDevices:
@@ -177,8 +191,8 @@ def highest_level_flyscan_xray_centre(
     assert xray_centre_results, (
         "Flyscan result event not received or no crystal found and exception not raised"
     )
-    # Typing complains if you don't put parameters here
-    yield from feature_controlled.plan_using_xrc_results(
+
+    yield from feature_controlled.plan_after_getting_xrc_results(
         composite, parameters, xray_centre_results[0]
     )
 
@@ -237,7 +251,7 @@ def run_gridscan_and_fetch_results(
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    yield from feature_controlled.setup_trigger(fgs_composite, parameters)
+    yield from feature_controlled.setup_trigger_plan(fgs_composite, parameters)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -343,10 +357,10 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from feature_controlled.read_pre_collection_plan()
+        yield from feature_controlled.read_pre_flyscan_plan()
 
     LOGGER.info("Setting fgs params")
-    yield from feature_controlled.set_flyscan_params()
+    yield from feature_controlled.set_flyscan_params_plan()
 
     LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(feature_controlled.fgs_motors)
