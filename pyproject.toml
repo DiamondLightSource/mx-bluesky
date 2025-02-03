@@ -181,7 +181,7 @@ commands =
     type-checking: pyright src tests {posargs}
     tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-    systemtests: pytest -m system_test tests/system_tests
+    systemtests: pytest --junit-xml=systemtests_output.xml -m system_test tests/system_tests
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
         docs/developer/hyperion/reference/param_hierarchy.puml"
