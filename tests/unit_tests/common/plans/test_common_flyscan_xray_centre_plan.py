@@ -1,4 +1,5 @@
 import types
+from functools import partial
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -110,10 +111,6 @@ def mock_ispyb():
     return MagicMock()
 
 
-def mock_setup_trigger():
-    return MagicMock()
-
-
 def mock_plan():
     yield from bps.null()
 
@@ -124,12 +121,12 @@ def feature_controlled(
     test_fgs_params: SpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
-        setup_trigger_plan=MagicMock(side_effect=mock_plan()),
-        tidy_plan=MagicMock(side_effect=mock_plan()),
-        set_flyscan_params_plan=MagicMock(side_effect=mock_plan()),
+        setup_trigger_plan=MagicMock(),
+        tidy_plan=MagicMock(),
+        set_flyscan_params_plan=MagicMock(),
         fgs_motors=fake_fgs_composite.zebra_fast_grid_scan,
-        read_pre_flyscan_plan=MagicMock(side_effect=mock_plan()),
-        read_during_collection_plan=MagicMock(side_effect=mock_plan()),
+        read_pre_flyscan_plan=MagicMock(),
+        read_during_collection_plan=MagicMock(),
     )
 
 
@@ -446,21 +443,19 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
+        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
     )
     @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
     )
     @patch(
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-        modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
-        zocalo_trigger: MagicMock,
+        zoc_trigger: MagicMock,
         run_gridscan: MagicMock,
+        safe_move: MagicMock,
         RE_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
@@ -477,6 +472,8 @@ class TestFlyscanXrayCentrePlan:
 
         RE(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
+        feature_controlled.setup_trigger_plan.assert_called_once()
+        feature_controlled.tidy_plan.assert_called_once()
 
     # TODO move to hyperion as testing devshm
     # @patch(
@@ -899,6 +896,12 @@ class TestFlyscanXrayCentrePlan:
         class CompleteException(Exception):
             pass
 
+        feature_controlled.read_pre_flyscan_plan = partial(
+            read_hardware_plan,
+            [],
+            ReadHardwareTime.DURING_COLLECTION,
+        )
+
         mock_complete.side_effect = CompleteException()
 
         fake_fgs_composite.eiger.stage = MagicMock(
@@ -1003,6 +1006,11 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
+        feature_controlled.read_during_collection_plan = partial(
+            read_hardware_plan,
+            [fake_fgs_composite.eiger.bit_depth],  # type: ignore # see https://github.com/bluesky/bluesky/issues/1809
+            ReadHardwareTime.DURING_COLLECTION,
+        )
         sim_run_engine.add_handler(
             "read",
             lambda msg: {"values": {"value": SynchrotronMode.USER}},

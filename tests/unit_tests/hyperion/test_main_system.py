@@ -37,7 +37,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from ...conftest import raw_params_from_file
 from ..conftest import mock_beamline_module_filepaths
 
-FGS_ENDPOINT = "/flyscan_xray_centre/"
+FGS_ENDPOINT = "/hyperion_flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value

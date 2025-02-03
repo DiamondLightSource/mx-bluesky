@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE
+from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     ZebraGridScanParams,
@@ -29,7 +29,7 @@ from mx_bluesky.common.parameters.constants import (
 
 """Parameter models in this file are abstract. They should be inherited by a top-level model"""
 
-DETECTOR_SIZE_PER_BEAMLINE = {"i02-1": EIGER2_X_9M_SIZE, "dev": EIGER2_X_9M_SIZE}
+DETECTOR_SIZE_PER_BEAMLINE = {"i02-1": EIGER2_X_9M_SIZE, "dev": EIGER2_X_16M_SIZE}
 
 
 class GridCommon(

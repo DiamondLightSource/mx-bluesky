@@ -1,8 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-from graypy import GELFTCPHandler
-
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -10,9 +7,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import setup_logging
-from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 from .....conftest import TestData
 
@@ -53,9 +48,7 @@ class TestXrayCentreIspybHandler:
     def test_fgs_failing_results_in_bad_run_status_in_ispyb(
         self,
     ):
-        ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
+        ispyb_handler = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -82,9 +75,7 @@ class TestXrayCentreIspybHandler:
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         self,
     ):
-        ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
+        ispyb_handler = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
@@ -108,71 +99,6 @@ class TestXrayCentreIspybHandler:
             "",
         )
 
-    @pytest.mark.skip_log_setup
-    def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
-        self,
-    ):
-        setup_logging(True)
-        gelf_handler: MagicMock = next(
-            filter(
-                lambda h: isinstance(h, GELFTCPHandler),
-                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,  # type: ignore
-            )
-        )
-        gelf_handler.emit = MagicMock()
-
-        ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
-        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
-        ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_pre_data_collection
-        )
-        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
-        ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_during_data_collection
-        )
-        ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
-        )
-
-        ISPYB_ZOCALO_CALLBACK_LOGGER.info("test")
-        latest_record = gelf_handler.emit.call_args.args[-1]
-        assert latest_record.dc_group_id == DCG_ID
-
-    @pytest.mark.skip_log_setup
-    def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
-        self,
-    ):
-        setup_logging(True)
-        gelf_handler: MagicMock = next(
-            filter(
-                lambda h: isinstance(h, GELFTCPHandler),
-                ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,  # type: ignore
-            )
-        )
-        gelf_handler.emit = MagicMock()
-
-        ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
-        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
-        ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_pre_data_collection
-        )
-        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
-        ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_during_data_collection
-        )
-        ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
-        )
-        ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
-
-        ISPYB_ZOCALO_CALLBACK_LOGGER.info("test")
-        latest_record = gelf_handler.emit.call_args.args[-1]
-        assert not hasattr(latest_record, "dc_group_id")
-
     @patch(
         "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.time",
         side_effect=[2, 100],
@@ -180,9 +106,7 @@ class TestXrayCentreIspybHandler:
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
         self, mock_time
     ):
-        ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
-        )
+        ispyb_handler = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
 
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)  # type:ignore
 

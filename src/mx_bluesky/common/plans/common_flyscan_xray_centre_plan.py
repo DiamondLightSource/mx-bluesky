@@ -4,7 +4,6 @@ import dataclasses
 from collections.abc import Callable, Sequence
 from enum import StrEnum
 from functools import partial
-from typing import Generic, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -77,8 +76,6 @@ class FlyScanEssentialDevices:
     smargon: Smargon
 
 
-D = TypeVar(name="D", bound="FlyScanEssentialDevices")
-P = TypeVar(name="P", bound="SpecifiedThreeDGridScan")
 NullPlanType = Callable[[], MsgGenerator]
 
 
@@ -89,20 +86,20 @@ class ReadHardwareTime(StrEnum):
 
 # TODO: Think about proper typing for all these
 @dataclasses.dataclass
-class BeamlineSpecificFGSFeatures(Generic[D, P]):
-    setup_trigger_plan: Callable[[D, P], MsgGenerator]
-    tidy_plan: Callable[[D], MsgGenerator]
-    set_flyscan_params_plan: Callable[[], MsgGenerator]
+class BeamlineSpecificFGSFeatures:
+    setup_trigger_plan: Callable[..., MsgGenerator]
+    tidy_plan: Callable[..., MsgGenerator]
+    set_flyscan_params_plan: Callable[..., MsgGenerator]
     fgs_motors: FastGridScanCommon
-    read_pre_flyscan_plan: Callable[[], MsgGenerator]
-    read_during_collection_plan: Callable[[], MsgGenerator]
+    read_pre_flyscan_plan: Callable[..., MsgGenerator]
+    read_during_collection_plan: Callable[..., MsgGenerator]
     plan_after_getting_xrc_results: Callable[..., MsgGenerator] = null_plan
 
 
 def construct_beamline_specific_FGS_features(
-    setup_trigger_plan: Callable[[D, P], MsgGenerator],
-    tidy_plan: Callable[[D], MsgGenerator],
-    set_flyscan_params_plan: Callable[[], MsgGenerator],
+    setup_trigger_plan: Callable[..., MsgGenerator],
+    tidy_plan: Callable[..., MsgGenerator],
+    set_flyscan_params_plan: Callable[..., MsgGenerator],
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: list[Readable],
     signals_to_read_during_collection: list[Readable],
@@ -128,7 +125,7 @@ def construct_beamline_specific_FGS_features(
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
         signals_to_read_pre_flyscan,
-        ReadHardwareTime.DURING_COLLECTION,
+        ReadHardwareTime.PRE_COLLECTION,
     )
 
     read_during_collection_plan = partial(

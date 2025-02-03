@@ -51,7 +51,7 @@ class ExperimentRegistryEntry(TypedDict):
 
 
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
-    "flyscan_xray_centre": {
+    "hyperion_flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
         "param_type": HyperionSpecifiedThreeDGridScan,
         "callbacks_factory": create_hyperion_gridscan_callbacks,
