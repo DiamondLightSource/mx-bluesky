@@ -27,11 +27,11 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_zocalo,
-)
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
+)
+from mx_bluesky.common.plans.read_hardware_plan import (
+    read_hardware_for_zocalo,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER

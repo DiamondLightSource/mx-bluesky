@@ -22,6 +22,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.callback_util impor
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -128,6 +131,16 @@ def mock_subscriptions(test_fgs_params):
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
     return (nexus_callback, ispyb_callback)
+
+
+@pytest.fixture
+def RE_with_subs(
+    RE: RunEngine,
+    mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
+):
+    for cb in list(mock_subscriptions):
+        RE.subscribe(cb)
+    yield RE, mock_subscriptions
 
 
 @pytest.fixture

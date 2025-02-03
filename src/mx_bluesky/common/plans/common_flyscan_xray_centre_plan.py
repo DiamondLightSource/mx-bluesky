@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Sequence
-from enum import StrEnum
 from functools import partial
 
 import bluesky.plan_stubs as bps
@@ -40,14 +39,17 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import (
-    DocDescriptorNames,
     EnvironmentConstants,
     GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.component_plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.read_hardware_plan import (
+    ReadHardwareTime,
+    read_hardware_plan,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -79,12 +81,6 @@ class FlyScanEssentialDevices:
 NullPlanType = Callable[[], MsgGenerator]
 
 
-class ReadHardwareTime(StrEnum):
-    DURING_COLLECTION = "during collection"
-    PRE_COLLECTION = "pre collection"
-
-
-# TODO: Think about proper typing for all these
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures:
     setup_trigger_plan: Callable[..., MsgGenerator]
@@ -108,19 +104,19 @@ def construct_beamline_specific_FGS_features(
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
     Args:
-        setup_trigger_plan: Configure any triggering, for example with the Zebra or PandA device. Ran directly before kicking off the gridscan.
+        setup_trigger_plan (Callable): Configure any triggering, for example with the Zebra or PandA device. Ran directly before kicking off the gridscan.
 
-        tidy_plan: Tidy up states of devices. Ran at the end of the flyscan, regardless of whether or not it finished successfully.
+        tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of whether or not it finished successfully.
 
-        set_flyscan_params_plan: TODO this one and Make better type hints for it
+        set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
 
-        fgs_motors: Composite device representing the fast grid scan's motion program parameters.
+        fgs_motors (Callable): Composite device representing the fast grid scan's motion program parameters.
 
-        signals_to_read_pre_flyscan: Signals which will be read and saved as a bluesky event document after all configuration, but before the gridscan.
+        signals_to_read_pre_flyscan (Callable): Signals which will be read and saved as a bluesky event document after all configuration, but before the gridscan.
 
-        signals_to_read_during_collection: Signals which will be read and saved as a bluesky event document whilst the gridscan motion is in progress
+        signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event document whilst the gridscan motion is in progress
 
-        plan_after_getting_xrc_results: Optional plan which is ran after x-ray centring results have been retrieved from Zocalo.
+        plan_after_getting_xrc_results (Callable): Optional plan which is ran after x-ray centring results have been retrieved from Zocalo.
     """
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
@@ -144,23 +140,6 @@ def construct_beamline_specific_FGS_features(
     )
 
 
-# TODO put this in common plans
-def read_hardware_plan(
-    signals: list[Readable],
-    read_hardware_time: ReadHardwareTime,
-):
-    LOGGER.info(f"Reading status of beamline for callbacks, {read_hardware_time}")
-    event_name = (
-        DocDescriptorNames.HARDWARE_READ_DURING
-        if read_hardware_time == ReadHardwareTime.DURING_COLLECTION
-        else ReadHardwareTime.PRE_COLLECTION
-    )
-    yield from bps.create(name=event_name)
-    for signal in signals:
-        yield from bps.read(signal)
-    yield from bps.save()
-
-
 def create_devices(context: BlueskyContext) -> FlyScanEssentialDevices:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanEssentialDevices)
@@ -171,7 +150,20 @@ def highest_level_flyscan_xray_centre(
     parameters: SpecifiedThreeDGridScan,
     feature_controlled: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
-    """TODO: Need to create a proper docstring here. This function will be called by other MX beamlines to do a XRC FGS"""
+    """Main entry point of the MX-Bluesky x-ray centering flyscan
+
+    Args:
+        composite (FlyScanEssentialDevices): Devices required to perform this plan.
+
+        parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
+
+        feature_controlled (BeamlineSpecificFGSFeatures): Configure the beamline-specific version of this plan: For example triggering setup and tidy up plans, as well as what to do with the centering results.
+
+
+
+    With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data to ispyb; triggering zocalo; reading hardware before and during the scan; optionally performing a plan using the results; and tidying up devices after the plan is complete. For more information, see https://diamondlightsource.github.io/mx-bluesky/main/index.html
+
+    """
 
     xrc_event_handler = XRayCentreEventHandler()
 

@@ -14,13 +14,13 @@ from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from scanspec.core import AxesPoints, Axis
 
-from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_zocalo,
-)
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
     TriggerConstants,
+)
+from mx_bluesky.common.plans.read_hardware_plan import (
+    read_hardware_for_zocalo,
 )
 from mx_bluesky.common.utils.tracing import TRACER
 

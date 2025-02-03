@@ -24,11 +24,11 @@ def thaw_and_stream_to_redis(
     oav: OAV = inject("oav"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
-    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
     sample_id = yield from bps.rd(robot.sample_id)
 
     sample_id = int(sample_id)
-    zoom_level_before_thawing = yield from bps.rd(oav.zoom_controller.level)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    zoom_level_before_thawing = yield from bps.rd(oav.zoom_controller.level)
 
     yield from bps.mv(oav.zoom_controller.level, "1.0x")  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 

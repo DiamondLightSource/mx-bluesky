@@ -21,7 +21,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
     TriggerConstants,
 )
-from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.component_plans.do_fgs import kickoff_and_complete_gridscan
 
 
 @pytest.fixture

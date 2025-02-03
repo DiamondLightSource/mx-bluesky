@@ -4,7 +4,6 @@ from dodal.devices.zebra.zebra import Zebra
 ZEBRA_STATUS_TIMEOUT = 30
 
 
-# TODO: Check this with Andy - current deployed code sets TTL 4
 def setup_zebra_for_xrc_flyscan(zebra: Zebra, group="setup_zebra_for_xrc", wait=True):
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER],
