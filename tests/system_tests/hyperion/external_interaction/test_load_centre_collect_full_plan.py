@@ -50,6 +50,8 @@ from ...conftest import (
 )
 from .conftest import raw_params_from_file
 
+SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
+
 
 @pytest.fixture
 def load_centre_collect_params():
@@ -57,7 +59,7 @@ def load_centre_collect_params():
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
     json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
-    json_dict["sample_id"] = os.environ.get("ST_SAMPLE_ID", 5461074)
+    json_dict["sample_id"] = SAMPLE_ID
     return LoadCentreCollect(**json_dict)
 
 
@@ -110,7 +112,7 @@ def load_centre_collect_composite(
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": 5461074,
+    "BLSAMPLEID": SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,
