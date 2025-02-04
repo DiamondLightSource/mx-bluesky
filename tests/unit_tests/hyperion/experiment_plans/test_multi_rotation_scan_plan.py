@@ -85,7 +85,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     )
 
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "eiger_do_arm"
     )[1:]
 
     msgs_within_arming = list(
