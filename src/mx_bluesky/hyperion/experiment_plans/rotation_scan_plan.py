@@ -427,7 +427,6 @@ def multi_rotation_scan(
             ],
         }
     )
-    @bpp.stage_decorator([eiger])
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
@@ -460,3 +459,4 @@ def multi_rotation_scan(
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
+    yield from bps.unstage(eiger)

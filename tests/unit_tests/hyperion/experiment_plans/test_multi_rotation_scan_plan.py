@@ -15,6 +15,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
@@ -480,3 +481,33 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         fourth_upsert_data = upsert_calls[3].args[0]
         assert fourth_upsert_data[9]  # timestamp
         assert fourth_upsert_data[10] == "DataCollection Successful"
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
+    _,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    eiger = fake_create_rotation_devices.eiger
+    eiger.stage = MagicMock(return_value=Status(done=True, success=True))
+    eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
+    eiger.do_arm.set = MagicMock(return_value=Status(done=True, success=True))
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [],
+        oav_parameters_for_rotation,
+    )
+    # Stage will arm the eiger synchonously
+    eiger.stage.assert_not_called()
+
+    eiger.do_arm.set.assert_called_once()
+    eiger.unstage.assert_called_once()
