@@ -227,7 +227,8 @@ def dummy_params():
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
     )
-    dummy_params.visit = "cm31105-5"
+    dummy_params.visit = os.environ.get("ST_VISIT", "cm31105-5")
+    dummy_params.sample_id = os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id)
     return dummy_params
 
 
