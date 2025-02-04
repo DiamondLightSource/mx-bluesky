@@ -231,7 +231,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
-    zocalo = i03.zocalo(fake_with_ophyd_sim=True)
+    zocalo = i03.zocalo(connect_immediately=True, mock=True)
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = TEST_RESULT_MEDIUM
 
