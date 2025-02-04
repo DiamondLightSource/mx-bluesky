@@ -198,7 +198,7 @@ def params_for_rotation_scan(test_rotation_params: RotationScan):
     return test_rotation_params
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[..., Any]):
     expected_comment_contents = (
         "Xray centring - "
@@ -211,7 +211,7 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[...
     assert fetch_comment(2) == ""
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
@@ -228,7 +228,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d: StoreInIspyb,
     fetch_comment: Callable[..., Any],
@@ -259,7 +259,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 @pytest.mark.parametrize(
     "experiment_type, exp_num_of_grids, success",
     [
@@ -319,7 +319,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         assert fetch_comment(dc_id) == expected_comments[grid_no]
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 @pytest.mark.skip(
     "Broken, fix in https://github.com/DiamondLightSource/mx-bluesky/issues/183"
 )
@@ -461,7 +461,7 @@ def test_ispyb_deposition_in_gridscan(
     )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
     params_for_rotation_scan: RotationScan,
