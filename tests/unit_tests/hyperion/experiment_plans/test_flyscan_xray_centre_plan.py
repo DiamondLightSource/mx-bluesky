@@ -1,16 +1,14 @@
 import types
 from pathlib import Path
-from unittest.mock import DEFAULT, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.devices.aperturescatterguard import AperturePosition, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
@@ -26,9 +24,6 @@ from ophyd_async.testing import set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -43,11 +38,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
 from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
@@ -67,7 +57,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util imp
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
@@ -85,7 +74,6 @@ from ....system_tests.hyperion.external_interaction.conftest import (
     TEST_RESULT_SMALL,
 )
 from .conftest import (
-    assert_event,
     mock_zocalo_trigger,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
@@ -122,24 +110,6 @@ def test_fgs_params_panda_zebra(
         feature_flags.use_panda_for_gridscan = request.param
     test_fgs_params.features = feature_flags
     return test_fgs_params
-
-
-@pytest.fixture
-def ispyb_plan(test_fgs_params: HyperionSpecifiedThreeDGridScan):
-    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
-    @bpp.run_decorator(  # attach experiment metadata to the start document
-        md={
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
-        }
-    )
-    def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
-    ):
-        yield from read_hardware_pre_collection(und, syn, slits, dcm, sm)
-        yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
-
-    return standalone_read_hardware_for_ispyb
 
 
 @pytest.fixture
@@ -217,117 +187,6 @@ class TestFlyscanXrayCentrePlan:
             "fail",
             "Test Exception",
         )
-
-    def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-        self,
-        fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
-        RE: RunEngine,
-        ispyb_plan,
-    ):
-        undulator_test_value = 1.234
-
-        set_mock_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
-
-        synchrotron_test_value = SynchrotronMode.USER
-        set_mock_value(
-            fake_fgs_composite.synchrotron.synchrotron_mode, synchrotron_test_value
-        )
-
-        transmission_test_value = 0.01
-        set_mock_value(
-            fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
-        )
-
-        current_energy_kev_test_value = 12.05
-        set_mock_value(
-            fake_fgs_composite.dcm.energy_in_kev.user_readback,
-            current_energy_kev_test_value,
-        )
-
-        xgap_test_value = 0.1234
-        ygap_test_value = 0.2345
-        ap_sg_test_value = AperturePosition(
-            aperture_x=10,
-            aperture_y=11,
-            aperture_z=2,
-            scatterguard_x=13,
-            scatterguard_y=14,
-            radius=20,
-        )
-        set_mock_value(
-            fake_fgs_composite.s4_slit_gaps.xgap.user_readback, xgap_test_value
-        )
-        set_mock_value(
-            fake_fgs_composite.s4_slit_gaps.ygap.user_readback, ygap_test_value
-        )
-        flux_test_value = 10.0
-        set_mock_value(fake_fgs_composite.flux.flux_reading, flux_test_value)
-
-        RE(
-            bps.abs_set(
-                fake_fgs_composite.aperture_scatterguard,
-                ApertureValue.SMALL,
-            )
-        )
-
-        test_ispyb_callback = PlanReactiveCallback(ISPYB_ZOCALO_CALLBACK_LOGGER)
-        test_ispyb_callback.active = True
-
-        with patch.multiple(
-            test_ispyb_callback,
-            activity_gated_start=DEFAULT,
-            activity_gated_event=DEFAULT,
-        ):
-            RE.subscribe(test_ispyb_callback)
-
-            RE(
-                ispyb_plan(
-                    fake_fgs_composite.undulator,
-                    fake_fgs_composite.synchrotron,
-                    fake_fgs_composite.s4_slit_gaps,
-                    fake_fgs_composite.robot,
-                    fake_fgs_composite.attenuator,
-                    fake_fgs_composite.flux,
-                    fake_fgs_composite.dcm,
-                    fake_fgs_composite.aperture_scatterguard,
-                    fake_fgs_composite.smargon,
-                    fake_fgs_composite.eiger,
-                )
-            )
-            # fmt: off
-            assert_event(
-                test_ispyb_callback.activity_gated_start.mock_calls[0],  # pyright: ignore
-                {
-                    "plan_name": "standalone_read_hardware_for_ispyb",
-                    "subplan_name": "run_gridscan_move_and_tidy",
-                },
-            )
-            assert_event(
-                test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
-                {
-                    "undulator-current_gap": undulator_test_value,
-                    "synchrotron-synchrotron_mode": synchrotron_test_value.value,
-                    "s4_slit_gaps-xgap": xgap_test_value,
-                    "s4_slit_gaps-ygap": ygap_test_value,
-                },
-            )
-            assert_event(
-                test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
-                {
-                    "aperture_scatterguard-selected_aperture": ApertureValue.SMALL,
-                    "aperture_scatterguard-aperture-x": ap_sg_test_value.aperture_x,
-                    "aperture_scatterguard-aperture-y": ap_sg_test_value.aperture_y,
-                    "aperture_scatterguard-aperture-z": ap_sg_test_value.aperture_z,
-                    "aperture_scatterguard-scatterguard-x": ap_sg_test_value.scatterguard_x,
-                    "aperture_scatterguard-scatterguard-y": ap_sg_test_value.scatterguard_y,
-                    "aperture_scatterguard-radius": ap_sg_test_value.radius,
-                    "attenuator-actual_transmission": transmission_test_value,
-                    "flux-flux_reading": flux_test_value,
-                    "dcm-energy_in_kev": current_energy_kev_test_value,
-                },
-            )
-            # fmt: on
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",

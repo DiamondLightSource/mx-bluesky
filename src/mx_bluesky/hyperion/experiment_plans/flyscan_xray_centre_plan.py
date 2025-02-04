@@ -51,16 +51,16 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
+)
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
     set_panda_directory,
@@ -326,7 +326,7 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
@@ -335,7 +335,7 @@ def run_gridscan(
         )
 
     read_during_collection = partial(
-        read_hardware_during_collection,
+        standard_read_hardware_during_collection,
         fgs_composite.aperture_scatterguard,
         fgs_composite.attenuator,
         fgs_composite.flux,
