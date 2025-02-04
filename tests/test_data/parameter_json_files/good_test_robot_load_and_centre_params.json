@@ -16,5 +16,6 @@
     "sample_id": 12345,
     "sample_puck": 40,
     "sample_pin": 3,
-    "comment": "Descriptive comment."
+    "comment": "Descriptive comment.",
+    "box_size_um": 20
 }

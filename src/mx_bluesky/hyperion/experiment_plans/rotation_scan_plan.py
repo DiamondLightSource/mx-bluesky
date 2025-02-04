@@ -375,8 +375,6 @@ def rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            "zocalo_environment": CONST.ZOCALO_ENV,
             "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
@@ -450,7 +448,6 @@ def multi_rotation_scan(
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
-                    CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
                     "mx_bluesky_parameters": single_scan.model_dump_json(),
                 }
             )

@@ -7,9 +7,7 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field
 
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
     SpecifiedThreeDGridScan,
@@ -49,7 +47,8 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
+            or self.features.use_gpu_results,
             **optional_args,
         )
 
@@ -85,7 +84,8 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFe
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
+            or self.features.use_gpu_results,
             **optional_args,
         )
 
@@ -146,4 +146,4 @@ class PinTipCentreThenXrayCentre(
 class GridScanWithEdgeDetect(
     GridCommonWithHyperionDetectorParams, WithHyperionUDCFeatures
 ):
-    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    pass

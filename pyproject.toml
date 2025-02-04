@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.8a5",
     "bluesky >= 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@92a19d8c729e2317abce1c16a6a06e04e07e3df9",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@a2b9d8c20ff3826e3f1407d0e634a4765dde7f70",
 ]
 
 
@@ -121,7 +121,7 @@ markers = [
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
 ]
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [

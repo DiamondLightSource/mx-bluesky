@@ -683,7 +683,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    mock_zocalo_callback = ZocaloCallback()
+    mock_zocalo_callback = ZocaloCallback(CONST.PLAN.ROTATION_MAIN, "env")
     mock_ispyb_callback = RotationISPyBCallback(emit=mock_zocalo_callback)
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)

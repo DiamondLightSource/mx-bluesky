@@ -35,15 +35,8 @@ def start_dict(plan_name: str = "test_plan_name", env: str = "test_env"):
 
 class TestZocaloHandler:
     def _setup_handler(self):
-        zocalo_handler = ZocaloCallback()
-        assert zocalo_handler.triggering_plan is None
-        zocalo_handler.start(start_dict())  # type: ignore
-        assert zocalo_handler.triggering_plan == "test_plan_name"
-        assert zocalo_handler.zocalo_interactor is not None
+        zocalo_handler = ZocaloCallback("test_plan_name", "test_env")
         return zocalo_handler
-
-    def test_handler_gets_plan_name_from_start_doc(self):
-        self._setup_handler()
 
     def test_handler_doesnt_trigger_on_wrong_plan(self):
         zocalo_handler = self._setup_handler()

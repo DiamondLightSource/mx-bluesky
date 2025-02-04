@@ -29,8 +29,13 @@ class GridCommon(
     DiffractionExperimentWithSample,
     OptionalGonioAngleStarts,
 ):
-    """Parameters used in every MX diffraction experiment using grids. This model should be used by plans which have no knowledge of the grid specifications - i.e before automatic grid detection has completed"""
+    """
+    Parameters used in every MX diffraction experiment using grids. This model should
+    be used by plans which have no knowledge of the grid specifications - i.e before
+    automatic grid detection has completed
+    """
 
+    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.WIDTH_UM)
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
 

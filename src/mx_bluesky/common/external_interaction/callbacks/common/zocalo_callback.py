@@ -7,7 +7,6 @@ from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
-    TriggerConstants,
 )
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
@@ -30,27 +29,17 @@ class ZocaloCallback(CallbackBase):
 
     def _reset_state(self):
         self.run_uid: str | None = None
-        self.triggering_plan: str | None = None
-        self.zocalo_interactor: ZocaloTrigger | None = None
         self.zocalo_info: list[ZocaloStartInfo] = []
         self.descriptors: dict[str, EventDescriptor] = {}
 
-    def __init__(
-        self,
-    ):
+    def __init__(self, triggering_plan: str, zocalo_environment: str):
         super().__init__()
+        self.triggering_plan = triggering_plan
+        self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
         self._reset_state()
 
     def start(self, doc: RunStart):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info("Zocalo handler received start document.")
-        if triggering_plan := doc.get(TriggerConstants.ZOCALO):
-            self.triggering_plan = triggering_plan
-            assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
-            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-                f"Zocalo environment set to {zocalo_environment}."
-            )
-            self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
-
         if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             self.run_uid = doc.get("uid")
             assert isinstance(scan_points := doc.get("scan_points"), list)
@@ -58,6 +47,7 @@ class ZocaloCallback(CallbackBase):
                 isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple)
                 and len(ispyb_ids) > 0
             ):
+                ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Zocalo triggering for {ispyb_ids}")
                 ids_and_shape = list(zip(ispyb_ids, scan_points, strict=False))
                 start_frame = 0
                 self.zocalo_info = []
@@ -82,7 +72,6 @@ class ZocaloCallback(CallbackBase):
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename
-                assert self.zocalo_interactor is not None
                 self.zocalo_interactor.run_start(start_info)
         return doc
 
