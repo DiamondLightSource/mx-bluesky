@@ -213,9 +213,6 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smarg
             "mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml"
         ),
         patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.bps.abs_set"),
-        patch(
-            "mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml"
-        ),
     ):
         RE(
             setup_panda_for_flyscan(
