@@ -121,6 +121,7 @@ class PlanGroupCheckpointConstants:
     READY_FOR_OAV = "ready_for_oav"
 
 
+# Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798
 @dataclass(frozen=True)
 class DeviceSettingsConstants:
     PANDA_FLYSCAN_SETTINGS_FILENAME = "panda-gridscan"
