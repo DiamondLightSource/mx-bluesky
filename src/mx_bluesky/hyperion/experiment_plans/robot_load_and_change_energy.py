@@ -122,11 +122,6 @@ def do_robot_load(
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
-    error_code = yield from bps.rd(composite.robot.error_code)
-    # Reset robot if light curtains were tripped
-    if error_code == 40:
-        yield from bps.trigger(composite.robot.reset, wait=True)
-
     yield from bps.abs_set(
         composite.robot,
         sample_location,
