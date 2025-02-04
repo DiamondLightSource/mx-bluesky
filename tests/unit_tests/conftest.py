@@ -1,9 +1,11 @@
 import asyncio
 import time
+from types import ModuleType
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines import beamline_parameters
+from dodal.utils import AnyDeviceFactory, collect_factories
 
 
 @pytest.fixture
@@ -42,3 +44,18 @@ def mock_beamline_module_filepaths(bl_name, bl_module):
         beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
             "tests/test_data/i04_beamlineParameters"
         )
+
+
+def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceFactory]:
+    return {
+        f
+        for f in collect_factories(beamline_module, include_skipped=True).values()
+        if hasattr(f, "cache_clear")
+    }
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(active_device_factories):
+    yield None
+    for f in active_device_factories:
+        f.cache_clear()  # type: ignore

@@ -601,21 +601,22 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
     )
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
 def test_box_size_passed_through_to_gridscan(
+    mock_detect_grid: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
 ):
     load_centre_collect_params.robot_load_then_centre.box_size_um = 25
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
-    ) as mock_detect_grid:
-        with pytest.raises(AssertionError, match="Flyscan result event not received.*"):
-            RE(
-                load_centre_collect_full(
-                    composite, load_centre_collect_params, oav_parameters_for_rotation
-                )
+    with pytest.raises(AssertionError, match="Flyscan result event not received.*"):
+        RE(
+            load_centre_collect_full(
+                composite, load_centre_collect_params, oav_parameters_for_rotation
             )
-        detect_grid_call = mock_detect_grid.mock_calls[0]
-        assert detect_grid_call.args[1].box_size_um == 25
+        )
+    detect_grid_call = mock_detect_grid.mock_calls[0]
+    assert detect_grid_call.args[1].box_size_um == 25

@@ -32,8 +32,11 @@ class I03Constants:
     OMEGA_FLIP = True
 
     # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
-    # processed results. GPU results never used in analysis for now
+    # processed results.
     COMPARE_CPU_AND_GPU_ZOCALO = False
+
+    # Turns on GPU processing for zocalo and uses the results that come back
+    USE_GPU_RESULTS = False
 
 
 @dataclass(frozen=True)

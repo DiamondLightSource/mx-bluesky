@@ -74,7 +74,7 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 @pytest.fixture
 def thawer(RE: RunEngine) -> Thawer:
-    return i04.thawer(fake_with_ophyd_sim=True, wait_for_connection=True)
+    return i04.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -96,7 +96,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 @pytest.fixture
 def robot(RE: RunEngine) -> BartRobot:
-    return i04.robot(wait_for_connection=True, fake_with_ophyd_sim=True)
+    return i04.robot(connect_immediately=True, mock=True)
 
 
 def _do_thaw_and_confirm_cleanup(

@@ -121,7 +121,7 @@ markers = [
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
 ]
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
