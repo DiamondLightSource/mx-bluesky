@@ -310,9 +310,6 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
 
 @pytest.mark.system_test
-@pytest.mark.skip(
-    "Broken, fix in https://github.com/DiamondLightSource/mx-bluesky/issues/183"
-)
 def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
     grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
