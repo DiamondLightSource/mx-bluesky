@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -5,6 +6,8 @@ from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
+
+from mx_bluesky.definitions import ROOT_DIR
 
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
@@ -116,6 +119,15 @@ class PlanGroupCheckpointConstants:
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
+
+
+# Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798
+@dataclass(frozen=True)
+class DeviceSettingsConstants:
+    PANDA_FLYSCAN_SETTINGS_FILENAME = "panda-gridscan"
+    PANDA_FLYSCAN_SETTINGS_DIR = os.path.abspath(
+        f"{ROOT_DIR}/hyperion/resources/panda/{PANDA_FLYSCAN_SETTINGS_FILENAME}"
+    )
 
 
 @dataclass(frozen=True)

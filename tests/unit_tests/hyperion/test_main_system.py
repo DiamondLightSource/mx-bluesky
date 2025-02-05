@@ -287,33 +287,27 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
         ],
         [
             "/grid_detect_then_xray_centre/start",
-            "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         ],
         [
             "/rotation_scan/start",
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         ],
         [
             "/pin_tip_centre_then_xray_centre/start",
-            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
         ],
         [
             "/robot_load_then_centre/start",
-            "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json",
         ],
         [
             "/multi_rotation_scan/start",
-            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
         ],
         [
             "/load_centre_collect_full/start",
-            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params"
-            ".json",
+            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
         ],
     ],
 )

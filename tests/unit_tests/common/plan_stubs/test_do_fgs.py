@@ -13,7 +13,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 from event_model.documents import Event, RunStart
-from ophyd_async.core import DeviceCollector
+from ophyd_async.core import init_devices
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.parameters.constants import (
@@ -24,12 +24,12 @@ from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 
 @pytest.fixture
 def fgs_devices(RE):
-    with DeviceCollector(mock=True):
+    with init_devices(mock=True):
         synchrotron = Synchrotron()
         grid_scan_device = ZebraFastGridScan("zebra_fgs")
 
     # Eiger done separately as not ophyd-async yet
-    detector = eiger(fake_with_ophyd_sim=True)
+    detector = eiger(mock=True)
 
     return {
         "synchrotron": synchrotron,

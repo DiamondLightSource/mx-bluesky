@@ -79,27 +79,30 @@ def fake_rotation_scan(
 
 
 def fake_create_rotation_devices():
-    beamstop = i03.beamstop(fake_with_ophyd_sim=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    zebra = i03.zebra(fake_with_ophyd_sim=True)
-    detector_motion = i03.detector_motion(fake_with_ophyd_sim=True)
-    backlight = i03.backlight(fake_with_ophyd_sim=True)
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-    flux = i03.flux(fake_with_ophyd_sim=True)
-    undulator = i03.undulator(fake_with_ophyd_sim=True)
-    aperture_scatterguard = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    beamstop = i03.beamstop(connect_immediately=True, mock=True)
+    eiger = i03.eiger(connect_immediately=True, mock=True)
+    smargon = i03.smargon(connect_immediately=True, mock=True)
+    zebra = i03.zebra(connect_immediately=True, mock=True)
+    detector_motion = i03.detector_motion(connect_immediately=True, mock=True)
+    backlight = i03.backlight(mock=True)
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
+    flux = i03.flux(connect_immediately=True, mock=True)
+    undulator = i03.undulator(connect_immediately=True, mock=True)
+    aperture_scatterguard = i03.aperture_scatterguard(
+        connect_immediately=True, mock=True
+    )
+    synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
+    s4_slit_gaps = i03.s4_slit_gaps(connect_immediately=True, mock=True)
+    dcm = i03.dcm(connect_immediately=True, mock=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
     oav = i03.oav(
-        fake_with_ophyd_sim=True,
+        connect_immediately=True,
+        mock=True,
         params=OAVConfig(
             zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
         ),
     )
-    xbpm_feedback = i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
@@ -120,7 +123,7 @@ def fake_create_rotation_devices():
         zebra=zebra,
         robot=robot,
         oav=oav,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
         xbpm_feedback=xbpm_feedback,
     )
 

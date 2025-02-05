@@ -4,6 +4,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import asdict
 from queue import Queue
+from sys import argv
 from traceback import format_exception
 from typing import Any
 
@@ -322,6 +323,7 @@ def create_targets():
     do_default_logging_setup(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
+    LOGGER.info(f"Hyperion launched with args:{argv}")
     app, runner = create_app(
         skip_startup_connection=args.skip_startup_connection,
     )

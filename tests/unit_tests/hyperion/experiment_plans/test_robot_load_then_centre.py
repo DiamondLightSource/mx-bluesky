@@ -534,21 +534,22 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
         )
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
 def test_box_size_passed_through_to_gridscan(
+    mock_detect_grid: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
     RE: RunEngine,
 ):
     robot_load_then_centre_params.box_size_um = 25
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
-    ) as mock_detect_grid:
-        RE(
-            robot_load_then_centre(
-                robot_load_composite,
-                robot_load_then_centre_params,
-            )
+    RE(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params,
         )
-        detect_grid_call = mock_detect_grid.mock_calls[0]
-        assert detect_grid_call.args[1].box_size_um == 25
+    )
+    detect_grid_call = mock_detect_grid.mock_calls[0]
+    assert detect_grid_call.args[1].box_size_um == 25

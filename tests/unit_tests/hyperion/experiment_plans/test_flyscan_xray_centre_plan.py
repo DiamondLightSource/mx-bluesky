@@ -10,7 +10,6 @@ from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.aperturescatterguard import AperturePosition, ApertureValue
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
@@ -43,6 +42,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
+from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -331,17 +331,14 @@ class TestFlyscanXrayCentrePlan:
             # fmt: on
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     async def test_results_adjusted_and_event_raised(
         self,
+        mock_panda_load: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
@@ -468,10 +465,6 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -483,12 +476,13 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
+        mock_panda_load: MagicMock,
         mock_zocalo_trigger: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         RE_with_subs: ReWithSubs,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
@@ -517,8 +511,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     async def test_when_gridscan_finished_then_dev_shm_disabled(
         self,
+        mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
@@ -559,8 +555,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_when_gridscan_succeeds_ispyb_comment_appended_to(
         self,
+        mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
@@ -605,8 +603,7 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        clear_device("zebra_fast_grid_scan")
-        fgs = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        fgs = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_mock_value(fgs.motion_program.running, 1)
@@ -632,7 +629,6 @@ class TestFlyscanXrayCentrePlan:
 
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
-        clear_device("zebra_fast_grid_scan")
 
     @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
@@ -642,8 +638,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_when_gridscan_finds_no_xtal_ispyb_comment_appended_to(
         self,
+        mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
@@ -684,8 +682,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_when_gridscan_finds_no_xtal_exception_is_raised(
         self,
+        mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
@@ -718,7 +718,9 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        )
 
         set_mock_value(test_fgs.position_counter, 0)
         set_mock_value(test_fgs.scan_invalid, False)
@@ -734,7 +736,9 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        )
 
         set_mock_value(test_fgs.scan_invalid, True)
         set_mock_value(test_fgs.position_counter, 0)
@@ -831,8 +835,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         new=MagicMock(side_effect=_custom_msg("do_gridscan")),
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
         self,
+        mock_load_panda: MagicMock,
         mock_set_panda_directory: MagicMock,
         done_status: Status,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
@@ -855,6 +861,11 @@ class TestFlyscanXrayCentrePlan:
 
         mock_set_panda_directory.assert_called_with(
             Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
+        )
+        mock_load_panda.assert_called_once_with(
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME,
+            fgs_composite_with_panda_pcap.panda,
         )
 
         msgs = assert_message_and_return_remaining(
@@ -929,8 +940,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_when_grid_scan_fails_with_exception_then_detector_disarmed_and_correct_exception_returned(
         self,
+        mock_load_panda,
         mock_topup,
         mock_complete,
         mock_wait,
@@ -1107,8 +1120,10 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
         MagicMock(),
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
         self,
+        mock_load_panda: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
