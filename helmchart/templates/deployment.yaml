@@ -119,7 +119,6 @@ spec:
             value: "/dls_sw/apps/zocalo/live/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
             value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.hyperion.beamline }}.cfg"
-        args: [ "--external-callbacks" ]
           {{- end }}
         readinessProbe:
           exec:

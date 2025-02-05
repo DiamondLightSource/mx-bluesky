@@ -33,8 +33,7 @@ def parse_cli_args() -> HyperionArgs:
     """Parses all arguments relevant to hyperion. Returns an HyperionArgs dataclass with
     the fields: (verbose_event_logging: bool,
                  dev_mode: bool,
-                 skip_startup_connection: bool,
-                 external_callbacks: bool)"""
+                 skip_startup_connection: bool"""
     parser = argparse.ArgumentParser()
     _add_callback_relevant_args(parser)
     parser.add_argument(
@@ -46,11 +45,6 @@ def parse_cli_args() -> HyperionArgs:
         "--skip-startup-connection",
         action="store_true",
         help="Skip connecting to EPICS PVs on startup",
-    )
-    parser.add_argument(
-        "--external-callbacks",
-        action="store_true",
-        help="Run the external hyperion-callbacks service and publish events over ZMQ",
     )
     parser.add_argument(
         "--version",
