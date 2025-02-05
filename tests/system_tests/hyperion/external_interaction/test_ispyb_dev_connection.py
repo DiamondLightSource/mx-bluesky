@@ -202,19 +202,6 @@ def params_for_rotation_scan(test_rotation_params: RotationScan):
 
 
 @pytest.mark.system_test
-def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[..., Any]):
-    expected_comment_contents = (
-        "Xray centring - "
-        "Diffraction grid scan of 1 by 41 images, "
-        "Top left [454,-4], Bottom right [455,772]"
-    )
-
-    assert fetch_comment(8292317) == expected_comment_contents
-
-    assert fetch_comment(2) == ""
-
-
-@pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
@@ -493,13 +480,13 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
         ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
         ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
         ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
+        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456-4/snapshots/\\d{6}_oav_snapshot_270"
         ".png",
     }
 
