@@ -331,10 +331,6 @@ class TestFlyscanXrayCentrePlan:
             # fmt: on
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -343,7 +339,6 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_panda_load: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
@@ -470,10 +465,6 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -492,7 +483,6 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         RE_with_subs: ReWithSubs,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
