@@ -33,7 +33,7 @@ def parse_cli_args() -> HyperionArgs:
     """Parses all arguments relevant to hyperion. Returns an HyperionArgs dataclass with
     the fields: (verbose_event_logging: bool,
                  dev_mode: bool,
-                 skip_startup_connection: bool"""
+                 skip_startup_connection: bool)"""
     parser = argparse.ArgumentParser()
     _add_callback_relevant_args(parser)
     parser.add_argument(
