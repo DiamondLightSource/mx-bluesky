@@ -92,7 +92,6 @@ class BlueskyRunner:
 
         self.RE = RE
         self.context = context
-        self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
         RE.subscribe(self.logging_uid_tag_callback)
 
@@ -190,11 +189,6 @@ class BlueskyRunner:
                         self.last_run_aborted = False
                     else:
                         self.current_status = make_error_status_and_message(exception)
-                finally:
-                    [
-                        self.RE.unsubscribe(cb)
-                        for cb in self.subscribed_per_plan_callbacks
-                    ]
 
 
 def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):

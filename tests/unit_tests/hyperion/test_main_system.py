@@ -349,14 +349,9 @@ test_argument_combinations = [
         [
             "--dev",
             "--skip-startup-connection",
-            "--external-callbacks",
             "--verbose-event-logging",
         ],
-        (True, True, True, True),
-    ),
-    (
-        ["--external-callbacks"],
-        (False, False, False, True),
+        (True, True, True),
     ),
 ]
 
