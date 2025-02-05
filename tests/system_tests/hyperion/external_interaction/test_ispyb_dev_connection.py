@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Sequence
 from copy import deepcopy
 from typing import Any, Literal
@@ -195,6 +196,7 @@ def params_for_rotation_scan(test_rotation_params: RotationScan):
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71
+    test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
     return test_rotation_params
 
 
@@ -489,14 +491,15 @@ def test_ispyb_deposition_in_rotation_plan(
         fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
     )
 
+    visit = params_for_rotation_scan.visit
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        "xtalSnapshotFullPath1": f"regex:/tmp/dls/i03/data/2024/{visit}/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
         ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        "xtalSnapshotFullPath2": f"regex:/tmp/dls/i03/data/2024/{visit}/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
         ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        "xtalSnapshotFullPath3": f"regex:/tmp/dls/i03/data/2024/{visit}/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
         ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
+        "xtalSnapshotFullPath4": f"regex:/tmp/dls/i03/data/2024/{visit}/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
         ".png",
     }
 
