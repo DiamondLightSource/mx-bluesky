@@ -51,6 +51,9 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from unit_tests.hyperion.external_interaction.callbacks.robot_load.test_robot_load_ispyb_callback import (
+    VISIT,
+)
 
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
@@ -58,6 +61,7 @@ from ...conftest import (
     compare_comment,
 )
 from .conftest import raw_params_from_file
+from .test_exp_eye_dev import SAMPLE_ID
 
 EXPECTED_DATACOLLECTION_FOR_ROTATION = {
     "wavelength": 0.71,
@@ -122,6 +126,8 @@ def grid_detect_then_xray_centre_parameters():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
+    json_dict["sample_id"] = SAMPLE_ID
+    json_dict["visit"] = VISIT
     return GridScanWithEdgeDetect(**json_dict)
 
 
