@@ -12,7 +12,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     ExpeyeInteraction,
 )
 
-CONTAINER_ID = 288588
+CONTAINER_ID = int(os.environ.get("ST_CONTAINER_ID", 288588))
 
 SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5289780))
 
