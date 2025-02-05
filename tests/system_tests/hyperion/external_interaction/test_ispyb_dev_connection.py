@@ -197,7 +197,7 @@ def params_for_rotation_scan(test_rotation_params: RotationScan):
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71
     test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
-    test_rotation_params.sample_id = os.environ.get("ST_SAMPLE_ID", 123456)
+    test_rotation_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", 123456))
     return test_rotation_params
 
 
