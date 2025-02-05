@@ -480,13 +480,13 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
         ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
         ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm-31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
         ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm-31105/auto/123456-4/snapshots/\\d{6}_oav_snapshot_270"
+        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
         ".png",
     }
 
