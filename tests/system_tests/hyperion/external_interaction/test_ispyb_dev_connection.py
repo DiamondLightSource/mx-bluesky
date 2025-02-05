@@ -363,20 +363,20 @@ def test_ispyb_deposition_in_gridscan(
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
-        "xtalsnapshotfullpath1": "test_1_y",
-        "xtalsnapshotfullpath2": "test_2_y",
-        "xtalsnapshotfullpath3": "test_3_y",
+        "xtalsnapshotfullpath1": "/tmp/snapshots/file_name_1_0_grid_overlay.png",
+        "xtalsnapshotfullpath2": "/tmp/snapshots/file_name_1_0_outer_overlay.png",
+        "xtalsnapshotfullpath3": "/tmp/snapshots/file_name_1_0.png",
         "synchrotronmode": "User",
         "undulatorgap1": 1.11,
         "filetemplate": "file_name_1_master.h5",
-        "numberofimages": 20 * 12,
+        "numberofimages": 20 * 6,
     }
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[0],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 12 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
-        "bottom right (px): [239,244]. Small. ",
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+        "bottom right (px): [626,278]. Aperture: Small. ",
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
@@ -389,14 +389,14 @@ def test_ispyb_deposition_in_gridscan(
         "dx_mm": 0.02,
         "dy_mm": 0.02,
         "steps_x": 20,
-        "steps_y": 12,
-        "snapshot_offsetXPixel": 100,
-        "snapshot_offsetYPixel": 161,
+        "steps_y": 6,
+        "snapshot_offsetXPixel": 130,
+        "snapshot_offsetYPixel": 130,
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "micronsPerPixelX": 2.87,
-        "micronsPerPixelY": 2.87,
+        "micronsPerPixelX": 0.806,
+        "micronsPerPixelY": 0.806,
     }
 
     compare_actual_and_expected(
@@ -416,7 +416,10 @@ def test_ispyb_deposition_in_gridscan(
             "datacollectionnumber": 2,
             "omegastart": 90.0,
             "filetemplate": "file_name_2_master.h5",
-            "numberofimages": 220,
+            "xtalsnapshotfullpath1": "/tmp/snapshots/file_name_1_90_grid_overlay.png",
+            "xtalsnapshotfullpath2": "/tmp/snapshots/file_name_1_90_outer_overlay.png",
+            "xtalsnapshotfullpath3": "/tmp/snapshots/file_name_1_90.png",
+            "numberofimages": 20 * 6,
         }
     )
     compare_actual_and_expected(
@@ -428,9 +431,9 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[1],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 11 "
-        "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [239,241]. Small. ",
+        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 6 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+        "bottom right (px): [626,278]. Aperture: Small. ",
     )
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
@@ -439,8 +442,8 @@ def test_ispyb_deposition_in_gridscan(
     GRIDINFO_EXPECTED_VALUES.update(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
-            "steps_y": 11.0,
-            "snapshot_offsetYPixel": 165.0,
+            "steps_y": 6.0,
+            "snapshot_offsetYPixel": 130.0,
             "dataCollectionId": ispyb_ids.data_collection_ids[1],
         }
     )
