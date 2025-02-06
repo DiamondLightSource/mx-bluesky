@@ -55,7 +55,7 @@ def test_params(tmpdir):
         ),
     ],
 )
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_rotation_nexgen(
     test_params: RotationScan,
     tmpdir,

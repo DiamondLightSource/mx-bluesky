@@ -27,7 +27,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
     rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -121,7 +120,7 @@ def RE_with_external_callbacks():
     t.join()
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_RE_with_external_callbacks_starts_and_stops(
     RE_with_external_callbacks: RunEngine,
 ):
@@ -133,7 +132,8 @@ def test_RE_with_external_callbacks_starts_and_stops(
     RE(plan())
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
+@pytest.mark.skip(reason="need zocalo")
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
@@ -180,22 +180,14 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     assert "Size (grid boxes) [6 6 5];" in ispyb_comment
 
 
-@pytest.mark.s03()
+@pytest.mark.system_test
+@pytest.mark.skip(reason="need zocalo")
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
     test_rotation_params: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
-    undulator,
-    attenuator,
-    synchrotron,
-    s4_slit_gaps,
-    flux,
-    robot,
-    aperture_scatterguard,
-    fake_create_devices,
-    sample_shutter,
-    xbpm_feedback,
+    composite_for_rotation_scan,
 ):
     test_wl = 0.71
     test_bs_x = 0.023
@@ -207,30 +199,10 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_rotation_params.exposure_time_s = test_exp_time
     test_rotation_params.demand_energy_ev = convert_angstrom_to_eV(test_wl)
 
-    composite = RotationScanComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=attenuator,
-        backlight=fake_create_devices["backlight"],
-        beamstop=fake_create_devices["beamstop"],
-        dcm=fake_create_devices["dcm"],
-        detector_motion=fake_create_devices["detector_motion"],
-        eiger=fake_create_devices["eiger"],
-        flux=flux,
-        smargon=fake_create_devices["smargon"],
-        undulator=undulator,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        zebra=fake_create_devices["zebra"],
-        robot=robot,
-        oav=fake_create_devices["oav"],
-        sample_shutter=sample_shutter,
-        xbpm_feedback=xbpm_feedback,
-    )
-
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE_with_external_callbacks(
             rotation_scan(
-                composite,
+                composite_for_rotation_scan,
                 test_rotation_params,
             )
         )
