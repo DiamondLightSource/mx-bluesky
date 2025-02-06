@@ -397,6 +397,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
+    grid_detection_callback_with_detected_grid,
 ):
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
