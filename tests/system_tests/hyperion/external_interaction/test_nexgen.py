@@ -137,7 +137,10 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
 
 def _run_imginfo(filename):
     process = subprocess.run(
-        ["utility_scripts/run_imginfo.sh", filename], text=True, capture_output=True
+        # This file is provided in the system test docker image
+        ["/usr/local/bin/imginfo", filename],
+        text=True,
+        capture_output=True,
     )
     assert process.returncode != 2, "imginfo is not available"
     assert process.returncode == 0, (
