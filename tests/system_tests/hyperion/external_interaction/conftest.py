@@ -228,7 +228,7 @@ def dummy_params():
         )
     )
     dummy_params.visit = os.environ.get("ST_VISIT", "cm31105-5")
-    dummy_params.sample_id = os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id)
+    dummy_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id))
     return dummy_params
 
 
