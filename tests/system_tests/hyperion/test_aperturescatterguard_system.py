@@ -1,34 +1,14 @@
 import pytest
-from dodal.common.beamlines.beamline_parameters import (
-    BEAMLINE_PARAMETER_PATHS,
-    GDABeamlineParameters,
-)
 from dodal.devices.aperturescatterguard import (
-    AperturePosition,
     ApertureScatterguard,
-    load_positions_from_beamline_parameters,
 )
-from ophyd_async.core import init_devices
 
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     set_aperture_for_bbox_mm,
 )
 
 
-@pytest.fixture
-def ap_sg():
-    params = GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
-    with init_devices():
-        ap_sg = ApertureScatterguard(
-            prefix="BL03S",
-            name="ap_sg",
-            loaded_positions=load_positions_from_beamline_parameters(params),
-            tolerances=AperturePosition.tolerances_from_gda_params(params),
-        )
-    return ap_sg
-
-
-@pytest.mark.s03()
+@pytest.mark.system_test()
 @pytest.mark.parametrize(
     "bbox, expected_aperture",
     [
@@ -38,16 +18,18 @@ def ap_sg():
     ids=["large_aperture", "medium_aperture"],
 )
 def test_aperture_change_callback(
-    ap_sg: ApertureScatterguard, bbox: list[float], expected_aperture: str
+    aperture_scatterguard: ApertureScatterguard,
+    bbox: list[float],
+    expected_aperture: str,
 ):
     from bluesky.run_engine import RunEngine
 
-    from mx_bluesky.hyperion.external_interaction.callbacks.aperture_change_callback import (
+    from mx_bluesky.common.external_interaction.callbacks.common.aperture_change_callback import (
         ApertureChangeCallback,
     )
 
     cb = ApertureChangeCallback()
     RE = RunEngine({})
     RE.subscribe(cb)
-    RE(set_aperture_for_bbox_mm(ap_sg, bbox))
+    RE(set_aperture_for_bbox_mm(aperture_scatterguard, bbox))
     assert cb.last_selected_aperture == expected_aperture
