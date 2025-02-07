@@ -195,16 +195,6 @@ def scan_data_infos_for_update_3d(
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
 
-@pytest.fixture
-def params_for_rotation_scan(test_rotation_params: RotationScan):
-    test_rotation_params.rotation_increment_deg = 0.27
-    test_rotation_params.exposure_time_s = 0.023
-    test_rotation_params.detector_params.expected_energy_ev = 0.71
-    test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
-    test_rotation_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", 123456))
-    return test_rotation_params
-
-
 @pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
