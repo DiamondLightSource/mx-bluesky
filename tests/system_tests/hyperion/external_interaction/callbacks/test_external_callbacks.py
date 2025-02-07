@@ -187,8 +187,8 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     oav_parameters_for_rotation,
 ):
     test_wl = 0.71
-    test_bs_x = 0.023
-    test_bs_y = 0.047
+    test_bs_x = 0.020
+    test_bs_y = 0.020
     test_exp_time = 0.023
     test_img_wid = 0.27
 
