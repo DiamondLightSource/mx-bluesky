@@ -221,7 +221,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     dcid = matches[0][0]
 
     comment = fetch_comment(dcid)
-    assert comment == "Hyperion rotation scan"
+    assert comment == "Sample position (µm): (1, 2, 3) test  Aperture: Small."
     wavelength = fetch_datacollection_attribute(dcid, "wavelength")
     beamsize_x = fetch_datacollection_attribute(dcid, "beamSizeAtSampleX")
     beamsize_y = fetch_datacollection_attribute(dcid, "beamSizeAtSampleY")
