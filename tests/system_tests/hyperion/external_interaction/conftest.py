@@ -248,9 +248,12 @@ def zocalo_env():
 
 
 @pytest_asyncio.fixture
-async def zocalo_for_fake_zocalo():
+async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
+    """
+    This attempts to connect to a fake zocalo via rabbitmq
+    """
     zd = ZocaloResults()
-    zd.timeout_s = 5
+    zd.timeout_s = 10
     await zd.connect()
     return zd
 
