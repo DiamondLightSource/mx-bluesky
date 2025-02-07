@@ -16,7 +16,6 @@ from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo.zocalo_results import (
-    ZocaloResults,
     get_processing_results_from_event,
 )
 from zmq.utils.monitor import recv_monitor_message
@@ -41,7 +40,6 @@ from ..conftest import (  # noqa
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     fetch_comment,
-    zocalo_env,
 )
 
 """
@@ -135,16 +133,14 @@ def test_RE_with_external_callbacks_starts_and_stops(
 @pytest.mark.system_test
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
-    zocalo_env,  # noqa
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
-    zocalo_device: ZocaloResults,
     fetch_comment,  # noqa
 ):
-    """This test doesn't actually require S03 to be running, but it does require fake
-    zocalo, and a connection to the dev ISPyB database; like S03 tests, it can only run
-    locally at DLS."""
+    """
+    This test requires fake zocalo, and a connection to the dev ISPyB database.
+    """
 
     RE = RE_with_external_callbacks
 
