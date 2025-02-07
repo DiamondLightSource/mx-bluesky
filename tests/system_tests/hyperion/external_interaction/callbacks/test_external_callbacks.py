@@ -173,7 +173,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     ispyb_comment = fetch_comment(dcid)
     assert ispyb_comment != ""
     assert "Zocalo processing took" in ispyb_comment
-    assert "Position (grid boxes) ['1', '2', '3']" in ispyb_comment
+    assert "Position (grid boxes) ['1.0', '2.0', '3.0']" in ispyb_comment
     assert "Size (grid boxes) [6 6 5];" in ispyb_comment
 
 
