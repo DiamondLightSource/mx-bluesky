@@ -180,7 +180,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 @pytest.mark.system_test
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
-    test_rotation_params: RotationScan,
+    params_for_rotation_scan: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
     composite_for_rotation_scan,
@@ -192,15 +192,15 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_exp_time = 0.023
     test_img_wid = 0.27
 
-    test_rotation_params.rotation_increment_deg = test_img_wid
-    test_rotation_params.exposure_time_s = test_exp_time
-    test_rotation_params.demand_energy_ev = convert_angstrom_to_eV(test_wl)
+    params_for_rotation_scan.rotation_increment_deg = test_img_wid
+    params_for_rotation_scan.exposure_time_s = test_exp_time
+    params_for_rotation_scan.demand_energy_ev = convert_angstrom_to_eV(test_wl)
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE_with_external_callbacks(
             rotation_scan(
                 composite_for_rotation_scan,
-                test_rotation_params,
+                params_for_rotation_scan,
                 oav_parameters_for_rotation,
             )
         )
