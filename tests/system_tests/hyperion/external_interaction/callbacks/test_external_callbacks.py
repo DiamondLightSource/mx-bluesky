@@ -77,7 +77,9 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 
 
 @pytest.fixture
-def RE_with_external_callbacks():
+def RE_with_external_callbacks(
+    zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
+):
     RE = RunEngine()
 
     process_env = os.environ.copy()
