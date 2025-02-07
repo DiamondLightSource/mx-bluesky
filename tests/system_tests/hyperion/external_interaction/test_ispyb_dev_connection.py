@@ -350,7 +350,7 @@ def test_ispyb_deposition_in_gridscan(
         "datacollectionnumber": 1,
         "detectordistance": 100.0,
         "exposuretime": 0.12,
-        "imagedirectory": "/tmp/",
+        "imagedirectory": f"{storage_directory}/",
         "imageprefix": "file_name",
         "imagesuffix": "h5",
         "numberofpasses": 1,
