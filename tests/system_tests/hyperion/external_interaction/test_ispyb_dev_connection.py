@@ -119,12 +119,18 @@ def dummy_scan_data_info_for_begin(dummy_params):
 
 
 @pytest.fixture
-def grid_detect_then_xray_centre_parameters():
+def storage_directory(tmp_path) -> str:
+    return str(tmp_path)
+
+
+@pytest.fixture
+def grid_detect_then_xray_centre_parameters(storage_directory):
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
     json_dict["sample_id"] = SAMPLE_ID
     json_dict["visit"] = os.environ.get("ST_VISIT", "cm31105-4")
+    json_dict["storage_directory"] = storage_directory
     return GridScanWithEdgeDetect(**json_dict)
 
 
@@ -311,6 +317,7 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
+    storage_directory: str,
 ):
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
@@ -353,9 +360,9 @@ def test_ispyb_deposition_in_gridscan(
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
-        "xtalsnapshotfullpath1": "/tmp/snapshots/file_name_1_0_grid_overlay.png",
-        "xtalsnapshotfullpath2": "/tmp/snapshots/file_name_1_0_outer_overlay.png",
-        "xtalsnapshotfullpath3": "/tmp/snapshots/file_name_1_0.png",
+        "xtalsnapshotfullpath1": f"{storage_directory}/snapshots/file_name_1_0_grid_overlay.png",
+        "xtalsnapshotfullpath2": f"{storage_directory}/snapshots/file_name_1_0_outer_overlay.png",
+        "xtalsnapshotfullpath3": f"{storage_directory}/snapshots/file_name_1_0.png",
         "synchrotronmode": "User",
         "undulatorgap1": 1.11,
         "filetemplate": "file_name_1_master.h5",
@@ -406,9 +413,9 @@ def test_ispyb_deposition_in_gridscan(
             "datacollectionnumber": 2,
             "omegastart": 90.0,
             "filetemplate": "file_name_2_master.h5",
-            "xtalsnapshotfullpath1": "/tmp/snapshots/file_name_1_90_grid_overlay.png",
-            "xtalsnapshotfullpath2": "/tmp/snapshots/file_name_1_90_outer_overlay.png",
-            "xtalsnapshotfullpath3": "/tmp/snapshots/file_name_1_90.png",
+            "xtalsnapshotfullpath1": f"{storage_directory}/snapshots/file_name_1_90_grid_overlay.png",
+            "xtalsnapshotfullpath2": f"{storage_directory}/snapshots/file_name_1_90_outer_overlay.png",
+            "xtalsnapshotfullpath3": f"{storage_directory}/snapshots/file_name_1_90.png",
             "numberofimages": 20 * 6,
         }
     )
