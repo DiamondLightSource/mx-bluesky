@@ -184,6 +184,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
     composite_for_rotation_scan,
+    oav_parameters_for_rotation,
 ):
     test_wl = 0.71
     test_bs_x = 0.023
@@ -200,6 +201,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
             rotation_scan(
                 composite_for_rotation_scan,
                 test_rotation_params,
+                oav_parameters_for_rotation,
             )
         )
 
