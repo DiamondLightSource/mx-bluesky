@@ -8,7 +8,6 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
 )
 
 
-@pytest.mark.system_test()
 @pytest.mark.parametrize(
     "bbox, expected_aperture",
     [
