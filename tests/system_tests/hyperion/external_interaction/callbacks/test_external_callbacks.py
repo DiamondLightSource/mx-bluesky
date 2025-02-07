@@ -133,7 +133,6 @@ def test_RE_with_external_callbacks_starts_and_stops(
 
 
 @pytest.mark.system_test
-@pytest.mark.skip(reason="need zocalo")
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
@@ -181,7 +180,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
 
 @pytest.mark.system_test
-@pytest.mark.skip(reason="need zocalo")
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
     test_rotation_params: RotationScan,
