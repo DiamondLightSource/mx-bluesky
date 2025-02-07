@@ -133,7 +133,7 @@ def test_RE_with_external_callbacks_starts_and_stops(
 @pytest.mark.system_test
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     fetch_comment,  # noqa
@@ -148,7 +148,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE.subscribe(doc_catcher)
 
     # Run the xray centring plan
-    RE(flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
+    RE(flyscan_xray_centre(fgs_composite_for_fake_zocalo, dummy_params))
 
     # Check that we we emitted a valid reading from the zocalo device
     zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore
