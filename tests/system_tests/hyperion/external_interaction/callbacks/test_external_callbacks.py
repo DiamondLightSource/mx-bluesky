@@ -213,7 +213,9 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         stdout=subprocess.PIPE,
     ).stdout.decode("utf-8")
 
-    ids_re = re.compile(r"data_collection_ids=(\d+) data_collection_group_id=(\d+) ")
+    ids_re = re.compile(
+        r"data_collection_ids=\((\d+),\) data_collection_group_id=(\d+) "
+    )
     matches = ids_re.findall(ispyb_log_tail)
 
     dcid = matches[0][0]
