@@ -149,6 +149,8 @@ filterwarnings = [
     "ignore:.*custom tp_new.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
+    # Ignore warning about deprecations in python-workflows encountered during system tests 
+    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning"
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
