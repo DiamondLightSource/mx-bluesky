@@ -470,10 +470,6 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.undulator.Undulator.set",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
