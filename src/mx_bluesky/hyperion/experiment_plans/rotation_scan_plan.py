@@ -386,7 +386,7 @@ def rotation_scan(
         composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
-        parameters.demand_energy_ev,
+        composite.dcm,
         parameters.transmission_frac,
     )
     def rotation_scan_plan_with_stage_and_cleanup(
@@ -441,7 +441,7 @@ def multi_rotation_scan(
         composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
-        parameters.demand_energy_ev,
+        composite.dcm,
         parameters.transmission_frac,
     )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))

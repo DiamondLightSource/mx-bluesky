@@ -2,6 +2,7 @@ from bluesky import plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper
 from bluesky.utils import make_decorator
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.dcm import DCM
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
@@ -53,7 +54,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     undulator: Undulator,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
-    energy_ev: float | None,
+    dcm: DCM,
     desired_transmission_fraction: float,
 ):
     """Sets the transmission for the data collection, ensuring the xbpm feedback is valid
@@ -84,8 +85,9 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         yield from _check_and_pause_feedback(
             xbpm_feedback, attenuator, desired_transmission_fraction
         )
-        if energy_ev:
-            yield from bps.abs_set(undulator, energy_ev / 1000, wait=True)
+        # Verify Undulator gap is correct, as may not be after a beam dump
+        energy_in_kev = yield from bps.rd(dcm.energy_in_kev)
+        yield from bps.abs_set(undulator, energy_in_kev, wait=True)
         return (yield from plan)
 
     return (

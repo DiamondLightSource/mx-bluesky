@@ -57,6 +57,6 @@ def set_energy_plan(
             composite.undulator_dcm.undulator_ref(),
             composite.xbpm_feedback,
             composite.attenuator,
-            energy_ev,
+            composite.dcm,
             DESIRED_TRANSMISSION_FRACTION,
         )

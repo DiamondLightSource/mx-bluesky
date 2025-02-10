@@ -159,7 +159,7 @@ def flyscan_xray_centre_no_move(
         composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
-        parameters.demand_energy_ev,
+        composite.dcm,
         parameters.transmission_frac,
     )
     def run_gridscan_and_fetch_and_tidy(
