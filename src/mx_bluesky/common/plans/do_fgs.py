@@ -18,9 +18,7 @@ from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.common.parameters.constants import (
-    EnvironmentConstants,
     PlanNameConstants,
-    TriggerConstants,
 )
 from mx_bluesky.common.utils.tracing import TRACER
 
@@ -70,7 +68,6 @@ def kickoff_and_complete_gridscan(
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
-    zocalo_environment: str = EnvironmentConstants.ZOCALO_ENV,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
     If the RunEngine is subscribed to ZocaloCallback, this plan will also trigger Zocalo.
@@ -86,7 +83,6 @@ def kickoff_and_complete_gridscan(
         scan_start_indices (list[int]):         Contains the first index of each grid scan
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff and completion,
                                                 eg waiting on zocalo.
-        zocalo_environment (Optional, str)      Used for zocalo connection
     """
 
     assert len(scan_points) == len(scan_start_indices), (
@@ -100,10 +96,8 @@ def kickoff_and_complete_gridscan(
     @bpp.run_decorator(
         md={
             "subplan_name": plan_name,
-            TriggerConstants.ZOCALO: plan_name,
             "scan_points": scan_points,
             "scan_start_indices": scan_start_indices,
-            "zocalo_environment": zocalo_environment,
         }
     )
     @bpp.contingency_decorator(

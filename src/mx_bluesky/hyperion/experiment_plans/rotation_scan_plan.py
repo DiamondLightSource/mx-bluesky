@@ -346,6 +346,13 @@ def _move_and_rotation(
         yield from setup_beamline_for_OAV(
             composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
+        yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
+        if params.selected_aperture:
+            yield from bps.prepare(
+                composite.aperture_scatterguard,
+                params.selected_aperture,
+                group=CONST.WAIT.ROTATION_READY_FOR_DC,
+            )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(
         composite,
@@ -368,8 +375,6 @@ def rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            "zocalo_environment": CONST.ZOCALO_ENV,
             "mx_bluesky_parameters": parameters.model_dump_json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
@@ -447,7 +452,6 @@ def multi_rotation_scan(
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
-                    CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
                     "mx_bluesky_parameters": single_scan.model_dump_json(),
                 }
             )

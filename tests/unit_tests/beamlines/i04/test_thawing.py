@@ -15,7 +15,7 @@ from dodal.devices.thawer import Thawer, ThawerStates
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
-    DeviceCollector,
+    init_devices,
 )
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import (
@@ -49,7 +49,7 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 @pytest.fixture
 async def oav(RE: RunEngine) -> OAV:
     oav_config = OAVConfig(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
-    async with DeviceCollector(mock=True, connect=True):
+    async with init_devices(mock=True, connect=True):
         oav = OAV("", config=oav_config, name="fake_oav")
     zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
@@ -74,12 +74,12 @@ async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 @pytest.fixture
 def thawer(RE: RunEngine) -> Thawer:
-    return i04.thawer(fake_with_ophyd_sim=True, wait_for_connection=True)
+    return i04.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
-    with DeviceCollector(mock=True):
+    with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
             "prefix", "host", "password", name="oav_to_redis_forwarder"
         )
@@ -96,7 +96,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
 
 @pytest.fixture
 def robot(RE: RunEngine) -> BartRobot:
-    return i04.robot(wait_for_connection=True, fake_with_ophyd_sim=True)
+    return i04.robot(connect_immediately=True, mock=True)
 
 
 def _do_thaw_and_confirm_cleanup(
