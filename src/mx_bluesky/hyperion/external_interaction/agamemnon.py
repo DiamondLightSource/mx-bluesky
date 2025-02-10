@@ -1,11 +1,15 @@
 import dataclasses
 import json
+from typing import TypeVar
 
 import requests
 
+from mx_bluesky.common.parameters.components import WithVisit
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
+T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 
 
@@ -56,3 +60,14 @@ def get_next_instruction(beamline: str) -> dict:
 def get_pin_type_from_agamemnon(beamline: str) -> PinType:
     params = get_next_instruction(beamline)
     return _get_pin_type_from_agamemnon_parameters(params)
+
+
+def update_params_from_agamemnon(parameters: T) -> T:
+    try:
+        pin_type = get_pin_type_from_agamemnon(parameters.beamline)
+        if isinstance(parameters, LoadCentreCollect):
+            parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
+            parameters.select_centres.n = pin_type.expected_number_of_crystals
+    except Exception as e:
+        LOGGER.warning(f"Faild to get pin type from agamemnon, using single pin {e}")
+    return parameters

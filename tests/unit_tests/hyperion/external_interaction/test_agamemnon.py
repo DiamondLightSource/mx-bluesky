@@ -3,13 +3,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     PinType,
     _get_pin_type_from_agamemnon_parameters,
     _single_pin,
     get_next_instruction,
     get_pin_type_from_agamemnon,
+    update_params_from_agamemnon,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from tests.conftest import raw_params_from_file
 
 
 @pytest.mark.parametrize(
@@ -90,3 +94,45 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
 ):
     configure_mock_agamemnon(mock_requests, "multipin-6x50")
     assert get_pin_type_from_agamemnon("i03") == PinType(6, 50)
+
+
+@pytest.fixture
+def load_centre_collect_params():
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
+    )
+    return LoadCentreCollect(**json_dict)
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_agamemnon_fails_when_update_parameters_called_then_parameters_unchanged(
+    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    mock_requests.get.side_effect = Exception("Bad")
+    old_grid_width = load_centre_collect_params.robot_load_then_centre.grid_width_um
+    params = update_params_from_agamemnon(load_centre_collect_params)
+    assert params.robot_load_then_centre.grid_width_um == old_grid_width
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_parameters_changed_to_single_pin(
+    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    configure_mock_agamemnon(mock_requests, None)
+    load_centre_collect_params.robot_load_then_centre.grid_width_um = 0
+    load_centre_collect_params.select_centres.n = 0
+    params = update_params_from_agamemnon(load_centre_collect_params)
+    assert (
+        params.robot_load_then_centre.grid_width_um == GridscanParamConstants.WIDTH_UM
+    )
+    assert params.select_centres.n == 1
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_parameters_changed_to_multi_pin(
+    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    configure_mock_agamemnon(mock_requests, "multipin-6x50")
+    params = update_params_from_agamemnon(load_centre_collect_params)
+    assert params.robot_load_then_centre.grid_width_um == 300
+    assert params.select_centres.n == 6
