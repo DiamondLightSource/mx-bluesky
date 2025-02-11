@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
     [
         (ApertureValue.SMALL),
         (ApertureValue.MEDIUM),
-        (ApertureValue.ROBOT_LOAD),
+        (ApertureValue.OUT_OF_BEAM),
         (ApertureValue.LARGE),
     ],
 )

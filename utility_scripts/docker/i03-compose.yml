@@ -39,7 +39,6 @@ services:
       ZOCALO_GO_HOSTNAME: i03-control
       ZOCALO_CONFIG: /dls_sw/apps/zocalo/live/configuration.yaml
       ISPYB_CONFIG_PATH: /dls_sw/dasc/mariadb/credentials/ispyb-hyperion-i03.cfg
-    command: [ "--external-callbacks" ]
   hyperion-dev:
     extends:
       service: hyperion-common

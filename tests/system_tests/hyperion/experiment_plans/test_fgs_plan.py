@@ -30,7 +30,7 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
