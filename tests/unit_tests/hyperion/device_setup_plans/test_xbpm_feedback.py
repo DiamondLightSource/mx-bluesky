@@ -37,7 +37,7 @@ async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_ener
     def my_collection_plan():
         yield from bps.null()
 
-    set_mock_value(xbpm_feedback.pos_stable, True)  # type: ignore
+    set_mock_value(xbpm_feedback.pos_stable, 1)
 
     RE = RunEngine()
     RE(my_collection_plan())
@@ -70,7 +70,7 @@ async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_e
         pause_feedback = yield from bps.rd(xbpm_feedback.pause_feedback)
         assert pause_feedback == Pause.PAUSE
 
-    set_mock_value(xbpm_feedback.pos_stable, True)  # type: ignore
+    set_mock_value(xbpm_feedback.pos_stable, 1)
 
     RE = RunEngine()
     RE(my_collection_plan())
@@ -115,7 +115,7 @@ async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorato
     dcm,
     attenuator,
 ):
-    set_mock_value(xbpm_feedback.pos_stable, True)  # type: ignore
+    set_mock_value(xbpm_feedback.pos_stable, 1)
 
     class MyException(Exception):
         pass
