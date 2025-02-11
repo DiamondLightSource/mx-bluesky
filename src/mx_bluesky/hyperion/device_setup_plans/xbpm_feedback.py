@@ -86,7 +86,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
             xbpm_feedback, attenuator, desired_transmission_fraction
         )
         # Verify Undulator gap is correct, as may not be after a beam dump
-        energy_in_kev = yield from bps.rd(dcm.energy_in_kev)
+        energy_in_kev = yield from bps.rd(dcm.energy_in_kev.user_readback)
         yield from bps.abs_set(undulator, energy_in_kev, wait=True)
         return (yield from plan)
 

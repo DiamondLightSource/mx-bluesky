@@ -19,6 +19,39 @@ def fake_undulator_set(undulator, done_status):
     return undulator
 
 
+async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_energy(
+    RE,
+    xbpm_feedback,
+    fake_undulator_set,
+    dcm,
+    attenuator,
+):
+    energy_in_kev = 10
+    dcm.energy_in_kev.user_readback.read = MagicMock(
+        return_value={"value": {"value": energy_in_kev}}
+    )
+
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        fake_undulator_set, xbpm_feedback, attenuator, dcm, 0.1
+    )
+    def my_collection_plan():
+        yield from bps.null()
+
+    set_mock_value(xbpm_feedback.pos_stable, True)  # type: ignore
+
+    RE = RunEngine()
+    RE(my_collection_plan())
+
+    # Assert XBPM is stable
+    xbpm_feedback.trigger.assert_called_once()
+    # Assert DCM energy is read after XBPM is stable
+    dcm.energy_in_kev.user_readback.read.assert_called_once()
+    # Assert Undulator is finally set
+    fake_undulator_set.set.assert_called_once()
+    # Assert energy passed to the Undulator is the same as read from the DCM
+    assert fake_undulator_set.set.call_args.args[0] == energy_in_kev
+
+
 async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
     RE,
     xbpm_feedback,
