@@ -10,7 +10,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
-from bluesky.callbacks import CallbackBase
 from bluesky.utils import MsgGenerator
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -25,18 +24,19 @@ from dodal.devices.zocalo.zocalo_results import (
     XrcResult,
     get_full_processing_results,
 )
-from event_model import RunStart
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
     read_hardware_pre_collection,
@@ -57,33 +57,17 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
 
 class SmargonSpeedException(Exception):
     pass
-
-
-class XRayCentreEventHandler(CallbackBase):
-    def __init__(self):
-        super().__init__()
-        self.xray_centre_results: Sequence[XRayCentreResult] | None = None
-
-    def start(self, doc: RunStart) -> RunStart | None:
-        if CONST.PLAN.FLYSCAN_RESULTS in doc:
-            self.xray_centre_results = [
-                XRayCentreResult(**result_dict)
-                for result_dict in doc[CONST.PLAN.FLYSCAN_RESULTS]  # type: ignore
-            ]
-        return doc
 
 
 def create_devices(context: BlueskyContext) -> HyperionFlyScanXRayCentreComposite:

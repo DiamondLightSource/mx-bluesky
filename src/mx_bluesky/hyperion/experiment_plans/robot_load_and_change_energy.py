@@ -54,7 +54,7 @@ class RobotLoadAndEnergyChangeComposite:
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadAndEnergyChangeComposite:
-    from mx_bluesky.hyperion.utils.context import device_composite_from_context
+    from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadAndEnergyChangeComposite)
 
