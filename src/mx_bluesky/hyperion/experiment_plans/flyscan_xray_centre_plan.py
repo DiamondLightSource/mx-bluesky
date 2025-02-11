@@ -119,10 +119,10 @@ class XRayCentreEventHandler(CallbackBase):
         self.xray_centre_results: Sequence[XRayCentreResult] | None = None
 
     def start(self, doc: RunStart) -> RunStart | None:
-        if "xray_centre_results" in doc:
+        if CONST.PLAN.FLYSCAN_RESULTS in doc:
             self.xray_centre_results = [
                 XRayCentreResult(**result_dict)
-                for result_dict in doc["xray_centre_results"]  # type: ignore
+                for result_dict in doc[CONST.PLAN.FLYSCAN_RESULTS]  # type: ignore
             ]
         return doc
 
@@ -304,7 +304,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 
     yield from bpp.run_wrapper(
         empty_plan(),
-        md={"xray_centre_results": [dataclasses.asdict(r) for r in results]},
+        md={CONST.PLAN.FLYSCAN_RESULTS: [dataclasses.asdict(r) for r in results]},
     )
 
 

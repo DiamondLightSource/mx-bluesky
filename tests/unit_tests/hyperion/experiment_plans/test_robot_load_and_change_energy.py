@@ -162,7 +162,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert await smargon.omega.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(ApertureValue.ROBOT_LOAD)  # type: ignore
+    aperture_scatterguard.set.assert_called_once_with(ApertureValue.OUT_OF_BEAM)  # type: ignore
 
 
 @patch(
