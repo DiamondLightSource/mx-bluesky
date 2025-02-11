@@ -26,7 +26,7 @@ async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_ener
     dcm,
     attenuator,
 ):
-    energy_in_kev = 10
+    energy_in_kev = 11.3
     dcm.energy_in_kev.user_readback.read = MagicMock(
         return_value={"value": {"value": energy_in_kev}}
     )
