@@ -195,8 +195,13 @@ class TestFlyscanXrayCentrePlan:
         plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
+    @patch(
+        "dodal.devices.undulator.Undulator.set",
+        return_value=NullStatus(),
+    )
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
+        move_undulator: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,

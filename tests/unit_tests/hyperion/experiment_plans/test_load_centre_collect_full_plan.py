@@ -12,6 +12,7 @@ from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
+from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
@@ -67,6 +68,7 @@ def composite(
 
     composite = LoadCentreCollectComposite(**(rlaec_args | rotation_args))
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
+    composite.undulator_dcm.set = MagicMock(return_value=NullStatus())
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
