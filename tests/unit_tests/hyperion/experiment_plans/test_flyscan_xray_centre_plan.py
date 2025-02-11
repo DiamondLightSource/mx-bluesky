@@ -343,7 +343,6 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_panda_load: MagicMock,
         run_gridscan: MagicMock,
-        move_aperture: MagicMock,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
@@ -1128,6 +1127,7 @@ class TestFlyscanXrayCentrePlan:
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
         self,
+        mock_load_panda: MagicMock,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,

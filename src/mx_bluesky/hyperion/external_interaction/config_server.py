@@ -32,12 +32,6 @@ class HyperionFeatureFlags(FeatureFlags):
     def get_config_server() -> ConfigServer:
         return ConfigServer(CONST.CONFIG_SERVER_URL, LOGGER)
 
-    use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
-    compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
-    use_gpu_results: bool = CONST.I03.USE_GPU_RESULTS
-    set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
-    omega_flip: bool = CONST.I03.OMEGA_FLIP
-
     @model_validator(mode="after")
     def use_gpu_and_compare_cannot_both_be_true(self):
         assert not (self.use_gpu_results and self.compare_cpu_and_gpu_zocalo), (
@@ -51,3 +45,9 @@ class HyperionFeatureFlags(FeatureFlags):
         self.update_self_from_server()
         gridscan_composite.zocalo.use_cpu_and_gpu = self.compare_cpu_and_gpu_zocalo
         gridscan_composite.zocalo.use_gpu = self.use_gpu_results
+
+    use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
+    compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
+    use_gpu_results: bool = CONST.I03.USE_GPU_RESULTS
+    set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
+    omega_flip: bool = CONST.I03.OMEGA_FLIP
