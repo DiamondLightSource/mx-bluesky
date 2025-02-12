@@ -3,6 +3,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hyperion-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/whitelist-source-range: {{ .Values.subnet }}
 spec:
   ingressClassName: nginx
   tls:
