@@ -48,7 +48,6 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -178,8 +177,10 @@ def get_blsample(Session: Callable, bl_sample_id: int) -> BLSample:
 
 
 @pytest.fixture
-def sqlalchemy_sessionmaker() -> sessionmaker:
-    url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def sqlalchemy_sessionmaker(system_test_ispyb_config_path) -> sessionmaker:
+    url = ispyb.sqlalchemy.url(
+        os.environ.get("ISPYB_CONFIG_PATH", system_test_ispyb_config_path)
+    )
     engine = create_engine(url, connect_args={"use_pure": True})
     return sessionmaker(engine)
 
@@ -234,18 +235,20 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb(system_test_ispyb_config_path, dummy_params) -> StoreInIspyb:
+    return StoreInIspyb(system_test_ispyb_config_path)
 
 
 @pytest.fixture
-def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb_3d(dummy_params, system_test_ispyb_config_path) -> StoreInIspyb:
+    return StoreInIspyb(system_test_ispyb_config_path)
 
 
 @pytest.fixture
 def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+    os.environ["ZOCALO_CONFIG"] = os.environ.get(
+        "ZOCALO_CONFIG", "/dls_sw/apps/zocalo/live/configuration.yaml"
+    )
 
 
 @pytest_asyncio.fixture

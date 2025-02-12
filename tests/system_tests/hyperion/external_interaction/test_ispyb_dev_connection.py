@@ -44,7 +44,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     GridScanWithEdgeDetect,
@@ -267,8 +266,9 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     dummy_params,
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin,
+    system_test_ispyb_config_path: str,
 ):
-    ispyb: StoreInIspyb = StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+    ispyb: StoreInIspyb = StoreInIspyb(system_test_ispyb_config_path)
     ispyb_ids: IspybIds = ispyb.begin_deposition(
         dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
