@@ -78,6 +78,10 @@ class HardwareConstants:
     THAWING_TIME = 20
     TIP_OFFSET_UM = 0
 
+    # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
+    # causes dropped frames, so increase value for safety
+    PANDA_FGS_EIGER_DEADTIME_S = 5e-5
+
 
 @dataclass(frozen=True)
 class GridscanParamConstants:
