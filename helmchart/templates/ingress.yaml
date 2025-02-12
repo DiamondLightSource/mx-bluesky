@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: hyperion-ingress
   annotations:
-    nginx.ingress.kubernetes.io/whitelist-source-range: {{ .Values.subnet }}
+    nginx.ingress.kubernetes.io/whitelist-source-range: {{ .Values.hyperion.subnet }}
 spec:
   ingressClassName: nginx
   tls:
