@@ -12,7 +12,6 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
-    SimConstants,
     TriggerConstants,
 )
 
@@ -49,7 +48,6 @@ class HyperionConstants:
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
-    SIM = SimConstants()
     TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()

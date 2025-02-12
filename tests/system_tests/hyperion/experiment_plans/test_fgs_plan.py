@@ -33,12 +33,11 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from tests.conftest import default_raw_gridscan_params
+from tests.conftest import SimConstants, default_raw_gridscan_params
 
 from ..external_interaction.conftest import (  # noqa
     fetch_comment,
@@ -49,7 +48,7 @@ from ..external_interaction.conftest import (  # noqa
 @pytest.fixture
 def params():
     params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
-    params.beamline = CONST.SIM.BEAMLINE
+    params.beamline = SimConstants.BEAMLINE
     yield params
 
 
