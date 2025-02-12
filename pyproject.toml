@@ -183,7 +183,6 @@ passenv = *
 setenv =
     systemtests: DODAL_TEST_MODE=true
     localsystemtests: DODAL_TEST_MODE=true
-        ST_VISIT=cm14451-2
         ST_SAMPLE_ID=398810
         ST_CONTAINER_ID=34864
         ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg

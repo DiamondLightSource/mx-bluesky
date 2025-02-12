@@ -124,7 +124,7 @@ DATA_COLLECTION_COLUMN_MAP = {
 
 
 @pytest.fixture(autouse=True, scope="session")
-def system_test_ispyb_config_path():
+def ispyb_config_path() -> str:
     ispyb_config_path = os.environ.get(
         "ISPYB_CONFIG_PATH", "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
     )

@@ -132,14 +132,6 @@ class DeviceSettingsConstants:
     )
 
 
-@dataclass(frozen=True)
-class SimConstants:
-    BEAMLINE = "BL03S"
-    INSERTION_PREFIX = "SR03S"
-    # this one is for unit tests
-    ISPYB_CONFIG = "tests/test_data/test_config.cfg"
-
-
 class Actions(Enum):
     START = "start"
     STOP = "stop"

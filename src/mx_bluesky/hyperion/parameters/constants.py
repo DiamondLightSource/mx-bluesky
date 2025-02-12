@@ -12,7 +12,6 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
-    SimConstants,
 )
 
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
@@ -47,7 +46,6 @@ class HyperionConstants:
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
-    SIM = SimConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
     CONFIG_SERVER_URL = (
