@@ -119,10 +119,10 @@ class XRayCentreEventHandler(CallbackBase):
         self.xray_centre_results: Sequence[XRayCentreResult] | None = None
 
     def start(self, doc: RunStart) -> RunStart | None:
-        if "xray_centre_results" in doc:
+        if CONST.PLAN.FLYSCAN_RESULTS in doc:
             self.xray_centre_results = [
                 XRayCentreResult(**result_dict)
-                for result_dict in doc["xray_centre_results"]  # type: ignore
+                for result_dict in doc[CONST.PLAN.FLYSCAN_RESULTS]  # type: ignore
             ]
         return doc
 
@@ -156,8 +156,10 @@ def flyscan_xray_centre_no_move(
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
+        composite.dcm,
         parameters.transmission_frac,
     )
     def run_gridscan_and_fetch_and_tidy(
@@ -304,7 +306,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 
     yield from bpp.run_wrapper(
         empty_plan(),
-        md={"xray_centre_results": [dataclasses.asdict(r) for r in results]},
+        md={CONST.PLAN.FLYSCAN_RESULTS: [dataclasses.asdict(r) for r in results]},
     )
 
 

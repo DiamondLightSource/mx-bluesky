@@ -296,7 +296,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args == (ApertureValue.ROBOT_LOAD,)
+        and msg.args == (ApertureValue.OUT_OF_BEAM,)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
 

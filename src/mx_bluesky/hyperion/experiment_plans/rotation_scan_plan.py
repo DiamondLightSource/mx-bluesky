@@ -344,6 +344,13 @@ def _move_and_rotation(
         yield from setup_beamline_for_OAV(
             composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
+        yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
+        if params.selected_aperture:
+            yield from bps.prepare(
+                composite.aperture_scatterguard,
+                params.selected_aperture,
+                group=CONST.WAIT.ROTATION_READY_FOR_DC,
+            )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(
         composite,
@@ -374,8 +381,10 @@ def rotation_scan(
         }
     )
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
+        composite.dcm,
         parameters.transmission_frac,
     )
     def rotation_scan_plan_with_stage_and_cleanup(
@@ -427,8 +436,10 @@ def multi_rotation_scan(
     )
     @bpp.stage_decorator([eiger])
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
+        composite.dcm,
         parameters.transmission_frac,
     )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))

@@ -592,7 +592,7 @@ async def aperture_scatterguard(RE):
             scatterguard_y=14,
             radius=20,
         ),
-        ApertureValue.ROBOT_LOAD: AperturePosition(
+        ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
             aperture_y=16,
             aperture_z=2,
@@ -696,7 +696,7 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-
+    undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,

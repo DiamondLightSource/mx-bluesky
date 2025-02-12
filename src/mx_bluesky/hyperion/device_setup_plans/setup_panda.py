@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from importlib import resources
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
@@ -8,15 +7,15 @@ from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
-from ophyd_async.core import load_device
 from ophyd_async.fastcs.panda import (
     HDFPanda,
     SeqTable,
     SeqTrigger,
 )
 
-import mx_bluesky.hyperion.resources.panda as panda_resource
+from mx_bluesky.common.device_setup_plans.setup_panda import load_panda_from_yaml
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.parameters.constants import DeviceSettingsConstants
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
@@ -145,10 +144,11 @@ def setup_panda_for_flyscan(
 
     yield from bps.stage(panda, group="panda-config")
 
-    with resources.as_file(
-        resources.files(panda_resource) / "panda-gridscan.yaml"
-    ) as config_yaml_path:
-        yield from load_device(panda, str(config_yaml_path))
+    yield from load_panda_from_yaml(
+        DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
+        DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME,
+        panda,
+    )
 
     initial_x = yield from bps.rd(smargon.x.user_readback)
     initial_y = yield from bps.rd(smargon.y.user_readback)
