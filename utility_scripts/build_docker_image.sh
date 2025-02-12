@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# builds the docker image
+# Convenience script for building development versions of the docker image
 BUILD=1
 PUSH=1
 PODMAN_FLAGS=""
@@ -21,7 +21,8 @@ for option in "$@"; do
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options]"
-            echo "Builds and/or pushes the docker container image to the repository"
+            echo "Convenience script for building and/or pushing development versions of the docker container image"
+            echo "to a repository"
             echo "  --help                  This help"
             echo "  --no-build              Do not build the image"
             echo "  --no-push               Do not push the image"
@@ -73,5 +74,5 @@ if [[ $PUSH == 1 ]]; then
   fi
   echo "Pushing to ghcr.io/$NAMESPACE/$IMAGE:latest ..."
   podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:latest
-  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:$IMAGE_VERSION
+  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:v$IMAGE_VERSION
 fi
