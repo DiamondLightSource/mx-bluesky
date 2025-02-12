@@ -100,9 +100,10 @@ The dev deployment bind-mounts the current ``hyperion`` workspace and ``../dodal
 run against your own development code. **Clusters do not allow bind mounts from arbitrary directories so
 your workspace will have to be in a permitted directory such as your home directory.**
 
-By default the script will log into the ``argus`` cluster, if you want to deploy to an alternate cluster,
-log in with ``kubectl set-context --current --namespace=<NAMESPACE>`` and then specify ``--no-login`` when running the
-script
+By default the script will log into the ``argus`` cluster if ``--dev`` is specified, otherwise the beamline cluster.
+If you want to deploy to an alternate namespace/cluster, change cluster with ``module load <cluster module>``
+and then set your namespace with ``kubectl config set-context --current --namespace=<NAMESPACE>`` and then
+specify ``--no-login`` when running the script.
 
 Please note, the deployment script is intended to be run from a checked-out matching version of the git repository.
 
