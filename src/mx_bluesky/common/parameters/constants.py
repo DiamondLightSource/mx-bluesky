@@ -138,8 +138,6 @@ class SimConstants:
     INSERTION_PREFIX = "SR03S"
     # this one is for unit tests
     ISPYB_CONFIG = "tests/test_data/test_config.cfg"
-    # this one is for system tests
-    DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
 
 
 class Actions(Enum):

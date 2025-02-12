@@ -70,10 +70,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.ispyb: StoreInIspyb
         self.descriptors: dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
-        if (
-            self.ispyb_config == SimConstants.ISPYB_CONFIG
-            or self.ispyb_config == SimConstants.DEV_ISPYB_DATABASE_CFG
-        ):
+        if self.ispyb_config == SimConstants.ISPYB_CONFIG:
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
                 "want to use the real database, please set the ISPYB_CONFIG_PATH "

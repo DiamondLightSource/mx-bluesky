@@ -1,0 +1,20 @@
+---
+# Test zocalo configuration, this contains only sufficient info
+# to connect to the rabbitmq test instance
+
+version: 1
+
+rabbitmq-development: rabbitmq-test-credentials.yml
+
+rabbitmq-default-transport:
+  plugin: transport
+  default: PikaTransport
+
+environments:
+  default: dev_bluesky
+
+  dev_bluesky:
+    rabbitmq:
+    - rabbitmq-development
+    plugins:
+    - rabbitmq-default-transport
