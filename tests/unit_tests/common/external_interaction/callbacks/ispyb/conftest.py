@@ -9,7 +9,6 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ......conftest import (
@@ -29,20 +28,8 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_3d_gridscan_ispyb():
-    store_in_ispyb_3d = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
-    return store_in_ispyb_3d
-
-
-@pytest.fixture
-def dummy_rotation_ispyb(dummy_rotation_params):
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
-    return store_in_ispyb
-
-
-@pytest.fixture
-def dummy_2d_gridscan_ispyb():
-    return StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
+def dummy_ispyb(ispyb_config_path: str) -> StoreInIspyb:
+    return StoreInIspyb(ispyb_config_path)
 
 
 @pytest.fixture
