@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 from os import environ
@@ -136,9 +137,10 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
 
 
 def _run_imginfo(filename):
+    imginfo_path = os.environ.get("IMGINFO_PATH", "utility_scripts/run_imginfo.sh")
     process = subprocess.run(
         # This file is provided in the system test docker image
-        ["/usr/local/bin/imginfo", filename],
+        [imginfo_path, filename],
         text=True,
         capture_output=True,
     )

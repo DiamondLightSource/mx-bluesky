@@ -54,7 +54,12 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
+from ....conftest import (
+    SimConstants,
+    fake_read,
+    pin_tip_edge_data,
+    raw_params_from_file,
+)
 
 TEST_RESULT_LARGE = [
     {
@@ -177,10 +182,8 @@ def get_blsample(Session: Callable, bl_sample_id: int) -> BLSample:
 
 
 @pytest.fixture
-def sqlalchemy_sessionmaker(system_test_ispyb_config_path) -> sessionmaker:
-    url = ispyb.sqlalchemy.url(
-        os.environ.get("ISPYB_CONFIG_PATH", system_test_ispyb_config_path)
-    )
+def sqlalchemy_sessionmaker(ispyb_config_path) -> sessionmaker:
+    url = ispyb.sqlalchemy.url(ispyb_config_path)
     engine = create_engine(url, connect_args={"use_pure": True})
     return sessionmaker(engine)
 
@@ -229,19 +232,14 @@ def dummy_params():
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
     )
-    dummy_params.visit = os.environ.get("ST_VISIT", "cm31105-5")
-    dummy_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id))
+    dummy_params.visit = SimConstants.ST_VISIT
+    dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
     return dummy_params
 
 
 @pytest.fixture
-def dummy_ispyb(system_test_ispyb_config_path, dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(system_test_ispyb_config_path)
-
-
-@pytest.fixture
-def dummy_ispyb_3d(dummy_params, system_test_ispyb_config_path) -> StoreInIspyb:
-    return StoreInIspyb(system_test_ispyb_config_path)
+def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
+    return StoreInIspyb(ispyb_config_path)
 
 
 @pytest.fixture
@@ -404,8 +402,8 @@ def params_for_rotation_scan(test_rotation_params: RotationScan) -> RotationScan
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71
-    test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
-    test_rotation_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", 123456))
+    test_rotation_params.visit = SimConstants.ST_VISIT
+    test_rotation_params.sample_id = SimConstants.ST_SAMPLE_ID
     return test_rotation_params
 
 
