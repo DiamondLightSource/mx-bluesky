@@ -62,7 +62,6 @@ def callbacks(params):
         "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
         _, ispyb_cb = create_gridscan_callbacks()
-        ispyb_cb.ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     yield callbacks
 
 
