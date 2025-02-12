@@ -84,6 +84,23 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
+    def test_reason_provided_if_crystal_not_found_error(self, mock_ispyb_conn):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        callback.activity_gated_stop(
+            TestData.test_gridscan3d_stop_document_with_crystal_exception
+        )
+        assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
+            (
+                TEST_DATA_COLLECTION_IDS[0],
+                "DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
+                " ",
+            ),
+        )
+
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams

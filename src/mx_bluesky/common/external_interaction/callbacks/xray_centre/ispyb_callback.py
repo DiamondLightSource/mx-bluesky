@@ -281,5 +281,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
+            reason = doc.get("reason") or ""
+            if "CrystalNotFoundException" in reason:
+                doc["reason"] = "Diffraction not found, skipping sample."
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)
