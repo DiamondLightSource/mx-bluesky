@@ -143,8 +143,8 @@ if [[ -n $REPOSITORY ]]; then
   HELM_OPTIONS+="--set hyperion.imageRepository=$REPOSITORY "
 fi
 
-ensure_version_py
 if [[ -z $APP_VERSION ]]; then
+  ensure_version_py
   APP_VERSION=$(app_version)
 fi
 
