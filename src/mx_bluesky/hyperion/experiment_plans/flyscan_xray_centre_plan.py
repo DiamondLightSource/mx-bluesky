@@ -80,10 +80,13 @@ def flyscan_xray_centre_no_move(
     parameters: HyperionSpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """Perform a flyscan and determine the centres of interest"""
-    parameters.features.feature_dependant_config(composite)
+
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = CONST.ZOCALO_ENV
+
+    parameters.features.update_self_from_server()
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
+    composite.zocalo.use_gpu = parameters.features.use_gpu_results
 
     feature_controlled = _get_feature_controlled(composite, parameters)
 

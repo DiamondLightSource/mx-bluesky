@@ -6,9 +6,6 @@ from pydantic import model_validator
 from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
-)
 
 
 class HyperionFeatureFlags(FeatureFlags):
@@ -38,13 +35,6 @@ class HyperionFeatureFlags(FeatureFlags):
             "Cannot both use GPU results and compare them to CPU"
         )
         return self
-
-    def feature_dependant_config(
-        self, gridscan_composite: HyperionFlyScanXRayCentreComposite
-    ):
-        self.update_self_from_server()
-        gridscan_composite.zocalo.use_cpu_and_gpu = self.compare_cpu_and_gpu_zocalo
-        gridscan_composite.zocalo.use_gpu = self.use_gpu_results
 
     use_panda_for_gridscan: bool = CONST.I03.USE_PANDA_FOR_GRIDSCAN
     compare_cpu_and_gpu_zocalo: bool = CONST.I03.COMPARE_CPU_AND_GPU_ZOCALO
