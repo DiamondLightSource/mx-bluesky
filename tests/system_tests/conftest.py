@@ -1,7 +1,9 @@
 import os
 import re
+from collections.abc import Generator
 from decimal import Decimal
 from functools import partial
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -124,7 +126,7 @@ DATA_COLLECTION_COLUMN_MAP = {
 
 
 @pytest.fixture(autouse=True, scope="session")
-def ispyb_config_path() -> str:
+def ispyb_config_path() -> Generator[str, Any, Any]:
     ispyb_config_path = os.environ.get(
         "ISPYB_CONFIG_PATH", "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
     )
