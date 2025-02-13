@@ -43,7 +43,11 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameC
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import (
+    CrystalNotFoundException,
+    ISPyBDepositionNotMade,
+    SampleException,
+)
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 
 if TYPE_CHECKING:
@@ -281,8 +285,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-            reason = doc.get("reason") or ""
-            if "CrystalNotFoundException" in reason:
-                doc["reason"] = "Diffraction not found, skipping sample."
+            exception_type, message = SampleException.type_and_message_from_reason(
+                doc.get("reason", "")
+            )
+            if exception_type == CrystalNotFoundException.__name__:
+                doc["reason"] = message
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)
