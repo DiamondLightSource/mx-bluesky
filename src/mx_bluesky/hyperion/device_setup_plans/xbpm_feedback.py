@@ -2,6 +2,8 @@ from bluesky import plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper
 from bluesky.utils import make_decorator
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.dcm import DCM
+from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -49,8 +51,10 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
     plan,
+    undulator: Undulator,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
     desired_transmission_fraction: float,
 ):
     """Sets the transmission for the data collection, ensuring the xbpm feedback is valid
@@ -66,6 +70,9 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     mostly accounts for slow thermal drift so it is safe to assume that the beam is
     stable during a collection.
 
+    In the case of a beam dump, undulator gap may not return. Therefore, we check here
+    that the undulator gap is correct after XBPM is stable, and before collection.
+
     Args:
         plan: The plan performing the data collection
         xbpm_feedback (XBPMFeedback): The XBPM device that is responsible for keeping
@@ -78,6 +85,9 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         yield from _check_and_pause_feedback(
             xbpm_feedback, attenuator, desired_transmission_fraction
         )
+        # Verify Undulator gap is correct, as may not be after a beam dump
+        energy_in_kev = yield from bps.rd(dcm.energy_in_kev.user_readback)
+        yield from bps.abs_set(undulator, energy_in_kev, wait=True)
         return (yield from plan)
 
     return (
