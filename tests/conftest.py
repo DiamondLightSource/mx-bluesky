@@ -1223,7 +1223,7 @@ class TestData(OavGridSnapshotTestEvents):
         "time": 1666604299.6149616,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
         "exit_status": "fail",
-        "reason": f"{str(CrystalNotFoundException())}",
+        "reason": f"{CrystalNotFoundException()}",
     }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
