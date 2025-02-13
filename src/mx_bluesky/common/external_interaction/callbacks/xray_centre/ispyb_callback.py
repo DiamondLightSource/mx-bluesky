@@ -288,7 +288,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             exception_type, message = SampleException.type_and_message_from_reason(
                 doc.get("reason", "")
             )
-            if exception_type == CrystalNotFoundException.__name__:
+            if exception_type:
                 doc["reason"] = message
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)
