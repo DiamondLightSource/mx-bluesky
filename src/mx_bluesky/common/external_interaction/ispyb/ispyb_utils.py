@@ -8,8 +8,10 @@ from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.core import Core
 
 
-def get_ispyb_config():
-    return os.environ.get("ISPYB_CONFIG_PATH")
+def get_ispyb_config() -> str:
+    ispyb_config = os.environ.get("ISPYB_CONFIG_PATH")
+    assert ispyb_config, "ISPYB_CONFIG_PATH must be set"
+    return ispyb_config
 
 
 def get_session_id_from_visit(conn: Connector, visit: str):
