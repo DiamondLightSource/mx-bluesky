@@ -189,7 +189,9 @@ async def test_when_error_40_reset_robot_before_load(
 
     demand_energy_ev = robot_load_and_energy_change_params.demand_energy_ev
 
-    set_mock_value(robot_load_and_energy_change_composite.robot.error_code, 40)
+    set_mock_value(
+        robot_load_and_energy_change_composite.robot.controller_error.code, 40
+    )
 
     RE = RunEngine()
     RE(
