@@ -27,7 +27,7 @@ rm -rf .venv
 fi
 mkdir .venv
 
-python -m venv .venv
+python -m ven#v .venv
 source .venv/bin/activate
 
 pip install --upgrade pip
@@ -46,4 +46,4 @@ pip install -e ../dodal[dev]
 # get dlstbx into our env
 ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.11/site-packages/dlstbx
 
-pytest -m "not s03"
+pytest

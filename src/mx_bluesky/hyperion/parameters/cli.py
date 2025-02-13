@@ -17,7 +17,7 @@ def _add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--dev",
         action="store_true",
-        help="Use dev options, such as local graylog instances and S03",
+        help="Use dev options, such as local graylog instances",
     )
 
 
