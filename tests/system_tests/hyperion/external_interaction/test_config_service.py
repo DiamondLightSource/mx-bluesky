@@ -19,38 +19,38 @@ def config_service():
     return HyperionFeatureFlags.get_config_server()
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_get_beamline_params(config_service: ConfigServer):
     resp = config_service.get_beamline_param("miniap_x_SMALL_APERTURE")
     assert isinstance(resp, float)
     assert np.isclose(resp, 2.43)
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_get_feature_flag(config_service: ConfigServer):
     resp = config_service.get_feature_flag("set_stub_offsets")
     assert isinstance(resp, bool)
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_get_feature_flags(config_service: ConfigServer):
     features = config_service.best_effort_get_all_feature_flags()
     assert len(features.keys()) == 3
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_nonsense_feature_flag_fails_with_normal_call(config_service: ConfigServer):
     with pytest.raises(AssertionError):
         _ = config_service.get_feature_flag(str(uuid4()))
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_best_effort_gracefully_fails_with_nonsense(config_service: ConfigServer):
     resp = config_service.best_effort_get_feature_flag(str(uuid4()))
     assert resp is None
 
 
-@pytest.mark.s03
+@pytest.mark.skip(reason="https://github.com/DiamondLightSource/mx-bluesky/issues/817")
 def test_best_effort_gracefully_fails_if_service_down(config_service: ConfigServer):
     log_mock = MagicMock()
     config_service = ConfigServer("http://not_real_address", log_mock)
