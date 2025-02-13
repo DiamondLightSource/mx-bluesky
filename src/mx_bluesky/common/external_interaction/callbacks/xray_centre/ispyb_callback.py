@@ -44,7 +44,6 @@ from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
 )
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
     ISPyBDepositionNotMade,
     SampleException,
 )
