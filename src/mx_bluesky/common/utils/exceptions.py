@@ -39,7 +39,7 @@ T = TypeVar("T")
 class CrystalNotFoundException(SampleException):
     """Raised if grid detection completed normally but no crystal was found."""
 
-    def __init__(self):
+    def __init__(self, *args):
         super().__init__("Diffraction not found, skipping sample.")
 
 
