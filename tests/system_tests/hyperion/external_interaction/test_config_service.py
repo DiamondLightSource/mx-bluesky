@@ -1,3 +1,9 @@
+"""
+TODO enable these tests with @pytest.mark.system_test when config server added
+to system test infrastructure. See
+https://github.com/DiamondLightSource/mx-bluesky/issues/817
+"""
+
 from unittest.mock import MagicMock
 from uuid import uuid4
 
