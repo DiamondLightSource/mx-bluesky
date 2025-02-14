@@ -270,7 +270,9 @@ def test_scrape_mtr_directions():
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.PARAM_FILE_PATH_FT"
 )
-def test_fiducial(fake_param_path, patch_read, patch_mtr, pmac, RE):
+def test_fiducial_writes_correct_values_to_file(
+    fake_param_path, patch_read, patch_mtr, pmac, RE
+):
     fake_param_path.return_value = Path("/tmp/params")
     mtr_values = (1.0, -1.0, -1.0)
     patch_mtr.return_value = mtr_values
