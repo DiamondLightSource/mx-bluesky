@@ -84,6 +84,9 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
     TriggerConstants,
 )
+from mx_bluesky.common.utils.exceptions import (
+    CrystalNotFoundException,
+)
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -1214,6 +1217,13 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_name": "test",
         "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
+    }
+    test_gridscan3d_stop_document_with_crystal_exception: RunStop = {
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+        "exit_status": "fail",
+        "reason": f"{CrystalNotFoundException()}",
     }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
