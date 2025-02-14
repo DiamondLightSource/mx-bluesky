@@ -6,13 +6,11 @@ import os
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
-from queue import Queue
 from sys import argv
 from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import flask
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
@@ -26,7 +24,6 @@ from mx_bluesky.hyperion.__main__ import (
     BlueskyRunner,
     Status,
     create_app,
-    create_targets,
     setup_context,
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
@@ -115,19 +112,10 @@ TEST_EXPTS = {
     "test_experiment": {
         "setup": MagicMock(),
         "param_type": MagicMock(),
-        "experiment_param_type": MagicMock(),
-        "callback_collection_type": MagicMock(),
-    },
-    "test_experiment_no_internal_param_type": {
-        "setup": MagicMock(),
-        "experiment_param_type": MagicMock(),
-        "callback_collection_type": MagicMock(),
     },
     "fgs_real_params": {
         "setup": MagicMock(),
         "param_type": HyperionSpecifiedThreeDGridScan,
-        "experiment_param_type": MagicMock(),
-        "callback_collection_type": MagicMock(),
     },
 }
 
@@ -193,7 +181,9 @@ def wait_for_run_engine_status(
 
 def check_status_in_response(response_object, expected_result: Status):
     response_json = json.loads(response_object.data)
-    assert response_json["status"] == expected_result.value
+    assert response_json["status"] == expected_result.value, (
+        f"{response_json['status']} != {expected_result.value}: {response_json.get('message')}"
+    )
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):
@@ -233,10 +223,8 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     ).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
-    assert (
-        response.get("message")
-        == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
-    )
+    assert isinstance(message := response.get("message"), str)
+    assert "'test_experiment_no_internal_param_type' not found in registry." in message
     test_env.mock_run_engine.abort()
 
 
@@ -290,14 +278,47 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
-def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
+@pytest.mark.parametrize(
+    "endpoint, test_file",
+    [
+        [
+            START_ENDPOINT,
+            "tests/test_data/parameter_json_files/good_test_parameters.json",
+        ],
+        [
+            "/grid_detect_then_xray_centre/start",
+            "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        ],
+        [
+            "/rotation_scan/start",
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        ],
+        [
+            "/pin_tip_centre_then_xray_centre/start",
+            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
+        ],
+        [
+            "/robot_load_then_centre/start",
+            "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json",
+        ],
+        [
+            "/multi_rotation_scan/start",
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+        ],
+        [
+            "/load_centre_collect_full/start",
+            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        ],
+    ],
+)
+def test_start_with_json_file_gives_success(
+    test_env: ClientAndRunEngine, endpoint: str, test_file: str
+):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
-    ) as test_params_file:
+    with open(test_file) as test_params_file:
         test_params = test_params_file.read()
-    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(endpoint, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
@@ -328,14 +349,9 @@ test_argument_combinations = [
         [
             "--dev",
             "--skip-startup-connection",
-            "--external-callbacks",
             "--verbose-event-logging",
         ],
-        (True, True, True, True),
-    ),
-    (
-        ["--external-callbacks"],
-        (False, False, False, True),
+        (True, True, True),
     ),
 ]
 
@@ -347,81 +363,6 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
     assert test_args.dev_mode == parsed_arg_values[0]
     assert test_args.verbose_event_logging == parsed_arg_values[1]
     assert test_args.skip_startup_connection == parsed_arg_values[2]
-    assert test_args.use_external_callbacks == parsed_arg_values[3]
-
-
-@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
-@patch("mx_bluesky.hyperion.__main__.Publisher")
-@patch("mx_bluesky.hyperion.__main__.setup_context")
-@patch("dodal.log.GELFTCPHandler.emit")
-@patch("dodal.log.TimedRotatingFileHandler.emit")
-@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
-def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
-    filehandler_emit,
-    graylog_emit,
-    setup_context: MagicMock,
-    zmq_publisher: MagicMock,
-    set_up_logging_handlers: MagicMock,
-    arg_list,
-    parsed_arg_values,
-):
-    mock_param_class = MagicMock()
-    callbacks_mock = MagicMock(
-        name="mock_callback_class",
-        return_value=("test_cb_1", "test_cb_2"),
-    )
-
-    TEST_REGISTRY = {
-        "test_experiment": {
-            "setup": MagicMock(),
-            "param_type": mock_param_class,
-            "callback_collection_type": callbacks_mock,
-        }
-    }
-
-    @dataclass
-    class MockCommand:
-        action: Actions
-        devices: Any = None
-        experiment: Any = None
-        parameters: Any = None
-        callbacks: Any = None
-
-    with (
-        flask.Flask(__name__).test_request_context() as flask_context,
-        patch("mx_bluesky.hyperion.__main__.Command", MockCommand),
-        patch.dict(
-            "mx_bluesky.hyperion.__main__.PLAN_REGISTRY", TEST_REGISTRY, clear=True
-        ),
-    ):
-        flask_context.request.data = b"{}"  # type: ignore
-        argv[1:] = arg_list
-        app, runner, port, dev_mode = create_targets()
-        runner.RE = MagicMock()
-        runner.command_queue = Queue()
-        runner_thread = threading.Thread(target=runner.wait_on_queue, daemon=True)
-        runner_thread.start()
-        assert dev_mode == parsed_arg_values[0]
-
-        mock_context = MagicMock()
-        mock_context.plan_functions = {"test_experiment": MagicMock()}
-        runner.command_queue.put(
-            MockCommand(
-                action=Actions.START,
-                devices={},
-                experiment="test_experiment",
-                parameters={},
-                callbacks=callbacks_mock,
-            ),  # type: ignore
-            block=True,  # type: ignore
-        )
-        runner.shutdown()
-        runner_thread.join()
-        assert (zmq_publisher.call_count == 1) == parsed_arg_values[3]
-        if parsed_arg_values[3]:
-            assert runner.RE.subscribe.call_count == 0
-        else:
-            assert runner.RE.subscribe.call_count == 2
 
 
 @pytest.mark.skip(
@@ -450,9 +391,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
         {
             "flyscan_xray_centre": {
                 "setup": fake_create_devices,
-                "run": MagicMock(),
                 "param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
         },
         clear=True,
@@ -482,16 +421,14 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         {
             "flyscan_xray_centre": {
                 "setup": mock_setup,
-                "run": MagicMock(),
                 "param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
         },
         clear=True,
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(lambda: None, test_fgs_params, "flyscan_xray_centre", None)
+        runner.start(lambda: None, test_fgs_params, "flyscan_xray_centre")
         mock_setup.assert_called_once()
         runner.shutdown()
 
@@ -504,26 +441,18 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
             "flyscan_xray_centre": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
-                "experiment_param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
             "rotation_scan": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
-                "experiment_param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
-                "experiment_param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
-                "experiment_param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
             },
         },
         clear=True,

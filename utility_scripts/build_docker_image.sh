@@ -3,6 +3,7 @@ set -e
 # builds the docker image
 BUILD=1
 PUSH=1
+PODMAN_FLAGS=""
 for option in "$@"; do
     case $option in
         --no-build)
@@ -13,6 +14,10 @@ for option in "$@"; do
             PUSH=0
             shift
             ;;
+        --no-cache)
+            PODMAN_FLAGS+=" --no-cache"
+            shift
+            ;;
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options]"
@@ -20,6 +25,7 @@ for option in "$@"; do
             echo "  --help                  This help"
             echo "  --no-build              Do not build the image"
             echo "  --no-push               Do not push the image"
+            echo "  --no-cache              Don't use the cache when building the image."
             exit 0
             ;;
         -*|--*)
@@ -42,6 +48,7 @@ if [[ $BUILD == 1 ]]; then
   echo "Building initial image"
   LATEST_TAG=$IMAGE:latest
   TMPDIR=/tmp podman build \
+    $PODMAN_FLAGS \
     -f $PROJECTDIR/Dockerfile.release \
     --tag $LATEST_TAG \
     $PROJECTDIR

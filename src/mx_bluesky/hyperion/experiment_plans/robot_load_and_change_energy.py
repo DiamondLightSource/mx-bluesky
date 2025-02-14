@@ -95,9 +95,7 @@ def prepare_for_robot_load(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon
 ):
     yield from bps.abs_set(
-        aperture_scatterguard,
-        ApertureValue.ROBOT_LOAD,
-        group="prepare_robot_load",
+        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group="prepare_robot_load"
     )
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
@@ -122,11 +120,6 @@ def do_robot_load(
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
-    error_code = yield from bps.rd(composite.robot.error_code)
-    # Reset robot if light curtains were tripped
-    if error_code == 40:
-        yield from bps.trigger(composite.robot.reset, wait=True)
-
     yield from bps.abs_set(
         composite.robot,
         sample_location,

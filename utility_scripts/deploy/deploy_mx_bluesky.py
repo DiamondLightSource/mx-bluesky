@@ -356,5 +356,4 @@ def _parse_options() -> tuple[str, Options]:
 
 if __name__ == "__main__":
     beamline, options = _parse_options()
-    print(options.prune_deployments)
     main(beamline, options)

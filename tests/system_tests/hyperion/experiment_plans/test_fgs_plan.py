@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -32,7 +31,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -66,7 +65,7 @@ def reset_positions(smargon: Smargon):
     yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def fxc_composite():
     with (
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
@@ -76,24 +75,28 @@ async def fxc_composite():
         zocalo = i03.zocalo()
 
     composite = FlyScanXRayCentreComposite(
-        attenuator=i03.attenuator(),
-        aperture_scatterguard=i03.aperture_scatterguard(),
-        backlight=i03.backlight(),
+        attenuator=i03.attenuator(connect_immediately=True, mock=True),
+        aperture_scatterguard=i03.aperture_scatterguard(
+            connect_immediately=True, mock=True
+        ),
+        backlight=i03.backlight(mock=True),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        robot=i03.robot(fake_with_ophyd_sim=True),
-        panda=i03.panda(fake_with_ophyd_sim=True),
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        robot=i03.robot(connect_immediately=True, mock=True),
+        panda=i03.panda(connect_immediately=True, mock=True),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
         s4_slit_gaps=i03.s4_slit_gaps(),
         smargon=i03.smargon(),
         undulator=i03.undulator(),
-        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
-        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
+        synchrotron=i03.synchrotron(connect_immediately=True, mock=True),
+        xbpm_feedback=i03.xbpm_feedback(connect_immediately=True, mock=True),
         zebra=i03.zebra(),
         zocalo=zocalo,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore
@@ -159,8 +162,10 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        fxc_composite.undulator,
         fxc_composite.xbpm_feedback,
         fxc_composite.attenuator,
+        fxc_composite.dcm,
         params.transmission_frac,
     )
     def decorated_plan():

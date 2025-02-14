@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -19,7 +18,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from dodal.devices.zocalo import ZocaloResults
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
@@ -43,7 +42,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -91,7 +90,7 @@ BASIC_PRE_SETUP_DOC = {
 }
 
 BASIC_POST_SETUP_DOC = {
-    "aperture_scatterguard-selected_aperture": ApertureValue.ROBOT_LOAD,
+    "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
     "aperture_scatterguard-radius": None,
     "aperture_scatterguard-aperture-x": 15,
     "aperture_scatterguard-aperture-y": 16,
@@ -213,13 +212,6 @@ def run_generic_ispyb_handler_setup(
     )
 
 
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
-
-
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
     mock = MagicMock(spec=StoreInIspyb)
     mock.begin_deposition.return_value = IspybIds(
@@ -236,7 +228,7 @@ def mock_subscriptions(test_fgs_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
+            autospec=True,
         ),
         patch(
             "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
@@ -294,7 +286,7 @@ def robot_load_composite(
     backlight,
     detector_motion,
     flux,
-    ophyd_pin_tip_detection,
+    pin_tip_detection_with_found_pin,
     zocalo,
     synchrotron,
     sample_shutter,
@@ -305,6 +297,7 @@ def robot_load_composite(
     set_mock_value(dcm.energy_in_kev.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    set_mock_value(smargon.omega.max_velocity, 131)
     return RobotLoadThenCentreComposite(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,
@@ -316,7 +309,7 @@ def robot_load_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
-        pin_tip_detection=ophyd_pin_tip_detection,
+        pin_tip_detection=pin_tip_detection_with_found_pin,
         smargon=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
@@ -376,3 +369,27 @@ def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str
         return msg.run == run_name
 
     sim_run_engine.add_handler("open_run", fire_event, msg_maches_run)
+
+
+@pytest.fixture
+def grid_detection_callback_with_detected_grid():
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        autospec=True,
+    ) as callback:
+        callback.return_value.get_grid_parameters.return_value = {
+            "transmission_frac": 1.0,
+            "exposure_time_s": 0,
+            "x_start_um": 0,
+            "y_start_um": 0,
+            "y2_start_um": 0,
+            "z_start_um": 0,
+            "z2_start_um": 0,
+            "x_steps": 10,
+            "y_steps": 10,
+            "z_steps": 10,
+            "x_step_size_um": 0.1,
+            "y_step_size_um": 0.1,
+            "z_step_size_um": 0.1,
+        }
+        yield callback
