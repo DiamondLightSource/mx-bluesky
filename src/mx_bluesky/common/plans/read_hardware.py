@@ -50,11 +50,8 @@ def standard_read_hardware_pre_collection(
     signals_to_read_pre_flyscan = [
         undulator.current_gap,
         synchrotron.synchrotron_mode,
-        s4_slit_gaps.xgap,
-        s4_slit_gaps.ygap,
-        smargon.x,
-        smargon.y,
-        smargon.z,
+        s4_slit_gaps,
+        smargon,
         dcm.energy_in_kev,
     ]
     yield from read_hardware_plan(

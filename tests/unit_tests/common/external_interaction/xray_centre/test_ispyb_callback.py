@@ -1,8 +1,14 @@
 from unittest.mock import MagicMock, patch
 
+from bluesky.preprocessors import run_decorator, subs_decorator
+from ophyd_async.core import init_devices
+from ophyd_async.epics.core import epics_signal_rw
+
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.plans.read_hardware import read_hardware_plan
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
@@ -260,3 +266,36 @@ class TestXrayCentreISPyBCallback:
                 "snaked": True,
             },
         )
+
+    async def test_ispyb_callback_handles_read_hardware_in_run_engine(
+        self, RE, mock_ispyb_conn
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback._handle_ispyb_hardware_read = MagicMock()
+        callback._handle_ispyb_transmission_flux_read = MagicMock()
+        callback.ispyb = MagicMock()
+        callback.params = MagicMock()
+
+        with init_devices(mock=True):
+            test_readable = epics_signal_rw(str, "pv")
+
+        @subs_decorator(callback)
+        @run_decorator(
+            md={
+                "activate_callbacks": ["GridscanISPyBCallback"],
+            },
+        )
+        def test_plan():
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_PRE
+            )
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_DURING
+            )
+
+        RE(test_plan())
+
+        callback._handle_ispyb_hardware_read.assert_called_once()
+        callback._handle_ispyb_transmission_flux_read.assert_called_once()
