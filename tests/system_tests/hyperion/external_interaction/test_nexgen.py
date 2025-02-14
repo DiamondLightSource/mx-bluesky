@@ -7,8 +7,8 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -162,7 +162,7 @@ def _fake_rotation_scan(
         }
     )
     def plan():
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             rotation_devices.aperture_scatterguard,
             rotation_devices.attenuator,
             rotation_devices.flux,

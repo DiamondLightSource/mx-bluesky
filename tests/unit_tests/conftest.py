@@ -59,3 +59,11 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
     yield None
     for f in active_device_factories:
         f.cache_clear()  # type: ignore
+
+
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"

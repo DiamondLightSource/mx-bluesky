@@ -350,14 +350,6 @@ def robot_load_and_energy_change_composite(
     return composite
 
 
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
-
-
 def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str):
     def fire_event(msg: Msg):
         try:
