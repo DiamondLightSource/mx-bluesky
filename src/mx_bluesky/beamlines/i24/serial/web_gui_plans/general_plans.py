@@ -75,10 +75,8 @@ def gui_set_parameters(
     n_shots: int,
     chip_type: str,
     checker_pattern: bool,
-    # pump_settings: Sequence,
-    # use_mapping_lite: bool = False,
-    # chipmap: Sequence = (),
 ) -> MsgGenerator:
+    # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType[chip_type])
@@ -87,11 +85,6 @@ def gui_set_parameters(
     #     if not pump_settings[0]
     #     else PumpProbeSetting[pump_settings[0]]
     # )
-    # map_type = MappingType.Lite if use_mapping_lite else MappingType.NoMap
-
-    # if chip_params.chip_type is ChipType.Oxford:
-    #     if use_mapping_lite and len(chipmap) == 0:
-    #         raise ValueError("Mapping lite chosen but no chipmap")
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -103,8 +96,8 @@ def gui_set_parameters(
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
-        "map_type": MappingType.NoMap,  # map_type,
-        "chip_map": [],  # list(chipmap),
+        "map_type": MappingType.NoMap,
+        "chip_map": [],
         "pump_repeat": PumpProbeSetting.NoPP,  # pump_repeat,
         "laser_dwell_s": 0.0,  # pump_settings[1]
         # if pump_repeat != PumpProbeSetting.NoPP
@@ -115,8 +108,6 @@ def gui_set_parameters(
         "checker_pattern": checker_pattern,  # pump_settings[3],
         "pre_pump_exposure_s": None,
     }
-    # At some point it will use FixedTargetParameters to create the parameters model
-    # For now not doing that because:
-    # a- not all data in
     print(FixedTargetParameters(**params))
+    # This will then run the run_fixed_target plan
     yield from bps.sleep(0.5)
