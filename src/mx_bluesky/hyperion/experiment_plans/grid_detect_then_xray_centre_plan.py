@@ -39,7 +39,9 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -50,10 +52,6 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
-)
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    XRayCentreEventHandler,
     flyscan_xray_centre_no_move,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
@@ -61,11 +59,13 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     grid_detection_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -167,7 +167,7 @@ def detect_grid_and_do_gridscan(
     )
 
     yield from flyscan_xray_centre_no_move(
-        FlyScanXRayCentreComposite(
+        HyperionFlyScanXRayCentreComposite(
             aperture_scatterguard=composite.aperture_scatterguard,
             attenuator=composite.attenuator,
             backlight=composite.backlight,

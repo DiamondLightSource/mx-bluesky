@@ -24,7 +24,6 @@ from zmq.utils.monitor import recv_monitor_message
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -32,6 +31,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -140,7 +142,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fgs_composite_for_fake_zocalo: FlyScanXRayCentreComposite,
+    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,
     fetch_comment,  # noqa

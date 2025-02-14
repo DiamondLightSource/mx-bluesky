@@ -37,15 +37,13 @@ from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
-)
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -106,7 +104,7 @@ class RobotLoadThenCentreComposite:
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
-    from mx_bluesky.hyperion.utils.context import device_composite_from_context
+    from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadThenCentreComposite)
 

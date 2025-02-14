@@ -53,7 +53,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
         )
 
 
-class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFeatures):
+class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGridScan):
     """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
