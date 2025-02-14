@@ -61,14 +61,8 @@ def gui_move_detector(det: Literal["eiger", "pilatus"]) -> MsgGenerator:
     detector_stage = i24.detector_motion()
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
+    # Make the output readable
     caput(pv.me14e_gp101, det)
-
-
-@bpp.run_decorator()
-def gui_use_jungfrau() -> MsgGenerator:
-    print("Set to use jungfrau detector")
-    caput(pv.me14e_gp101, "jungfrau")
-    yield from bps.null()
 
 
 @bpp.run_decorator()
