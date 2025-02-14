@@ -84,11 +84,6 @@ def gui_set_parameters(
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType[chip_type])
-    # pump_repeat = (
-    #     PumpProbeSetting.NoPP
-    #     if not pump_settings[0]
-    #     else PumpProbeSetting[pump_settings[0]]
-    # )
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
