@@ -25,7 +25,7 @@ BEAM_CENTER_LUT_FILES = {
 
 
 OAV_CONFIG_FILES = {
-    "zoom_params_file": "/dls_sw/i24/software/gda_versions/gda_9_34/config/xml/jCameraManZoomLevels.xml",
+    "zoom_params_file": "/dls_sw/i24/software/gda_versions/gda_9_36/config/xml/jCameraManZoomLevels.xml",
     "oav_config_json": "/dls_sw/i24/software/daq_configuration/json/OAVCentring.json",
     "display_config": "/dls_sw/i24/software/gda_versions/var/display.configuration",
 }
