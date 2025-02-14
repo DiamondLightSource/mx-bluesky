@@ -102,15 +102,11 @@ def gui_set_parameters(
         "chip": chip_params,
         "map_type": MappingType.NoMap,
         "chip_map": [],
-        "pump_repeat": PumpProbeSetting.NoPP,  # pump_repeat,
-        "laser_dwell_s": 0.0,  # pump_settings[1]
-        # if pump_repeat != PumpProbeSetting.NoPP
-        # else 0.0,
-        "laser_delay_s": 0.0,  # pump_settings[2]
-        # if pump_repeat != PumpProbeSetting.NoPP
-        # else 0.0,
-        "checker_pattern": checker_pattern,  # pump_settings[3],
-        "pre_pump_exposure_s": None,
+        "pump_repeat": PumpProbeSetting[pump_probe],  # pump_repeat,
+        "laser_dwell_s": laser_dwell,
+        "laser_delay_s": laser_delay,
+        "checker_pattern": checker_pattern,
+        "pre_pump_exposure_s": pre_pump,
     }
     print(FixedTargetParameters(**params))
     # This will then run the run_fixed_target plan
