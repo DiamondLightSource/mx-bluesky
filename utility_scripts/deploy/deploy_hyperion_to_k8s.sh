@@ -36,10 +36,10 @@ for option in "$@"; do
             CMD=`basename $0`
             echo "$CMD [options] <release>"
             cat <<EOM
-Deploys hyperion to kubernetes
+Deploys a mx_bluesky app to kubernetes
 
 Important!
-If you do not specify --checkout-to-prod YOU MUST run this from the hyperion directory that will be bind-mounted to
+If you do not specify --checkout-to-prod YOU MUST run this from the mx_bluesky directory that will be bind-mounted to
 the container, NOT the directory that you built the container image from.
 
   --help                  This help
@@ -74,9 +74,23 @@ if [[ -z $RELEASE ]]; then
   exit 1
 fi
 
+APP_NAME=$2
+
+if [[ -z $APP_NAME ]]; then
+  echo "App name must be specified, currently supporting hyperion and redis-to-murko"
+  exit 1
+else
+  if [[ "$APP_NAME" != "hyperion" && "$RELEASE" != "redis-to-murko" ]]; then
+    echo "Invalid app ame specified. Please provide either 'hyperion' or 'redis-to-murko'."
+    exit 1
+  fi
+fi
+
+
 HELM_OPTIONS=""
 PROJECTDIR=$(readlink -e $(dirname $0)/../..)
-HELMCHART_DIR=${PROJECTDIR}/helmchart
+TOP_HELMCHART_DIR=${PROJECTDIR}/helmcharts
+HELMCHART_DIR=${TOP_HELMCHART_DIR}/${APP_NAME}
 
 if [[ -n $DEV ]]; then
   if [[ -n $CHECKOUT ]]; then
@@ -91,24 +105,24 @@ else
   fi
 
   # First extract the version and location that will be deployed
-  DEPLOY_HYPERION="python $PROJECTDIR/utility_scripts/deploy/deploy_mx_bluesky.py"
-  HYPERION_BASE=$($DEPLOY_HYPERION --print-release-dir $BEAMLINE)
+  DEPLOY_MX_BLUESKY="python $PROJECTDIR/utility_scripts/deploy/deploy_mx_bluesky.py"
+  MX_BLUESKY_BASE=$($DEPLOY_MX_BLUESKY --print-release-dir $BEAMLINE)
 
   if [[ -n $CHECKOUT ]]; then
-    echo "Running deploy_hyperion.py to deploy to production folder..."
-    $DEPLOY_HYPERION --kubernetes $BEAMLINE
+    echo "Running deploy_mx_bluesky.py to deploy to production folder..."
+    $DEPLOY_MX_BLUESKY --kubernetes $BEAMLINE
     if [[ $? != 0 ]]; then
       echo "Deployment failed, aborting."
       exit 1
     fi
   fi
 
-  NEW_PROJECTDIR=$HYPERION_BASE/mx-bluesky
+  NEW_PROJECTDIR=$MX_BLUESKY_BASE/mx-bluesky
   echo "Changing directory to $NEW_PROJECTDIR..."
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
-  HYPERION_BASENAME=$(basename $HYPERION_BASE)
-  CHECKED_OUT_VERSION=${HYPERION_BASENAME#mx-bluesky_v}
+  MX_BLUESKY_BASENAME=$(basename $MX_BLUESKY_BASE)
+  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_v}
 fi
 
 
@@ -140,7 +154,7 @@ app_version() {
 }
 
 if [[ -n $REPOSITORY ]]; then
-  HELM_OPTIONS+="--set hyperion.imageRepository=$REPOSITORY "
+  HELM_OPTIONS+="--set application.imageRepository=$REPOSITORY "
 fi
 
 ensure_version_py
@@ -161,21 +175,21 @@ if [[ -n $DEV ]]; then
   GID=`id -g`
   SUPPLEMENTAL_GIDS=37904
   HELM_OPTIONS+="--set \
-hyperion.dev=true,\
-hyperion.runAsUser=$EUID,\
-hyperion.runAsGroup=$GID,\
-hyperion.supplementalGroups=[$SUPPLEMENTAL_GIDS],\
-hyperion.logDir=$PROJECTDIR/tmp,\
-hyperion.dataDir=$PROJECTDIR/tmp/data,\
-hyperion.externalHostname=test-hyperion.diamond.ac.uk "
+application.dev=true,\
+application.runAsUser=$EUID,\
+application.runAsGroup=$GID,\
+application.supplementalGroups=[$SUPPLEMENTAL_GIDS],\
+application.logDir=$PROJECTDIR/tmp,\
+application.dataDir=$PROJECTDIR/tmp/data,\
+application.externalHostname=test-$APP_NAME.diamond.ac.uk "
   mkdir -p $PROJECTDIR/tmp/data
   DEPLOYMENT_DIR=$PROJECTDIR
 else
-  DEPLOYMENT_DIR=/dls_sw/i03/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
+  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
 fi
 
-HELM_OPTIONS+="--set hyperion.appVersion=v$APP_VERSION,\
-hyperion.projectDir=$DEPLOYMENT_DIR,\
+HELM_OPTIONS+="--set application.appVersion=v$APP_VERSION,\
+application.projectDir=$DEPLOYMENT_DIR,\
 dodal.projectDir=$DEPLOYMENT_DIR/../dodal "
 
 module load helm
@@ -187,5 +201,5 @@ if [[ $LOGIN = true ]]; then
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
 if [[ -z $DRY_RUN ]]; then
-  helm upgrade --install $HELM_OPTIONS $RELEASE hyperion-0.0.1.tgz
+  helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz
 fi
