@@ -75,6 +75,10 @@ def gui_set_parameters(
     n_shots: int,
     chip_type: str,
     checker_pattern: bool,
+    pump_probe: str,
+    laser_dwell: float,
+    laser_delay: float,
+    pre_pump: float,
 ) -> MsgGenerator:
     # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
