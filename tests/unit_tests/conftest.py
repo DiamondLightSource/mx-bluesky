@@ -69,3 +69,11 @@ def modified_interactor_mock(assign_run_end: Callable | None = None):
     if assign_run_end:
         mock.run_end = assign_run_end
     return mock
+
+
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
