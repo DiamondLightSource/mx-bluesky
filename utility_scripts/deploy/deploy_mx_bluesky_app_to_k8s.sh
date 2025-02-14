@@ -34,7 +34,7 @@ for option in "$@"; do
             ;;
         --help|--info|--h)
             CMD=`basename $0`
-            echo "$CMD [options] <release>"
+            echo "$CMD [options] <release> <app_name>"
             cat <<EOM
 Deploys a mx_bluesky app to kubernetes
 
