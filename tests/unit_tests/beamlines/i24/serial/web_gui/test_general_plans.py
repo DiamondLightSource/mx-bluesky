@@ -6,6 +6,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_detector,
     gui_sleep,
+    gui_stage_move_on_click,
 )
 
 
@@ -45,3 +46,15 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
         RE(gui_gonio_move_on_click((10, 20)))
 
     fake_mv.assert_called_with(ANY, 0.0125, ANY, 0.025)
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_on_mouse_click_plan"
+)
+def test_gui_stage_move_on_click(fake_move_plan, RE):
+    with (
+        patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.oav"),
+        patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.pmac"),
+    ):
+        RE(gui_stage_move_on_click((200, 200)))
+        fake_move_plan.assert_called_once()
