@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
+import bluesky.plan_stubs as bps
+import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
@@ -66,33 +66,40 @@ def load_centre_collect_full(
             flyscan_event_handler,
         )
 
-        assert flyscan_event_handler.xray_centre_results, (
-            "Flyscan result event not received or no crystal found and exception not raised"
-        )
+        locations_to_collect_um: list[np.ndarray] = []
 
-        selection_func = flyscan_result.resolve_selection_fn(
-            parameters.selection_params
-        )
-        hits: Sequence[flyscan_result.XRayCentreResult] = selection_func(
-            flyscan_event_handler.xray_centre_results
-        )
-        LOGGER.info(
-            f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
-        )
+        if flyscan_event_handler.xray_centre_results:
+            selection_func = flyscan_result.resolve_selection_fn(
+                parameters.selection_params
+            )
+            hits = selection_func(flyscan_event_handler.xray_centre_results)
+            locations_to_collect_um = [hit.centre_of_mass_mm * 1000 for hit in hits]
+
+            LOGGER.info(
+                f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
+            )
+        else:
+            # If the xray centring hasn't found a result but has not thrown an error it
+            # means that we do not need to recentre and can collect where we are
+            initial_x = yield from bps.rd(composite.smargon.x.user_readback)
+            initial_y = yield from bps.rd(composite.smargon.y.user_readback)
+            initial_z = yield from bps.rd(composite.smargon.z.user_readback)
+
+            locations_to_collect_um = [np.array([initial_x, initial_y, initial_z])]
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()
 
         multi_rotation.rotation_scans.clear()
 
-        for hit in hits:
+        for location in locations_to_collect_um:
             for rot in rotation_template:
                 combination = rot.model_copy()
                 (
                     combination.x_start_um,
                     combination.y_start_um,
                     combination.z_start_um,
-                ) = (axis * 1000 for axis in hit.centre_of_mass_mm)
+                ) = location
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = MultiRotationScan.model_validate(multi_rotation)
 

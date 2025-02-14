@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -162,8 +162,10 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        fxc_composite.undulator,
         fxc_composite.xbpm_feedback,
         fxc_composite.attenuator,
+        fxc_composite.dcm,
         params.transmission_frac,
     )
     def decorated_plan():

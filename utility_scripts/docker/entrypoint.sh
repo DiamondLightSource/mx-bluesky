@@ -13,9 +13,6 @@ for option in "$@"; do
         --verbose-event-logging)
             VERBOSE_EVENT_LOGGING=true
             ;;
-        --external-callbacks)
-            EXTERNAL_CALLBACK_SERVICE=true
-            ;;
 
         --help|--info|--h)
             echo "Arguments:"
@@ -46,11 +43,9 @@ callback_start_log_path=$LOG_DIR/callback_start_log.log
 
 #Add future arguments here
 declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
-                                ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
-                                ["EXTERNAL_CALLBACK_SERVICE"]="$EXTERNAL_CALLBACK_SERVICE" )
+                                ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
 declare -A h_only_arg_strings=( ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection"
-                                ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
-                                ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
+                                ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
 
 declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
 declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
@@ -73,9 +68,7 @@ done
 
 trap kill_active_apps TERM 
 
-if [ "$EXTERNAL_CALLBACK_SERVICE" = true ]; then
-    hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
-fi
+hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
 
 echo "$(date) Starting Hyperion..."
 hyperion `echo $h_commands;`>$start_log_path  2>&1

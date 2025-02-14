@@ -179,7 +179,6 @@ def test_rotation_scan(
 ):
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
-
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 
@@ -511,7 +510,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == ApertureValue.ROBOT_LOAD
+        and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(

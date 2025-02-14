@@ -50,6 +50,7 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -119,10 +120,10 @@ class XRayCentreEventHandler(CallbackBase):
         self.xray_centre_results: Sequence[XRayCentreResult] | None = None
 
     def start(self, doc: RunStart) -> RunStart | None:
-        if "xray_centre_results" in doc:
+        if CONST.PLAN.FLYSCAN_RESULTS in doc:
             self.xray_centre_results = [
                 XRayCentreResult(**result_dict)
-                for result_dict in doc["xray_centre_results"]  # type: ignore
+                for result_dict in doc[CONST.PLAN.FLYSCAN_RESULTS]  # type: ignore
             ]
         return doc
 
@@ -156,8 +157,10 @@ def flyscan_xray_centre_no_move(
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
     @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.undulator,
         composite.xbpm_feedback,
         composite.attenuator,
+        composite.dcm,
         parameters.transmission_frac,
     )
     def run_gridscan_and_fetch_and_tidy(
@@ -304,7 +307,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 
     yield from bpp.run_wrapper(
         empty_plan(),
-        md={"xray_centre_results": [dataclasses.asdict(r) for r in results]},
+        md={CONST.PLAN.FLYSCAN_RESULTS: [dataclasses.asdict(r) for r in results]},
     )
 
 
@@ -469,10 +472,9 @@ def _panda_triggering_setup(
         fgs_composite.panda_fast_grid_scan.run_up_distance_mm
     )
 
-    # Set the time between x steps pv
-    DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
-
-    time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
+    time_between_x_steps_ms = (
+        HardwareConstants.PANDA_FGS_EIGER_DEADTIME_S + parameters.exposure_time_s
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x.max_velocity
@@ -491,7 +493,7 @@ def _panda_triggering_setup(
         )
     else:
         LOGGER.info(
-            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f"Panda grid scan: Smargon speed set to {sample_velocity_mm_per_s} mm/s"
             f" and using a run-up distance of {run_up_distance_mm}"
         )
 

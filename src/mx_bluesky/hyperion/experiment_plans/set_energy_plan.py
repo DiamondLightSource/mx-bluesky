@@ -54,7 +54,9 @@ def set_energy_plan(
     if energy_ev:
         yield from transmission_and_xbpm_feedback_for_collection_wrapper(
             _set_energy_plan(energy_ev / 1000, composite),
+            composite.undulator_dcm.undulator_ref(),
             composite.xbpm_feedback,
             composite.attenuator,
+            composite.dcm,
             DESIRED_TRANSMISSION_FRACTION,
         )
