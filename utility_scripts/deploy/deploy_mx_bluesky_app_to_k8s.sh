@@ -80,7 +80,7 @@ if [[ -z $APP_NAME ]]; then
   echo "App name must be specified, currently supporting hyperion and redis-to-murko"
   exit 1
 else
-  if [[ "$APP_NAME" != "hyperion" && "$RELEASE" != "redis-to-murko" ]]; then
+  if [[ "$APP_NAME" != "hyperion" && "$APP_NAME" != "redis-to-murko" ]]; then
     echo "Invalid app ame specified. Please provide either 'hyperion' or 'redis-to-murko'."
     exit 1
   fi
