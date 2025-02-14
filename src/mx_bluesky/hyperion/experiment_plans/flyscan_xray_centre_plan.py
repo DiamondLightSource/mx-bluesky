@@ -28,6 +28,7 @@ from dodal.devices.zocalo.zocalo_results import (
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
@@ -417,10 +418,9 @@ def _panda_triggering_setup(
         fgs_composite.panda_fast_grid_scan.run_up_distance_mm
     )
 
-    # Set the time between x steps pv
-    DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
-
-    time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
+    time_between_x_steps_ms = (
+        HardwareConstants.PANDA_FGS_EIGER_DEADTIME_S + parameters.exposure_time_s
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x.max_velocity
@@ -439,7 +439,7 @@ def _panda_triggering_setup(
         )
     else:
         LOGGER.info(
-            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f"Panda grid scan: Smargon speed set to {sample_velocity_mm_per_s} mm/s"
             f" and using a run-up distance of {run_up_distance_mm}"
         )
 

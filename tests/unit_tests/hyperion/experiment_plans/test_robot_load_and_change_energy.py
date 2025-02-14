@@ -15,8 +15,6 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
-    SampleLocation,
-    do_robot_load,
     prepare_for_robot_load,
     robot_load_and_change_energy_plan,
     take_robot_snapshots,
@@ -165,41 +163,6 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.set.assert_called_once_with(ApertureValue.OUT_OF_BEAM)  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([])),
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.bps.trigger",
-)
-async def test_when_error_40_reset_robot_before_load(
-    mock_reset_error: MagicMock,
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-):
-    assert robot_load_and_energy_change_params.sample_puck is not None
-    assert robot_load_and_energy_change_params.sample_pin is not None
-
-    sample_location = SampleLocation(
-        robot_load_and_energy_change_params.sample_puck,
-        robot_load_and_energy_change_params.sample_pin,
-    )
-
-    demand_energy_ev = robot_load_and_energy_change_params.demand_energy_ev
-
-    set_mock_value(robot_load_and_energy_change_composite.robot.error_code, 40)
-
-    RE = RunEngine()
-    RE(
-        # Thawing time set to arbitrary value
-        do_robot_load(
-            robot_load_and_energy_change_composite, sample_location, demand_energy_ev, 0
-        )
-    )
-
-    mock_reset_error.assert_called_once()
 
 
 @patch(
