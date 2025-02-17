@@ -326,13 +326,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
     )
 
 
