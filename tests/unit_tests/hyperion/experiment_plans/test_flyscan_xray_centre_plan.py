@@ -78,12 +78,13 @@ from tests.conftest import (
     create_dummy_scan_spec,
 )
 
-from ....conftest import TestData, simulate_xrc_result
-from ....system_tests.hyperion.external_interaction.conftest import (
+from ....conftest import (
     TEST_RESULT_BELOW_THRESHOLD,
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
+    TestData,
+    simulate_xrc_result,
 )
 from .conftest import (
     assert_event,

@@ -9,10 +9,12 @@ from .....conftest import (
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
+    TEST_RESULT_MEDIUM,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     TestData,
     assert_upsert_call_with,
+    generate_xrc_result_event,
     mx_acquisition_from_conn,
     remap_upsert_columns,
 )
@@ -307,3 +309,27 @@ class TestXrayCentreISPyBCallback:
             mx_acq.get_data_collection_params(), upsert_dc_2.args[0]
         )
         assert dc_1_cols["comments"] < dc_2_cols["comments"]
+
+    def test_zocalo_read_event_appends_comment_to_first_data_collection(
+        self,
+        mock_ispyb_conn,
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        zocalo_read_event = TestData.test_zocalo_reading_event | {
+            "data": generate_xrc_result_event("zocalo", TEST_RESULT_MEDIUM)
+        }
+
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_zocalo_reading
+        )
+        callback.activity_gated_event(zocalo_read_event)  # type: ignore
+
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[0],
+            "Crystal 1: Strength 100000; Position (grid boxes) ['1', '2', '3']; Size (grid boxes) [2 2 1]; ",
+            " ",
+        )

@@ -35,10 +35,8 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from .....conftest import fake_read
+from .....conftest import TEST_RESULT_LARGE, fake_read
 from ..conftest import (  # noqa
-    TEST_RESULT_LARGE,
-    TEST_RESULT_MEDIUM,
     fetch_comment,
     zocalo_env,
 )
