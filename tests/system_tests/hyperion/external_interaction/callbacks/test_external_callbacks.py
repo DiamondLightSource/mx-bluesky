@@ -23,9 +23,6 @@ from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    flyscan_xray_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,

@@ -5,9 +5,9 @@ from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
-from mx_bluesky.common.utils.exceptions import SampleException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    SampleException,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,

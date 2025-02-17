@@ -30,7 +30,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     get_chip_format,
 )
 
-from ....conftest import device_factories_for_beamline
+from .....conftest import device_factories_for_beamline
 
 
 @pytest.fixture(scope="session")

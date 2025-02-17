@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TypedDict
 
-import mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
+import mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan as hyperion_flyscan_xray_centre_plan
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
@@ -43,8 +43,8 @@ class ExperimentRegistryEntry(TypedDict):
 
 
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
-    "flyscan_xray_centre": {
-        "setup": flyscan_xray_centre_plan.create_devices,
+    "hyperion_flyscan_xray_centre": {
+        "setup": hyperion_flyscan_xray_centre_plan.create_devices,
         "param_type": HyperionSpecifiedThreeDGridScan,
     },
     "grid_detect_then_xray_centre": {
