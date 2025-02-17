@@ -9,8 +9,8 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_phi_chi_omega,
     move_x_y_z,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
@@ -62,7 +62,7 @@ async def test_move_aperture_does_nothing_when_none_selected(
 def test_move_x_y_z(
     bps_abs_set: MagicMock,
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fake_fgs_composite: FlyScanXRayCentreComposite,
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     RE: RunEngine,
     motor_position: list[float],
     expected_moves: list[float | None],
@@ -103,7 +103,7 @@ def test_move_x_y_z(
 def test_move_phi_chi_omega(
     bps_abs_set: MagicMock,
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fake_fgs_composite: FlyScanXRayCentreComposite,
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     RE: RunEngine,
     motor_position: list[float],
     expected_moves: list[float | None],

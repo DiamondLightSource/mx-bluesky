@@ -28,13 +28,15 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import default_raw_gridscan_params
 
@@ -74,7 +76,7 @@ async def fxc_composite():
     ):
         zocalo = i03.zocalo()
 
-    composite = FlyScanXRayCentreComposite(
+    composite = HyperionFlyScanXRayCentreComposite(
         attenuator=i03.attenuator(connect_immediately=True, mock=True),
         aperture_scatterguard=i03.aperture_scatterguard(
             connect_immediately=True, mock=True
@@ -116,7 +118,7 @@ async def fxc_composite():
 
 
 @pytest.mark.s03
-def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
+def test_s03_devices_connect(fxc_composite: HyperionFlyScanXRayCentreComposite):
     assert fxc_composite.aperture_scatterguard
     assert fxc_composite.backlight
 
@@ -124,7 +126,7 @@ def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
 @pytest.mark.s03
 def test_read_hardware_pre_collection(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
 ):
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
@@ -153,7 +155,7 @@ def test_read_hardware_pre_collection(
 @pytest.mark.s03
 async def test_xbpm_feedback_decorator(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
@@ -193,7 +195,7 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
@@ -228,7 +230,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
 ):
@@ -247,7 +249,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     zocalo_trigger: MagicMock,
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     fetch_comment: Callable,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
@@ -277,7 +279,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 @pytest.mark.s03
 async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks,
@@ -311,7 +313,7 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
 @pytest.mark.s03
 async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks,

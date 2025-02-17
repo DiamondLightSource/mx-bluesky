@@ -17,6 +17,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
@@ -29,7 +30,6 @@ from mx_bluesky.hyperion.__main__ import (
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
 from ..conftest import mock_beamline_module_filepaths
