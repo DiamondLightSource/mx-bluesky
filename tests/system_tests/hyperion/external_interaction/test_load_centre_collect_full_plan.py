@@ -547,10 +547,9 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
 
 
 @pytest.mark.parametrize(
-    "zocalo_result, expected_in_bounds",
+    "zocalo_result, expected_exception",
     [
         [TEST_RESULT_MEDIUM, nullcontext()],
-        # TEST_RESULT_LARGE,
         [TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX, nullcontext()],
         [TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER, nullcontext()],
         [
@@ -566,7 +565,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
 @pytest.mark.s03
 def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     zocalo_result,
-    expected_in_bounds,
+    expected_exception,
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -587,7 +586,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(ispyb_rotation_cb)
     RE.subscribe(robot_load_cb)
-    with expected_in_bounds:
+    with expected_exception:
         RE(
             load_centre_collect_full(
                 load_centre_collect_composite,
