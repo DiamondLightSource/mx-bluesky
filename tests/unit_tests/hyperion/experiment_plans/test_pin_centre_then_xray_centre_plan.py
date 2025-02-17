@@ -28,10 +28,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 
-from ....conftest import raw_params_from_file, simulate_xrc_result
-from ....system_tests.hyperion.external_interaction.conftest import (
-    TEST_RESULT_LARGE,
-)
+from ....conftest import TEST_RESULT_LARGE, raw_params_from_file, simulate_xrc_result
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 

@@ -116,7 +116,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             scan_data_infos = [
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
-                        None,
+                        "MX-Bluesky: Xray centring 1 -",
                         None,
                         populate_xy_data_collection_info(
                             self.params.detector_params,
@@ -126,7 +126,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 ),
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
-                        None,
+                        "MX-Bluesky: Xray centring 2 -",
                         None,
                         populate_xz_data_collection_info(self.params.detector_params),
                         self.params,

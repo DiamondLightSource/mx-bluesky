@@ -136,7 +136,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             "handle_ispyb_hardware_read triggered before activity_gated_start"
         )
         motor_positions_um = [position * 1000 for position in motor_positions_mm]
-        comment = f"Sample position (µm): ({motor_positions_um[0]:.0f}, {motor_positions_um[1]:.0f}, {motor_positions_um[2]:.0f}) {self.params.comment} "
+        comment = f"Sample position (µm): ({motor_positions_um[0]:.0f}, {motor_positions_um[1]:.0f}, {motor_positions_um[2]:.0f})"
         scan_data_infos[0].data_collection_info.comments = comment
         return scan_data_infos
 

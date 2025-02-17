@@ -16,6 +16,7 @@ from ......conftest import (
     TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
+    remap_upsert_columns,
 )
 
 EXPECTED_DATA_COLLECTION = {
@@ -140,10 +141,12 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "comments": "Sample position (µm): (158, 24, 3) test ",
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         },
+    )
+    mx.update_data_collection_append_comments.assert_called_with(
+        TEST_DATA_COLLECTION_IDS[0], "Sample position (µm): (158, 24, 3)", " "
     )
     expected_data = TestData.test_event_document_pre_data_collection["data"]
     assert_upsert_call_with(
@@ -301,6 +304,11 @@ def test_comment_correct_after_hardware_read(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
+    dc_upsert_dict = remap_upsert_columns(
+        mx.get_data_collection_params(),
+        mx.upsert_data_collection.mock_calls[0].args[0],
+    )
+    assert dc_upsert_dict["comments"] == "a lovely unit test"
 
     mx.upsert_data_collection_group.reset_mock()
     mx.upsert_data_collection.reset_mock()
@@ -319,8 +327,10 @@ def test_comment_correct_after_hardware_read(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "comments": "Sample position (µm): (158, 24, 3) a lovely unit test ",
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         },
+    )
+    mx.update_data_collection_append_comments.assert_called_with(
+        TEST_DATA_COLLECTION_IDS[0], "Sample position (µm): (158, 24, 3)", " "
     )
