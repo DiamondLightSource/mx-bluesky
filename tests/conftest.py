@@ -87,8 +87,17 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 TEST_GRAYLOG_PORT = 5555
+
+
+@pytest.fixture(scope="session")
+def active_device_factories() -> set[AnyDeviceFactory]:
+    """Obtain the set of device factories that should have their caches cleared
+    after every test invocation.
+    Override this in sub-packages for the specific beamlines under test."""
+    return device_factories_for_beamline(i03)
 
 
 def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceFactory]:
@@ -97,6 +106,13 @@ def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceF
         for f in collect_factories(beamline_module, include_skipped=True).values()
         if hasattr(f, "cache_clear")
     }
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(active_device_factories):
+    yield None
+    for f in active_device_factories:
+        f.cache_clear()  # type: ignore
 
 
 def raw_params_from_file(filename):
@@ -1324,4 +1340,24 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
         TEST_DATA_COLLECTION_GROUP_ID,
         list(range(12, 24)),
         list(range(56, 68)),
+    )
+
+
+@pytest.fixture
+def dummy_rotation_params():
+    dummy_params = RotationScan(
+        **default_raw_params(
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        )
+    )
+    dummy_params.sample_id = TEST_SAMPLE_ID
+    return dummy_params
+
+
+@pytest.fixture
+def test_rotation_params():
+    return RotationScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        )
     )

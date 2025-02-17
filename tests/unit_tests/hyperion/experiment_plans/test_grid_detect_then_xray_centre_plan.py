@@ -97,7 +97,7 @@ async def test_detect_grid_and_do_gridscan(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan.assert_called_once_with(ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(

@@ -23,6 +23,9 @@ from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    hyperion_flyscan_xray_centre,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
@@ -34,7 +37,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from .....conftest import fake_read
+from .....conftest import TestData, fake_read
 from ..conftest import (  # noqa
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -154,13 +157,14 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE.subscribe(doc_catcher)
 
     # Run the xray centring plan
-    RE(flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
+    RE(hyperion_flyscan_xray_centre(fgs_composite_for_fake_zocalo, test_fgs_params))
 
     # Check that we we emitted a valid reading from the zocalo device
     zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore
-    # TEST_RESULT_LARGE is what fake_zocalo sends by default
+    # TestData.test_result_large is what fake_zocalo sends by default
     assert (
-        get_processing_results_from_event("zocalo", zocalo_event) == TEST_RESULT_LARGE
+        get_processing_results_from_event("zocalo", zocalo_event)
+        == TestData.test_result_large
     )
 
     # get dcids from zocalo device

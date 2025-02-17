@@ -33,6 +33,7 @@ from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
 )
@@ -51,9 +52,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 from tests.conftest import (
-    TEST_SAMPLE_ID,
     default_raw_gridscan_params,
-    default_raw_params,
     raw_params_from_file,
 )
 
@@ -152,15 +151,6 @@ async def fake_fgs_composite(
 
 
 @pytest.fixture
-def test_rotation_params():
-    return RotationScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
-        )
-    )
-
-
-@pytest.fixture
 def test_rotation_params_nomove():
     return RotationScan(
         **raw_params_from_file(
@@ -225,7 +215,7 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-
+    undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -286,14 +276,3 @@ def test_full_grid_scan_params():
         "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     return GridScanWithEdgeDetect(**params)
-
-
-@pytest.fixture
-def dummy_rotation_params():
-    dummy_params = RotationScan(
-        **default_raw_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
-        )
-    )
-    dummy_params.sample_id = TEST_SAMPLE_ID
-    return dummy_params

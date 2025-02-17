@@ -9,14 +9,12 @@ from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
-from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV
 from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
@@ -67,7 +65,6 @@ from tests.conftest import (
 from ....conftest import TestData
 from ...conftest import (
     mock_zocalo_trigger,
-    modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
@@ -306,7 +303,6 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        clear_device("zebra_fast_grid_scan")
         fgs = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
@@ -333,7 +329,6 @@ class TestFlyscanXrayCentrePlan:
 
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
-        clear_device("zebra_fast_grid_scan")
 
     @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
@@ -481,6 +476,8 @@ class TestFlyscanXrayCentrePlan:
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
+        assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
+        ispyb_cb.emit_cb.zocalo_interactor.run_end = mock_parent.run_end
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()  # type: ignore
         fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock(
@@ -492,15 +489,9 @@ class TestFlyscanXrayCentrePlan:
         )
         set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
-        with (
-            patch(
-                "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
-                autospec=True,
-            ),
-            patch(
-                "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-                lambda _: modified_interactor_mock(mock_parent.run_end),
-            ),
+        with patch(
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+            autospec=True,
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(
@@ -633,7 +624,7 @@ class TestFlyscanXrayCentrePlan:
         ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
-        mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+        mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
 
         fake_fgs_composite.eiger.unstage = MagicMock()
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
@@ -651,7 +642,6 @@ class TestFlyscanXrayCentrePlan:
                 scan_start_indices=[0, x_steps * y_steps],
             )
         )
-        mock_zocalo_trigger_class.assert_called_once_with(ZOCALO_ENV)
 
         expected_start_infos = [
             ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
@@ -665,11 +655,11 @@ class TestFlyscanXrayCentrePlan:
             call(expected_start_infos[1]),
         ]
 
-        assert mock_zocalo_trigger.run_start.call_count == 2
-        assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+        assert mock_zocalo_trigger.run_start.call_count == 2  # type: ignore
+        assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls  # type: ignore
 
-        assert mock_zocalo_trigger.run_end.call_count == 2
-        assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
+        assert mock_zocalo_trigger.run_end.call_count == 2  # type: ignore
+        assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]  # type: ignore
 
     @patch(
         "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",

@@ -10,6 +10,8 @@ from dodal.devices.aperturescatterguard import (
 )
 from ophyd.sim import NullStatus
 from ophyd.status import Status
+from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
@@ -21,6 +23,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -40,6 +43,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from tests.conftest import (
     RunEngineSimulator,
 )
+from tests.system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
 
 from ....conftest import TestData, simulate_xrc_result
 from ...conftest import (
@@ -73,11 +77,25 @@ def _custom_msg(command_name: str):
     return lambda *args, **kwargs: iter([Msg(command_name)])
 
 
+@pytest.fixture
+def fgs_composite_with_panda_pcap(
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+):
+    capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
+    set_mock_value(fake_fgs_composite.panda.data.datasets, capture_table)
+
+    return fake_fgs_composite
+
+
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
+    @patch(
+        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        return_value=NullStatus(),
+    )
     @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
@@ -92,6 +110,7 @@ class TestFlyscanXrayCentrePlan:
     def test_results_adjusted_and_passed_to_move_xyz(
         self,
         move_x_y_z: MagicMock,
+        move_aperture: MagicMock,
         run_gridscan: MagicMock,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
@@ -199,7 +218,7 @@ class TestFlyscanXrayCentrePlan:
             assert not test_fgs_params.features.use_panda_for_gridscan
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.set_panda_directory",
+        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.set_panda_directory",
         side_effect=_custom_msg("set_panda_directory"),
     )
     @patch(
@@ -207,40 +226,45 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(side_effect=_custom_msg("arm_panda")),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.disarm_panda_for_gridscan",
+        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.disarm_panda_for_gridscan",
         new=MagicMock(side_effect=_custom_msg("disarm_panda")),
     )
     @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         new=MagicMock(side_effect=_custom_msg("do_gridscan")),
     )
+    @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
         self,
+        mock_load_panda: MagicMock,
         mock_set_panda_directory: MagicMock,
         done_status: Status,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
         feature_controlled: BeamlineSpecificFGSFeatures,
     ):
         sim_run_engine.add_handler("unstage", lambda _: done_status)
         sim_run_engine.add_read_handler_for(
-            fake_fgs_composite.smargon.x.max_velocity, 10
+            fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
         simulate_xrc_result(
-            sim_run_engine,
-            fake_fgs_composite.zocalo,
-            TestData.test_result_large,
+            sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(
             flyscan_xray_centre_no_move(
-                fake_fgs_composite, fgs_params_use_panda, feature_controlled
+                fgs_composite_with_panda_pcap, fgs_params_use_panda, feature_controlled
             )
         )
 
         mock_set_panda_directory.assert_called_with(
             Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
+        )
+        mock_load_panda.assert_called_once_with(
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
+            DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME,
+            fgs_composite_with_panda_pcap.panda,
         )
 
         msgs = assert_message_and_return_remaining(
