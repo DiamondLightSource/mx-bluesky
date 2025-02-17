@@ -32,7 +32,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -104,7 +104,7 @@ BASIC_POST_SETUP_DOC = {
 
 
 @pytest.fixture
-def grid_detect_devices(
+async def grid_detect_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_i03: Beamstop,
@@ -125,8 +125,8 @@ def grid_detect_devices(
     undulator,
     undulator_dcm,
     dcm,
-) -> GridDetectThenXRayCentreComposite:
-    return GridDetectThenXRayCentreComposite(
+):
+    yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -348,14 +348,6 @@ def robot_load_and_energy_change_composite(
     composite.thawer = thawer
     composite.eiger = eiger
     return composite
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
 def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str):

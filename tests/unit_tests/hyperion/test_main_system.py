@@ -17,6 +17,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
@@ -29,12 +30,11 @@ from mx_bluesky.hyperion.__main__ import (
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
 from ..conftest import mock_beamline_module_filepaths
 
-FGS_ENDPOINT = "/flyscan_xray_centre/"
+FGS_ENDPOINT = "/hyperion_flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
@@ -409,7 +409,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices",
+    "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.create_devices",
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
@@ -419,7 +419,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     with patch.dict(
         "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
         {
-            "flyscan_xray_centre": {
+            "hyperion_flyscan_xray_centre": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
             },
@@ -428,7 +428,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(lambda: None, test_fgs_params, "flyscan_xray_centre")
+        runner.start(lambda: None, test_fgs_params, "hyperion_flyscan_xray_centre")
         mock_setup.assert_called_once()
         runner.shutdown()
 
@@ -438,7 +438,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
     with patch.dict(
         "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
         {
-            "flyscan_xray_centre": {
+            "hyperion_flyscan_xray_centre": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
             },

@@ -13,10 +13,10 @@ from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVolta
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
-from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
+from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_wrapper,
 )
+from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 
 DESIRED_TRANSMISSION_FRACTION = 0.1
 
@@ -57,6 +57,6 @@ def set_energy_plan(
             composite.undulator_dcm.undulator_ref(),
             composite.xbpm_feedback,
             composite.attenuator,
-            composite.dcm,
-            DESIRED_TRANSMISSION_FRACTION,
+            dcm=composite.dcm,
+            desired_transmission_fraction=DESIRED_TRANSMISSION_FRACTION,
         )
