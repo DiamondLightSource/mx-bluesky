@@ -251,8 +251,8 @@ class TestFlyscanXrayCentrePlan:
 
         RE(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
-        feature_controlled.setup_trigger_plan.assert_called_once()
-        feature_controlled.tidy_plan.assert_called_once()
+        feature_controlled.setup_trigger_plan.assert_called_once()  # type: ignore
+        feature_controlled.tidy_plan.assert_called_once()  # type: ignore
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",

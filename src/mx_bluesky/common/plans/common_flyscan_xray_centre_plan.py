@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
+from typing import Generic, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -67,9 +68,12 @@ def null_plan(*args):
     yield from bps.null()
 
 
+T = TypeVar("T", bound=ReadOnlyAttenuator)  # Ensures T is always a subclass of A
+
+
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices:
-    attenuator: ReadOnlyAttenuator
+class FlyScanEssentialDevices(Generic[T]):
+    attenuator: T
     backlight: Backlight
     eiger: EigerDetector
     zebra_fast_grid_scan: ZebraFastGridScan
