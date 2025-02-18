@@ -36,7 +36,7 @@ class PlanReactiveCallback(CallbackBase):
         super().__init__(emit=emit)
         self.emit_cb = emit  # to avoid GC; base class only holds a WeakRef
         self.active = False
-        self.activity_uid = 0
+        self.activity_uid = ""
         self.log = log
 
     def _run_activity_gated(self, name: str, func, doc, override=False):
@@ -76,7 +76,7 @@ class PlanReactiveCallback(CallbackBase):
         do_stop = self.active
         if doc.get("run_start") == self.activity_uid:
             self.active = False
-            self.activity_uid = 0
+            self.activity_uid = ""
         return (
             self._run_activity_gated(
                 "stop", self.activity_gated_stop, doc, override=True
