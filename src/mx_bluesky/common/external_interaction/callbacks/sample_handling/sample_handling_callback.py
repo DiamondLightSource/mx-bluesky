@@ -27,6 +27,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
             self._sample_id = sample_id
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
+        expeye = ExpeyeInteraction()
         if doc["exit_status"] != "success":
             exception_type, message = SampleException.type_and_message_from_reason(
                 doc.get("reason", "")
@@ -34,14 +35,19 @@ class SampleHandlingCallback(PlanReactiveCallback):
             self.log.info(
                 f"Sample handling callback intercepted exception of type {exception_type}: {message}"
             )
-            self._record_exception(exception_type)
+            self._record_exception(exception_type, expeye)
+        else:
+            self._record_loaded(expeye)
         return doc
 
-    def _record_exception(self, exception_type: str):
-        expeye = ExpeyeInteraction()
+    def _record_exception(self, exception_type: str, expeye: ExpeyeInteraction):
         assert self._sample_id, "Unable to record exception due to no sample ID"
         sample_status = self._decode_sample_status(exception_type)
         expeye.update_sample_status(self._sample_id, sample_status)
+
+    def _record_loaded(self, expeye: ExpeyeInteraction):
+        assert self._sample_id, "Unable to record loaded state due to no sample ID"
+        expeye.update_sample_status(self._sample_id, BLSampleStatus.LOADED)
 
     def _decode_sample_status(self, exception_type: str) -> BLSampleStatus:
         match exception_type:
