@@ -316,6 +316,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             if exception_type:
                 doc["reason"] = message
                 self.data_collection_group_info.comments = message
+                self.ispyb.update_data_collection_group_table(
+                    self.data_collection_group_info,
+                    self.ispyb_ids.data_collection_group_id,
+                )
             self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)
