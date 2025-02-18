@@ -43,7 +43,7 @@ def construct_comment_for_gridscan(grid_info: DataCollectionGridInfo) -> str:
         grid_info.microns_per_pixel_y,
     )
     return (
-        "MX-Bluesky: Xray centring - Diffraction grid scan of "
+        "Diffraction grid scan of "
         f"{grid_info.steps_x} by "
         f"{grid_info.steps_y} images in "
         f"{(grid_info.dx_in_mm * 1e3):.1f} um by "

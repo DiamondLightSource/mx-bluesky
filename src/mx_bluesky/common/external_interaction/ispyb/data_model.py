@@ -13,6 +13,7 @@ class DataCollectionGroupInfo:
     experiment_type: str
     sample_id: int | None
     sample_barcode: str | None = None
+    comments: str | None = None
 
 
 @dataclass(kw_only=True)
