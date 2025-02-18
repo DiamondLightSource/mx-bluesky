@@ -99,6 +99,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
         self.data_collection_group_info: DataCollectionGroupInfo | None
+        self.sample_id = int | None
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
@@ -153,12 +154,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
-                self.ispyb_ids, scan_data_infos
+                self.ispyb_ids, scan_data_infos, self.data_collection_group_info
             )
 
         return doc
 
     def _handle_zocalo_read_event(self, doc):
+        assert self.data_collection_group_info, "No data collection group"
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -167,10 +169,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
         )
-
-        # Should be in assertions
-        if self.data_collection_group_info and self.data_collection_group_info.comments:
-            self.data_collection_group_info.comments += crystal_summary
 
         raw_results = get_processing_results_from_event("zocalo", doc)
         if len(raw_results) > 0:
@@ -193,6 +191,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids.data_collection_ids, (
             "No data collection to add results to"
         )
+        self.data_collection_group_info.comments = crystal_summary
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -296,6 +295,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
+        assert self.data_collection_group_info, "No data collection group"
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
@@ -303,7 +303,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback received stop document corresponding to start document "
                 f"with uid: {self.uid_to_finalize_on}."
             )
-            self.data_collection_group_info = None
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             exception_type, message = SampleException.type_and_message_from_reason(
@@ -311,5 +310,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if exception_type:
                 doc["reason"] = message
+                self.data_collection_group_info.comments = message
+            self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)

@@ -61,6 +61,7 @@ class StoreInIspyb:
         self,
         ispyb_ids,
         scan_data_infos: Sequence[ScanDataInfo],
+        data_collection_info: DataCollectionGroupInfo | None,
     ) -> IspybIds:
         assert ispyb_ids.data_collection_group_id, (
             "Attempted to store scan data without a collection group"
@@ -68,7 +69,9 @@ class StoreInIspyb:
         assert ispyb_ids.data_collection_ids, (
             "Attempted to store scan data without a collection"
         )
-        return self._begin_or_update_deposition(ispyb_ids, None, scan_data_infos)
+        return self._begin_or_update_deposition(
+            ispyb_ids, data_collection_info, scan_data_infos
+        )
 
     def _begin_or_update_deposition(
         self,

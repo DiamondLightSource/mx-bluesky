@@ -6,6 +6,9 @@ from graypy import GELFTCPHandler
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -20,6 +23,15 @@ DC_IDS = (1, 2)
 DCG_ID = 4
 DC_GRID_IDS = (11, 12)
 td = TestData()
+
+
+@pytest.fixture
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id=364758,
+    )
 
 
 def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:
@@ -178,16 +190,20 @@ class TestXrayCentreIspybHandler:
         side_effect=[2, 100],
     )
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
-        self, mock_time
+        self, mock_time, dummy_rotation_data_collection_group_info
     ):
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GridCommonWithHyperionDetectorParams,
         )
 
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)  # type:ignore
 
         ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
+
+        ispyb_handler.data_collection_group_info = (
+            dummy_rotation_data_collection_group_info
+        )
 
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_zocalo_reading

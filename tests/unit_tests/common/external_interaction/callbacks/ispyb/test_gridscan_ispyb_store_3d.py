@@ -375,7 +375,7 @@ def test_update_deposition(
     dummy_collection_group_info.sample_barcode = TEST_BARCODE
 
     actual_rows = dummy_3d_gridscan_ispyb.update_deposition(
-        ispyb_ids, scan_data_infos_for_update
+        ispyb_ids, scan_data_infos_for_update, dummy_collection_group_info
     )
 
     assert actual_rows == IspybIds(
@@ -384,7 +384,7 @@ def test_update_deposition(
         grid_ids=TEST_GRID_INFO_IDS,
     )
 
-    mx_acq.upsert_data_collection_group.assert_not_called()
+    # mx_acq.upsert_data_collection_group.assert_not_called()
 
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
