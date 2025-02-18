@@ -81,7 +81,7 @@ if [[ -z $APP_NAME ]]; then
   exit 1
 else
   if [[ "$APP_NAME" != "hyperion" && "$APP_NAME" != "redis-to-murko" ]]; then
-    echo "Invalid app ame specified. Please provide either 'hyperion' or 'redis-to-murko'."
+    echo "Invalid app name specified. Please provide either 'hyperion' or 'redis-to-murko'."
     exit 1
   fi
 fi

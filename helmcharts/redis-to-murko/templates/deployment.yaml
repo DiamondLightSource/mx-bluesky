@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.application.name }}
+        project: murko
     spec:
       securityContext:
         runAsUser: {{  .Values.application.runAsUser }}
