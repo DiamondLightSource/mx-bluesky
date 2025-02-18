@@ -17,7 +17,7 @@ from packaging.version import VERSION_PATTERN, Version
 
 usage = "python %(prog)s beamline [options]"
 
-recognised_beamlines = ["i03", "i04", "i24"]
+recognised_beamlines = ["i03", "i04", "i24", "i02-1"]
 
 VERSION_PATTERN_COMPILED = re.compile(
     f"^{VERSION_PATTERN}$", re.VERBOSE | re.IGNORECASE
