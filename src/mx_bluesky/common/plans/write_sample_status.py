@@ -1,22 +1,15 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 
-from mx_bluesky.common.parameters.components import (
-    MxBlueskyParameters,
-    WithSample,
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
 )
 from mx_bluesky.common.utils.exceptions import SampleException
 
-
-class WriteSampleStatus(MxBlueskyParameters, WithSample):
-    pass
+callback = SampleHandlingCallback()
 
 
-def create_devices() -> None:
-    """Create the necessary devices for the plan."""
-    return None
-
-
+@bpp.subs_decorator(callback)
 def deposit_sample_error(exception_type, sample_id):
     @bpp.run_decorator(
         md={
@@ -34,6 +27,7 @@ def deposit_sample_error(exception_type, sample_id):
     yield from _inner()
 
 
+@bpp.subs_decorator(callback)
 def deposit_loaded_sample(sample_id):
     @bpp.run_decorator(
         md={

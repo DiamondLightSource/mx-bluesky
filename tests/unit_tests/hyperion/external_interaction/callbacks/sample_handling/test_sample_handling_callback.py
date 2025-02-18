@@ -4,13 +4,13 @@ import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.utils.exceptions import SampleException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     CrystalNotFoundException,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
 )
 
 TEST_SAMPLE_ID = 123456
@@ -58,7 +58,7 @@ def test_sample_handling_callback_intercepts_general_exception(
     mock_expeye = MagicMock()
     with (
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
             ".ExpeyeInteraction",
             return_value=mock_expeye,
         ),
@@ -77,7 +77,7 @@ def test_sample_handling_callback_closes_run_normally(RE: RunEngine):
     with (
         patch.object(callback, "_record_exception") as record_exception,
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
             ".ExpeyeInteraction",
             return_value=mock_expeye,
         ),

@@ -3,15 +3,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.plans.write_sample_status import (
     deposit_loaded_sample,
     deposit_sample_error,
 )
 from mx_bluesky.common.utils.exceptions import SampleException
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
-)
 
 TEST_SAMPLE_ID = 123456
 
@@ -35,7 +35,7 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
     mock_expeye = MagicMock()
     with (
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
             ".ExpeyeInteraction",
             return_value=mock_expeye,
         ),
@@ -50,12 +50,9 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
 def test_depositing_sample_loaded(
     RE: RunEngine,
 ):
-    sample_handling_callback = SampleHandlingCallback()
-    RE.subscribe(sample_handling_callback)
-
     mock_expeye = MagicMock()
     with patch(
-        "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+        "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
         ".ExpeyeInteraction",
         return_value=mock_expeye,
     ):
