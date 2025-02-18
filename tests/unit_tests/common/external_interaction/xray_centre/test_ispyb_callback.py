@@ -318,6 +318,7 @@ class TestXrayCentreISPyBCallback:
         self,
         mock_ispyb_conn,
     ):
+        zocalo_read_event_comment = "Crystal 1: Strength 100000; Position (grid boxes) ['1', '2', '3']; Size (grid boxes) [2 2 1]; "
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
@@ -334,6 +335,11 @@ class TestXrayCentreISPyBCallback:
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.update_data_collection_append_comments.assert_any_call(
             TEST_DATA_COLLECTION_IDS[0],
-            "Crystal 1: Strength 100000; Position (grid boxes) ['1', '2', '3']; Size (grid boxes) [2 2 1]; ",
+            zocalo_read_event_comment,
             " ",
+        )
+
+        assert (
+            zocalo_read_event_comment
+            in mx_acq.upsert_data_collection_group.call_args.args[0]
         )

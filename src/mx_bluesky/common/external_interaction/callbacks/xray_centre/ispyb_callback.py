@@ -195,8 +195,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids.data_collection_ids, (
             "No data collection to add results to"
         )
-        if self.data_collection_group_info.comments:
-            self.data_collection_group_info.comments += crystal_summary
+
+        self.data_collection_group_info.comments = (
+            self.data_collection_group_info.comments or ""
+        ) + crystal_summary
+
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
