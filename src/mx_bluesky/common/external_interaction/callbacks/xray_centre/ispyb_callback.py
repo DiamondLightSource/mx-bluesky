@@ -99,7 +99,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
         self.data_collection_group_info: DataCollectionGroupInfo | None
-        self.sample_id = int | None
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
