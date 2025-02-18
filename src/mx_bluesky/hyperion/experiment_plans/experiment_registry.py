@@ -5,22 +5,16 @@ from typing import TypedDict
 
 import mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
-from mx_bluesky.common.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    PinTipCentreThenXrayCentre,
-    RobotLoadThenCentre,
-)
-from mx_bluesky.common.plans import write_sample_status
-from mx_bluesky.common.plans.write_sample_status import WriteSampleStatus
 from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
     pin_centre_then_xray_centre_plan,
     robot_load_then_centre_plan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
-    create_load_centre_collect_callbacks,
-    create_sample_status_callbacks,
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
+    PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
@@ -43,9 +37,8 @@ class ExperimentRegistryEntry(TypedDict):
         | RotationScan
         | MultiRotationScan
         | PinTipCentreThenXrayCentre
-        | RobotLoadThenCentre
         | LoadCentreCollect
-        | WriteSampleStatus
+        | RobotLoadThenCentre
     ]
 
 
@@ -77,12 +70,6 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "load_centre_collect_full": {
         "setup": load_centre_collect_full_plan.create_devices,
         "param_type": LoadCentreCollect,
-        "callbacks_factory": create_load_centre_collect_callbacks,
-    },
-    "deposit_sample_error": {
-        "setup": write_sample_status.create_devices,
-        "param_type": WriteSampleStatus,
-        "callbacks_factory": create_sample_status_callbacks,
     },
 }
 
