@@ -291,11 +291,7 @@ class TestXrayCentreISPyBCallback:
         )
 
         # mx_acq.upsert_data_collection_group.assert_any_call(
-        #     TEST_DATA_COLLECTION_IDS[1],
         #     "Diffraction grid scan of 40 by 20 by 10 "
-        #     "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
-        #     "bottom right (px): [3250,800].",
-        #     " ",
         # )
 
     def test_activity_gated_start_first_gridscan_comment_is_first_lexicographically(

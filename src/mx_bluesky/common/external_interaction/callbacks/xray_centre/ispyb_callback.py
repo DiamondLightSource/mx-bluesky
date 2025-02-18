@@ -164,8 +164,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def _handle_zocalo_read_event(self, doc):
-        assert self.data_collection_group_info, "No data collection group"
-        assert self.data_collection_group_info.comments
+        assert self.data_collection_group_info, "No data collection group info"
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -196,7 +195,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids.data_collection_ids, (
             "No data collection to add results to"
         )
-        self.data_collection_group_info.comments += crystal_summary
+        if self.data_collection_group_info.comments:
+            self.data_collection_group_info.comments += crystal_summary
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -236,7 +236,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         if self.data_collection_group_info.comments:
             self.data_collection_group_info.comments += (
-                f"by {data_collection_grid_info.steps_y}"
+                f"by {data_collection_grid_info.steps_y}."
             )
         else:
             self.data_collection_group_info.comments = (
