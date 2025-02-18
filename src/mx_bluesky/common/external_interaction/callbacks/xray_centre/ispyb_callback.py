@@ -302,7 +302,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
-        assert self.data_collection_group_info, "No data collection group"
+        assert self.data_collection_group_info, "No data collection group info"
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
