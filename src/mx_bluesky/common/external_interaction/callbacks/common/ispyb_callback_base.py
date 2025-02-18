@@ -112,9 +112,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
-        self.ispyb_ids = self.ispyb.update_deposition(
-            self.ispyb_ids, scan_data_infos, None
-        )
+        self.ispyb_ids = self.ispyb.update_deposition(self.ispyb_ids, scan_data_infos)
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Received ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 

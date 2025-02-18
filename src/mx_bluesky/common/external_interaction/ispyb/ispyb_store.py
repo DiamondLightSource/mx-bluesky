@@ -61,7 +61,6 @@ class StoreInIspyb:
         self,
         ispyb_ids,
         scan_data_infos: Sequence[ScanDataInfo],
-        data_collection_info: DataCollectionGroupInfo | None,
     ) -> IspybIds:
         assert ispyb_ids.data_collection_group_id, (
             "Attempted to store scan data without a collection group"
@@ -69,9 +68,7 @@ class StoreInIspyb:
         assert ispyb_ids.data_collection_ids, (
             "Attempted to store scan data without a collection"
         )
-        return self._begin_or_update_deposition(
-            ispyb_ids, data_collection_info, scan_data_infos
-        )
+        return self._begin_or_update_deposition(ispyb_ids, None, scan_data_infos)
 
     def _begin_or_update_deposition(
         self,
@@ -153,6 +150,19 @@ class StoreInIspyb:
             mx_acquisition: MXAcquisition = conn.mx_acquisition
             mx_acquisition.update_data_collection_append_comments(
                 data_collection_id, comment, delimiter
+            )
+
+    def update_data_collection_group_table(
+        self,
+        dcg_info: DataCollectionGroupInfo,
+        data_collection_group_id: int | None = None,
+    ) -> None:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB!"
+            self._store_data_collection_group_table(
+                conn,
+                dcg_info,
+                data_collection_group_id,
             )
 
     def _update_scan_with_end_time_and_status(

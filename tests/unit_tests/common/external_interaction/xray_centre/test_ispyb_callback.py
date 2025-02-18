@@ -118,7 +118,7 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        mx_acq.upsert_data_collection_group.assert_not_called()
+        mx_acq.upsert_data_collection_group.assert_called_once()
         expected_upsert = {
             "parentid": TEST_DATA_COLLECTION_GROUP_ID,
             "slitgaphorizontal": 0.1234,
@@ -209,7 +209,6 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
         callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xz)
 
-        mx_acq.upsert_data_collection_group.assert_not_called()
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
@@ -290,6 +289,14 @@ class TestXrayCentreISPyBCallback:
                 "snaked": True,
             },
         )
+
+        # mx_acq.upsert_data_collection_group.assert_any_call(
+        #     TEST_DATA_COLLECTION_IDS[1],
+        #     "Diffraction grid scan of 40 by 20 by 10 "
+        #     "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
+        #     "bottom right (px): [3250,800].",
+        #     " ",
+        # )
 
     def test_activity_gated_start_first_gridscan_comment_is_first_lexicographically(
         self, mock_ispyb_conn

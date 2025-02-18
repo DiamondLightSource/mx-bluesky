@@ -146,6 +146,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
+        assert self.data_collection_group_info, "No data collection group info"
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
@@ -154,13 +155,17 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
-                self.ispyb_ids, scan_data_infos, self.data_collection_group_info
+                self.ispyb_ids, scan_data_infos
             )
+        self.ispyb.update_data_collection_group_table(
+            self.data_collection_group_info, self.ispyb_ids.data_collection_group_id
+        )
 
         return doc
 
     def _handle_zocalo_read_event(self, doc):
         assert self.data_collection_group_info, "No data collection group"
+        assert self.data_collection_group_info.comments
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -191,7 +196,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids.data_collection_ids, (
             "No data collection to add results to"
         )
-        self.data_collection_group_info.comments = crystal_summary
+        self.data_collection_group_info.comments += crystal_summary
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -235,8 +240,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
         else:
             self.data_collection_group_info.comments = (
-                f"MX-Bluesky: Xray centring - Diffraction grid scan of "
-                f"{data_collection_grid_info.steps_x}"
+                f"Diffraction grid scan of "
+                f"{data_collection_grid_info.steps_x} "
                 f"by {data_collection_grid_info.steps_y} "
             )
 

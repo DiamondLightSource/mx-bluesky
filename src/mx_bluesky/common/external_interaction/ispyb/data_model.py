@@ -13,23 +13,7 @@ class DataCollectionGroupInfo:
     experiment_type: str
     sample_id: int | None
     sample_barcode: str | None = None
-    _comments: str | None = None
-
-    @property
-    def comments(self):
-        return self._comments
-
-    @comments.setter
-    def comments(self, value):
-        if value is None:
-            self._comments = None
-        elif isinstance(value, str):
-            if self._comments:
-                self._comments += " " + value
-            else:
-                self._comments = value
-        else:
-            raise ValueError("Comment must be a string or None.")
+    comments: str | None = None
 
 
 @dataclass(kw_only=True)
