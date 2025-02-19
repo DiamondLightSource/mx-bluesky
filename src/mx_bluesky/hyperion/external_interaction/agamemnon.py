@@ -87,6 +87,7 @@ def update_params_from_agamemnon(parameters: T) -> T:
     try:
         pin_type = get_pin_type_from_agamemnon(parameters.beamline)
         if isinstance(parameters, LoadCentreCollect):
+            parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
     except Exception as e:

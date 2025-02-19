@@ -155,3 +155,4 @@ def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_para
     params = update_params_from_agamemnon(load_centre_collect_params)
     assert params.robot_load_then_centre.grid_width_um == 270
     assert params.select_centres.n == 6
+    assert params.robot_load_then_centre.tip_offset_um == 135
