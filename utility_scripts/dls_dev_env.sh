@@ -27,7 +27,7 @@ rm -rf .venv
 fi
 mkdir .venv
 
-python -m ven#v .venv
+python -m venv .venv
 source .venv/bin/activate
 
 pip install --upgrade pip
