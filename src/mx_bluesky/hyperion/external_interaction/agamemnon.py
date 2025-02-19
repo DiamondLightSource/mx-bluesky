@@ -38,7 +38,11 @@ def _single_pin() -> PinType:
 def _get_parameters_from_url(url: str) -> dict:
     response = requests.get(url, headers={"Accept": "application/json"})
     response.raise_for_status()
-    return json.loads(response.content)["collect"]
+    response_json = json.loads(response.content)
+    try:
+        return response_json["collect"]
+    except KeyError as e:
+        raise Exception(f"Unexpected json from agamemnon: {response_json}") from e
 
 
 def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
@@ -69,5 +73,5 @@ def update_params_from_agamemnon(parameters: T) -> T:
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
     except Exception as e:
-        LOGGER.warning(f"Faild to get pin type from agamemnon, using single pin {e}")
+        LOGGER.warning(f"Failed to get pin type from agamemnon, using single pin {e}")
     return parameters

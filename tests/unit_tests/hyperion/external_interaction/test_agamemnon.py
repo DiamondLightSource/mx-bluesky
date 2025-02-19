@@ -13,7 +13,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from tests.conftest import raw_params_from_file
 
 
 @pytest.mark.parametrize(
@@ -94,14 +93,6 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
 ):
     configure_mock_agamemnon(mock_requests, "multipin-6x50")
     assert get_pin_type_from_agamemnon("i03") == PinType(6, 50)
-
-
-@pytest.fixture
-def load_centre_collect_params():
-    json_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
-    )
-    return LoadCentreCollect(**json_dict)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
