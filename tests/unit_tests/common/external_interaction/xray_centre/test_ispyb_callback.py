@@ -290,10 +290,11 @@ class TestXrayCentreISPyBCallback:
             },
         )
 
-        assert (
-            "Diffraction grid scan of 40 by 20 by 10."
-            in mx_acq.upsert_data_collection_group.call_args.args[0]
+        group_dc_cols = remap_upsert_columns(
+            mx_acq.get_data_collection_group_params(),
+            mx_acq.upsert_data_collection_group.mock_calls[1].args[0],
         )
+        assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
 
     def test_activity_gated_start_first_gridscan_comment_is_first_lexicographically(
         self, mock_ispyb_conn
