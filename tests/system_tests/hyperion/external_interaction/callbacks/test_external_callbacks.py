@@ -24,7 +24,6 @@ from zmq.utils.monitor import recv_monitor_message
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -32,6 +31,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
@@ -78,10 +80,8 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 @pytest.fixture
 def RE_with_external_callbacks():
     RE = RunEngine()
-    old_ispyb_config = os.environ.get("ISPYB_CONFIG_PATH")
 
     process_env = os.environ.copy()
-    process_env["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
     external_callbacks_process = subprocess.Popen(
         [
@@ -117,8 +117,6 @@ def RE_with_external_callbacks():
     external_callbacks_process.kill()
     external_callbacks_process.wait(10)
     t.join()
-    if old_ispyb_config:
-        os.environ["ISPYB_CONFIG_PATH"] = old_ispyb_config
 
 
 @pytest.mark.s03
@@ -138,7 +136,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,  # noqa
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fgs_composite_for_fake_zocalo: FlyScanXRayCentreComposite,
+    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,
     fetch_comment,  # noqa

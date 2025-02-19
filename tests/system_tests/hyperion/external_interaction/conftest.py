@@ -42,9 +42,6 @@ from sqlalchemy.orm import sessionmaker
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -52,6 +49,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import (
@@ -313,10 +313,10 @@ def grid_detect_then_xray_centre_composite(
 
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
-    fake_fgs_composite: FlyScanXRayCentreComposite,
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
     done_status: NullStatus,
-) -> FlyScanXRayCentreComposite:
+) -> HyperionFlyScanXRayCentreComposite:
     set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore

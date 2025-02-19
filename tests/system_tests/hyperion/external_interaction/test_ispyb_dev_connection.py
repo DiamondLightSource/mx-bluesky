@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Sequence
 from copy import deepcopy
 from typing import Any, Literal
@@ -356,7 +355,6 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_grid_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
-    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
     )
@@ -498,7 +496,6 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_datacollection_position_attribute: Callable[..., Any],
     feature_flags_update_with_omega_flip,
 ):
-    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()
     RE.subscribe(ispyb_cb)
 
