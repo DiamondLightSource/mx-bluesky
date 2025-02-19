@@ -179,7 +179,6 @@ def test_rotation_scan(
 ):
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
-
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 

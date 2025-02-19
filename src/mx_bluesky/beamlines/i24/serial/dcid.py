@@ -213,7 +213,9 @@ class DCID:
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,
                 "wavelength": beam_settings.wavelength_in_a,
-                "group": {"experimentType": self.parameters.ispyb_experiment_type},
+                "group": {
+                    "experimentType": self.parameters.ispyb_experiment_type.value
+                },
                 "xBeam": xbeam,
                 "yBeam": ybeam,
                 "ssx": {

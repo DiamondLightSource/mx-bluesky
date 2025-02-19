@@ -75,7 +75,8 @@ def _get_seq_table(
 
     num_pulses = parameters.x_steps
 
-    delay_between_pulses = time_between_steps_ms * TICKS_PER_MS
+    # Integer precision here is 1e-6s, so casting is safe
+    delay_between_pulses = int(time_between_steps_ms * TICKS_PER_MS)
 
     assert delay_between_pulses > PULSE_WIDTH_US
 
