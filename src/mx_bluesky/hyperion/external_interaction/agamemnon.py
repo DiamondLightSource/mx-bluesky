@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import re
 from typing import TypeVar
 
 import requests
@@ -11,28 +12,41 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
+MULTIPIN_PREFIX = "multipin"
+MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
+MULTIPIN_REGEX = rf"{MULTIPIN_PREFIX}_(\d+)x(\d*\.?\d*)\+(\d*\.?\d*)"
 
 
 @dataclasses.dataclass
 class PinType:
     expected_number_of_crystals: int
     single_well_width_um: float
-    additional_width_um: float = 0
+    tip_to_first_well_um: float = 0
 
     @property
     def full_width(self) -> float:
         """This is the "width" of the area where there may be samples.
 
         From a pin perspective this along the length of the pin but we use width here as
-        we mount the sample at 90 deg to the optical camera."""
-        return (
-            self.expected_number_of_crystals * self.single_well_width_um
-            + self.additional_width_um
+        we mount the sample at 90 deg to the optical camera.
+
+        We calculate the full width by adding all the gaps between wells then assuming
+        there is a buffer of {tip_to_first_well_um} either side too. In reality the
+        calculation does not need to be very exact as long as we get a width that's good
+        enough to use for optical centring and XRC grid size.
+        """
+        return (self.expected_number_of_crystals - 1) * self.single_well_width_um + (
+            2 * self.tip_to_first_well_um
         )
 
 
-def _single_pin() -> PinType:
-    return PinType(1, GridscanParamConstants.WIDTH_UM)
+class SinglePin(PinType):
+    def __init__(self):
+        super().__init__(1, GridscanParamConstants.WIDTH_UM)
+
+    @property
+    def full_width(self) -> float:
+        return self.single_well_width_um
 
 
 def _get_parameters_from_url(url: str) -> dict:
@@ -47,14 +61,17 @@ def _get_parameters_from_url(url: str) -> dict:
 
 def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
     loop_type_name: str | None = parameters["sample"]["loopType"]
-    if loop_type_name and loop_type_name.startswith("multipin"):
-        shape = loop_type_name.split("-")[1].split("x")
-        return PinType(int(shape[0]), float(shape[1]))
     if loop_type_name:
-        LOGGER.warning(
-            f"Agamemnon loop type of {loop_type_name} not recognised, assuming single pin"
-        )
-    return _single_pin()
+        regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
+        if regex_search:
+            wells, well_size, tip_to_first_well = regex_search.groups()
+            return PinType(int(wells), float(well_size), float(tip_to_first_well))
+        else:
+            warning_message = f"Agamemnon loop type of {loop_type_name} not recognised, assuming single pin"
+            if loop_type_name.startswith(MULTIPIN_PREFIX):
+                warning_message += f". {MULTIPIN_FORMAT_DESC}"
+            LOGGER.warning(warning_message)
+    return SinglePin()
 
 
 def get_next_instruction(beamline: str) -> dict:
