@@ -1,0 +1,17 @@
+podSecurityContext: {}
+
+application:
+  name: redis-to-murko
+  imageRepository: ghcr.io/diamondlightsource
+  beamline: i04
+  # i03-hyperion user and group
+  runAsUser: 36101
+  runAsGroup: 36101
+  supplementalGroups: []
+  # These should be overridden at install time
+  projectDir: SET_ON_INSTALL
+  appVersion: SET_ON_INSTALL
+dodal:
+  projectDir: SET_ON_INSTALL
+service:
+  type: NodePort
