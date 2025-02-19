@@ -49,7 +49,7 @@ python -m hyperion --skip-startup-connection
 
 ## Testing
 
-Unit tests can be run with `pytest  --random-order`. To see log output from tests you can turn on logging with the `--logging` command line option and then use the `-s` command line option to print logs into the console. So to run the unit tests such that all logs are at printed to the terminal, you can use `python -m pytest -m "not s03" --random-order --logging -s`. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the `-k "<test name pattern>"` option.
+Unit tests can be run with `pytest --random-order`. To see log output from tests you can turn on logging with the `--logging` command line option and then use the `-s` command line option to print logs into the console. So to run the unit tests such that all logs are at printed to the terminal, you can use `python -m pytest --random-order --logging -s`. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the `-k "<test name pattern>"` option.
 
 To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_start_fake_zocalo.sh`, and make sure to run `module load dials/latest` before starting hyperion (in the same terminal).
 

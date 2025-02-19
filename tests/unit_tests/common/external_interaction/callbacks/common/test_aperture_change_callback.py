@@ -1,8 +1,12 @@
 import pytest
+from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.common.aperture_change_callback import (
+    ApertureChangeCallback,
+)
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     set_aperture_for_bbox_mm,
 )
@@ -21,12 +25,6 @@ def test_aperture_change_callback(
     bbox: list[float],
     expected_aperture: str,
 ):
-    from bluesky.run_engine import RunEngine
-
-    from mx_bluesky.common.external_interaction.callbacks.common.aperture_change_callback import (
-        ApertureChangeCallback,
-    )
-
     cb = ApertureChangeCallback()
     RE = RunEngine({})
     RE.subscribe(cb)
