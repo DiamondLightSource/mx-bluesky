@@ -14,13 +14,13 @@ spec:
     spec:
       securityContext:
         # gda2
-        runAsUser: {{  .Values.hyperion.runAsUser }}
-        runAsGroup: {{ .Values.hyperion.runAsGroup }}
-        supplementalGroups: {{ .Values.hyperion.supplementalGroups }}
+        runAsUser: {{  .Values.application.runAsUser }}
+        runAsGroup: {{ .Values.application.runAsGroup }}
+        supplementalGroups: {{ .Values.application.supplementalGroups }}
       volumes:
         - name: dls-sw-bl
           hostPath:
-            path: "/dls_sw/{{ .Values.hyperion.beamline }}"
+            path: "/dls_sw/{{ .Values.application.beamline }}"
             type: Directory
         - name: dls-sw-apps
           hostPath:
@@ -33,15 +33,15 @@ spec:
         # Bind some source folders for easier debugging        
         - name: src
           hostPath:
-            path: "{{ .Values.hyperion.projectDir }}/src"
+            path: "{{ .Values.application.projectDir }}/src"
             type: Directory
         - name: tests
           hostPath:
-            path: "{{ .Values.hyperion.projectDir }}/tests"
+            path: "{{ .Values.application.projectDir }}/tests"
             type: Directory
         - name: utility-scripts
           hostPath:
-            path: "{{ .Values.hyperion.projectDir }}/utility_scripts"
+            path: "{{ .Values.application.projectDir }}/utility_scripts"
             type: Directory
         - name: dodal
           hostPath:
@@ -50,14 +50,14 @@ spec:
         - name: logs
           hostPath:
             type: Directory
-            path: "{{ .Values.hyperion.logDir }}"
+            path: "{{ .Values.application.logDir }}"
         - name: data
           hostPath:
             type: Directory
-            path: "{{ .Values.hyperion.dataDir }}"
+            path: "{{ .Values.application.dataDir }}"
       containers:
       - name: hyperion
-        image: {{ .Values.hyperion.imageRepository}}/mx-bluesky:{{ .Values.hyperion.appVersion }}
+        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}
         securityContext:
           capabilities:
             # Required for hostNetwork 
@@ -103,29 +103,29 @@ spec:
             memory: "1Gi"
         ports:
           - name: hyperion-api
-            containerPort: {{ .Values.hyperion.containerPort }}
+            containerPort: {{ .Values.application.containerPort }}
             protocol: TCP
         env:
           - name: LOG_DIR
             value: /var/log/bluesky
           - name: BEAMLINE
-            value: "{{ .Values.hyperion.beamline }}"
-          {{- if not .Values.hyperion.dev }}
+            value: "{{ .Values.application.beamline }}"
+          {{- if not .Values.application.dev }}
           - name: ZOCALO_GO_USER
             value: "gda2"
           - name: ZOCALO_GO_HOSTNAME
-            value: "{{ .Values.hyperion.beamline }}-control"
+            value: "{{ .Values.application.beamline }}-control"
           - name: ZOCALO_CONFIG
             value: "/dls_sw/apps/zocalo/live/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
-            value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.hyperion.beamline }}.cfg"
+            value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.application.beamline }}.cfg"
           {{- end }}
         readinessProbe:
           exec:
             command: [ "/app/hyperion/utility_scripts/docker/healthcheck.sh" ]
           periodSeconds: 5
         volumeMounts:
-          - mountPath: "/dls_sw/{{ .Values.hyperion.beamline }}"
+          - mountPath: "/dls_sw/{{ .Values.application.beamline }}"
             name: dls-sw-bl
             readOnly: true
             mountPropagation: HostToContainer
@@ -147,6 +147,6 @@ spec:
             name: dodal
           - mountPath: "/var/log/bluesky"
             name: logs
-          - mountPath: "/dls/{{ .Values.hyperion.beamline }}/data"
+          - mountPath: "/dls/{{ .Values.application.beamline }}/data"
             name: data
       hostNetwork: true

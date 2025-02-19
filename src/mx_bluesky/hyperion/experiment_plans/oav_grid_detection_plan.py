@@ -14,13 +14,13 @@ from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
 from dodal.devices.oav.utils import PinNotFoundException, wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
