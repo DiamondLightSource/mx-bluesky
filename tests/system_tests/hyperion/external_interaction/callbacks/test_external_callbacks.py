@@ -82,10 +82,8 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 @pytest.fixture
 def RE_with_external_callbacks():
     RE = RunEngine()
-    old_ispyb_config = os.environ.get("ISPYB_CONFIG_PATH")
 
     process_env = os.environ.copy()
-    process_env["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
     external_callbacks_process = subprocess.Popen(
         [
@@ -121,8 +119,6 @@ def RE_with_external_callbacks():
     external_callbacks_process.kill()
     external_callbacks_process.wait(10)
     t.join()
-    if old_ispyb_config:
-        os.environ["ISPYB_CONFIG_PATH"] = old_ispyb_config
 
 
 @pytest.mark.s03
