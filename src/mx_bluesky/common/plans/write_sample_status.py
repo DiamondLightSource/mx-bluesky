@@ -6,6 +6,7 @@ from blueapi.core import BlueskyContext
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.exceptions import SampleException
 from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
@@ -13,7 +14,7 @@ callback = SampleHandlingCallback()
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class WriteSampleStatus:
+class WriteSampleStatus(MxBlueskyParameters):
     """Composite that provides access to the required devices."""
 
 
