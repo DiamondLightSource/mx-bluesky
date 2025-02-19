@@ -1,10 +1,13 @@
 import asyncio
 import time
+from collections.abc import Callable
 from types import ModuleType
+from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines import beamline_parameters
+from dodal.devices.zocalo import ZocaloTrigger
 from dodal.utils import AnyDeviceFactory, collect_factories
 
 
@@ -59,3 +62,10 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
     yield None
     for f in active_device_factories:
         f.cache_clear()  # type: ignore
+
+
+def modified_interactor_mock(assign_run_end: Callable | None = None):
+    mock = MagicMock(spec=ZocaloTrigger)
+    if assign_run_end:
+        mock.run_end = assign_run_end
+    return mock

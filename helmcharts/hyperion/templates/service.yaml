@@ -3,15 +3,15 @@ kind: Service
 metadata:
   name: hyperion-svc
 spec:
-  {{- if .Values.hyperion.dev }}
+  {{- if .Values.application.dev }}
   type: LoadBalancer
   {{- else }}
   type: ClusterIP
   {{- end }}
   ports:
     - name: hyperion-api
-      port: {{ .Values.hyperion.servicePort }}
+      port: {{ .Values.application.servicePort }}
       protocol: TCP
-      targetPort: {{ .Values.hyperion.containerPort }}
+      targetPort: {{ .Values.application.containerPort }}
   selector:
     app: hyperion

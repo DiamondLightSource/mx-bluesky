@@ -1,6 +1,7 @@
 from unittest.mock import ANY, patch
 
 import pytest
+from requests import JSONDecodeError
 
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BearerAuth,
@@ -45,6 +46,16 @@ def test_when_start_called_then_returns_id(mock_post):
     expeye_interactor = ExpeyeInteraction()
     robot_id = expeye_interactor.start_load("test", 3, 700, 10, 5)
     assert robot_id == 190
+
+
+@patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.post")
+def test_when_bad_response_no_json_handled_correctly(mock_post):
+    mock_post.return_value.ok = False
+    mock_post.return_value.json.side_effect = JSONDecodeError("Unable to decode", "", 0)
+
+    expeye_interactor = ExpeyeInteraction()
+    with pytest.raises(ISPyBDepositionNotMade):
+        expeye_interactor.start_load("test", 3, 700, 10, 5)
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.post")

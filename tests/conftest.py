@@ -95,13 +95,13 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -822,7 +822,7 @@ async def fake_fgs_composite(
     backlight,
     s4_slit_gaps,
 ):
-    fake_composite = FlyScanXRayCentreComposite(
+    fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -1519,3 +1519,10 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
         list(range(12, 24)),
         list(range(56, 68)),
     )
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(active_device_factories):
+    yield None
+    for f in active_device_factories:
+        f.cache_clear()  # type: ignore
