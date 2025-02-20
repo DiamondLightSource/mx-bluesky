@@ -28,7 +28,7 @@ class PinType:
     def full_width(self) -> float:
         """This is the "width" of the area where there may be samples.
 
-        From a pin perspective this along the length of the pin but we use width here as
+        From a pin perspective this is along the length of the pin but we use width here as
         we mount the sample at 90 deg to the optical camera.
 
         We calculate the full width by adding all the gaps between wells then assuming
