@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -47,21 +45,14 @@ EXPECTED_DATA_COLLECTION = {
 }
 
 
-@pytest.fixture
-def rotation_start_outer_doc_without_snapshots(test_rotation_start_outer_document):
-    return test_rotation_start_outer_document
-
-
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_start(
-    mock_ispyb_conn, rotation_start_outer_doc_without_snapshots
-):
+def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
 
-    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)
+    callback.activity_gated_start(test_rotation_start_outer_document)
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx.upsert_data_collection_group.mock_calls[0],
@@ -202,10 +193,10 @@ def test_flux_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_oav_rotation_snapshot_triggered_event(
-    mock_ispyb_conn, rotation_start_outer_doc_without_snapshots
+    mock_ispyb_conn, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)  # pyright: ignore
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
