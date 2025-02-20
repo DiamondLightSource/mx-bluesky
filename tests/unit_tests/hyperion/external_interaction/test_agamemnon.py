@@ -156,3 +156,14 @@ def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_para
     assert params.robot_load_then_centre.grid_width_um == 270
     assert params.select_centres.n == 6
     assert params.robot_load_then_centre.tip_offset_um == 135
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
+    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    update_params_from_agamemnon(load_centre_collect_params)
+    mock_requests.get.assert_called_once_with(
+        "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+        headers={"Accept": "application/json"},
+    )

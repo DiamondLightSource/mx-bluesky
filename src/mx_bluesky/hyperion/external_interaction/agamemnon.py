@@ -4,6 +4,7 @@ import re
 from typing import TypeVar
 
 import requests
+from dodal.utils import get_beamline_name
 
 from mx_bluesky.common.parameters.components import WithVisit
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
@@ -85,7 +86,8 @@ def get_pin_type_from_agamemnon(beamline: str) -> PinType:
 
 def update_params_from_agamemnon(parameters: T) -> T:
     try:
-        pin_type = get_pin_type_from_agamemnon(parameters.beamline)
+        beamline_name = get_beamline_name("i03")
+        pin_type = get_pin_type_from_agamemnon(beamline_name)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
