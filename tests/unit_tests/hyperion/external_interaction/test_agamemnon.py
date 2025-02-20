@@ -49,7 +49,7 @@ def test_given_no_loop_type_in_parameteers_then_single_pin_returned():
         ("multipin_9x31+90", PinType(9, 31, 90)),
     ],
 )
-def test_given_multipin_loop_type_in_parameteers_then_expected_pin_returned(
+def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     loop_name: str, expected_loop: PinType
 ):
     assert (
@@ -145,6 +145,7 @@ def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_par
         params.robot_load_then_centre.grid_width_um == GridscanParamConstants.WIDTH_UM
     )
     assert params.select_centres.n == 1
+    assert params.multi_rotation_scan.snapshot_omegas_deg
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
@@ -156,3 +157,4 @@ def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_para
     assert params.robot_load_then_centre.grid_width_um == 270
     assert params.select_centres.n == 6
     assert params.robot_load_then_centre.tip_offset_um == 135
+    assert not params.multi_rotation_scan.snapshot_omegas_deg
