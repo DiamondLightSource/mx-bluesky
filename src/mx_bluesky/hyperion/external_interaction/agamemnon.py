@@ -68,10 +68,12 @@ def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
             wells, well_size, tip_to_first_well = regex_search.groups()
             return PinType(int(wells), float(well_size), float(tip_to_first_well))
         else:
-            warning_message = f"Agamemnon loop type of {loop_type_name} not recognised, assuming single pin"
+            loop_type_message = (
+                f"Agamemnon loop type of {loop_type_name} not recognised"
+            )
             if loop_type_name.startswith(MULTIPIN_PREFIX):
-                warning_message += f". {MULTIPIN_FORMAT_DESC}"
-            LOGGER.warning(warning_message)
+                raise Exception(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
+            LOGGER.warning(f"{loop_type_message}, assuming single pin")
     return SinglePin()
 
 
