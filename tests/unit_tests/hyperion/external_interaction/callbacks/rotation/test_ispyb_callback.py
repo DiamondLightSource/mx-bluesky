@@ -49,31 +49,6 @@ EXPECTED_DATA_COLLECTION = {
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_document):
-    callback = RotationISPyBCallback()
-
-    callback.activity_gated_start(test_rotation_start_outer_document)
-    mx = mx_acquisition_from_conn(mock_ispyb_conn)
-    assert_upsert_call_with(
-        mx.upsert_data_collection_group.mock_calls[0],
-        mx.get_data_collection_group_params(),
-        {
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "SAD",
-            "sampleid": TEST_SAMPLE_ID,
-        },
-    )
-    assert_upsert_call_with(
-        mx.upsert_data_collection.mock_calls[0],
-        mx.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
-    )
-
-
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
-    new=MagicMock(return_value=EXPECTED_START_TIME),
-)
 def test_activity_gated_start_with_snapshot_parameters(
     mock_ispyb_conn, test_rotation_start_outer_document
 ):
