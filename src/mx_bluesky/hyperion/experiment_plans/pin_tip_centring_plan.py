@@ -83,7 +83,7 @@ def move_pin_into_view(
         if pin_tip_valid(tip_xy_px):
             return (int(tip_xy_px[0]), int(tip_xy_px[1]))
 
-        # Pin is off in the -ve direction
+        # Pin is off in the -ve direction if the returned tip x pixel value is 0
         direction_multiple = -1 if tip_xy_px[0] == 0 else 1
         step_vector_mm = step_magnitude_mm * direction_multiple
 
