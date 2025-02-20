@@ -48,9 +48,7 @@ EXPECTED_DATA_COLLECTION = {
 
 
 @pytest.fixture
-def rotation_start_outer_doc_without_snapshots(
-    test_rotation_start_outer_document, dummy_rotation_params
-):
+def rotation_start_outer_doc_without_snapshots(test_rotation_start_outer_document):
     return test_rotation_start_outer_document
 
 
@@ -112,9 +110,7 @@ def test_activity_gated_start_with_snapshot_parameters(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_hardware_read_events(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
-):
+def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
@@ -162,9 +158,7 @@ def test_hardware_read_events(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_flux_read_events(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
-):
+def test_flux_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
@@ -208,7 +202,7 @@ def test_flux_read_events(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_oav_rotation_snapshot_triggered_event(
-    mock_ispyb_conn, dummy_rotation_params, rotation_start_outer_doc_without_snapshots
+    mock_ispyb_conn, rotation_start_outer_doc_without_snapshots
 ):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)  # pyright: ignore
@@ -288,7 +282,7 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
 
 
 def test_comment_correct_after_hardware_read(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
+    mock_ispyb_conn, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["mx_bluesky_parameters"] = (
