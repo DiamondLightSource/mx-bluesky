@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from itertools import takewhile
 from math import ceil
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import h5py
 import numpy as np
@@ -18,12 +18,21 @@ from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+    StoreInIspyb,
+)
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
     multi_rotation_scan,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
+    create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -249,14 +258,14 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
     )
     nexus_writer_calls = mock_nexus_writer.call_args_list
     first_run_number = test_multi_rotation_params.detector_params.run_number
-    for call, rotation_params in zip(
+    for writer_call, rotation_params in zip(
         nexus_writer_calls,
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        callback_params = call.args[0]
+        callback_params = writer_call.args[0]
         assert callback_params == rotation_params
-        assert call.kwargs == {
+        assert writer_call.kwargs == {
             "omega_start_deg": rotation_params.omega_start_deg,
             "chi_start_deg": rotation_params.chi_start_deg,
             "phi_start_deg": rotation_params.phi_start_deg,
@@ -511,3 +520,48 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
 
     eiger.do_arm.set.assert_called_once()
     eiger.unstage.assert_called_once()
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
+    _,
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    """We must unstage the detector before we trigger zocalo so that we're sure we've
+    finished writing data."""
+    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_ids=(123,)
+    )
+    eiger = fake_create_rotation_devices.eiger
+    parent_mock = MagicMock()
+    parent_mock.eiger = MagicMock(return_value=Status(done=True, success=True))
+    eiger.unstage = parent_mock.eiger_unstage
+    callbacks = create_rotation_callbacks()
+    zocalo_callback = callbacks[1].emit_cb
+    assert isinstance(zocalo_callback, ZocaloCallback)
+    zocalo_callback.zocalo_interactor = MagicMock()
+    zocalo_callback.zocalo_interactor.run_end = parent_mock.run_end
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        callbacks,
+        oav_parameters_for_rotation,
+    )
+
+    assert parent_mock.method_calls.count(call.run_end(123)) == len(
+        test_multi_rotation_params.rotation_scans
+    )
+    assert parent_mock.method_calls[0] == call.eiger_unstage
