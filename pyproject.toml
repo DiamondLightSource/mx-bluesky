@@ -94,6 +94,7 @@ hyperion = "mx_bluesky.hyperion.__main__:main"
 hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
 hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
 hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
+redis_to_murko = "mx_bluesky.beamlines.i04.redis_to_murko_forwarder:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/mx-bluesky"
@@ -119,6 +120,7 @@ markers = [
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
+    "system_test: marks tests as a system test"
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
@@ -165,7 +167,7 @@ legacy_tox_ini = """
 [tox]
 skipsdist=True
 
-[testenv:{pre-commit,type-checking,tests,docs}]
+[testenv:{pre-commit,type-checking,tests,docs,systemtests}]
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
@@ -180,6 +182,7 @@ commands =
     type-checking: pyright src tests {posargs}
     tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+    systemtests: pytest --junit-xml=systemtests_output.xml -m system_test tests/system_tests
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
         docs/developer/hyperion/reference/param_hierarchy.puml"
