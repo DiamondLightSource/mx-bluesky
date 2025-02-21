@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,6 +13,7 @@ from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
 from ophyd_async.fastcs.panda import HDFPanda, SeqTable, SeqTrigger
 
+from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
     PULSE_WIDTH_US,
@@ -253,3 +256,14 @@ def test_set_panda_directory(
     mock_directory_provider.update.assert_called_with(
         directory=tmp_path, suffix="_20240811155923"
     )
+
+
+def test_panda_settings_exist():
+    # Panda settings are found relative to the top of the repo so this should
+    # work in prod as well as test
+
+    panda_settings_location = Path(
+        DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
+        f"{DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME}.yaml",
+    )
+    assert os.path.exists(panda_settings_location)
