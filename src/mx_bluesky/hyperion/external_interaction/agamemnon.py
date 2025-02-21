@@ -16,6 +16,10 @@ AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
+MX_GENERAL_ROOT_REGEX = (
+    r"^/dls/(?P<beamline>[^/]+)/data/(?P<year>\d{4})/(?P<visit>[^/]+)(?:/|$)"
+)
+MX_VMX_ROOT_REGEX = r"^/dls/mx/data/(?P<proposal>[^/]+)/(?P<visit>[^/]+)(?:/|$)"
 
 
 @dataclasses.dataclass
@@ -60,7 +64,7 @@ def _get_parameters_from_url(url: str) -> dict:
         raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
 
 
-def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
+def get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
     loop_type_name: str | None = parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
@@ -81,19 +85,37 @@ def get_next_instruction(beamline: str) -> dict:
     return _get_parameters_from_url(AGAMEMNON_URL + f"getnextcollect/{beamline}")
 
 
-def get_pin_type_from_agamemnon(beamline: str) -> PinType:
-    params = get_next_instruction(beamline)
-    return _get_pin_type_from_agamemnon_parameters(params)
+def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
+    prefix = parameters.get("prefix")
+    if not prefix:
+        raise KeyError
+
+    possible_roots = [MX_GENERAL_ROOT_REGEX, MX_VMX_ROOT_REGEX]
+
+    match = next(
+        (re.match(root, prefix) for root in possible_roots if re.match(root, prefix)),
+        None,
+    )
+
+    if match:
+        return match.group("visit")
+
+    raise ValueError(
+        f"Agamemnon prefix '{prefix}' does not match known root structures"
+    )
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
     try:
         beamline_name = get_beamline_name("i03")
-        pin_type = get_pin_type_from_agamemnon(beamline_name)
+        params = get_next_instruction(beamline_name)
+        pin_type = get_pin_type_from_agamemnon_parameters(params)
+        visit = get_visit_from_agamemnon_parameters(params)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
+            parameters.visit = visit
     except Exception as e:
         LOGGER.warning(f"Failed to get pin type from agamemnon, using single pin {e}")
     return parameters
