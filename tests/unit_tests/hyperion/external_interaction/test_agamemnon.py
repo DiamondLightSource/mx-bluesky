@@ -7,9 +7,9 @@ from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     PinType,
     SinglePin,
-    _get_pin_type_from_agamemnon_parameters,
     get_next_instruction,
-    get_pin_type_from_agamemnon,
+    get_pin_type_from_agamemnon_parameters,
+    get_visit_from_agamemnon_parameters,
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -31,12 +31,22 @@ def test_given_various_pin_formats_then_pin_width_as_expected(
 
 
 def params_from_loop_type(loop_type: str | None):
-    return {"sample": {"loopType": loop_type}}
+    return {
+        "prefix": "/dls/i03/data/2025/mx23694-130/auto/TestProteinaseK/20250217-mp0101/20250217-mp0101",
+        "sample": {"loopType": loop_type},
+    }
+
+
+def params_from_prefix(prefix: str | None):
+    return {
+        "prefix": prefix,
+        "sample": {"loopType": "multipin_6x50+9"},
+    }
 
 
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
-        _get_pin_type_from_agamemnon_parameters(params_from_loop_type(None))
+        get_pin_type_from_agamemnon_parameters(params_from_loop_type(None))
         == SinglePin()
     )
 
@@ -53,7 +63,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     loop_name: str, expected_loop: PinType
 ):
     assert (
-        _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
         == expected_loop
     )
 
@@ -71,7 +81,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     loop_name: str,
 ):
     assert (
-        _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
         == SinglePin()
     )
     mock_logger.warning.assert_called_once()
@@ -98,7 +108,7 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(ValueError) as e:
-        _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
     assert "Expected multipin format" in str(e.value)
 
 
@@ -135,7 +145,8 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
     mock_requests: MagicMock,
 ):
     configure_mock_agamemnon(mock_requests, "multipin_6x50+98.1")
-    assert get_pin_type_from_agamemnon("i03") == PinType(6, 50, 98.1)
+    params = get_next_instruction("i03")
+    assert get_pin_type_from_agamemnon_parameters(params) == PinType(6, 50, 98.1)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
@@ -182,3 +193,17 @@ def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
         headers={"Accept": "application/json"},
     )
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "/dls/i03/data/2025/mx23694-130/trail",
+        "/dls/mx/data/mx23694/mx23694-130/trail",
+    ],
+)
+def test_given_valid_prefix_then_correct_visit_is_set(
+    load_centre_collect_params: LoadCentreCollect, prefix: str
+):
+    visit = get_visit_from_agamemnon_parameters(params_from_prefix(prefix))
+    assert visit == "mx23694-130"
