@@ -34,7 +34,7 @@ def params_from_loop_type(loop_type: str | None):
     return {"sample": {"loopType": loop_type}}
 
 
-def test_given_no_loop_type_in_parameteers_then_single_pin_returned():
+def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
         _get_pin_type_from_agamemnon_parameters(params_from_loop_type(None))
         == SinglePin()
@@ -66,7 +66,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     ],
 )
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-def test_given_completely_unrecognised_loop_type_in_parameteers_then_warning_logged_single_pin_returned(
+def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logged_single_pin_returned(
     mock_logger: MagicMock,
     loop_name: str,
 ):
@@ -82,19 +82,24 @@ def test_given_completely_unrecognised_loop_type_in_parameteers_then_warning_log
     [
         "multipin_67x56",
         "multipin_90+4",
+        "multipin_8",
+        "multipin_6x50+",
+        "multipin_6x50+98.",
+        "multipin_6x50+.1",
+        "multipin_6x.50+98",
+        "multipin_6x50+98.1.2",
+        "multipin_6x50.5.6+98",
+        "multipin_6x50+98..1",
+        "multipin_6x.50+.98",
+        "multipin_6x+98",
     ],
 )
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-def test_given_unrecognised_multipin_in_parameteers_then_warning_logged_single_pin_returned(
-    mock_logger: MagicMock,
+def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pin_returned(
     loop_name: str,
 ):
-    assert (
+    with pytest.raises(ValueError) as e:
         _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
-        == SinglePin()
-    )
-    mock_logger.warning.assert_called_once()
-    assert "Expected multipin format" in mock_logger.warning.call_args.args[0]
+    assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
@@ -113,6 +118,16 @@ def test_when_get_next_instruction_called_then_expected_agamemnon_url_queried(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
         headers={"Accept": "application/json"},
     )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_agamemnon_returns_an_unexpected_response_then_exception_is_thrown(
+    mock_requests: MagicMock,
+):
+    mock_requests.get.return_value.content = json.dumps({"not_collect": ""})
+    with pytest.raises(KeyError) as e:
+        get_next_instruction("i03")
+    assert "not_collect" in str(e.value)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
@@ -158,3 +173,14 @@ def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_para
     assert params.select_centres.n == 6
     assert params.robot_load_then_centre.tip_offset_um == 135
     assert not params.multi_rotation_scan.snapshot_omegas_deg
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
+    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    update_params_from_agamemnon(load_centre_collect_params)
+    mock_requests.get.assert_called_once_with(
+        "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+        headers={"Accept": "application/json"},
+    )

@@ -4,6 +4,7 @@ import re
 from typing import TypeVar
 
 import requests
+from dodal.utils import get_beamline_name
 
 from mx_bluesky.common.parameters.components import WithVisit
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
@@ -14,7 +15,7 @@ T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
-MULTIPIN_REGEX = rf"{MULTIPIN_PREFIX}_(\d+)x(\d*\.?\d*)\+(\d*\.?\d*)"
+MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 
 
 @dataclasses.dataclass
@@ -27,7 +28,7 @@ class PinType:
     def full_width(self) -> float:
         """This is the "width" of the area where there may be samples.
 
-        From a pin perspective this along the length of the pin but we use width here as
+        From a pin perspective this is along the length of the pin but we use width here as
         we mount the sample at 90 deg to the optical camera.
 
         We calculate the full width by adding all the gaps between wells then assuming
@@ -56,7 +57,7 @@ def _get_parameters_from_url(url: str) -> dict:
     try:
         return response_json["collect"]
     except KeyError as e:
-        raise Exception(f"Unexpected json from agamemnon: {response_json}") from e
+        raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
 
 
 def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
@@ -67,10 +68,12 @@ def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
             wells, well_size, tip_to_first_well = regex_search.groups()
             return PinType(int(wells), float(well_size), float(tip_to_first_well))
         else:
-            warning_message = f"Agamemnon loop type of {loop_type_name} not recognised, assuming single pin"
+            loop_type_message = (
+                f"Agamemnon loop type of {loop_type_name} not recognised"
+            )
             if loop_type_name.startswith(MULTIPIN_PREFIX):
-                warning_message += f". {MULTIPIN_FORMAT_DESC}"
-            LOGGER.warning(warning_message)
+                raise ValueError(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
+            LOGGER.warning(f"{loop_type_message}, assuming single pin")
     return SinglePin()
 
 
@@ -85,7 +88,8 @@ def get_pin_type_from_agamemnon(beamline: str) -> PinType:
 
 def update_params_from_agamemnon(parameters: T) -> T:
     try:
-        pin_type = get_pin_type_from_agamemnon(parameters.beamline)
+        beamline_name = get_beamline_name("i03")
+        pin_type = get_pin_type_from_agamemnon(beamline_name)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width

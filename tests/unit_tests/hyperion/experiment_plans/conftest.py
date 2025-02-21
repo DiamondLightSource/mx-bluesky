@@ -32,7 +32,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )

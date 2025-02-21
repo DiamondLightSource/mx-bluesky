@@ -36,6 +36,8 @@ Developers are welcome to ignore **nit** comments if they wish and can choose no
 
 For minor changes to code reviewers are welcome to make the changes themselves but in this case the original developer should then recheck what the reviewer has done.
 
+When beginning to review a PR, it is recommended to assign the PR to yourself on GitHub so that other developers know that this code is already being reviewed. If you decide you cannot complete the review, remember to unassign yourself from this PR to let others know.
+
 ## Issue or Discussion?
 
 Github also offers [discussions](https://github.com/DiamondLightSource/mx-bluesky/discussions) as a place to ask questions and share ideas. If
