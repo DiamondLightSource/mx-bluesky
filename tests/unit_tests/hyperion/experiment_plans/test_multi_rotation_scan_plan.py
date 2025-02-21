@@ -15,6 +15,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.xbpm_feedback import Pause
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
@@ -685,4 +686,35 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     )
     assert zocalo_callback.zocalo_interactor.run_end.call_count == len(
         test_multi_rotation_params.rotation_scans
+    )
+
+
+def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(
+    fake_create_rotation_devices: RotationScanComposite,
+    test_multi_rotation_params: MultiRotationScan,
+    sim_run_engine_for_rotation: RunEngineSimulator,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    msgs = sim_run_engine_for_rotation.simulate_plan(
+        multi_rotation_scan(
+            fake_create_rotation_devices,
+            test_multi_rotation_params,
+            oav_parameters_for_rotation,
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "unstage" and msg.obj.name == "eiger",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args[0] == Pause.RUN.value,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == 1.0,
     )
