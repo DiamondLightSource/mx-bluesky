@@ -88,11 +88,8 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(Exception) as e:
-        assert (
-            _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
-            == SinglePin()
-        )
-        assert "Expected multipin format" in str(e.value)
+        _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+    assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
