@@ -26,6 +26,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
@@ -547,8 +548,8 @@ def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
     parent_mock = MagicMock()
     parent_mock.eiger = MagicMock(return_value=Status(done=True, success=True))
     eiger.unstage = parent_mock.eiger_unstage
-    callbacks = create_rotation_callbacks()
-    zocalo_callback = callbacks[1].emit_cb
+    _, ispyb_callback = create_rotation_callbacks()
+    zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)
     zocalo_callback.zocalo_interactor = MagicMock()
     zocalo_callback.zocalo_interactor.run_end = parent_mock.run_end
@@ -557,7 +558,7 @@ def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
         RE,
         test_multi_rotation_params,
         fake_create_rotation_devices,
-        [callbacks[1]],  # Only add the ispyb callback otherwise we get nexus files
+        [ispyb_callback],
         oav_parameters_for_rotation,
     )
 
@@ -565,3 +566,123 @@ def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
         test_multi_rotation_params.rotation_scans
     )
     assert parent_mock.method_calls[0] == call.eiger_unstage
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
+    _,
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    _, ispyb_callback = create_rotation_callbacks()
+    zocalo_callback = ispyb_callback.emit_cb
+    assert isinstance(zocalo_callback, ZocaloCallback)
+    zocalo_callback.zocalo_interactor = (zocalo_trigger := MagicMock())
+
+    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
+    with pytest.raises(ISPyBDepositionNotMade):
+        _run_multi_rotation_plan(
+            RE,
+            test_multi_rotation_params,
+            fake_create_rotation_devices,
+            [ispyb_callback],
+            oav_parameters_for_rotation,
+        )
+
+    zocalo_trigger.run_start.assert_not_called()  # type: ignore
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_ispyb_triggered_before_zocalo(
+    _,
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    _, ispyb_callback = create_rotation_callbacks()
+    parent_mock = MagicMock()
+
+    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store.return_value.begin_deposition = parent_mock.ispyb_begin
+    mock_ispyb_store.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_ids=(123,)
+    )
+
+    zocalo_callback = ispyb_callback.emit_cb
+    assert isinstance(zocalo_callback, ZocaloCallback)
+    zocalo_callback.zocalo_interactor = MagicMock()
+    zocalo_callback.zocalo_interactor.run_start = parent_mock.zocalo_start
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [ispyb_callback],
+        oav_parameters_for_rotation,
+    )
+
+    call_names = [call[0] for call in parent_mock.method_calls]
+
+    assert "ispyb_begin" in call_names
+    assert "zocalo_start" in call_names
+
+    assert call_names.index("ispyb_begin") < call_names.index("zocalo_start")
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_zocalo_start_and_end_called_once_for_each_collection(
+    _,
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    _, ispyb_callback = create_rotation_callbacks()
+
+    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_ids=(123,)
+    )
+
+    zocalo_callback = ispyb_callback.emit_cb
+    assert isinstance(zocalo_callback, ZocaloCallback)
+    zocalo_callback.zocalo_interactor = MagicMock()
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [ispyb_callback],
+        oav_parameters_for_rotation,
+    )
+
+    assert zocalo_callback.zocalo_interactor.run_start.call_count == len(
+        test_multi_rotation_params.rotation_scans
+    )
+    assert zocalo_callback.zocalo_interactor.run_end.call_count == len(
+        test_multi_rotation_params.rotation_scans
+    )
