@@ -82,6 +82,16 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     [
         "multipin_67x56",
         "multipin_90+4",
+        "multipin_8",
+        "multipin_6x50+",
+        "multipin_6x50+98.",
+        "multipin_6x50+.1",
+        "multipin_6x.50+98",
+        "multipin_6x50+98.1.2",
+        "multipin_6x50.5.6+98",
+        "multipin_6x50+98..1",
+        "multipin_6x.50+.98",
+        "multipin_6x+98",
     ],
 )
 def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pin_returned(
