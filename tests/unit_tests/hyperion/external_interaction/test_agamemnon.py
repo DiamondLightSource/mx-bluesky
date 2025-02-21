@@ -97,7 +97,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
 def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pin_returned(
     loop_name: str,
 ):
-    with pytest.raises(Exception) as e:
+    with pytest.raises(ValueError) as e:
         _get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
     assert "Expected multipin format" in str(e.value)
 
@@ -127,7 +127,7 @@ def test_given_agamemnon_returns_an_unexpected_response_then_exception_is_thrown
     mock_requests.get.return_value.content = json.dumps({"not_collect": ""})
     with pytest.raises(Exception) as e:
         get_next_instruction("i03")
-        assert "not_collect" in str(e.value)
+    assert "not_collect" in str(e.value)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")

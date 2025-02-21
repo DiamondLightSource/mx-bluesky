@@ -72,7 +72,7 @@ def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
                 f"Agamemnon loop type of {loop_type_name} not recognised"
             )
             if loop_type_name.startswith(MULTIPIN_PREFIX):
-                raise Exception(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
+                raise ValueError(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
             LOGGER.warning(f"{loop_type_message}, assuming single pin")
     return SinglePin()
 
