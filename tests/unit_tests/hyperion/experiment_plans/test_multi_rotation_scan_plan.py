@@ -557,7 +557,7 @@ def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
         RE,
         test_multi_rotation_params,
         fake_create_rotation_devices,
-        callbacks,
+        [callbacks[1]],  # Only add the ispyb callback otherwise we get nexus files
         oav_parameters_for_rotation,
     )
 
