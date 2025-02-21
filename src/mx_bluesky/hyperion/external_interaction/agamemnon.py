@@ -57,7 +57,7 @@ def _get_parameters_from_url(url: str) -> dict:
     try:
         return response_json["collect"]
     except KeyError as e:
-        raise Exception(f"Unexpected json from agamemnon: {response_json}") from e
+        raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
 
 
 def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:

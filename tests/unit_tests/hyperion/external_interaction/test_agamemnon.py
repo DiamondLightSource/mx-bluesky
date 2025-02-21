@@ -125,7 +125,7 @@ def test_given_agamemnon_returns_an_unexpected_response_then_exception_is_thrown
     mock_requests: MagicMock,
 ):
     mock_requests.get.return_value.content = json.dumps({"not_collect": ""})
-    with pytest.raises(Exception) as e:
+    with pytest.raises(KeyError) as e:
         get_next_instruction("i03")
     assert "not_collect" in str(e.value)
 
