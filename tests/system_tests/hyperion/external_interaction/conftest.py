@@ -53,6 +53,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
 
@@ -227,7 +228,8 @@ def dummy_params():
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
     )
-    dummy_params.visit = "cm31105-5"
+    dummy_params.visit = os.environ.get("ST_VISIT", "cm31105-5")
+    dummy_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id))
     return dummy_params
 
 
@@ -247,9 +249,12 @@ def zocalo_env():
 
 
 @pytest_asyncio.fixture
-async def zocalo_for_fake_zocalo():
+async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
+    """
+    This attempts to connect to a fake zocalo via rabbitmq
+    """
     zd = ZocaloResults()
-    zd.timeout_s = 5
+    zd.timeout_s = 10
     await zd.connect()
     return zd
 
@@ -389,6 +394,16 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
     with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=no_pin_tip_found):
         yield ophyd_pin_tip_detection
+
+
+@pytest.fixture
+def params_for_rotation_scan(test_rotation_params: RotationScan) -> RotationScan:
+    test_rotation_params.rotation_increment_deg = 0.27
+    test_rotation_params.exposure_time_s = 0.023
+    test_rotation_params.detector_params.expected_energy_ev = 0.71
+    test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
+    test_rotation_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", 123456))
+    return test_rotation_params
 
 
 @pytest.fixture
