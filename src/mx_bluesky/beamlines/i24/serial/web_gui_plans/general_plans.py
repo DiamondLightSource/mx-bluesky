@@ -50,6 +50,7 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)  # type: ignore
 
 
+# See https://github.com/DiamondLightSource/mx-bluesky/issues/853
 @bpp.run_decorator()
 def gui_sleep(sec: int) -> MsgGenerator:
     for _ in range(sec):
