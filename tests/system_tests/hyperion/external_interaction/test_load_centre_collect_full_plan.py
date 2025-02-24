@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Generator
+from contextlib import nullcontext
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -43,12 +44,19 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
+from ....conftest import (
+    TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,
+    TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER,
+    TEST_RESULT_MEDIUM,
+    TEST_RESULT_OUT_OF_BOUNDS_BB,
+    TEST_RESULT_OUT_OF_BOUNDS_COM,
+    raw_params_from_file,
+)
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
     compare_comment,
 )
-from .conftest import raw_params_from_file
 
 SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
 
@@ -280,14 +288,14 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: Small. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: Small. ",
     )
@@ -313,7 +321,8 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: Small. ",
+        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, 341) Aperture: "
+        "Small. ",
     )
     assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
 
@@ -535,3 +544,53 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
         == "ERROR - beamline"
     )
+
+
+@pytest.mark.parametrize(
+    "zocalo_result, expected_exception",
+    [
+        [TEST_RESULT_MEDIUM, nullcontext()],
+        [TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX, nullcontext()],
+        [TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER, nullcontext()],
+        [
+            TEST_RESULT_OUT_OF_BOUNDS_COM,
+            pytest.raises(IndexError, match=".* is outside the bounds of the grid"),
+        ],
+        [
+            TEST_RESULT_OUT_OF_BOUNDS_BB,
+            pytest.raises(IndexError, match=".* is outside the bounds of the grid"),
+        ],
+    ],
+)
+@pytest.mark.s03
+def test_load_centre_collect_gridscan_result_at_edge_of_grid(
+    zocalo_result,
+    expected_exception,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    robot_load_cb = RobotLoadISPyBCallback()
+    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(ispyb_rotation_cb)
+    RE.subscribe(robot_load_cb)
+    with expected_exception:
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )

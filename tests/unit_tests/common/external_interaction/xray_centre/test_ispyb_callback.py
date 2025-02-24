@@ -9,17 +9,21 @@ from .....conftest import (
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
+    TEST_RESULT_MEDIUM,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     TestData,
     assert_upsert_call_with,
+    generate_xrc_result_event,
     mx_acquisition_from_conn,
+    remap_upsert_columns,
 )
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": TEST_SAMPLE_ID,
+    "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorid": 78,
     "data_collection_number": 1,
     "detector_distance": 100.0,
@@ -40,6 +44,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
+    "comments": "MX-Bluesky: Xray centring 2 -",
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
 }
@@ -215,14 +220,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_y",
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
-                "bottom right (px): [3250,1700].",
                 "axisstart": 0,
                 "omegastart": 0,
                 "axisend": 0,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[0],
+            "Diffraction grid scan of 40 by 20 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
+            "bottom right (px): [3250,1700].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[1],
@@ -234,14 +243,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_z",
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
-                "bottom right (px): [3250,800].",
                 "axisstart": 90,
                 "omegastart": 90,
                 "axisend": 90,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[1],
+            "Diffraction grid scan of 40 by 10 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
+            "bottom right (px): [3250,800].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_dc_grid.mock_calls[0],
@@ -276,4 +289,47 @@ class TestXrayCentreISPyBCallback:
                 "orientation": "horizontal",
                 "snaked": True,
             },
+        )
+
+    def test_activity_gated_start_first_gridscan_comment_is_first_lexicographically(
+        self, mock_ispyb_conn
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        upsert_dc_1 = mx_acq.upsert_data_collection.mock_calls[0]
+        upsert_dc_2 = mx_acq.upsert_data_collection.mock_calls[1]
+
+        dc_1_cols = remap_upsert_columns(
+            mx_acq.get_data_collection_params(), upsert_dc_1.args[0]
+        )
+        dc_2_cols = remap_upsert_columns(
+            mx_acq.get_data_collection_params(), upsert_dc_2.args[0]
+        )
+        assert dc_1_cols["comments"] < dc_2_cols["comments"]
+
+    def test_zocalo_read_event_appends_comment_to_first_data_collection(
+        self,
+        mock_ispyb_conn,
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        zocalo_read_event = TestData.test_zocalo_reading_event | {
+            "data": generate_xrc_result_event("zocalo", TEST_RESULT_MEDIUM)
+        }
+
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_zocalo_reading
+        )
+        callback.activity_gated_event(zocalo_read_event)  # type: ignore
+
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[0],
+            "Crystal 1: Strength 100000; Position (grid boxes) ['1', '2', '3']; Size (grid boxes) [2 2 1]; ",
+            " ",
         )

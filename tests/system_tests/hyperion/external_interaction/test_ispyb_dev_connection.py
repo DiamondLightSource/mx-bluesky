@@ -108,11 +108,26 @@ def dummy_data_collection_group_info(dummy_params):
 
 
 @pytest.fixture
-def dummy_scan_data_info_for_begin(dummy_params):
+def dummy_scan_data_info_for_begin_xy(dummy_params):
     info = populate_xy_data_collection_info(
         dummy_params.detector_params,
     )
-    info = populate_remaining_data_collection_info(None, None, info, dummy_params)
+    info = populate_remaining_data_collection_info(
+        "MX-Bluesky: Xray centring 1 -", None, info, dummy_params
+    )
+    return ScanDataInfo(
+        data_collection_info=info,
+    )
+
+
+@pytest.fixture
+def dummy_scan_data_info_for_begin_xz(dummy_params):
+    info = populate_xz_data_collection_info(
+        dummy_params.detector_params,
+    )
+    info = populate_remaining_data_collection_info(
+        "MX-Bluesky: Xray centring 2 -", None, info, dummy_params
+    )
     return ScanDataInfo(
         data_collection_info=info,
     )
@@ -195,6 +210,7 @@ def scan_data_infos_for_update_3d(
     xz_data_collection_info.parent_id = ispyb_ids.data_collection_group_id
 
     scan_xz_data_info_for_update = ScanDataInfo(
+        data_collection_id=ispyb_ids.data_collection_ids[1],
         data_collection_info=xz_data_collection_info,
         data_collection_grid_info=(data_collection_grid_info),
     )
@@ -206,15 +222,15 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
     dummy_data_collection_group_info,
-    dummy_scan_data_info_for_begin,
+    dummy_scan_data_info_for_begin_xy,
 ):
     ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin_xy]
     )
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(ispyb_ids.data_collection_ids[0])  # type: ignore
-        == "DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring 1 - DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -224,14 +240,16 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     fetch_comment: Callable[..., Any],
     dummy_params,
     dummy_data_collection_group_info,
-    dummy_scan_data_info_for_begin,
+    dummy_scan_data_info_for_begin_xy,
+    dummy_scan_data_info_for_begin_xz,
 ):
     ispyb_ids = dummy_ispyb_3d.begin_deposition(
-        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
+        dummy_data_collection_group_info,
+        [dummy_scan_data_info_for_begin_xy, dummy_scan_data_info_for_begin_xz],
     )
     scan_data_infos = generate_scan_data_infos(
         dummy_params,
-        dummy_scan_data_info_for_begin,
+        dummy_scan_data_info_for_begin_xy,
         IspybExperimentType.GRIDSCAN_3D,
         ispyb_ids,
     )
@@ -241,11 +259,13 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
-        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top "
+        "left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
         fetch_comment(dcid2)
-        == "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top "
+        "left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -266,14 +286,18 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     fetch_comment: Callable[..., Any],
     dummy_params,
     dummy_data_collection_group_info,
-    dummy_scan_data_info_for_begin,
+    dummy_scan_data_info_for_begin_xy,
+    dummy_scan_data_info_for_begin_xz,
 ):
     ispyb: StoreInIspyb = StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+    scan_data_infos = [dummy_scan_data_info_for_begin_xy]
+    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
+        scan_data_infos += [dummy_scan_data_info_for_begin_xz]
     ispyb_ids: IspybIds = ispyb.begin_deposition(
-        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
+        dummy_data_collection_group_info, scan_data_infos
     )
     scan_data_infos = generate_scan_data_infos(
-        dummy_params, dummy_scan_data_info_for_begin, experiment_type, ispyb_ids
+        dummy_params, dummy_scan_data_info_for_begin_xy, experiment_type, ispyb_ids
     )
 
     ispyb_ids = ispyb.update_deposition(ispyb_ids, scan_data_infos)
@@ -283,11 +307,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     expected_comments = [
         (
-            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
+            "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
         ),
         (
-            "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
+            "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
         ),
     ]
@@ -371,7 +395,7 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[0],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 6 "
+        "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 20 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [626,278]. Aperture: Small. ",
     )
@@ -428,7 +452,7 @@ def test_ispyb_deposition_in_gridscan(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_ids.data_collection_ids[1],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 20 by 6 "
+        "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 20 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [626,278]. Aperture: Small. ",
     )
@@ -477,7 +501,7 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid) == "Sample position (µm): (1, 2, 3) test  Aperture: Small. "
+        fetch_comment(dcid) == "test Sample position (µm): (1, 2, 3) Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
