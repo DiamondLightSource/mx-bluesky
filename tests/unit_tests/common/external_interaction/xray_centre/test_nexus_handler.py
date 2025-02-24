@@ -132,10 +132,10 @@ def test_sensible_error_if_writing_triggered_before_params_received(
     nexus_handler = GridscanNexusFileCallback(
         param_type=HyperionSpecifiedThreeDGridScan
     )
+    nexus_handler.activity_gated_descriptor(
+        TestData.test_descriptor_document_during_data_collection
+    )
     with pytest.raises(AssertionError) as excinfo:
-        nexus_handler.activity_gated_descriptor(
-            TestData.test_descriptor_document_during_data_collection
-        )
         nexus_handler.activity_gated_event(
             TestData.test_event_document_during_data_collection
         )
