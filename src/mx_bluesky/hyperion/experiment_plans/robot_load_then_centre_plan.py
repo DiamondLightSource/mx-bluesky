@@ -3,7 +3,6 @@ from __future__ import annotations
 from math import isclose
 from typing import cast
 
-import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
@@ -37,13 +36,9 @@ from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -131,27 +126,6 @@ def _robot_load_then_flyscan_plan(
     )
 
     yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
-
-
-def robot_load_then_centre(
-    composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentre,
-) -> MsgGenerator:
-    """Perform pin-tip detection followed by a flyscan to determine centres of interest.
-    Performs a robot load if necessary. Centre on the best diffracting centre.
-    """
-
-    xray_centre_event_handler = XRayCentreEventHandler()
-
-    yield from bpp.subs_wrapper(
-        robot_load_then_xray_centre(composite, parameters), xray_centre_event_handler
-    )
-    flyscan_results = xray_centre_event_handler.xray_centre_results
-    if flyscan_results is not None:
-        yield from change_aperture_then_move_to_xtal(
-            flyscan_results[0], composite.smargon, composite.aperture_scatterguard
-        )
-    # else no chi change, no need to recentre.
 
 
 def robot_load_then_xray_centre(
