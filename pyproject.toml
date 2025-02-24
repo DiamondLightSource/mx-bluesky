@@ -205,6 +205,7 @@ lint.select = [
     "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "PT012" # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
 ]
 lint.extend-ignore = [
     "E501", # Line too long
