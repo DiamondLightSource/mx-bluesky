@@ -213,9 +213,8 @@ class TestFlyscanXrayCentrePlan:
         )
         RE.subscribe(ispyb_callback)
 
-        error = None
+        error = AssertionError("Test Exception")
         with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
-            error = AssertionError("Test Exception")
             mock_set.return_value = FailedStatus(error)
             with pytest.raises(FailedStatus) as exc:
                 RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
