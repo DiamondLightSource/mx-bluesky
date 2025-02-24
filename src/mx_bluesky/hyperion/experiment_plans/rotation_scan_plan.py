@@ -461,6 +461,8 @@ def multi_rotation_scan(
 
             yield from rotation_scan_core(single_scan)
 
+        yield from bps.unstage(eiger)
+
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
@@ -470,4 +472,3 @@ def multi_rotation_scan(
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
-    yield from bps.unstage(eiger)
