@@ -19,25 +19,28 @@ class SampleHandlingCallback(PlanReactiveCallback):
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
         self._sample_id: int | None = None
         self._descriptor: str | None = None
+        self._run_id: str | None = None
 
     def activity_gated_start(self, doc: RunStart):
-        if not self._sample_id:
+        if not self._sample_id and self.active:
             sample_id = doc.get("metadata", {}).get("sample_id")
             self.log.info(f"Recording sample ID at run start {sample_id}")
             self._sample_id = sample_id
+            self._run_id = self.activity_uid
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         expeye = ExpeyeInteraction()
-        if doc["exit_status"] != "success":
-            exception_type, message = SampleException.type_and_message_from_reason(
-                doc.get("reason", "")
-            )
-            self.log.info(
-                f"Sample handling callback intercepted exception of type {exception_type}: {message}"
-            )
-            self._record_exception(exception_type, expeye)
-        else:
-            self._record_loaded(expeye)
+        if self._run_id == doc.get("run_start"):
+            if doc["exit_status"] != "success":
+                exception_type, message = SampleException.type_and_message_from_reason(
+                    doc.get("reason", "")
+                )
+                self.log.info(
+                    f"Sample handling callback intercepted exception of type {exception_type}: {message}"
+                )
+                self._record_exception(exception_type, expeye)
+            self._sample_id = None
+            self._run_id = None
         return doc
 
     def _record_exception(self, exception_type: str, expeye: ExpeyeInteraction):
