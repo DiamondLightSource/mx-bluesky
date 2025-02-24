@@ -154,6 +154,50 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
     }
 ]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
+    {
+        "centre_of_mass": [0.5, 0.5, 0.5],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
+    {
+        "centre_of_mass": [0.0, 0.0, 0.0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_COM = [
+    {
+        "centre_of_mass": [-0.0001, -0.0001, -0.0001],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_BB = [
+    {
+        "centre_of_mass": [0, 0, 0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+    }
+]
 
 
 @pytest.fixture(scope="session")
