@@ -198,13 +198,17 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb(
+    use_dev_ispyb_unless_overridden_by_environment, dummy_params
+) -> StoreInIspyb:
+    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
 
 
 @pytest.fixture
-def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb_3d(
+    use_dev_ispyb_unless_overridden_by_environment, dummy_params
+) -> StoreInIspyb:
+    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
 
 
 @pytest.fixture
