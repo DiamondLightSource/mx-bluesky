@@ -32,6 +32,7 @@ from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
@@ -60,7 +61,6 @@ from mx_bluesky.hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScan,
 )
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

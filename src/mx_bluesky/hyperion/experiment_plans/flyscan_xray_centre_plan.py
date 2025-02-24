@@ -9,43 +9,21 @@ from typing import Protocol
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-import pydantic
 from blueapi.core import BlueskyContext
-from bluesky.callbacks import CallbackBase
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-)
-from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
-    PandAFastGridScan,
-    ZebraFastGridScan,
 )
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
-from dodal.devices.flux import Flux
-from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
     XrcResult,
-    ZocaloResults,
     get_full_processing_results,
 )
-from event_model import RunStart
-from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
@@ -56,12 +34,14 @@ from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
     set_panda_directory,
@@ -78,10 +58,11 @@ from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
@@ -90,56 +71,21 @@ class SmargonSpeedException(Exception):
     pass
 
 
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanXRayCentreComposite:
-    """All devices which are directly or indirectly required by this plan"""
-
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: BinaryFilterAttenuator
-    backlight: Backlight
-    dcm: DCM
-    eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    smargon: Smargon
-    undulator: Undulator
-    synchrotron: Synchrotron
-    xbpm_feedback: XBPMFeedback
-    zebra: Zebra
-    zocalo: ZocaloResults
-    panda: HDFPanda
-    panda_fast_grid_scan: PandAFastGridScan
-    robot: BartRobot
-    sample_shutter: ZebraShutter
-
-
-class XRayCentreEventHandler(CallbackBase):
-    def __init__(self):
-        super().__init__()
-        self.xray_centre_results: Sequence[XRayCentreResult] | None = None
-
-    def start(self, doc: RunStart) -> RunStart | None:
-        if CONST.PLAN.FLYSCAN_RESULTS in doc:
-            self.xray_centre_results = [
-                XRayCentreResult(**result_dict)
-                for result_dict in doc[CONST.PLAN.FLYSCAN_RESULTS]  # type: ignore
-            ]
-        return doc
-
-
-def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
+def create_devices(context: BlueskyContext) -> HyperionFlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
-    return device_composite_from_context(context, FlyScanXRayCentreComposite)
+    return device_composite_from_context(context, HyperionFlyScanXRayCentreComposite)
 
 
 def flyscan_xray_centre_no_move(
-    composite: FlyScanXRayCentreComposite, parameters: HyperionSpecifiedThreeDGridScan
+    composite: HyperionFlyScanXRayCentreComposite,
+    parameters: HyperionSpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """Perform a flyscan and determine the centres of interest"""
-    parameters.features.update_self_from_server()
+
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = CONST.ZOCALO_ENV
+
+    parameters.features.update_self_from_server()
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
     composite.zocalo.use_gpu = parameters.features.use_gpu_results
 
@@ -164,7 +110,7 @@ def flyscan_xray_centre_no_move(
         parameters.transmission_frac,
     )
     def run_gridscan_and_fetch_and_tidy(
-        fgs_composite: FlyScanXRayCentreComposite,
+        fgs_composite: HyperionFlyScanXRayCentreComposite,
         params: HyperionSpecifiedThreeDGridScan,
         feature_controlled: _FeatureControlled,
     ) -> MsgGenerator:
@@ -178,7 +124,7 @@ def flyscan_xray_centre_no_move(
 
 
 def flyscan_xray_centre(
-    composite: FlyScanXRayCentreComposite,
+    composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
@@ -217,7 +163,7 @@ def flyscan_xray_centre(
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_fetch_results(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
 ) -> MsgGenerator:
@@ -314,7 +260,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
     md={  # noqa
@@ -394,18 +340,18 @@ class _FeatureControlled:
     class _ExtraSetup(Protocol):
         def __call__(
             self,
-            fgs_composite: FlyScanXRayCentreComposite,
+            fgs_composite: HyperionFlyScanXRayCentreComposite,
             parameters: HyperionSpecifiedThreeDGridScan,
         ) -> MsgGenerator: ...
 
     setup_trigger: _ExtraSetup
-    tidy_plan: Callable[[FlyScanXRayCentreComposite], MsgGenerator]
+    tidy_plan: Callable[[HyperionFlyScanXRayCentreComposite], MsgGenerator]
     set_flyscan_params: Callable[[], MsgGenerator]
     fgs_motors: FastGridScanCommon
 
 
 def _get_feature_controlled(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
 ):
     if parameters.features.use_panda_for_gridscan:
@@ -433,7 +379,7 @@ def _get_feature_controlled(
 
 
 def _generic_tidy(
-    fgs_composite: FlyScanXRayCentreComposite, group, wait=True
+    fgs_composite: HyperionFlyScanXRayCentreComposite, group, wait=True
 ) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from tidy_up_zebra_after_gridscan(
@@ -444,7 +390,7 @@ def _generic_tidy(
     yield from bps.unstage(fgs_composite.zocalo, group=group, wait=wait)
 
 
-def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
+def _panda_tidy(fgs_composite: HyperionFlyScanXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
@@ -454,7 +400,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
 
 
 def _zebra_triggering_setup(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
 ):
     yield from setup_zebra_for_gridscan(
@@ -463,7 +409,7 @@ def _zebra_triggering_setup(
 
 
 def _panda_triggering_setup(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
 ):
     LOGGER.info("Setting up Panda for flyscan")

@@ -108,7 +108,6 @@ def config(
     # Remove dodal StreamHandler to avoid duplication of messages above debug
     dodal_logger.removeHandler(dodal_logger.handlers[0])
     _integrate_bluesky_logs(dodal_logger)
-
     if logfile:
         logs = _get_logging_file_path() / logfile
         fileFormatter = logging.Formatter(

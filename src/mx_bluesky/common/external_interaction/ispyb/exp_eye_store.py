@@ -2,7 +2,7 @@ import configparser
 from dataclasses import dataclass
 from enum import StrEnum
 
-from requests import patch, post
+from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
@@ -34,7 +34,11 @@ def _get_base_url_and_token() -> tuple[str, str]:
 def _send_and_get_response(auth, url, data, send_func) -> dict:
     response = send_func(url, auth=auth, json=data)
     if not response.ok:
-        raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {response}")
+        try:
+            resp_txt = str(response.json())
+        except JSONDecodeError:
+            resp_txt = str(response)
+        raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {resp_txt}")
     return response.json()
 
 

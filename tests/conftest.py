@@ -95,13 +95,13 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -113,6 +113,91 @@ from .unit_tests.conftest import device_factories_for_beamline
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
+
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 1000,
+        "n_voxels": 35,
+        "total_count": 1000,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
+    {
+        "centre_of_mass": [0.5, 0.5, 0.5],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
+    {
+        "centre_of_mass": [0.0, 0.0, 0.0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_COM = [
+    {
+        "centre_of_mass": [-0.0001, -0.0001, -0.0001],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_BB = [
+    {
+        "centre_of_mass": [0, 0, 0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+    }
+]
 
 
 @pytest.fixture(scope="session")
@@ -822,7 +907,7 @@ async def fake_fgs_composite(
     backlight,
     s4_slit_gaps,
 ):
-    fake_composite = FlyScanXRayCentreComposite(
+    fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -1519,3 +1604,10 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
         list(range(12, 24)),
         list(range(56, 68)),
     )
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(active_device_factories):
+    yield None
+    for f in active_device_factories:
+        f.cache_clear()  # type: ignore

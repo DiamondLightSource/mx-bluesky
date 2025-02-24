@@ -121,14 +121,6 @@ def load_centre_collect_params_multi():
 
 
 @pytest.fixture
-def load_centre_collect_params():
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
-    )
-    return LoadCentreCollect(**params)
-
-
-@pytest.fixture
 def load_centre_collect_with_top_n_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
