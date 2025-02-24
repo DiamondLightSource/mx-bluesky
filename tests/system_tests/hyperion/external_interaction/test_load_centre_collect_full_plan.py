@@ -562,7 +562,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         ],
     ],
 )
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     zocalo_result,
     expected_exception,
