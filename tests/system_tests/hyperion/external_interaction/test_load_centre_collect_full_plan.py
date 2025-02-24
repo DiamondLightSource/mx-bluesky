@@ -44,18 +44,18 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
-from ...conftest import (
-    DATA_COLLECTION_COLUMN_MAP,
-    compare_actual_and_expected,
-    compare_comment,
-)
-from .conftest import (
+from ....conftest import (
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_OUT_OF_BOUNDS_BB,
     TEST_RESULT_OUT_OF_BOUNDS_COM,
     raw_params_from_file,
+)
+from ...conftest import (
+    DATA_COLLECTION_COLUMN_MAP,
+    compare_actual_and_expected,
+    compare_comment,
 )
 
 SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
