@@ -191,16 +191,15 @@ def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
 
 
 @pytest.mark.parametrize(
-    "prefix",
+    "prefix, expected_visit",
     [
-        "/dls/i03/data/2025/mx23694-130/foo/bar",
+        ["/dls/i03/data/2025/mx23694-130/foo/bar", "mx23694-130"],
+        ["/dls/not-i03/data/2021/mx84743-230", "mx84743-230"],
     ],
 )
-def test_given_valid_prefix_then_correct_visit_is_set(
-    load_centre_collect_params: LoadCentreCollect, prefix: str
-):
+def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visit: str):
     visit = get_visit_from_agamemnon_parameters(set_up_agamemmnon_params(None, prefix))
-    assert visit == "mx23694-130"
+    assert visit == expected_visit
 
 
 @pytest.mark.parametrize(
