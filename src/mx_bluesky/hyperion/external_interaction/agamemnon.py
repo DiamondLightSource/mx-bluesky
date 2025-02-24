@@ -19,7 +19,6 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = (
     r"^/dls/(?P<beamline>[^/]+)/data/(?P<year>\d{4})/(?P<visit>[^/]+)(?:/|$)"
 )
-MX_VMX_ROOT_REGEX = r"^/dls/mx/data/(?P<proposal>[^/]+)/(?P<visit>[^/]+)(?:/|$)"
 
 
 @dataclasses.dataclass
