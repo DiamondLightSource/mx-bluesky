@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import bluesky.plan_stubs as bps
@@ -24,10 +25,14 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 impo
     load_motion_program_data,
     main_fixed_target_plan,
     run_aborted_plan,
+    run_fixed_target_plan,
     set_datasize,
     start_i24,
     tidy_up_after_collection_plan,
     write_userlog,
+)
+from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
+    BeamSettings,
 )
 
 from ..conftest import TEST_LUT
@@ -172,11 +177,19 @@ def test_load_motion_program_data(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+)
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
+)
 def test_start_i24_with_eiger(
+    fake_datetime,
     fake_sleep,
     fake_sup,
+    fake_cagetstring,
     fake_caget,
     fake_caput,
     fake_dcid,
@@ -192,9 +205,19 @@ def test_start_i24_with_eiger(
     eiger_beam_center,
     dummy_params_without_pp,
 ):
+    expected_start = datetime.now()
+    fake_datetime.now.return_value = expected_start
     dummy_params_without_pp.chip_map = [1, 2]
     assert dummy_params_without_pp.total_num_images == 800
     set_mock_value(dcm.wavelength_in_a, 0.6)
+    expected_beam_settings = BeamSettings(
+        wavelength_in_a=0.6,
+        beam_size_in_um=(7.0, 7.0),
+        beam_center_in_mm=(1605 * 0.075, 1702 * 0.075),
+    )
+    expected_odin_filename = f"{dummy_params_without_pp.filename}_0001"
+    fake_cagetstring.return_value = expected_odin_filename
+
     RE(
         start_i24(
             zebra,
@@ -213,7 +236,16 @@ def test_start_i24_with_eiger(
     assert fake_sup.eiger.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
-    assert fake_dcid.generate_dcid.call_count == 1
+    fake_cagetstring.assert_called_once()
+    fake_dcid.generate_dcid.assert_called_with(
+        beam_settings=expected_beam_settings,
+        image_dir=dummy_params_without_pp.collection_directory.as_posix(),
+        file_template=f"{expected_odin_filename}.nxs",
+        num_images=dummy_params_without_pp.total_num_images,
+        shots_per_position=dummy_params_without_pp.num_exposures,
+        start_time=expected_start,
+        pump_probe=False,
+    )
 
     shutter_call_list = [
         call("Reset", wait=True),
@@ -446,3 +478,57 @@ async def test_main_fixed_target_plan(
     mock_kickoff.assert_called_once_with(
         pmac, dummy_params_without_pp
     )  # Check collection kick off
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup.get_beam_center_device"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.read_parameters"
+)
+def test_setup_tasks_in_run_fixed_target_plan(
+    fake_read,
+    fake_mkdir,
+    mock_beam_center,
+    zebra,
+    pmac,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    RE,
+    dummy_params_without_pp,
+):
+    mock_attenuator = MagicMock()
+    fake_read.side_effect = [fake_generator(dummy_params_without_pp)]
+    with (
+        patch(
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bpp.contingency_wrapper"
+        ),
+        patch(
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.upload_chip_map_to_geobrick"
+        ) as patch_upload,
+    ):
+        RE(
+            run_fixed_target_plan(
+                zebra,
+                pmac,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                mock_attenuator,
+            )
+        )
+        fake_mkdir.assert_called_once()
+        mock_beam_center.assert_called_once()
+        patch_upload.assert_called_once_with(pmac, dummy_params_without_pp.chip_map)

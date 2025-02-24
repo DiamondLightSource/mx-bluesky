@@ -26,6 +26,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": TEST_SAMPLE_ID,
+    "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorid": 78,
     "data_collection_number": 1,
     "detector_distance": 100.0,
@@ -46,6 +47,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
+    "comments": "MX-Bluesky: Xray centring 2 -",
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
 }
@@ -221,14 +223,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_y",
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
-                "bottom right (px): [3250,1700].",
                 "axisstart": 0,
                 "omegastart": 0,
                 "axisend": 0,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[0],
+            "Diffraction grid scan of 40 by 20 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
+            "bottom right (px): [3250,1700].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[1],
@@ -240,14 +246,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_z",
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
-                "bottom right (px): [3250,800].",
                 "axisstart": 90,
                 "omegastart": 90,
                 "axisend": 90,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[1],
+            "Diffraction grid scan of 40 by 10 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
+            "bottom right (px): [3250,800].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_dc_grid.mock_calls[0],

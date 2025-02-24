@@ -26,16 +26,18 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    HyperionFlyScanXRayCentreComposite,
+from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     hyperion_flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import default_raw_gridscan_params
 
@@ -121,16 +123,16 @@ def test_s03_devices_connect(fxc_composite: HyperionFlyScanXRayCentreComposite):
 
 
 @pytest.mark.s03
-def test_read_hardware_pre_collection(
+def test_standard_read_hardware_pre_collection(
     RE: RunEngine,
     fxc_composite: HyperionFlyScanXRayCentreComposite,
 ):
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             undulator=u, synchrotron=s, s4_slit_gaps=g, dcm=dcm, smargon=sm
         )
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             ap_sg, a, f, dcm, fxc_composite.eiger
         )
 

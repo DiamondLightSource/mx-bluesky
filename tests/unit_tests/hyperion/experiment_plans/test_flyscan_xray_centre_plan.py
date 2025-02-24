@@ -43,9 +43,8 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from tests.conftest import (
     RunEngineSimulator,
 )
-from tests.system_tests.hyperion.external_interaction.conftest import TEST_RESULT_LARGE
 
-from ....conftest import TestData, simulate_xrc_result
+from ....conftest import TEST_RESULT_LARGE, TestData, simulate_xrc_result
 from ...conftest import (
     mock_zocalo_trigger,
     modified_store_grid_scan_mock,

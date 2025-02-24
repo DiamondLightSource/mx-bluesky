@@ -50,6 +50,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 from tests.conftest import (
     default_raw_gridscan_params,
@@ -58,6 +59,14 @@ from tests.conftest import (
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
+
+
+@pytest.fixture
+def load_centre_collect_params():
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+    )
+    return LoadCentreCollect(**json_dict)
 
 
 @pytest.fixture(autouse=True)
