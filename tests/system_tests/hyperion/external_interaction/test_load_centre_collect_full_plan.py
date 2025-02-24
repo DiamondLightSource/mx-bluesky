@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Generator
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -43,6 +42,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
+from ....conftest import SimConstants
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
@@ -50,16 +50,14 @@ from ...conftest import (
 )
 from .conftest import raw_params_from_file
 
-SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
-
 
 @pytest.fixture
 def load_centre_collect_params():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
-    json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
-    json_dict["sample_id"] = SAMPLE_ID
+    json_dict["visit"] = SimConstants.ST_VISIT
+    json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     return LoadCentreCollect(**json_dict)
 
 
@@ -112,7 +110,7 @@ def load_centre_collect_composite(
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": SAMPLE_ID,
+    "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,

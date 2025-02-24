@@ -1,6 +1,8 @@
 import os
 import re
+from collections.abc import Generator
 from decimal import Decimal
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -8,8 +10,6 @@ from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
 from ophyd_async.testing import set_mock_value
-
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -122,13 +122,13 @@ DATA_COLLECTION_COLUMN_MAP = {
 }
 
 
-@pytest.fixture(autouse=True)
-def use_dev_ispyb_unless_overridden_by_environment():
+@pytest.fixture(autouse=True, scope="session")
+def ispyb_config_path() -> Generator[str, Any, Any]:
     ispyb_config_path = os.environ.get(
-        "ISPYB_CONFIG_PATH", CONST.SIM.DEV_ISPYB_DATABASE_CFG
+        "ISPYB_CONFIG_PATH", "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
     )
     with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
-        yield
+        yield ispyb_config_path
 
 
 @pytest.fixture
