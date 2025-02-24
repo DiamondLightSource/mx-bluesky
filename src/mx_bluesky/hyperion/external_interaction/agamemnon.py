@@ -88,20 +88,15 @@ def get_next_instruction(beamline: str) -> dict:
 def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
     prefix = parameters.get("prefix")
     if not prefix:
-        raise KeyError
+        raise KeyError("Failed to get prefix from Agamemnon")
 
-    possible_roots = [MX_GENERAL_ROOT_REGEX, MX_VMX_ROOT_REGEX]
-
-    match = next(
-        (re.match(root, prefix) for root in possible_roots if re.match(root, prefix)),
-        None,
-    )
+    match = re.match(MX_GENERAL_ROOT_REGEX, prefix)
 
     if match:
         return match.group("visit")
 
     raise ValueError(
-        f"Agamemnon prefix '{prefix}' does not match known root structures"
+        f"Agamemnon prefix '{prefix}' does not match MX-General root structure"
     )
 
 
@@ -116,6 +111,8 @@ def update_params_from_agamemnon(parameters: T) -> T:
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
             parameters.visit = visit
+    except (ValueError, KeyError) as e:
+        LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
-        LOGGER.warning(f"Failed to get pin type from agamemnon, using single pin {e}")
+        LOGGER.warning(f"Unexpected error occurred: {e}")
     return parameters
