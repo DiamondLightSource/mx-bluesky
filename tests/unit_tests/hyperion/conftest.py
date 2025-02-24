@@ -4,7 +4,18 @@ from unittest.mock import patch
 
 import pytest
 
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from tests.conftest import raw_params_from_file
+
 BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
+
+
+@pytest.fixture
+def load_centre_collect_params():
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+    )
+    return LoadCentreCollect(**json_dict)
 
 
 @pytest.fixture(autouse=True)

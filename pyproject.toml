@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.9.0a2",
     "bluesky >= 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@61d2eb609245cb96184c9dbfb8d9af8adef50447",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@ff68ad54b5ab96b50701f23796694884b8e72987",
 ]
 
 
@@ -149,6 +149,9 @@ filterwarnings = [
     "ignore:.*custom tp_new.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
+    # Ignore warning about deprecations in python-workflows encountered during system tests
+    # https://github.com/DiamondLightSource/python-workflows/issues/188
+    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning"
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -171,6 +174,8 @@ skipsdist=True
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
+setenv =
+    systemtests: DODAL_TEST_MODE=true
 allowlist_externals =
     pytest
     pre-commit
