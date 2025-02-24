@@ -30,23 +30,18 @@ def test_given_various_pin_formats_then_pin_width_as_expected(
     assert pin.full_width == expected_width
 
 
-def params_from_loop_type(loop_type: str | None):
-    return {
-        "prefix": "/dls/i03/data/2025/mx23694-130/auto/TestProteinaseK/20250217-mp0101/20250217-mp0101",
-        "sample": {"loopType": loop_type},
-    }
-
-
-def params_from_prefix(prefix: str | None):
+def set_up_agamemmnon_params(
+    loop_type: str | None, prefix: str | None = "/dls/i03/data/2025/mx23694-130/foo/bar"
+):
     return {
         "prefix": prefix,
-        "sample": {"loopType": "multipin_6x50+9"},
+        "sample": {"loopType": loop_type},
     }
 
 
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
-        get_pin_type_from_agamemnon_parameters(params_from_loop_type(None))
+        get_pin_type_from_agamemnon_parameters(set_up_agamemmnon_params(None))
         == SinglePin()
     )
 
@@ -63,7 +58,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     loop_name: str, expected_loop: PinType
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(set_up_agamemmnon_params(loop_name))
         == expected_loop
     )
 
@@ -81,7 +76,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     loop_name: str,
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(set_up_agamemmnon_params(loop_name))
         == SinglePin()
     )
     mock_logger.warning.assert_called_once()
@@ -108,13 +103,13 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(ValueError) as e:
-        get_pin_type_from_agamemnon_parameters(params_from_loop_type(loop_name))
+        get_pin_type_from_agamemnon_parameters(set_up_agamemmnon_params(loop_name))
     assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
     mock_requests.get.return_value.content = json.dumps(
-        {"collect": params_from_loop_type(loop_type)}
+        {"collect": set_up_agamemmnon_params(loop_type)}
     )
 
 
@@ -198,12 +193,35 @@ def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
 @pytest.mark.parametrize(
     "prefix",
     [
-        "/dls/i03/data/2025/mx23694-130/trail",
-        "/dls/mx/data/mx23694/mx23694-130/trail",
+        "/dls/i03/data/2025/mx23694-130/foo/bar",
     ],
 )
 def test_given_valid_prefix_then_correct_visit_is_set(
     load_centre_collect_params: LoadCentreCollect, prefix: str
 ):
-    visit = get_visit_from_agamemnon_parameters(params_from_prefix(prefix))
+    visit = get_visit_from_agamemnon_parameters(set_up_agamemmnon_params(None, prefix))
     assert visit == "mx23694-130"
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "/not-dls/i03/data/2025/mx23694-130/foo/bar",
+        "/dls/i03/not-data/2025/mx23694-130/foo/bar",
+        "/dls/i03/data/twenty-twenty-five/mx23694-130/foo/bar",
+        "/dls/i03/data/20025/mx23694-130/foo/bar",
+        "/foo/bar/i03/data/2025/mx23694-130",
+    ],
+)
+def test_given_invalid_prefix_then_exception_raised(prefix: str):
+    with pytest.raises(ValueError) as e:
+        get_visit_from_agamemnon_parameters(set_up_agamemmnon_params(None, prefix))
+
+    assert "MX-General root structure" in str(e.value)
+
+
+def test_no_prefix_raises_exception():
+    with pytest.raises(KeyError) as e:
+        get_visit_from_agamemnon_parameters(set_up_agamemmnon_params(None, None))
+
+    assert "Failed to get prefix from Agamemnon" in str(e.value)
