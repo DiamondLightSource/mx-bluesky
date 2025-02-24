@@ -10,5 +10,5 @@ def read_hardware_for_zocalo(detector: EigerDetector):
     A bluesky run must be open to use this plan
     """
     yield from bps.create(name=DocDescriptorNames.ZOCALO_HW_READ)
-    yield from bps.read(detector.odin.file_writer.id)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(detector.odin.file_writer.id)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     yield from bps.save()

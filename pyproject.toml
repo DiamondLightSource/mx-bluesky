@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.9.0a2",
     "bluesky >= 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@ff68ad54b5ab96b50701f23796694884b8e72987",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@fb99435ebe5220b373cb6b976034e99a6cc0491e",
 ]
 
 
@@ -120,7 +120,7 @@ markers = [
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
-    "system_test: marks tests as a system test"
+    "system_test: marks tests as a system test",
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
@@ -151,7 +151,7 @@ filterwarnings = [
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
-    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning"
+    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
