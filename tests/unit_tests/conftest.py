@@ -90,6 +90,14 @@ BASIC_POST_SETUP_DOC = {
 }
 
 
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
+
+
 def mock_beamline_module_filepaths(bl_name, bl_module):
     if mock_attributes := mock_attributes_table.get(bl_name):
         [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
@@ -150,14 +158,6 @@ def test_fgs_params():
             "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
     )
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
 def mock_zocalo_trigger(zocalo: ZocaloResults, result):

@@ -95,19 +95,23 @@ def test_serialise_deserialise(minimal_3d_gridscan_params):
     assert deserialised.x_start_um == 0.123
 
 
-def test_param_version(minimal_3d_gridscan_params):
-    with pytest.raises(ValidationError):
-        minimal_3d_gridscan_params["parameter_model_version"] = "4.3.0"
+@pytest.mark.parametrize(
+    "version, valid",
+    [
+        ("4.3.0", False),
+        ("6.3.7", False),
+        ("5.0.0", True),
+        ("5.3.0", True),
+        ("5.3.7", True),
+    ],
+)
+def test_param_version(minimal_3d_gridscan_params, version: str, valid: bool):
+    minimal_3d_gridscan_params["parameter_model_version"] = version
+    if valid:
         _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    minimal_3d_gridscan_params["parameter_model_version"] = "5.0.0"
-    _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    minimal_3d_gridscan_params["parameter_model_version"] = "5.3.0"
-    _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    minimal_3d_gridscan_params["parameter_model_version"] = "5.3.7"
-    _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    with pytest.raises(ValidationError):
-        minimal_3d_gridscan_params["parameter_model_version"] = "6.3.7"
-        _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+    else:
+        with pytest.raises(ValidationError):
+            _ = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
 
 
 def test_robot_load_then_centre_params():
