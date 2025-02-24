@@ -113,5 +113,5 @@ def update_params_from_agamemnon(parameters: T) -> T:
     except (ValueError, KeyError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
-        LOGGER.warning(f"Unexpected error occurred: {e}")
+        LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
     return parameters
