@@ -36,7 +36,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 
-from .conftest import assert_event
+from ...conftest import assert_event
 
 
 @pytest.fixture
