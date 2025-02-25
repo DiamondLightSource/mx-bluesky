@@ -82,12 +82,13 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     """
 
     def _inner_plan():
-        yield from _check_and_pause_feedback(
-            xbpm_feedback, attenuator, desired_transmission_fraction
+        yield from _check_and_pause_feedback_and_verify_undulator_gap(
+            undulator,
+            xbpm_feedback,
+            attenuator,
+            dcm,
+            desired_transmission_fraction,
         )
-        # Verify Undulator gap is correct, as may not be after a beam dump
-        energy_in_kev = yield from bps.rd(dcm.energy_in_kev.user_readback)
-        yield from bps.abs_set(undulator, energy_in_kev, wait=True)
         return (yield from plan)
 
     return (
@@ -96,6 +97,21 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
             _unpause_xbpm_feedback_and_set_transmission_to_1(xbpm_feedback, attenuator),
         )
     )
+
+
+def _check_and_pause_feedback_and_verify_undulator_gap(
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
+    desired_transmission_fraction: float,
+):
+    yield from _check_and_pause_feedback(
+        xbpm_feedback, attenuator, desired_transmission_fraction
+    )
+    # Verify Undulator gap is correct, as may not be after a beam dump
+    energy_in_kev = yield from bps.rd(dcm.energy_in_kev.user_readback)
+    yield from bps.abs_set(undulator, energy_in_kev, wait=True)
 
 
 transmission_and_xbpm_feedback_for_collection_decorator = make_decorator(

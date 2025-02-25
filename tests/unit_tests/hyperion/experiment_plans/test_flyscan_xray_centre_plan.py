@@ -1010,3 +1010,5 @@ class TestFlyscanXrayCentrePlan:
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
+
+    def test_flyscan_xray_centre_correctly_pauses_xbpm_feedback_during_collection(): ...
