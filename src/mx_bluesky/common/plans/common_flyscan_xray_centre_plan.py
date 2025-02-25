@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -11,12 +11,10 @@ import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.protocols import Readable
-from bluesky.utils import MsgGenerator
+from bluesky.utils import MsgGenerator, make_decorator
 from dodal.devices.attenuator.attenuator import (
     ReadOnlyAttenuator,
 )
-from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -24,8 +22,6 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -35,9 +31,6 @@ from dodal.devices.zocalo.zocalo_results import (
     get_full_processing_results,
 )
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -68,27 +61,25 @@ def null_plan(*args):
     yield from bps.null()
 
 
+null_decorator = make_decorator(null_plan())
+
 T = TypeVar("T", bound=ReadOnlyAttenuator)  # Ensures T is always a subclass of A
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices(Generic[T]):
-    attenuator: T
-    backlight: Backlight
+class FlyScanEssentialDevices:
     eiger: EigerDetector
     zebra_fast_grid_scan: ZebraFastGridScan
     synchrotron: Synchrotron
-    xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
     smargon: Smargon
-    undulator: Undulator
-    dcm: DCM
 
 
 NullPlanType = Callable[[], MsgGenerator]
 
 
+# TODO ask for opinions on typing for the below
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures:
     setup_trigger_plan: Callable[..., MsgGenerator]
@@ -100,6 +91,14 @@ class BeamlineSpecificFGSFeatures:
     plan_after_getting_xrc_results: Callable[..., MsgGenerator] = null_plan
 
 
+# TODO: Make the lists optional and do standard reads if nothing was passed?
+
+
+# TODO: use preprocessors for scan_wrapper - see baseline_wrapper
+# Do somethingl ike if msg.command = "start fgs" then add a finalizer preproc to the head which does XBPM pause
+
+
+# This should be thr MINIMUM set of parameters needed to specifify the gridscan. If there is a way to remove any of these parameters we should do them
 def construct_beamline_specific_FGS_features(
     setup_trigger_plan: Callable[..., MsgGenerator],
     tidy_plan: Callable[..., MsgGenerator],
@@ -137,6 +136,7 @@ def construct_beamline_specific_FGS_features(
         signals_to_read_during_collection,
         DocDescriptorNames.HARDWARE_READ_DURING,
     )
+
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan,
         tidy_plan,
@@ -153,7 +153,7 @@ def create_devices(context: BlueskyContext) -> FlyScanEssentialDevices:
     return device_composite_from_context(context, FlyScanEssentialDevices)
 
 
-def highest_level_flyscan_xray_centre(
+def common_flyscan_xray_centre(
     composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     feature_controlled: BeamlineSpecificFGSFeatures,
@@ -166,8 +166,6 @@ def highest_level_flyscan_xray_centre(
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
 
         feature_controlled (BeamlineSpecificFGSFeatures): Configure the beamline-specific version of this plan: For example triggering setup and tidy up plans, as well as what to do with the centering results.
-
-
 
     With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data to ispyb; triggering zocalo; reading hardware before and during the scan; optionally performing a plan using the results; and tidying up devices after the plan is complete. For more information, see https://diamondlightsource.github.io/mx-bluesky/main/index.html
 
@@ -215,13 +213,6 @@ def flyscan_xray_centre_no_move(
         }
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
-    )
     def run_gridscan_and_fetch_and_tidy(
         fgs_composite: FlyScanEssentialDevices,
         params: SpecifiedThreeDGridScan,
@@ -234,6 +225,11 @@ def flyscan_xray_centre_no_move(
     yield from run_gridscan_and_fetch_and_tidy(
         composite, parameters, feature_controlled
     )
+
+
+def run_gridscan_then_fetch_results_then_tidy_with_xbpm_feedback_wrapper(
+    fgs_composite: FlyScanEssentialDevices, params: SpecifiedThreeDGridScan
+): ...
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_AND_MOVE)

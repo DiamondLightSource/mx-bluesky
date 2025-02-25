@@ -11,8 +11,8 @@ from dodal.devices.fast_grid_scan import (
 )
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    common_flyscan_xray_centre,
     construct_beamline_specific_FGS_features,
-    highest_level_flyscan_xray_centre,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -64,9 +64,7 @@ def hyperion_flyscan_xray_centre(
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
     composite.zocalo.use_gpu = parameters.features.use_gpu_results
 
-    yield from highest_level_flyscan_xray_centre(
-        composite, parameters, feature_controlled
-    )
+    yield from common_flyscan_xray_centre(composite, parameters, feature_controlled)
 
 
 def construct_hyperion_specific_features(

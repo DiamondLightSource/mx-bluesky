@@ -46,7 +46,7 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     CrystalNotFoundException,
     FlyScanEssentialDevices,
     XRayCentreEventHandler,
-    highest_level_flyscan_xray_centre,
+    common_flyscan_xray_centre,
     kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_fetch_results,
@@ -130,13 +130,12 @@ class TestFlyscanXrayCentrePlan:
         RE.subscribe(ispyb_callback)
 
         error = None
-        with pytest.raises(FailedStatus) as exc:
-            with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
-                error = AssertionError("Test Exception")
-                mock_set.return_value = FailedStatus(error)
-
+        with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
+            error = AssertionError("Test Exception")
+            mock_set.return_value = FailedStatus(error)
+            with pytest.raises(FailedStatus) as exc:
                 RE(
-                    highest_level_flyscan_xray_centre(
+                    common_flyscan_xray_centre(
                         fake_fgs_composite, test_fgs_params, feature_controlled
                     )
                 )
@@ -243,7 +242,7 @@ class TestFlyscanXrayCentrePlan:
         RE, (_, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
-            yield from highest_level_flyscan_xray_centre(
+            yield from common_flyscan_xray_centre(
                 fake_fgs_composite,
                 test_fgs_params,
                 feature_controlled,
@@ -495,7 +494,7 @@ class TestFlyscanXrayCentrePlan:
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(
-                highest_level_flyscan_xray_centre(
+                common_flyscan_xray_centre(
                     fake_fgs_composite, test_fgs_params, feature_controlled
                 )
             )

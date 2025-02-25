@@ -27,8 +27,8 @@ from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
+    common_flyscan_xray_centre,
     flyscan_xray_centre_no_move,
-    highest_level_flyscan_xray_centre,
     run_gridscan_and_fetch_results,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -126,7 +126,7 @@ class TestFlyscanXrayCentrePlan:
         ]:
             mock_zocalo_trigger(fake_fgs_composite.zocalo, result)
             RE(
-                highest_level_flyscan_xray_centre(
+                common_flyscan_xray_centre(
                     fake_fgs_composite,
                     test_fgs_params,
                     feature_controlled,

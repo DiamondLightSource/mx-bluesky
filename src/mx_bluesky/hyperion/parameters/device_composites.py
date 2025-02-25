@@ -51,6 +51,8 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
     sample_shutter: ZebraShutter
+    backlight: Backlight
+    xbpm_feedback: XBPMFeedback
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
