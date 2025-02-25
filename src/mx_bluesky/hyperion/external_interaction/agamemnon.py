@@ -6,10 +6,15 @@ from typing import TypeVar
 import requests
 from dodal.utils import get_beamline_name
 
-from mx_bluesky.common.parameters.components import WithVisit
+from mx_bluesky.common.parameters.components import (
+    TopNByMaxCountSelection,
+    WithVisit,
+)
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
@@ -19,6 +24,23 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = (
     r"^/dls/(?P<beamline>[^/]+)/data/(?P<year>\d{4})/(?P<visit>[^/]+)(?:/|$)"
 )
+
+
+class PseudoLoadCentreCollect:
+    panda_runup_distance_mm: int | None
+    features: dict | None
+    selected_centres: TopNByMaxCountSelection | None
+    sample_id: int | None
+    sample_puck: int | None
+    sample_pin: int | None
+    beamline: str | None
+    visit: str | None
+    det_dist_to_beam_converter_path: str | None
+    insertion_prefix: str | None
+    detector_distance_mm: int | None
+    parameter_model_version: str | None
+    robot_load_then_centre: RobotLoadThenCentre | None
+    multi_rotation_scan: MultiRotationScan | None
 
 
 @dataclasses.dataclass
@@ -99,24 +121,41 @@ def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
     )
 
 
+def compare_params(agamemnon_params, load_centre_collect_params):
+    # Blank parameters
+    parameters = PseudoLoadCentreCollect()
+
+    # Populate parameters directly from Agamemnon
+    visit = get_visit_from_agamemnon_parameters(agamemnon_params)
+    parameters.visit = visit
+
+    # Log differences against GDA populated parameters
+    differences = []
+    for key, value in load_centre_collect_params.__dict__.items():
+        if value != getattr(parameters, key, None):
+            differences.append(key)
+    LOGGER.info(f"Differences found for: {differences}")
+    print(f"Differences found for: {differences}")
+
+
 def update_params_from_agamemnon(parameters: T) -> T:
     try:
         beamline_name = get_beamline_name("i03")
-        params = get_next_instruction(beamline_name)
-        pin_type = get_pin_type_from_agamemnon_parameters(params)
-        visit = get_visit_from_agamemnon_parameters(params)
+        agamemnon_params = get_next_instruction(beamline_name)
+        pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
-            parameters.visit = visit
             if pin_type != SinglePin():
                 # Snapshots between each collection take a lot of time.
                 # Before we do https://github.com/DiamondLightSource/mx-bluesky/issues/226
                 # this will give no snapshots but that's preferable
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
+            compare_params(agamemnon_params, parameters)
     except (ValueError, KeyError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
         LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
+
     return parameters
