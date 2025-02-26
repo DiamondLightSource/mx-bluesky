@@ -124,17 +124,21 @@ def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
 def compare_params(agamemnon_params, load_centre_collect_params):
     # Blank parameters
     parameters = AgamemnonLoadCentreCollect()
+    try:
+        # Populate parameters from Agamemnon
+        visit = get_visit_from_agamemnon_parameters(agamemnon_params)
+        parameters.visit = visit
 
-    # Populate parameters from Agamemnon
-    visit = get_visit_from_agamemnon_parameters(agamemnon_params)
-    parameters.visit = visit
-
-    # Log differences against GDA populated parameters
-    differences = []
-    for key, value in load_centre_collect_params.__dict__.items():
-        if value != getattr(parameters, key, None):
-            differences.append(key)
-    LOGGER.info(f"Differences found for: {differences}")
+        # Log differences against GDA populated parameters
+        differences = []
+        for key, value in load_centre_collect_params.__dict__.items():
+            if value != getattr(parameters, key, None):
+                differences.append(key)
+        LOGGER.info(f"Differences found for: {differences}")
+    except (ValueError, KeyError) as e:
+        LOGGER.warning(f"Failed to compare parameters: {e}")
+    except Exception as e:
+        LOGGER.warning(f"Unexpected error occurred. Failed to compare parameters: {e}")
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
