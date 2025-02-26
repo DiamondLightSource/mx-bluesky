@@ -154,9 +154,12 @@ def test_given_agamemnon_fails_when_update_parameters_called_then_parameters_unc
     assert params.robot_load_then_centre.grid_width_um == old_grid_width
 
 
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_parameters_changed_to_single_pin(
-    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+    mock_requests: MagicMock,
+    mock_compare_params: MagicMock,
+    load_centre_collect_params: LoadCentreCollect,
 ):
     configure_mock_agamemnon(mock_requests, None)
     load_centre_collect_params.robot_load_then_centre.grid_width_um = 0
@@ -169,9 +172,12 @@ def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_par
     assert params.multi_rotation_scan.snapshot_omegas_deg
 
 
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_parameters_changed_to_multi_pin(
-    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
+    mock_requests: MagicMock,
+    mock_compare_params: MagicMock,
+    load_centre_collect_params: LoadCentreCollect,
 ):
     configure_mock_agamemnon(mock_requests, "multipin_6x50+10")
     params = update_params_from_agamemnon(load_centre_collect_params)
