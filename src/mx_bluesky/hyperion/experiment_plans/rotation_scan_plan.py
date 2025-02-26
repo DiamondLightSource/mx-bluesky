@@ -27,8 +27,10 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
+from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -37,10 +39,6 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_phi_chi_omega,
     move_x_y_z,
     setup_sample_environment,
-)
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
 )
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -267,7 +265,7 @@ def rotation_scan_plan(
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(composite.eiger)
 
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
@@ -293,7 +291,7 @@ def rotation_scan_plan(
         LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             composite.aperture_scatterguard,
             composite.attenuator,
             composite.flux,
