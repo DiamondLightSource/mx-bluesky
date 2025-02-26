@@ -173,6 +173,10 @@ class RedisListener:
             self._get_and_handle_message()
 
 
-if __name__ == "__main__":
+def main():
     client = RedisListener()
     client.listen_for_image_data_forever()
+
+
+if __name__ == "__main__":
+    main()

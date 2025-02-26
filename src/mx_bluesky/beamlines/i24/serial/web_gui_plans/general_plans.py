@@ -50,6 +50,7 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)  # type: ignore
 
 
+# See https://github.com/DiamondLightSource/mx-bluesky/issues/853
 @bpp.run_decorator()
 def gui_sleep(sec: int) -> MsgGenerator:
     for _ in range(sec):
@@ -61,14 +62,8 @@ def gui_move_detector(det: Literal["eiger", "pilatus"]) -> MsgGenerator:
     detector_stage = i24.detector_motion()
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
+    # Make the output readable
     caput(pv.me14e_gp101, det)
-
-
-@bpp.run_decorator()
-def gui_use_jungfrau() -> MsgGenerator:
-    print("Set to use jungfrau detector")
-    caput(pv.me14e_gp101, "jungfrau")
-    yield from bps.null()
 
 
 @bpp.run_decorator()
@@ -81,23 +76,15 @@ def gui_set_parameters(
     n_shots: int,
     chip_type: str,
     checker_pattern: bool,
-    # pump_settings: Sequence,
-    # use_mapping_lite: bool = False,
-    # chipmap: Sequence = (),
+    pump_probe: str,
+    laser_dwell: float,
+    laser_delay: float,
+    pre_pump: float,
 ) -> MsgGenerator:
+    # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType[chip_type])
-    # pump_repeat = (
-    #     PumpProbeSetting.NoPP
-    #     if not pump_settings[0]
-    #     else PumpProbeSetting[pump_settings[0]]
-    # )
-    # map_type = MappingType.Lite if use_mapping_lite else MappingType.NoMap
-
-    # if chip_params.chip_type is ChipType.Oxford:
-    #     if use_mapping_lite and len(chipmap) == 0:
-    #         raise ValueError("Mapping lite chosen but no chipmap")
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -109,20 +96,14 @@ def gui_set_parameters(
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
-        "map_type": MappingType.NoMap,  # map_type,
-        "chip_map": [],  # list(chipmap),
-        "pump_repeat": PumpProbeSetting.NoPP,  # pump_repeat,
-        "laser_dwell_s": 0.0,  # pump_settings[1]
-        # if pump_repeat != PumpProbeSetting.NoPP
-        # else 0.0,
-        "laser_delay_s": 0.0,  # pump_settings[2]
-        # if pump_repeat != PumpProbeSetting.NoPP
-        # else 0.0,
-        "checker_pattern": checker_pattern,  # pump_settings[3],
-        "pre_pump_exposure_s": None,
+        "map_type": MappingType.NoMap,
+        "chip_map": [],
+        "pump_repeat": PumpProbeSetting[pump_probe],  # pump_repeat,
+        "laser_dwell_s": laser_dwell,
+        "laser_delay_s": laser_delay,
+        "checker_pattern": checker_pattern,
+        "pre_pump_exposure_s": pre_pump,
     }
-    # At some point it will use FixedTargetParameters to create the parameters model
-    # For now not doing that because:
-    # a- not all data in
     print(FixedTargetParameters(**params))
+    # This will then run the run_fixed_target plan
     yield from bps.sleep(0.5)

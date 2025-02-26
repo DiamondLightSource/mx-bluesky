@@ -3,9 +3,9 @@ from collections.abc import Sequence
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
-import numpy
 import pytest
 from bluesky.protocols import Location
+from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.i03.beamstop import BeamstopPositions
@@ -50,20 +50,12 @@ from .conftest import (
 GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION = "tests/test_data/parameter_json_files/good_test_load_centre_collect_params_multi_rotation.json"
 
 
-def find_a_pin(pin_tip_detection):
-    def set_good_position():
-        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([100, 110]))
-        return NullStatus()
-
-    return set_good_position
-
-
 @pytest.fixture
 def composite(
     robot_load_composite,
     fake_create_rotation_devices,
     pin_tip_detection_with_found_pin,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ) -> LoadCentreCollectComposite:
     rlaec_args = {
         field.name: getattr(robot_load_composite, field.name)
@@ -76,6 +68,7 @@ def composite(
 
     composite = LoadCentreCollectComposite(**(rlaec_args | rotation_args))
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
+    composite.undulator_dcm.set = MagicMock(return_value=NullStatus())
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
@@ -128,43 +121,11 @@ def load_centre_collect_params_multi():
 
 
 @pytest.fixture
-def load_centre_collect_params():
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
-    )
-    return LoadCentreCollect(**params)
-
-
-@pytest.fixture
 def load_centre_collect_with_top_n_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
     )
     return LoadCentreCollect(**params)
-
-
-@pytest.fixture
-def grid_detection_callback_with_detected_grid():
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
-        autospec=True,
-    ) as callback:
-        callback.return_value.get_grid_parameters.return_value = {
-            "transmission_frac": 1.0,
-            "exposure_time_s": 0,
-            "x_start_um": 0,
-            "y_start_um": 0,
-            "y2_start_um": 0,
-            "z_start_um": 0,
-            "z2_start_um": 0,
-            "x_steps": 10,
-            "y_steps": 10,
-            "z_steps": 10,
-            "x_step_size_um": 0.1,
-            "y_step_size_um": 0.1,
-            "z_step_size_um": 0.1,
-        }
-        yield callback
 
 
 def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
@@ -318,7 +279,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
@@ -393,12 +354,12 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     new=MagicMock(),
 )
-def test_load_centre_collect_ful_skips_collect_if_pin_tip_not_found(
+def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
     mock_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
@@ -429,7 +390,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
     grid_detection_callback_with_detected_grid,
 ):
     sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
@@ -632,3 +593,57 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
         [call("/tmp/dls/i03/data/2024/cm31105-4/auto/123458/", exist_ok=True)],
         any_order=True,
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+def test_box_size_passed_through_to_gridscan(
+    mock_detect_grid: MagicMock,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+):
+    load_centre_collect_params.robot_load_then_centre.box_size_um = 25
+
+    RE(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+    detect_grid_call = mock_detect_grid.mock_calls[0]
+    assert detect_grid_call.args[1].box_size_um == 25
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    return_value=iter([]),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.robot_load_then_xray_centre",
+    return_value=iter([]),
+)
+def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centring_required(
+    _: MagicMock,
+    mock_rotation_scan: MagicMock,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    sim_run_engine: RunEngineSimulator,
+):
+    sim_run_engine.add_read_handler_for(composite.smargon.x, 1.1)
+    sim_run_engine.add_read_handler_for(composite.smargon.y, 2.2)
+    sim_run_engine.add_read_handler_for(composite.smargon.z, 3.3)
+
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+
+    rotation_scans = mock_rotation_scan.call_args.args[1].rotation_scans
+    assert len(rotation_scans) == 1
+    assert rotation_scans[0].x_start_um == 1.1
+    assert rotation_scans[0].y_start_um == 2.2
+    assert rotation_scans[0].z_start_um == 3.3

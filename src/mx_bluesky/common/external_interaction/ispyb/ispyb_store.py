@@ -206,9 +206,16 @@ class StoreInIspyb:
     def _store_data_collection_table(
         self, conn, data_collection_id, data_collection_info
     ):
+        if data_collection_id and data_collection_info.comments:
+            self.append_to_comment(
+                data_collection_id, data_collection_info.comments, " "
+            )
+            data_collection_info.comments = None
+
         params = self._fill_common_data_collection_params(
             conn, data_collection_id, data_collection_info
         )
+
         return self._upsert_data_collection(conn, params)
 
     def _store_single_scan_data(

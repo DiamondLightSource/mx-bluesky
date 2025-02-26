@@ -43,7 +43,10 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameC
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import (
+    ISPyBDepositionNotMade,
+    SampleException,
+)
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 
 if TYPE_CHECKING:
@@ -113,7 +116,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             scan_data_infos = [
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
-                        None,
+                        "MX-Bluesky: Xray centring 1 -",
                         None,
                         populate_xy_data_collection_info(
                             self.params.detector_params,
@@ -123,7 +126,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 ),
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
-                        None,
+                        "MX-Bluesky: Xray centring 2 -",
                         None,
                         populate_xz_data_collection_info(self.params.detector_params),
                         self.params,
@@ -281,5 +284,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
+            exception_type, message = SampleException.type_and_message_from_reason(
+                doc.get("reason", "")
+            )
+            if exception_type:
+                doc["reason"] = message
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)

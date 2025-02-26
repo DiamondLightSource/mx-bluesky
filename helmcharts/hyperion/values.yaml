@@ -1,4 +1,4 @@
-hyperion:
+application:
   containerPort: 5005
   servicePort: 80
   imageRepository: ghcr.io/diamondlightsource

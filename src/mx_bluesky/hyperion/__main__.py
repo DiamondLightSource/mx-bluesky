@@ -4,6 +4,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import asdict
 from queue import Queue
+from sys import argv
 from traceback import format_exception
 from typing import Any
 
@@ -37,11 +38,8 @@ from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    setup_logging as setup_callback_logging,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
-    CallbacksFactory,
+from mx_bluesky.hyperion.external_interaction.agamemnon import (
+    update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -56,7 +54,6 @@ class Command:
     devices: Any | None = None
     experiment: Callable[[Any, Any], MsgGenerator] | None = None
     parameters: MxBlueskyParameters | None = None
-    callbacks: CallbacksFactory | None = None
 
 
 @dataclass
@@ -88,7 +85,6 @@ class BlueskyRunner:
         RE: RunEngine,
         context: BlueskyContext,
         skip_startup_connection=False,
-        use_external_callbacks: bool = False,
     ) -> None:
         self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -99,15 +95,12 @@ class BlueskyRunner:
 
         self.RE = RE
         self.context = context
-        self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
         RE.subscribe(self.logging_uid_tag_callback)
 
-        self.use_external_callbacks = use_external_callbacks
-        if self.use_external_callbacks:
-            LOGGER.info("Connecting to external callback ZMQ proxy...")
-            self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
-            RE.subscribe(self.publisher)
+        LOGGER.info("Connecting to external callback ZMQ proxy...")
+        self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
+        RE.subscribe(self.publisher)
 
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -123,7 +116,6 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: MxBlueskyParameters,
         plan_name: str,
-        callbacks: CallbacksFactory | None,
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters.model_dump_json(indent=2)}")
 
@@ -142,7 +134,6 @@ class BlueskyRunner:
                     devices=devices,
                     experiment=experiment,
                     parameters=parameters,
-                    callbacks=callbacks,
                 )
             )
             return StatusAndMessage(Status.SUCCESS)
@@ -181,17 +172,6 @@ class BlueskyRunner:
                 if command.experiment is None:
                     raise ValueError("No experiment provided for START")
                 try:
-                    if (
-                        not self.use_external_callbacks
-                        and command.callbacks
-                        and (cbs := command.callbacks())
-                    ):
-                        LOGGER.info(
-                            f"Using callbacks for this plan: {not self.use_external_callbacks} - {cbs}"
-                        )
-                        self.subscribed_per_plan_callbacks += [
-                            self.RE.subscribe(cb) for cb in cbs
-                        ]
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.devices, command.parameters))
 
@@ -212,11 +192,6 @@ class BlueskyRunner:
                         self.last_run_aborted = False
                     else:
                         self.current_status = make_error_status_and_message(exception)
-                finally:
-                    [
-                        self.RE.unsubscribe(cb)
-                        for cb in self.subscribed_per_plan_callbacks
-                    ]
 
 
 def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):
@@ -225,7 +200,6 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
-    callback_type = experiment_registry_entry.get("callback_collection_type")
     plan = context.plan_functions.get(plan_name)
     if experiment_internal_param_type is None:
         raise PlanNotFound(
@@ -237,13 +211,14 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
+        parameters = update_params_from_agamemnon(parameters)
         if parameters.model_extra:
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:
         raise ValueError(
             f"Supplied parameters don't match the plan for this endpoint {request.data}, for plan {plan_name}"
         ) from e
-    return plan, parameters, plan_name, callback_type
+    return plan, parameters, plan_name
 
 
 class RunExperiment(Resource):
@@ -256,12 +231,10 @@ class RunExperiment(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                plan, params, plan_name, callback_type = compose_start_args(
+                plan, params, plan_name = compose_start_args(
                     self.context, plan_name, action
                 )
-                status_and_message = self.runner.start(
-                    plan, params, plan_name, callback_type
-                )
+                status_and_message = self.runner.start(plan, params, plan_name)
             except Exception as e:
                 status_and_message = make_error_status_and_message(e)
                 LOGGER.error(format_exception(e))
@@ -312,7 +285,6 @@ def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
     skip_startup_connection: bool = False,
-    use_external_callbacks: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
     context = setup_context(
         wait_for_connection=not skip_startup_connection,
@@ -320,7 +292,6 @@ def create_app(
     runner = BlueskyRunner(
         RE,
         context=context,
-        use_external_callbacks=use_external_callbacks,
         skip_startup_connection=skip_startup_connection,
     )
     app = Flask(__name__)
@@ -350,11 +321,9 @@ def create_targets():
     do_default_logging_setup(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
-    if not args.use_external_callbacks:
-        setup_callback_logging(args.dev_mode)
+    LOGGER.info(f"Hyperion launched with args:{argv}")
     app, runner = create_app(
         skip_startup_connection=args.skip_startup_connection,
-        use_external_callbacks=args.use_external_callbacks,
     )
     return app, runner, hyperion_port, args.dev_mode
 

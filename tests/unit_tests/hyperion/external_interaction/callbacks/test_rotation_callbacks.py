@@ -14,7 +14,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -121,9 +121,9 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
 
     ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
     ispyb_callback.params = params
+    RE.subscribe(nexus_callback)
+    RE.subscribe(ispyb_callback)
     with pytest.raises(ISPyBDepositionNotMade):
-        RE.subscribe(nexus_callback)
-        RE.subscribe(ispyb_callback)
         RE(do_rotation_scan)
     zocalo_trigger.run_start.assert_not_called()  # type: ignore
 

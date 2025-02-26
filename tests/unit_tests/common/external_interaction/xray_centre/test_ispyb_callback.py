@@ -1,8 +1,14 @@
 from unittest.mock import MagicMock, patch
 
+from bluesky.preprocessors import run_decorator, subs_decorator
+from ophyd_async.core import init_devices
+from ophyd_async.epics.core import epics_signal_rw
+
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.plans.read_hardware import read_hardware_plan
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
@@ -20,6 +26,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": TEST_SAMPLE_ID,
+    "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorid": 78,
     "data_collection_number": 1,
     "detector_distance": 100.0,
@@ -40,6 +47,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
+    "comments": "MX-Bluesky: Xray centring 2 -",
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
 }
@@ -83,6 +91,23 @@ class TestXrayCentreISPyBCallback:
         )
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
+
+    def test_reason_provided_if_crystal_not_found_error(self, mock_ispyb_conn):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        callback.activity_gated_stop(
+            TestData.test_gridscan3d_stop_document_with_crystal_exception
+        )
+        assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
+            (
+                TEST_DATA_COLLECTION_IDS[0],
+                "DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
+                " ",
+            ),
+        )
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback(
@@ -198,14 +223,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_y",
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 20 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
-                "bottom right (px): [3250,1700].",
                 "axisstart": 0,
                 "omegastart": 0,
                 "axisend": 0,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[0],
+            "Diffraction grid scan of 40 by 20 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
+            "bottom right (px): [3250,1700].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[1],
@@ -217,14 +246,18 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot1": "test_1_z",
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
-                "comments": "MX-Bluesky: Xray centring - Diffraction grid scan of 40 by 10 "
-                "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
-                "bottom right (px): [3250,800].",
                 "axisstart": 90,
                 "omegastart": 90,
                 "axisend": 90,
                 "axisrange": 0,
             },
+        )
+        mx_acq.update_data_collection_append_comments.assert_any_call(
+            TEST_DATA_COLLECTION_IDS[1],
+            "Diffraction grid scan of 40 by 10 "
+            "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
+            "bottom right (px): [3250,800].",
+            " ",
         )
         assert_upsert_call_with(
             mx_acq.upsert_dc_grid.mock_calls[0],
@@ -260,3 +293,36 @@ class TestXrayCentreISPyBCallback:
                 "snaked": True,
             },
         )
+
+    async def test_ispyb_callback_handles_read_hardware_in_run_engine(
+        self, RE, mock_ispyb_conn
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback._handle_ispyb_hardware_read = MagicMock()
+        callback._handle_ispyb_transmission_flux_read = MagicMock()
+        callback.ispyb = MagicMock()
+        callback.params = MagicMock()
+
+        with init_devices(mock=True):
+            test_readable = epics_signal_rw(str, "pv")
+
+        @subs_decorator(callback)
+        @run_decorator(
+            md={
+                "activate_callbacks": ["GridscanISPyBCallback"],
+            },
+        )
+        def test_plan():
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_PRE
+            )
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_DURING
+            )
+
+        RE(test_plan())
+
+        callback._handle_ispyb_hardware_read.assert_called_once()
+        callback._handle_ispyb_transmission_flux_read.assert_called_once()

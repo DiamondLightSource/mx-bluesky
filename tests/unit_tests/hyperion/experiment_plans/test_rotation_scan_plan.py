@@ -179,7 +179,6 @@ def test_rotation_scan(
 ):
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
-
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 
@@ -291,7 +290,7 @@ def test_cleanup_happens(
                     fake_create_rotation_devices, test_rotation_params, motion_values
                 )
             )
-            cleanup_plan.assert_not_called()
+        cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
         with pytest.raises(MyTestException) as exc:
             RE(
@@ -301,8 +300,8 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-            assert "Experiment fails because this is a test" in exc.value.args[0]
-            cleanup_plan.assert_called_once()
+        assert "Experiment fails because this is a test" in exc.value.args[0]
+        cleanup_plan.assert_called_once()
 
 
 def test_rotation_plan_reads_hardware(
@@ -327,13 +326,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
     )
 
 
@@ -511,7 +504,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == ApertureValue.ROBOT_LOAD
+        and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(
@@ -683,7 +676,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    mock_zocalo_callback = ZocaloCallback()
+    mock_zocalo_callback = ZocaloCallback(CONST.PLAN.ROTATION_MAIN, "env")
     mock_ispyb_callback = RotationISPyBCallback(emit=mock_zocalo_callback)
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)

@@ -28,10 +28,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 
-from ....conftest import raw_params_from_file, simulate_xrc_result
-from ....system_tests.hyperion.external_interaction.conftest import (
-    TEST_RESULT_LARGE,
-)
+from ....conftest import TEST_RESULT_LARGE, raw_params_from_file, simulate_xrc_result
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
@@ -296,7 +293,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args == (ApertureValue.ROBOT_LOAD,)
+        and msg.args == (ApertureValue.OUT_OF_BEAM,)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
 
