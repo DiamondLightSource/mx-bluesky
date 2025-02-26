@@ -114,6 +114,91 @@ i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
 
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 1000,
+        "n_voxels": 35,
+        "total_count": 1000,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
+    {
+        "centre_of_mass": [0.5, 0.5, 0.5],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
+    {
+        "centre_of_mass": [0.0, 0.0, 0.0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_COM = [
+    {
+        "centre_of_mass": [-0.0001, -0.0001, -0.0001],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_BB = [
+    {
+        "centre_of_mass": [0, 0, 0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+    }
+]
+
 
 @pytest.fixture(scope="session")
 def active_device_factories() -> set[AnyDeviceFactory]:

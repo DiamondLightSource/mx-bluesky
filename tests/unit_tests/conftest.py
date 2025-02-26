@@ -41,6 +41,14 @@ mock_attributes_table = {
 }
 
 
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
+
+
 def mock_beamline_module_filepaths(bl_name, bl_module):
     if mock_attributes := mock_attributes_table.get(bl_name):
         [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
@@ -55,13 +63,6 @@ def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceF
         for f in collect_factories(beamline_module, include_skipped=True).values()
         if hasattr(f, "cache_clear")
     }
-
-
-@pytest.fixture(scope="function", autouse=True)
-def clear_device_factory_caches_after_every_test(active_device_factories):
-    yield None
-    for f in active_device_factories:
-        f.cache_clear()  # type: ignore
 
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):

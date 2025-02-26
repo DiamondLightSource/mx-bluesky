@@ -129,7 +129,7 @@ async def test_zocalo_adds_nonzero_comment_time(
     ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
 
     comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    match = re.match(r"Zocalo processing took (\d+\.\d+) s", comment)
+    match = re.match(r".*Zocalo processing took (\d+\.\d+) s", comment)
     assert match
     time_s = float(match.group(1))
     assert time_s > 0
