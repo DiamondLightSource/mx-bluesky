@@ -26,7 +26,7 @@ MX_GENERAL_ROOT_REGEX = (
 )
 
 
-class PseudoLoadCentreCollect:
+class AgamemnonLoadCentreCollect:
     panda_runup_distance_mm: int | None
     features: dict | None
     selected_centres: TopNByMaxCountSelection | None
@@ -123,9 +123,9 @@ def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
 
 def compare_params(agamemnon_params, load_centre_collect_params):
     # Blank parameters
-    parameters = PseudoLoadCentreCollect()
+    parameters = AgamemnonLoadCentreCollect()
 
-    # Populate parameters directly from Agamemnon
+    # Populate parameters from Agamemnon
     visit = get_visit_from_agamemnon_parameters(agamemnon_params)
     parameters.visit = visit
 
@@ -135,7 +135,6 @@ def compare_params(agamemnon_params, load_centre_collect_params):
         if value != getattr(parameters, key, None):
             differences.append(key)
     LOGGER.info(f"Differences found for: {differences}")
-    print(f"Differences found for: {differences}")
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
