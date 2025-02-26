@@ -1,6 +1,7 @@
 import io
 import json
 import pickle
+from datetime import timedelta
 from typing import TypedDict
 
 import numpy as np
@@ -41,20 +42,10 @@ def send_to_murko_and_get_results(request: MurkoRequest) -> dict:
     return results
 
 
-def correlate_results_to_uuids(request: MurkoRequest, murko_results: dict) -> list:
-    results = []
-    uuids = request["prefix"]
-
-    width, height = get_image_size(request["to_predict"][0])
-
-    for uuid, prediction in zip(uuids, murko_results["descriptions"], strict=False):
-        coords = prediction["most_likely_click"]
-        y_coord = coords[0] * height
-        x_coord = coords[1] * width
-        results.append(
-            {"uuid": uuid, "x_pixel_coord": x_coord, "y_pixel_coord": y_coord}
-        )
-    return results
+def correlate_results_to_uuids(
+    request: MurkoRequest, murko_results: dict
+) -> list[tuple]:
+    return list(zip(request["prefix"], murko_results["descriptions"], strict=False))
 
 
 class BatchMurkoForwarder:
@@ -98,12 +89,12 @@ class BatchMurkoForwarder:
         results = correlate_results_to_uuids(request_arguments, predictions)
         self._send_murko_results_to_redis(sample_id, results)
 
-    def _send_murko_results_to_redis(self, sample_id: str, results: list):
-        for result in results:
-            self.redis_client.hset(
-                f"murko:{sample_id}:results", result["uuid"], json.dumps(result)
-            )
-        self.redis_client.publish("murko-results", json.dumps(results))
+    def _send_murko_results_to_redis(self, sample_id: str, results: list[tuple]):
+        for uuid, result in results:
+            redis_key = f"murko:{sample_id}:results"
+            self.redis_client.hset(redis_key, uuid, str(pickle.dumps(result)))
+            self.redis_client.expire(redis_key, timedelta(days=7))
+        self.redis_client.publish("murko-results", pickle.dumps(results))
 
     def add(self, sample_id: str, uuid: str, image: NDArray):
         """Add an image to the batch to send to murko."""
