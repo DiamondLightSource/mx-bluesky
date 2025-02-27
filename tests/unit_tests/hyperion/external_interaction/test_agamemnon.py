@@ -7,6 +7,7 @@ from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     PinType,
     SinglePin,
+    compare_params,
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
     get_withvisit_parameters_from_agamemnon,
@@ -249,3 +250,22 @@ def test_no_prefix_raises_exception():
         )
 
     assert "does not match MX-General root structure" in str(e.value)
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.agamemnon.populate_parameters_from_agamemnon"
+)
+def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
+    mock_populate_params,
+    mock_logger,
+    load_centre_collect_params: LoadCentreCollect,
+):
+    compare_params(
+        set_up_agamemmnon_params(None, None, None),
+        load_centre_collect_params,
+    )
+
+    # Differences should be all keys of LoadCentreCollect
+    differences = list(load_centre_collect_params.__dict__.keys())
+    mock_logger.info.assert_called_with(f"Differences found for: {differences}")
