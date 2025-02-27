@@ -27,6 +27,9 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
+from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -47,9 +50,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 )
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
