@@ -7,14 +7,11 @@ import requests
 from dodal.utils import get_beamline_name
 
 from mx_bluesky.common.parameters.components import (
-    TopNByMaxCountSelection,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
@@ -26,21 +23,8 @@ MX_GENERAL_ROOT_REGEX = (
 )
 
 
-class AgamemnonLoadCentreCollect:
-    panda_runup_distance_mm: int | None
-    features: dict | None
-    selected_centres: TopNByMaxCountSelection | None
-    sample_id: int | None
-    sample_puck: int | None
-    sample_pin: int | None
-    beamline: str | None
-    visit: str | None
-    det_dist_to_beam_converter_path: str | None
-    insertion_prefix: str | None
-    detector_distance_mm: int | None
-    parameter_model_version: str | None
-    robot_load_then_centre: RobotLoadThenCentre | None
-    multi_rotation_scan: MultiRotationScan | None
+class AgamemnonLoadCentreCollect(WithVisit):
+    """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
 @dataclasses.dataclass
@@ -106,28 +90,35 @@ def get_next_instruction(beamline: str) -> dict:
     return _get_parameters_from_url(AGAMEMNON_URL + f"getnextcollect/{beamline}")
 
 
-def get_visit_from_agamemnon_parameters(parameters: dict) -> str:
-    prefix = parameters.get("prefix")
-    if not prefix:
-        raise KeyError("Failed to get prefix from Agamemnon")
+def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
+    try:
+        prefix = parameters["prefix"]
+        collection = parameters["collection"]
+        detector_distance = collection["distance"]
+    except KeyError as e:
+        raise KeyError("Unexpected json from agamemnon") from e
 
-    match = re.match(MX_GENERAL_ROOT_REGEX, prefix)
+    match = re.match(MX_GENERAL_ROOT_REGEX, prefix) if prefix else None
 
     if match:
-        return match.group("visit")
+        return (match.group("visit"), detector_distance)
 
     raise ValueError(
         f"Agamemnon prefix '{prefix}' does not match MX-General root structure"
     )
 
 
+def populate_parameters_from_agamemnon(agamemnon_params):
+    visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
+    return AgamemnonLoadCentreCollect(
+        visit=visit, detector_distance_mm=detector_distance
+    )
+
+
 def compare_params(agamemnon_params, load_centre_collect_params):
-    # Blank parameters
-    parameters = AgamemnonLoadCentreCollect()
     try:
         # Populate parameters from Agamemnon
-        visit = get_visit_from_agamemnon_parameters(agamemnon_params)
-        parameters.visit = visit
+        parameters = populate_parameters_from_agamemnon(agamemnon_params)
 
         # Log differences against GDA populated parameters
         differences = []
