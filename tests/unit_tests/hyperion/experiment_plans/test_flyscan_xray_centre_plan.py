@@ -1,6 +1,6 @@
 import types
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -1023,6 +1023,33 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_no_move",
+    )
+    def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
+        self,
+        flyscan_xray_centre_no_move: MagicMock,
+        mock_unpause_and_set_transmission: MagicMock,
+        mock_check_and_pause: MagicMock,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        RE: RunEngine,
+    ):
+        flyscan_xray_centre_no_move.side_effect = Exception
+        with pytest.raises(Exception):  # noqa: B017
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        # We end up calling unpause twice in this case. One for close run and one for exception
+        mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
+
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors._check_and_pause_feedback_and_verify_undulator_gap",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors._unpause_xbpm_feedback_and_set_transmission_to_1",
+        autospec=True,
+    )
+    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
@@ -1042,7 +1069,6 @@ class TestFlyscanXrayCentrePlan:
         RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
         mock_check_and_pause.assert_called_once()
 
-        # This actually gets called twice as it's added to a finally block
         mock_unpause_and_set_transmission.assert_called()
 
     @patch(
@@ -1085,6 +1111,12 @@ class TestFlyscanXrayCentrePlan:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "open_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "close_run"
             and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
         )
 

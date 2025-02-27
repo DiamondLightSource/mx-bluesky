@@ -1,7 +1,4 @@
-from bluesky.preprocessors import (
-    finalize_wrapper,
-    plan_mutator,
-)
+from bluesky.preprocessors import contingency_wrapper, plan_mutator
 from bluesky.utils import make_decorator
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
@@ -37,21 +34,24 @@ def transmission_and_xbpm_feedback_for_collection_for_fgs_wrapper(
         )
 
     def insert_plans(msg):
-        if msg.command == "open_run" and PlanNameConstants.GRIDSCAN_OUTER in msg.run:
-            return head(msg), None
-        elif (
-            msg.command == "close_run"
-            and PlanNameConstants.GRIDSCAN_OUTER in msg.kwargs
-        ):
-            return None, tail()
-        else:
-            return None, None
+        if msg.run:
+            if (
+                msg.command == "open_run"
+                and PlanNameConstants.GRIDSCAN_OUTER in msg.run
+            ):
+                return head(msg), None
+            elif (
+                msg.command == "close_run"
+                and PlanNameConstants.GRIDSCAN_OUTER in msg.run
+            ):
+                return None, tail()
+        return None, None
 
-    # Ensure unpausing xbpm feedback always occurs
+    # Ensure unpausing xbpm feedback occurs if there's an exception during the run
     return (
-        yield from finalize_wrapper(
+        yield from contingency_wrapper(
             plan_mutator(plan, insert_plans),
-            _unpause_xbpm_feedback_and_set_transmission_to_1(
+            except_plan=_unpause_xbpm_feedback_and_set_transmission_to_1(
                 devices.xbpm_feedback, devices.attenuator
             ),
         )
