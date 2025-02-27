@@ -51,7 +51,7 @@ def transmission_and_xbpm_feedback_for_collection_for_fgs_wrapper(
     return (
         yield from contingency_wrapper(
             plan_mutator(plan, insert_plans),
-            except_plan=_unpause_xbpm_feedback_and_set_transmission_to_1(
+            except_plan=lambda _: _unpause_xbpm_feedback_and_set_transmission_to_1(
                 devices.xbpm_feedback, devices.attenuator
             ),
         )
