@@ -6,9 +6,6 @@
         {
             "path": "../../dodal"
         },
-        {
-            "path": "../../ophyd"
-        }
     ],
     "settings": {
         "python.languageServer": "Pylance",
