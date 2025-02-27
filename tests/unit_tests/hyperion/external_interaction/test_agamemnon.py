@@ -31,7 +31,7 @@ def test_given_various_pin_formats_then_pin_width_as_expected(
     assert pin.full_width == expected_width
 
 
-def set_up_agamemmnon_params(
+def set_up_agamemnon_params(
     loop_type: str | None,
     prefix: str | None,
     distance: int | None,
@@ -46,7 +46,7 @@ def set_up_agamemmnon_params(
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
         get_pin_type_from_agamemnon_parameters(
-            set_up_agamemmnon_params(None, None, None)
+            set_up_agamemnon_params(None, None, None)
         )
         == SinglePin()
     )
@@ -65,7 +65,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
 ):
     assert (
         get_pin_type_from_agamemnon_parameters(
-            set_up_agamemmnon_params(loop_name, None, None)
+            set_up_agamemnon_params(loop_name, None, None)
         )
         == expected_loop
     )
@@ -85,7 +85,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
 ):
     assert (
         get_pin_type_from_agamemnon_parameters(
-            set_up_agamemmnon_params(loop_name, None, None)
+            set_up_agamemnon_params(loop_name, None, None)
         )
         == SinglePin()
     )
@@ -114,14 +114,14 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
 ):
     with pytest.raises(ValueError) as e:
         get_pin_type_from_agamemnon_parameters(
-            set_up_agamemmnon_params(loop_name, None, None)
+            set_up_agamemnon_params(loop_name, None, None)
         )
     assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
     mock_requests.get.return_value.content = json.dumps(
-        {"collect": set_up_agamemmnon_params(loop_type, None, None)}
+        {"collect": set_up_agamemnon_params(loop_type, "", 255)}
     )
 
 
@@ -129,7 +129,7 @@ def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
 def test_when_get_next_instruction_called_then_expected_agamemnon_url_queried(
     mock_requests: MagicMock,
 ):
-    configure_mock_agamemnon(mock_requests, None)
+    configure_mock_agamemnon(mock_requests, "")
     get_next_instruction("i03")
     mock_requests.get.assert_called_once_with(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
@@ -173,7 +173,7 @@ def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_par
     mock_compare_params: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
 ):
-    configure_mock_agamemnon(mock_requests, None)
+    configure_mock_agamemnon(mock_requests, "")
     load_centre_collect_params.robot_load_then_centre.grid_width_um = 0
     load_centre_collect_params.select_centres.n = 0
     params = update_params_from_agamemnon(load_centre_collect_params)
@@ -219,7 +219,7 @@ def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
 )
 def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visit: str):
     visit, _ = get_withvisit_parameters_from_agamemnon(
-        set_up_agamemmnon_params(None, prefix, None)
+        set_up_agamemnon_params(None, prefix, None)
     )
     assert visit == expected_visit
 
@@ -237,19 +237,17 @@ def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visi
 def test_given_invalid_prefix_then_exception_raised(prefix: str):
     with pytest.raises(ValueError) as e:
         get_withvisit_parameters_from_agamemnon(
-            set_up_agamemmnon_params(None, prefix, None)
+            set_up_agamemnon_params(None, prefix, None)
         )
 
     assert "MX-General root structure" in str(e.value)
 
 
 def test_no_prefix_raises_exception():
-    with pytest.raises(ValueError) as e:
-        get_withvisit_parameters_from_agamemnon(
-            set_up_agamemmnon_params(None, None, None)
-        )
+    with pytest.raises(KeyError) as e:
+        get_withvisit_parameters_from_agamemnon({"not_collect": ""})
 
-    assert "does not match MX-General root structure" in str(e.value)
+    assert "Unexpected json from agamemnon" in str(e.value)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
@@ -262,7 +260,7 @@ def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
     load_centre_collect_params: LoadCentreCollect,
 ):
     compare_params(
-        set_up_agamemmnon_params(None, None, None),
+        set_up_agamemnon_params(None, None, None),
         load_centre_collect_params,
     )
 

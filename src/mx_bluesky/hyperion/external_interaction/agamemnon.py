@@ -5,6 +5,7 @@ from typing import TypeVar
 
 import requests
 from dodal.utils import get_beamline_name
+from jsonschema import ValidationError
 
 from mx_bluesky.common.parameters.components import (
     WithVisit,
@@ -147,7 +148,7 @@ def update_params_from_agamemnon(parameters: T) -> T:
                 # this will give no snapshots but that's preferable
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
             compare_params(agamemnon_params, parameters)
-    except (ValueError, KeyError) as e:
+    except (ValueError, ValidationError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
         LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
