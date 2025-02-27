@@ -267,3 +267,20 @@ def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
     # Differences should be all keys of LoadCentreCollect
     differences = list(load_centre_collect_params.__dict__.keys())
     mock_logger.info.assert_called_with(f"Differences found for: {differences}")
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.agamemnon.populate_parameters_from_agamemnon"
+)
+def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
+    mock_populate_params,
+    mock_logger,
+    load_centre_collect_params: LoadCentreCollect,
+):
+    mock_populate_params.side_effect = ValueError()
+    compare_params(
+        set_up_agamemnon_params(None, None, None),
+        load_centre_collect_params,
+    )
+    mock_logger.warning.assert_called_with("Failed to compare parameters: ")
