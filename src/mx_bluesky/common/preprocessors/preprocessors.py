@@ -14,7 +14,7 @@ def transmission_and_xbpm_feedback_for_collection_for_fgs_wrapper(
     devices: DevicesForXbpmAndTransmissionWrapper,
     desired_transmission_fraction: float,
 ):
-    """Wrapper that can attach at the entry point of a beamline-specific XRC FGS plan. The wrapped plan will listen for an 'open_run' Message with metadata `PlanNameConstants.GRIDSCAN_OUTER`, then insert a plan to check and pause XBPM feedback, and verify undulator gap. It will also listen for the 'close_run' Message with the same metadata to unpause XBPM feedback. The unpausing is also added to a 'finally' block to ensure it still happens on any Exceptions"""
+    """Wrapper that can attach at the entry point of a beamline-specific XRC FGS plan. The wrapped plan will listen for an 'open_run' Message with run `PlanNameConstants.GRIDSCAN_OUTER`, then insert a plan to check and pause XBPM feedback, and verify undulator gap. It will also listen for the 'close_run' Message with the same metadata to unpause XBPM feedback. The unpausing is also added to an 'except' block."""
 
     def head(msg):
         yield from _check_and_pause_feedback_and_verify_undulator_gap(
