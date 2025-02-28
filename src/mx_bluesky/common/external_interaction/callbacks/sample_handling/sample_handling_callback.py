@@ -39,8 +39,12 @@ class SampleHandlingCallback(PlanReactiveCallback):
                     f"Sample handling callback intercepted exception of type {exception_type}: {message}"
                 )
                 self._record_exception(exception_type, expeye)
+            else:
+                self._record_loaded(expeye)
+
             self._sample_id = None
             self._run_id = None
+
         return doc
 
     def _record_exception(self, exception_type: str, expeye: ExpeyeInteraction):

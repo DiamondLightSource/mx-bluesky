@@ -3,9 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
-)
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.plans.write_sample_status import (
     deposit_loaded_sample,
@@ -29,9 +26,6 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
     expected_sample_status: BLSampleStatus,
     expected_raised_exception: type,
 ):
-    sample_handling_callback = SampleHandlingCallback()
-    RE.subscribe(sample_handling_callback)
-
     mock_expeye = MagicMock()
     with (
         patch(
@@ -42,9 +36,9 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
         pytest.raises(expected_raised_exception),
     ):
         RE(deposit_sample_error(exception_type, TEST_SAMPLE_ID))
-        mock_expeye.update_sample_status.assert_called_once_with(
-            TEST_SAMPLE_ID, expected_sample_status
-        )
+    mock_expeye.update_sample_status.assert_called_once_with(
+        TEST_SAMPLE_ID, expected_sample_status
+    )
 
 
 def test_depositing_sample_loaded(
