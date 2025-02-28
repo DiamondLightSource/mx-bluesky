@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update -y && apt upgrade -y
 # Needed for python cv2 dependency and confluent-kafka
-RUN apt install -y libgl1 libglib2.0-0 librdkafka
+RUN apt install -y libgl1 libglib2.0-0 librdkafka1
 
 RUN pip install setuptools_scm
 
