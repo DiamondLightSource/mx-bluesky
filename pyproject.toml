@@ -18,6 +18,7 @@ dependencies = [
     #
     "annotated_types",
     "caproto",
+    "confluent-kafka==2.8.0",
     "fastapi[all]",
     "flask-restful",
     "ispyb",
@@ -73,7 +74,6 @@ dev = [
     "pydata-sphinx-theme>=0.12",
     "pyright==1.1.394",          # See https://github.com/DiamondLightSource/mx-bluesky/issues/875
     "pytest-asyncio",
-    "confluent-kafka==2.8.0",
     "pytest-cov",
     "pytest-random-order",
     "pytest",
