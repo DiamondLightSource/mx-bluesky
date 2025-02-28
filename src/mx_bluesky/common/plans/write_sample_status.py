@@ -7,8 +7,8 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
     SampleHandlingCallback,
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters, WithSample
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 callback = SampleHandlingCallback()
 
