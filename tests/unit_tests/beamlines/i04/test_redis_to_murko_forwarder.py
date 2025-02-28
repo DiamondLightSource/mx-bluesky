@@ -203,11 +203,11 @@ def test_send_to_murko_and_get_results_calls_murko_as_expected(patch_zmq):
 
     returned = send_to_murko_and_get_results(mock_request)
 
-    assert mock_socket.connect.called_once_with(MURKO_ADDRESS)
-    assert mock_socket.send.called_once_with(pickle.dumps(mock_request))
+    mock_socket.connect.assert_called_once_with(MURKO_ADDRESS)
+    mock_socket.send.assert_called_once_with(pickle.dumps(mock_request))
     assert returned == expected_return_dict
 
-    
+
 @patch("mx_bluesky.beamlines.i04.redis_to_murko_forwarder.LOGGER")
 def test_given_no_bytes_received_then_warn_and_do_nothing(
     patch_logger: MagicMock,
@@ -224,4 +224,3 @@ def test_given_no_bytes_received_then_warn_and_do_nothing(
 
     patch_logger.warning.assert_called_once()
     redis_listener.forwarder.add.assert_not_called()  # type:ignore
-
