@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import SynAxis
+from ophyd_async.sim import SimMotor
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -41,12 +41,12 @@ def RE_with_mock_callback(mocked_test_callback):
 
 
 def get_test_plan(callback_name):
-    s = SynAxis(name="fake_signal")
+    s = SimMotor(name="fake_signal")
 
     @bpp.run_decorator(md={"activate_callbacks": [callback_name]})
     def test_plan():
         yield from bps.create()
-        yield from bps.read(s)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.read(s)
         yield from bps.save()
 
     return test_plan, s

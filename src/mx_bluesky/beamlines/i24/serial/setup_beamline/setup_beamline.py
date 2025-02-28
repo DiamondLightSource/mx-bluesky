@@ -84,7 +84,7 @@ def move_detector_stage_to_position_plan(
     SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
-    yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.z, detector_distance)
 
 
 def set_detector_beam_center_plan(
