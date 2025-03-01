@@ -15,13 +15,20 @@ from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
 
+MurkoResult = dict
+FullMurkoResults = dict[str, list[MurkoResult]]
+
 
 class MurkoRequest(TypedDict):
+    """See https://github.com/MartinSavko/murko#usage for more information."""
+
     to_predict: NDArray
     model_img_size: tuple[int, int]
     save: bool
     min_size: int
     description: list
+
+    # The identifier for each image
     prefix: list[str]
 
 
@@ -30,7 +37,7 @@ def get_image_size(image: NDArray) -> tuple[int, int]:
     return image.shape[1], image.shape[0]
 
 
-def send_to_murko_and_get_results(request: MurkoRequest) -> dict:
+def send_to_murko_and_get_results(request: MurkoRequest) -> FullMurkoResults:
     LOGGER.info(f"Sending {request['prefix']} to murko")
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
@@ -42,9 +49,12 @@ def send_to_murko_and_get_results(request: MurkoRequest) -> dict:
     return results
 
 
-def correlate_results_to_uuids(
-    request: MurkoRequest, murko_results: dict
-) -> list[tuple]:
+def _correlate_results_to_uuids(
+    request: MurkoRequest, murko_results: FullMurkoResults
+) -> list[tuple[str, MurkoResult]]:
+    """We send a batch of images to murko, with each having a 'prefix' of the uuid that
+    we're using to keep track of the image. Murko sends back an ordered list of these,
+    which we match to the supplied prefix here."""
     return list(zip(request["prefix"], murko_results["descriptions"], strict=False))
 
 
@@ -86,10 +96,14 @@ class BatchMurkoForwarder:
             "prefix": uuids,
         }
         predictions = send_to_murko_and_get_results(request_arguments)
-        results = correlate_results_to_uuids(request_arguments, predictions)
+        results = _correlate_results_to_uuids(request_arguments, predictions)
         self._send_murko_results_to_redis(sample_id, results)
 
-    def _send_murko_results_to_redis(self, sample_id: str, results: list[tuple]):
+    def _send_murko_results_to_redis(
+        self, sample_id: str, results: list[tuple[str, MurkoResult]]
+    ):
+        """Stores the results into a redis hash (for longer term storage) and publishes
+        them as well so that downstream clients can get notified."""
         for uuid, result in results:
             redis_key = f"murko:{sample_id}:results"
             self.redis_client.hset(redis_key, uuid, str(pickle.dumps(result)))
