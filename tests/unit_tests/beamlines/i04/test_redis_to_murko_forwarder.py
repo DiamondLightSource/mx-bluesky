@@ -77,19 +77,19 @@ def test_when_more_images_added_than_batch_size_then_murko_called(
 def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once(
     batch_forwarder: BatchMurkoForwarder,
 ):
-    results = [("uuid_1", "result_1"), ("uuid_2", "result_2")]
+    results = [("uuid_1", {"result": 1}), ("uuid_2", {"result": 2})]
     batch_forwarder._send_murko_results_to_redis("sample_id", results)
 
     assert batch_forwarder.redis_client.hset.call_args_list == [  # type:ignore
         call(
             "murko:sample_id:results",
             "uuid_1",
-            str(pickle.dumps("result_1")),
+            str(pickle.dumps({"result": 1})),
         ),
         call(
             "murko:sample_id:results",
             "uuid_2",
-            str(pickle.dumps("result_2")),
+            str(pickle.dumps({"result": 2})),
         ),
     ]
     batch_forwarder.redis_client.publish.assert_called_once_with(  # type:ignore
