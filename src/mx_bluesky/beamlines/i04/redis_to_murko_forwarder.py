@@ -7,6 +7,7 @@ from typing import TypedDict
 import numpy as np
 import zmq
 from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
+from dodal.devices.i04.murko_results import FullMurkoResults, MurkoResult
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
@@ -14,9 +15,6 @@ from redis import StrictRedis
 from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
-
-MurkoResult = dict
-FullMurkoResults = dict[str, list[MurkoResult]]
 
 
 class MurkoRequest(TypedDict):
