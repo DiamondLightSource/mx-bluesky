@@ -18,7 +18,6 @@ dependencies = [
     #
     "annotated_types",
     "caproto",
-    "confluent-kafka==2.8.0",
     "fastapi[all]",
     "flask-restful",
     "ispyb",
