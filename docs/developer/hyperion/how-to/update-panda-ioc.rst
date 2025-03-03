@@ -1,7 +1,7 @@
 Update the PandA IOC
 ================
 
-The IOC for the PandA on IOC can sometimes get out of sync with the production version of Ophyd-Async. Here is how to update it
+The IOC for the PandA can sometimes get out of sync with the production version of Ophyd-Async. Here is how to update it
 
 Check if the IOC needs updating
 """"""""""""""""""""""""""
