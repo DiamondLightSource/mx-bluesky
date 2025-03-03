@@ -138,7 +138,7 @@ def enter_hutch(
     detector_stage: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
-    yield from bps.mv(detector_stage.z, SAFE_DET_Z)
+    yield from bps.mv(detector_stage.z, SAFE_DET_Z)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     SSX_LOGGER.debug("Detector moved.")
 
 

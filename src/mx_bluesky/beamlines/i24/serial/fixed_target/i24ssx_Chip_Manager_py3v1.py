@@ -548,11 +548,11 @@ def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
     chip_move = CHIP_MOVES[chip_type]
 
     if place == Fiducials.origin:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid1:
-        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)
+        yield from bps.mv(pmac.x, chip_move, pmac.y, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     if place == Fiducials.fid2:
-        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, chip_move)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log_on_entry
@@ -580,7 +580,7 @@ def moveto_preset(
     elif place == "collect_position":
         SSX_LOGGER.info("collect position")
         caput(pv.me14e_filter, 20)
-        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 0.0, pmac.y, 0.0, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
         yield from bps.abs_set(
             beamstop.pos_select, BeamstopPositions.DATA_COLLECTION, group=place
         )
@@ -589,7 +589,7 @@ def moveto_preset(
 
     elif place == "microdrop_position":
         SSX_LOGGER.info("microdrop align position")
-        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)
+        yield from bps.mv(pmac.x, 6.0, pmac.y, -7.8, pmac.z, 0.0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @log_on_entry

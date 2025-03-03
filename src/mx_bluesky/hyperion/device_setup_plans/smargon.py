@@ -16,10 +16,10 @@ def move_smargon_warn_on_out_of_range(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
     yield from bps.mv(
-        smargon.x,
-        position[0],
-        smargon.y,
-        position[1],
-        smargon.z,
-        position[2],
+        smargon.x,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        position[0],  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.y,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        position[1],  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.z,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        position[2],  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
