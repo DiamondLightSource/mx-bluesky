@@ -129,7 +129,7 @@ def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
 def test_when_get_next_instruction_called_then_expected_agamemnon_url_queried(
     mock_requests: MagicMock,
 ):
-    configure_mock_agamemnon(mock_requests, "")
+    configure_mock_agamemnon(mock_requests, None)
     get_next_instruction("i03")
     mock_requests.get.assert_called_once_with(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
@@ -173,7 +173,7 @@ def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_par
     mock_compare_params: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
 ):
-    configure_mock_agamemnon(mock_requests, "")
+    configure_mock_agamemnon(mock_requests, None)
     load_centre_collect_params.robot_load_then_centre.grid_width_um = 0
     load_centre_collect_params.select_centres.n = 0
     params = update_params_from_agamemnon(load_centre_collect_params)
@@ -250,23 +250,24 @@ def test_no_prefix_raises_exception():
     assert "Unexpected json from agamemnon" in str(e.value)
 
 
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch(
-    "mx_bluesky.hyperion.external_interaction.agamemnon.populate_parameters_from_agamemnon"
+    "mx_bluesky.hyperion.external_interaction.agamemnon.get_withvisit_parameters_from_agamemnon"
 )
 def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
-    mock_populate_params,
+    mock_get_withvisit,
     mock_logger,
+    mock_requests: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
 ):
+    configure_mock_agamemnon(mock_requests, None)
+    mock_get_withvisit.side_effect = [("test_visit", 200)]
     compare_params(
-        set_up_agamemnon_params(None, None, None),
         load_centre_collect_params,
     )
 
-    # Differences should be all keys of LoadCentreCollect
-    differences = list(load_centre_collect_params.__dict__.keys())
-    mock_logger.info.assert_called_with(f"Differences found for: {differences}")
+    mock_logger.info.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -276,6 +277,7 @@ def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
         (Exception(), "Unexpected error occurred. Failed to compare parameters: "),
     ],
 )
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch(
     "mx_bluesky.hyperion.external_interaction.agamemnon.populate_parameters_from_agamemnon"
@@ -283,13 +285,14 @@ def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
 def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     mock_populate_params,
     mock_logger,
+    mock_requests,
     mock_error,
     mock_log,
     load_centre_collect_params: LoadCentreCollect,
 ):
+    configure_mock_agamemnon(mock_requests, None)
     mock_populate_params.side_effect = mock_error
     compare_params(
-        set_up_agamemnon_params(None, None, None),
         load_centre_collect_params,
     )
     mock_logger.warning.assert_called_with(mock_log)

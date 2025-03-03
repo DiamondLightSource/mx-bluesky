@@ -4,6 +4,7 @@ import re
 from typing import TypeVar
 
 import requests
+from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
 
@@ -116,17 +117,22 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     )
 
 
-def compare_params(agamemnon_params, load_centre_collect_params):
+def compare_params(load_centre_collect_params):
     try:
+        beamline_name = get_beamline_name("i03")
+        agamemnon_params = get_next_instruction(beamline_name)
+
         # Populate parameters from Agamemnon
         parameters = populate_parameters_from_agamemnon(agamemnon_params)
 
         # Log differences against GDA populated parameters
-        differences = []
-        for key, value in load_centre_collect_params.__dict__.items():
-            if value != getattr(parameters, key, None):
-                differences.append(key)
-        LOGGER.info(f"Differences found for: {differences}")
+        differences = DeepDiff(
+            parameters, load_centre_collect_params, math_epsilon=1e-5
+        )
+        if differences:
+            LOGGER.info(
+                f"Different parameters found when directly reading from Hyperion: {differences}"
+            )
     except (ValueError, KeyError) as e:
         LOGGER.warning(f"Failed to compare parameters: {e}")
     except Exception as e:
@@ -147,7 +153,6 @@ def update_params_from_agamemnon(parameters: T) -> T:
                 # Before we do https://github.com/DiamondLightSource/mx-bluesky/issues/226
                 # this will give no snapshots but that's preferable
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
-            compare_params(agamemnon_params, parameters)
     except (ValueError, ValidationError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
