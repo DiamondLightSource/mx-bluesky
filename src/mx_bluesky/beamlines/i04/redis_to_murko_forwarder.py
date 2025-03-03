@@ -44,6 +44,7 @@ def send_to_murko_and_get_results(request: MurkoRequest) -> FullMurkoResults:
     socket.connect(MURKO_ADDRESS)
     socket.send(pickle.dumps(request))
     raw_results = socket.recv()
+    assert isinstance(raw_results, bytes)
     results = pickle.loads(raw_results)
     LOGGER.info(f"Got {len(results['descriptions'])} results")
     return results
