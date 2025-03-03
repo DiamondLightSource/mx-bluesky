@@ -156,8 +156,15 @@ class RedisListener:
             sample_id = data["sample_id"]
 
             # Images are put in redis as raw jpeg bytes, murko needs numpy arrays
-            raw_image = self.redis_client.hget(f"murko:{sample_id}:raw", uuid)
-            assert isinstance(raw_image, bytes)
+            image_key = f"murko:{sample_id}:raw"
+            raw_image = self.redis_client.hget(image_key, uuid)
+
+            if not isinstance(raw_image, bytes):
+                LOGGER.warning(
+                    f"Image at {image_key}:{uuid} is {raw_image}, expected bytes. Ignoring the data"
+                )
+                return
+
             image = Image.open(io.BytesIO(raw_image))
             image = np.asarray(image)
 
