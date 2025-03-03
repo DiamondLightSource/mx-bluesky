@@ -20,9 +20,7 @@ AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
-MX_GENERAL_ROOT_REGEX = (
-    r"^/dls/(?P<beamline>[^/]+)/data/(?P<year>\d{4})/(?P<visit>[^/]+)(?:/|$)"
-)
+MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
 class AgamemnonLoadCentreCollect(WithVisit):

@@ -229,8 +229,6 @@ def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visi
     [
         "/not-dls/i03/data/2025/mx23694-130/foo/bar",
         "/dls/i03/not-data/2025/mx23694-130/foo/bar",
-        "/dls/i03/data/twenty-twenty-five/mx23694-130/foo/bar",
-        "/dls/i03/data/20025/mx23694-130/foo/bar",
         "/foo/bar/i03/data/2025/mx23694-130",
     ],
 )
