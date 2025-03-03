@@ -95,9 +95,9 @@ class BatchMurkoForwarder:
             ],
             "prefix": uuids,
         }
-        predictions = send_to_murko_and_get_results(request_arguments)
-        results = _correlate_results_to_uuids(request_arguments, predictions)
-        self._send_murko_results_to_redis(sample_id, results)
+        results = send_to_murko_and_get_results(request_arguments)
+        results_with_uuids = _correlate_results_to_uuids(request_arguments, results)
+        self._send_murko_results_to_redis(sample_id, results_with_uuids)
 
     def _send_murko_results_to_redis(
         self, sample_id: str, results: list[tuple[str, MurkoResult]]
