@@ -211,7 +211,7 @@ def run_gridscan_and_fetch_results(
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here
@@ -300,7 +300,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)
+    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -444,8 +444,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
-        time_between_x_steps_ms,
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
 
     directory_provider_root = Path(parameters.storage_directory)
