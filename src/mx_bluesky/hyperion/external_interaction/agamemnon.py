@@ -96,7 +96,8 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     try:
         prefix = parameters["prefix"]
         collection = parameters["collection"]
-        detector_distance = collection["distance"]
+        # Assuming distance is identical for multiple collections. Remove after https://github.com/DiamondLightSource/mx-bluesky/issues/773
+        detector_distance = collection[0]["distance"]
     except KeyError as e:
         raise KeyError("Unexpected json from agamemnon") from e
 

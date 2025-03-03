@@ -37,7 +37,7 @@ def set_up_agamemnon_params(
     distance: int | None,
 ):
     return {
-        "collection": {"distance": distance},
+        "collection": [{"distance": distance}],
         "prefix": prefix,
         "sample": {"loopType": loop_type},
     }
