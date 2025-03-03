@@ -1,5 +1,6 @@
 import io
 import json
+import pickle
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -76,22 +77,30 @@ def test_when_more_images_added_than_batch_size_then_murko_called(
 def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once(
     batch_forwarder: BatchMurkoForwarder,
 ):
-    results = [{"uuid": "result_1"}, {"uuid": "result_2"}]
+    results = [("uuid_1", {"result": 1}), ("uuid_2", {"result": 2})]
     batch_forwarder._send_murko_results_to_redis("sample_id", results)
 
     assert batch_forwarder.redis_client.hset.call_args_list == [  # type:ignore
-        call("murko:sample_id:results", "result_1", '{"uuid": "result_1"}'),
-        call("murko:sample_id:results", "result_2", '{"uuid": "result_2"}'),
+        call(
+            "murko:sample_id:results",
+            "uuid_1",
+            str(pickle.dumps({"result": 1})),
+        ),
+        call(
+            "murko:sample_id:results",
+            "uuid_2",
+            str(pickle.dumps({"result": 2})),
+        ),
     ]
     batch_forwarder.redis_client.publish.assert_called_once_with(  # type:ignore
-        "murko-results", json.dumps(results)
+        "murko-results", pickle.dumps(results)
     )
 
 
 @patch(
     "mx_bluesky.beamlines.i04.redis_to_murko_forwarder.send_to_murko_and_get_results"
 )
-def test_when_images_flushed_then_resuls_are_gathered_correlated_and_sent_to_redis(
+def test_when_images_flushed_then_results_are_gathered_correlated_and_sent_to_redis(
     mock_get_results: MagicMock, batch_forwarder: BatchMurkoForwarder
 ):
     mock_get_results.return_value = {
@@ -108,12 +117,12 @@ def test_when_images_flushed_then_resuls_are_gathered_correlated_and_sent_to_red
         call(
             "murko:sample_1:results",
             "uuid_1",
-            '{"uuid": "uuid_1", "x_pixel_coord": 320, "y_pixel_coord": 0}',
+            str(pickle.dumps({"most_likely_click": (0, 1)})),
         ),
         call(
             "murko:sample_1:results",
             "uuid_2",
-            '{"uuid": "uuid_2", "x_pixel_coord": 240.0, "y_pixel_coord": 128.0}',
+            str(pickle.dumps({"most_likely_click": (0.5, 0.75)})),
         ),
     ]
 
