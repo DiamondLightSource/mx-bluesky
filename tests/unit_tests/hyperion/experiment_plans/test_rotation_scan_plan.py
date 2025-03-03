@@ -290,7 +290,7 @@ def test_cleanup_happens(
                     fake_create_rotation_devices, test_rotation_params, motion_values
                 )
             )
-            cleanup_plan.assert_not_called()
+        cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
         with pytest.raises(MyTestException) as exc:
             RE(
@@ -300,8 +300,8 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-            assert "Experiment fails because this is a test" in exc.value.args[0]
-            cleanup_plan.assert_called_once()
+        assert "Experiment fails because this is a test" in exc.value.args[0]
+        cleanup_plan.assert_called_once()
 
 
 def test_rotation_plan_reads_hardware(
@@ -326,13 +326,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
     )
 
 

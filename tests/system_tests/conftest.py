@@ -128,7 +128,7 @@ def use_dev_ispyb_unless_overridden_by_environment():
         "ISPYB_CONFIG_PATH", CONST.SIM.DEV_ISPYB_DATABASE_CFG
     )
     with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
-        yield
+        yield ispyb_config_path
 
 
 @pytest.fixture

@@ -30,6 +30,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -38,10 +42,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
     set_panda_directory,
@@ -211,7 +211,7 @@ def run_gridscan_and_fetch_results(
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
 
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here
@@ -275,7 +275,7 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
@@ -284,7 +284,7 @@ def run_gridscan(
         )
 
     read_during_collection = partial(
-        read_hardware_during_collection,
+        standard_read_hardware_during_collection,
         fgs_composite.aperture_scatterguard,
         fgs_composite.attenuator,
         fgs_composite.flux,
@@ -300,7 +300,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.stage(fgs_composite.eiger)
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -444,8 +444,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
     )
 
     directory_provider_root = Path(parameters.storage_directory)
