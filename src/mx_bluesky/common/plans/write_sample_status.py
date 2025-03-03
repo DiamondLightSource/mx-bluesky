@@ -41,7 +41,7 @@ def deposit_sample_error_no_internal_callbacks(
     composite: NullDeviceComposite, params: WriteSampleStatus
 ):
     """Hyperion subscribes to external callbacks on instantiation, so needs an entry point without internal callbacks.
-    See https://github.com/DiamondLightSource/mx-bluesky/issues/new?template=issue.md"""
+    See https://github.com/DiamondLightSource/mx-bluesky/issues/880"""
 
     @bpp.run_decorator(
         md={
@@ -63,7 +63,7 @@ def deposit_loaded_sample_no_internal_callbacks(
     composite: NullDeviceComposite, params: WriteSampleLoaded
 ):
     """Hyperion subscribes to external callbacks on instantiation, so needs an entry point without internal callbacks.
-    See https://github.com/DiamondLightSource/mx-bluesky/issues/new?template=issue.md"""
+    See https://github.com/DiamondLightSource/mx-bluesky/issues/880"""
 
     @bpp.run_decorator(
         md={

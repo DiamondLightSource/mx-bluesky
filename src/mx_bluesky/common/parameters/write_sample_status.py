@@ -4,7 +4,7 @@ from mx_bluesky.common.parameters.components import (
     WithVisit,
 )
 
-"""These two parameter classes can be removed once we remove the Hyperion entry points for the write sample status plans. See https://github.com/DiamondLightSource/mx-bluesky/issues/new?template=issue.md"""
+"""These two parameter classes can be removed once we remove the Hyperion entry points for the write sample status plans. See https://github.com/DiamondLightSource/mx-bluesky/issues/880"""
 
 
 class WriteSampleStatus(MxBlueskyParameters, WithSample, WithVisit):
