@@ -5,10 +5,13 @@ from typing import TypedDict
 
 import mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
+from mx_bluesky.common.parameters.write_sample_status import (
+    WriteSampleLoaded,
+    WriteSampleStatus,
+)
 from mx_bluesky.common.plans import (
     write_sample_status,
 )
-from mx_bluesky.common.plans.write_sample_status import WriteSampleStatus
 from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
@@ -44,6 +47,7 @@ class ExperimentRegistryEntry(TypedDict):
         | LoadCentreCollect
         | RobotLoadThenCentre
         | WriteSampleStatus
+        | WriteSampleLoaded
     ]
 
 
@@ -76,7 +80,11 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": load_centre_collect_full_plan.create_devices,
         "param_type": LoadCentreCollect,
     },
-    "write_sample_status": {
+    "deposit_loaded_sample_no_internal_callbacks": {
+        "setup": write_sample_status.create_devices,
+        "param_type": WriteSampleLoaded,
+    },
+    "deposit_sample_error_no_internal_callbacks": {
         "setup": write_sample_status.create_devices,
         "param_type": WriteSampleStatus,
     },

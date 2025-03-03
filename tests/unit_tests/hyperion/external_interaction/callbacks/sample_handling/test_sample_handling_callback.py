@@ -152,7 +152,7 @@ def test_sample_handling_callback_closes_run_normally(RE: RunEngine):
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
     ".ExpeyeInteraction",
 )
 def test_sample_handling_callback_resets_sample_id(
@@ -177,7 +177,7 @@ def test_sample_handling_callback_resets_sample_id(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
     ".ExpeyeInteraction",
 )
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_thrown_in_inner_plan(
@@ -195,7 +195,7 @@ def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exceptio
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback"
+    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
     ".ExpeyeInteraction",
 )
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_rethrown_from_outermost_plan(

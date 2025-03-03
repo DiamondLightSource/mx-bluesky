@@ -5,6 +5,7 @@ from bluesky.run_engine import RunEngine
 
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.plans.write_sample_status import (
+    SampleStatusExceptionType,
     deposit_loaded_sample,
     deposit_sample_error,
 )
@@ -16,13 +17,21 @@ TEST_SAMPLE_ID = 123456
 @pytest.mark.parametrize(
     "exception_type, expected_sample_status, expected_raised_exception",
     [
-        ["Beamline", BLSampleStatus.ERROR_BEAMLINE, AssertionError],
-        ["Sample", BLSampleStatus.ERROR_SAMPLE, SampleException],
+        [
+            SampleStatusExceptionType.BEAMLINE,
+            BLSampleStatus.ERROR_BEAMLINE,
+            AssertionError,
+        ],
+        [
+            SampleStatusExceptionType.SAMPLE,
+            BLSampleStatus.ERROR_SAMPLE,
+            SampleException,
+        ],
     ],
 )
 def test_depositing_sample_error_with_sample_or_beamline_exception(
     RE: RunEngine,
-    exception_type: str,
+    exception_type: SampleStatusExceptionType,
     expected_sample_status: BLSampleStatus,
     expected_raised_exception: type,
 ):
