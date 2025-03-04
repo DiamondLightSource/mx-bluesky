@@ -14,7 +14,7 @@ Currently, the requirement of needing to have written to ispyb is explicit as th
 In general, the ordering flow of when callbacks are triggered is controlled by emitting documents with the expected plan name and data.
 
 Rotation Scans
-==============
+---------------------
 
 There are currently two ways of doing rotation scans. A single scan creates one hdf file, one ispyb deposition and then triggers zocalo once. Multi rotation scans create one hdf file for all rotations but then N nexus files, N ispyb depositions and triggers zocalo N times.
 
