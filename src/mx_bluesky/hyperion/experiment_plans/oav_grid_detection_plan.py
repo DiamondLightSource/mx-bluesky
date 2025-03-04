@@ -100,7 +100,7 @@ def grid_detection_plan(
 
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
-        yield from bps.mv(smargon.omega, angle)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
@@ -152,20 +152,20 @@ def grid_detection_plan(
 
         upper_left = (tip_x_px, min_y)
 
-        yield from bps.abs_set(oav.grid_snapshot.top_left_x, upper_left[0])  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.abs_set(oav.grid_snapshot.top_left_y, upper_left[1])  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.abs_set(oav.grid_snapshot.box_width, box_size_x_pixels)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.abs_set(oav.grid_snapshot.num_boxes_x, x_steps)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.abs_set(oav.grid_snapshot.num_boxes_y, y_steps)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.abs_set(oav.grid_snapshot.top_left_x, upper_left[0])
+        yield from bps.abs_set(oav.grid_snapshot.top_left_y, upper_left[1])
+        yield from bps.abs_set(oav.grid_snapshot.box_width, box_size_x_pixels)
+        yield from bps.abs_set(oav.grid_snapshot.num_boxes_x, x_steps)
+        yield from bps.abs_set(oav.grid_snapshot.num_boxes_y, y_steps)
 
         snapshot_filename = snapshot_template.format(angle=abs(angle))
 
-        yield from bps.abs_set(oav.grid_snapshot.filename, snapshot_filename)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.abs_set(oav.grid_snapshot.directory, snapshot_dir)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        yield from bps.trigger(oav.grid_snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.abs_set(oav.grid_snapshot.filename, snapshot_filename)
+        yield from bps.abs_set(oav.grid_snapshot.directory, snapshot_dir)
+        yield from bps.trigger(oav.grid_snapshot, wait=True)
         yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
 
-        yield from bps.read(oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.read(oav)
         yield from bps.read(smargon)
         yield from bps.save()
 
