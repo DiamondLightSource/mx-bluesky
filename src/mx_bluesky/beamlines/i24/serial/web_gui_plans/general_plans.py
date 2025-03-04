@@ -19,6 +19,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
@@ -75,6 +76,8 @@ def gui_set_parameters(
     transmission: float,
     n_shots: int,
     chip_type: str,
+    map_type: str,
+    chip_format: list[int | float],  # for Lite Oxford it's the chipmap
     checker_pattern: bool,
     pump_probe: str,
     laser_dwell: float,
@@ -84,7 +87,17 @@ def gui_set_parameters(
     # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
-    chip_params = get_chip_format(ChipType[chip_type])
+    _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
+    chip_params = get_chip_format(ChipType[chip_type], _format)
+    if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
+        mapping = MappingType.Lite if map_type == "Lite" else MappingType.NoMap
+        if mapping is MappingType.Lite and len(chip_format) == 0:
+            # this logic should go in the gui with error message.
+            raise EmptyMapError("No blocks chosen")
+        chip_map = chip_format
+    else:
+        mapping = MappingType.NoMap
+        chip_map = []
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -96,8 +109,8 @@ def gui_set_parameters(
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
-        "map_type": MappingType.NoMap,
-        "chip_map": [],
+        "map_type": mapping,
+        "chip_map": chip_map,
         "pump_repeat": PumpProbeSetting[pump_probe],  # pump_repeat,
         "laser_dwell_s": laser_dwell,
         "laser_delay_s": laser_delay,
