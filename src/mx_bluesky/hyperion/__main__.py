@@ -38,6 +38,10 @@ from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
 )
+from mx_bluesky.hyperion.external_interaction.agamemnon import (
+    compare_params,
+    update_params_from_agamemnon,
+)
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import setup_context
@@ -208,6 +212,8 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
+        parameters = update_params_from_agamemnon(parameters)
+        compare_params(parameters)
         if parameters.model_extra:
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:

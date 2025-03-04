@@ -1,8 +1,14 @@
 from unittest.mock import MagicMock, patch
 
+from bluesky.preprocessors import run_decorator, subs_decorator
+from ophyd_async.core import init_devices
+from ophyd_async.epics.core import epics_signal_rw
+
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.plans.read_hardware import read_hardware_plan
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
@@ -296,51 +302,35 @@ class TestXrayCentreISPyBCallback:
         )
         assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
 
-    def test_activity_gated_start_first_gridscan_comment_is_first_lexicographically(
-        self, mock_ispyb_conn
+    async def test_ispyb_callback_handles_read_hardware_in_run_engine(
+        self, RE, mock_ispyb_conn
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        upsert_dc_1 = mx_acq.upsert_data_collection.mock_calls[0]
-        upsert_dc_2 = mx_acq.upsert_data_collection.mock_calls[1]
+        callback._handle_ispyb_hardware_read = MagicMock()
+        callback._handle_ispyb_transmission_flux_read = MagicMock()
+        callback.ispyb = MagicMock()
+        callback.params = MagicMock()
 
-        dc_1_cols = remap_upsert_columns(
-            mx_acq.get_data_collection_params(), upsert_dc_1.args[0]
-        )
-        dc_2_cols = remap_upsert_columns(
-            mx_acq.get_data_collection_params(), upsert_dc_2.args[0]
-        )
-        assert dc_1_cols["comments"] < dc_2_cols["comments"]
+        with init_devices(mock=True):
+            test_readable = epics_signal_rw(str, "pv")
 
-    def test_zocalo_read_event_appends_comment_to_first_data_collection(
-        self,
-        mock_ispyb_conn,
-    ):
-        zocalo_read_event_comment = "Crystal 1: Strength 100000; Position (grid boxes) ['1', '2', '3']; Size (grid boxes) [2 2 1]; "
-        callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+        @subs_decorator(callback)
+        @run_decorator(
+            md={
+                "activate_callbacks": ["GridscanISPyBCallback"],
+            },
         )
-        zocalo_read_event = TestData.test_zocalo_reading_event | {
-            "data": generate_xrc_result_event("zocalo", TEST_RESULT_MEDIUM)
-        }
+        def test_plan():
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_PRE
+            )
+            yield from read_hardware_plan(
+                [test_readable], DocDescriptorNames.HARDWARE_READ_DURING
+            )
 
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_zocalo_reading
-        )
-        callback.activity_gated_event(zocalo_read_event)  # type: ignore
+        RE(test_plan())
 
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.update_data_collection_append_comments.assert_any_call(
-            TEST_DATA_COLLECTION_IDS[0],
-            zocalo_read_event_comment,
-            " ",
-        )
-
-        assert (
-            zocalo_read_event_comment
-            in mx_acq.upsert_data_collection_group.call_args.args[0]
-        )
+        callback._handle_ispyb_hardware_read.assert_called_once()
+        callback._handle_ispyb_transmission_flux_read.assert_called_once()

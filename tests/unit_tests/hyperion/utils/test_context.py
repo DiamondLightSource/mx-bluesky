@@ -4,7 +4,7 @@ import pydantic
 import pytest
 from ophyd.device import Device
 
-from mx_bluesky.hyperion.utils.context import (
+from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
