@@ -1,11 +1,15 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bluesky.preprocessors import run_decorator, subs_decorator
 from ophyd_async.core import init_devices
 from ophyd_async.epics.core import epics_signal_rw
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.plans.read_hardware import read_hardware_plan
@@ -15,12 +19,10 @@ from .....conftest import (
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_RESULT_MEDIUM,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     TestData,
     assert_upsert_call_with,
-    generate_xrc_result_event,
     mx_acquisition_from_conn,
     remap_upsert_columns,
 )
@@ -60,6 +62,15 @@ TEST_GRID_INFO_IDS = (56, 57)
 TEST_POSITION_ID = 78
 
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
+
+
+@pytest.fixture
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id=364758,
+    )
 
 
 @patch(
@@ -303,7 +314,7 @@ class TestXrayCentreISPyBCallback:
         assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
 
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
-        self, RE, mock_ispyb_conn
+        self, RE, mock_ispyb_conn, dummy_rotation_data_collection_group_info
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -312,6 +323,7 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read = MagicMock()
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
+        callback.data_collection_group_info = dummy_rotation_data_collection_group_info
 
         with init_devices(mock=True):
             test_readable = epics_signal_rw(str, "pv")

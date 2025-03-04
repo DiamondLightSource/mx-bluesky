@@ -880,7 +880,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete: MagicMock,
         mock_kickoff: MagicMock,
         RE: RunEngine,
-        fake_fgs_composite: FlyScanXRayCentreComposite,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         dummy_rotation_data_collection_group_info,
     ):
         id_1, id_2 = 100, 200

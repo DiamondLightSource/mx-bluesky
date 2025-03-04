@@ -200,6 +200,7 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
     }
 ]
 
+
 @pytest.fixture(scope="session")
 def active_device_factories() -> set[AnyDeviceFactory]:
     """Obtain the set of device factories that should have their caches cleared
