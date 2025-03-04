@@ -33,7 +33,7 @@ def _get_beam_centre(oav: OAV):
 
 def _calculate_zoom_calibrator(oav: OAV):
     """Set the scale for the zoom calibrator for the pmac moves."""
-    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)
+    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     zoomcalibrator = 1.547 - (0.03 * currentzoom) + (0.0001634 * currentzoom**2)
     return zoomcalibrator
 

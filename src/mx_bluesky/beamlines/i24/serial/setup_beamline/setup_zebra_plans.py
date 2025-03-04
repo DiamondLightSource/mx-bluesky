@@ -55,12 +55,12 @@ def get_zebra_settings_for_extruder(
 
 
 def arm_zebra(zebra: Zebra):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     SSX_LOGGER.info("Zebra armed.")
 
 
 def disarm_zebra(zebra: Zebra):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     SSX_LOGGER.info("Zebra disarmed.")
 
 
