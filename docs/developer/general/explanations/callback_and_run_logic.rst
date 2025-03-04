@@ -1,7 +1,11 @@
+Callbacks and Run Logic
+========================
+
 Callbacks are used to trigger external services:
-* Ispyb deposition
-* Nexus writing
-* Zocalo triggering
+
+- Ispyb deposition
+- Nexus writing
+- Zocalo triggering
 
 These are linked in that to trigger zocalo you need to have made an ispyb deposition, written a nexus file and have finished writing raw data to disk. Nexus files and ispyb depositions can be made at anytime, we do not need to have necessarily finished writing raw data. 
 
