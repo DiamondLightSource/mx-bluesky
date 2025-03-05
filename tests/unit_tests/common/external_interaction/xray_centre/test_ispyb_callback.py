@@ -322,7 +322,7 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read = MagicMock()
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
-        callback.data_collection_group_info = None
+        callback.data_collection_group_info = dummy_rotation_data_collection_group_info
 
         with init_devices(mock=True):
             test_readable = epics_signal_rw(str, "pv")
