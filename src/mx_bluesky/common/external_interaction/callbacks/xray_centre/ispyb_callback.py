@@ -145,7 +145,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
-        assert self.data_collection_group_info, "No data collection group info"
+        assert self.data_collection_group_info, (
+            f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+        )
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
@@ -163,7 +165,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def _handle_zocalo_read_event(self, doc):
-        assert self.data_collection_group_info, "No data collection group info"
+        assert self.data_collection_group_info, (
+            f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+        )
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -302,7 +306,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
-        assert self.data_collection_group_info, "No data collection group info"
+        assert self.data_collection_group_info, (
+            f"No data collection group info - stop document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+        )
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:

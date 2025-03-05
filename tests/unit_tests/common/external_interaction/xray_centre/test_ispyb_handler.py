@@ -6,9 +6,6 @@ from graypy import GELFTCPHandler
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.ispyb.data_model import (
-    DataCollectionGroupInfo,
-)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -23,15 +20,6 @@ DC_IDS = (1, 2)
 DCG_ID = 4
 DC_GRID_IDS = (11, 12)
 td = TestData()
-
-
-@pytest.fixture
-def dummy_rotation_data_collection_group_info():
-    return DataCollectionGroupInfo(
-        visit_string="cm31105-4",
-        experiment_type="SAD",
-        sample_id=364758,
-    )
 
 
 def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:

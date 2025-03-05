@@ -8,9 +8,6 @@ from ophyd_async.epics.core import epics_signal_rw
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.ispyb.data_model import (
-    DataCollectionGroupInfo,
-)
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.plans.read_hardware import read_hardware_plan
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
@@ -64,15 +61,6 @@ TEST_POSITION_ID = 78
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
 
-@pytest.fixture
-def dummy_rotation_data_collection_group_info():
-    return DataCollectionGroupInfo(
-        visit_string="cm31105-4",
-        experiment_type="SAD",
-        sample_id=364758,
-    )
-
-
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
@@ -106,7 +94,14 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
-    def test_reason_provided_if_crystal_not_found_error(self, mock_ispyb_conn):
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
+    )
+    def test_reason_provided_if_crystal_not_found_error(
+        self,
+        mock_update_data_collection_group_table,
+        mock_ispyb_conn,
+    ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
@@ -121,6 +116,10 @@ class TestXrayCentreISPyBCallback:
                 "DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
                 " ",
             ),
+        )
+        assert (
+            mock_update_data_collection_group_table.call_args_list[0][0][0].comments
+            == "Diffraction not found, skipping sample."
         )
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
@@ -323,7 +322,7 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read = MagicMock()
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
-        callback.data_collection_group_info = dummy_rotation_data_collection_group_info
+        callback.data_collection_group_info = None
 
         with init_devices(mock=True):
             test_readable = epics_signal_rw(str, "pv")
@@ -346,3 +345,36 @@ class TestXrayCentreISPyBCallback:
 
         callback._handle_ispyb_hardware_read.assert_called_once()
         callback._handle_ispyb_transmission_flux_read.assert_called_once()
+
+    @patch(
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_zocalo_read_event",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_oav_grid_snapshot_triggered",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_deposition",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
+    )
+    def test_given_even_doc_before_start_doc_recieved_then_exception_raised(
+        self,
+        mock_update_data_collection_group_table,
+        mock_update_deposition,
+        mock__handle_oav_grid_snapshot_triggered,
+        mock__handle_zocalo_read_event,
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_oav_snapshot
+        )
+        callback.ispyb = MagicMock()
+        callback.params = MagicMock()
+        callback.data_collection_group_info = None
+        with pytest.raises(AssertionError) as e:
+            callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
+
+        assert "No data collection group info" in str(e.value)

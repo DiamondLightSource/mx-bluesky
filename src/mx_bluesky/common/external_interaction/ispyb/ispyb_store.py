@@ -77,7 +77,7 @@ class StoreInIspyb:
         scan_data_infos,
     ) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            assert conn is not None, "Failed to connect to ISPyB"
+            assert conn, "Failed to connect to ISPyB"
             if data_collection_group_info:
                 ispyb_ids.data_collection_group_id = (
                     self._store_data_collection_group_table(
