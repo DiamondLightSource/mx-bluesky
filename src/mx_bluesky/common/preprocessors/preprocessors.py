@@ -75,19 +75,15 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
             if msg.command == "open_run" and (
                 run_key_to_wrap
                 and run_key_to_wrap is msg.run
-                or (
-                    # Run opened and no run_key specified
-                    not (run_key_to_wrap or _wrapped_plan_name)
-                )
+                or (not (run_key_to_wrap or _wrapped_plan_name))
             ):
-                # If the run has no key, msg.run will be None, but we still need to track it
                 _wrapped_plan_name = msg.run if msg.run else "unnamed_run"
 
                 return head(msg), None
 
             # Check if the run tracked from above was closed
             elif msg.command == "close_run" and (
-                _wrapped_plan_name == "unnamed_run"  # Unnamed run from above was closed
+                _wrapped_plan_name == "unnamed_run"
                 or (msg.run and _wrapped_plan_name and _wrapped_plan_name is msg.run)
             ):
                 return None, tail()
