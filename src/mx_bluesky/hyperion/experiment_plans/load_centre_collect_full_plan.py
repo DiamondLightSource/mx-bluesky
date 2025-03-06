@@ -54,7 +54,7 @@ def load_centre_collect_full(
     @run_decorator(
         md={
             "metadata": {"sample_id": parameters.sample_id},
-            "activate_callbacks": ["SampleHandlingCallback"],
+            "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
         }
     )
     def plan_with_callback_subs():
