@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 import bluesky.plan_stubs as bps
 import pytest
-from bluesky import RunEngine
 from bluesky.preprocessors import run_decorator, set_run_key_decorator
+from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from PIL import Image
 

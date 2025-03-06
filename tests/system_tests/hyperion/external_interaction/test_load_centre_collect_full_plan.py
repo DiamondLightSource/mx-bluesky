@@ -615,7 +615,7 @@ def test_execute_load_centre_collect_rotation_snapshots(
     fetch_blsample: Callable[[int], BLSample],
     tmp_path: Path,
 ):
-    load_centre_collect_params.multi_rotation_scan.snapshot_directory = str(tmp_path)
+    load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
 
     ispyb_gridscan_cb = GridscanISPyBCallback(
         param_type=GridCommonWithHyperionDetectorParams

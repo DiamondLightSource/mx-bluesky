@@ -20,7 +20,6 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK
 class BeamDrawingCallback(PlanReactiveCallback):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, log=CALLBACK_LOGGER, **kwargs)
-        self._rotation_snapshot_descriptor: None
         self._snapshot_files: list[str] = []
         self._microns_per_pixel: tuple[float, float]
         self._beam_centre: tuple[int, int]
@@ -28,12 +27,16 @@ class BeamDrawingCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         if self.activity_uid == doc.get("uid"):
-            params = WithSnapshot.model_validate_json(doc.get("with_snapshot"))
-            self._output_directory = params.snapshot_directory
+            with_snapshot_json = doc.get("with_snapshot")  # type: ignore
+            assert with_snapshot_json, (
+                "run start event did not have expected snapshot json"
+            )
+            params = WithSnapshot.model_validate_json(with_snapshot_json)
+            self._output_directory = str(params.snapshot_directory)
         return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        if doc["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED:
+        if doc.get("name") == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED:
             self._rotation_snapshot_descriptor = doc["uid"]
         return doc
 
@@ -55,7 +58,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
         self._extract_base_snapshot_params(doc)
         data = doc["data"]
         snapshot_path = data["oav-snapshot-last_saved_path"]
-        snapshot_base = re.match("(.*)\\.png", snapshot_path).groups()[0]
+        match = re.match("(.*)\\.png", snapshot_path)
+        assert match, f"Snapshot {snapshot_path} was not a .png file"
+        snapshot_base = match.groups()[0]
         output_snapshot_path = f"{snapshot_base}_annotated.png"
         self._generate_snapshot_at(snapshot_path, output_snapshot_path, 0, 0)
         data["oav-snapshot-last_saved_path"] = output_snapshot_path
