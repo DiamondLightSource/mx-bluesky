@@ -27,6 +27,7 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -374,7 +375,11 @@ def rotation_scan(
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "mx_bluesky_parameters": parameters.model_dump_json(),
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
             "activate_callbacks": [
+                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],
