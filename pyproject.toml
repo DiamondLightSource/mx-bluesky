@@ -71,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright==1.1.394",          # See https://github.com/DiamondLightSource/mx-bluesky/issues/875
+    "pyright",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
