@@ -1015,38 +1015,38 @@ class TestFlyscanXrayCentrePlan:
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
 
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors._check_and_pause_feedback_and_verify_undulator_gap",
+        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors._unpause_xbpm_feedback_and_set_transmission_to_1",
+        "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_no_move",
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
     )
     def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
         self,
-        flyscan_xray_centre_no_move: MagicMock,
+        fake_run_gridscan: MagicMock,
         mock_unpause_and_set_transmission: MagicMock,
         mock_check_and_pause: MagicMock,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         RE: RunEngine,
     ):
-        flyscan_xray_centre_no_move.side_effect = Exception
+        fake_run_gridscan.side_effect = Exception
         with pytest.raises(Exception):  # noqa: B017
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
-        # We end up calling unpause twice in this case. One for close run and one for exception
+        # Called once on exception and once on close_run
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
 
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors._check_and_pause_feedback_and_verify_undulator_gap",
+        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors._unpause_xbpm_feedback_and_set_transmission_to_1",
+        "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
         autospec=True,
     )
     @patch(
@@ -1068,8 +1068,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
         mock_check_and_pause.assert_called_once()
-
-        mock_unpause_and_set_transmission.assert_called()
+        mock_unpause_and_set_transmission.assert_called_once()
 
     @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.change_aperture_then_move_to_xtal",

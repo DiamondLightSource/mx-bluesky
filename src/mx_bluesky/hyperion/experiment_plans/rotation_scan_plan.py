@@ -27,13 +27,14 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -369,7 +370,12 @@ def rotation_scan(
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
 
-    @bpp.set_run_key_decorator("rotation_scan")
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+        run_key_to_wrap=PlanNameConstants.ROTATION_RUN_KEY,
+    )
+    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_RUN_KEY)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
@@ -379,13 +385,6 @@ def rotation_scan(
                 "RotationNexusFileCallback",
             ],
         }
-    )
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
     )
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
@@ -434,18 +433,16 @@ def multi_rotation_scan(
             ],
         }
     )
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
-    )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
-            @bpp.set_run_key_decorator("rotation_scan")
+            @transmission_and_xbpm_feedback_for_collection_decorator(
+                composite,
+                parameters.transmission_frac,
+                run_key_to_wrap=PlanNameConstants.ROTATION_RUN_KEY,
+            )
+            @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_RUN_KEY)
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,

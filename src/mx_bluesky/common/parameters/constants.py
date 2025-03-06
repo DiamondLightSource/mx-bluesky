@@ -58,6 +58,8 @@ class PlanNameConstants:
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
     FLYSCAN_RESULTS = "xray_centre_results"
+    SET_ENERGY = "set_energy"
+    ROTATION_RUN_KEY = "rotation_scan"
 
 
 @dataclass(frozen=True)
