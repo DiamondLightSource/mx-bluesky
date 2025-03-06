@@ -183,9 +183,6 @@ class TestXrayCentreIspybHandler:
         ispyb_handler = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams,
         )
-        ispyb_handler.data_collection_group_info = (
-            dummy_rotation_data_collection_group_info
-        )
 
         ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)  # type:ignore
 
@@ -194,6 +191,9 @@ class TestXrayCentreIspybHandler:
 
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_zocalo_reading
+        )
+        ispyb_handler.data_collection_group_info = (
+            dummy_rotation_data_collection_group_info
         )
         ispyb_handler.activity_gated_event(td.test_zocalo_reading_event)
 
