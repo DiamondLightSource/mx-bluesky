@@ -16,7 +16,9 @@ from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
 
-from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import BeamDrawingCallback
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
+    BeamDrawingCallback,
+)
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
