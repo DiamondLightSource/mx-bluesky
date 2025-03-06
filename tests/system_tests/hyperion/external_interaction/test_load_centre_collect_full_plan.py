@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import os
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
@@ -13,6 +15,8 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
+
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import BeamDrawingCallback
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
@@ -594,3 +598,57 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
                 oav_parameters_for_rotation,
             )
         )
+
+
+@pytest.mark.system_test1
+def test_execute_load_centre_collect_rotation_snapshots(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
+    tmp_path: Path,
+):
+    load_centre_collect_params.multi_rotation_scan.snapshot_directory = str(tmp_path)
+
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    robot_load_cb = RobotLoadISPyBCallback()
+    # robot_load_cb.expeye = MagicMock()
+    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_callback)
+    RE.subscribe(robot_load_cb)
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
+    rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
+    compare_actual_and_expected(
+        rotation_dc_ids[0],
+        ROTATION_DC_EXPECTED_VALUES,
+        fetch_datacollection_attribute,
+    )
+    compare_actual_and_expected(
+        rotation_dc_ids[1],
+        ROTATION_DC_2_EXPECTED_VALUES,
+        fetch_datacollection_attribute,
+    )
+
+    assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
