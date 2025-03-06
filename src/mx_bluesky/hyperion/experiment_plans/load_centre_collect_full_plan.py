@@ -9,6 +9,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 import mx_bluesky.common.xrc_result as flyscan_result
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
@@ -55,7 +56,9 @@ def load_centre_collect_full(
         md={
             "metadata": {"sample_id": parameters.sample_id},
             "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
-            "with_snapshot": parameters.multi_rotation_scan.model_dump_json(),
+            "with_snapshot": parameters.multi_rotation_scan.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
         }
     )
     def plan_with_callback_subs():
