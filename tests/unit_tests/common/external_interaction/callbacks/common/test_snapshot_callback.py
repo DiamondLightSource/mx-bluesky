@@ -55,9 +55,9 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
 ):
     downstream_cb = Mock()
     callback = BeamDrawingCallback(emit=downstream_cb)
-    generated_image_path = tmp_path / "test_filename.png"
+    base_image_path = tmp_path / "test_filename.png"
     shutil.copy(
-        "tests/test_data/test_images/generate_snapshot_input.png", generated_image_path
+        "tests/test_data/test_images/generate_snapshot_input.png", base_image_path
     )
 
     RE.subscribe(callback)
@@ -67,6 +67,7 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
         "tests/test_data/test_images/generate_snapshot_output.png"
     )
     expected_bytes = expected_image.tobytes()
+    generated_image_path = str(tmp_path / "test_filename_annotated.png")
     generated_image = Image.open(generated_image_path)
     generated_bytes = generated_image.tobytes()
     assert generated_bytes == expected_bytes, "Actual and expected images differ"
@@ -75,4 +76,8 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
     assert downstream_calls[0].args[0] == "start"
     assert downstream_calls[1].args[0] == "descriptor"
     assert downstream_calls[2].args[0] == "event"
+    assert (
+        downstream_calls[2].args[1]["data"]["oav-snapshot-last_saved_path"]
+        == generated_image_path
+    )
     assert downstream_calls[3].args[0] == "stop"
