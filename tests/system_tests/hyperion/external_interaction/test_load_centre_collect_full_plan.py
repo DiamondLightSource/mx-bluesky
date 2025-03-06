@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import os
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -15,12 +14,9 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
-
-from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
-    BeamDrawingCallback,
-)
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
+from PIL import Image
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
@@ -45,6 +41,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
+    BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
@@ -602,7 +601,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
         )
 
 
-@pytest.mark.system_test1
+@pytest.mark.system_test
 def test_execute_load_centre_collect_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -640,17 +639,35 @@ def test_execute_load_centre_collect_rotation_snapshots(
         )
     )
 
+    EXPECTED_SNAPSHOT_VALUES = {
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_0\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_90\\.png",
+        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_180\\.png",
+        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_270\\.png",
+    }
+
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
     rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
     compare_actual_and_expected(
         rotation_dc_ids[0],
-        ROTATION_DC_EXPECTED_VALUES,
+        EXPECTED_SNAPSHOT_VALUES,
         fetch_datacollection_attribute,
     )
     compare_actual_and_expected(
         rotation_dc_ids[1],
-        ROTATION_DC_2_EXPECTED_VALUES,
+        EXPECTED_SNAPSHOT_VALUES,
         fetch_datacollection_attribute,
     )
 
-    assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
+    expected_bytes = Image.open(
+        "tests/test_data/test_images/generate_snapshot_output.png"
+    ).tobytes()
+    for column in [
+        "xtalSnapshotFullPath1",
+        "xtalSnapshotFullPath2",
+        "xtalSnapshotFullPath3",
+        "xtalSnapshotFullPath4",
+    ]:
+        filename = fetch_datacollection_attribute(rotation_dc_ids[0], column)
+        actual_bytes = Image.open(filename).tobytes()
+        assert actual_bytes == expected_bytes, f"Expected image differed for {column}"

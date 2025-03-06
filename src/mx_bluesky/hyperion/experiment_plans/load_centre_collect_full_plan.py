@@ -55,6 +55,7 @@ def load_centre_collect_full(
         md={
             "metadata": {"sample_id": parameters.sample_id},
             "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
+            "with_snapshot": parameters.multi_rotation_scan.model_dump_json(),
         }
     )
     def plan_with_callback_subs():

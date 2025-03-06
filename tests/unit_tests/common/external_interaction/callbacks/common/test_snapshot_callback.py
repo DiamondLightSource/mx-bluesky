@@ -35,7 +35,7 @@ def simplified_experiment_plan(
     @run_decorator(
         md={
             "activate_callbacks": ["BeamDrawingCallback"],
-            "mx_bluesky_parameters": params.model_dump_json(),
+            "with_snapshot": params.model_dump_json(),
         }
     )
     def inner():

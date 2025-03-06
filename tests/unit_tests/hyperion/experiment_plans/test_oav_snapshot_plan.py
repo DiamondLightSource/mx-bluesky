@@ -134,7 +134,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
             == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         )
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav-snapshot"
+            msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav"
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"

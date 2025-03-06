@@ -76,5 +76,5 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
     yield from bps.trigger(composite.oav.snapshot, wait=True)
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-    yield from bps.read(composite.oav.snapshot)
+    yield from bps.read(composite.oav)
     yield from bps.save()
