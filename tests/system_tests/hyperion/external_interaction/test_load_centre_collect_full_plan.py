@@ -187,23 +187,24 @@ ROTATION_DC_EXPECTED_VALUES = {
     "synchrotronMode": SynchrotronMode.USER.value,
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
-    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "6}_oav_snapshot_0_annotated\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_90\\.png",
+    "6}_oav_snapshot_90_annotated\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_180\\.png",
+    "6}_oav_snapshot_180_annotated\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_270\\.png",
+    "6}_oav_snapshot_270_annotated\\.png",
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
-    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0_annotated\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_90\\.png",
+    "6}_oav_snapshot_90_annotated\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_180\\.png",
+    "6}_oav_snapshot_180_annotated\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_270\\.png",
+    "6}_oav_snapshot_270_annotated\\.png",
 }
 
 
@@ -236,6 +237,7 @@ def test_execute_load_centre_collect_full(
         param_type=GridCommonWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     robot_load_cb = RobotLoadISPyBCallback()
     # robot_load_cb.expeye = MagicMock()
     robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
@@ -245,7 +247,7 @@ def test_execute_load_centre_collect_full(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(ispyb_rotation_cb)
+    RE.subscribe(snapshot_cb)
     RE.subscribe(robot_load_cb)
     RE(
         load_centre_collect_full(
@@ -620,17 +622,11 @@ def test_execute_load_centre_collect_rotation_snapshots(
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
-    robot_load_cb = RobotLoadISPyBCallback()
-    # robot_load_cb.expeye = MagicMock()
-    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
-    robot_load_cb.expeye.end_load = MagicMock()
-    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(snapshot_callback)
-    RE.subscribe(robot_load_cb)
     RE(
         load_centre_collect_full(
             load_centre_collect_composite,
@@ -640,10 +636,10 @@ def test_execute_load_centre_collect_rotation_snapshots(
     )
 
     EXPECTED_SNAPSHOT_VALUES = {
-        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_0\\.png",
-        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_90\\.png",
-        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_180\\.png",
-        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_270\\.png",
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_0_annotated\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_90_annotated\\.png",
+        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_180_annotated\\.png",
+        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{6}}_oav_snapshot_270_annotated\\.png",
     }
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id

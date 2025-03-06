@@ -1,3 +1,5 @@
+import re
+
 from dodal.devices.oav.snapshots.snapshot_image_processing import (
     compute_beam_centre_pixel_xy_for_mm_position,
     draw_crosshair,
@@ -53,7 +55,10 @@ class BeamDrawingCallback(PlanReactiveCallback):
         self._extract_base_snapshot_params(doc)
         data = doc["data"]
         snapshot_path = data["oav-snapshot-last_saved_path"]
-        self._generate_snapshot_at(snapshot_path, snapshot_path, 0, 0)
+        snapshot_base = re.match("(.*)\\.png", snapshot_path).groups()[0]
+        output_snapshot_path = f"{snapshot_base}_annotated.png"
+        self._generate_snapshot_at(snapshot_path, output_snapshot_path, 0, 0)
+        data["oav-snapshot-last_saved_path"] = output_snapshot_path
         return doc
 
     def _generate_snapshot_at(
