@@ -22,10 +22,12 @@ class BeamDrawingCallback(PlanReactiveCallback):
         self._snapshot_files: list[str] = []
         self._microns_per_pixel: tuple[float, float]
         self._beam_centre: tuple[int, int]
+        self._rotation_snapshot_descriptor: str = ""
 
     def activity_gated_start(self, doc: RunStart):
-        params = WithSnapshot.model_validate_json(doc.get("mx_bluesky_parameters"))
-        self._output_directory = params.snapshot_directory
+        if self.activity_uid == doc.get("uid"):
+            params = WithSnapshot.model_validate_json(doc.get("with_snapshot"))
+            self._output_directory = params.snapshot_directory
         return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:

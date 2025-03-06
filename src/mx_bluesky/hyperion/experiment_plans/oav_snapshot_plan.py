@@ -76,5 +76,5 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
     yield from bps.trigger(composite.oav.snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-    yield from bps.read(composite.oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(composite.oav)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     yield from bps.save()
