@@ -1,6 +1,6 @@
 import types
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -37,7 +37,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
+from mx_bluesky.common.parameters.constants import (
+    DeviceSettingsConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -1010,3 +1013,86 @@ class TestFlyscanXrayCentrePlan:
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
+
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
+    )
+    def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
+        self,
+        fake_run_gridscan: MagicMock,
+        mock_unpause_and_set_transmission: MagicMock,
+        mock_check_and_pause: MagicMock,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        RE: RunEngine,
+    ):
+        fake_run_gridscan.side_effect = Exception
+        with pytest.raises(Exception):  # noqa: B017
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        # Called once on exception and once on close_run
+        mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
+
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.change_aperture_then_move_to_xtal",
+    )
+    @patch("mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait")
+    @patch(
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
+    )
+    def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+        self,
+        mock_check_topup,
+        mock_wait,
+        mock_change_aperture,
+        sim_run_engine: RunEngineSimulator,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    ):
+        # Get around the assertion error at the end of the plan
+        mock_xrc_event = MagicMock()
+        mock_xrc_event.xray_centre_results = TEST_RESULT_LARGE
+
+        simulate_xrc_result(
+            sim_run_engine, fake_fgs_composite.zocalo, TEST_RESULT_LARGE
+        )
+
+        with patch(
+            "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.XRayCentreEventHandler",
+            return_value=mock_xrc_event,
+        ):
+            msgs = sim_run_engine.simulate_plan(
+                flyscan_xray_centre(fake_fgs_composite, test_fgs_params)
+            )
+
+        # Assert order: pause -> open run -> close run -> unpause (set attenuator)
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "open_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "close_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (1.0,),
+        )
