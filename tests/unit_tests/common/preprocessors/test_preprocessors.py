@@ -3,7 +3,9 @@ from unittest.mock import ANY, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
+from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
+from bluesky.utils import IllegalMessageSequence
 
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
@@ -127,8 +129,8 @@ def test_xbpm_preprocessor_unpauses_xbpm_on_exception(
     "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1"
 )
 def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
-    mock_pause: MagicMock,
     mock_unpause_xbpm: MagicMock,
+    mock_pause: MagicMock,
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -138,7 +140,11 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN)
     @bpp.run_decorator()
     def first_plan():
+        mock_pause.assert_called_once()
         yield from second_plan()
+
+        # Check we didn't unpause on the inner-run
+        mock_unpause_xbpm.assert_not_called()
 
     @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
     @bpp.run_decorator()
@@ -148,3 +154,42 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     sim_run_engine.simulate_plan(first_plan())
     mock_pause.assert_called_once()
     mock_unpause_xbpm.assert_called_once()
+
+
+def test_xbpm_preprocessor_cant_unpause_on_wrong_run(
+    xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
+    RE: RunEngine,
+):
+    # Logic in the preprocessor relies on the assumption that Bluesky doesn't let us have
+    # multiple unnamed runs open, or multiple runs with the same name
+
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        devices=xbpm_and_transmission_wrapper_composite, desired_transmission_fraction=1
+    )
+    @bpp.run_decorator()
+    def first_unnamed_run():
+        yield from second_unnamed_run()
+
+    @bpp.run_decorator()
+    def second_unnamed_run():
+        yield from bps.null()
+
+    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
+    @bpp.run_decorator()
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        devices=xbpm_and_transmission_wrapper_composite,
+        desired_transmission_fraction=1,
+    )
+    def first_named_run():
+        yield from second_named_run()
+
+    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
+    @bpp.run_decorator()
+    def second_named_run():
+        yield from bps.null()
+
+    with pytest.raises(IllegalMessageSequence):
+        RE(first_unnamed_run())
+
+    with pytest.raises(IllegalMessageSequence):
+        RE(first_named_run())
