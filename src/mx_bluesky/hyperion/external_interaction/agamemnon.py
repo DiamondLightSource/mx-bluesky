@@ -1,7 +1,7 @@
 import dataclasses
 import json
 import re
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import requests
 from deepdiff.diff import DeepDiff
@@ -9,6 +9,7 @@ from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
 
 from mx_bluesky.common.parameters.components import (
+    WithSample,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
@@ -23,7 +24,7 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
-class AgamemnonLoadCentreCollect(WithVisit):
+class AgamemnonLoadCentreCollect(WithVisit, WithSample):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
@@ -109,10 +110,20 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     )
 
 
+def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    assert parameters.get("sample"), "instruction does not have a sample"
+    return {
+        "sample_id": parameters["sample"]["id"],
+        "sample_puck": parameters["sample"]["container"],
+        "sample_pin": parameters["sample"]["position"],
+    }
+
+
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
+    with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
     return AgamemnonLoadCentreCollect(
-        visit=visit, detector_distance_mm=detector_distance
+        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
     )
 
 

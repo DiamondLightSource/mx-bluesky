@@ -10,7 +10,11 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 
 EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(
-    visit="cm00000-0", detector_distance_mm=180.8
+    visit="cm00000-0",
+    detector_distance_mm=180.8,
+    sample_id=12345,
+    sample_puck=1,
+    sample_pin=1,
 )
 
 
