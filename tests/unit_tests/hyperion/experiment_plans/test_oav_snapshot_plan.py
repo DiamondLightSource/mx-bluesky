@@ -53,7 +53,7 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     mock_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
 ):
-    mock_datetime.now.return_value = datetime.fromisoformat("2024-06-07T10:06:23")
+    mock_datetime.now.return_value = datetime.fromisoformat("2024-06-07T10:06:23.12")
     msgs = sim_run_engine.simulate_plan(
         oav_snapshot_plan(
             oav_snapshot_composite,
@@ -99,10 +99,10 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         and msg.args[0] == "/tmp/my_snapshots",
     )
     for expected in [
-        {"omega": 0, "filename": "100623_oav_snapshot_0"},
-        {"omega": 90, "filename": "100623_oav_snapshot_90"},
-        {"omega": 180, "filename": "100623_oav_snapshot_180"},
-        {"omega": 270, "filename": "100623_oav_snapshot_270"},
+        {"omega": 0, "filename": "10062312_oav_snapshot_0"},
+        {"omega": 90, "filename": "10062312_oav_snapshot_90"},
+        {"omega": 180, "filename": "10062312_oav_snapshot_180"},
+        {"omega": 270, "filename": "10062312_oav_snapshot_270"},
     ]:
         msgs = assert_message_and_return_remaining(
             msgs,
