@@ -67,7 +67,7 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
         composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
     )
     time_now = datetime.now()
-    filename = f"{time_now.strftime('%H%M%S')}_oav_snapshot_{omega:.0f}"
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{omega:.0f}"
     yield from bps.abs_set(
         composite.oav.snapshot.filename,
         filename,
