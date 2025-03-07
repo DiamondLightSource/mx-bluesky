@@ -20,6 +20,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
         self._sample_id: int | None = None
         self._descriptor: str | None = None
         self._run_id: str | None = None
+        self.expeye: ExpeyeInteraction = ExpeyeInteraction()
 
     def activity_gated_start(self, doc: RunStart):
         if not self._sample_id and self.active:
@@ -29,7 +30,6 @@ class SampleHandlingCallback(PlanReactiveCallback):
             self._run_id = self.activity_uid
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
-        expeye = ExpeyeInteraction()
         if self._run_id == doc.get("run_start"):
             if doc["exit_status"] != "success":
                 exception_type, message = SampleException.type_and_message_from_reason(
@@ -38,23 +38,20 @@ class SampleHandlingCallback(PlanReactiveCallback):
                 self.log.info(
                     f"Sample handling callback intercepted exception of type {exception_type}: {message}"
                 )
-                self._record_exception(exception_type, expeye)
-            else:
-                self._record_loaded(expeye)
+                self._record_exception(exception_type)
 
             self._sample_id = None
             self._run_id = None
 
         return doc
 
-    def _record_exception(self, exception_type: str, expeye: ExpeyeInteraction):
+    def _record_exception(
+        self,
+        exception_type: str,
+    ):
         assert self._sample_id, "Unable to record exception due to no sample ID"
         sample_status = self._decode_sample_status(exception_type)
-        expeye.update_sample_status(self._sample_id, sample_status)
-
-    def _record_loaded(self, expeye: ExpeyeInteraction):
-        assert self._sample_id, "Unable to record loaded state due to no sample ID"
-        expeye.update_sample_status(self._sample_id, BLSampleStatus.LOADED)
+        self.expeye.update_sample_status(self._sample_id, sample_status)
 
     def _decode_sample_status(self, exception_type: str) -> BLSampleStatus:
         match exception_type:
