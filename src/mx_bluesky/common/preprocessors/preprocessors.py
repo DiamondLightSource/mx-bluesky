@@ -85,7 +85,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
                 # Check if the run tracked from above was closed
                 # An exception is raised in the RunEngine if two unnamed runs are opened
                 # at the same time, so we are safe from unpausing on the wrong run
-                if _wrapped_run_name == "unnamed_run" or (
+                if (_wrapped_run_name == "unnamed_run" and not msg.run) or (
                     msg.run and _wrapped_run_name and _wrapped_run_name is msg.run
                 ):
                     return None, tail()

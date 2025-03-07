@@ -132,12 +132,11 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     mock_unpause_xbpm: MagicMock,
     mock_pause: MagicMock,
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
-    sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
 ):
     @transmission_and_xbpm_feedback_for_collection_decorator(
         devices=xbpm_and_transmission_wrapper_composite, desired_transmission_fraction=1
     )
-    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN)
     @bpp.run_decorator()
     def first_plan():
         mock_pause.assert_called_once()
@@ -146,12 +145,12 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
         # Check we didn't unpause on the inner-run
         mock_unpause_xbpm.assert_not_called()
 
-    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
+    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN)
     @bpp.run_decorator()
     def second_plan():
         yield from bps.null()
 
-    sim_run_engine.simulate_plan(first_plan())
+    RE(first_plan())
     mock_pause.assert_called_once()
     mock_unpause_xbpm.assert_called_once()
 
