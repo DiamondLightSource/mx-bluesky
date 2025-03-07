@@ -8,6 +8,7 @@ import ispyb.sqlalchemy
 import numpy
 import pytest
 import pytest_asyncio
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
@@ -39,6 +40,7 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
@@ -55,48 +57,12 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from ....conftest import fake_read, pin_tip_edge_data, raw_params_from_file
-
-TEST_RESULT_LARGE = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [1, 2, 3],
-        "max_count": 105062,
-        "n_voxels": 35,
-        "total_count": 2387574,
-        "bounding_box": [[2, 2, 2], [8, 8, 7]],
-    }
-]
-TEST_RESULT_MEDIUM = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [2, 4, 5],
-        "max_count": 50000,
-        "n_voxels": 35,
-        "total_count": 100000,
-        "bounding_box": [[1, 2, 3], [3, 4, 4]],
-    }
-]
-TEST_RESULT_SMALL = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [1, 2, 3],
-        "max_count": 1000,
-        "n_voxels": 35,
-        "total_count": 1000,
-        "bounding_box": [[2, 2, 2], [3, 3, 3]],
-    }
-]
-TEST_RESULT_BELOW_THRESHOLD = [
-    {
-        "centre_of_mass": [2, 3, 4],
-        "max_voxel": [2, 3, 4],
-        "max_count": 2,
-        "n_voxels": 1,
-        "total_count": 2,
-        "bounding_box": [[1, 2, 3], [2, 3, 4]],
-    }
-]
+from ....conftest import (
+    TEST_RESULT_MEDIUM,
+    fake_read,
+    pin_tip_edge_data,
+    raw_params_from_file,
+)
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
@@ -234,13 +200,17 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb(
+    use_dev_ispyb_unless_overridden_by_environment, dummy_params
+) -> StoreInIspyb:
+    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
 
 
 @pytest.fixture
-def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def dummy_ispyb_3d(
+    use_dev_ispyb_unless_overridden_by_environment, dummy_params
+) -> StoreInIspyb:
+    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
 
 
 @pytest.fixture
@@ -260,13 +230,33 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 
 
 @pytest.fixture
-def zocalo_for_system_test(zocalo) -> Generator[ZocaloResults, None, None]:
+def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
+    zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    old_zocalo_trigger = zocalo.trigger
+    zocalo.my_zocalo_result = TEST_RESULT_MEDIUM
+
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
-        await zocalo._put_results(TEST_RESULT_MEDIUM, {"dcid": 1234, "dcgid": 123})
+        fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
+        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        message = {
+            "results": zocalo.my_zocalo_result  # type: ignore
+        }
+        header = {}
+        zocalo.my_callback(fake_recipe_wrapper, header, message)  # type: ignore
+        await old_zocalo_trigger()
 
-    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-        yield zocalo
+    def mock_worfklow_subscribe(transport, channel, callback, **kwargs):
+        if channel == "xrc.i03":
+            zocalo.my_callback = callback
+
+    with (
+        patch("dodal.devices.zocalo.zocalo_results.workflows") as workflows,
+        patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
+    ):
+        workflows.recipe.wrap_subscribe.side_effect = mock_worfklow_subscribe
+        with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
+            yield zocalo
 
 
 @pytest.fixture
