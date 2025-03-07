@@ -28,7 +28,7 @@ from dodal.devices.zocalo.zocalo_results import (
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.constants import HardwareConstants, PlanNameConstants
+from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
@@ -136,7 +136,6 @@ def flyscan_xray_centre(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite,
         parameters.transmission_frac,
-        run_key_to_wrap=PlanNameConstants.GRIDSCAN_OUTER,
     )
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:

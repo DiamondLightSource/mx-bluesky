@@ -7,7 +7,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 
 
 @runtime_checkable
-class DevicesForXbpmAndTransmissionWrapper(Protocol):
+class XBPMPauseDevices(Protocol):
     undulator: Undulator
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator

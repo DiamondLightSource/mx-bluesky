@@ -1042,35 +1042,6 @@ class TestFlyscanXrayCentrePlan:
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
 
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait",
-        autospec=True,
-    )
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-    )
-    def test_flyscan_xray_centre_correctly_pauses_xbpm_feedback_during_collection(
-        self,
-        mock_kickoff_complete,
-        mock_wait,
-        mock_unpause_and_set_transmission: MagicMock,
-        mock_check_and_pause: MagicMock,
-        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
-        RE: RunEngine,
-    ):
-        RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
-        mock_check_and_pause.assert_called_once()
-        mock_unpause_and_set_transmission.assert_called_once()
-
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.change_aperture_then_move_to_xtal",
     )
     @patch("mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait")

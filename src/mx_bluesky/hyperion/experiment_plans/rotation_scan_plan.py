@@ -27,7 +27,6 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -373,9 +372,8 @@ def rotation_scan(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite,
         parameters.transmission_frac,
-        run_key_to_wrap=PlanNameConstants.ROTATION_RUN_KEY,
     )
-    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_RUN_KEY)
+    @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
@@ -440,9 +438,8 @@ def multi_rotation_scan(
             @transmission_and_xbpm_feedback_for_collection_decorator(
                 composite,
                 parameters.transmission_frac,
-                run_key_to_wrap=PlanNameConstants.ROTATION_RUN_KEY,
             )
-            @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_RUN_KEY)
+            @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,

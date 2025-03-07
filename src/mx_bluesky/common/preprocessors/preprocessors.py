@@ -1,6 +1,6 @@
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import plan_mutator
-from bluesky.utils import make_decorator
+from bluesky.utils import Msg, MsgGenerator, make_decorator
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     check_and_pause_feedback_and_verify_undulator_gap,
@@ -8,13 +8,13 @@ from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.protocols.protocols import (
-    DevicesForXbpmAndTransmissionWrapper,
+    XBPMPauseDevices,
 )
 
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
-    plan,
-    devices: DevicesForXbpmAndTransmissionWrapper,
+    plan: MsgGenerator,
+    devices: XBPMPauseDevices,
     desired_transmission_fraction: float,
     run_key_to_wrap: PlanNameConstants | None = None,
 ):
@@ -40,15 +40,17 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
 
     Args:
         plan: The plan performing the data collection.
-        devices (DevicesForXbpmAndTransmissionWrapper): Composite device including The XBPM device that is responsible for keeping
+        devices (XBPMPauseDevices): Composite device including The XBPM device that is responsible for keeping
                                                         the beam in position, undulator, attenuator, and DCM
         desired_transmission_fraction (float): The desired transmission for the collection
-        run_key_to_wrap: (str | None): Pausing XBPM and setting transmission is inserted after the 'open_run' message is seen with the matching run key, and unpausing and resetting transmission is inserted after the corresponding 'close_run' message is seen. If not specified, instead wrap the first run encountered.
+        run_key_to_wrap: (str | None): Pausing XBPM and setting transmission is inserted after the 'open_run' message is seen with
+        the matching run key, and unpausing and resetting transmission is inserted after the corresponding 'close_run' message is
+        seen. If not specified, instead wrap the first run encountered.
     """
 
-    _wrapped_plan_name: None | str = None
+    _wrapped_run_name: None | str = None
 
-    def head(msg):
+    def head(msg: Msg):
         yield from check_and_pause_feedback_and_verify_undulator_gap(
             devices.undulator,
             devices.xbpm_feedback,
@@ -65,28 +67,26 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
             devices.xbpm_feedback, devices.attenuator
         )
 
-    def insert_plans(msg):
+    def insert_plans(msg: Msg):
         # Wrap the specified run, or, if none specified, wrap the first run encountered
-        nonlocal _wrapped_plan_name
+        nonlocal _wrapped_run_name
 
-        if msg.command:
-            # If we specified a run key, did we encounter it
-            # If we didn't specify, then insert the plans and track the name of the run
-            if msg.command == "open_run" and (
-                run_key_to_wrap
-                and run_key_to_wrap is msg.run
-                or (not (run_key_to_wrap or _wrapped_plan_name))
-            ):
-                _wrapped_plan_name = msg.run if msg.run else "unnamed_run"
-
-                return head(msg), None
-
-            # Check if the run tracked from above was closed
-            elif msg.command == "close_run" and (
-                _wrapped_plan_name == "unnamed_run"
-                or (msg.run and _wrapped_plan_name and _wrapped_plan_name is msg.run)
-            ):
-                return None, tail()
+        match msg.command:
+            case "open_run":
+                # If we specified a run key, did we encounter it
+                # If we didn't specify, then insert the plans and track the name of the run
+                if (
+                    not (run_key_to_wrap or _wrapped_run_name)
+                    or run_key_to_wrap is msg.run
+                ):
+                    _wrapped_run_name = msg.run if msg.run else "unnamed_run"
+                    return head(msg), None
+            case "close_run":
+                # Check if the run tracked from above was closed
+                if _wrapped_run_name == "unnamed_run" or (
+                    msg.run and _wrapped_run_name and _wrapped_run_name is msg.run
+                ):
+                    return None, tail()
 
         return None, None
 

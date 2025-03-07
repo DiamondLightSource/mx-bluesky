@@ -23,6 +23,7 @@ def composite(
     xbpm_and_transmission_wrapper_composite.undulator.set = MagicMock(
         return_value=done_status
     )
+
     return xbpm_and_transmission_wrapper_composite
 
 
@@ -40,8 +41,6 @@ async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_ener
         yield from bps.null()
 
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
-    composite.xbpm_feedback.trigger = MagicMock()
-    composite.undulator.set = MagicMock()
     RE = RunEngine()
     RE(my_collection_plan())
 
@@ -91,7 +90,7 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
         yield from bps.null()
 
     status = Status()
-    status.set_exception(Exception())  # error occurs before contingency wrapper?
+    status.set_exception(Exception())
     composite.xbpm_feedback.trigger = MagicMock(side_effect=lambda: status)
 
     RE = RunEngine()
