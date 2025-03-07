@@ -44,6 +44,10 @@ async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_ener
     RE = RunEngine()
     RE(my_collection_plan())
 
+    # Stop pyright from complaining
+    assert isinstance(composite.xbpm_feedback.trigger, MagicMock)
+    assert isinstance(composite.undulator.set, MagicMock)
+
     # Assert XBPM is stable
     composite.xbpm_feedback.trigger.assert_called_once()
     # Assert DCM energy is read after XBPM is stable

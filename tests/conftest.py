@@ -568,7 +568,7 @@ def beamstop_i03(
 @pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
