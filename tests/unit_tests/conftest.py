@@ -248,8 +248,6 @@ async def fake_fgs_composite(
     undulator,
 ):
     fake_composite = FlyScanEssentialDevices(
-        attenuator=attenuator,
-        backlight=backlight,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
@@ -257,7 +255,6 @@ async def fake_fgs_composite(
         ),
         smargon=smargon,
         synchrotron=synchrotron,
-        xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
         dcm=i03.dcm(connect_immediately=True, mock=True),

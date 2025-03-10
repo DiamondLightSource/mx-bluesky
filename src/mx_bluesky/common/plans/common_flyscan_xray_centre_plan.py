@@ -15,6 +15,7 @@ from bluesky.utils import MsgGenerator, make_decorator
 from dodal.devices.attenuator.attenuator import (
     ReadOnlyAttenuator,
 )
+from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -22,6 +23,7 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -29,6 +31,9 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
     XrcResult,
     get_full_processing_results,
+)
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
 )
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -74,6 +79,8 @@ class FlyScanEssentialDevices:
     zebra: Zebra
     zocalo: ZocaloResults
     smargon: Smargon
+    undulator: Undulator
+    dcm: DCM
 
 
 NullPlanType = Callable[[], MsgGenerator]
@@ -173,6 +180,7 @@ def common_flyscan_xray_centre(
 
     xrc_event_handler = XRayCentreEventHandler()
 
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(
@@ -225,11 +233,6 @@ def flyscan_xray_centre_no_move(
     yield from run_gridscan_and_fetch_and_tidy(
         composite, parameters, feature_controlled
     )
-
-
-def run_gridscan_then_fetch_results_then_tidy_with_xbpm_feedback_wrapper(
-    fgs_composite: FlyScanEssentialDevices, params: SpecifiedThreeDGridScan
-): ...
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_AND_MOVE)

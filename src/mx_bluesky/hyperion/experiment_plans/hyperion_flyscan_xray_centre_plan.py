@@ -14,6 +14,9 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
     construct_beamline_specific_FGS_features,
 )
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
@@ -64,7 +67,13 @@ def hyperion_flyscan_xray_centre(
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
     composite.zocalo.use_gpu = parameters.features.use_gpu_results
 
-    yield from common_flyscan_xray_centre(composite, parameters, feature_controlled)
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite, parameters.transmission_frac
+    )
+    def decorated_flyscan_plan():
+        yield from common_flyscan_xray_centre(composite, parameters, feature_controlled)
+
+    yield from decorated_flyscan_plan()
 
 
 def construct_hyperion_specific_features(
