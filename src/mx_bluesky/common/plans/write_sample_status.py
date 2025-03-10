@@ -8,15 +8,13 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 )
 from mx_bluesky.common.utils.exceptions import SampleException
 
-callback = SampleHandlingCallback()
-
 
 class SampleStatusExceptionType(StrEnum):
     BEAMLINE = "Beamline"
     SAMPLE = "Sample"
 
 
-@bpp.subs_decorator(callback)
+@bpp.subs_decorator(SampleHandlingCallback())
 def deposit_sample_error(exception_type: SampleStatusExceptionType, sample_id: int):
     @bpp.run_decorator(
         md={
@@ -34,7 +32,7 @@ def deposit_sample_error(exception_type: SampleStatusExceptionType, sample_id: i
     yield from _inner()
 
 
-@bpp.subs_decorator(callback)
+@bpp.subs_decorator(SampleHandlingCallback(record_loaded_on_success=True))
 def deposit_loaded_sample(sample_id: int):
     @bpp.run_decorator(
         md={
