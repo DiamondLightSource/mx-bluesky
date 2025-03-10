@@ -54,6 +54,11 @@ from ...conftest import (
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
+class CompleteException(Exception):
+    # To avoid having to run through the entire plan during tests
+    pass
+
+
 @pytest.fixture
 def fgs_params_use_panda(
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
