@@ -19,6 +19,9 @@ from ophyd_async.testing import set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -36,9 +39,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
