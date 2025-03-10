@@ -79,7 +79,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.descriptors[doc["uid"]] = doc
 
     def activity_gated_event(self, doc: Event) -> Event | None:
-        assert (event_descriptor := self.descriptors.get(doc["descriptor"])) is not None
+        event_descriptor = self.descriptors.get(doc["descriptor"])
+        assert event_descriptor is not None
         if event_descriptor.get("name") == DocDescriptorNames.HARDWARE_READ_DURING:
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:

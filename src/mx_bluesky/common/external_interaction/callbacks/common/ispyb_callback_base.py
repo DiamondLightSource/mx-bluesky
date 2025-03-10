@@ -121,10 +121,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "ISPyB handler received event from read hardware"
         )
-        assert isinstance(
-            synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
-            SynchrotronMode,
-        )
+        synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
+        assert isinstance(synchrotron_mode, SynchrotronMode)
 
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
