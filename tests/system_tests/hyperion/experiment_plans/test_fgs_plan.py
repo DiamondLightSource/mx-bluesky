@@ -13,9 +13,6 @@ from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
 )
@@ -29,6 +26,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -163,8 +163,7 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        fxc_composite.xbpm_feedback,
-        fxc_composite.attenuator,
+        fxc_composite,
         params.transmission_frac,
     )
     def decorated_plan():

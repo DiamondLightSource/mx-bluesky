@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import pydantic
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -31,7 +32,9 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
 )
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
@@ -41,8 +44,10 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
+from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import XrcResult, ZocaloResults
@@ -496,7 +501,7 @@ def attenuator(RE):
 @pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -1445,4 +1450,24 @@ def test_rotation_params():
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
+    )
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class XBPMAndTransmissionWrapperComposite:
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    attenuator: BinaryFilterAttenuator
+    dcm: DCM
+
+
+@pytest.fixture
+def xbpm_and_transmission_wrapper_composite(
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
+) -> XBPMAndTransmissionWrapperComposite:
+    return XBPMAndTransmissionWrapperComposite(
+        undulator, xbpm_feedback, attenuator, dcm
     )

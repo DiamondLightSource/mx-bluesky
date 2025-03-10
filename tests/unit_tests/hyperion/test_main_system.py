@@ -298,10 +298,6 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
             "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
         ],
         [
-            "/robot_load_then_centre/start",
-            "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json",
-        ],
-        [
             "/multi_rotation_scan/start",
             "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
         ],
@@ -510,4 +506,3 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         assert "rotation_scan" in plan_names
         assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names
-        assert "robot_load_then_centre" in plan_names

@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from functools import partial
+from importlib import resources
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -72,6 +73,10 @@ def load_centre_collect_params():
 @pytest.fixture(autouse=True)
 def patch_open_to_prevent_dls_reads_in_tests():
     unpatched_open = open
+    assert __package__
+    project_folder = resources.files(__package__)
+    assert isinstance(project_folder, Path)
+    project_folder = project_folder.parent.parent.parent
 
     def patched_open(*args, **kwargs):
         requested_path = Path(args[0])

@@ -1,12 +1,17 @@
 import dataclasses
 import json
 import re
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import requests
+from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
+from jsonschema import ValidationError
 
-from mx_bluesky.common.parameters.components import WithVisit
+from mx_bluesky.common.parameters.components import (
+    WithSample,
+    WithVisit,
+)
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -16,6 +21,11 @@ AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
+MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
+
+
+class AgamemnonLoadCentreCollect(WithVisit, WithSample):
+    """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
 @dataclasses.dataclass
@@ -60,7 +70,7 @@ def _get_parameters_from_url(url: str) -> dict:
         raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
 
 
-def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
+def get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
     loop_type_name: str | None = parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
@@ -81,15 +91,69 @@ def get_next_instruction(beamline: str) -> dict:
     return _get_parameters_from_url(AGAMEMNON_URL + f"getnextcollect/{beamline}")
 
 
-def get_pin_type_from_agamemnon(beamline: str) -> PinType:
-    params = get_next_instruction(beamline)
-    return _get_pin_type_from_agamemnon_parameters(params)
+def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
+    try:
+        prefix = parameters["prefix"]
+        collection = parameters["collection"]
+        # Assuming distance is identical for multiple collections. Remove after https://github.com/DiamondLightSource/mx-bluesky/issues/773
+        detector_distance = collection[0]["distance"]
+    except KeyError as e:
+        raise KeyError("Unexpected json from agamemnon") from e
+
+    match = re.match(MX_GENERAL_ROOT_REGEX, prefix) if prefix else None
+
+    if match:
+        return (match.group("visit"), detector_distance)
+
+    raise ValueError(
+        f"Agamemnon prefix '{prefix}' does not match MX-General root structure"
+    )
+
+
+def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    assert parameters.get("sample"), "instruction does not have a sample"
+    return {
+        "sample_id": parameters["sample"]["id"],
+        "sample_puck": parameters["sample"]["container"],
+        "sample_pin": parameters["sample"]["position"],
+    }
+
+
+def populate_parameters_from_agamemnon(agamemnon_params):
+    visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
+    with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
+    return AgamemnonLoadCentreCollect(
+        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
+    )
+
+
+def compare_params(load_centre_collect_params):
+    try:
+        beamline_name = get_beamline_name("i03")
+        agamemnon_params = get_next_instruction(beamline_name)
+
+        # Populate parameters from Agamemnon
+        parameters = populate_parameters_from_agamemnon(agamemnon_params)
+
+        # Log differences against GDA populated parameters
+        differences = DeepDiff(
+            parameters, load_centre_collect_params, math_epsilon=1e-5
+        )
+        if differences:
+            LOGGER.info(
+                f"Different parameters found when directly reading from Hyperion: {differences}"
+            )
+    except (ValueError, KeyError) as e:
+        LOGGER.warning(f"Failed to compare parameters: {e}")
+    except Exception as e:
+        LOGGER.warning(f"Unexpected error occurred. Failed to compare parameters: {e}")
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
     try:
         beamline_name = get_beamline_name("i03")
-        pin_type = get_pin_type_from_agamemnon(beamline_name)
+        agamemnon_params = get_next_instruction(beamline_name)
+        pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
@@ -99,6 +163,9 @@ def update_params_from_agamemnon(parameters: T) -> T:
                 # Before we do https://github.com/DiamondLightSource/mx-bluesky/issues/226
                 # this will give no snapshots but that's preferable
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
+    except (ValueError, ValidationError) as e:
+        LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
-        LOGGER.warning(f"Failed to get pin type from agamemnon, using single pin {e}")
+        LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
+
     return parameters
