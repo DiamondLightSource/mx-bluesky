@@ -521,3 +521,24 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
 
     eiger.do_arm.set.assert_called_once()
     eiger.unstage.assert_called_once()
+
+
+def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
+    fake_create_rotation_devices: RotationScanComposite,
+    test_multi_rotation_params: MultiRotationScan,
+    sim_run_engine_for_rotation: RunEngineSimulator,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    msgs = sim_run_engine_for_rotation.simulate_plan(
+        multi_rotation_scan(
+            fake_create_rotation_devices,
+            test_multi_rotation_params,
+            oav_parameters_for_rotation,
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run"
+    )

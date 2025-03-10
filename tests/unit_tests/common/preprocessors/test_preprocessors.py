@@ -122,9 +122,7 @@ def test_xbpm_preprocessor_unpauses_xbpm_on_exception(
     mock_unpause_xbpm.assert_has_calls([call(ANY, ANY)])
 
 
-@patch(
-    "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap"
-)
+@patch("mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback")
 @patch(
     "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1"
 )
