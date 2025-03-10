@@ -12,6 +12,7 @@ env/
 # Output
 *.png
 !docs/*.png
+!tests/test_data/**/*.png
 
 # Distribution / packaging
 .Python
