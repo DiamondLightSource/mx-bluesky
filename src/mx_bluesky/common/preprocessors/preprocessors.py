@@ -3,7 +3,7 @@ from bluesky.preprocessors import plan_mutator
 from bluesky.utils import Msg, MsgGenerator, make_decorator
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    check_and_pause_feedback_and_verify_undulator_gap,
+    check_and_pause_feedback,
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
@@ -35,13 +35,10 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     mostly accounts for slow thermal drift so it is safe to assume that the beam is
     stable during a collection.
 
-    In the case of a beam dump, undulator gap may not return. Therefore, we check here
-    that the undulator gap is correct after XBPM is stable, and before collection.
-
     Args:
         plan: The plan performing the data collection.
         devices (XBPMPauseDevices): Composite device including The XBPM device that is responsible for keeping
-                                                        the beam in position, undulator, attenuator, and DCM
+                                                        the beam in position, and attenuator
         desired_transmission_fraction (float): The desired transmission for the collection
         run_key_to_wrap: (str | None): Pausing XBPM and setting transmission is inserted after the 'open_run' message is seen with
         the matching run key, and unpausing and resetting transmission is inserted after the corresponding 'close_run' message is
@@ -51,11 +48,9 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     _wrapped_run_name: None | str = None
 
     def head(msg: Msg):
-        yield from check_and_pause_feedback_and_verify_undulator_gap(
-            devices.undulator,
+        yield from check_and_pause_feedback(
             devices.xbpm_feedback,
             devices.attenuator,
-            devices.dcm,
             desired_transmission_fraction,
         )
 
