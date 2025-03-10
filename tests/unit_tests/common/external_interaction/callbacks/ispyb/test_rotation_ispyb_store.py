@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
-    DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
@@ -65,15 +64,6 @@ EXPECTED_UPDATE_DATA_COLLECTION = {
 EXPECTED_BEGIN_DATA_COLLECTION = EXPECTED_UPDATE_DATA_COLLECTION | {
     "comments": "Hyperion rotation scan",
 }
-
-
-@pytest.fixture
-def dummy_rotation_data_collection_group_info():
-    return DataCollectionGroupInfo(
-        visit_string="cm31105-4",
-        experiment_type="SAD",
-        sample_id=364758,
-    )
 
 
 @pytest.fixture
