@@ -23,10 +23,10 @@ from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
+from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
@@ -64,7 +64,7 @@ def callbacks(params):
 
 
 def reset_positions(smargon: Smargon):
-    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
+    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
 
 @pytest.fixture
@@ -164,10 +164,7 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        fxc_composite.undulator,
-        fxc_composite.xbpm_feedback,
-        fxc_composite.attenuator,
-        fxc_composite.dcm,
+        fxc_composite,
         params.transmission_frac,
     )
     def decorated_plan():

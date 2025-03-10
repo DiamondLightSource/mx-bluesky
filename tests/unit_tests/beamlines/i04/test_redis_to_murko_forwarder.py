@@ -1,5 +1,6 @@
 import io
 import json
+import pickle
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -7,9 +8,12 @@ import pytest
 from PIL import Image
 
 from mx_bluesky.beamlines.i04.redis_to_murko_forwarder import (
+    MURKO_ADDRESS,
     BatchMurkoForwarder,
+    MurkoRequest,
     RedisListener,
     get_image_size,
+    send_to_murko_and_get_results,
 )
 
 
@@ -76,22 +80,30 @@ def test_when_more_images_added_than_batch_size_then_murko_called(
 def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once(
     batch_forwarder: BatchMurkoForwarder,
 ):
-    results = [{"uuid": "result_1"}, {"uuid": "result_2"}]
+    results = [("uuid_1", {"result": 1}), ("uuid_2", {"result": 2})]
     batch_forwarder._send_murko_results_to_redis("sample_id", results)
 
     assert batch_forwarder.redis_client.hset.call_args_list == [  # type:ignore
-        call("murko:sample_id:results", "result_1", '{"uuid": "result_1"}'),
-        call("murko:sample_id:results", "result_2", '{"uuid": "result_2"}'),
+        call(
+            "murko:sample_id:results",
+            "uuid_1",
+            str(pickle.dumps({"result": 1})),
+        ),
+        call(
+            "murko:sample_id:results",
+            "uuid_2",
+            str(pickle.dumps({"result": 2})),
+        ),
     ]
     batch_forwarder.redis_client.publish.assert_called_once_with(  # type:ignore
-        "murko-results", json.dumps(results)
+        "murko-results", pickle.dumps(results)
     )
 
 
 @patch(
     "mx_bluesky.beamlines.i04.redis_to_murko_forwarder.send_to_murko_and_get_results"
 )
-def test_when_images_flushed_then_resuls_are_gathered_correlated_and_sent_to_redis(
+def test_when_images_flushed_then_results_are_gathered_correlated_and_sent_to_redis(
     mock_get_results: MagicMock, batch_forwarder: BatchMurkoForwarder
 ):
     mock_get_results.return_value = {
@@ -108,12 +120,12 @@ def test_when_images_flushed_then_resuls_are_gathered_correlated_and_sent_to_red
         call(
             "murko:sample_1:results",
             "uuid_1",
-            '{"uuid": "uuid_1", "x_pixel_coord": 320, "y_pixel_coord": 0}',
+            str(pickle.dumps({"most_likely_click": (0, 1)})),
         ),
         call(
             "murko:sample_1:results",
             "uuid_2",
-            '{"uuid": "uuid_2", "x_pixel_coord": 240.0, "y_pixel_coord": 128.0}',
+            str(pickle.dumps({"most_likely_click": (0.5, 0.75)})),
         ),
     ]
 
@@ -187,6 +199,21 @@ def test_given_jpeg_image_received_then_converted_to_numpy_array_and_sent_to_for
     assert add_call[0] == "sample_id_1"
     assert add_call[1] == "uuid_1"
     assert np.array_equal(add_call[2], np.array([[[0, 0, 0]]]))
+
+
+@patch("mx_bluesky.beamlines.i04.redis_to_murko_forwarder.zmq")
+def test_send_to_murko_and_get_results_calls_murko_as_expected(patch_zmq):
+    mock_request: MurkoRequest = {"prefix": "test"}  # type: ignore
+
+    mock_socket = patch_zmq.Context.return_value.socket.return_value
+    expected_return_dict = {"descriptions": ["returned"]}
+    mock_socket.recv.return_value = pickle.dumps(expected_return_dict)
+
+    returned = send_to_murko_and_get_results(mock_request)
+
+    mock_socket.connect.assert_called_once_with(MURKO_ADDRESS)
+    mock_socket.send.assert_called_once_with(pickle.dumps(mock_request))
+    assert returned == expected_return_dict
 
 
 @patch("mx_bluesky.beamlines.i04.redis_to_murko_forwarder.LOGGER")

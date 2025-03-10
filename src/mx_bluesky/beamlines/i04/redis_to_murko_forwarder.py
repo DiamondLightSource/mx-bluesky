@@ -1,6 +1,7 @@
 import io
 import json
 import pickle
+from datetime import timedelta
 from typing import TypedDict
 
 import numpy as np
@@ -14,13 +15,20 @@ from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
 
+MurkoResult = dict
+FullMurkoResults = dict[str, list[MurkoResult]]
+
 
 class MurkoRequest(TypedDict):
+    """See https://github.com/MartinSavko/murko#usage for more information."""
+
     to_predict: NDArray
     model_img_size: tuple[int, int]
     save: bool
     min_size: int
     description: list
+
+    # The identifier for each image
     prefix: list[str]
 
 
@@ -29,32 +37,26 @@ def get_image_size(image: NDArray) -> tuple[int, int]:
     return image.shape[1], image.shape[0]
 
 
-def send_to_murko_and_get_results(request: MurkoRequest) -> dict:
+def send_to_murko_and_get_results(request: MurkoRequest) -> FullMurkoResults:
     LOGGER.info(f"Sending {request['prefix']} to murko")
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect(MURKO_ADDRESS)
     socket.send(pickle.dumps(request))
     raw_results = socket.recv()
+    assert isinstance(raw_results, bytes)
     results = pickle.loads(raw_results)
     LOGGER.info(f"Got {len(results['descriptions'])} results")
     return results
 
 
-def correlate_results_to_uuids(request: MurkoRequest, murko_results: dict) -> list:
-    results = []
-    uuids = request["prefix"]
-
-    width, height = get_image_size(request["to_predict"][0])
-
-    for uuid, prediction in zip(uuids, murko_results["descriptions"], strict=False):
-        coords = prediction["most_likely_click"]
-        y_coord = coords[0] * height
-        x_coord = coords[1] * width
-        results.append(
-            {"uuid": uuid, "x_pixel_coord": x_coord, "y_pixel_coord": y_coord}
-        )
-    return results
+def _correlate_results_to_uuids(
+    request: MurkoRequest, murko_results: FullMurkoResults
+) -> list[tuple[str, MurkoResult]]:
+    """We send a batch of images to murko, with each having a 'prefix' of the uuid that
+    we're using to keep track of the image. Murko sends back an ordered list of these,
+    which we match to the supplied prefix here."""
+    return list(zip(request["prefix"], murko_results["descriptions"], strict=False))
 
 
 class BatchMurkoForwarder:
@@ -94,16 +96,20 @@ class BatchMurkoForwarder:
             ],
             "prefix": uuids,
         }
-        predictions = send_to_murko_and_get_results(request_arguments)
-        results = correlate_results_to_uuids(request_arguments, predictions)
-        self._send_murko_results_to_redis(sample_id, results)
+        results = send_to_murko_and_get_results(request_arguments)
+        results_with_uuids = _correlate_results_to_uuids(request_arguments, results)
+        self._send_murko_results_to_redis(sample_id, results_with_uuids)
 
-    def _send_murko_results_to_redis(self, sample_id: str, results: list):
-        for result in results:
-            self.redis_client.hset(
-                f"murko:{sample_id}:results", result["uuid"], json.dumps(result)
-            )
-        self.redis_client.publish("murko-results", json.dumps(results))
+    def _send_murko_results_to_redis(
+        self, sample_id: str, results: list[tuple[str, MurkoResult]]
+    ):
+        """Stores the results into a redis hash (for longer term storage) and publishes
+        them as well so that downstream clients can get notified."""
+        for uuid, result in results:
+            redis_key = f"murko:{sample_id}:results"
+            self.redis_client.hset(redis_key, uuid, str(pickle.dumps(result)))
+            self.redis_client.expire(redis_key, timedelta(days=7))
+        self.redis_client.publish("murko-results", pickle.dumps(results))
 
     def add(self, sample_id: str, uuid: str, image: NDArray):
         """Add an image to the batch to send to murko."""

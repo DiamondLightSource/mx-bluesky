@@ -34,6 +34,9 @@ from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -51,9 +54,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
     tidy_up_zebra_after_gridscan,
-)
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
@@ -102,13 +102,6 @@ def flyscan_xray_centre_no_move(
         }
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
-    )
     def run_gridscan_and_fetch_and_tidy(
         fgs_composite: HyperionFlyScanXRayCentreComposite,
         params: HyperionSpecifiedThreeDGridScan,
@@ -140,6 +133,10 @@ def flyscan_xray_centre(
     """
     xrc_event_handler = XRayCentreEventHandler()
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(
@@ -211,7 +208,7 @@ def run_gridscan_and_fetch_results(
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here
@@ -300,7 +297,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)
+    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -444,8 +441,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
-        time_between_x_steps_ms,
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
     )
 
     directory_provider_root = Path(parameters.storage_directory)

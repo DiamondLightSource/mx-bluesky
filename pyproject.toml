@@ -18,7 +18,6 @@ dependencies = [
     #
     "annotated_types",
     "caproto",
-    "confluent-kafka==2.8.0",
     "fastapi[all]",
     "flask-restful",
     "ispyb",
@@ -46,8 +45,8 @@ dependencies = [
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.9.0a2",
-    "bluesky >= 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@27128737247487a5f5d3e98e7bfbdfd3990546cc",
+    "bluesky == 1.13",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@b119d38c70c67925a998f9bcfc09689db9043eaf",
 ]
 
 
@@ -72,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright==1.1.394",          # See https://github.com/DiamondLightSource/mx-bluesky/issues/875
+    "pyright",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
