@@ -272,7 +272,7 @@ def setup_zebra_for_fastchip_plan(
     det_type: str,
     num_gates: int,
     num_exposures: int,
-    exposure_time: float,
+    exposure_time_s: float,
     start_time_offset: float = 0.0,
     group: str = "setup_zebra_for_fastchip",
     wait: bool = True,
@@ -303,7 +303,7 @@ def setup_zebra_for_fastchip_plan(
         det_type (str): Detector in use, current choices are Eiger or Pilatus.
         num_gates (int): Number of apertures to visit in a chip.
         num_exposures (int): Number of times data is collected in each aperture.
-        exposure_time (float): Exposure time for each shot.
+        exposure_time_s (float): Exposure time for each shot.
         start_time_offset (float): Delay on the start of the position compare. \
             Defaults to 0.0 (standard chip collection).
     """
@@ -341,10 +341,12 @@ def setup_zebra_for_fastchip_plan(
         )
 
     # Square wave - needs a small drop to make it work for eiger
-    pulse_width = exposure_time - 0.0001 if det_type == "eiger" else exposure_time / 2
+    pulse_width = (
+        exposure_time_s - 0.0001 if det_type == "eiger" else exposure_time_s / 2
+    )
 
     # 100us buffer needed to avoid missing some of the triggers
-    exptime_buffer = exposure_time + 0.0001
+    exptime_buffer = exposure_time_s + 0.0001
 
     # Number of gates is the number of windows collected
     yield from bps.abs_set(zebra.pc.num_gates, num_gates, group=group)
@@ -362,7 +364,7 @@ def setup_zebra_for_fastchip_plan(
 def open_fast_shutter_at_each_position_plan(
     zebra: Zebra,
     num_exposures: int,
-    exposure_time: float,
+    exposure_time_s: float,
     group: str = "fast_shutter_control",
     wait: bool = True,
 ):
@@ -384,7 +386,7 @@ def open_fast_shutter_at_each_position_plan(
     Args:
         zebra (Zebra): The zebra ophyd device.
         num_exposures (int): Number of times data is collected in each aperture.
-        exposure_time (float): Exposure time for each shot.
+        exposure_time_s (float): Exposure time for each shot.
     """
     SSX_LOGGER.info(
         "ZEBRA setup for fastchip collection with long delays between exposures."
@@ -395,7 +397,7 @@ def open_fast_shutter_at_each_position_plan(
         zebra.output.pulse_2.input, zebra.mapping.sources.PC_GATE, group=group
     )
     yield from bps.abs_set(zebra.output.pulse_2.delay, 0.0, group=group)
-    pulse2_width = num_exposures * exposure_time + SHUTTER_OPEN_TIME
+    pulse2_width = num_exposures * exposure_time_s + SHUTTER_OPEN_TIME
     yield from bps.abs_set(zebra.output.pulse_2.width, pulse2_width, group=group)
 
     # Fast shutter

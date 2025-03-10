@@ -75,7 +75,7 @@ class RotationExperiment(DiffractionExperimentWithSample, WithHyperionUDCFeature
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
-            exposure_time=self.exposure_time_s,
+            exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,

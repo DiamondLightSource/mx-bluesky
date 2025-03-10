@@ -94,11 +94,11 @@ async def test_setup_zebra_for_extruder_pp_pilatus_collection(zebra: Zebra, RE):
 async def test_setup_zebra_for_fastchip(zebra: Zebra, RE):
     num_gates = 400
     num_exposures = 2
-    exposure_time = 0.001
+    exposure_time_s = 0.001
     # With Eiger
     RE(
         setup_zebra_for_fastchip_plan(
-            zebra, "eiger", num_gates, num_exposures, exposure_time, wait=True
+            zebra, "eiger", num_gates, num_exposures, exposure_time_s, wait=True
         )
     )
     # Check that SOFT_IN:B0 gets disabled
@@ -108,32 +108,32 @@ async def test_setup_zebra_for_fastchip(zebra: Zebra, RE):
     assert await zebra.output.out_pvs[1].get_value() == zebra.mapping.sources.AND3
     assert await zebra.pc.num_gates.get_value() == num_gates
     assert await zebra.pc.pulse_max.get_value() == num_exposures
-    assert await zebra.pc.pulse_width.get_value() == exposure_time - 0.0001
+    assert await zebra.pc.pulse_width.get_value() == exposure_time_s - 0.0001
 
     # With Pilatus
     RE(
         setup_zebra_for_fastchip_plan(
-            zebra, "pilatus", num_gates, num_exposures, exposure_time, wait=True
+            zebra, "pilatus", num_gates, num_exposures, exposure_time_s, wait=True
         )
     )
     # Check ttl out2 is set to AND3
     assert await zebra.output.out_pvs[2].get_value() == zebra.mapping.sources.AND3
 
     assert await zebra.pc.pulse_start.get_value() == 0.0
-    assert await zebra.pc.pulse_width.get_value() == exposure_time / 2
-    assert await zebra.pc.pulse_step.get_value() == exposure_time + 0.0001
+    assert await zebra.pc.pulse_width.get_value() == exposure_time_s / 2
+    assert await zebra.pc.pulse_step.get_value() == exposure_time_s + 0.0001
 
 
 async def test_open_fast_shutter_at_each_position_plan(zebra: Zebra, RE):
     num_exposures = 2
-    exposure_time = 0.001
+    exposure_time_s = 0.001
 
-    RE(open_fast_shutter_at_each_position_plan(zebra, num_exposures, exposure_time))
+    RE(open_fast_shutter_at_each_position_plan(zebra, num_exposures, exposure_time_s))
 
     # Check output Pulse2 is set
     assert await zebra.output.pulse_2.input.get_value() == zebra.mapping.sources.PC_GATE
     assert await zebra.output.pulse_2.delay.get_value() == 0.0
-    expected_pulse_width = num_exposures * exposure_time + 0.05
+    expected_pulse_width = num_exposures * exposure_time_s + 0.05
     assert await zebra.output.pulse_2.width.get_value() == pytest.approx(
         expected_pulse_width, abs=1e-3
     )
