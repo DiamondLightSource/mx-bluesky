@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Contributing &#8212; mx-bluesky 1.0.1.dev178+g13143d918 documentation</title>
+    <title>Contributing &#8212; mx-bluesky 1.0.1.dev179+ga285e0ac3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=e1427914"></script>
+    <script src="../../../_static/documentation_options.js?v=52d9a7f0"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -509,6 +509,24 @@
 </ol>
 <p><strong>Work should not be done without an associated ticket describing what the work is</strong></p>
 </section>
+<section id="developing-mx-bluesky-and-dodal">
+<h3>Developing mx-bluesky and dodal<a class="headerlink" href="#developing-mx-bluesky-and-dodal" title="Link to this heading">#</a></h3>
+<p>Some issues will span the mx-bluesky repo and the dodal repo. When working on both at the same time, follow these instructions:</p>
+<ol class="arabic simple">
+<li><p>An issue is created for the work, inside mx-bluesky. This issue should describe in as much detail as possible the work that needs to be done. Anyone is free to make a ticket and/or comment on one.</p></li>
+<li><p>If a developer is going to do the work they assign themselves to the issue.</p></li>
+<li><p>The developer makes a new branch in mx-bluesky with the format <code class="docutils literal notranslate"><span class="pre">issue_short_description</span></code> e.g. <code class="docutils literal notranslate"><span class="pre">122_create_a_contributing_file</span></code>. The developer also creates a new branch in dodal, with the format <code class="docutils literal notranslate"><span class="pre">mx_bluesky_issue_short_description</span></code> - the same as the mx-bluesky branch name but with <code class="docutils literal notranslate"><span class="pre">mx_bluesky_</span></code> in front. (External developers are also welcome to make forks)</p></li>
+<li><p>The developer does the work on these branches, adding their work in small commits. Commit messages should be informative and prefixed with the issue number e.g. <code class="docutils literal notranslate"><span class="pre">(#122)</span> <span class="pre">Added</span> <span class="pre">contributing</span> <span class="pre">file</span></code>.</p></li>
+<li><p>Once the developer has done the final commit in both repos, they find the latest commit SHA in the dodal repo using <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span></code>. In <code class="docutils literal notranslate"><span class="pre">mx-bluesky/pyproject.toml</span></code>, the developer changes <code class="docutils literal notranslate"><span class="pre">dls-dodal</span> <span class="pre">&#64;</span> <span class="pre">git+https://github.com/DiamondLightSource/dodal.git&#64;{dodal_commmit_SHA}</span></code> using the SHA they just found.</p></li>
+<li><p>The developer commits and pushes this final change on mx-bluesky.</p></li>
+<li><p>The developer submits a dodal PR for the work they have done in the dodal repo. The pull request should start with <code class="docutils literal notranslate"><span class="pre">Fixes</span> <span class="pre">#issue_num</span></code> e.g. <code class="docutils literal notranslate"><span class="pre">Fixes</span> <span class="pre">#122</span></code>, and should link to the issue created in mx-bluesky. The developer should also add some background on how the reviewer might test the change.</p></li>
+<li><p>The developer submits a mx-bluesky PR for the work they have done in the mx-bluesky repo. The pull request should start with <code class="docutils literal notranslate"><span class="pre">Fixes</span> <span class="pre">#issue_num</span></code> e.g. <code class="docutils literal notranslate"><span class="pre">Fixes</span> <span class="pre">#122</span></code>. This PR should link to the dodal PR just created with something like “Also needs #456”. Again, the developer should add some background on how the reviewer might test the change.</p></li>
+<li><p>If the developer has a particular person in mind to review the work they should assign that person to the PRs as a reviewer.</p></li>
+<li><p>The reviewer and developer go back and forth on the code until the reviewer approves it. (See “Reviewing Work” below)</p></li>
+<li><p>Once the work is approved on both PRs, the original developer merges them. The PRs should be merged at the same time.</p></li>
+</ol>
+<p><strong>Work should not be done without an associated ticket describing what the work is</strong></p>
+</section>
 <section id="reviewing-work">
 <h3>Reviewing Work<a class="headerlink" href="#reviewing-work" title="Link to this heading">#</a></h3>
 <p><strong>Work must be reviewed by another developer before it can be merged</strong>. Remember that work is reviewed for a number of reasons:</p>
@@ -597,6 +615,7 @@ same or is improved by a pull request!</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-contribute-to-mx-bluesky">How to contribute to mx-bluesky</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#general-workflow">General Workflow</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#developing-mx-bluesky-and-dodal">Developing mx-bluesky and dodal</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#reviewing-work">Reviewing Work</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-or-discussion">Issue or Discussion?</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#code-coverage">Code Coverage</a></li>
