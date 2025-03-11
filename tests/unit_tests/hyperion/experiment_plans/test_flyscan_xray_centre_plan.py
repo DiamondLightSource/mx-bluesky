@@ -973,7 +973,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         test_fgs_params_panda_zebra.x_step_size_um = 10000
-        test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
+        test_fgs_params_panda_zebra.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
         try:
