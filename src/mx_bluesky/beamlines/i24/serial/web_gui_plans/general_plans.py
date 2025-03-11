@@ -5,6 +5,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
+from dodal.devices.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -27,6 +28,13 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
     get_detector_type,
 )
+
+
+@bpp.run_decorator()
+def gui_move_backlight(position: str) -> MsgGenerator:
+    backlight = i24.backlight()
+    bl_pos = BacklightPositions(position)
+    yield from bps.abs_set(backlight, bl_pos, wait=True)
 
 
 @bpp.run_decorator()
