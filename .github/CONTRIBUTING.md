@@ -30,7 +30,7 @@ Some issues will span the mx-bluesky repo and the dodal repo. When working on bo
 8. The developer submits a mx-bluesky PR for the work they have done in the mx-bluesky repo. The pull request should start with `Fixes #issue_num` e.g. `Fixes #122`. This PR should link to the dodal PR just created with something like "Also needs #456". Again, the developer should add some background on how the reviewer might test the change.
 9. If the developer has a particular person in mind to review the work they should assign that person to the PRs as a reviewer.
 10. The reviewer and developer go back and forth on the code until the reviewer approves it. (See "Reviewing Work" below)
-11. Once the work is approved the original developer merges it.
+11. Once the work is approved on both PRs, the original developer merges them. The PRs should be merged at the same time.
 
 **Work should not be done without an associated ticket describing what the work is**
 
