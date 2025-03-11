@@ -141,9 +141,9 @@ def detect_grid_and_do_gridscan(
         parameters, grid_params_callback.get_grid_parameters()
     )
 
-    feature_controlled = construct_hyperion_specific_features(xrc_composite, params)
+    beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
 
-    yield from flyscan_xray_centre_no_move(xrc_composite, params, feature_controlled)
+    yield from flyscan_xray_centre_no_move(xrc_composite, params, beamline_specific)
 
 
 def grid_detect_then_xray_centre(

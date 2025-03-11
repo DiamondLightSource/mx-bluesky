@@ -87,7 +87,7 @@ def mock_plan():
 
 
 @pytest.fixture
-def feature_controlled(
+def beamline_specific(
     fake_fgs_composite: FlyScanEssentialDevices,
     test_fgs_params: SpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
@@ -129,7 +129,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         mock_ispyb: MagicMock,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
         RE.subscribe(ispyb_callback)
@@ -141,7 +141,7 @@ class TestFlyscanXrayCentrePlan:
             with pytest.raises(FailedStatus) as exc:
                 RE(
                     common_flyscan_xray_centre(
-                        fake_fgs_composite, test_fgs_params, feature_controlled
+                        fake_fgs_composite, test_fgs_params, beamline_specific
                     )
                 )
 
@@ -161,7 +161,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
         RE_with_subs: ReWithSubs,
     ):
         RE, _ = RE_with_subs
@@ -174,7 +174,7 @@ class TestFlyscanXrayCentrePlan:
             yield from run_gridscan_and_fetch_results(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         RE(plan())
@@ -242,7 +242,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (_, ispyb_cb) = RE_with_subs
 
@@ -250,13 +250,13 @@ class TestFlyscanXrayCentrePlan:
             yield from common_flyscan_xray_centre(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         RE(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
-        feature_controlled.setup_trigger_plan.assert_called_once()  # type: ignore
-        feature_controlled.tidy_plan.assert_called_once()  # type: ignore
+        beamline_specific.setup_trigger_plan.assert_called_once()  # type: ignore
+        beamline_specific.tidy_plan.assert_called_once()  # type: ignore
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
@@ -273,7 +273,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -282,7 +282,7 @@ class TestFlyscanXrayCentrePlan:
             yield from run_gridscan_and_fetch_results(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -344,7 +344,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -353,7 +353,7 @@ class TestFlyscanXrayCentrePlan:
             yield from run_gridscan_and_fetch_results(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
@@ -377,7 +377,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
@@ -386,7 +386,7 @@ class TestFlyscanXrayCentrePlan:
             yield from run_gridscan_and_fetch_results(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
@@ -471,7 +471,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         RE_with_subs: ReWithSubs,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         test_fgs_params.x_steps = 9
         test_fgs_params.y_steps = 10
@@ -499,7 +499,7 @@ class TestFlyscanXrayCentrePlan:
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(
                 common_flyscan_xray_centre(
-                    fake_fgs_composite, test_fgs_params, feature_controlled
+                    fake_fgs_composite, test_fgs_params, beamline_specific
                 )
             )
 
@@ -531,10 +531,10 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
         done_status: Status,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
+        RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
@@ -563,9 +563,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        feature_controlled.read_pre_flyscan_plan = partial(
+        beamline_specific.read_pre_flyscan_plan = partial(
             read_hardware_plan,
             [],
             DocDescriptorNames.HARDWARE_READ_DURING,
@@ -585,7 +585,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
         with pytest.raises(CompleteException):
-            RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
+            RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
@@ -670,9 +670,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        feature_controlled.read_during_collection_plan = partial(
+        beamline_specific.read_during_collection_plan = partial(
             read_hardware_plan,
             [fake_fgs_composite.eiger.bit_depth],  # type: ignore # see https://github.com/bluesky/bluesky/issues/1809
             DocDescriptorNames.HARDWARE_READ_DURING,
@@ -683,7 +683,7 @@ class TestFlyscanXrayCentrePlan:
             "synchrotron-synchrotron_mode",
         )
         msgs = sim_run_engine.simulate_plan(
-            run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled)
+            run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
@@ -691,7 +691,7 @@ class TestFlyscanXrayCentrePlan:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "kickoff"
-            and msg.obj == feature_controlled.fgs_motors,
+            and msg.obj == beamline_specific.fgs_motors,
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"
@@ -712,7 +712,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
         callback = XRayCentreEventHandler()
@@ -726,7 +726,7 @@ class TestFlyscanXrayCentrePlan:
         )
         RE(
             run_gridscan_and_fetch_results(
-                fake_fgs_composite, test_fgs_params, feature_controlled
+                fake_fgs_composite, test_fgs_params, beamline_specific
             )
         )
 
@@ -746,13 +746,13 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         mock_plan.side_effect = CompleteException
         with pytest.raises(CompleteException):
             RE(
                 common_flyscan_xray_centre(
-                    fake_fgs_composite, test_fgs_params, feature_controlled
+                    fake_fgs_composite, test_fgs_params, beamline_specific
                 )
             )
 

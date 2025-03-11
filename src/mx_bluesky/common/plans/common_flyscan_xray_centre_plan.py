@@ -61,7 +61,8 @@ from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 
 
-# Saves needing to write 'assert not None' everywhere
+# Defaulting to a null plan saves
+# needing to write 'assert not None' everywhere
 def null_plan(*args):
     yield from bps.null()
 
@@ -86,26 +87,19 @@ class FlyScanEssentialDevices:
 NullPlanType = Callable[[], MsgGenerator]
 
 
-# TODO ask for opinions on typing for the below
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures:
     setup_trigger_plan: Callable[..., MsgGenerator]
     tidy_plan: Callable[..., MsgGenerator]
     set_flyscan_params_plan: Callable[..., MsgGenerator]
     fgs_motors: FastGridScanCommon
-    read_pre_flyscan_plan: Callable[..., MsgGenerator]
+    read_pre_flyscan_plan: Callable[
+        ..., MsgGenerator
+    ]  # Eventually replace with https://github.com/DiamondLightSource/mx-bluesky/issues/819
     read_during_collection_plan: Callable[..., MsgGenerator]
     plan_after_getting_xrc_results: Callable[..., MsgGenerator] = null_plan
 
 
-# TODO: Make the lists optional and do standard reads if nothing was passed?
-
-
-# TODO: use preprocessors for scan_wrapper - see baseline_wrapper
-# Do somethingl ike if msg.command = "start fgs" then add a finalizer preproc to the head which does XBPM pause
-
-
-# This should be thr MINIMUM set of parameters needed to specifify the gridscan. If there is a way to remove any of these parameters we should do them
 def construct_beamline_specific_FGS_features(
     setup_trigger_plan: Callable[..., MsgGenerator],
     tidy_plan: Callable[..., MsgGenerator],
@@ -118,19 +112,24 @@ def construct_beamline_specific_FGS_features(
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
     Args:
-        setup_trigger_plan (Callable): Configure any triggering, for example with the Zebra or PandA device. Ran directly before kicking off the gridscan.
+        setup_trigger_plan (Callable): Configure triggering, for example with the Zebra or PandA device.
+        Ran directly before kicking off the gridscan.
 
-        tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of whether or not it finished successfully.
+        tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of
+        whether or not it finished successfully.
 
         set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
 
         fgs_motors (Callable): Composite device representing the fast grid scan's motion program parameters.
 
-        signals_to_read_pre_flyscan (Callable): Signals which will be read and saved as a bluesky event document after all configuration, but before the gridscan.
+        signals_to_read_pre_flyscan (Callable): Signals which will be read and saved as a bluesky event document
+        after all configuration, but before the gridscan.
 
-        signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event document whilst the gridscan motion is in progress
+        signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event
+        document whilst the gridscan motion is in progress
 
-        plan_after_getting_xrc_results (Callable): Optional plan which is ran after x-ray centring results have been retrieved from Zocalo.
+        plan_after_getting_xrc_results (Callable): Optional plan which is ran after x-ray centring results have
+        been retrieved from Zocalo.
     """
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
@@ -163,7 +162,7 @@ def create_devices(context: BlueskyContext) -> FlyScanEssentialDevices:
 def common_flyscan_xray_centre(
     composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
-    feature_controlled: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
@@ -172,10 +171,14 @@ def common_flyscan_xray_centre(
 
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
 
-        feature_controlled (BeamlineSpecificFGSFeatures): Configure the beamline-specific version of this plan: For example triggering setup and tidy up plans, as well as what to do with the centering results.
+        beamline_specific (BeamlineSpecificFGSFeatures): Configure the beamline-specific version
+        of this plan: For example triggering setup and tidy up plans, as well as what to do with the
+        centering results.
 
-    With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data to ispyb; triggering zocalo; reading hardware before and during the scan; optionally performing a plan using the results; and tidying up devices after the plan is complete. For more information, see https://diamondlightsource.github.io/mx-bluesky/main/index.html
-
+    With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan
+    x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data
+    to ispyb; triggering zocalo; reading hardware before and during the scan; optionally performing a
+    plan using the results; and tidying up devices after the plan is complete.
     """
 
     xrc_event_handler = XRayCentreEventHandler()
@@ -184,7 +187,7 @@ def common_flyscan_xray_centre(
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(
-            flyscan_xray_centre_no_move(composite, parameters, feature_controlled),
+            flyscan_xray_centre_no_move(composite, parameters, beamline_specific),
             parameters,
         )
 
@@ -195,7 +198,7 @@ def common_flyscan_xray_centre(
         "Flyscan result event not received or no crystal found and exception not raised"
     )
 
-    yield from feature_controlled.plan_after_getting_xrc_results(
+    yield from beamline_specific.plan_after_getting_xrc_results(
         composite, parameters, xray_centre_results[0]
     )
 
@@ -203,7 +206,7 @@ def common_flyscan_xray_centre(
 def flyscan_xray_centre_no_move(
     composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
-    feature_controlled: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Perform a flyscan and determine the centres of interest"""
 
@@ -220,19 +223,17 @@ def flyscan_xray_centre_no_move(
             ],
         }
     )
-    @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
+    @bpp.finalize_decorator(lambda: beamline_specific.tidy_plan(composite))
     def run_gridscan_and_fetch_and_tidy(
         fgs_composite: FlyScanEssentialDevices,
         params: SpecifiedThreeDGridScan,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ) -> MsgGenerator:
         yield from run_gridscan_and_fetch_results(
-            fgs_composite, params, feature_controlled
+            fgs_composite, params, beamline_specific
         )
 
-    yield from run_gridscan_and_fetch_and_tidy(
-        composite, parameters, feature_controlled
-    )
+    yield from run_gridscan_and_fetch_and_tidy(composite, parameters, beamline_specific)
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_AND_MOVE)
@@ -240,18 +241,18 @@ def flyscan_xray_centre_no_move(
 def run_gridscan_and_fetch_results(
     fgs_composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
-    feature_controlled: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and fires an event with the centres of mass determined by zocalo"""
 
-    yield from feature_controlled.setup_trigger_plan(fgs_composite, parameters)
+    yield from beamline_specific.setup_trigger_plan(fgs_composite, parameters)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
         fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
     )  # connect to zocalo and make sure the queue is clear
-    yield from run_gridscan(fgs_composite, parameters, feature_controlled)
+    yield from run_gridscan(fgs_composite, parameters, beamline_specific)
 
     LOGGER.info("Grid scan finished, getting results.")
 
@@ -338,7 +339,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 def run_gridscan(
     fgs_composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
-    feature_controlled: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
     md={  # noqa
         "plan_name": PlanNameConstants.GRIDSCAN_MAIN,
     },
@@ -351,27 +352,27 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from feature_controlled.read_pre_flyscan_plan()
+        yield from beamline_specific.read_pre_flyscan_plan()
 
     LOGGER.info("Setting fgs params")
-    yield from feature_controlled.set_flyscan_params_plan()
+    yield from beamline_specific.set_flyscan_params_plan()
 
     LOGGER.info("Waiting for gridscan validity check")
-    yield from wait_for_gridscan_valid(feature_controlled.fgs_motors)
+    yield from wait_for_gridscan_valid(beamline_specific.fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
 
     yield from kickoff_and_complete_gridscan(
-        feature_controlled.fgs_motors,
+        beamline_specific.fgs_motors,
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
-        plan_during_collection=feature_controlled.read_during_collection_plan,
+        plan_during_collection=beamline_specific.read_during_collection_plan,
     )
-    yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
+    yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):

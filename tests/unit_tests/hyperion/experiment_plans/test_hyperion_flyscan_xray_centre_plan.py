@@ -74,7 +74,7 @@ def fgs_params_use_panda(
 
 
 @pytest.fixture
-def feature_controlled(
+def beamline_specific(
     fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
@@ -123,7 +123,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         RE_with_subs: ReWithSubs,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, _ = RE_with_subs
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -138,7 +138,7 @@ class TestFlyscanXrayCentrePlan:
                 common_flyscan_xray_centre(
                     fake_fgs_composite,
                     test_fgs_params,
-                    feature_controlled,
+                    beamline_specific,
                 )
             )
 
@@ -181,7 +181,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         test_fgs_params.features.set_stub_offsets = True
@@ -193,7 +193,7 @@ class TestFlyscanXrayCentrePlan:
             yield from run_gridscan_and_fetch_results(
                 fake_fgs_composite,
                 test_fgs_params,
-                feature_controlled,
+                beamline_specific,
             )
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
@@ -207,7 +207,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff_and_complete: MagicMock,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
         test_fgs_params.x_step_size_um = 10000
@@ -217,7 +217,7 @@ class TestFlyscanXrayCentrePlan:
         try:
             RE(
                 run_gridscan_and_fetch_results(
-                    fake_fgs_composite, test_fgs_params, feature_controlled
+                    fake_fgs_composite, test_fgs_params, beamline_specific
                 )
             )
         except SmargonSpeedException:
@@ -250,7 +250,7 @@ class TestFlyscanXrayCentrePlan:
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
-        feature_controlled: BeamlineSpecificFGSFeatures,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         sim_run_engine.add_handler("unstage", lambda _: done_status)
         sim_run_engine.add_read_handler_for(
@@ -262,7 +262,7 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = sim_run_engine.simulate_plan(
             flyscan_xray_centre_no_move(
-                fgs_composite_with_panda_pcap, fgs_params_use_panda, feature_controlled
+                fgs_composite_with_panda_pcap, fgs_params_use_panda, beamline_specific
             )
         )
 

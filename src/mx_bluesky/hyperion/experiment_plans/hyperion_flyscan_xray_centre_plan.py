@@ -62,7 +62,7 @@ def hyperion_flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    feature_controlled = construct_hyperion_specific_features(composite, parameters)
+    beamline_specific = construct_hyperion_specific_features(composite, parameters)
     parameters.features.update_self_from_server()
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
     composite.zocalo.use_gpu = parameters.features.use_gpu_results
@@ -71,7 +71,7 @@ def hyperion_flyscan_xray_centre(
         composite, parameters.transmission_frac
     )
     def decorated_flyscan_plan():
-        yield from common_flyscan_xray_centre(composite, parameters, feature_controlled)
+        yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
 
     yield from decorated_flyscan_plan()
 
