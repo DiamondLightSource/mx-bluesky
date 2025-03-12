@@ -332,30 +332,40 @@ def robot_load_composite(
 
 @pytest.fixture
 def robot_load_and_energy_change_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio, eiger
+    smargon,
+    dcm,
+    robot,
+    aperture_scatterguard,
+    oav,
+    webcam,
+    thawer,
+    lower_gonio,
+    vfm,
+    mirror_voltages,
+    undulator_dcm,
+    xbpm_feedback,
+    attenuator,
 ) -> RobotLoadAndEnergyChangeComposite:
-    composite: RobotLoadAndEnergyChangeComposite = MagicMock()
-    composite.smargon = smargon
-    composite.dcm = dcm
-    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
-    composite.robot = robot
-    composite.aperture_scatterguard = aperture_scatterguard
+    composite = RobotLoadAndEnergyChangeComposite(
+        vfm,
+        mirror_voltages,
+        dcm,
+        undulator_dcm,
+        xbpm_feedback,
+        attenuator,
+        robot,
+        webcam,
+        lower_gonio,
+        thawer,
+        oav,
+        smargon,
+        aperture_scatterguard,
+    )
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
-    composite.oav = oav
-    composite.webcam = webcam
-    composite.lower_gonio = lower_gonio
-    composite.thawer = thawer
-    composite.eiger = eiger
+    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
+
     return composite
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
 def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str):

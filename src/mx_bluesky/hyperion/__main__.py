@@ -16,9 +16,6 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-from mx_bluesky.common.external_interaction.callbacks.common.aperture_change_callback import (
-    ApertureChangeCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
@@ -37,6 +34,10 @@ from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
+)
+from mx_bluesky.hyperion.external_interaction.agamemnon import (
+    compare_params,
+    update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -86,13 +87,11 @@ class BlueskyRunner:
         self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
         self.last_run_aborted: bool = False
-        self.aperture_change_callback = ApertureChangeCallback()
         self.logging_uid_tag_callback = LogUidTaggingCallback()
         self.context: BlueskyContext
 
         self.RE = RE
         self.context = context
-        RE.subscribe(self.aperture_change_callback)
         RE.subscribe(self.logging_uid_tag_callback)
 
         LOGGER.info("Connecting to external callback ZMQ proxy...")
@@ -172,10 +171,7 @@ class BlueskyRunner:
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.devices, command.parameters))
 
-                    self.current_status = StatusAndMessage(
-                        Status.IDLE,
-                        self.aperture_change_callback.last_selected_aperture,
-                    )
+                    self.current_status = StatusAndMessage(Status.IDLE)
 
                     self.last_run_aborted = False
                 except WarningException as exception:
@@ -208,6 +204,8 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
+        parameters = update_params_from_agamemnon(parameters)
+        compare_params(parameters)
         if parameters.model_extra:
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:

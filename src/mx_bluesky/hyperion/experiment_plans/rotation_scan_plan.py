@@ -26,9 +26,17 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
-from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
+from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -38,10 +46,6 @@ from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_x_y_z,
     setup_sample_environment,
 )
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     setup_zebra_for_rotation,
@@ -49,9 +53,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 )
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
@@ -267,7 +268,7 @@ def rotation_scan_plan(
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(composite.eiger)
 
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
@@ -293,7 +294,7 @@ def rotation_scan_plan(
         LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             composite.aperture_scatterguard,
             composite.attenuator,
             composite.flux,
@@ -371,6 +372,11 @@ def rotation_scan(
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -381,13 +387,6 @@ def rotation_scan(
                 "RotationNexusFileCallback",
             ],
         }
-    )
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
     )
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
@@ -436,17 +435,15 @@ def multi_rotation_scan(
             ],
         }
     )
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
-    )
     @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
+            @transmission_and_xbpm_feedback_for_collection_decorator(
+                composite,
+                parameters.transmission_frac,
+            )
+            @verify_undulator_gap_before_run_decorator(composite)
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={

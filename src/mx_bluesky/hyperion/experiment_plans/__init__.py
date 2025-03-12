@@ -15,9 +15,6 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
-from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
-    robot_load_then_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     multi_rotation_scan,
     rotation_scan,
@@ -29,6 +26,5 @@ __all__ = [
     "rotation_scan",
     "pin_tip_centre_then_xray_centre",
     "multi_rotation_scan",
-    "robot_load_then_centre",
     "load_centre_collect_full",
 ]

@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import pydantic
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -113,6 +114,91 @@ from .unit_tests.conftest import device_factories_for_beamline
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
+
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 1000,
+        "n_voxels": 35,
+        "total_count": 1000,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
+    {
+        "centre_of_mass": [0.5, 0.5, 0.5],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
+    {
+        "centre_of_mass": [0.0, 0.0, 0.0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_COM = [
+    {
+        "centre_of_mass": [-0.0001, -0.0001, -0.0001],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_BB = [
+    {
+        "centre_of_mass": [0, 0, 0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+    }
+]
 
 
 @pytest.fixture(scope="session")
@@ -482,7 +568,7 @@ def beamstop_i03(
 @pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -1526,3 +1612,23 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
     yield None
     for f in active_device_factories:
         f.cache_clear()  # type: ignore
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class XBPMAndTransmissionWrapperComposite:
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    attenuator: BinaryFilterAttenuator
+    dcm: DCM
+
+
+@pytest.fixture
+def xbpm_and_transmission_wrapper_composite(
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
+) -> XBPMAndTransmissionWrapperComposite:
+    return XBPMAndTransmissionWrapperComposite(
+        undulator, xbpm_feedback, attenuator, dcm
+    )

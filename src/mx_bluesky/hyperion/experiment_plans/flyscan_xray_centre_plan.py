@@ -24,12 +24,22 @@ from dodal.devices.zocalo.zocalo_results import (
     XrcResult,
     get_full_processing_results,
 )
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -38,10 +48,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
     set_panda_directory,
@@ -51,9 +57,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
     tidy_up_zebra_after_gridscan,
-)
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
@@ -102,13 +105,6 @@ def flyscan_xray_centre_no_move(
         }
     )
     @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.undulator,
-        composite.xbpm_feedback,
-        composite.attenuator,
-        composite.dcm,
-        parameters.transmission_frac,
-    )
     def run_gridscan_and_fetch_and_tidy(
         fgs_composite: HyperionFlyScanXRayCentreComposite,
         params: HyperionSpecifiedThreeDGridScan,
@@ -140,6 +136,11 @@ def flyscan_xray_centre(
     """
     xrc_event_handler = XRayCentreEventHandler()
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(
@@ -275,7 +276,7 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
@@ -284,7 +285,7 @@ def run_gridscan(
         )
 
     read_during_collection = partial(
-        read_hardware_during_collection,
+        standard_read_hardware_during_collection,
         fgs_composite.aperture_scatterguard,
         fgs_composite.attenuator,
         fgs_composite.flux,

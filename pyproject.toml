@@ -45,8 +45,8 @@ dependencies = [
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.9.0a2",
-    "bluesky >= 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@ff68ad54b5ab96b50701f23796694884b8e72987",
+    "bluesky == 1.13",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git",
 ]
 
 
@@ -120,7 +120,7 @@ markers = [
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
-    "system_test: marks tests as a system test"
+    "system_test: marks tests as a system test",
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
@@ -151,7 +151,7 @@ filterwarnings = [
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
-    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning"
+    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -197,14 +197,15 @@ commands_pre =
 src = ["src", "tests"]
 line-length = 88
 lint.select = [
-    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "B",     # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",    # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",     # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",     # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",     # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",     # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",    # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF",   # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "PT012", # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
 ]
 lint.extend-ignore = [
     "E501", # Line too long
