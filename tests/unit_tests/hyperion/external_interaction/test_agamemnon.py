@@ -1,4 +1,5 @@
 import json
+from math import isclose
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,6 +12,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
     get_withvisit_parameters_from_agamemnon,
+    populate_parameters_from_agamemnon,
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -39,7 +41,7 @@ def set_up_agamemnon_params(
     return {
         "collection": [{"distance": distance}],
         "prefix": prefix,
-        "sample": {"loopType": loop_type},
+        "sample": {"loopType": loop_type, "id": 1, "position": 1, "container": 1},
     }
 
 
@@ -294,3 +296,26 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
         load_centre_collect_params,
     )
     mock_logger.warning.assert_called_with(mock_log)
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_parameters_from_agamemnon(
+    mock_requests: MagicMock,
+    mock_logger: MagicMock,
+    load_centre_collect_params: LoadCentreCollect,
+):
+    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    assert hyperion_params.visit == "cm00000-0"
+    assert isclose(hyperion_params.detector_distance_mm, 180.8)  # type: ignore
+    assert hyperion_params.sample_id == 12345
+    assert hyperion_params.sample_puck == 40
+    assert hyperion_params.sample_pin == 3
+
+    compare_params(load_centre_collect_params)
+    mock_logger.warning.assert_not_called()
