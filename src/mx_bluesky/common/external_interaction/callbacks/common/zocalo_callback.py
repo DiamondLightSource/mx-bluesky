@@ -42,7 +42,8 @@ class ZocaloCallback(CallbackBase):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info("Zocalo handler received start document.")
         if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             self.run_uid = doc.get("uid")
-            assert isinstance(scan_points := doc.get("scan_points"), list)
+            scan_points = doc.get("scan_points")
+            assert isinstance(scan_points, list)
             if (
                 isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple)
                 and len(ispyb_ids) > 0

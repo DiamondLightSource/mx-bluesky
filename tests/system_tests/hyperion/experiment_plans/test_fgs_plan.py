@@ -9,6 +9,9 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.smargon import Smargon
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 
@@ -23,10 +26,10 @@ from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
+from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
@@ -164,12 +167,10 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        fxc_composite.undulator,
-        fxc_composite.xbpm_feedback,
-        fxc_composite.attenuator,
-        fxc_composite.dcm,
+        fxc_composite,
         params.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(fxc_composite)
     def decorated_plan():
         yield from bps.sleep(0.1)
 

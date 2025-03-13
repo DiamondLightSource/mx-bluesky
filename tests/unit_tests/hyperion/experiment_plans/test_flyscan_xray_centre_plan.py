@@ -1,6 +1,6 @@
 import types
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -37,7 +37,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
+from mx_bluesky.common.parameters.constants import (
+    DeviceSettingsConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -83,6 +86,11 @@ from .conftest import (
 )
 
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
+
+
+class CompleteException(Exception):
+    # To avoid having to run through the entire plan during tests
+    pass
 
 
 @pytest.fixture
@@ -819,9 +827,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         feature_controlled: _FeatureControlled,
     ):
-        class CompleteException(Exception):
-            pass
-
         mock_complete.side_effect = CompleteException()
 
         fake_fgs_composite.eiger.stage = MagicMock(
@@ -970,7 +975,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         test_fgs_params_panda_zebra.x_step_size_um = 10000
-        test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
+        test_fgs_params_panda_zebra.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
         try:
@@ -1012,3 +1017,106 @@ class TestFlyscanXrayCentrePlan:
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
+
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
+    )
+    def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
+        self,
+        fake_run_gridscan: MagicMock,
+        mock_unpause_and_set_transmission: MagicMock,
+        mock_check_and_pause: MagicMock,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        RE: RunEngine,
+    ):
+        fake_run_gridscan.side_effect = Exception
+        with pytest.raises(Exception):  # noqa: B017
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        # Called once on exception and once on close_run
+        mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
+
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.change_aperture_then_move_to_xtal",
+    )
+    @patch("mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait")
+    @patch(
+        "mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary",
+    )
+    def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+        self,
+        mock_check_topup,
+        mock_wait,
+        mock_change_aperture,
+        sim_run_engine: RunEngineSimulator,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    ):
+        # Get around the assertion error at the end of the plan
+        mock_xrc_event = MagicMock()
+        mock_xrc_event.xray_centre_results = TEST_RESULT_LARGE
+
+        simulate_xrc_result(
+            sim_run_engine, fake_fgs_composite.zocalo, TEST_RESULT_LARGE
+        )
+
+        with patch(
+            "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.XRayCentreEventHandler",
+            return_value=mock_xrc_event,
+        ):
+            msgs = sim_run_engine.simulate_plan(
+                flyscan_xray_centre(fake_fgs_composite, test_fgs_params)
+            )
+
+        # Assert order: pause -> open run -> close run -> unpause (set attenuator)
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "open_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "close_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (1.0,),
+        )
+
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_fetch_results",
+    )
+    @patch(
+        "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
+    )
+    def test_flyscan_xray_centre_does_undulator_check_before_collection(
+        self,
+        mock_verify_gap: MagicMock,
+        mock_plan: MagicMock,
+        RE: RunEngine,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    ):
+        mock_plan.side_effect = CompleteException
+        with pytest.raises(CompleteException):
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        mock_verify_gap.assert_called_once()
