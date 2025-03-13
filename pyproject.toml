@@ -208,6 +208,7 @@ lint.select = [
     "UP",    # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "SLF",   # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
     "PT012", # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
+    "RUF018",# walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -217,7 +218,7 @@ lint.extend-ignore = [
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "B023"]
+"tests/**/*" = ["SLF001", "B023", "RUF018"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
