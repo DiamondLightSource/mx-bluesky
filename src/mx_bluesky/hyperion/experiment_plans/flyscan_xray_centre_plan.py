@@ -24,6 +24,9 @@ from dodal.devices.zocalo.zocalo_results import (
     XrcResult,
     get_full_processing_results,
 )
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
@@ -137,6 +140,7 @@ def flyscan_xray_centre(
         composite,
         parameters.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(

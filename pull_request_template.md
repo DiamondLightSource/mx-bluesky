@@ -1,7 +1,7 @@
 Fixes #ISSUE
 
 Link to dodal PR (if required): #XXX
-(remember to update `setup.cfg` with the dodal commit tag if you need it for tests to pass!)
+(remember to update `pyproject.toml` with the dodal commit tag if you need it for tests to pass!)
 
 ### Instructions to reviewer on how to test:
 
