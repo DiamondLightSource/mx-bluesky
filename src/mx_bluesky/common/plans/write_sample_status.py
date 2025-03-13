@@ -23,11 +23,11 @@ def deposit_sample_error(exception_type: SampleStatusExceptionType, sample_id: i
         }
     )
     def _inner():
+        yield from bps.null()
         if exception_type == SampleStatusExceptionType.BEAMLINE:
             raise AssertionError()
         elif exception_type == SampleStatusExceptionType.SAMPLE:
             raise SampleException
-        yield from bps.null()
 
     yield from _inner()
 
