@@ -598,6 +598,7 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
     composite: LoadCentreCollectComposite,

@@ -499,8 +499,10 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         os.environ,
         {"BEAMLINE": "i03"},
     ):
-        context = setup_context(wait_for_connection=False)
-
+        with patch(
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+        ):
+            context = setup_context(wait_for_connection=False)
         plan_names = context.plans.keys()
 
         assert "rotation_scan" in plan_names
