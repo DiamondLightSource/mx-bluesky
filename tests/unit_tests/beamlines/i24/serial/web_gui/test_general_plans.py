@@ -1,13 +1,22 @@
 from unittest.mock import ANY, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 
+from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_detector,
+    gui_set_parameters,
     gui_sleep,
     gui_stage_move_on_click,
 )
+
+
+def fake_generator(value):
+    yield from bps.null()
+    return value
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.sleep")
@@ -58,3 +67,30 @@ def test_gui_stage_move_on_click(fake_move_plan, RE):
     ):
         RE(gui_stage_move_on_click((200, 200)))
         fake_move_plan.assert_called_once()
+
+
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
+def test_gui_set_parameters_raises_error_for_empty_map(mock_det_type, RE):
+    mock_det_type.side_effect = [fake_generator(Eiger())]
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.detector_motion"
+    ):
+        with pytest.raises(EmptyMapError):
+            RE(
+                gui_set_parameters(
+                    "/path/",
+                    "chip",
+                    0.01,
+                    1300,
+                    0.3,
+                    1,
+                    "Oxford",
+                    "Lite",
+                    [],
+                    False,
+                    "Short1",
+                    0.01,
+                    0.005,
+                    0.0,
+                )
+            )
