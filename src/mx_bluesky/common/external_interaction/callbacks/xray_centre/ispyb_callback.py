@@ -206,6 +206,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.params, "ISPyB handler didn't receive parameters!"
+        assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo(
