@@ -53,6 +53,9 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
+T = TypeVar("T", bound="GridCommon")
+ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     return bpp.set_run_key_wrapper(
@@ -66,9 +69,6 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         ),
         PlanNameConstants.ISPYB_ACTIVATION,
     )
-
-
-T = TypeVar("T", bound="GridCommon")
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
@@ -145,9 +145,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
-        assert self.data_collection_group_info, (
-            f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
-        )
+        assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
@@ -165,9 +163,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def _handle_zocalo_read_event(self, doc):
-        assert self.data_collection_group_info, (
-            f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
-        )
+        assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -210,7 +206,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.params, "ISPyB handler didn't receive parameters!"
-        assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo(

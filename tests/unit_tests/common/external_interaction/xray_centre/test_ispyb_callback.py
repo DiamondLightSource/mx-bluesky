@@ -358,7 +358,7 @@ class TestXrayCentreISPyBCallback:
     @patch(
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
     )
-    def test_given_even_doc_before_start_doc_recieved_then_exception_raised(
+    def test_given_event_doc_before_start_doc_recieved_then_exception_raised(
         self,
         mock_update_data_collection_group_table,
         mock_update_deposition,
