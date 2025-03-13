@@ -130,6 +130,8 @@ filterwarnings = [
     "error",
     # Ignore deprecation warning from sqlalchemy
     "ignore::sqlalchemy.exc.MovedIn20Warning",
+    # Remove when there's a fix for https://github.com/DiamondLightSource/ispyb-api/issues/233
+    "sqlalchemy.exc.SADeprecationWarning",
     # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
     "ignore::DeprecationWarning:wheel",
     # Ophyd status objects in tests
