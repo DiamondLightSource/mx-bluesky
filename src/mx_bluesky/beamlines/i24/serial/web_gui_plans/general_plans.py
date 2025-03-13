@@ -125,6 +125,6 @@ def gui_set_parameters(
         "checker_pattern": checker_pattern,
         "pre_pump_exposure_s": pre_pump,
     }
-    print(FixedTargetParameters(**params))
     # This will then run the run_fixed_target plan
     yield from bps.sleep(0.5)
+    return FixedTargetParameters(**params)

@@ -2,11 +2,13 @@ from unittest.mock import ANY, patch
 
 import bluesky.plan_stubs as bps
 import pytest
+from dodal.devices.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
+    gui_move_backlight,
     gui_move_detector,
     gui_set_parameters,
     gui_sleep,
@@ -24,6 +26,18 @@ def test_gui_sleep(fake_sleep, RE):
     RE(gui_sleep(3))
 
     assert fake_sleep.call_count == 3
+
+
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set")
+def test_gui_move_backlight(mock_set, RE):
+    pos_to_reach = "In"
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.backlight"
+    ) as patch_backlight:
+        RE(gui_move_backlight(pos_to_reach))
+        mock_set.assert_called_once_with(
+            patch_backlight(), BacklightPositions(pos_to_reach), wait=True
+        )
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
