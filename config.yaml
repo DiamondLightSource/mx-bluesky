@@ -1,0 +1,19 @@
+api:
+  host: "0.0.0.0"
+  port: 8000
+env:
+  events:
+    broadcast_status_events: false
+  sources:
+  - kind: dodal
+    module: dodal.beamlines.i04
+  - kind: planFunctions
+    module: mx_bluesky.beamlines.i04
+scratch:
+  root: /blueapi-plugins/scratch/
+stomp:
+  auth:
+    password: guest
+    username: guest
+  host: i04-control.diamond.ac.uk
+  port: 61613
