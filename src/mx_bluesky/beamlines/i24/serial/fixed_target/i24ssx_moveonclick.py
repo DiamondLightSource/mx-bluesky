@@ -34,7 +34,13 @@ def _get_beam_centre(oav: OAV):
 def _calculate_zoom_calibrator(oav: OAV):
     """Set the scale for the zoom calibrator for the pmac moves."""
     currentzoom = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    zoomcalibrator = 1.547 - (0.03 * currentzoom) + (0.0001634 * currentzoom**2)
+    # zoomcalibrator = 1.547 - (0.03 * currentzoom) + (0.0001634 * currentzoom**2)
+    zoomcalibrator = (
+        1.285
+        - (0.02866 * currentzoom)
+        + (0.00025 * currentzoom**2)
+        - (0.0000008151 * currentzoom**3)
+    )
     return zoomcalibrator
 
 
@@ -49,8 +55,10 @@ def _move_on_mouse_click_plan(
     zoomcalibrator = yield from _calculate_zoom_calibrator(oav)
     beamX, beamY = yield from _get_beam_centre(oav)
     x, y = clicked_position
-    xmove = -1 * (beamX - x) * zoomcalibrator
-    ymove = 1 * (beamY - y) * zoomcalibrator
+    xmove = -10 * (beamX - x) * zoomcalibrator
+    ymove = 10 * (beamY - y) * zoomcalibrator
+    SSX_LOGGER.info(f"Zoom calibrator {zoomcalibrator}")
+    SSX_LOGGER.info(f"Beam centre {beamX} {beamY}")
     SSX_LOGGER.info(f"Moving X and Y {xmove} {ymove}")
     xmovepmacstring = "#1J:" + str(xmove)
     ymovepmacstring = "#2J:" + str(ymove)

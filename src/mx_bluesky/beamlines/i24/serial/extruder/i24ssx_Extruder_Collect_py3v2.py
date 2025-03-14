@@ -71,21 +71,21 @@ def initialise_extruder(
 ) -> MsgGenerator:
     SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
-    visit = caget(pv.ioc12_gp1)
+    visit = caget(pv.ioc13_gp1)
     SSX_LOGGER.info(f"Visit defined {visit}")
 
     # Define detector in use
     det_type = yield from get_detector_type(detector_stage)
 
-    caput(pv.ioc12_gp2, "test")
-    caput(pv.ioc12_gp3, "testrun")
-    caput(pv.ioc12_gp4, "100")
-    caput(pv.ioc12_gp5, "0.01")
-    caput(pv.ioc12_gp6, 0)
-    caput(pv.ioc12_gp8, 0)  # status PV do not reuse gp8 for something else
-    caput(pv.ioc12_gp9, 0)
-    caput(pv.ioc12_gp10, 0)
-    caput(pv.ioc12_gp15, det_type.name)
+    caput(pv.ioc13_gp2, "test")
+    caput(pv.ioc13_gp3, "testrun")
+    caput(pv.ioc13_gp4, "100")
+    caput(pv.ioc13_gp5, "0.01")
+    caput(pv.ioc13_gp6, 0)
+    caput(pv.ioc13_gp8, 0)  # status PV do not reuse gp8 for something else
+    caput(pv.ioc13_gp9, 0)
+    caput(pv.ioc13_gp10, 0)
+    caput(pv.ioc13_gp15, det_type.name)
     caput(pv.pilat_cbftemplate, 0)
     SSX_LOGGER.info("Initialisation complete.")
     yield from bps.null()
@@ -160,7 +160,7 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     det_type = yield from get_detector_type(detector_stage)
     SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
-    filename = caget(pv.ioc12_gp3)
+    filename = caget(pv.ioc13_gp3)
     # If file name ends in a digit this causes processing/pilatus pain.
     # Append an underscore
     if det_type.name == "pilatus":
@@ -175,19 +175,19 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
-    pump_status = bool(int(caget(pv.ioc12_gp6)))
-    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
-    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
+    pump_status = bool(int(caget(pv.ioc13_gp6)))
+    pump_exp = float(caget(pv.ioc13_gp9)) if pump_status else 0.0
+    pump_delay = float(caget(pv.ioc13_gp10)) if pump_status else 0.0
 
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": caget(pv.ioc12_gp2),
+        "directory": caget(pv.ioc13_gp2),
         "filename": filename,
-        "exposure_time_s": float(caget(pv.ioc12_gp5)),
-        "detector_distance_mm": float(caget(pv.ioc12_gp7)),
+        "exposure_time_s": float(caget(pv.ioc13_gp5)),
+        "detector_distance_mm": float(caget(pv.ioc13_gp7)),
         "detector_name": str(det_type),
         "transmission": transmission,
-        "num_images": int(caget(pv.ioc12_gp4)),
+        "num_images": int(caget(pv.ioc13_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
         "laser_delay_s": pump_delay,
