@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bluesky.preprocessors import run_decorator, subs_decorator
 from ophyd_async.core import init_devices
 from ophyd_async.epics.core import epics_signal_rw
@@ -20,6 +21,7 @@ from .....conftest import (
     TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
+    remap_upsert_columns,
 )
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
@@ -92,7 +94,14 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
-    def test_reason_provided_if_crystal_not_found_error(self, mock_ispyb_conn):
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
+    )
+    def test_reason_provided_if_crystal_not_found_error(
+        self,
+        mock_update_data_collection_group_table,
+        mock_ispyb_conn,
+    ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
@@ -108,6 +117,10 @@ class TestXrayCentreISPyBCallback:
                 " ",
             ),
         )
+        assert (
+            mock_update_data_collection_group_table.call_args_list[0][0][0].comments
+            == "Diffraction not found, skipping sample."
+        )
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback(
@@ -121,7 +134,7 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        mx_acq.upsert_data_collection_group.assert_not_called()
+        mx_acq.upsert_data_collection_group.assert_called_once()
         expected_upsert = {
             "parentid": TEST_DATA_COLLECTION_GROUP_ID,
             "slitgaphorizontal": 0.1234,
@@ -212,7 +225,6 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
         callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xz)
 
-        mx_acq.upsert_data_collection_group.assert_not_called()
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
@@ -294,8 +306,14 @@ class TestXrayCentreISPyBCallback:
             },
         )
 
+        group_dc_cols = remap_upsert_columns(
+            mx_acq.get_data_collection_group_params(),
+            mx_acq.upsert_data_collection_group.mock_calls[1].args[0],
+        )
+        assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
+
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
-        self, RE, mock_ispyb_conn
+        self, RE, mock_ispyb_conn, dummy_rotation_data_collection_group_info
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -304,6 +322,7 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read = MagicMock()
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
+        callback.data_collection_group_info = dummy_rotation_data_collection_group_info
 
         with init_devices(mock=True):
             test_readable = epics_signal_rw(str, "pv")
@@ -326,3 +345,36 @@ class TestXrayCentreISPyBCallback:
 
         callback._handle_ispyb_hardware_read.assert_called_once()
         callback._handle_ispyb_transmission_flux_read.assert_called_once()
+
+    @patch(
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_zocalo_read_event",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_oav_grid_snapshot_triggered",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_deposition",
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
+    )
+    def test_given_event_doc_before_start_doc_recieved_then_exception_raised(
+        self,
+        mock_update_data_collection_group_table,
+        mock_update_deposition,
+        mock__handle_oav_grid_snapshot_triggered,
+        mock__handle_zocalo_read_event,
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_oav_snapshot
+        )
+        callback.ispyb = MagicMock()
+        callback.params = MagicMock()
+        callback.data_collection_group_info = None
+        with pytest.raises(AssertionError) as e:
+            callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
+
+        assert "No data collection group info" in str(e.value)
