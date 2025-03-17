@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Generic, Protocol, TypeVar
 
 import pydantic
 from blueapi.core import BlueskyContext
@@ -67,9 +68,39 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 
+TBeamstop = TypeVar("TBeamstop", bound=Beamstop)
+
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite:
+class GridDetectThenXRayCentreCompositeProtocol(Protocol, Generic[TBeamstop]):
+    """All devices which are directly or indirectly required by this plan"""
+
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: BinaryFilterAttenuator
+    backlight: Backlight
+    beamstop: TBeamstop
+    dcm: DCM
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    zebra_fast_grid_scan: ZebraFastGridScan
+    flux: Flux
+    oav: OAV
+    pin_tip_detection: PinTipDetection
+    smargon: Smargon
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    zebra: Zebra
+    zocalo: ZocaloResults
+    panda: HDFPanda
+    panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
+    sample_shutter: ZebraShutter
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectThenXRayCentreComposite(GridDetectThenXRayCentreCompositeProtocol):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -112,7 +143,7 @@ def create_parameters_for_flyscan_xray_centre(
 
 
 def detect_grid_and_do_gridscan(
-    composite: GridDetectThenXRayCentreComposite,
+    composite: GridDetectThenXRayCentreCompositeProtocol,
     parameters: GridScanWithEdgeDetect,
     oav_params: OAVParameters,
 ):
@@ -194,7 +225,7 @@ def detect_grid_and_do_gridscan(
 
 
 def grid_detect_then_xray_centre(
-    composite: GridDetectThenXRayCentreComposite,
+    composite: GridDetectThenXRayCentreCompositeProtocol,
     parameters: GridScanWithEdgeDetect,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
