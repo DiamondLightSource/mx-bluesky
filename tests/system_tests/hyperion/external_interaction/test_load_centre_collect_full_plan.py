@@ -188,24 +188,24 @@ ROTATION_DC_EXPECTED_VALUES = {
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
     "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_0_annotated\\.png",
+    "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_90_annotated\\.png",
+    "8}_oav_snapshot_90_with_beam_centre\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_180_annotated\\.png",
+    "8}_oav_snapshot_180_with_beam_centre\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_270_annotated\\.png",
+    "8}_oav_snapshot_270_with_beam_centre\\.png",
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_0_annotated\\.png",
+    "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_90_annotated\\.png",
+    "8}_oav_snapshot_90_with_beam_centre\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_180_annotated\\.png",
+    "8}_oav_snapshot_180_with_beam_centre\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "8}_oav_snapshot_270_annotated\\.png",
+    "8}_oav_snapshot_270_with_beam_centre\\.png",
 }
 
 
@@ -637,10 +637,10 @@ def test_execute_load_centre_collect_rotation_snapshots(
     )
 
     EXPECTED_SNAPSHOT_VALUES = {
-        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_annotated\\.png",
-        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_annotated\\.png",
-        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_180_annotated\\.png",
-        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_270_annotated\\.png",
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_with_beam_centre\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_with_beam_centre\\.png",
+        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_180_with_beam_centre\\.png",
+        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_270_with_beam_centre\\.png",
     }
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
