@@ -67,7 +67,7 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
         "tests/test_data/test_images/generate_snapshot_output.png"
     )
     expected_bytes = expected_image.tobytes()
-    generated_image_path = str(tmp_path / "test_filename_annotated.png")
+    generated_image_path = str(tmp_path / "test_filename_with_beam_centre.png")
     generated_image = Image.open(generated_image_path)
     generated_bytes = generated_image.tobytes()
     assert generated_bytes == expected_bytes, "Actual and expected images differ"

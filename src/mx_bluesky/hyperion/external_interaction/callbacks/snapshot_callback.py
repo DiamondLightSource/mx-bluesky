@@ -10,9 +10,6 @@ from PIL import Image
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.common.parameters.components import (
-    WithSnapshot,
-)
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK_LOGGER
 
@@ -31,8 +28,6 @@ class BeamDrawingCallback(PlanReactiveCallback):
             assert with_snapshot_json, (
                 "run start event did not have expected snapshot json"
             )
-            params = WithSnapshot.model_validate_json(with_snapshot_json)
-            self._output_directory = str(params.snapshot_directory)
         return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
@@ -61,7 +56,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
         match = re.match("(.*)\\.png", snapshot_path)
         assert match, f"Snapshot {snapshot_path} was not a .png file"
         snapshot_base = match.groups()[0]
-        output_snapshot_path = f"{snapshot_base}_annotated.png"
+        output_snapshot_path = f"{snapshot_base}_with_beam_centre.png"
         self._generate_snapshot_at(snapshot_path, output_snapshot_path, 0, 0)
         data["oav-snapshot-last_saved_path"] = output_snapshot_path
         return doc
@@ -69,6 +64,15 @@ class BeamDrawingCallback(PlanReactiveCallback):
     def _generate_snapshot_at(
         self, input_snapshot_path: str, output_snapshot_path: str, x_mm: int, y_mm: int
     ):
+        """
+        Save a snapshot to the specified path, with an annotated crosshair at the specified
+        position
+        Args:
+            input_snapshot_path: The non-annotated image path.
+            output_snapshot_path:  The path to the image that will be annotated.
+            x_mm: Relative x location of the sample to the original image (mm)
+            y_mm: Relative y location of the sample to the original image (mm)
+        """
         image = Image.open(input_snapshot_path)
         x_px, y_px = compute_beam_centre_pixel_xy_for_mm_position(
             (x_mm, y_mm), self._beam_centre, self._microns_per_pixel

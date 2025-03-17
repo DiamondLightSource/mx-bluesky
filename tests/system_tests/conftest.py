@@ -179,7 +179,6 @@ def oav_for_system_test(test_config_files):
         patch(
             "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
         ) as mock_get,
-        patch("dodal.devices.oav.snapshots.snapshot_with_beam_centre.draw_crosshair"),
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
         set_mock_value(oav.zoom_controller.level, "1.0")
