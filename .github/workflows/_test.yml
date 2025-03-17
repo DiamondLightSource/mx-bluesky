@@ -50,8 +50,14 @@ jobs:
           python-version: ${{ inputs.python-version }}
           pip-install: ".[dev]"
 
+      - name: Start test execution
+        run: echo "Starting tests at $(date)"
+      
       - name: Run tests
         run: tox -e tests -- -m "not dlstbx" --timeout=1
+      
+      - name: End test execution
+        run: echo "Tests finished at $(date)"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
