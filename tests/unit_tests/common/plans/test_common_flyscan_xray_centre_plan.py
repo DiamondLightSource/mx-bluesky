@@ -614,6 +614,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
+        dummy_rotation_data_collection_group_info,
     ):
         id_1, id_2 = 100, 200
 
@@ -622,6 +623,7 @@ class TestFlyscanXrayCentrePlan:
         ispyb_cb.ispyb = MagicMock()
         ispyb_cb.params = MagicMock()
         ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
+        ispyb_cb.data_collection_group_info = dummy_rotation_data_collection_group_info
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
         mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor

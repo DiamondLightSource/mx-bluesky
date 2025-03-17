@@ -29,6 +29,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping 
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
     Orientation,
@@ -52,6 +53,9 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
+T = TypeVar("T", bound="GridCommon")
+ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     return bpp.set_run_key_wrapper(
@@ -65,9 +69,6 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         ),
         PlanNameConstants.ISPYB_ACTIVATION,
     )
-
-
-T = TypeVar("T", bound="GridCommon")
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
@@ -97,6 +98,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.param_type = param_type
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
+        self.data_collection_group_info: DataCollectionGroupInfo | None
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
@@ -111,7 +113,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             assert isinstance(mx_bluesky_parameters, str)
             self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
             self.ispyb = StoreInIspyb(self.ispyb_config)
-            data_collection_group_info = populate_data_collection_group(self.params)
+            self.data_collection_group_info = populate_data_collection_group(
+                self.params
+            )
 
             scan_data_infos = [
                 ScanDataInfo(
@@ -135,12 +139,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             ]
 
             self.ispyb_ids = self.ispyb.begin_deposition(
-                data_collection_group_info, scan_data_infos
+                self.data_collection_group_info, scan_data_infos
             )
             set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
         return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
+        assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
@@ -151,10 +156,14 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos
             )
+        self.ispyb.update_data_collection_group_table(
+            self.data_collection_group_info, self.ispyb_ids.data_collection_group_id
+        )
 
         return doc
 
     def _handle_zocalo_read_event(self, doc):
+        assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
@@ -185,6 +194,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids.data_collection_ids, (
             "No data collection to add results to"
         )
+
+        self.data_collection_group_info.comments = (
+            self.data_collection_group_info.comments or ""
+        ) + crystal_summary
+
         self.ispyb.append_to_comment(
             self.ispyb_ids.data_collection_ids[0], crystal_summary
         )
@@ -192,6 +206,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.params, "ISPyB handler didn't receive parameters!"
+        assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo(
@@ -220,6 +235,18 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         data_collection_info.comments = construct_comment_for_gridscan(
             data_collection_grid_info
         )
+
+        if self.data_collection_group_info.comments:
+            self.data_collection_group_info.comments += (
+                f"by {data_collection_grid_info.steps_y}."
+            )
+        else:
+            self.data_collection_group_info.comments = (
+                f"Diffraction grid scan of "
+                f"{data_collection_grid_info.steps_x} "
+                f"by {data_collection_grid_info.steps_y} "
+            )
+
         if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
             data_collection_id = self.ispyb_ids.data_collection_ids[
                 self._oav_snapshot_event_idx
@@ -275,6 +302,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
+        assert self.data_collection_group_info, (
+            f"No data collection group info - stop document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+        )
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
@@ -289,5 +319,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if exception_type:
                 doc["reason"] = message
+                self.data_collection_group_info.comments = message
+                self.ispyb.update_data_collection_group_table(
+                    self.data_collection_group_info,
+                    self.ispyb_ids.data_collection_group_id,
+                )
+            self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)

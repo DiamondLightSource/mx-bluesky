@@ -40,6 +40,9 @@ from ophyd_async.core import (
 )
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -290,3 +293,11 @@ def test_full_grid_scan_params():
         "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     return GridScanWithEdgeDetect(**params)
+
+
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id=364758,
+    )

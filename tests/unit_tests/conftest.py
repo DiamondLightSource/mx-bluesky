@@ -25,6 +25,9 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -289,3 +292,12 @@ async def fake_fgs_composite(
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     return fake_composite
+
+
+@pytest.fixture
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id=364758,
+    )
