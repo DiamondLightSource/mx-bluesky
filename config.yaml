@@ -15,5 +15,5 @@ stomp:
   auth:
     password: guest
     username: guest
-  host: i04-control.diamond.ac.uk
+  host: "localhost"
   port: 61613
