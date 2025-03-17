@@ -9,6 +9,9 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
@@ -67,6 +70,7 @@ def hyperion_flyscan_xray_centre(
     composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
     composite.zocalo.use_gpu = parameters.features.use_gpu_results
 
+    @verify_undulator_gap_before_run_decorator(composite)
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite, parameters.transmission_frac
     )

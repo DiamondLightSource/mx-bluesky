@@ -734,28 +734,3 @@ class TestFlyscanXrayCentrePlan:
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
-
-    @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan_and_fetch_results",
-    )
-    @patch(
-        "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
-    )
-    def test_flyscan_xray_centre_does_undulator_check_before_collection(
-        self,
-        mock_verify_gap: MagicMock,
-        mock_plan: MagicMock,
-        RE: RunEngine,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-    ):
-        mock_plan.side_effect = CompleteException
-        with pytest.raises(CompleteException):
-            RE(
-                common_flyscan_xray_centre(
-                    fake_fgs_composite, test_fgs_params, beamline_specific
-                )
-            )
-
-        mock_verify_gap.assert_called_once()
