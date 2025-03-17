@@ -28,18 +28,6 @@ def test_gui_sleep(fake_sleep, RE):
     assert fake_sleep.call_count == 3
 
 
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set")
-def test_gui_move_backlight(mock_set, RE):
-    pos_to_reach = "In"
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.backlight"
-    ) as patch_backlight:
-        RE(gui_move_backlight(pos_to_reach))
-        mock_set.assert_called_once_with(
-            patch_backlight(), BacklightPositions(pos_to_reach), wait=True
-        )
-
-
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
 async def test_gui_move_detector(fake_caput, detector_stage, RE):
     RE(gui_move_detector("eiger", detector_stage))
@@ -92,9 +80,20 @@ def test_gui_set_parameters_raises_error_for_empty_map(mock_det_type, RE):
                 )
             )
 
+
 @patch(
     "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_on_mouse_click_plan"
 )
 def test_gui_stage_move_on_click(fake_move_plan, oav, pmac, RE):
     RE(gui_stage_move_on_click((200, 200), oav, pmac))
     fake_move_plan.assert_called_once()
+
+
+@pytest.mark.parametrize("position", ["In", "Out", "White In"])
+async def test_gui_move_backlight(position, backlight, RE):
+    RE(gui_move_backlight(position, backlight))
+
+    assert (
+        await backlight.backlight_position.pos_level.get_value()
+        == BacklightPositions(position)
+    )
