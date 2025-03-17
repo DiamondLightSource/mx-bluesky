@@ -4,9 +4,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 
-from mx_bluesky.beamlines.aithre_lasershaping.check_goniometer_performance import (
-    check_omega_performance,
-)
+from mx_bluesky.beamlines.aithre_lasershaping import check_omega_performance
 
 
 @pytest.fixture
