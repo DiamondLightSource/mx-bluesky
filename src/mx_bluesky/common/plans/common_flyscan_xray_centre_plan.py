@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -11,10 +10,7 @@ import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.protocols import Readable
-from bluesky.utils import MsgGenerator, make_decorator
-from dodal.devices.attenuator.attenuator import (
-    ReadOnlyAttenuator,
-)
+from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -31,8 +27,18 @@ from dodal.devices.zocalo.zocalo_results import (
     get_full_processing_results,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
     ispyb_activation_wrapper,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -55,16 +61,22 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 
+# Hyperion handles its own callbacks via an external process. Other beamlines using this plan should wrap their entry point with
+# @bpp.subs_decorator(CALLBACKS_FOR_SUBS_DECORATOR)
+CALLBACKS_FOR_SUBS_DECORATOR = [
+    GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+    GridscanISPyBCallback(
+        param_type=SpecifiedThreeDGridScan,
+        emit=ZocaloCallback(PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV),
+    ),
+    LogUidTaggingCallback(),
+]
+
 
 # Defaulting to a null plan saves
 # needing to write 'assert not None' everywhere
 def null_plan(*args):
     yield from bps.null()
-
-
-null_decorator = make_decorator(null_plan())
-
-T = TypeVar("T", bound=ReadOnlyAttenuator)  # Ensures T is always a subclass of A
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
