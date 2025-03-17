@@ -15,6 +15,32 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK
 
 
 class BeamDrawingCallback(PlanReactiveCallback):
+    """
+    Callback that monitors for OAV_ROTATION_SNAPSHOT_TRIGGERED events and
+    draws a crosshair at the beam centre, saving the snapshot to a file.
+    The callback assumes an OAV device "oav"
+    Examples:
+        Take a snapshot at the current location
+    >>> from bluesky.run_engine import RunEngine
+    ... import bluesky.preprocessors as bpp
+    ... import bluesky.plan_stubs as bps
+    ... from dodal.devices.oav.oav_detector import OAV
+    ... from mx_bluesky.common.parameters.components import WithSnapshot
+    ... def take_snapshot(params: WithSnapshot, oav: OAV, run_engine: RunEngine):
+    ...     run_engine.subscribe(BeamDrawingCallback())
+    ...     @bpp.run_decorator(md={
+    ...     "activate_callbacks": ["BeamDrawingCallback"],
+    ...         "with_snapshot": params.model_dump_json(),
+    ...     })
+    ...     def inner_plan():
+    ...         yield from bps.abs_set(oav.snapshot.directory, "/path/to/snapshot_folder", wait=True)
+    ...         yield from bps.abs_set(oav.snapshot.filename, "my_snapshot_prefix", wait=True)
+    ...         yield from bps.trigger(oav.snapshot, wait=True)
+    ...         yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
+    ...         yield from bps.read(oav)
+    ...         yield from bps.save()
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, log=CALLBACK_LOGGER, **kwargs)
         self._snapshot_files: list[str] = []
