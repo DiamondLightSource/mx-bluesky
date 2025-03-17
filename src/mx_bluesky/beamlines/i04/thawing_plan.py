@@ -68,9 +68,9 @@ def thaw_and_stream_to_redis(
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
         yield from bps.monitor(smargon.omega.user_readback, name="smargon")
         yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-        yield from thaw(
-            time_to_thaw, rotation, thawer, smargon, switch_forwarder_to_ROI
-        )
+        # yield from thaw(
+        #     time_to_thaw, rotation, thawer, smargon, switch_forwarder_to_ROI
+        # )
         yield from bps.complete(oav_to_redis_forwarder)
 
     def cleanup():
