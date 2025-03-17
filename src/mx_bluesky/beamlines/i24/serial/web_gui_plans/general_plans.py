@@ -5,7 +5,11 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
-from dodal.devices.i24.dual_backlight import BacklightPositions
+from dodal.common import inject
+from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pmac import PMAC
+from dodal.devices.oav.oav_detector import OAV
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -31,16 +35,17 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 
 
 @bpp.run_decorator()
-def gui_move_backlight(position: str) -> MsgGenerator:
-    backlight = i24.backlight()
+def gui_move_backlight(
+    position: str, backlight: DualBacklight = inject("backlight")
+) -> MsgGenerator:
     bl_pos = BacklightPositions(position)
     yield from bps.abs_set(backlight, bl_pos, wait=True)
 
 
 @bpp.run_decorator()
-def gui_stage_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
-    oav = i24.oav()
-    pmac = i24.pmac()
+def gui_stage_move_on_click(
+    position_px: tuple[int, int], oav: OAV = inject("oav"), pmac: PMAC = inject("pmac")
+) -> MsgGenerator:
     yield from _move_on_mouse_click_plan(oav, pmac, position_px)
 
 
@@ -67,8 +72,10 @@ def gui_sleep(sec: int) -> MsgGenerator:
 
 
 @bpp.run_decorator()
-def gui_move_detector(det: Literal["eiger", "pilatus"]) -> MsgGenerator:
-    detector_stage = i24.detector_motion()
+def gui_move_detector(
+    det: Literal["eiger", "pilatus"],
+    detector_stage: DetectorMotion = inject("detector_motion"),
+) -> MsgGenerator:
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable

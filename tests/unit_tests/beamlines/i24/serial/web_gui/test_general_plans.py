@@ -41,16 +41,11 @@ def test_gui_move_backlight(mock_set, RE):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
-@patch(
-    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_detector_stage"
-)
-def test_gui_move_detector(fake_move_plan, fake_caput, RE):
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.detector_motion"
-    ):
-        RE(gui_move_detector("eiger"))
-        fake_move_plan.assert_called_once_with(ANY, -22.0)
+async def test_gui_move_detector(fake_caput, detector_stage, RE):
+    RE(gui_move_detector("eiger", detector_stage))
     fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP101", "eiger")
+
+    assert await detector_stage.y.user_readback.get_value() == -22.0
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.rd")
@@ -69,18 +64,6 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
         RE(gui_gonio_move_on_click((10, 20)))
 
     fake_mv.assert_called_with(ANY, 0.0125, ANY, 0.025)
-
-
-@patch(
-    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_on_mouse_click_plan"
-)
-def test_gui_stage_move_on_click(fake_move_plan, RE):
-    with (
-        patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.oav"),
-        patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.pmac"),
-    ):
-        RE(gui_stage_move_on_click((200, 200)))
-        fake_move_plan.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
@@ -108,3 +91,10 @@ def test_gui_set_parameters_raises_error_for_empty_map(mock_det_type, RE):
                     0.0,
                 )
             )
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_on_mouse_click_plan"
+)
+def test_gui_stage_move_on_click(fake_move_plan, oav, pmac, RE):
+    RE(gui_stage_move_on_click((200, 200), oav, pmac))
+    fake_move_plan.assert_called_once()
