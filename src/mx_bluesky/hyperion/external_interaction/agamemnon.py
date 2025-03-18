@@ -9,11 +9,13 @@ from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
 
 from mx_bluesky.common.parameters.components import (
+    WithOptionalEnergyChange,
     WithSample,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -24,7 +26,7 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
-class AgamemnonLoadCentreCollect(WithVisit, WithSample):
+class AgamemnonLoadCentreCollect(WithVisit, WithSample, WithOptionalEnergyChange):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
@@ -119,11 +121,24 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
     }
 
 
+def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    angstrom: dict = parameters["collection"][0]
+    wavelength: float | None = angstrom.get("wavelength")
+    if wavelength is not None:
+        demand_energy_ev = convert_angstrom_to_eV(wavelength)
+        return {"demand_energy_ev": demand_energy_ev}
+    return {"demand_energy_ev": None}
+
+
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     return AgamemnonLoadCentreCollect(
-        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
+        visit=visit,
+        detector_distance_mm=detector_distance,
+        **with_sample_params,
+        **with_energy_params,
     )
 
 
