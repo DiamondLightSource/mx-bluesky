@@ -245,10 +245,8 @@ async def fake_fgs_composite(
     synchrotron,
     aperture_scatterguard,
     zocalo,
-    dcm,
     panda,
     backlight,
-    undulator,
 ):
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
@@ -260,8 +258,6 @@ async def fake_fgs_composite(
         synchrotron=synchrotron,
         zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
-        dcm=i03.dcm(connect_immediately=True, mock=True),
-        undulator=i03.undulator(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)

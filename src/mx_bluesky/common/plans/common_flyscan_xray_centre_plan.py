@@ -292,7 +292,7 @@ def run_gridscan_and_fetch_results(
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
 
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here

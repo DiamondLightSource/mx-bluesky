@@ -68,7 +68,7 @@ def callbacks(params):
 
 
 def reset_positions(smargon: Smargon):
-    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
 
 
 @pytest_asyncio.fixture
