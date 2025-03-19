@@ -362,56 +362,6 @@ def _move_and_rotation(
     )
 
 
-def rotation_scan(
-    composite: RotationScanComposite,
-    parameters: RotationScan,
-    oav_params: OAVParameters | None = None,
-) -> MsgGenerator:
-    parameters.features.update_self_from_server()
-
-    if not oav_params:
-        oav_params = OAVParameters(context="xrayCentring")
-
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite,
-        parameters.transmission_frac,
-    )
-    @verify_undulator_gap_before_run_decorator(composite)
-    @bpp.set_run_key_decorator("rotation_scan")
-    @bpp.run_decorator(  # attach experiment metadata to the start document
-        md={
-            "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
-            "activate_callbacks": [
-                "RotationISPyBCallback",
-                "RotationNexusFileCallback",
-            ],
-        }
-    )
-    def rotation_scan_plan_with_stage_and_cleanup(
-        params: RotationScan,
-    ):
-        eiger: EigerDetector = composite.eiger
-        eiger.set_detector_parameters(params.detector_params)
-
-        @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
-        def rotation_with_cleanup_and_stage(params: RotationScan):
-            yield from _move_and_rotation(composite, params, oav_params)
-
-        LOGGER.info("setting up and staging eiger...")
-        yield from start_preparing_data_collection_then_do_plan(
-            composite.beamstop,
-            eiger,
-            composite.detector_motion,
-            params.detector_distance_mm,
-            rotation_with_cleanup_and_stage(params),
-            group=CONST.WAIT.ROTATION_READY_FOR_DC,
-        )
-        yield from bps.unstage(eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-
-    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
-
-
 def multi_rotation_scan(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
