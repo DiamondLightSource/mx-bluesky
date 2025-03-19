@@ -94,7 +94,7 @@ def i02_1_flyscan_xray_centre(
     zebra: Zebra = inject("zebra"),
     zocalo: ZocaloResults = inject("zocalo"),
     smargon: Smargon = inject("smargon"),
-):
+) -> MsgGenerator:
     """BlueAPI entry point for XRC grid scans"""
 
     do_default_logging_setup(
