@@ -407,7 +407,7 @@ def rotation_scan(
             rotation_with_cleanup_and_stage(params),
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
-        yield from bps.unstage(eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.unstage(eiger)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
 
