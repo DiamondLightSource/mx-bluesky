@@ -5,6 +5,11 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
+from dodal.common import inject
+from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pmac import PMAC
+from dodal.devices.oav.oav_detector import OAV
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -19,6 +24,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
@@ -29,9 +35,17 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 
 
 @bpp.run_decorator()
-def gui_stage_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
-    oav = i24.oav()
-    pmac = i24.pmac()
+def gui_move_backlight(
+    position: str, backlight: DualBacklight = inject("backlight")
+) -> MsgGenerator:
+    bl_pos = BacklightPositions(position)
+    yield from bps.abs_set(backlight, bl_pos, wait=True)
+
+
+@bpp.run_decorator()
+def gui_stage_move_on_click(
+    position_px: tuple[int, int], oav: OAV = inject("oav"), pmac: PMAC = inject("pmac")
+) -> MsgGenerator:
     yield from _move_on_mouse_click_plan(oav, pmac, position_px)
 
 
@@ -58,8 +72,10 @@ def gui_sleep(sec: int) -> MsgGenerator:
 
 
 @bpp.run_decorator()
-def gui_move_detector(det: Literal["eiger", "pilatus"]) -> MsgGenerator:
-    detector_stage = i24.detector_motion()
+def gui_move_detector(
+    det: Literal["eiger", "pilatus"],
+    detector_stage: DetectorMotion = inject("detector_motion"),
+) -> MsgGenerator:
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable
@@ -75,6 +91,8 @@ def gui_set_parameters(
     transmission: float,
     n_shots: int,
     chip_type: str,
+    map_type: str,
+    chip_format: list[int | float],  # for Lite Oxford it's the chipmap
     checker_pattern: bool,
     pump_probe: str,
     laser_dwell: float,
@@ -84,7 +102,17 @@ def gui_set_parameters(
     # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
-    chip_params = get_chip_format(ChipType[chip_type])
+    _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
+    chip_params = get_chip_format(ChipType[chip_type], _format)
+    if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
+        mapping = MappingType.Lite if map_type == "Lite" else MappingType.NoMap
+        if mapping is MappingType.Lite and len(chip_format) == 0:
+            # this logic should go in the gui with error message.
+            raise EmptyMapError("No blocks chosen")
+        chip_map = chip_format
+    else:
+        mapping = MappingType.NoMap
+        chip_map = []
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -96,14 +124,14 @@ def gui_set_parameters(
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
-        "map_type": MappingType.NoMap,
-        "chip_map": [],
+        "map_type": mapping,
+        "chip_map": chip_map,
         "pump_repeat": PumpProbeSetting[pump_probe],  # pump_repeat,
         "laser_dwell_s": laser_dwell,
         "laser_delay_s": laser_delay,
         "checker_pattern": checker_pattern,
         "pre_pump_exposure_s": pre_pump,
     }
-    print(FixedTargetParameters(**params))
     # This will then run the run_fixed_target plan
     yield from bps.sleep(0.5)
+    return FixedTargetParameters(**params)
