@@ -4,8 +4,8 @@ Get Started with mx-bluesky
 Development Environment
 =======================
 
-- Clone this repo: ``git@github.com:DiamondLightSource/mx-bluesky.git``
-- To install a ``dev`` environment run ``./dls_dev_setup.sh``. Note that this will also clone and install a local version of ``dodal``, as the ``mx-bluesky`` package makes use of the devices instantiated there. 
+- Clone this repo using SSH: ``git clone git@github.com:DiamondLightSource/mx-bluesky.git``
+- To install a ``dev`` environment, from the top level ``mx-bluesky`` directory, run ``./utility_scripts/dls_dev_env.sh``. Note that this will also clone and install a local version of ``dodal``, as the ``mx-bluesky`` package makes use of the devices instantiated there. 
 
 The recommended IDE is vscode, and a workspace which includes dodal has been set up in the repo. This can be used on a DLS machine as follows:
 
