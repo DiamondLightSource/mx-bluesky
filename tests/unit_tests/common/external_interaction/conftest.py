@@ -11,9 +11,6 @@ from ophyd_async.sim import SimMotor
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.common.external_interaction.ispyb.data_model import (
-    DataCollectionGroupInfo,
-)
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -53,12 +50,3 @@ def get_test_plan(callback_name):
         yield from bps.save()
 
     return test_plan, s
-
-
-@pytest.fixture
-def dummy_rotation_data_collection_group_info():
-    return DataCollectionGroupInfo(
-        visit_string="cm31105-4",
-        experiment_type="SAD",
-        sample_id=364758,
-    )

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
+import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -15,6 +16,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -30,11 +34,8 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    flyscan_xray_centre,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_gridscan_callbacks,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    hyperion_flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -70,7 +71,7 @@ def reset_positions(smargon: Smargon):
     yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def fxc_composite():
     with (
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
@@ -80,12 +81,10 @@ async def fxc_composite():
         zocalo = i03.zocalo()
 
     composite = HyperionFlyScanXRayCentreComposite(
-        attenuator=i03.attenuator(connect_immediately=True, mock=True),
-        aperture_scatterguard=i03.aperture_scatterguard(
-            connect_immediately=True, mock=True
-        ),
-        backlight=i03.backlight(mock=True),
-        dcm=i03.dcm(fake_with_ophyd_sim=True),
+        attenuator=i03.attenuator(),
+        aperture_scatterguard=i03.aperture_scatterguard(),
+        backlight=i03.backlight(),
+        dcm=i03.dcm(connect_immediately=True, mock=True),
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(connect_immediately=True, mock=True),
@@ -127,7 +126,7 @@ def test_s03_devices_connect(fxc_composite: HyperionFlyScanXRayCentreComposite):
 
 
 @pytest.mark.s03
-def test_read_hardware_pre_collection(
+def test_standard_read_hardware_pre_collection(
     RE: RunEngine,
     fxc_composite: HyperionFlyScanXRayCentreComposite,
 ):
@@ -183,11 +182,11 @@ async def test_xbpm_feedback_decorator(
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
+    "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.tidy_up_zebra_after_gridscan",
+    "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.tidy_up_zebra_after_gridscan",
     autospec=True,
 )
 def test_full_plan_tidies_at_end(
@@ -209,7 +208,7 @@ def test_full_plan_tidies_at_end(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
     [RE.subscribe(cb) for cb in callbacks]
-    RE(flyscan_xray_centre(fxc_composite, params))
+    RE(hyperion_flyscan_xray_centre(fxc_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -218,11 +217,11 @@ def test_full_plan_tidies_at_end(
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
+    "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.tidy_up_zebra_after_gridscan",
+    "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.tidy_up_zebra_after_gridscan",
     autospec=True,
 )
 def test_full_plan_tidies_at_end_when_plan_fails(
@@ -239,7 +238,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 
     run_gridscan_and_move.side_effect = _Exception()
     with pytest.raises(_Exception):
-        RE(flyscan_xray_centre(fxc_composite, params))
+        RE(hyperion_flyscan_xray_centre(fxc_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -265,7 +264,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
     [RE.subscribe(cb) for cb in callbacks]
     with pytest.raises(WarningException):
-        RE(flyscan_xray_centre(fxc_composite, params))
+        RE(hyperion_flyscan_xray_centre(fxc_composite, params))
 
     ids = ispyb_cb.ispyb_ids
     assert ids.data_collection_group_id is not None
@@ -303,7 +302,7 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
 
     # [RE.subscribe(cb) for cb in callbacks]
     fxc_composite.zocalo.trigger = MagicMock(side_effect=zocalo_trigger)
-    RE(flyscan_xray_centre(fxc_composite, params))
+    RE(hyperion_flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(-1)
@@ -332,7 +331,7 @@ async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE(reset_positions(fxc_composite.smargon))
 
     [RE.subscribe(cb) for cb in callbacks]
-    RE(flyscan_xray_centre(fxc_composite, params))
+    RE(hyperion_flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert await fxc_composite.smargon.x.user_readback.get_value() == pytest.approx(
