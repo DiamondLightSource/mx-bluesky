@@ -232,10 +232,12 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     test_config_files: dict[str, str],
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
     tmp_path: Path,
+    dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
     cb = GridscanISPyBCallback(param_type=GridCommonWithHyperionDetectorParams)
+    cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     RE.subscribe(cb)
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):

@@ -808,3 +808,16 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     assert event_params.rotation_increment_deg == 0.1
     assert event_params.scan_width_deg == 180
     assert event_params.features.omega_flip == omega_flip
+
+
+def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
+    rotation_scan_simulated_messages,
+    test_rotation_params: RotationScan,
+):
+    msgs = rotation_scan_simulated_messages
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run"
+    )

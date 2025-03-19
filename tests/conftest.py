@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import pydantic
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -154,6 +155,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
     }
 ]
+
 # These are the uncorrected coordinate from zocalo
 TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
     {
@@ -567,7 +569,7 @@ def beamstop_i03(
 @pytest.fixture
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -1611,3 +1613,23 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
     yield None
     for f in active_device_factories:
         f.cache_clear()  # type: ignore
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class XBPMAndTransmissionWrapperComposite:
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    attenuator: BinaryFilterAttenuator
+    dcm: DCM
+
+
+@pytest.fixture
+def xbpm_and_transmission_wrapper_composite(
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
+) -> XBPMAndTransmissionWrapperComposite:
+    return XBPMAndTransmissionWrapperComposite(
+        undulator, xbpm_feedback, attenuator, dcm
+    )
