@@ -290,7 +290,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
             "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         ],
         [
-            "/rotation_scan/start",
+            "/multi_rotation_scan/start",
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         ],
         [

@@ -39,7 +39,7 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-    rotation_scan,
+    multi_rotation_scan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -50,7 +50,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
@@ -479,7 +479,7 @@ def test_ispyb_deposition_in_gridscan(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
-    params_for_rotation_scan: RotationScan,
+    params_for_rotation_scan: MultiRotationScan,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
     fetch_comment: Callable[..., Any],
@@ -491,7 +491,7 @@ def test_ispyb_deposition_in_rotation_plan(
     RE.subscribe(ispyb_cb)
 
     RE(
-        rotation_scan(
+        multi_rotation_scan(
             composite_for_rotation_scan,
             params_for_rotation_scan,
             oav_parameters_for_rotation,

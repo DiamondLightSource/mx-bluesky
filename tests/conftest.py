@@ -363,11 +363,20 @@ def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
+
+
+# @pytest.fixture
+# def test_single_rotation_params():
+#     return MultiRotationScan(
+#         **raw_params_from_file(
+#             "tests/test_data/parameter_json_files/good_test_single_rotation_scan_parameters.json"
+#         )
+#     )
 
 
 @pytest.fixture
