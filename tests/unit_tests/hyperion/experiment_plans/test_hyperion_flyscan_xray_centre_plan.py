@@ -27,7 +27,6 @@ from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -391,9 +390,8 @@ class TestFlyscanXrayCentrePlan:
         mock_verify_gap: MagicMock,
         mock_plan: MagicMock,
         RE: RunEngine,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     ):
         mock_plan.side_effect = CompleteException
         with pytest.raises(CompleteException):
