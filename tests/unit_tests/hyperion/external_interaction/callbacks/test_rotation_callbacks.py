@@ -197,7 +197,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     RE.subscribe(ispyb_callback)
     RE(do_rotation_scan)
 
-    assert ispyb_callback.activity_gated_stop.call_count == 2
+    assert ispyb_callback.activity_gated_stop.call_count == 3
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 

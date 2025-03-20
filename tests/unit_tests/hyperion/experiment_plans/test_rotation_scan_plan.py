@@ -128,12 +128,13 @@ def setup_and_run_rotation_plan_for_tests_standard(
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
     RE: RunEngine,
-    test_rotation_params_nomove: RotationScan,
+    test_rotation_params_nomove: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
+    rotation_params = next(test_rotation_params_nomove.single_rotation_scans)
     return setup_and_run_rotation_plan_for_tests(
-        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values
+        RE, rotation_params, fake_create_rotation_devices, motion_values
     )
 
 
