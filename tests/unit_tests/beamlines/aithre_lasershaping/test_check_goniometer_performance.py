@@ -16,7 +16,7 @@ def test_goniometer_omega_performance_check(
     sim_run_engine: RunEngineSimulator, goniometer: Goniometer
 ):
     msgs = sim_run_engine.simulate_plan(check_omega_performance(goniometer))
-    assert len(msgs) == 66
+    assert len(msgs) == 132
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
