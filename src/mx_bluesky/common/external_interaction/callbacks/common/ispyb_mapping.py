@@ -35,7 +35,7 @@ def populate_remaining_data_collection_info(
     data_collection_info.detector_id = I03_EIGER_DETECTOR
     data_collection_info.comments = comment
     data_collection_info.detector_distance = params.detector_params.detector_distance
-    data_collection_info.exp_time = params.detector_params.exposure_time
+    data_collection_info.exp_time = params.detector_params.exposure_time_s
     data_collection_info.imgdir = params.detector_params.directory
     data_collection_info.imgprefix = params.detector_params.prefix
     data_collection_info.imgsuffix = EIGER_FILE_SUFFIX

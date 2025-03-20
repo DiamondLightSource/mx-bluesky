@@ -26,6 +26,9 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
@@ -373,6 +376,7 @@ def rotation_scan(
         composite,
         parameters.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -403,7 +407,7 @@ def rotation_scan(
             rotation_with_cleanup_and_stage(params),
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
-        yield from bps.unstage(eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.unstage(eiger)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
 
@@ -439,6 +443,7 @@ def multi_rotation_scan(
                 composite,
                 parameters.transmission_frac,
             )
+            @verify_undulator_gap_before_run_decorator(composite)
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={

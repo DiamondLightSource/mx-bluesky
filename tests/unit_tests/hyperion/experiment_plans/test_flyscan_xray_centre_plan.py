@@ -88,6 +88,11 @@ from .conftest import (
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
+class CompleteException(Exception):
+    # To avoid having to run through the entire plan during tests
+    pass
+
+
 @pytest.fixture
 def fgs_composite_with_panda_pcap(
     fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
@@ -822,9 +827,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         feature_controlled: _FeatureControlled,
     ):
-        class CompleteException(Exception):
-            pass
-
         mock_complete.side_effect = CompleteException()
 
         fake_fgs_composite.eiger.stage = MagicMock(
@@ -872,6 +874,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        dummy_rotation_data_collection_group_info,
     ):
         id_1, id_2 = 100, 200
 
@@ -880,6 +883,7 @@ class TestFlyscanXrayCentrePlan:
         ispyb_cb.ispyb = MagicMock()
         ispyb_cb.params = MagicMock()
         ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
+        ispyb_cb.data_collection_group_info = dummy_rotation_data_collection_group_info
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
         mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
@@ -971,7 +975,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         test_fgs_params_panda_zebra.x_step_size_um = 10000
-        test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
+        test_fgs_params_panda_zebra.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
         try:
@@ -1015,7 +1019,7 @@ class TestFlyscanXrayCentrePlan:
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
 
     @patch(
-        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback_and_verify_undulator_gap",
+        "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
         autospec=True,
     )
     @patch(
@@ -1096,3 +1100,23 @@ class TestFlyscanXrayCentrePlan:
             and msg.obj.name == "attenuator"
             and msg.args == (1.0,),
         )
+
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_fetch_results",
+    )
+    @patch(
+        "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
+    )
+    def test_flyscan_xray_centre_does_undulator_check_before_collection(
+        self,
+        mock_verify_gap: MagicMock,
+        mock_plan: MagicMock,
+        RE: RunEngine,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    ):
+        mock_plan.side_effect = CompleteException
+        with pytest.raises(CompleteException):
+            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        mock_verify_gap.assert_called_once()
