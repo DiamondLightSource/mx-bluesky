@@ -41,6 +41,7 @@ Documentation is split into four categories, and each is also accessible from li
             :maxdepth: 1
 
             explanations/decisions
+            explanations/callback_and_run_logic
 
         +++
 
