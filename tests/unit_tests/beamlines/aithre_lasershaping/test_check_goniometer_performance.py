@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.aithre_lasershaping import check_omega_performance
 
 @pytest.fixture
 def goniometer(RE: RunEngine) -> Goniometer:
-    return aithre.goniometer()
+    return aithre.goniometer(connect_immediately=True, mock=True)
 
 
 def test_goniometer_omega_performance_check(
