@@ -603,7 +603,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
 
 
 @pytest.mark.system_test
-def test_execute_load_centre_collect_rotation_snapshots(
+def test_execute_load_centre_collect_capture_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -666,3 +666,46 @@ def test_execute_load_centre_collect_rotation_snapshots(
         filename = fetch_datacollection_attribute(rotation_dc_ids[0], column)
         actual_bytes = Image.open(filename).tobytes()
         assert actual_bytes == expected_bytes, f"Expected image differed for {column}"
+
+
+@pytest.mark.system_test
+def test_load_centre_collect_generate_rotation_snapshots(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    tmp_path: Path,
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+):
+    load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
+    load_centre_collect_params.multi_rotation_scan.use_grid_snapshots = True
+    load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = [0, 90]
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
+
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_callback)
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    EXPECTED_SNAPSHOT_VALUES = {
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_with_beam_centre\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_with_beam_centre\\.png",
+    }
+
+    rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
+    rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
+    compare_actual_and_expected(
+        rotation_dc_ids[0],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
