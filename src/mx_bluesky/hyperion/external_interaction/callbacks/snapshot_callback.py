@@ -12,6 +12,7 @@ from PIL import Image
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK_LOGGER
 
@@ -95,6 +96,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
         self._rotation_snapshot_descriptor: str = ""
         self._grid_snapshot_descriptor: str = ""
         self._it_rotation_snapshots: Iterator | None = None
+        self._use_grid_snapshots: bool = False
 
     def _reset(self):
         self._base_snapshots = []
@@ -103,6 +105,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         if self.activity_uid == doc.get("uid"):
             self._reset()
+            self._use_grid_snapshots = WithSnapshot.model_validate_json(
+                doc.get("with_snapshot")
+            ).use_grid_snapshots
         return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
@@ -145,7 +150,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
 
     def _handle_rotation_snapshot(self, doc: Event) -> Event:
         data = doc["data"]
-        if self._base_snapshots:
+        if self._use_grid_snapshots:
             if not self._it_rotation_snapshots:
                 self._it_rotation_snapshots = iter(self._base_snapshots)
             snapshot_info = next(self._it_rotation_snapshots, None)
