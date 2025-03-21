@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, SupportsInt, cast
+from typing import Literal, Self, SupportsInt, cast
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -116,10 +116,18 @@ class MxBlueskyParameters(BaseModel):
 class WithSnapshot(BaseModel):
     snapshot_directory: Path
     snapshot_omegas_deg: list[float] | None = None
+    use_grid_snapshots: bool = False
 
     @property
     def take_snapshots(self) -> bool:
         return bool(self.snapshot_omegas_deg)
+
+    @model_validator(mode="after")
+    def _validate_omegas_with_grid_snapshots(self) -> Self:
+        assert not self.use_grid_snapshots or self.snapshot_omegas_deg == [0, 90], (
+            "Invalid snapshot omegas requested with use_grid_snapshots"
+        )
+        return self
 
 
 class WithOptionalEnergyChange(BaseModel):
