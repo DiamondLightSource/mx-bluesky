@@ -134,7 +134,7 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
     try:
         log_debug("Trying to wait forever on callback and dispatcher threads")
         while all(alive):
-            bps.sleep(LIVENESS_POLL_SECONDS)
+            yield from bps.sleep(LIVENESS_POLL_SECONDS)
             alive = [t.is_alive() for t in threads]
     except KeyboardInterrupt:
         log_info("Main thread received interrupt - exiting.")

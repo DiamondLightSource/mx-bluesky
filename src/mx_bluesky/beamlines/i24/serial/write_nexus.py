@@ -62,10 +62,10 @@ def call_nexgen(
     while time.time() - t0 < max_wait:
         if meta_h5.exists():
             SSX_LOGGER.info(f"Found {meta_h5} after {time.time() - t0:.1f} seconds")
-            bps.sleep(5)
+            yield from bps.sleep(5)
             break
         SSX_LOGGER.debug(f"Waiting for {meta_h5}")
-        bps.sleep(1)
+        yield from bps.sleep(1)
     if not meta_h5.exists():
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return

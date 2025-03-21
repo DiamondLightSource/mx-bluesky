@@ -406,7 +406,7 @@ def start_i24(
         caput(pv.pilat_acquire, "1")  # Arm pilatus
         yield from arm_zebra(zebra)
         caput(pv.pilat_filename, filename)
-        bps.sleep(1.5)
+        yield from bps.sleep(1.5)
 
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.info("Using Eiger detector")
@@ -467,7 +467,7 @@ def start_i24(
             )
         yield from arm_zebra(zebra)
 
-        bps.sleep(1.5)
+        yield from bps.sleep(1.5)
 
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
@@ -501,7 +501,7 @@ def finish_i24(
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
         sup.pilatus("return-to-normal", None)
-        bps.sleep(0.2)
+        yield from bps.sleep(0.2)
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
@@ -594,7 +594,7 @@ def main_fixed_target_plan(
 
     SSX_LOGGER.info("Moving to Start")
     yield from bps.trigger(pmac.to_xyz_zero)
-    bps.sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # Now ready for data collection. Open fast shutter (zebra gate)
     SSX_LOGGER.info("Opening fast shutter.")
@@ -665,7 +665,7 @@ def tidy_up_after_collection_plan(
     """
     SSX_LOGGER.info("Closing fast shutter")
     yield from close_fast_shutter(zebra)
-    bps.sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # This probably should go in main then
     if parameters.detector_name == "pilatus":
@@ -675,7 +675,7 @@ def tidy_up_after_collection_plan(
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
-    bps.sleep(0.5)
+    yield from bps.sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 
