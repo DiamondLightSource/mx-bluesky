@@ -83,6 +83,13 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
     @run_decorator(
         md={
             "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": WithSnapshot.model_validate(
+                {
+                    "snapshot_directory": snapshot_directory,
+                    "snapshot_omegas_deg": [0, 90],
+                    "use_grid_snapshots": True,
+                }
+            ).model_dump_json(),
         }
     )
     def inner():
