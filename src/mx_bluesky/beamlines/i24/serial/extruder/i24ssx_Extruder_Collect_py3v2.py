@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from pprint import pformat
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -393,13 +392,15 @@ def main_extruder_plan(
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
     yield from arm_zebra(zebra)
-    sleep(GATE_START)  # Sleep for the same length of gate_start, hard coded to 1
+    bps.sleep(
+        GATE_START
+    )  # bps.sleep for the same length of gate_start, hard coded to 1
     i = 0
     text_list = ["|", "/", "-", "\\"]
     while True:
         line_of_text = "\r\t\t\t Waiting   " + 30 * (f"{text_list[i % 4]}")
         flush_print(line_of_text)
-        sleep(0.5)
+        bps.sleep(0.5)
         i += 1
         zebra_arm_status = yield from bps.rd(zebra.pc.arm.armed)
         if zebra_arm_status == 0:  # not zebra.pc.is_armed():
@@ -429,7 +430,7 @@ def collection_aborted_plan(
         caput(pv.pilat_acquire, 0)
     elif detector_name == "eiger":
         caput(pv.eiger_acquire, 0)
-    sleep(0.5)
+    bps.sleep(0.5)
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=True)
 
@@ -475,7 +476,7 @@ def collection_complete_plan(
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
 
-    sleep(0.5)
+    bps.sleep(0.5)
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=False)
