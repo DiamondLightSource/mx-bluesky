@@ -6,6 +6,7 @@ This version changed to python3 March2020 by RLO
 import json
 import re
 import sys
+import time
 from pathlib import Path
 from pprint import pformat
 
@@ -830,16 +831,16 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     SSX_LOGGER.info(f"{sqfact1:1.4f} \n {sqfact2:1.4f} \n {sqfact3:1.4f}")
     SSX_LOGGER.debug("Long wait, please be patient")
     yield from bps.trigger(pmac.to_xyz_zero)
-    bps.sleep(2.5)
+    time.sleep(2.5)  # noqa - needed for blocking - see https://github.com/DiamondLightSource/mx-bluesky/pull/942
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
     yield from bps.trigger(pmac.to_xyz_zero)
-    bps.sleep(2.5)
+    time.sleep(2.5)  # noqa
     yield from bps.trigger(pmac.home, wait=True)
-    bps.sleep(2.5)
+    time.sleep(2.5)  # noqa
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
-        bps.sleep(2.5)
+        time.sleep(2.5)  # noqa
         yield from bps.trigger(pmac.home, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)
