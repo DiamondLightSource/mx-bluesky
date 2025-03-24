@@ -694,14 +694,15 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
     wrapped = detect_grid_and_do_gridscan
 
     # Before we do the grid scan, pretend we detected the pin at this position and move to it
+    # This is the base snapshot position
     def wrapper(*args, **kwargs):
         yield from bps.mv(
             load_centre_collect_composite.smargon.x,
-            -0.5984,
+            -0.614,
             load_centre_collect_composite.smargon.y,
-            00.2153,
+            0.0259,
             load_centre_collect_composite.smargon.z,
-            0.1506,
+            0.250,
         )
 
         yield from wrapped(*args, **kwargs)
@@ -717,8 +718,8 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
 def grid_detect_for_snapshot_generation():
     fake_grid_params = GridParamUpdate(
         x_start_um=-598.4,
-        y_start_um=-21.5,
-        y2_start_um=-21.5,
+        y_start_um=-215.3,
+        y2_start_um=-215.3,
         z_start_um=150.6,
         z2_start_um=150.6,
         x_steps=30,
@@ -735,11 +736,14 @@ def grid_detect_for_snapshot_generation():
         yield fake_grid_params
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.OavConstants.OAV_CONFIG_JSON",
+    "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
+)
 @pytest.mark.system_test
 def test_load_centre_collect_generate_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
-    oav_parameters_for_rotation: OAVParameters,
     grid_detect_for_snapshot_generation: GridParamUpdate,
     patch_detect_grid_and_do_gridscan_with_detected_pin_position: MagicMock,
     next_oav_system_test_image: MagicMock,
@@ -748,6 +752,10 @@ def test_load_centre_collect_generate_rotation_snapshots(
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
+    oav_parameters = OAVParameters(
+        oav_config_json="tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
+        context="xrayCentring",
+    )
     next_fake_snapshot = iter(
         [
             # 1 extra for robot load
@@ -781,7 +789,7 @@ def test_load_centre_collect_generate_rotation_snapshots(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
-            oav_parameters_for_rotation,
+            oav_parameters,
         )
     )
 

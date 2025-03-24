@@ -143,8 +143,17 @@ def undulator_for_system_test(undulator):
 @pytest.fixture
 def next_oav_system_test_image():
     return MagicMock(
-        return_value=["tests/test_data/test_images/generate_snapshot_input.png"] * 100
+        return_value="tests/test_data/test_images/generate_snapshot_input.png"
     )
+
+
+@pytest.fixture()
+def test_config_files():
+    return {
+        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
+        "oav_config_json": "tests/test_data/test_OAVCentring.json",
+        "display_config": "tests/test_data/test_daq_configuration/display.configuration",
+    }
 
 
 @pytest.fixture
@@ -186,7 +195,7 @@ def oav_for_system_test(test_config_files, next_oav_system_test_image):
         ) as mock_get,
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
-        set_mock_value(oav.zoom_controller.level, "1.0")
+        set_mock_value(oav.zoom_controller.level, "1.0x")
         zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
         oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
             return_value=zoom_levels_list

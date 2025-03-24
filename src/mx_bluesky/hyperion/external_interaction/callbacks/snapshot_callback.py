@@ -22,7 +22,7 @@ class _SnapshotInfo:
     beam_centre: tuple[int, int]
     microns_per_pixel: tuple[float, float]
     snapshot_path: str
-    omega: float
+    omega: int
     sample_pos_mm: tuple[float, float, float]
 
     @property
@@ -143,7 +143,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 data.get("smargon-y", 0.0),
                 data.get("smargon-z", 0.0),
             ),
-            omega=data.get("smargon-omega", 0.0),
+            omega=round(data.get("smargon-omega", 0.0)),
         )
 
     def _handle_grid_snapshot(self, doc: Event):
@@ -193,14 +193,16 @@ class BeamDrawingCallback(PlanReactiveCallback):
         snapshot_info: _SnapshotInfo,
         current_sample_pos_mm: tuple[float, float, float],
     ) -> tuple[float, float]:
+        assert snapshot_info.omega in (0, -90), "Unexpected base snapshot angle"
         return (
             (
-                current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0],
-                current_sample_pos_mm[1] - snapshot_info.sample_pos_mm[1],
+                -(current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
+                -(current_sample_pos_mm[1] - snapshot_info.sample_pos_mm[1]),
             )
             if snapshot_info.omega == 0
             else (
-                current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0],
+                -(current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
+                # Y-coordinate is NOT y-flipped because omega is -90 not +90
                 current_sample_pos_mm[2] - snapshot_info.sample_pos_mm[2],
             )
         )
