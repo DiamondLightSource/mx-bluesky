@@ -695,7 +695,7 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
 
     # Before we do the grid scan, pretend we detected the pin at this position and move to it
     def wrapper(*args, **kwargs):
-        yield from bps.abs_set(
+        yield from bps.mv(
             load_centre_collect_composite.smargon.x,
             -0.5984,
             load_centre_collect_composite.smargon.y,
