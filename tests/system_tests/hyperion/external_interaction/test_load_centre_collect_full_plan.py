@@ -744,6 +744,7 @@ def test_load_centre_collect_generate_rotation_snapshots(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     grid_detect_for_snapshot_generation: GridParamUpdate,
+    patch_detect_grid_and_do_gridscan_with_detected_pin_position: MagicMock,
     RE: RunEngine,
     tmp_path: Path,
     fetch_datacollection_attribute: Callable[..., Any],
