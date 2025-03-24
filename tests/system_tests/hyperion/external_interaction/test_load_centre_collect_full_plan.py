@@ -708,8 +708,8 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
 
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
-        new_callable=wrapper,
     ) as patched_detect_grid:
+        patched_detect_grid.side_effect = wrapper
         yield patched_detect_grid
 
 
