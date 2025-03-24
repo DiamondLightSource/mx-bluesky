@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
+from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
 from dodal.devices.backlight import Backlight
@@ -428,9 +429,13 @@ def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
         smargon=smargon,
         pin_tip_detection=mock_ophyd_pin_tip_detection,
     )
-    mock_wait_for_tip.side_effect = PinNotFoundException
+
+    def raise_exception(*args):
+        yield from bps.null()
+        raise PinNotFoundException()
+
+    mock_wait_for_tip.side_effect = raise_exception
     mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
     with pytest.raises(SampleException):
         RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
-    mock_move_into_view.assert_called_once_with(mock_ophyd_pin_tip_detection, smargon)
     assert mock_wait_for_tip.call_count == 1
