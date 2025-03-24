@@ -780,6 +780,19 @@ def test_load_centre_collect_generate_rotation_snapshots(
         "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90\\.png",
     }
 
+    grid_dcg_id = ispyb_gridscan_cb.ispyb_ids.data_collection_group_id
+    grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)
+    compare_actual_and_expected(
+        grid_dc_ids[0],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
+    compare_actual_and_expected(
+        grid_dc_ids[1],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
+
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
     rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
     compare_actual_and_expected(
