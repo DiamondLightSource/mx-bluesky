@@ -750,6 +750,10 @@ def test_load_centre_collect_generate_rotation_snapshots(
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
+    load_centre_collect_params.robot_load_then_centre.snapshot_directory = (
+        tmp_path / "grid_snapshots"
+    )
+    os.mkdir(load_centre_collect_params.robot_load_then_centre.snapshot_directory)
     load_centre_collect_params.multi_rotation_scan.use_grid_snapshots = True
     load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = [0, 90]
     load_centre_collect_composite.zocalo.my_zocalo_result = (
