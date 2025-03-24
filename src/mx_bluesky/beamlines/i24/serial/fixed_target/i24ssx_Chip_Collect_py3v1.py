@@ -361,7 +361,7 @@ def start_i24(
             f"Fastchip Pilatus setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.pilatus(
+        yield from sup.pilatus(
             "fastchip",
             [
                 filepath,
@@ -422,7 +422,7 @@ def start_i24(
             f"Triggered Eiger setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.eiger(
+        yield from sup.eiger(
             "triggered",
             [
                 filepath,
@@ -500,12 +500,12 @@ def finish_i24(
         SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None)
         yield from bps.sleep(0.2)
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")

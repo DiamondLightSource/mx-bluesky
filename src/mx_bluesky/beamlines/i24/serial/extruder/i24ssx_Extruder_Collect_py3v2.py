@@ -256,7 +256,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.info(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.info(f"Pump delay time {parameters.laser_delay_s}")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "fastchip",
                 [
                     filepath,
@@ -277,7 +277,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "quickshot",
                 [
                     filepath,
@@ -309,7 +309,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.debug(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.debug(f"Pump delay time {parameters.laser_delay_s}")
-            sup.eiger(
+            yield from sup.eiger(
                 "triggered",
                 [
                     filepath,
@@ -330,7 +330,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.eiger(
+            yield from sup.eiger(
                 "quickshot",
                 [
                     filepath,
@@ -453,9 +453,9 @@ def tidy_up_at_collection_end_plan(
 
     # Clean Up
     if parameters.detector_name == "pilatus":
-        sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")

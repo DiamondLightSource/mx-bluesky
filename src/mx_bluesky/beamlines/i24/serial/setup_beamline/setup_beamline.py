@@ -275,7 +275,7 @@ def modechange(action):
         caput(pv.ptab_y, 0)
         while float(caget(pv.ptab_y + ".RBV")) < -1.0:
             yield from bps.sleep(1)
-        modechange("Pin_data_collection")
+        yield from modechange("Pin_data_collection")
         SSX_LOGGER.debug("Switch To Pin Done")
     else:
         SSX_LOGGER.debug(f"Unknown action: {action}")
