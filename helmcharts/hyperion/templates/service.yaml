@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hyperion-svc
+spec:
+  {{- if .Values.application.dev }}
+  type: LoadBalancer
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
+  ports:
+    - name: hyperion-api
+      port: {{ .Values.application.servicePort }}
+      protocol: TCP
+      targetPort: {{ .Values.application.containerPort }}
+  selector:
+    app: hyperion

@@ -15,6 +15,7 @@ from dodal.devices.oav.utils import (
 )
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
@@ -22,7 +23,6 @@ from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
 
@@ -53,7 +53,7 @@ def trigger_and_return_pin_tip(
 def move_pin_into_view(
     pin_tip_device: PinTipDetection,
     smargon: Smargon,
-    step_size_mm: float = DEFAULT_STEP_SIZE,
+    step_magnitude_mm: float = DEFAULT_STEP_SIZE,
     max_steps: int = 2,
 ) -> Generator[Msg, None, Pixel]:
     """Attempt to move the pin into view and return the tip location in pixels if found.
@@ -63,7 +63,7 @@ def move_pin_into_view(
     Args:
         pin_tip_device (PinTipDetection): The device being used to detect the pin
         smargon (Smargon): The gonio to move the tip
-        step_size (float, optional): Distance to move the gonio (in mm) for each
+        step_magnitude_mm (float, optional): Distance to move the gonio (in mm) for each
                                     step of the search. Defaults to 0.5.
         max_steps (int, optional): The number of steps to search with. Defaults to 2.
 
@@ -83,21 +83,21 @@ def move_pin_into_view(
         if pin_tip_valid(tip_xy_px):
             return (int(tip_xy_px[0]), int(tip_xy_px[1]))
 
-        if tip_xy_px[0] == 0:
-            # Pin is off in the -ve direction
-            step_size_mm = -step_size_mm
+        # Pin is off in the -ve direction if the returned tip x pixel value is 0
+        direction_multiple = -1 if tip_xy_px[0] == 0 else 1
+        step_vector_mm = step_magnitude_mm * direction_multiple
 
         smargon_x = yield from bps.rd(smargon.x.user_readback)
-        ideal_move_to_find_pin = float(smargon_x) + step_size_mm
+        ideal_move_to_find_pin = float(smargon_x) + step_vector_mm
         high_limit = yield from bps.rd(smargon.x.high_limit_travel)
         low_limit = yield from bps.rd(smargon.x.low_limit_travel)
         move_within_limits = max(min(ideal_move_to_find_pin, high_limit), low_limit)
         if move_within_limits != ideal_move_to_find_pin:
             LOGGER.warning(
-                f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
+                f"Pin tip is off screen, and moving {step_vector_mm}mm would cross limits, "
                 f"moving to {move_within_limits} instead"
             )
-        yield from bps.mv(smargon.x, move_within_limits)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.mv(smargon.x, move_within_limits)
 
         # Some time for the view to settle after the move
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
@@ -154,7 +154,7 @@ def pin_tip_centre_plan(
     tip = yield from move_pin_into_view(pin_tip_detect, smargon)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(smargon.omega, 90)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mvr(smargon.omega, 90)
 
     # need to wait for the OAV image to update
     # See #673 for improvements

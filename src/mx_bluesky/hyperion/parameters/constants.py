@@ -4,6 +4,7 @@ from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.parameters.constants import (
+    DeviceSettingsConstants,
     DocDescriptorNames,
     EnvironmentConstants,
     ExperimentParamConstants,
@@ -31,8 +32,11 @@ class I03Constants:
     OMEGA_FLIP = True
 
     # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
-    # processed results. GPU results never used in analysis for now
+    # processed results.
     COMPARE_CPU_AND_GPU_ZOCALO = False
+
+    # Turns on GPU processing for zocalo and uses the results that come back
+    USE_GPU_RESULTS = False
 
 
 @dataclass(frozen=True)
@@ -57,6 +61,7 @@ class HyperionConstants:
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
+    DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()
 
 
 CONST = HyperionConstants()

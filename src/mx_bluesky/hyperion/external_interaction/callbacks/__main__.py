@@ -3,6 +3,7 @@ from collections.abc import Callable, Sequence
 from threading import Thread
 from time import sleep
 
+from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -12,6 +13,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -34,9 +38,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
-)
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -48,17 +49,33 @@ LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
 
 
-def setup_callbacks():
-    return [
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
+    return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams,
             emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
         ),
+    )
+
+
+def create_rotation_callbacks() -> tuple[
+    RotationNexusFileCallback, RotationISPyBCallback
+]:
+    return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
             emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
         ),
+    )
+
+
+def setup_callbacks() -> list[CallbackBase]:
+    return [
+        *create_gridscan_callbacks(),
+        *create_rotation_callbacks(),
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),

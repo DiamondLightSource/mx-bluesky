@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
-    DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
@@ -26,7 +25,7 @@ from ......conftest import (
     mx_acquisition_from_conn,
 )
 
-EXPECTED_DATA_COLLECTION = {
+EXPECTED_UPDATE_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": None,
@@ -39,7 +38,6 @@ EXPECTED_DATA_COLLECTION = {
     "beamsize_at_samplex": 1,
     "beamsize_at_sampley": 1,
     "transmission": 100.0,
-    "comments": "Hyperion rotation scan",
     "data_collection_number": 0,
     "detector_distance": 100.0,
     "exp_time": 0.1,
@@ -63,14 +61,9 @@ EXPECTED_DATA_COLLECTION = {
     "kappastart": 0,
 }
 
-
-@pytest.fixture
-def dummy_rotation_data_collection_group_info():
-    return DataCollectionGroupInfo(
-        visit_string="cm31105-4",
-        experiment_type="SAD",
-        sample_id=364758,
-    )
+EXPECTED_BEGIN_DATA_COLLECTION = EXPECTED_UPDATE_DATA_COLLECTION | {
+    "comments": "Hyperion rotation scan",
+}
 
 
 @pytest.fixture
@@ -147,7 +140,6 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             beamsize_at_samplex=1.0,
             beamsize_at_sampley=1.0,
             transmission=100.0,
-            comments="Hyperion rotation scan",
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
@@ -216,7 +208,7 @@ def test_begin_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
+        EXPECTED_BEGIN_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 
@@ -259,7 +251,7 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
+        EXPECTED_BEGIN_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 
@@ -328,7 +320,7 @@ def test_update_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION
+        EXPECTED_UPDATE_DATA_COLLECTION
         | {
             "id": TEST_DATA_COLLECTION_IDS[0],
             "synchrotron_mode": "test",
@@ -387,7 +379,7 @@ def test_update_deposition_with_group_id_updates(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION
+        EXPECTED_UPDATE_DATA_COLLECTION
         | {
             "id": TEST_DATA_COLLECTION_IDS[0],
             "synchrotron_mode": "test",

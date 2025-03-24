@@ -179,7 +179,6 @@ def test_rotation_scan(
 ):
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
-
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 
@@ -291,7 +290,7 @@ def test_cleanup_happens(
                     fake_create_rotation_devices, test_rotation_params, motion_values
                 )
             )
-            cleanup_plan.assert_not_called()
+        cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
         with pytest.raises(MyTestException) as exc:
             RE(
@@ -301,8 +300,8 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-            assert "Experiment fails because this is a test" in exc.value.args[0]
-            cleanup_plan.assert_called_once()
+        assert "Experiment fails because this is a test" in exc.value.args[0]
+        cleanup_plan.assert_called_once()
 
 
 def test_rotation_plan_reads_hardware(
@@ -327,13 +326,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
-    )
-    assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
     )
 
 
@@ -511,7 +504,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == ApertureValue.ROBOT_LOAD
+        and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(
@@ -815,3 +808,16 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     assert event_params.rotation_increment_deg == 0.1
     assert event_params.scan_width_deg == 180
     assert event_params.features.omega_flip == omega_flip
+
+
+def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
+    rotation_scan_simulated_messages,
+    test_rotation_params: RotationScan,
+):
+    msgs = rotation_scan_simulated_messages
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run"
+    )

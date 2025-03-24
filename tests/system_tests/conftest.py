@@ -1,3 +1,4 @@
+import os
 import re
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
@@ -7,6 +8,8 @@ from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
 from ophyd_async.testing import set_mock_value
+
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -119,6 +122,15 @@ DATA_COLLECTION_COLUMN_MAP = {
 }
 
 
+@pytest.fixture(autouse=True)
+def use_dev_ispyb_unless_overridden_by_environment():
+    ispyb_config_path = os.environ.get(
+        "ISPYB_CONFIG_PATH", CONST.SIM.DEV_ISPYB_DATABASE_CFG
+    )
+    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
+        yield ispyb_config_path
+
+
 @pytest.fixture
 def undulator_for_system_test(undulator):
     set_mock_value(undulator.current_gap, 1.11)
@@ -130,7 +142,7 @@ def oav_for_system_test(test_config_files):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
     set_mock_value(oav.cam.array_size_y, 768)
 

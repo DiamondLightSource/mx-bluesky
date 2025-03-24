@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Generator
+from contextlib import nullcontext
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,12 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
+    get_proposal_and_session_from_visit_string,
+)
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -33,19 +40,25 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
+from ....conftest import (
+    TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,
+    TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER,
+    TEST_RESULT_MEDIUM,
+    TEST_RESULT_OUT_OF_BOUNDS_BB,
+    TEST_RESULT_OUT_OF_BOUNDS_COM,
+    raw_params_from_file,
+)
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
     compare_comment,
 )
-from .conftest import raw_params_from_file
+
+SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
 
 
 @pytest.fixture
@@ -53,6 +66,8 @@ def load_centre_collect_params():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
+    json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
+    json_dict["sample_id"] = SAMPLE_ID
     return LoadCentreCollect(**json_dict)
 
 
@@ -105,7 +120,7 @@ def load_centre_collect_composite(
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": 5461074,
+    "BLSAMPLEID": SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,
@@ -186,8 +201,6 @@ ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "6}_oav_snapshot_270\\.png",
 }
 
-SAMPLE_ID = 5461074
-
 
 @pytest.fixture
 def composite_with_no_diffraction(
@@ -203,15 +216,7 @@ def composite_with_no_diffraction(
         yield load_centre_collect_composite
 
 
-@pytest.fixture(autouse=True)
-def use_dev_ispyb():
-    with patch.dict(
-        os.environ, values={"ISPYB_CONFIG_PATH": CONST.SIM.DEV_ISPYB_DATABASE_CFG}
-    ):
-        yield
-
-
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -245,7 +250,13 @@ def test_execute_load_centre_collect_full(
         )
     )
 
-    robot_load_cb.expeye.start_load.assert_called_once_with("cm37235", 4, 5461074, 2, 6)
+    expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
+        load_centre_collect_params.visit
+    )
+    expected_sample_id = load_centre_collect_params.sample_id
+    robot_load_cb.expeye.start_load.assert_called_once_with(
+        expected_proposal, expected_visit, expected_sample_id, 2, 6
+    )
     # TODO re-enable this https://github.com/DiamondLightSource/mx-bluesky/issues/690
     # robot_load_cb.expeye.update_barcode_and_snapshots.assert_called_once_with(
     #     1234,
@@ -258,7 +269,7 @@ def test_execute_load_centre_collect_full(
     # Compare gridscan collection
     compare_actual_and_expected(
         ispyb_gridscan_cb.ispyb_ids.data_collection_group_id,
-        {"experimentType": "Mesh3D", "blSampleId": 5461074},
+        {"experimentType": "Mesh3D", "blSampleId": expected_sample_id},
         fetch_datacollectiongroup_attribute,
     )
     compare_actual_and_expected(
@@ -277,14 +288,14 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: Small. ",
     )
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        "MX-Bluesky: Xray centring - Diffraction grid scan of 30 by 6 "
+        "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 6 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
         "bottom right (px): [874,278]. Aperture: Small. ",
     )
@@ -293,7 +304,7 @@ def test_execute_load_centre_collect_full(
     rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
     compare_actual_and_expected(
         rotation_dcg_id,
-        {"experimentType": "SAD", "blSampleId": 5461074},
+        {"experimentType": "SAD", "blSampleId": expected_sample_id},
         fetch_datacollectiongroup_attribute,
     )
     compare_actual_and_expected(
@@ -310,12 +321,13 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Sample position (µm): (-2309, -591, 341) Hyperion Rotation Scan -   Aperture: Small. ",
+        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, 341) Aperture: "
+        "Small. ",
     )
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "LOADED"  # type: ignore
+    assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -343,10 +355,13 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - beamline"
+    )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -375,10 +390,13 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - sample"
+    )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -399,10 +417,13 @@ def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - beamline"
+    )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_not_found(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -449,10 +470,13 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - sample"
+    )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     composite_with_no_diffraction: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -478,10 +502,13 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - sample"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - sample"
+    )
 
 
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
@@ -513,4 +540,57 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
             )
         )
 
-    assert fetch_blsample(SAMPLE_ID).blSampleStatus == "ERROR - beamline"
+    assert (
+        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
+        == "ERROR - beamline"
+    )
+
+
+@pytest.mark.parametrize(
+    "zocalo_result, expected_exception",
+    [
+        [TEST_RESULT_MEDIUM, nullcontext()],
+        [TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX, nullcontext()],
+        [TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER, nullcontext()],
+        [
+            TEST_RESULT_OUT_OF_BOUNDS_COM,
+            pytest.raises(IndexError, match=".* is outside the bounds of the grid"),
+        ],
+        [
+            TEST_RESULT_OUT_OF_BOUNDS_BB,
+            pytest.raises(IndexError, match=".* is outside the bounds of the grid"),
+        ],
+    ],
+)
+@pytest.mark.system_test
+def test_load_centre_collect_gridscan_result_at_edge_of_grid(
+    zocalo_result,
+    expected_exception,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    robot_load_cb = RobotLoadISPyBCallback()
+    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(ispyb_rotation_cb)
+    RE.subscribe(robot_load_cb)
+    with expected_exception:
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )

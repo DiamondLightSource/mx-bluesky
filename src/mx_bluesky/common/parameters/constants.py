@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -5,6 +6,8 @@ from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
+
+from mx_bluesky.definitions import ROOT_DIR
 
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
@@ -55,6 +58,8 @@ class PlanNameConstants:
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
     FLYSCAN_RESULTS = "xray_centre_results"
+    SET_ENERGY = "set_energy"
+    UNNAMED_RUN = "unnamed_run"
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,10 @@ class HardwareConstants:
     CRYOJET_MARGIN_MM = 0.2
     THAWING_TIME = 20
     TIP_OFFSET_UM = 0
+
+    # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
+    # causes dropped frames, so increase value for safety
+    PANDA_FGS_EIGER_DEADTIME_S = 5e-5
 
 
 @dataclass(frozen=True)
@@ -116,6 +125,15 @@ class PlanGroupCheckpointConstants:
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
+
+
+# Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798
+@dataclass(frozen=True)
+class DeviceSettingsConstants:
+    PANDA_FLYSCAN_SETTINGS_FILENAME = "panda-gridscan"
+    PANDA_FLYSCAN_SETTINGS_DIR = os.path.abspath(
+        f"{ROOT_DIR}/hyperion/resources/panda/"
+    )
 
 
 @dataclass(frozen=True)

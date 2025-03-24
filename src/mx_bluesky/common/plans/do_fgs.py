@@ -14,12 +14,10 @@ from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from scanspec.core import AxesPoints, Axis
 
-from mx_bluesky.common.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_zocalo,
-)
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
+from mx_bluesky.common.plans.read_hardware import read_hardware_for_zocalo
 from mx_bluesky.common.utils.tracing import TRACER
 
 
@@ -30,7 +28,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     during_collection_plan: Callable[[], MsgGenerator] | None = None,
 ):
     expected_images = yield from bps.rd(grid_scan_device.expected_images)
-    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     LOGGER.info("waiting for topup if necessary...")
     yield from check_topup_and_wait_if_necessary(
         synchrotron,
@@ -101,8 +99,8 @@ def kickoff_and_complete_gridscan(
         }
     )
     @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        else_plan=lambda: (yield from bps.unstage(detector)),  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        else_plan=lambda: (yield from bps.unstage(detector)),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(

@@ -8,7 +8,6 @@ from mx_bluesky._version import version
 @dataclass
 class HyperionArgs:
     dev_mode: bool = False
-    use_external_callbacks: bool = False
     verbose_event_logging: bool = False
     skip_startup_connection: bool = False
 
@@ -34,8 +33,7 @@ def parse_cli_args() -> HyperionArgs:
     """Parses all arguments relevant to hyperion. Returns an HyperionArgs dataclass with
     the fields: (verbose_event_logging: bool,
                  dev_mode: bool,
-                 skip_startup_connection: bool,
-                 external_callbacks: bool)"""
+                 skip_startup_connection: bool)"""
     parser = argparse.ArgumentParser()
     _add_callback_relevant_args(parser)
     parser.add_argument(
@@ -49,11 +47,6 @@ def parse_cli_args() -> HyperionArgs:
         help="Skip connecting to EPICS PVs on startup",
     )
     parser.add_argument(
-        "--external-callbacks",
-        action="store_true",
-        help="Run the external hyperion-callbacks service and publish events over ZMQ",
-    )
-    parser.add_argument(
         "--version",
         help="Print hyperion version string",
         action="version",
@@ -64,5 +57,4 @@ def parse_cli_args() -> HyperionArgs:
         verbose_event_logging=args.verbose_event_logging or False,
         dev_mode=args.dev or False,
         skip_startup_connection=args.skip_startup_connection or False,
-        use_external_callbacks=args.external_callbacks or False,
     )

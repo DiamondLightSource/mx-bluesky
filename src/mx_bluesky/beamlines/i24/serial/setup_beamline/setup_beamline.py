@@ -21,9 +21,9 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 
 def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
     if detector_in_use == "eiger":
-        return i24.eiger_beam_center()
+        return i24.eiger_beam_center(connect_immediately=True)
     else:
-        return i24.pilatus_beam_center()
+        return i24.pilatus_beam_center(connect_immediately=True)
 
 
 def compute_beam_center_position_from_lut(
@@ -84,7 +84,7 @@ def move_detector_stage_to_position_plan(
     SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
-    yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.z, detector_distance)
 
 
 def set_detector_beam_center_plan(

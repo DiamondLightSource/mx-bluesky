@@ -53,7 +53,6 @@ def call_nexgen(
             total_numb_imgs = parameters.num_images
             pump_status = parameters.pump_status
 
-    filename_prefix = parameters.filename
     filename_prefix = cagetstring(Eiger.pv.filenameRBV)
     meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()

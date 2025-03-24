@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 from collections.abc import Callable, Sequence
-from itertools import takewhile
+from itertools import dropwhile, takewhile
 from math import ceil
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -15,6 +15,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
@@ -39,6 +40,7 @@ from ....conftest import (
     fake_read,
     mx_acquisition_from_conn,
     raw_params_from_file,
+    remap_upsert_columns,
 )
 from ..external_interaction.conftest import *  # noqa # for fixtures
 
@@ -84,7 +86,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     )
 
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "eiger_do_arm"
     )[1:]
 
     msgs_within_arming = list(
@@ -456,6 +458,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     mx = mx_acquisition_from_conn(mock_ispyb_conn_multiscan)
     assert mx.get_data_collection_group_params.call_count == number_of_scans
     assert mx.get_data_collection_params.call_count == number_of_scans * 4
+    upsert_keys = mx.get_data_collection_params()
     for upsert_calls, rotation_params in zip(
         [  # there should be 4 datacollection upserts per scan
             mx.upsert_data_collection.call_args_list[i * 4 : (i + 1) * 4]
@@ -464,19 +467,78 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        first_upsert_data = upsert_calls[0].args[0]
+        first_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[0].args[0])
         assert (
-            first_upsert_data[12] - first_upsert_data[11]
+            first_upsert_data["axisend"] - first_upsert_data["axisstart"]
             == rotation_params.scan_width_deg
         )
-        assert first_upsert_data[15] == rotation_params.num_images
-        second_upsert_data = upsert_calls[1].args[0]
-        assert second_upsert_data[29].startswith("Sample position")
+        assert first_upsert_data["nimages"] == rotation_params.num_images
+        second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])
+        dc_id = second_upsert_data["id"]
+        append_comment_call = next(
+            dropwhile(
+                lambda c: c.args[0] != dc_id,
+                mx.update_data_collection_append_comments.mock_calls,
+            )
+        )
+        comment = append_comment_call.args[1]
+        assert comment.startswith("Sample position")
         position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
-        assert position_string in second_upsert_data[29]
-        third_upsert_data = upsert_calls[2].args[0]
-        assert third_upsert_data[24] > 0  # resolution
-        assert third_upsert_data[52] > 0  # beam size
-        fourth_upsert_data = upsert_calls[3].args[0]
-        assert fourth_upsert_data[9]  # timestamp
-        assert fourth_upsert_data[10] == "DataCollection Successful"
+        assert position_string in comment
+        third_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[2].args[0])
+        assert third_upsert_data["resolution"] > 0  # resolution
+        assert third_upsert_data["focalspotsizeatsamplex"] > 0  # beam size
+        fourth_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[3].args[0])
+        assert fourth_upsert_data["endtime"]  # timestamp
+        assert fourth_upsert_data["runstatus"] == "DataCollection Successful"
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
+    _,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    eiger = fake_create_rotation_devices.eiger
+    eiger.stage = MagicMock(return_value=Status(done=True, success=True))
+    eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
+    eiger.do_arm.set = MagicMock(return_value=Status(done=True, success=True))
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [],
+        oav_parameters_for_rotation,
+    )
+    # Stage will arm the eiger synchonously
+    eiger.stage.assert_not_called()
+
+    eiger.do_arm.set.assert_called_once()
+    eiger.unstage.assert_called_once()
+
+
+def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
+    fake_create_rotation_devices: RotationScanComposite,
+    test_multi_rotation_params: MultiRotationScan,
+    sim_run_engine_for_rotation: RunEngineSimulator,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    msgs = sim_run_engine_for_rotation.simulate_plan(
+        multi_rotation_scan(
+            fake_create_rotation_devices,
+            test_multi_rotation_params,
+            oav_parameters_for_rotation,
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "set" and msg.obj.name == "undulator"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "open_run"
+    )

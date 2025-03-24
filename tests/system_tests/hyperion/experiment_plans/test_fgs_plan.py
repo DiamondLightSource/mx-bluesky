@@ -5,11 +5,13 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.smargon import Smargon
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 
@@ -20,22 +22,24 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
-    read_hardware_pre_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
+    standard_read_hardware_pre_collection,
 )
-from mx_bluesky.hyperion.device_setup_plans.xbpm_feedback import (
+from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import default_raw_gridscan_params
 
@@ -63,10 +67,10 @@ def callbacks(params):
 
 
 def reset_positions(smargon: Smargon):
-    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def fxc_composite():
     with (
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
@@ -75,25 +79,29 @@ async def fxc_composite():
     ):
         zocalo = i03.zocalo()
 
-    composite = FlyScanXRayCentreComposite(
-        attenuator=i03.attenuator(),
-        aperture_scatterguard=i03.aperture_scatterguard(),
-        backlight=i03.backlight(),
+    composite = HyperionFlyScanXRayCentreComposite(
+        attenuator=i03.attenuator(connect_immediately=True, mock=True),
+        aperture_scatterguard=i03.aperture_scatterguard(
+            connect_immediately=True, mock=True
+        ),
+        backlight=i03.backlight(mock=True),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
         zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        robot=i03.robot(fake_with_ophyd_sim=True),
-        panda=i03.panda(fake_with_ophyd_sim=True),
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        robot=i03.robot(connect_immediately=True, mock=True),
+        panda=i03.panda(connect_immediately=True, mock=True),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
         s4_slit_gaps=i03.s4_slit_gaps(),
         smargon=i03.smargon(),
         undulator=i03.undulator(),
-        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
-        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
+        synchrotron=i03.synchrotron(connect_immediately=True, mock=True),
+        xbpm_feedback=i03.xbpm_feedback(connect_immediately=True, mock=True),
         zebra=i03.zebra(),
         zocalo=zocalo,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore
@@ -113,7 +121,7 @@ async def fxc_composite():
 
 
 @pytest.mark.s03
-def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
+def test_s03_devices_connect(fxc_composite: HyperionFlyScanXRayCentreComposite):
     assert fxc_composite.aperture_scatterguard
     assert fxc_composite.backlight
 
@@ -121,14 +129,14 @@ def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
 @pytest.mark.s03
 def test_read_hardware_pre_collection(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
 ):
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
-        yield from read_hardware_pre_collection(
+        yield from standard_read_hardware_pre_collection(
             undulator=u, synchrotron=s, s4_slit_gaps=g, dcm=dcm, smargon=sm
         )
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             ap_sg, a, f, dcm, fxc_composite.eiger
         )
 
@@ -150,7 +158,7 @@ def test_read_hardware_pre_collection(
 @pytest.mark.s03
 async def test_xbpm_feedback_decorator(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
@@ -159,10 +167,10 @@ async def test_xbpm_feedback_decorator(
     # in S03
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        fxc_composite.xbpm_feedback,
-        fxc_composite.attenuator,
+        fxc_composite,
         params.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(fxc_composite)
     def decorated_plan():
         yield from bps.sleep(0.1)
 
@@ -188,7 +196,7 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
@@ -223,7 +231,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     params: HyperionSpecifiedThreeDGridScan,
     RE: RunEngine,
 ):
@@ -242,7 +250,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     zocalo_trigger: MagicMock,
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     fetch_comment: Callable,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks: tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
@@ -272,7 +280,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 @pytest.mark.s03
 async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks,
@@ -306,7 +314,7 @@ async def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
 @pytest.mark.s03
 async def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
+    fxc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_env: None,  # noqa
     params: HyperionSpecifiedThreeDGridScan,
     callbacks,
