@@ -742,11 +742,23 @@ def test_load_centre_collect_generate_rotation_snapshots(
     oav_parameters_for_rotation: OAVParameters,
     grid_detect_for_snapshot_generation: GridParamUpdate,
     patch_detect_grid_and_do_gridscan_with_detected_pin_position: MagicMock,
+    next_oav_system_test_image: MagicMock,
     RE: RunEngine,
     tmp_path: Path,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
+    next_fake_snapshot = iter(
+        [
+            # 1 extra for robot load
+            "tests/test_data/test_images/thau_1_91_0.png",
+            "tests/test_data/test_images/thau_1_91_0.png",
+            "tests/test_data/test_images/thau_1_91_1.png",
+        ]
+    )
+
+    next_oav_system_test_image.side_effect = lambda: next(next_fake_snapshot)
+
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
     load_centre_collect_params.robot_load_then_centre.snapshot_directory = (
         tmp_path / "grid_snapshots"
