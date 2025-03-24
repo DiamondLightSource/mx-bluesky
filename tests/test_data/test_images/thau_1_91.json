@@ -1,0 +1,8 @@
+{
+  "grid_start_pos": [-598.4, -215.3, 150.6],
+  "xtal_position_um": [-463,19,248],
+  "crystal_boxes": [7.25, 12.2, 5.38],
+  "crystal_size": [7,13,7],
+  "box_size_um": [20, 20]
+  
+}

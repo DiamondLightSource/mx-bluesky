@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -30,6 +31,9 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
+)
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    detect_grid_and_do_gridscan,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -62,6 +66,18 @@ from ...conftest import (
     compare_actual_and_expected,
     compare_comment,
 )
+
+
+SNAPSHOT_GENERATION_ZOCALO_RESULT = [
+    {
+        "centre_of_mass": [7.25, 12.2, 5.38],
+        "max_voxel": [7, 12, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
 
 
 @pytest.fixture
@@ -668,6 +684,35 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
         assert actual_bytes == expected_bytes, f"Expected image differed for {column}"
 
 
+@pytest.fixture
+def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+):
+    wrapped = detect_grid_and_do_gridscan
+
+    # Before we do the grid scan, pretend we detected the pin at this position and move to it
+    def wrapper(*args, **kwargs):
+        yield from bps.abs_set(
+            load_centre_collect_composite.smargon.x,
+            -0.5984,
+            load_centre_collect_composite.smargon.y,
+            00.2153,
+            load_centre_collect_composite.smargon.z,
+            0.1506,
+        )
+
+        yield from wrapped(*args, **kwargs)
+
+    with (
+        patch(
+            "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
+            new_callable=wrapper,
+        ) as patched_detect_grid,
+        (),
+    ):
+        yield patched_detect_grid
+
+
 @pytest.mark.system_test
 def test_load_centre_collect_generate_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
@@ -681,12 +726,15 @@ def test_load_centre_collect_generate_rotation_snapshots(
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
     load_centre_collect_params.multi_rotation_scan.use_grid_snapshots = True
     load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = [0, 90]
+    load_centre_collect_composite.zocalo.my_zocalo_result = (
+        SNAPSHOT_GENERATION_ZOCALO_RESULT
+    )
+
     ispyb_gridscan_cb = GridscanISPyBCallback(
         param_type=GridCommonWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
-
     RE.subscribe(ispyb_gridscan_cb)
     RE.subscribe(snapshot_callback)
     RE(
@@ -698,14 +746,19 @@ def test_load_centre_collect_generate_rotation_snapshots(
     )
 
     EXPECTED_SNAPSHOT_VALUES = {
-        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_with_beam_centre\\.png",
-        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_with_beam_centre\\.png",
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90\\.png",
     }
 
     rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
     rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
     compare_actual_and_expected(
         rotation_dc_ids[0],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
+    compare_actual_and_expected(
+        rotation_dc_ids[1],
         EXPECTED_SNAPSHOT_VALUES,
         fetch_datacollection_attribute,
     )
