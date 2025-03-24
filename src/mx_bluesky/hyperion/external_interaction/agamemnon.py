@@ -7,12 +7,17 @@ import requests
 from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
+from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    MxBlueskyParameters,
     WithSample,
     WithVisit,
 )
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.constants import (
+    GridscanParamConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -24,7 +29,7 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
-class AgamemnonLoadCentreCollect(WithVisit, WithSample):
+class AgamemnonLoadCentreCollect(MxBlueskyParameters, WithVisit, WithSample):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
@@ -123,7 +128,12 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
     return AgamemnonLoadCentreCollect(
-        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
+        parameter_model_version=SemanticVersion.validate_from_str(
+            str(PARAMETER_VERSION)
+        ),
+        visit=visit,
+        detector_distance_mm=detector_distance,
+        **with_sample_params,
     )
 
 

@@ -316,6 +316,7 @@ def test_populate_parameters_from_agamemnon(
     assert hyperion_params.sample_id == 12345
     assert hyperion_params.sample_puck == 40
     assert hyperion_params.sample_pin == 3
+    assert str(hyperion_params.parameter_model_version) == "5.3.0"
 
     compare_params(load_centre_collect_params)
     mock_logger.warning.assert_not_called()

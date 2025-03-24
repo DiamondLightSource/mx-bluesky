@@ -1,5 +1,7 @@
 from deepdiff.diff import DeepDiff
+from pydantic_extra_types.semantic_version import SemanticVersion
 
+from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     AGAMEMNON_URL,
     AgamemnonLoadCentreCollect,
@@ -15,6 +17,7 @@ EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(
     sample_id=12345,
     sample_puck=1,
     sample_pin=1,
+    parameter_model_version=SemanticVersion.validate_from_str(str(PARAMETER_VERSION)),
 )
 
 
