@@ -32,6 +32,7 @@ class TestZocaloHandler:
     def test_handler_doesnt_trigger_on_wrong_plan(self):
         zocalo_handler = self._setup_handler()
         zocalo_handler.start({"sybplan_name": "_not_test_plan_name"})  # type: ignore
+        assert len(zocalo_handler.zocalo_info) == 0
 
     @patch(
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
