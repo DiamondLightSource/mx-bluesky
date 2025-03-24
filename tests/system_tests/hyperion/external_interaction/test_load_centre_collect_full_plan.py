@@ -753,7 +753,7 @@ def test_load_centre_collect_generate_rotation_snapshots(
             # 1 extra for robot load
             "tests/test_data/test_images/thau_1_91_0.png",
             "tests/test_data/test_images/thau_1_91_0.png",
-            "tests/test_data/test_images/thau_1_91_1.png",
+            "tests/test_data/test_images/thau_1_91_90.png",
         ]
     )
 
