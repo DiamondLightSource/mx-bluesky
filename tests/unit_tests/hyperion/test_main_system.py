@@ -186,6 +186,7 @@ def check_status_in_response(response_object, expected_result: Status):
     )
 
 
+@pytest.mark.timeout(5)
 def test_start_gives_success(test_env: ClientAndRunEngine):
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
@@ -198,6 +199,7 @@ def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.IDLE)
 
 
+@pytest.mark.timeout(5)
 def test_getting_status_after_start_sent_returns_busy(
     test_env: ClientAndRunEngine,
 ):
@@ -228,12 +230,14 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
+@pytest.mark.timeout(5)
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.FAILED)
 
 
+@pytest.mark.timeout(5)
 def test_given_started_when_stopped_then_success_and_idle_status(
     test_env: ClientAndRunEngine,
 ):
@@ -250,6 +254,7 @@ def test_given_started_when_stopped_then_success_and_idle_status(
     check_status_in_response(response, Status.ABORTING)
 
 
+@pytest.mark.timeout(6)
 def test_given_started_when_stopped_and_started_again_then_runs(
     test_env: ClientAndRunEngine,
 ):
@@ -263,6 +268,7 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     test_env.mock_run_engine.RE_takes_time = False
 
 
+@pytest.mark.timeout(5)
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine,
 ):
@@ -278,6 +284,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
+@pytest.mark.timeout(5)
 @pytest.mark.parametrize(
     "endpoint, test_file",
     [
