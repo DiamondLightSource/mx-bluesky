@@ -13,7 +13,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callb
     PlanReactiveCallback,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK_LOGGER
 
 
@@ -100,14 +100,16 @@ class BeamDrawingCallback(PlanReactiveCallback):
 
     def _reset(self):
         self._base_snapshots = []
-        self._it_rotation_snapshots = None
 
     def activity_gated_start(self, doc: RunStart):
         if self.activity_uid == doc.get("uid"):
             self._reset()
-            self._use_grid_snapshots = WithSnapshot.model_validate_json(
-                doc.get("with_snapshot")
-            ).use_grid_snapshots
+            with_snapshot = WithSnapshot.model_validate_json(doc.get("with_snapshot"))
+            self._use_grid_snapshots = with_snapshot.use_grid_snapshots
+            CALLBACK_LOGGER.info(f"Snapshot callback initialised with {with_snapshot}")
+        elif doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
+            self._it_rotation_snapshots = None
+            CALLBACK_LOGGER.info("Snapshot callback start rotation")
         return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
@@ -162,6 +164,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 data["smargon-y"],
                 data["smargon-z"],
             )
+            CALLBACK_LOGGER.info(
+                f"Generating snapshot at {current_sample_pos_mm} from base snapshot {snapshot_info}"
+            )
             output_snapshot_path = data["oav-snapshot-last_saved_path"]
             self._generate_snapshot_at(
                 snapshot_info,
@@ -172,6 +177,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
             snapshot_info = self._extract_base_snapshot_params("snapshot", doc)
             output_snapshot_path = (
                 f"{snapshot_info.snapshot_basename}_with_beam_centre.png"
+            )
+            CALLBACK_LOGGER.info(
+                f"Annotating snapshot {output_snapshot_path} from base snapshot {snapshot_info}"
             )
             self._generate_snapshot_zero_offset(
                 snapshot_info,
