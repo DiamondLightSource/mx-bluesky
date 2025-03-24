@@ -629,8 +629,6 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         pmac.collection_time, total_collection_time, group="setup_pmac"
     )
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
-    _sig = yield from bps.rd(pmac.collection_time)
-    SSX_LOGGER.warning(f"This was set for collection time {_sig}")
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
