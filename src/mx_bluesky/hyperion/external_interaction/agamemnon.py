@@ -21,6 +21,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -32,7 +33,11 @@ MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(
 
 
 class AgamemnonLoadCentreCollect(
-    MxBlueskyParameters, WithVisit, WithSample, WithCentreSelection
+    MxBlueskyParameters,
+    WithVisit,
+    WithSample,
+    WithCentreSelection,
+    WithHyperionUDCFeatures,
 ):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
