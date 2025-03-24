@@ -19,6 +19,9 @@ from ophyd_async.testing import set_mock_value
 from PIL import Image
 
 from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
+    GridParamUpdate,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
@@ -713,11 +716,34 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
         yield patched_detect_grid
 
 
+@pytest.fixture
+def grid_detect_for_snapshot_generation():
+    fake_grid_params = GridParamUpdate(
+        x_start_um=-598.4,
+        y_start_um=-21.5,
+        y2_start_um=-21.5,
+        z_start_um=150.6,
+        z2_start_um=150.6,
+        x_steps=30,
+        y_steps=20,
+        z_steps=13,
+        x_step_size_um=20,
+        y_step_size_um=20,
+        z_step_size_um=20,
+    )
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback"
+    ) as gdc:
+        gdc.return_value.get_grid_parameters.return_value = fake_grid_params
+        yield fake_grid_params
+
+
 @pytest.mark.system_test
 def test_load_centre_collect_generate_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
+    grid_detect_for_snapshot_generation: GridParamUpdate,
     RE: RunEngine,
     tmp_path: Path,
     fetch_datacollection_attribute: Callable[..., Any],
