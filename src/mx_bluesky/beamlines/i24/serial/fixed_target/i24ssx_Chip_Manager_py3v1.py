@@ -99,7 +99,7 @@ def initialise_stages(
 
     caput(pv.pilat_cbftemplate, 0)
 
-    bps.sleep(0.1)
+    yield from bps.sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
         if i == 100:
@@ -258,7 +258,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         SSX_LOGGER.debug(f"Set {pvar_str} for block {block}")
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         # Wait for PMAC to be done processing PVAR string
-        bps.sleep(0.02)
+        yield from bps.sleep(0.02)
     SSX_LOGGER.debug("Upload parameters done.")
 
 
@@ -931,12 +931,12 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
             for entry in block_start_list:
                 if int(caget(pv.me14e_gp9)) != 0:
                     SSX_LOGGER.warning("Block Check Aborted")
-                    bps.sleep(1.0)
+                    yield from bps.sleep(1.0)
                     break
                 block, x, y = entry
                 SSX_LOGGER.debug(f"Block: {block} -> (x={x} y={y})")
                 yield from bps.abs_set(pmac.pmac_string, f"!x{x}y{y}", wait=True)
-                bps.sleep(0.4)
+                yield from bps.sleep(0.4)
         else:
             SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")
             break

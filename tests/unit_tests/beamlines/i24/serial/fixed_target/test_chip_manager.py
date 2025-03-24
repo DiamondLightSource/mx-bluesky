@@ -120,7 +120,9 @@ async def test_initialise(
     "fake_chip_map",
     [[10], [1, 2, 15, 16], list(range(33, 65))],  # 1 block, 1 corner, half chip
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.sleep"
+)
 def test_upload_chip_map_to_geobrick(
     fake_sleep: MagicMock, fake_chip_map: list[int], pmac: PMAC, RE
 ):
