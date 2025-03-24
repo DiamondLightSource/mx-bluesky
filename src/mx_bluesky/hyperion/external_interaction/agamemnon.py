@@ -12,6 +12,8 @@ from pydantic_extra_types.semantic_version import SemanticVersion
 from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
     MxBlueskyParameters,
+    TopNByMaxCountSelection,
+    WithCentreSelection,
     WithSample,
     WithVisit,
 )
@@ -29,7 +31,9 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
-class AgamemnonLoadCentreCollect(MxBlueskyParameters, WithVisit, WithSample):
+class AgamemnonLoadCentreCollect(
+    MxBlueskyParameters, WithVisit, WithSample, WithCentreSelection
+):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
@@ -127,12 +131,14 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
+    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
     return AgamemnonLoadCentreCollect(
         parameter_model_version=SemanticVersion.validate_from_str(
             str(PARAMETER_VERSION)
         ),
         visit=visit,
         detector_distance_mm=detector_distance,
+        select_centres=TopNByMaxCountSelection(n=pin_type.expected_number_of_crystals),
         **with_sample_params,
     )
 

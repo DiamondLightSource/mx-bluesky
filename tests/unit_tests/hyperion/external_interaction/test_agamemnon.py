@@ -298,12 +298,29 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     mock_logger.warning.assert_called_with(mock_log)
 
 
+@pytest.mark.parametrize(
+    "agamemnon_params",
+    ["example_collect.json", "example_collect_multipin.json"],
+)
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_populate_parameters_from_agamemnon(
+def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
+    agamemnon_params: str,
     load_centre_collect_params: LoadCentreCollect,
+):
+    with open(f"tests/test_data/agamemnon/{agamemnon_params}") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    compare_params(load_centre_collect_params)
+    mock_logger.warning.assert_not_called()
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_parameters_from_agamemnon_contains_expected_data(
+    mock_requests: MagicMock,
 ):
     with open("tests/test_data/agamemnon/example_collect.json") as json_file:
         example_json = json_file.read()
@@ -317,6 +334,17 @@ def test_populate_parameters_from_agamemnon(
     assert hyperion_params.sample_puck == 40
     assert hyperion_params.sample_pin == 3
     assert str(hyperion_params.parameter_model_version) == "5.3.0"
+    assert hyperion_params.select_centres.n == 1
 
-    compare_params(load_centre_collect_params)
-    mock_logger.warning.assert_not_called()
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_multipin_parameters_from_agamemnon(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    assert hyperion_params.select_centres.n == 6
