@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from datetime import datetime
 from unittest.mock import patch
 
@@ -50,7 +51,7 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
 
 
 @pytest.fixture(autouse=True)
-def fixed_datetime() -> str:
+def fixed_datetime() -> Generator[str, None, None]:
     with patch(
         "mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
     ) as mock_datetime:
@@ -183,9 +184,11 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is oav_snapshot_composite.oav.snapshot.last_saved_path
-            and expected_snapshot_path,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj is oav_snapshot_composite.oav.snapshot.last_saved_path
+                and bool(expected_snapshot_path)
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,

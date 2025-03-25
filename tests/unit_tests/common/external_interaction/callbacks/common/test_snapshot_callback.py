@@ -55,7 +55,7 @@ def oav_with_snapshots(oav: OAV, next_snapshot):
             await mjpg.post_processing(image)
 
     oav.snapshot.trigger = MagicMock(side_effect=partial(fake_trigger, oav.snapshot))
-    oav.grid_snapshot.trigger.side_effect = MagicMock(
+    oav.grid_snapshot.trigger = MagicMock(
         side_effect=partial(fake_trigger, oav.grid_snapshot)
     )
     yield oav
