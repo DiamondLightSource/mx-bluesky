@@ -105,7 +105,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         if self.activity_uid == doc.get("uid"):
             self._reset()
-            with_snapshot = WithSnapshot.model_validate_json(doc.get("with_snapshot"))
+            with_snapshot = WithSnapshot.model_validate_json(doc.get("with_snapshot"))  # type: ignore
             self._use_grid_snapshots = with_snapshot.use_grid_snapshots
             CALLBACK_LOGGER.info(f"Snapshot callback initialised with {with_snapshot}")
         elif doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
