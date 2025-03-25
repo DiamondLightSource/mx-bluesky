@@ -11,6 +11,7 @@ from dodal.devices.areadetector.plugins.MJPG import MJPG
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import AsyncStatus
+from ophyd_async.testing import set_mock_value
 from PIL import Image
 
 from mx_bluesky.common.parameters.components import WithSnapshot
@@ -40,12 +41,17 @@ def params_generate_from_grid_snapshots(params_take_snapshots):
 
 
 @pytest.fixture
-def oav_with_snapshots(oav: OAV):
+def next_snapshot():
+    return MagicMock(
+        return_value="tests/test_data/test_images/generate_snapshot_input.png"
+    )
+
+
+@pytest.fixture
+def oav_with_snapshots(oav: OAV, next_snapshot):
     @AsyncStatus.wrap
     async def fake_trigger(mjpg: MJPG):
-        with Image.open(
-            "tests/test_data/test_images/generate_snapshot_input.png"
-        ) as image:
+        with Image.open(next_snapshot()) as image:
             await mjpg.post_processing(image)
 
     oav.snapshot.trigger = MagicMock(side_effect=partial(fake_trigger, oav.snapshot))
@@ -97,6 +103,7 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         rotation_snapshot_dir = snapshot_directory / "rotation_snapshots"
         os.mkdir(grid_snapshot_dir)
         os.mkdir(rotation_snapshot_dir)
+        yield from bps.mv(smargon.x, -0.614, smargon.y, 0.0259, smargon.z, 0.250)
         for omega in (
             0,
             -90,
@@ -115,7 +122,7 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
             yield from bps.read(oav)  # Capture base image path
             yield from bps.read(smargon)  # Capture base image sample x, y, z, omega
             yield from bps.save()
-        yield from bps.mvr(smargon.x, 0.4, smargon.y, 0.25, smargon.z, 0.5)
+        yield from bps.mv(smargon.x, -0.4634, smargon.y, 0.0187, smargon.z, 0.2482)
         yield from bps.wait()
         for omega in (
             0,
@@ -133,51 +140,86 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
     yield from inner()
 
 
-def test_snapshot_callback_generate_snapshot_from_gridscan(
-    tmp_path: Path,
-    RE: RunEngine,
-    oav_with_snapshots: OAV,
-    smargon: Smargon,
-    params_generate_from_grid_snapshots: RotationScan,
-):
-    downstream_cb = Mock()
-    callback = BeamDrawingCallback(emit=downstream_cb)
-
-    RE.subscribe(callback)
-    RE(
-        simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
-            oav_with_snapshots, smargon, tmp_path, params_generate_from_grid_snapshots
+class TestGeneratedSnapshots:
+    @pytest.fixture
+    def next_snapshot(self):
+        return MagicMock(
+            side_effect=[
+                "tests/test_data/test_images/thau_1_91_0.png",
+                "tests/test_data/test_images/thau_1_91_90.png",
+            ]
         )
-    )
 
-    downstream_calls = downstream_cb.mock_calls
-    event_names_to_descriptors = {
-        c.args[1]["name"]: c.args[1]["uid"]
-        for c in downstream_calls
-        if c.args[0] == "descriptor"
-    }
-    rotation_snapshot_events = [
-        c.args[1]["data"]
-        for c in downstream_calls
-        if c.args[0] == "event"
-        and c.args[1]["descriptor"]
-        == event_names_to_descriptors[
-            DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+    @pytest.fixture()
+    def test_config_files(self):
+        return {
+            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
+            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
+            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
+        }
+
+    @pytest.fixture()
+    def snapshot_oav_with_1x_zoom(self, oav_with_snapshots):
+        set_mock_value(oav_with_snapshots.zoom_controller.level, "1.0x")
+        return oav_with_snapshots
+
+    def test_snapshot_callback_generate_snapshot_from_gridscan(
+        self,
+        tmp_path: Path,
+        RE: RunEngine,
+        snapshot_oav_with_1x_zoom: OAV,
+        smargon: Smargon,
+        params_generate_from_grid_snapshots: RotationScan,
+    ):
+        downstream_cb = Mock()
+        callback = BeamDrawingCallback(emit=downstream_cb)
+
+        RE.subscribe(callback)
+        RE(
+            simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
+                snapshot_oav_with_1x_zoom,
+                smargon,
+                tmp_path,
+                params_generate_from_grid_snapshots,
+            )
+        )
+
+        downstream_calls = downstream_cb.mock_calls
+        event_names_to_descriptors = {
+            c.args[1]["name"]: c.args[1]["uid"]
+            for c in downstream_calls
+            if c.args[0] == "descriptor"
+        }
+        rotation_snapshot_events = [
+            c.args[1]["data"]
+            for c in downstream_calls
+            if c.args[0] == "event"
+            and c.args[1]["descriptor"]
+            == event_names_to_descriptors[
+                DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+            ]
         ]
-    ]
 
-    for i, omega in {0: 0, 1: 270}.items():
-        generated_image_path = str(
-            tmp_path / f"rotation_snapshots/my_snapshot_prefix_{omega}.png"
-        )
-        assert_images_pixelwise_equal(
-            generated_image_path,
-            "tests/test_data/test_images/generate_snapshot_output.png",
-        )
-        assert (
-            rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
-            == generated_image_path
-        )
+        for i, omega, expected_image_path in zip(
+            [0, 1],
+            [0, 270],
+            [
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
+                "tests/test_data/test_images/thau_1_91_expected_270.png",
+            ],
+            strict=False,
+        ):
+            generated_image_path = str(
+                tmp_path / f"rotation_snapshots/my_snapshot_prefix_{omega}.png"
+            )
+            assert_images_pixelwise_equal(
+                generated_image_path,
+                expected_image_path,
+            )
+            assert (
+                rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
+                == generated_image_path
+            )
 
 
 def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(

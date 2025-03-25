@@ -739,7 +739,7 @@ class TestGenerateSnapshot:
     def test_config_files(self):
         return {
             "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-            "oav_config_json": "tests/test_data/test_OAVCentring.json",
+            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
             "display_config": "tests/test_data/test_daq_configuration/display.configuration",
         }
 
