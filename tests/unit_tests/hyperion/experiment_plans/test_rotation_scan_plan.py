@@ -718,6 +718,7 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
         )
 
 
+@pytest.mark.timeout(2)
 @pytest.mark.parametrize(
     "omega_flip, rotation_direction, expected_start_angle, "
     "expected_start_angle_with_runup, expected_zebra_direction",

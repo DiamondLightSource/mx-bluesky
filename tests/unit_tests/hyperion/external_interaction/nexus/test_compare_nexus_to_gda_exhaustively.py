@@ -187,6 +187,7 @@ def mockitem(name, item):
     return m
 
 
+@pytest.mark.timeout(2)
 def test_determine_datatype_differences(
     files_and_groups: FilesAndgroups,
 ):
@@ -235,6 +236,7 @@ def test_determine_datatype_differences(
     print(diffs)
 
 
+@pytest.mark.timeout(2)
 def test_hyperion_vs_gda_datatypes(
     files_and_groups: FilesAndgroups,
 ):

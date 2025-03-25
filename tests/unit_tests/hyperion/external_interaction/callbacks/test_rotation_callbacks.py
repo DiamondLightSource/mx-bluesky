@@ -171,6 +171,7 @@ def test_ispyb_triggered_before_zocalo(
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
@@ -201,6 +202,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
+@pytest.mark.timeout(5)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
