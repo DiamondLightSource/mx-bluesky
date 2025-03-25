@@ -1,5 +1,6 @@
 import json
 from math import isclose
+from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -250,26 +251,6 @@ def test_no_prefix_raises_exception():
     assert "Unexpected json from agamemnon" in str(e.value)
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch(
-    "mx_bluesky.hyperion.external_interaction.agamemnon.get_withvisit_parameters_from_agamemnon"
-)
-def test_hyperion_populated_parameters_are_compared_to_gda_populated_parameters(
-    mock_get_withvisit,
-    mock_logger,
-    mock_requests: MagicMock,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    configure_mock_agamemnon(mock_requests, None)
-    mock_get_withvisit.side_effect = [("test_visit", 200)]
-    compare_params(
-        load_centre_collect_params,
-    )
-
-    mock_logger.info.assert_called()
-
-
 @pytest.mark.parametrize(
     "mock_error, mock_log",
     [
@@ -335,6 +316,33 @@ def test_populate_parameters_from_agamemnon_contains_expected_data(
     assert hyperion_params.sample_pin == 3
     assert str(hyperion_params.parameter_model_version) == "5.3.0"
     assert hyperion_params.select_centres.n == 1
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    robot_load_params = hyperion_params.robot_load_then_centre
+    assert robot_load_params.visit == "cm00000-0"
+    assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
+    assert robot_load_params.sample_id == 12345
+    assert robot_load_params.sample_puck == 40
+    assert robot_load_params.sample_pin == 3
+    assert str(robot_load_params.parameter_model_version) == "5.3.0"
+    assert (
+        robot_load_params.storage_directory
+        == "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring"
+    )
+    assert robot_load_params.file_name == "test_xtal"
+    assert robot_load_params.snapshot_directory == PosixPath(
+        "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+    )
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
