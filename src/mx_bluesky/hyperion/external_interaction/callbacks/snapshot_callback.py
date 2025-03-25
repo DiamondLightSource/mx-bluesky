@@ -22,11 +22,11 @@ class BeamDrawingCallback(PlanReactiveCallback):
     Examples:
         Take a snapshot at the current location
     >>> from bluesky.run_engine import RunEngine
-    ... import bluesky.preprocessors as bpp
-    ... import bluesky.plan_stubs as bps
-    ... from dodal.devices.oav.oav_detector import OAV
-    ... from mx_bluesky.common.parameters.components import WithSnapshot
-    ... def take_snapshot(params: WithSnapshot, oav: OAV, run_engine: RunEngine):
+    >>> import bluesky.preprocessors as bpp
+    >>> import bluesky.plan_stubs as bps
+    >>> from dodal.devices.oav.oav_detector import OAV
+    >>> from mx_bluesky.common.parameters.components import WithSnapshot
+    >>> def take_snapshot(params: WithSnapshot, oav: OAV, run_engine: RunEngine):
     ...     run_engine.subscribe(BeamDrawingCallback())
     ...     @bpp.run_decorator(md={
     ...     "activate_callbacks": ["BeamDrawingCallback"],
