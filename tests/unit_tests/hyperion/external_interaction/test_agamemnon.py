@@ -285,6 +285,7 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
 )
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
@@ -300,6 +301,7 @@ def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_g
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_contains_expected_data(
     mock_requests: MagicMock,
 ):
@@ -319,6 +321,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_data(
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
     mock_requests: MagicMock,
 ):
@@ -346,6 +349,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 def test_populate_multipin_parameters_from_agamemnon(
     mock_requests: MagicMock,
 ):
