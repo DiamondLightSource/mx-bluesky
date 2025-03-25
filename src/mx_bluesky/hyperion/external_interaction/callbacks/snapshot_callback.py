@@ -1,9 +1,10 @@
 import dataclasses
 import re
 from collections.abc import Iterator
+from math import cos, sin
 
 from dodal.devices.oav.snapshots.snapshot_image_processing import (
-    compute_beam_centre_pixel_xy_for_mm_position,
+    compute_beam_centre_pixel_xy_for_mm_2d_position,
     draw_crosshair,
 )
 from event_model import Event, EventDescriptor, RunStart
@@ -194,18 +195,19 @@ class BeamDrawingCallback(PlanReactiveCallback):
         current_sample_pos_mm: tuple[float, float, float],
     ) -> tuple[float, float]:
         assert snapshot_info.omega in (0, -90), "Unexpected base snapshot angle"
-        return (
+        return self._project_xyz_to_xy(
             (
-                -(current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
-                -(current_sample_pos_mm[1] - snapshot_info.sample_pos_mm[1]),
-            )
-            if snapshot_info.omega == 0
-            else (
-                -(current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
-                # Y-coordinate is NOT y-flipped because omega is -90 not +90
-                current_sample_pos_mm[2] - snapshot_info.sample_pos_mm[2],
-            )
+                (current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
+                (current_sample_pos_mm[1] - snapshot_info.sample_pos_mm[1]),
+                (current_sample_pos_mm[2] - snapshot_info.sample_pos_mm[2]),
+            ),
+            snapshot_info.omega,
         )
+
+    def _project_xyz_to_xy(
+        self, xyz: tuple[float, float, float], omega_deg: float
+    ) -> tuple[float, float]:
+        return (xyz[0], xyz[1] * cos(omega_deg) + xyz[2] * sin(omega_deg))
 
     def _generate_snapshot_zero_offset(
         self,
@@ -232,7 +234,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
             image_plane_dy_mm: Relative y location of the sample to the original image in the image plane (mm)
         """
         image = Image.open(base_snapshot_info.snapshot_path)
-        x_px, y_px = compute_beam_centre_pixel_xy_for_mm_position(
+        x_px, y_px = compute_beam_centre_pixel_xy_for_mm_2d_position(
             (image_plane_dx_mm, image_plane_dy_mm),
             base_snapshot_info.beam_centre,
             base_snapshot_info.microns_per_pixel,

@@ -147,15 +147,6 @@ def next_oav_system_test_image():
     )
 
 
-@pytest.fixture()
-def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_daq_configuration/display.configuration",
-    }
-
-
 @pytest.fixture
 def oav_for_system_test(test_config_files, next_oav_system_test_image):
     parameters = OAVConfig(

@@ -21,7 +21,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from ......conftest import raw_params_from_file
+from ......conftest import assert_images_pixelwise_equal, raw_params_from_file
 
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
             "with_snapshot": WithSnapshot.model_validate(
                 {
                     "snapshot_directory": snapshot_directory,
-                    "snapshot_omegas_deg": [0, 90],
+                    "snapshot_omegas_deg": [0, 270],
                     "use_grid_snapshots": True,
                 }
             ).model_dump_json(),
@@ -99,7 +99,7 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         os.mkdir(rotation_snapshot_dir)
         for omega in (
             0,
-            90,
+            -90,
         ):
             yield from bps.abs_set(smargon.omega, omega, wait=True)
             yield from bps.abs_set(
@@ -119,7 +119,7 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         yield from bps.wait()
         for omega in (
             0,
-            90,
+            270,
         ):
             yield from bps.abs_set(
                 oav.snapshot.last_saved_path,
@@ -166,18 +166,18 @@ def test_snapshot_callback_generate_snapshot_from_gridscan(
         ]
     ]
 
-    with Image.open("tests/test_data/test_images/generate_snapshot_output.png"):
-        for i, omega in {0: 0, 1: 90}.items():
-            generated_image_path = str(
-                tmp_path / f"rotation_snapshots/my_snapshot_prefix_{omega}.png"
-            )
-            with Image.open(generated_image_path):
-                pass
-
-            assert (
-                rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
-                == generated_image_path
-            )
+    for i, omega in {0: 0, 1: 270}.items():
+        generated_image_path = str(
+            tmp_path / f"rotation_snapshots/my_snapshot_prefix_{omega}.png"
+        )
+        assert_images_pixelwise_equal(
+            generated_image_path,
+            "tests/test_data/test_images/generate_snapshot_output.png",
+        )
+        assert (
+            rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
+            == generated_image_path
+        )
 
 
 def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
@@ -193,23 +193,17 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
     RE.subscribe(callback)
     RE(simple_rotation_snapshot_plan(oav, tmp_path, params_take_snapshots))
 
-    with Image.open(
-        "tests/test_data/test_images/generate_snapshot_output.png"
-    ) as expected_image:
-        expected_bytes = expected_image.tobytes()
-        generated_image_path = str(tmp_path / "test_filename_with_beam_centre.png")
-        with Image.open(generated_image_path) as generated_image:
-            generated_bytes = generated_image.tobytes()
-            assert generated_bytes == expected_bytes, (
-                "Actual and expected images differ"
-            )
+    generated_image_path = str(tmp_path / "test_filename_with_beam_centre.png")
+    assert_images_pixelwise_equal(
+        generated_image_path, "tests/test_data/test_images/generate_snapshot_output.png"
+    )
 
-            downstream_calls = downstream_cb.mock_calls
-            assert downstream_calls[0].args[0] == "start"
-            assert downstream_calls[1].args[0] == "descriptor"
-            assert downstream_calls[2].args[0] == "event"
-            assert (
-                downstream_calls[2].args[1]["data"]["oav-snapshot-last_saved_path"]
-                == generated_image_path
-            )
-            assert downstream_calls[3].args[0] == "stop"
+    downstream_calls = downstream_cb.mock_calls
+    assert downstream_calls[0].args[0] == "start"
+    assert downstream_calls[1].args[0] == "descriptor"
+    assert downstream_calls[2].args[0] == "event"
+    assert (
+        downstream_calls[2].args[1]["data"]["oav-snapshot-last_saved_path"]
+        == generated_image_path
+    )
+    assert downstream_calls[3].args[0] == "stop"
