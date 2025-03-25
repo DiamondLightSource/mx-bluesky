@@ -63,7 +63,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
         WithSnapshot.snapshot_omegas_deg is ignored and snapshots are generated for the previously captured
         0, 90 base images named "my_snapshot_prefix_0" and "my_snapshot_prefix_90"
     >>> from dodal.devices.smargon import Smargon
-    ... def take_snapshot(params: WithSnapshot, oav: OAV, smargon: Smargon, run_engine: RunEngine):
+    >>> def take_snapshot(params: WithSnapshot, oav: OAV, smargon: Smargon, run_engine: RunEngine):
     ...     run_engine.subscribe(BeamDrawingCallback())
     ...     @bpp.run_decorator(md={
     ...     "activate_callbacks": ["BeamDrawingCallback"],
@@ -88,7 +88,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
     ...             yield from bps.read(oav)            # Capture path info for generated snapshot
     ...             yield from bps.read(smargon)        # Capture the current sample x, y, z
     ...             yield from bps.save()
-    ... yield from take_snapshot(WithSnapshot(use_grid_snapshots=True), oav, smargon, run_engine)
+    >>> yield from take_snapshot(WithSnapshot(use_grid_snapshots=True), oav, smargon, run_engine)
     """
 
     def __init__(self, *args, **kwargs):
