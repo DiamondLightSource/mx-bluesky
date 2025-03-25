@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from math import cos, sin
 
 from dodal.devices.oav.snapshots.snapshot_image_processing import (
-    compute_beam_centre_pixel_xy_for_mm_2d_position,
+    compute_beam_centre_pixel_xy_for_mm_position,
     draw_crosshair,
 )
 from event_model import Event, EventDescriptor, RunStart
@@ -234,7 +234,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
             image_plane_dy_mm: Relative y location of the sample to the original image in the image plane (mm)
         """
         image = Image.open(base_snapshot_info.snapshot_path)
-        x_px, y_px = compute_beam_centre_pixel_xy_for_mm_2d_position(
+        x_px, y_px = compute_beam_centre_pixel_xy_for_mm_position(
             (image_plane_dx_mm, image_plane_dy_mm),
             base_snapshot_info.beam_centre,
             base_snapshot_info.microns_per_pixel,
