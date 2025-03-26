@@ -30,7 +30,6 @@ class DocDescriptorNames:
 @dataclass(frozen=True)
 class OavConstants:
     OAV_CONFIG_JSON = (
-        # "tests/test_data/test_OAVCentring.json"
         "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json"
         if TEST_MODE
         else (
