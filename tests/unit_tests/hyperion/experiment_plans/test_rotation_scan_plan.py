@@ -615,17 +615,60 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
 
 def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     rotation_scan_simulated_messages,
+    test_rotation_params,
+    fake_create_rotation_devices,
+    oav_parameters_for_rotation,
 ):
+    composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
+        lambda msg: (
+            msg.command == "open_run"
+            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "eiger_do_arm"
         and msg.args[0] == 1
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj is composite.oav.snapshot.directory
+        and msg.args[0] == str(test_rotation_params.snapshot_directory),
     )
+    for omega in test_rotation_params.snapshot_omegas_deg:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj is composite.smargon.omega
+            and msg.args[0] == omega,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj is composite.oav.snapshot.filename
+            and f"_oav_snapshot_{omega:.0f}" in msg.args[0],
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "create"
+            and msg.kwargs["name"]
+            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "read" and msg.obj is composite.oav
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "save"
+        )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"

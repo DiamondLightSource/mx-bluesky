@@ -30,6 +30,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -382,7 +383,11 @@ def rotation_scan(
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "mx_bluesky_parameters": parameters.model_dump_json(),
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
             "activate_callbacks": [
+                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],
