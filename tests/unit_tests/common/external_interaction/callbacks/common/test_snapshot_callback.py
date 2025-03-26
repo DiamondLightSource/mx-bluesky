@@ -1,4 +1,5 @@
 import os
+from collections.abc import Sequence
 from functools import partial
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
@@ -83,8 +84,32 @@ def simple_rotation_snapshot_plan(
 
 
 def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
-    oav: OAV, smargon: Smargon, snapshot_directory: Path, params: WithSnapshot
+    oav: OAV,
+    smargon: Smargon,
+    snapshot_directory: Path,
+    params: WithSnapshot,
+    chis: Sequence[int] = [0],
 ):
+    @set_run_key_decorator(CONST.PLAN.ROTATION_MAIN)
+    @run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.ROTATION_MAIN,
+        }
+    )
+    def rotation_plan(rotation_snapshot_dir: Path, chi: float):
+        for omega in (
+            0,
+            270,
+        ):
+            yield from bps.abs_set(
+                oav.snapshot.last_saved_path,
+                str(rotation_snapshot_dir / f"my_snapshot_prefix_{chi}_{omega}.png"),
+            )
+            yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
+            yield from bps.read(oav)  # Capture path info for generated snapshot
+            yield from bps.read(smargon)  # Capture the current sample x, y, z
+            yield from bps.save()
+
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
         md={
@@ -124,18 +149,8 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
             yield from bps.save()
         yield from bps.mv(smargon.x, -0.4634, smargon.y, 0.0187, smargon.z, 0.2482)
         yield from bps.wait()
-        for omega in (
-            0,
-            270,
-        ):
-            yield from bps.abs_set(
-                oav.snapshot.last_saved_path,
-                str(rotation_snapshot_dir / f"my_snapshot_prefix_{omega}.png"),
-            )
-            yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-            yield from bps.read(oav)  # Capture path info for generated snapshot
-            yield from bps.read(smargon)  # Capture the current sample x, y, z
-            yield from bps.save()
+        for chi in chis:
+            yield from rotation_plan(rotation_snapshot_dir, chi)
 
     yield from inner()
 
@@ -163,6 +178,7 @@ class TestGeneratedSnapshots:
         set_mock_value(oav_with_snapshots.zoom_controller.level, "1.0x")
         return oav_with_snapshots
 
+    @pytest.mark.parametrize("chis", [[0], [0, 30]])
     def test_snapshot_callback_generate_snapshot_from_gridscan(
         self,
         tmp_path: Path,
@@ -170,6 +186,7 @@ class TestGeneratedSnapshots:
         snapshot_oav_with_1x_zoom: OAV,
         smargon: Smargon,
         params_generate_from_grid_snapshots: RotationScan,
+        chis: Sequence[int],
     ):
         downstream_cb = Mock()
         callback = BeamDrawingCallback(emit=downstream_cb)
@@ -181,12 +198,13 @@ class TestGeneratedSnapshots:
                 smargon,
                 tmp_path,
                 params_generate_from_grid_snapshots,
+                chis,
             )
         )
 
         downstream_calls = downstream_cb.mock_calls
-        event_names_to_descriptors = {
-            c.args[1]["name"]: c.args[1]["uid"]
+        descriptors_to_event_names = {
+            c.args[1]["uid"]: c.args[1]["name"]
             for c in downstream_calls
             if c.args[0] == "descriptor"
         }
@@ -194,32 +212,33 @@ class TestGeneratedSnapshots:
             c.args[1]["data"]
             for c in downstream_calls
             if c.args[0] == "event"
-            and c.args[1]["descriptor"]
-            == event_names_to_descriptors[
-                DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
-            ]
+            and descriptors_to_event_names.get(c.args[1]["descriptor"])
+            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
         ]
 
-        for i, omega, expected_image_path in zip(
-            [0, 1],
-            [0, 270],
-            [
-                "tests/test_data/test_images/thau_1_91_expected_0.png",
-                "tests/test_data/test_images/thau_1_91_expected_270.png",
-            ],
-            strict=False,
-        ):
-            generated_image_path = str(
-                tmp_path / f"rotation_snapshots/my_snapshot_prefix_{omega}.png"
-            )
-            assert_images_pixelwise_equal(
-                generated_image_path,
-                expected_image_path,
-            )
-            assert (
-                rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
-                == generated_image_path
-            )
+        i = 0
+        for chi in chis:
+            for omega, expected_image_path in zip(
+                [0, 270],
+                [
+                    "tests/test_data/test_images/thau_1_91_expected_0.png",
+                    "tests/test_data/test_images/thau_1_91_expected_270.png",
+                ],
+                strict=False,
+            ):
+                generated_image_path = str(
+                    tmp_path
+                    / f"rotation_snapshots/my_snapshot_prefix_{chi}_{omega}.png"
+                )
+                assert_images_pixelwise_equal(
+                    generated_image_path,
+                    expected_image_path,
+                )
+                assert (
+                    rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
+                    == generated_image_path
+                )
+                i += 1
 
 
 def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(

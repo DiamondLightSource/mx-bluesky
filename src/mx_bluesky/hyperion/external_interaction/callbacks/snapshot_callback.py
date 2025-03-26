@@ -95,7 +95,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
         self._base_snapshots: list[_SnapshotInfo] = []
         self._rotation_snapshot_descriptor: str = ""
         self._grid_snapshot_descriptor: str = ""
-        self._it_rotation_snapshots: Iterator | None = None
+        self._next_snapshot_info: Iterator | None = None
         self._use_grid_snapshots: bool = False
 
     def _reset(self):
@@ -108,7 +108,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
             self._use_grid_snapshots = with_snapshot.use_grid_snapshots
             CALLBACK_LOGGER.info(f"Snapshot callback initialised with {with_snapshot}")
         elif doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
-            self._it_rotation_snapshots = None
+            self._next_snapshot_info = None
             CALLBACK_LOGGER.info("Snapshot callback start rotation")
         return doc
 
@@ -153,9 +153,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
     def _handle_rotation_snapshot(self, doc: Event) -> Event:
         data = doc["data"]
         if self._use_grid_snapshots:
-            if not self._it_rotation_snapshots:
-                self._it_rotation_snapshots = iter(self._base_snapshots)
-            snapshot_info = next(self._it_rotation_snapshots, None)
+            if not self._next_snapshot_info:
+                self._next_snapshot_info = iter(self._base_snapshots)
+            snapshot_info = next(self._next_snapshot_info, None)
             assert snapshot_info, (
                 "Insufficient base gridscan snapshots to generate required rotation snapshots"
             )
