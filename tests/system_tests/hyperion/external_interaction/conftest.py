@@ -57,8 +57,8 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ....conftest import (
-    SimConstants,
     TEST_RESULT_MEDIUM,
+    SimConstants,
     fake_read,
     pin_tip_edge_data,
     raw_params_from_file,

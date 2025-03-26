@@ -49,12 +49,12 @@ from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetect
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 from ....conftest import (
-    SimConstants,
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_OUT_OF_BOUNDS_BB,
     TEST_RESULT_OUT_OF_BOUNDS_COM,
+    SimConstants,
     raw_params_from_file,
 )
 from ...conftest import (
