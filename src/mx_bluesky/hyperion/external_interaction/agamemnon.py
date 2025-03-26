@@ -127,13 +127,16 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     )
 
 
+def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect:
+    beamline_name = get_beamline_name("i03")
+    agamemnon_params = get_next_instruction(beamline_name)
+
+    return populate_parameters_from_agamemnon(agamemnon_params)
+
+
 def compare_params(load_centre_collect_params):
     try:
-        beamline_name = get_beamline_name("i03")
-        agamemnon_params = get_next_instruction(beamline_name)
-
-        # Populate parameters from Agamemnon
-        parameters = populate_parameters_from_agamemnon(agamemnon_params)
+        parameters = create_parameters_from_agamemnon()
 
         # Log differences against GDA populated parameters
         differences = DeepDiff(
