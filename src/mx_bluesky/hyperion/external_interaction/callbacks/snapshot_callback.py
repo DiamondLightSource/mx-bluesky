@@ -88,7 +88,6 @@ class BeamDrawingCallback(PlanReactiveCallback):
     ...             yield from bps.read(oav)            # Capture path info for generated snapshot
     ...             yield from bps.read(smargon)        # Capture the current sample x, y, z
     ...             yield from bps.save()
-    >>> yield from take_snapshot(WithSnapshot(use_grid_snapshots=True), oav, smargon, run_engine)
     """
 
     def __init__(self, *args, **kwargs):
