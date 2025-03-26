@@ -71,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright",
+    "pyright<1.1.398",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
@@ -155,7 +155,7 @@ filterwarnings = [
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
     # https://github.com/bluesky/ophyd-async/issues/838
-    "ignore:Accessing this attribute on the instance is deprecated"
+    "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
