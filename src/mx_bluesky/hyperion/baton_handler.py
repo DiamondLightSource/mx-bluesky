@@ -50,6 +50,7 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
 
 
 def move_to_default_state():
+    # To be filled in in https://github.com/DiamondLightSource/mx-bluesky/issues/396
     yield from bps.null()
 
 
