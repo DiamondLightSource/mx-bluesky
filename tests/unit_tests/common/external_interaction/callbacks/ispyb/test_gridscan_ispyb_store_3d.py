@@ -659,9 +659,7 @@ def test_fail_result_run_results_in_bad_run_status(
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
-    ispyb_ids = dummy_ispyb.update_deposition(
-        ispyb_ids, scan_data_infos_for_update
-    )
+    ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "test specifies failure")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
@@ -687,9 +685,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
-    ispyb_ids = dummy_ispyb.update_deposition(
-        ispyb_ids, scan_data_infos_for_update
-    )
+    ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "success", "")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
@@ -702,7 +698,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 
 def test_update_data_collection_no_comment(
     mock_ispyb_conn: MagicMock,
-    dummy_3d_gridscan_ispyb: StoreInIspyb,
+    dummy_ispyb: StoreInIspyb,
     dummy_collection_group_info: DataCollectionGroupInfo,
     scan_data_infos_for_begin: list[ScanDataInfo],
     scan_data_infos_for_update: list[ScanDataInfo],
@@ -710,10 +706,10 @@ def test_update_data_collection_no_comment(
     for scan_data_info in scan_data_infos_for_update:
         scan_data_info.data_collection_info.comments = None
 
-    ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
+    ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
-    dummy_3d_gridscan_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
+    dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
 
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.update_data_collection_append_comments.assert_not_called()
