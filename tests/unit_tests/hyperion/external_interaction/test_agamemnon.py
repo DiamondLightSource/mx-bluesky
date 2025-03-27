@@ -35,12 +35,13 @@ def test_given_various_pin_formats_then_pin_width_as_expected(
 
 
 def set_up_agamemnon_params(
-    loop_type: str | None,
-    prefix: str | None,
-    distance: int | None,
+    loop_type: str | None = None,
+    prefix: str | None = None,
+    distance: int | None = None,
+    wavelength: float | None = None,
 ):
     return {
-        "collection": [{"distance": distance}],
+        "collection": [{"distance": distance, "wavelength": wavelength}],
         "prefix": prefix,
         "sample": {"loopType": loop_type, "id": 1, "position": 1, "container": 1},
     }
@@ -48,10 +49,7 @@ def set_up_agamemnon_params(
 
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(None, None, None)
-        )
-        == SinglePin()
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params()) == SinglePin()
     )
 
 
@@ -67,9 +65,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     loop_name: str, expected_loop: PinType
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
         == expected_loop
     )
 
@@ -87,9 +83,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     loop_name: str,
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
         == SinglePin()
     )
     mock_logger.warning.assert_called_once()
@@ -116,15 +110,13 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(ValueError) as e:
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
     assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
     mock_requests.get.return_value.content = json.dumps(
-        {"collect": set_up_agamemnon_params(loop_type, "", 255)}
+        {"collect": set_up_agamemnon_params(loop_type, "", 255, 0.9)}
     )
 
 
