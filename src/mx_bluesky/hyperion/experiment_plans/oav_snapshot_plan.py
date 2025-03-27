@@ -67,7 +67,7 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
         composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
     )
     time_now = datetime.now()
-    filename = f"{time_now.strftime('%H%M%S')}_oav_snapshot_{omega:.0f}"
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{omega:.0f}"
     yield from bps.abs_set(
         composite.oav.snapshot.filename,
         filename,
@@ -76,5 +76,5 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
     yield from bps.trigger(composite.oav.snapshot, wait=True)
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-    yield from bps.read(composite.oav.snapshot)
+    yield from bps.read(composite.oav)
     yield from bps.save()
