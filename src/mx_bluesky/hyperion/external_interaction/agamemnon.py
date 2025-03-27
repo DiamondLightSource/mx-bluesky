@@ -123,8 +123,9 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
 
 def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
     try:
-        angstrom: dict = parameters["collection"][0]
-        wavelength: float = angstrom.get("wavelength")
+        first_collection: dict = parameters["collection"][0]
+        wavelength = first_collection.get("wavelength")
+        assert isinstance(wavelength, float)
         demand_energy_ev = convert_angstrom_to_eV(wavelength)
         return {"demand_energy_ev": demand_energy_ev}
     except (KeyError, IndexError, AttributeError, TypeError):
