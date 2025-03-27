@@ -9,6 +9,9 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.smargon import Smargon
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 
@@ -64,7 +67,7 @@ def callbacks(params):
 
 
 def reset_positions(smargon: Smargon):
-    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
 
 
 @pytest.fixture
@@ -167,6 +170,7 @@ async def test_xbpm_feedback_decorator(
         fxc_composite,
         params.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(fxc_composite)
     def decorated_plan():
         yield from bps.sleep(0.1)
 

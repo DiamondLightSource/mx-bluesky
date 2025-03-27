@@ -45,8 +45,8 @@ dependencies = [
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.9.0a2",
-    "bluesky == 1.13",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@b119d38c70c67925a998f9bcfc09689db9043eaf",
+    "bluesky >= 1.13.1",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@08b603354b178a3bc54aed2e5ad89de4e5fc05be",
 ]
 
 
@@ -71,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright",
+    "pyright<1.1.398",           # Remove pin when https://github.com/DiamondLightSource/mx-bluesky/issues/951 fixed
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
@@ -130,6 +130,8 @@ filterwarnings = [
     "error",
     # Ignore deprecation warning from sqlalchemy
     "ignore::sqlalchemy.exc.MovedIn20Warning",
+    # Remove when there's a fix for https://github.com/DiamondLightSource/ispyb-api/issues/233
+    "ignore::sqlalchemy.exc.SADeprecationWarning",
     # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
     "ignore::DeprecationWarning:wheel",
     # Ophyd status objects in tests
@@ -152,6 +154,8 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    # https://github.com/bluesky/ophyd-async/issues/838
+    "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -197,15 +201,16 @@ commands_pre =
 src = ["src", "tests"]
 line-length = 88
 lint.select = [
-    "B",     # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",    # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",     # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",     # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",     # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",     # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",    # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "SLF",   # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
-    "PT012", # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
+    "B",      # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",     # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",      # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",      # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",      # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",      # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",     # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF",    # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
+    "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -215,7 +220,7 @@ lint.extend-ignore = [
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "B023"]
+"tests/**/*" = ["SLF001", "B023", "RUF018"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

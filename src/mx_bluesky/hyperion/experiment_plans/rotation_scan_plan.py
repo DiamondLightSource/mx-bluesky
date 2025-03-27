@@ -26,7 +26,11 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -373,12 +377,17 @@ def rotation_scan(
         composite,
         parameters.transmission_frac,
     )
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "mx_bluesky_parameters": parameters.model_dump_json(),
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
             "activate_callbacks": [
+                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],
@@ -403,7 +412,7 @@ def rotation_scan(
             rotation_with_cleanup_and_stage(params),
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
-        yield from bps.unstage(eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.unstage(eiger)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
 
@@ -419,6 +428,10 @@ def multi_rotation_scan(
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
     @bpp.set_run_key_decorator("multi_rotation_scan")
     @bpp.run_decorator(
         md={
@@ -435,10 +448,7 @@ def multi_rotation_scan(
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
-            @transmission_and_xbpm_feedback_for_collection_decorator(
-                composite,
-                parameters.transmission_frac,
-            )
+            @verify_undulator_gap_before_run_decorator(composite)
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
                 md={
@@ -453,6 +463,8 @@ def multi_rotation_scan(
 
             yield from rotation_scan_core(single_scan)
 
+        yield from bps.unstage(eiger)
+
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
@@ -462,4 +474,3 @@ def multi_rotation_scan(
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
-    yield from bps.unstage(eiger)

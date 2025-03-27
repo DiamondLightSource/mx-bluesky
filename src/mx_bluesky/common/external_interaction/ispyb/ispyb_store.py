@@ -77,7 +77,7 @@ class StoreInIspyb:
         scan_data_infos,
     ) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            assert conn is not None, "Failed to connect to ISPyB"
+            assert conn, "Failed to connect to ISPyB"
             if data_collection_group_info:
                 ispyb_ids.data_collection_group_id = (
                     self._store_data_collection_group_table(
@@ -150,6 +150,19 @@ class StoreInIspyb:
             mx_acquisition: MXAcquisition = conn.mx_acquisition
             mx_acquisition.update_data_collection_append_comments(
                 data_collection_id, comment, delimiter
+            )
+
+    def update_data_collection_group_table(
+        self,
+        dcg_info: DataCollectionGroupInfo,
+        data_collection_group_id: int | None = None,
+    ) -> None:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB!"
+            self._store_data_collection_group_table(
+                conn,
+                dcg_info,
+                data_collection_group_id,
             )
 
     def _update_scan_with_end_time_and_status(

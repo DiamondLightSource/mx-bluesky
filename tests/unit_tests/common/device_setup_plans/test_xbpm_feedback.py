@@ -6,6 +6,9 @@ from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
 from dodal.devices.xbpm_feedback import Pause
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 from tests.conftest import XBPMAndTransmissionWrapperComposite
@@ -27,7 +30,7 @@ def composite(
     return xbpm_and_transmission_wrapper_composite
 
 
-async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_energy(
+async def test_xbpm_decorator_with_undulator_check_decorators(
     RE, composite: XBPMAndTransmissionWrapperComposite
 ):
     energy_in_kev = 11.3
@@ -36,6 +39,7 @@ async def test_after_xbpm_is_stable_dcm_is_read_and_undulator_is_set_to_dcm_ener
     )
 
     @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
+    @verify_undulator_gap_before_run_decorator(composite)
     @bpp.run_decorator()
     def my_collection_plan():
         yield from bps.null()
