@@ -335,6 +335,5 @@ def test_get_withenergy_parameters_from_agamemnon(mock_requests: MagicMock):
 
 def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
     agamemnon_params = {}
-    print(agamemnon_params)
     demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] is None
