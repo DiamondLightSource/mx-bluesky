@@ -11,6 +11,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
+    get_withenergy_parameters_from_agamemnon,
     get_withvisit_parameters_from_agamemnon,
     populate_parameters_from_agamemnon,
     update_params_from_agamemnon,
@@ -319,3 +320,21 @@ def test_populate_parameters_from_agamemnon(
 
     compare_params(load_centre_collect_params)
     mock_logger.warning.assert_not_called()
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_get_withenergy_parameters_from_agamemnon(mock_requests: MagicMock):
+    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    assert demand_energy_ev["demand_energy_ev"] == 12700.045934258673
+
+
+def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
+    agamemnon_params = {}
+    print(agamemnon_params)
+    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    assert demand_energy_ev["demand_energy_ev"] is None

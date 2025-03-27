@@ -122,12 +122,13 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
 
 
 def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
-    angstrom: dict = parameters["collection"][0]
-    wavelength: float | None = angstrom.get("wavelength")
-    if wavelength is not None:
+    try:
+        angstrom: dict = parameters["collection"][0]
+        wavelength: float = angstrom.get("wavelength")
         demand_energy_ev = convert_angstrom_to_eV(wavelength)
         return {"demand_energy_ev": demand_energy_ev}
-    return {"demand_energy_ev": None}
+    except (KeyError, IndexError, AttributeError, TypeError):
+        return {"demand_energy_ev": None}
 
 
 def populate_parameters_from_agamemnon(agamemnon_params):
