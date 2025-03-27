@@ -1,5 +1,9 @@
 import bluesky.plan_stubs as bps
+
+# from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
+
+# from dodal.beamlines.aithre import goniometer
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 
 
@@ -30,3 +34,8 @@ def rotate_continuously(goniometer: Goniometer) -> MsgGenerator:
 def stop_goniometer(goniometer: Goniometer) -> MsgGenerator:
     """Stop the goniometer"""
     yield from bps.stop(goniometer.omega)
+
+
+# RE = RunEngine()
+# gonio = goniometer(connect_immediately=True)
+# RE(change_goniometer_turn_speed(gonio, 50))
