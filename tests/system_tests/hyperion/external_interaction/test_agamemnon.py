@@ -24,6 +24,7 @@ EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(
     sample_pin=1,
     parameter_model_version=SemanticVersion.validate_from_str(str(PARAMETER_VERSION)),
     select_centres=TopNByMaxCountSelection(n=1),
+    demand_energy_ev=12700.045934258673,
 )
 
 

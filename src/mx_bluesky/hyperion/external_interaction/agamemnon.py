@@ -14,6 +14,7 @@ from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
     TopNByMaxCountSelection,
     WithCentreSelection,
+    WithOptionalEnergyChange,
     WithSample,
     WithVisit,
 )
@@ -21,6 +22,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -38,6 +40,7 @@ class AgamemnonLoadCentreCollect(
     WithSample,
     WithCentreSelection,
     WithHyperionUDCFeatures,
+    WithOptionalEnergyChange,
 ):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
@@ -133,9 +136,21 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
     }
 
 
+def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    try:
+        first_collection: dict = parameters["collection"][0]
+        wavelength = first_collection.get("wavelength")
+        assert isinstance(wavelength, float)
+        demand_energy_ev = convert_angstrom_to_eV(wavelength)
+        return {"demand_energy_ev": demand_energy_ev}
+    except (KeyError, IndexError, AttributeError, TypeError):
+        return {"demand_energy_ev": None}
+
+
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
     return AgamemnonLoadCentreCollect(
         parameter_model_version=SemanticVersion.validate_from_str(
@@ -145,6 +160,7 @@ def populate_parameters_from_agamemnon(agamemnon_params):
         detector_distance_mm=detector_distance,
         select_centres=TopNByMaxCountSelection(n=pin_type.expected_number_of_crystals),
         **with_sample_params,
+        **with_energy_params,
     )
 
 
