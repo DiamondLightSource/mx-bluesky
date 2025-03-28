@@ -54,7 +54,16 @@ def move_to_default_state():
     yield from bps.null()
 
 
-def baton_handler(baton: Baton, composite: LoadCentreCollectComposite):
+def run_udc_when_requested(baton: Baton, composite: LoadCentreCollectComposite):
+    """This will wait for the baton to be handed to hyperion and then run through the
+    UDC queue from agamemnon until:
+      1. There are no more instructions from agamemnon
+      2. There is an error on the beamline
+      3. The baton is requested by another party
+
+    In the case of 1. or 2. hyperion will immediately release the baton. In the case of
+    3. the baton will be released after the next collection has finished."""
+
     yield from wait_for_hyperion_requested(baton)
     yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
@@ -63,7 +72,11 @@ def baton_handler(baton: Baton, composite: LoadCentreCollectComposite):
         yield from main_hyperion_loop(baton, composite)
 
     def release_baton():
-        yield from bps.abs_set(baton.requested_user, NO_USER)
+        # If hyperion has given up the baton itself we need to also release requested
+        # user so that hyperion doesn't think we're requested again
+        requested_user = yield from bps.rd(baton.requested_user)
+        if requested_user == HYPERION_USER:
+            yield from bps.abs_set(baton.requested_user, NO_USER)
         yield from bps.abs_set(baton.current_user, NO_USER)
 
     yield from bpp.contingency_wrapper(
