@@ -24,7 +24,10 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
+from mx_bluesky.beamlines.i04.thawing_plan import (
+    thaw,
+    thaw_and_stream_to_redis,
+)
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -351,9 +354,9 @@ def test_given_thaw_succeeds_then_thaw_and_stream_sets_zoom_to_1_and_back(
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
-@patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
+@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
 def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
-    mock_thaw,
+    mock__thaw,
     patch_murko_callback,
     smargon: Smargon,
     thawer: Thawer,
@@ -362,7 +365,7 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
     robot: BartRobot,
     RE: RunEngine,
 ):
-    mock_thaw.side_effect = Exception()
+    mock__thaw.side_effect = Exception()
     _run_thaw_and_stream_and_assert_zoom_changes(
         smargon, thawer, oav_forwarder, oav, robot, RE, Exception
     )
