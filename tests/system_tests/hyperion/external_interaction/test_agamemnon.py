@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 
 from deepdiff.diff import DeepDiff
@@ -52,14 +51,8 @@ def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
     load_centre_collect = populate_parameters_from_agamemnon(params)
-    difference = True
-    with warnings.catch_warnings():
-        # Suppress warning exceptions due to Pydantic 2.11 deprecation warnings
-        warnings.filterwarnings(
-            "ignore", "Accessing this attribute on the instance is deprecated"
-        )
-        difference = DeepDiff(
-            load_centre_collect,
-            EXPECTED_PARAMETERS,
-        )
+    difference = DeepDiff(
+        load_centre_collect,
+        EXPECTED_PARAMETERS,
+    )
     assert not difference
