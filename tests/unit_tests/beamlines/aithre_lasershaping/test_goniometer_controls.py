@@ -17,7 +17,7 @@ def goniometer(RE: RunEngine) -> Goniometer:
 def test_change_goniometer_turn_speed(
     sim_run_engine: RunEngineSimulator, goniometer: Goniometer
 ):
-    msgs = sim_run_engine.simulate_plan(change_goniometer_turn_speed(goniometer, 40))
+    msgs = sim_run_engine.simulate_plan(change_goniometer_turn_speed(40, goniometer))
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
