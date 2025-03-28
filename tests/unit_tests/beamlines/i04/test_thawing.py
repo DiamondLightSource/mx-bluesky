@@ -3,7 +3,6 @@ from functools import partial
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
-from _pytest.python_api import ApproxBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
@@ -151,7 +150,7 @@ def test_given_different_rotations_and_times_then_velocity_correct(
     thawer: Thawer,
     time: float,
     rotation: float,
-    expected_speed: ApproxBase | float,
+    expected_speed: float,
     RE: RunEngine,
 ):
     RE(thaw(time, rotation, thawer=thawer, smargon=smargon))

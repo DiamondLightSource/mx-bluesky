@@ -71,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright<1.1.398",           # Remove pin when https://github.com/DiamondLightSource/mx-bluesky/issues/951 fixed
+    "pyright",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
