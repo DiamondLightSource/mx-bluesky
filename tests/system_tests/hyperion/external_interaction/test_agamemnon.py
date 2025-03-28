@@ -35,7 +35,6 @@ def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
     load_centre_collect = populate_parameters_from_agamemnon(params)
-    # difference = True
     difference = DeepDiff(
         load_centre_collect,
         EXPECTED_PARAMETERS,
