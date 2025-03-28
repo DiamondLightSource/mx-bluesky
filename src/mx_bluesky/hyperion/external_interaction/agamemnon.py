@@ -160,6 +160,7 @@ def create_robot_load_then_centre_params_from_agamemnon(
 ) -> RobotLoadThenCentre:
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
     with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
     visit_directory, file_name = path.split(parameters["prefix"])
     return RobotLoadThenCentre(
         parameter_model_version=get_param_version(),
@@ -168,6 +169,7 @@ def create_robot_load_then_centre_params_from_agamemnon(
         detector_distance_mm=detector_distance,
         snapshot_directory=visit_directory + "/snapshots",
         file_name=file_name,
+        **with_energy_params,
         **with_sample_params,
     )
 

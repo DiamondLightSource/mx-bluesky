@@ -27,6 +27,7 @@ EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = RobotLoadThenCentre(
     storage_directory="/dls/tmp/data/year/cm00000-0/auto/test/xraycentring",
     snapshot_directory=Path("/dls/tmp/data/year/cm00000-0/auto/test/snapshots"),
     file_name="test_xtal",
+    demand_energy_ev=12700.045934258673,
 )
 
 EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(

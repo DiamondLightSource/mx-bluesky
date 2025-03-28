@@ -330,6 +330,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     assert robot_load_params.sample_id == 12345
     assert robot_load_params.sample_puck == 40
     assert robot_load_params.sample_pin == 3
+    assert robot_load_params.demand_energy_ev == 12700.045934258673
     assert str(robot_load_params.parameter_model_version) == "5.3.0"
     assert (
         robot_load_params.storage_directory
