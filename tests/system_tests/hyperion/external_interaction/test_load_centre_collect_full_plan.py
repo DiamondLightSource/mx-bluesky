@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,7 @@ from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
+from PIL import Image
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
@@ -39,6 +41,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callbac
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
+    BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
@@ -182,23 +187,25 @@ ROTATION_DC_EXPECTED_VALUES = {
     "synchrotronMode": SynchrotronMode.USER.value,
     "slitGapHorizontal": 0.123,
     "slitGapVertical": 0.234,
-    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_90\\.png",
+    "8}_oav_snapshot_90_with_beam_centre\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_180\\.png",
+    "8}_oav_snapshot_180_with_beam_centre\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_270\\.png",
+    "8}_oav_snapshot_270_with_beam_centre\\.png",
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
-    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{6}_oav_snapshot_0\\.png",
+    "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
+    "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_90\\.png",
+    "8}_oav_snapshot_90_with_beam_centre\\.png",
     "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_180\\.png",
+    "8}_oav_snapshot_180_with_beam_centre\\.png",
     "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
-    "6}_oav_snapshot_270\\.png",
+    "8}_oav_snapshot_270_with_beam_centre\\.png",
 }
 
 
@@ -231,6 +238,7 @@ def test_execute_load_centre_collect_full(
         param_type=GridCommonWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     robot_load_cb = RobotLoadISPyBCallback()
     # robot_load_cb.expeye = MagicMock()
     robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
@@ -240,7 +248,7 @@ def test_execute_load_centre_collect_full(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
     RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(ispyb_rotation_cb)
+    RE.subscribe(snapshot_cb)
     RE.subscribe(robot_load_cb)
     RE(
         load_centre_collect_full(
@@ -594,3 +602,69 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
                 oav_parameters_for_rotation,
             )
         )
+
+
+@pytest.mark.system_test
+def test_execute_load_centre_collect_rotation_snapshots(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
+    tmp_path: Path,
+):
+    load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
+
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_callback)
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    EXPECTED_SNAPSHOT_VALUES = {
+        "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_with_beam_centre\\.png",
+        "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_with_beam_centre\\.png",
+        "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_180_with_beam_centre\\.png",
+        "xtalSnapshotFullPath4": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_270_with_beam_centre\\.png",
+    }
+
+    rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
+    rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
+    compare_actual_and_expected(
+        rotation_dc_ids[0],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
+    compare_actual_and_expected(
+        rotation_dc_ids[1],
+        EXPECTED_SNAPSHOT_VALUES,
+        fetch_datacollection_attribute,
+    )
+
+    expected_bytes = Image.open(
+        "tests/test_data/test_images/generate_snapshot_output.png"
+    ).tobytes()
+    for column in [
+        "xtalSnapshotFullPath1",
+        "xtalSnapshotFullPath2",
+        "xtalSnapshotFullPath3",
+        "xtalSnapshotFullPath4",
+    ]:
+        filename = fetch_datacollection_attribute(rotation_dc_ids[0], column)
+        actual_bytes = Image.open(filename).tobytes()
+        assert actual_bytes == expected_bytes, f"Expected image differed for {column}"
