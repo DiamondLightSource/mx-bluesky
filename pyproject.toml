@@ -211,6 +211,7 @@ lint.select = [
     "SLF",    # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
     "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
     "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
+    "TID251", # banned api - https://docs.astral.sh/ruff/rules/banned-api/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -219,8 +220,11 @@ lint.extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
-# Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "B023", "RUF018"]
+# Remove this line to forbid private member access, walrys operators in asserts, banned api in tests
+"tests/**/*" = ["SLF001", "B023", "RUF018", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"time.sleep".msg = "Use bps.sleep instead. # noqa will disable this rule for that line. See https://github.com/DiamondLightSource/mx-bluesky/issues/925"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
