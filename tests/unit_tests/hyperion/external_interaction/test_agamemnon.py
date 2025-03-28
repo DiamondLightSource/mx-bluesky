@@ -11,6 +11,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
+    get_withenergy_parameters_from_agamemnon,
     get_withvisit_parameters_from_agamemnon,
     populate_parameters_from_agamemnon,
     update_params_from_agamemnon,
@@ -34,12 +35,13 @@ def test_given_various_pin_formats_then_pin_width_as_expected(
 
 
 def set_up_agamemnon_params(
-    loop_type: str | None,
-    prefix: str | None,
-    distance: int | None,
+    loop_type: str | None = None,
+    prefix: str | None = None,
+    distance: int | None = None,
+    wavelength: float | None = None,
 ):
     return {
-        "collection": [{"distance": distance}],
+        "collection": [{"distance": distance, "wavelength": wavelength}],
         "prefix": prefix,
         "sample": {"loopType": loop_type, "id": 1, "position": 1, "container": 1},
     }
@@ -47,10 +49,7 @@ def set_up_agamemnon_params(
 
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(None, None, None)
-        )
-        == SinglePin()
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params()) == SinglePin()
     )
 
 
@@ -66,9 +65,7 @@ def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
     loop_name: str, expected_loop: PinType
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
         == expected_loop
     )
 
@@ -86,9 +83,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     loop_name: str,
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
         == SinglePin()
     )
     mock_logger.warning.assert_called_once()
@@ -115,15 +110,13 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(ValueError) as e:
-        get_pin_type_from_agamemnon_parameters(
-            set_up_agamemnon_params(loop_name, None, None)
-        )
+        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
     assert "Expected multipin format" in str(e.value)
 
 
 def configure_mock_agamemnon(mock_requests: MagicMock, loop_type: str | None):
     mock_requests.get.return_value.content = json.dumps(
-        {"collect": set_up_agamemnon_params(loop_type, "", 255)}
+        {"collect": set_up_agamemnon_params(loop_type, "", 255, 0.9)}
     )
 
 
@@ -298,12 +291,29 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     mock_logger.warning.assert_called_with(mock_log)
 
 
+@pytest.mark.parametrize(
+    "agamemnon_params",
+    ["example_collect.json", "example_collect_multipin.json"],
+)
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_populate_parameters_from_agamemnon(
+def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
+    agamemnon_params: str,
     load_centre_collect_params: LoadCentreCollect,
+):
+    with open(f"tests/test_data/agamemnon/{agamemnon_params}") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    compare_params(load_centre_collect_params)
+    mock_logger.warning.assert_not_called()
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_parameters_from_agamemnon_contains_expected_data(
+    mock_requests: MagicMock,
 ):
     with open("tests/test_data/agamemnon/example_collect.json") as json_file:
         example_json = json_file.read()
@@ -316,6 +326,35 @@ def test_populate_parameters_from_agamemnon(
     assert hyperion_params.sample_id == 12345
     assert hyperion_params.sample_puck == 40
     assert hyperion_params.sample_pin == 3
+    assert str(hyperion_params.parameter_model_version) == "5.3.0"
+    assert hyperion_params.select_centres.n == 1
 
-    compare_params(load_centre_collect_params)
-    mock_logger.warning.assert_not_called()
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_populate_multipin_parameters_from_agamemnon(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    assert hyperion_params.select_centres.n == 6
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_get_withenergy_parameters_from_agamemnon(mock_requests: MagicMock):
+    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    assert demand_energy_ev["demand_energy_ev"] == 12700.045934258673
+
+
+def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
+    agamemnon_params = {}
+    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    assert demand_energy_ev["demand_energy_ev"] is None

@@ -9,6 +9,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
 from dodal.devices.oav.utils import (
+    PinNotFoundException,
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
     wait_for_tip_to_be_found,
@@ -16,7 +17,7 @@ from dodal.devices.oav.utils import (
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.common.utils.exceptions import SampleException
+from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
@@ -97,7 +98,7 @@ def move_pin_into_view(
                 f"Pin tip is off screen, and moving {step_vector_mm}mm would cross limits, "
                 f"moving to {move_within_limits} instead"
             )
-        yield from bps.mv(smargon.x, move_within_limits)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.mv(smargon.x, move_within_limits)
 
         # Some time for the view to settle after the move
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
@@ -154,11 +155,12 @@ def pin_tip_centre_plan(
     tip = yield from move_pin_into_view(pin_tip_detect, smargon)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(smargon.omega, 90)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mvr(smargon.omega, 90)
 
     # need to wait for the OAV image to update
     # See #673 for improvements
     yield from bps.sleep(0.3)
-
-    tip = yield from wait_for_tip_to_be_found(pin_tip_detect)
+    tip = yield from catch_exception_and_warn(
+        PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detect
+    )
     yield from offset_and_move(tip)

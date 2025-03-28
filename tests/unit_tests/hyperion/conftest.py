@@ -4,6 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+)
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from tests.conftest import raw_params_from_file
 
@@ -39,3 +42,12 @@ def patch_open_to_prevent_dls_reads_in_tests():
 
     with patch("builtins.open", side_effect=patched_open):
         yield []
+
+
+@pytest.fixture
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id=364758,
+    )
