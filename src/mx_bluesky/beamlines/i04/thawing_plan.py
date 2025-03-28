@@ -154,9 +154,9 @@ def thaw_and_murko_centre(
         )
 
         yield from bps.wait("get_results")
-        x_predict = yield from bps.rd(murko_results.x_um)
-        y_predict = yield from bps.rd(murko_results.y_um)
-        z_predict = yield from bps.rd(murko_results.z_um)
+        x_predict = yield from bps.rd(murko_results.x_mm)
+        y_predict = yield from bps.rd(murko_results.y_mm)
+        z_predict = yield from bps.rd(murko_results.z_mm)
 
         yield from bps.rel_set(smargon.x, x_predict)
         yield from bps.rel_set(smargon.y, y_predict)
