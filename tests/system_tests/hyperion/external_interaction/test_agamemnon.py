@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 from deepdiff.diff import DeepDiff
@@ -38,6 +39,7 @@ EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(
     parameter_model_version=SemanticVersion.validate_from_str(str(PARAMETER_VERSION)),
     select_centres=TopNByMaxCountSelection(n=1),
     robot_load_then_centre=EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS,
+    demand_energy_ev=12700.045934258673,
 )
 
 
@@ -50,8 +52,14 @@ def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
     load_centre_collect = populate_parameters_from_agamemnon(params)
-    difference = DeepDiff(
-        load_centre_collect,
-        EXPECTED_PARAMETERS,
-    )
+    difference = True
+    with warnings.catch_warnings():
+        # Suppress warning exceptions due to Pydantic 2.11 deprecation warnings
+        warnings.filterwarnings(
+            "ignore", "Accessing this attribute on the instance is deprecated"
+        )
+        difference = DeepDiff(
+            load_centre_collect,
+            EXPECTED_PARAMETERS,
+        )
     assert not difference
