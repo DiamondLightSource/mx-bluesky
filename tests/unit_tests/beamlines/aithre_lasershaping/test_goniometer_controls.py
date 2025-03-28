@@ -15,7 +15,7 @@ def goniometer(RE: RunEngine) -> Goniometer:
 def test_goniometer_relative_rotation(
     sim_run_engine: RunEngineSimulator, goniometer: Goniometer
 ):
-    msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(goniometer, 15))
+    msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(15, goniometer))
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
