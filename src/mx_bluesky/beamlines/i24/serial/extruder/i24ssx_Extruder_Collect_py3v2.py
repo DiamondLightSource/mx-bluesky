@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from pprint import pformat
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -71,21 +70,21 @@ def initialise_extruder(
 ) -> MsgGenerator:
     SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
-    visit = caget(pv.ioc12_gp1)
+    visit = caget(pv.ioc13_gp1)
     SSX_LOGGER.info(f"Visit defined {visit}")
 
     # Define detector in use
     det_type = yield from get_detector_type(detector_stage)
 
-    caput(pv.ioc12_gp2, "test")
-    caput(pv.ioc12_gp3, "testrun")
-    caput(pv.ioc12_gp4, "100")
-    caput(pv.ioc12_gp5, "0.01")
-    caput(pv.ioc12_gp6, 0)
-    caput(pv.ioc12_gp8, 0)  # status PV do not reuse gp8 for something else
-    caput(pv.ioc12_gp9, 0)
-    caput(pv.ioc12_gp10, 0)
-    caput(pv.ioc12_gp15, det_type.name)
+    caput(pv.ioc13_gp2, "test")
+    caput(pv.ioc13_gp3, "testrun")
+    caput(pv.ioc13_gp4, "100")
+    caput(pv.ioc13_gp5, "0.01")
+    caput(pv.ioc13_gp6, 0)
+    caput(pv.ioc13_gp8, 0)  # status PV do not reuse gp8 for something else
+    caput(pv.ioc13_gp9, 0)
+    caput(pv.ioc13_gp10, 0)
+    caput(pv.ioc13_gp15, det_type.name)
     caput(pv.pilat_cbftemplate, 0)
     SSX_LOGGER.info("Initialisation complete.")
     yield from bps.null()
@@ -160,7 +159,7 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     det_type = yield from get_detector_type(detector_stage)
     SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
-    filename = caget(pv.ioc12_gp3)
+    filename = caget(pv.ioc13_gp3)
     # If file name ends in a digit this causes processing/pilatus pain.
     # Append an underscore
     if det_type.name == "pilatus":
@@ -175,19 +174,19 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
-    pump_status = bool(int(caget(pv.ioc12_gp6)))
-    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
-    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
+    pump_status = bool(int(caget(pv.ioc13_gp6)))
+    pump_exp = float(caget(pv.ioc13_gp9)) if pump_status else 0.0
+    pump_delay = float(caget(pv.ioc13_gp10)) if pump_status else 0.0
 
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": caget(pv.ioc12_gp2),
+        "directory": caget(pv.ioc13_gp2),
         "filename": filename,
-        "exposure_time_s": float(caget(pv.ioc12_gp5)),
-        "detector_distance_mm": float(caget(pv.ioc12_gp7)),
+        "exposure_time_s": float(caget(pv.ioc13_gp5)),
+        "detector_distance_mm": float(caget(pv.ioc13_gp7)),
         "detector_name": str(det_type),
         "transmission": transmission,
-        "num_images": int(caget(pv.ioc12_gp4)),
+        "num_images": int(caget(pv.ioc13_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
         "laser_delay_s": pump_delay,
@@ -257,7 +256,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.info(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.info(f"Pump delay time {parameters.laser_delay_s}")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "fastchip",
                 [
                     filepath,
@@ -278,7 +277,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "quickshot",
                 [
                     filepath,
@@ -310,7 +309,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.debug(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.debug(f"Pump delay time {parameters.laser_delay_s}")
-            sup.eiger(
+            yield from sup.eiger(
                 "triggered",
                 [
                     filepath,
@@ -331,7 +330,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.eiger(
+            yield from sup.eiger(
                 "quickshot",
                 [
                     filepath,
@@ -393,13 +392,15 @@ def main_extruder_plan(
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
     yield from arm_zebra(zebra)
-    sleep(GATE_START)  # Sleep for the same length of gate_start, hard coded to 1
+    yield from bps.sleep(
+        GATE_START
+    )  # bps.sleep for the same length of gate_start, hard coded to 1
     i = 0
     text_list = ["|", "/", "-", "\\"]
     while True:
         line_of_text = "\r\t\t\t Waiting   " + 30 * (f"{text_list[i % 4]}")
         flush_print(line_of_text)
-        sleep(0.5)
+        yield from bps.sleep(0.5)
         i += 1
         zebra_arm_status = yield from bps.rd(zebra.pc.arm.armed)
         if zebra_arm_status == 0:  # not zebra.pc.is_armed():
@@ -429,7 +430,7 @@ def collection_aborted_plan(
         caput(pv.pilat_acquire, 0)
     elif detector_name == "eiger":
         caput(pv.eiger_acquire, 0)
-    sleep(0.5)
+    yield from bps.sleep(0.5)
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=True)
 
@@ -452,9 +453,9 @@ def tidy_up_at_collection_end_plan(
 
     # Clean Up
     if parameters.detector_name == "pilatus":
-        sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")
@@ -475,7 +476,7 @@ def collection_complete_plan(
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
 
-    sleep(0.5)
+    yield from bps.sleep(0.5)
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=False)
