@@ -154,7 +154,7 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
-    # https://github.com/bluesky/ophyd-async/issues/838
+    # https://github.com/bluesky/ophyd-async/issues/838 and https://github.com/seperman/deepdiff/issues/536
     "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
