@@ -64,7 +64,7 @@ def thaw_and_stream_to_redis(
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
         yield from bps.monitor(smargon.omega.user_readback, name="smargon")
         yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-        yield from thaw(
+        yield from _thaw(
             time_to_thaw, rotation, thawer, smargon, switch_forwarder_to_ROI
         )
         yield from bps.complete(oav_to_redis_forwarder)
@@ -79,6 +79,15 @@ def thaw_and_stream_to_redis(
 
 
 def thaw(
+    time_to_thaw: float,
+    rotation: float = 360,
+    thawer: Thawer = inject("thawer"),
+    smargon: Smargon = inject("smargon"),
+) -> MsgGenerator:
+    yield from _thaw(time_to_thaw, rotation, thawer, smargon)
+
+
+def _thaw(
     time_to_thaw: float,
     rotation: float = 360,
     thawer: Thawer = inject("thawer"),

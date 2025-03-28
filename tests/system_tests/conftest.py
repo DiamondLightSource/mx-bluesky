@@ -1,13 +1,16 @@
 import os
 import re
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
+from functools import partial
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
+from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
+from PIL import Image
 
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -154,6 +157,21 @@ def oav_for_system_test(test_config_files):
     size_in_pixels = 0.1 * 1000 / 1.25
     set_mock_value(oav.grid_snapshot.box_width, size_in_pixels)
 
+    # Rotation snapshots
+    @AsyncStatus.wrap
+    async def trigger_with_test_image(self):
+        with Image.open(
+            "tests/test_data/test_images/generate_snapshot_input.png"
+        ) as image:
+            await self.post_processing(image)
+
+    oav.snapshot.trigger = MagicMock(
+        side_effect=partial(trigger_with_test_image, oav.snapshot)
+    )
+    oav.grid_snapshot.trigger = MagicMock(
+        side_effect=partial(trigger_with_test_image, oav.grid_snapshot)
+    )
+
     empty_response = AsyncMock(spec=ClientResponse)
     empty_response.read.return_value = b""
 
@@ -161,8 +179,6 @@ def oav_for_system_test(test_config_files):
         patch(
             "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
         ) as mock_get,
-        patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
-        patch("dodal.devices.oav.snapshots.snapshot_with_beam_centre.draw_crosshair"),
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
         set_mock_value(oav.zoom_controller.level, "1.0")
