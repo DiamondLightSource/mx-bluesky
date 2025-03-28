@@ -70,49 +70,49 @@ async def test_set_detector_beam_center_plan(
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-def test_pilatus_raises_error_if_fastchip_and_no_args_list(fake_caget, fake_caput):
+def test_pilatus_raises_error_if_fastchip_and_no_args_list(fake_caget, fake_caput, RE):
     with pytest.raises(TypeError):
-        setup_beamline.pilatus("fastchip", None)
+        RE(setup_beamline.pilatus("fastchip", None))
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
-def test_pilatus_quickshot(_, fake_caget, fake_caput):
-    setup_beamline.pilatus("quickshot", ["", "", 1, 0.1])
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
+def test_pilatus_quickshot(_, fake_caget, fake_caput, RE):
+    RE(setup_beamline.pilatus("quickshot", ["", "", 1, 0.1]))
     assert fake_caput.call_count == 10
     assert fake_caget.call_count == 2
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
-def test_pilatus_fastchip(_, fake_caget, fake_caput):
-    setup_beamline.pilatus("fastchip", ["", "", 10, 0.1])
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
+def test_pilatus_fastchip(_, fake_caget, fake_caput, RE):
+    RE(setup_beamline.pilatus("fastchip", ["", "", 10, 0.1]))
     assert fake_caput.call_count == 13
     assert fake_caget.call_count == 2
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-def test_eiger_raises_error_if_quickshot_and_no_args_list(fake_caget, fake_caput):
+def test_eiger_raises_error_if_quickshot_and_no_args_list(fake_caget, fake_caput, RE):
     with pytest.raises(TypeError):
-        setup_beamline.eiger("quickshot", None)
+        RE(setup_beamline.eiger("quickshot", None))
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
-def test_eiger_quickshot(_, fake_caget, fake_caput):
-    setup_beamline.eiger("quickshot", ["", "", "1", "0.1"])
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
+def test_eiger_quickshot(_, fake_caget, fake_caput, RE):
+    RE(setup_beamline.eiger("quickshot", ["", "", "1", "0.1"]))
     assert fake_caput.call_count == 30
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
-def test_eiger_triggered(_, fake_caget, fake_caput):
-    setup_beamline.eiger("triggered", ["", "", "10", "0.1"])
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
+def test_eiger_triggered(_, fake_caget, fake_caput, RE):
+    RE(setup_beamline.eiger("triggered", ["", "", "10", "0.1"]))
     assert fake_caget.call_count == 4
     assert fake_caput.call_count == 30
 
@@ -127,8 +127,10 @@ def test_eiger_triggered(_, fake_caget, fake_caput):
     ],
 )
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.sleep")
-def test_mode_change(fake_sleep, fake_caput, action, expected_caputs, expected_sleeps):
-    setup_beamline.modechange(action)
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
+def test_mode_change(
+    fake_sleep, fake_caput, action, expected_caputs, expected_sleeps, RE
+):
+    RE(setup_beamline.modechange(action))
     assert fake_caput.call_count == expected_caputs
     assert fake_sleep.call_count == expected_sleeps

@@ -106,7 +106,7 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
 def successful_robot_load_plan(robot: BartRobot, oav: OAV, webcam: Webcam):
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
     yield from bps.read(robot.barcode)
-    yield from bps.read(oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(oav.snapshot)
     yield from bps.read(webcam)
     yield from bps.save()
 
