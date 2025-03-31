@@ -1,3 +1,5 @@
+from unittest.mock import call
+
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -5,11 +7,12 @@ from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.util.test_utils import patch_motor
 from ophyd_async.core import init_devices
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
     change_goniometer_turn_speed,
     go_to_furthest_maximum,
+    rotate_continuously,
     rotate_goniometer_relative,
 )
 
@@ -61,3 +64,11 @@ async def test_go_to_furthest_maximum_real_run_engine(
     RE(go_to_furthest_maximum(goniometer))
 
     assert await goniometer.omega.user_setpoint.get_value() == expected_set_value
+
+
+def test_continuous_rotation(goniometer: Goniometer, RE: RunEngine):
+    RE(rotate_continuously(goniometer, 3))
+    first_call = get_mock_put(goniometer.omega.user_setpoint).call_args_list[0]
+    assert first_call == call(3600, wait=True)
+    second_call = get_mock_put(goniometer.omega.user_setpoint).call_args_list[1]
+    assert second_call == call(-3600, wait=True)
