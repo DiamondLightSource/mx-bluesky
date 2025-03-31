@@ -16,3 +16,5 @@ It will then trigger the ``OAVToRedisForwarder`` device in ``dodal`` that will s
 The image streaming must be done with an ophyd device as there is too much data for it all to be emitted in bluesky documents.
 
 When the data is entered into redis it will publish a message to the redis ``murko`` channel. This will get picked up by the `socket_handler <https://github.com/DiamondLightSource/mx_auto_mjpeg_capture/tree/main/socket_handler>`_, which will forward the data to murko. Currently, during testing the socket_handler is just manually run on a workstation, `#146 <https://github.com/DiamondLightSource/mx-bluesky/issues/146>`_ should fix this.
+
+Murko will then enter the results back into redis where they are retrieved by the `MurkoResultsDevice <https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i04/murko_results.py>` in ``dodal``. This device uses these results to calculate where the sample should be moved to and carry out these movements.
