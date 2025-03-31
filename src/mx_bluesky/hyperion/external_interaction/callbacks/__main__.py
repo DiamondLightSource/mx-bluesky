@@ -1,8 +1,8 @@
 import logging
 from collections.abc import Callable, Sequence
 from threading import Thread
-from time import sleep
 
+import bluesky.plan_stubs as bps
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
@@ -140,7 +140,7 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
     try:
         log_debug("Trying to wait forever on callback and dispatcher threads")
         while all(alive):
-            sleep(LIVENESS_POLL_SECONDS)
+            yield from bps.sleep(LIVENESS_POLL_SECONDS)
             alive = [t.is_alive() for t in threads]
     except KeyboardInterrupt:
         log_info("Main thread received interrupt - exiting.")

@@ -3,17 +3,19 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
+from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
+from dodal.devices.oav.utils import PinNotFoundException
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import SampleException, WarningException
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,
 )
@@ -382,3 +384,58 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     mock_move_into_view.assert_called_once_with(mock_ophyd_pin_tip_detection, smargon)
 
     assert mock_setup_oav.call_count == 1
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    autospec=True,
+)
+def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
+    mock_wait_for_tip,
+    move_smargon,
+    mock_sleep,
+    mock_setup_oav,
+    mock_move_into_view,
+    get_move: MagicMock,
+    smargon: Smargon,
+    oav: OAV,
+    test_config_files: dict[str, str],
+    RE: RunEngine,
+):
+    set_mock_value(smargon.omega.user_readback, 0)
+    mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
+    composite = PinTipCentringComposite(
+        backlight=MagicMock(Backlight),
+        oav=oav,
+        smargon=smargon,
+        pin_tip_detection=mock_ophyd_pin_tip_detection,
+    )
+
+    def raise_exception(*args):
+        yield from bps.null()
+        raise PinNotFoundException()
+
+    mock_wait_for_tip.side_effect = raise_exception
+    mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
+    with pytest.raises(SampleException):
+        RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
+    assert mock_wait_for_tip.call_count == 1
