@@ -17,15 +17,17 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -95,7 +97,7 @@ async def test_detect_grid_and_do_gridscan(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan.assert_called_once_with(ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
