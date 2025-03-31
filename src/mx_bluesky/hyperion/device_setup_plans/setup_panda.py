@@ -1,10 +1,12 @@
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from typing import cast
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_path_provider
+from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
 from ophyd_async.fastcs.panda import (
@@ -222,6 +224,8 @@ def set_panda_directory(panda_directory: Path) -> MsgGenerator:
     suffix = datetime.now().strftime("_%Y%m%d%H%M%S")
 
     async def set_panda_dir():
-        await get_path_provider().update(directory=panda_directory, suffix=suffix)
+        await cast(UpdatingPathProvider, get_path_provider()).update(
+            directory=panda_directory, suffix=suffix
+        )
 
     yield from bps.wait_for([set_panda_dir])

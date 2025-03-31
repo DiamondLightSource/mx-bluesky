@@ -1,5 +1,12 @@
-from deepdiff.diff import DeepDiff
+import warnings
 
+from deepdiff.diff import DeepDiff
+from pydantic_extra_types.semantic_version import SemanticVersion
+
+from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    TopNByMaxCountSelection,
+)
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     AGAMEMNON_URL,
     AgamemnonLoadCentreCollect,
@@ -15,6 +22,9 @@ EXPECTED_PARAMETERS = AgamemnonLoadCentreCollect(
     sample_id=12345,
     sample_puck=1,
     sample_pin=1,
+    parameter_model_version=SemanticVersion.validate_from_str(str(PARAMETER_VERSION)),
+    select_centres=TopNByMaxCountSelection(n=1),
+    demand_energy_ev=12700.045934258673,
 )
 
 
@@ -27,8 +37,14 @@ def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
     load_centre_collect = populate_parameters_from_agamemnon(params)
-    difference = DeepDiff(
-        load_centre_collect,
-        EXPECTED_PARAMETERS,
-    )
+    difference = True
+    with warnings.catch_warnings():
+        # Suppress warning exceptions due to Pydantic 2.11 deprecation warnings
+        warnings.filterwarnings(
+            "ignore", "Accessing this attribute on the instance is deprecated"
+        )
+        difference = DeepDiff(
+            load_centre_collect,
+            EXPECTED_PARAMETERS,
+        )
     assert not difference

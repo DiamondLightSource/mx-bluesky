@@ -373,6 +373,10 @@ def multi_rotation_scan(
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
     @bpp.set_run_key_decorator("multi_rotation_scan")
     @bpp.run_decorator(
         md={
@@ -389,10 +393,6 @@ def multi_rotation_scan(
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
-            @transmission_and_xbpm_feedback_for_collection_decorator(
-                composite,
-                parameters.transmission_frac,
-            )
             @verify_undulator_gap_before_run_decorator(composite)
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -408,6 +408,8 @@ def multi_rotation_scan(
 
             yield from rotation_scan_core(single_scan)
 
+        yield from bps.unstage(eiger)
+
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
@@ -417,4 +419,3 @@ def multi_rotation_scan(
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
-    yield from bps.unstage(eiger)

@@ -155,6 +155,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
     }
 ]
+
 # These are the uncorrected coordinate from zocalo
 TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
     {
