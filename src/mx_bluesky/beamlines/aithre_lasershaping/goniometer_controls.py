@@ -25,3 +25,14 @@ def go_to_furthest_maximum(
     current_value: float = yield from bps.rd(goniometer.omega.user_readback)
 
     yield from bps.mv(goniometer.omega, -3600 if current_value > 0 else 3600)
+
+
+def rotate_continuously(goniometer: Goniometer, num=None) -> MsgGenerator:
+    """Oscillate the goniometer between +3600 and -3600 repeatedly. Defaults to infinite
+    oscillations, but a finite number can be specified with the second argument"""
+    yield from bps.repeat(lambda: go_to_furthest_maximum(goniometer), num=num)
+
+
+def stop_goniometer(goniometer: Goniometer) -> MsgGenerator:
+    """Stop the goniometer"""
+    yield from bps.stop(goniometer.omega)
