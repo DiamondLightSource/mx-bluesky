@@ -9,6 +9,7 @@ from mx_bluesky.hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
     pin_centre_then_xray_centre_plan,
+    robot_load_then_centre_plan,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -16,6 +17,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 
@@ -36,6 +38,7 @@ class ExperimentRegistryEntry(TypedDict):
         | MultiRotationScan
         | PinTipCentreThenXrayCentre
         | LoadCentreCollect
+        | RobotLoadThenCentre
     ]
 
 
@@ -55,6 +58,10 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,
+    },
+    "robot_load_then_centre": {
+        "setup": robot_load_then_centre_plan.create_devices,
+        "param_type": RobotLoadThenCentre,
     },
     "multi_rotation_scan": {
         "setup": rotation_scan_plan.create_devices,

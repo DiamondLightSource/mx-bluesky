@@ -53,7 +53,7 @@ def fake_fgs_plan():
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(
     dummy_params: HyperionSpecifiedThreeDGridScan,
-    dummy_ispyb_3d,
+    dummy_ispyb,
     RE: RunEngine,
     zocalo_for_fake_zocalo: ZocaloResults,
 ):
