@@ -10,6 +10,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     PinType,
     SinglePin,
     compare_params,
+    create_parameters_from_agamemnon,
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
     get_withenergy_parameters_from_agamemnon,
@@ -372,3 +373,24 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
     agamemnon_params = {}
     demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] is None
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.get_next_instruction")
+def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
+    mock_get_next_instruction,
+):
+    mock_get_next_instruction.side_effect = lambda *args: {"collection": {}}
+    params = create_parameters_from_agamemnon()
+    assert params is None
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+def test_create_parameters_from_agamemnon_does_not_return_none_if_queue_is_not_empty(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+    params = create_parameters_from_agamemnon()
+    assert params is not None
