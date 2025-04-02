@@ -27,19 +27,7 @@ The diagram below shows all the plans that make up the `grid_detect_then_xray_ce
 3. Convert the parameters calculated in 2 into something we can send to flyscan xray centre
 5. Move the backlight out, set the aperture to small and wait for the detector to finish moving
 6. Do a [flyscan xray centre](#flyscan-xray-centre)
-
-### Flyscan Xray Centre
-[This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/flyscan_xray_centre_plan.py) does the following, in roughly this order:
-1. Move to desired transmission (and turn off xbpm feedback)
-2. Move to omega 0
-3. Read hardware values for ispyb (a grid scan entry will be added in the background, see [here](#external-interactions))
-4. Setup zebra and motion devices for a grid scan to be done in the motion controller
-5. Wait for the Eiger to finish arming or arm the Eiger if it hasn't already been done
-6. Run the motion control gridscan
-7. Wait for grid scan to end
-8. Retrieve the xray centring results from `Zocalo` (which will be gathered in the background see [here](#external-interactions))
-9. Move to the centre from these results and move the aperture based on the bounding box of the results
-10. Move to 100% transmission (and turn on xbpm feedback)
+7. Move the sample based on the results of 6.
 
 ### OAV Grid Detection
 [This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/oav_grid_detection_plan.py) does the following, in roughly this order:
@@ -49,3 +37,14 @@ The diagram below shows all the plans that make up the `grid_detect_then_xray_ce
 4. Read the snapshot paths (which will be gathered for ispyb in the background, see [here](#external-interactions))
 5. Repeat 2-4 for omega 90
 6. Return the grid positions
+
+### Flyscan Xray Centre (no move)
+[This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/flyscan_xray_centre_plan.py) does the following, in roughly this order:
+1. Move to desired transmission (and turn off xbpm feedback)
+2. Move to omega 0
+3. Read hardware values for ispyb (a grid scan entry will be added in the background, see [here](#external-interactions))
+4. Setup zebra and motion devices for a grid scan to be done in the motion controller
+5. Wait for the Eiger to finish arming or arm the Eiger if it hasn't already been done
+6. Run the motion control gridscan
+7. Wait for grid scan to end
+8. Retrieve the xray centring results from `Zocalo` (which will be gathered in the background see [here](#external-interactions))
