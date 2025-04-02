@@ -1,18 +1,32 @@
+import math
+
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
+from dodal.devices.util.test_utils import patch_motor
+from ophyd_async.core import init_devices
+from ophyd_async.epics.motor import Motor
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
     change_goniometer_turn_speed,
+    jog_sample,
     rotate_goniometer_relative,
 )
 
 
 @pytest.fixture
 def goniometer(RE: RunEngine) -> Goniometer:
-    return aithre.goniometer(connect_immediately=True, mock=True)
+    with init_devices(mock=True):
+        gonio = aithre.goniometer(connect_immediately=True, mock=True)
+
+    patch_motor(gonio.omega)
+    patch_motor(gonio.x)
+    patch_motor(gonio.y)
+    patch_motor(gonio.z)
+    return gonio
 
 
 def test_goniometer_relative_rotation(
@@ -37,3 +51,32 @@ def test_change_goniometer_turn_speed(
         and msg.obj.name == "goniometer-omega-velocity"
         and msg.args[0] == 40,
     )
+
+
+@pytest.mark.parametrize(
+    "directions, axis",
+    [
+        (("right", "left"), "x"),
+        (("z_plus", "z_minus"), "z"),
+    ],
+)
+async def test_jog_sample_x_z(RE: RunEngine, goniometer: Goniometer, directions, axis):
+    goniometer_axis: Motor = getattr(goniometer, axis)
+
+    RE(jog_sample(goniometer, directions[0], 0.05))
+    assert await goniometer_axis.user_readback.get_value() == 0.05
+
+    RE(jog_sample(goniometer, directions[1], 0.05))
+    assert await goniometer_axis.user_readback.get_value() == 0
+
+
+async def test_jog_sample_up_down(RE: RunEngine, goniometer: Goniometer):
+    set_mock_value(goniometer.omega.user_readback, 60)
+
+    RE(jog_sample(goniometer, "up", 2))
+    assert await goniometer.x.user_readback.get_value() == pytest.approx(1)
+    assert await goniometer.y.user_readback.get_value() == pytest.approx(math.sqrt(3))
+
+    RE(jog_sample(goniometer, "down", 2))
+    assert await goniometer.x.user_readback.get_value() == pytest.approx(0)
+    assert await goniometer.y.user_readback.get_value() == pytest.approx(0)
