@@ -9,17 +9,19 @@ There are then a number of plans that make up the `grid_detect_then_xray_centre_
 * [`grid_detection_plan`](#flyscan-xray-centre) - Use the OAV to optically calculates a grid for a scan that would cover the whole sample
 * [`flyscan_xray_centre_plan`](#flyscan-xray-centre) - triggers a hardware-based grid scan and moves to the xray centre as returned from `zocalo`
 
+
 * [`grid_detect_then_xray_centre_plan`](#grid-detect-then-xray-centre) performs an [OAV grid detection](#oav-grid-detection) then a [flyscan xray centre](#flyscan_xray_centre_plan)
 
 
 The diagram below shows all the plans that make up the `grid_detect_then_xray_centre_plan` plan. The colors indicate where these plans can be found.
+
 ![Code Map](grid_detect_then_xray_centre.drawio.png)
 
 
 
 
 ### Grid Detect Then Xray Centre
-[This plan](https://github.com/DiamondLightSource/hyperion/blob/main/src/hyperion/experiment_plans/grid_detect_then_xray_centre_plan.py) does the following, in roughly this order:
+[This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/grid_detect_then_xray_centre_plan.py) does the following, in roughly this order:
 1. If called standalone - start preparing for data collection
 2. Do an [OAV grid detection](#oav-grid-detection)
 3. Convert the parameters calculated in 2 into something we can send to flyscan xray centre
@@ -27,7 +29,7 @@ The diagram below shows all the plans that make up the `grid_detect_then_xray_ce
 6. Do a [flyscan xray centre](#flyscan-xray-centre)
 
 ### Flyscan Xray Centre
-[This plan](https://github.com/DiamondLightSource/hyperion/blob/main/src/hyperion/experiment_plans/flyscan_xray_centre_plan.py) does the following, in roughly this order:
+[This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/flyscan_xray_centre_plan.py) does the following, in roughly this order:
 1. Move to desired transmission (and turn off xbpm feedback)
 2. Move to omega 0
 3. Read hardware values for ispyb (a grid scan entry will be added in the background, see [here](#external-interactions))
@@ -40,7 +42,7 @@ The diagram below shows all the plans that make up the `grid_detect_then_xray_ce
 10. Move to 100% transmission (and turn on xbpm feedback)
 
 ### OAV Grid Detection
-[This plan](https://github.com/DiamondLightSource/hyperion/blob/main/src/hyperion/experiment_plans/oav_grid_detection_plan.py) does the following, in roughly this order:
+[This plan](https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/oav_grid_detection_plan.py) does the following, in roughly this order:
 1. Move to omega 0
 2. Calculate the 2D grid size using the edge arrays from the OAV
 3. Trigger the OAV device to take snapshots, both with and without the grid
