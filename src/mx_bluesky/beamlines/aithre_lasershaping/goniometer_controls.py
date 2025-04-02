@@ -1,3 +1,5 @@
+import math
+
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -16,3 +18,28 @@ def change_goniometer_turn_speed(
 ) -> MsgGenerator:
     """Set the velocity of the goniometer"""
     yield from bps.mv(goniometer.omega.velocity, velocity)
+
+
+def jog_sample(
+    goniometer: Goniometer, direction: str, increment_size: float
+) -> MsgGenerator:
+    """Adjust the goniometer stage positions vertically"""
+    direction_map = {
+        "right": (goniometer.x, 1),
+        "left": (goniometer.x, -1),
+        "z_plus": (goniometer.z, 1),
+        "z_minus": (goniometer.z, -1),
+    }
+
+    if direction in direction_map:
+        axis, sign = direction_map[direction]
+        yield from bps.mvr(axis, sign * increment_size)
+    elif direction in {"up", "down"}:
+        omega: float = yield from bps.rd(goniometer.omega)
+        x_component = (math.cos(math.radians(omega))) * increment_size
+        y_component = (math.sin(math.radians(omega))) * increment_size
+        sign = 1 if direction == "up" else -1
+
+        yield from bps.rel_set(goniometer.x, sign * x_component, group="gonio_stage")
+        yield from bps.rel_set(goniometer.y, sign * y_component, group="gonio_stage")
+        yield from bps.wait("gonio_stage")
