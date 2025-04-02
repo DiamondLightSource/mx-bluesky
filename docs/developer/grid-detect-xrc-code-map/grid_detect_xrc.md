@@ -5,14 +5,17 @@ The aim of this page is to provide a general overview of the Hyperion `grid_dete
 This is the location of most of the code for the `grid_detect_then_xray_centre_plan` plan. Some code is located in `mx-bluesky/common` and [dodal](https://github.com/DiamondLightSource/dodal), and plans are increasingly being generalised and moved into `mx-bluesky/common` where possible. Therefore the structure of the codebase is subject to change and this document should be updated accordinly.
 
 
-There are then a number of subplans that make up the `grid_detect_then_xray_centre_plan` plan. Some important ones:
+There are then a number of plans that make up the `grid_detect_then_xray_centre_plan` plan. Some important ones:
 * [`grid_detection_plan`](#flyscan-xray-centre) - Use the OAV to optically calculates a grid for a scan that would cover the whole sample
 * [`flyscan_xray_centre_plan`](#flyscan-xray-centre) - triggers a hardware-based grid scan and moves to the xray centre as returned from `zocalo`
 
+* [`grid_detect_then_xray_centre_plan`](#grid-detect-then-xray-centre) performs an [OAV grid detection](#oav-grid-detection) then a [flyscan xray centre](#flyscan_xray_centre_plan)
+
+
+The diagram below shows all the plans that make up the `grid_detect_then_xray_centre_plan` plan. The colors indicate where these plans can be found.
 ![Code Map](grid_detect_then_xray_centre.drawio.png)
 
 
-* [`grid_detect_then_xray_centre_plan`](#grid-detect-then-xray-centre) performs an [OAV grid detection](#oav-grid-detection) then a [flyscan xray centre](#flyscan_xray_centre_plan)
 
 
 ### Grid Detect Then Xray Centre
@@ -44,9 +47,3 @@ There are then a number of subplans that make up the `grid_detect_then_xray_cent
 4. Read the snapshot paths (which will be gathered for ispyb in the background, see [here](#external-interactions))
 5. Repeat 2-4 for omega 90
 6. Return the grid positions
-
-## Parameters
-TBD
-
-## External Interactions
-TBD
