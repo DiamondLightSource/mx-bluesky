@@ -11,7 +11,7 @@ __pycache__/
 env/
 # Output
 *.png
-!docs/*.png
+!docs/**/*.png
 !tests/test_data/**/*.png
 
 # Distribution / packaging
