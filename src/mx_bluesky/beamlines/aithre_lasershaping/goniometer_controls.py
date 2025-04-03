@@ -12,7 +12,7 @@ def rotate_goniometer_relative(
 
 
 def change_goniometer_turn_speed(
-    goniometer: Goniometer, velocity: float
+    velocity: float, goniometer: Goniometer = inject("goniometer")
 ) -> MsgGenerator:
     """Set the velocity of the goniometer"""
     yield from bps.mv(goniometer.omega.velocity, velocity)
