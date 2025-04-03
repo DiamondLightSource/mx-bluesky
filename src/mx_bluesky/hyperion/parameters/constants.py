@@ -4,6 +4,7 @@ from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.parameters.constants import (
+    BeamlineConstants,
     DeviceSettingsConstants,
     DocDescriptorNames,
     EnvironmentConstants,
@@ -38,7 +39,7 @@ class I03Constants:
 
 
 @dataclass(frozen=True)
-class HyperionConstants:
+class HyperionConstants(BeamlineConstants):
     DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
