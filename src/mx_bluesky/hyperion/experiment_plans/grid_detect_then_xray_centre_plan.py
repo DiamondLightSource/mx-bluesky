@@ -14,6 +14,10 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
+    OavGridDetectionComposite,
+    grid_detection_plan,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
     GridParamUpdate,
@@ -46,10 +50,6 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
-)
-from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
-    OavGridDetectionComposite,
-    grid_detection_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -106,6 +106,7 @@ def detect_grid_and_do_gridscan(
             str(snapshot_dir),
             parameters.grid_width_um,
             parameters.box_size_um,
+            group=CONST,
         )
 
     if parameters.selected_aperture:
