@@ -36,10 +36,14 @@ def jog_sample(
         yield from bps.mvr(axis, sign * increment_size)
     elif direction in {"up", "down"}:
         omega: float = yield from bps.rd(goniometer.omega)
-        x_component = (math.cos(math.radians(omega))) * increment_size
+        z_component = (math.cos(math.radians(omega))) * increment_size
         y_component = (math.sin(math.radians(omega))) * increment_size
         sign = 1 if direction == "up" else -1
 
-        yield from bps.rel_set(goniometer.x, sign * x_component, group="gonio_stage")
-        yield from bps.rel_set(goniometer.y, sign * y_component, group="gonio_stage")
+        yield from bps.rel_set(
+            goniometer.sampz, sign * z_component, group="gonio_stage"
+        )
+        yield from bps.rel_set(
+            goniometer.sampy, sign * y_component, group="gonio_stage"
+        )
         yield from bps.wait("gonio_stage")
