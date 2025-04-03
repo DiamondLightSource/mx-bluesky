@@ -200,7 +200,7 @@ def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect | None:
     agamemnon_params = get_next_instruction(beamline_name)
     return (
         populate_parameters_from_agamemnon(agamemnon_params)
-        if agamemnon_params["collection"]
+        if agamemnon_params
         else None
     )
 

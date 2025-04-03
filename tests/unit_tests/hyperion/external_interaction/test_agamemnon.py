@@ -375,11 +375,11 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
     assert demand_energy_ev["demand_energy_ev"] is None
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.get_next_instruction")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
-    mock_get_next_instruction,
+    mock_requests,
 ):
-    mock_get_next_instruction.side_effect = lambda *args: {"collection": {}}
+    mock_requests.get.return_value.content = json.dumps({"collect": {}})
     params = create_parameters_from_agamemnon()
     assert params is None
 
