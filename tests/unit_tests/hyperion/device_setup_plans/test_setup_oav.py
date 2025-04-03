@@ -12,6 +12,7 @@ from ophyd_async.sim import SimMotor
 from mx_bluesky.common.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 OAV_CENTRING_JSON = "tests/test_data/test_OAVCentring.json"
 
@@ -31,7 +32,9 @@ def test_when_set_up_oav_then_only_waits_on_oav_to_finish(
 
     def my_plan():
         yield from bps.abs_set(my_waiting_device, 10, wait=False)
-        yield from pre_centring_setup_oav(oav, mock_parameters, ophyd_pin_tip_detection)
+        yield from pre_centring_setup_oav(
+            oav, mock_parameters, ophyd_pin_tip_detection, CONST
+        )
 
     RE = RunEngine()
     RE(my_plan())
