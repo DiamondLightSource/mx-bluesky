@@ -24,8 +24,9 @@ def goniometer(RE: RunEngine) -> Goniometer:
 
     patch_motor(gonio.omega)
     patch_motor(gonio.x)
-    patch_motor(gonio.y)
     patch_motor(gonio.z)
+    patch_motor(gonio.sampy)
+    patch_motor(gonio.sampz)
     return gonio
 
 
@@ -74,9 +75,11 @@ async def test_jog_sample_up_down(RE: RunEngine, goniometer: Goniometer):
     set_mock_value(goniometer.omega.user_readback, 60)
 
     RE(jog_sample("up", 2, goniometer))
-    assert await goniometer.x.user_readback.get_value() == pytest.approx(1)
-    assert await goniometer.y.user_readback.get_value() == pytest.approx(math.sqrt(3))
+    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(1)
+    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+        math.sqrt(3)
+    )
 
     RE(jog_sample("down", 2, goniometer))
-    assert await goniometer.x.user_readback.get_value() == pytest.approx(0)
-    assert await goniometer.y.user_readback.get_value() == pytest.approx(0)
+    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0)
+    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(0)
