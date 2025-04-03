@@ -148,3 +148,8 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
+
+
+class BeamlineConstants:
+    WAIT = PlanGroupCheckpointConstants()
+    pass
