@@ -21,7 +21,7 @@ def change_goniometer_turn_speed(
 
 
 def jog_sample(
-    goniometer: Goniometer, direction: str, increment_size: float
+    direction: str, increment_size: float, goniometer: Goniometer = inject("goniometer")
 ) -> MsgGenerator:
     """Adjust the goniometer stage positions vertically"""
     direction_map = {

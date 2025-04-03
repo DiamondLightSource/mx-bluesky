@@ -63,20 +63,20 @@ def test_change_goniometer_turn_speed(
 async def test_jog_sample_x_z(RE: RunEngine, goniometer: Goniometer, directions, axis):
     goniometer_axis: Motor = getattr(goniometer, axis)
 
-    RE(jog_sample(goniometer, directions[0], 0.05))
+    RE(jog_sample(directions[0], 0.05, goniometer))
     assert await goniometer_axis.user_readback.get_value() == 0.05
 
-    RE(jog_sample(goniometer, directions[1], 0.05))
+    RE(jog_sample(directions[1], 0.05, goniometer))
     assert await goniometer_axis.user_readback.get_value() == 0
 
 
 async def test_jog_sample_up_down(RE: RunEngine, goniometer: Goniometer):
     set_mock_value(goniometer.omega.user_readback, 60)
 
-    RE(jog_sample(goniometer, "up", 2))
+    RE(jog_sample("up", 2, goniometer))
     assert await goniometer.x.user_readback.get_value() == pytest.approx(1)
     assert await goniometer.y.user_readback.get_value() == pytest.approx(math.sqrt(3))
 
-    RE(jog_sample(goniometer, "down", 2))
+    RE(jog_sample("down", 2, goniometer))
     assert await goniometer.x.user_readback.get_value() == pytest.approx(0)
     assert await goniometer.y.user_readback.get_value() == pytest.approx(0)
