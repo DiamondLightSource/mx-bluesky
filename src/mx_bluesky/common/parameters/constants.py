@@ -151,4 +151,6 @@ class Status(Enum):
 
 class BeamlineConstants:
     WAIT = PlanGroupCheckpointConstants()
+    HARDWARE = HardwareConstants()
+    DESCRIPTORS = DocDescriptorNames()
     pass
