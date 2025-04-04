@@ -166,4 +166,4 @@ class BeamlineConstants:
     WAIT = PlanGroupCheckpointConstants()
     HARDWARE = HardwareConstants()
     DESCRIPTORS = DocDescriptorNames()
-    pass
+    # Need to flesh this out
