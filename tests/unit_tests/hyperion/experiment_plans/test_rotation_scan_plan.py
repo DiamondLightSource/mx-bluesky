@@ -10,7 +10,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -19,12 +19,12 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
 )

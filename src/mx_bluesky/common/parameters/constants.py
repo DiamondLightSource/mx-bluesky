@@ -160,3 +160,10 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
+
+
+class BeamlineConstants:
+    WAIT = PlanGroupCheckpointConstants()
+    HARDWARE = HardwareConstants()
+    DESCRIPTORS = DocDescriptorNames()
+    # Need to flesh this out
