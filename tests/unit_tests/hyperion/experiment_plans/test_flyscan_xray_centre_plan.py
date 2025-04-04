@@ -21,6 +21,9 @@ from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.flyscan_xray_centre_plan import (
+    wait_for_gridscan_valid,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -53,7 +56,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_fetch_results,
-    wait_for_gridscan_valid,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,

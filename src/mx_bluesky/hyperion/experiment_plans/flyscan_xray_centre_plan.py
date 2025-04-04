@@ -31,6 +31,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
+from mx_bluesky.common.experiment_plans.flyscan_xray_centre_plan import (
+    wait_for_gridscan_valid,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -47,7 +50,6 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
-    SampleException,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
@@ -313,23 +315,6 @@ def run_gridscan(
         plan_during_collection=read_during_collection,
     )
     yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
-
-
-def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
-    LOGGER.info("Waiting for valid fgs_params")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
-        LOGGER.debug(
-            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
-        )
-        if not scan_invalid and pos_counter == 0:
-            LOGGER.info("Gridscan scan valid and position counter reset")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise SampleException("Scan invalid - pin too long/short/bent and out of range")
 
 
 @dataclasses.dataclass
