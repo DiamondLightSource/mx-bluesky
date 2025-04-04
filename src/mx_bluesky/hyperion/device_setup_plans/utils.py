@@ -11,11 +11,11 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.i03.beamstop import Beamstop
 from dodal.devices.i03.dcm import DCM
 
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
-from mx_bluesky.hyperion.device_setup_plans.position_detector import (
+from mx_bluesky.common.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
 )
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
 
 
 def fill_in_energy_if_not_supplied(dcm: DCM, detector_params: DetectorParams):
