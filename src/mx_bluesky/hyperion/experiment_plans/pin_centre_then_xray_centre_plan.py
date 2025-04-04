@@ -9,6 +9,9 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -18,9 +21,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
