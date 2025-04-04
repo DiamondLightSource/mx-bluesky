@@ -257,7 +257,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @pytest.mark.skip(
@@ -343,7 +343,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch(
@@ -382,7 +382,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -426,7 +426,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -509,7 +509,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -553,7 +553,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")

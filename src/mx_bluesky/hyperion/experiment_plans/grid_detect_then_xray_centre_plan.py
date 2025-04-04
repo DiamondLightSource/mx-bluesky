@@ -34,6 +34,9 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
+)
 from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
@@ -52,9 +55,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre_no_move,

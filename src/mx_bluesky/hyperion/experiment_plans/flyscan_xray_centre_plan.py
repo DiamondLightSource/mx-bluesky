@@ -28,6 +28,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
+    change_aperture_then_move_to_xtal,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -58,9 +61,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
     tidy_up_zebra_after_gridscan,
-)
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
