@@ -1,8 +1,8 @@
 import logging
 from collections.abc import Callable, Sequence
 from threading import Thread
-from time import sleep
 
+import bluesky.plan_stubs as bps
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
@@ -38,6 +38,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
+    BeamDrawingCallback,
+)
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -67,15 +70,18 @@ def create_rotation_callbacks() -> tuple[
     return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
-            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
+            emit=ZocaloCallback(CONST.PLAN.ROTATION_MULTI, CONST.ZOCALO_ENV)
         ),
     )
 
 
 def setup_callbacks() -> list[CallbackBase]:
+    rot_nexus_cb, rot_ispyb_cb = create_rotation_callbacks()
+    snapshot_cb = BeamDrawingCallback(emit=rot_ispyb_cb)
     return [
         *create_gridscan_callbacks(),
-        *create_rotation_callbacks(),
+        rot_nexus_cb,
+        snapshot_cb,
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),
@@ -134,7 +140,7 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
     try:
         log_debug("Trying to wait forever on callback and dispatcher threads")
         while all(alive):
-            sleep(LIVENESS_POLL_SECONDS)
+            yield from bps.sleep(LIVENESS_POLL_SECONDS)
             alive = [t.is_alive() for t in threads]
     except KeyboardInterrupt:
         log_info("Main thread received interrupt - exiting.")

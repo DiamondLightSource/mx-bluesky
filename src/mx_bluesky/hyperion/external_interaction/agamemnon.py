@@ -1,20 +1,32 @@
 import dataclasses
 import json
 import re
+from os import path
 from typing import Any, TypeVar
 
 import requests
 from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
+from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    MxBlueskyParameters,
+    TopNByMaxCountSelection,
+    WithCentreSelection,
+    WithOptionalEnergyChange,
     WithSample,
     WithVisit,
 )
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.constants import (
+    GridscanParamConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
@@ -24,8 +36,17 @@ MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
 
 
-class AgamemnonLoadCentreCollect(WithVisit, WithSample):
+class AgamemnonLoadCentreCollect(
+    MxBlueskyParameters,
+    WithVisit,
+    WithSample,
+    WithCentreSelection,
+    WithHyperionUDCFeatures,
+    WithOptionalEnergyChange,
+):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
+
+    robot_load_then_centre: RobotLoadThenCentre
 
 
 @dataclasses.dataclass
@@ -119,21 +140,71 @@ def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
     }
 
 
+def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    try:
+        first_collection: dict = parameters["collection"][0]
+        wavelength = first_collection.get("wavelength")
+        assert isinstance(wavelength, float)
+        demand_energy_ev = convert_angstrom_to_eV(wavelength)
+        return {"demand_energy_ev": demand_energy_ev}
+    except (KeyError, IndexError, AttributeError, TypeError):
+        return {"demand_energy_ev": None}
+
+
+def get_param_version() -> SemanticVersion:
+    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
+
+
+def create_robot_load_then_centre_params_from_agamemnon(
+    parameters: dict,
+) -> RobotLoadThenCentre:
+    visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
+    with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
+    visit_directory, file_name = path.split(parameters["prefix"])
+    return RobotLoadThenCentre(
+        parameter_model_version=get_param_version(),
+        storage_directory=visit_directory + "/xraycentring",
+        visit=visit,
+        detector_distance_mm=detector_distance,
+        snapshot_directory=visit_directory + "/snapshots",
+        file_name=file_name,
+        **with_energy_params,
+        **with_sample_params,
+    )
+
+
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
-    return AgamemnonLoadCentreCollect(
-        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
+    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
+    robot_load_params = create_robot_load_then_centre_params_from_agamemnon(
+        agamemnon_params
     )
+    return AgamemnonLoadCentreCollect(
+        parameter_model_version=SemanticVersion.validate_from_str(
+            str(PARAMETER_VERSION)
+        ),
+        visit=visit,
+        detector_distance_mm=detector_distance,
+        select_centres=TopNByMaxCountSelection(n=pin_type.expected_number_of_crystals),
+        robot_load_then_centre=robot_load_params,
+        **with_sample_params,
+        **with_energy_params,
+    )
+
+
+def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect:
+    beamline_name = get_beamline_name("i03")
+    agamemnon_params = get_next_instruction(beamline_name)
+
+    return populate_parameters_from_agamemnon(agamemnon_params)
 
 
 def compare_params(load_centre_collect_params):
     try:
-        beamline_name = get_beamline_name("i03")
-        agamemnon_params = get_next_instruction(beamline_name)
-
-        # Populate parameters from Agamemnon
-        parameters = populate_parameters_from_agamemnon(agamemnon_params)
+        parameters = create_parameters_from_agamemnon()
 
         # Log differences against GDA populated parameters
         differences = DeepDiff(

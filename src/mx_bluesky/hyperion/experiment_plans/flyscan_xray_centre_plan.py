@@ -32,6 +32,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import HardwareConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
@@ -157,7 +158,7 @@ def flyscan_xray_centre(
         xray_centre_results[0],
         composite.smargon,
         composite.aperture_scatterguard,
-        parameters,
+        parameters.FGS_params.set_stub_offsets,
     )
 
 
@@ -212,7 +213,7 @@ def run_gridscan_and_fetch_results(
     finally:
         # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
         LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
 
         # Wait on everything before returning to GDA (particularly apertures), can be removed
         # when we do not return to GDA here
@@ -262,7 +263,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: HyperionFlyScanXRayCentreComposite,
-    parameters: HyperionSpecifiedThreeDGridScan,
+    parameters: SpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
     md={  # noqa
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
@@ -301,7 +302,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.stage(fgs_composite.eiger)
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -445,8 +446,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
     )
 
     directory_provider_root = Path(parameters.storage_directory)

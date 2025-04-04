@@ -15,7 +15,7 @@ Releases       https://github.com/DiamondLightSource/mx-bluesky/releases
 Getting Started
 ===============
 
-To get started with developing this repo at DLS run ``dls_dev_setup.sh``.
+To get started with developing this repo at DLS run ``./utility_scripts/dls_dev_env.sh``.
 
 If you want to develop interactively at the beamline we recommend using jupyter notebooks. You can get started with this by running::
 

@@ -22,7 +22,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
 
 EXPT_TYPE_DETECTOR_PVS = {
     SSXType.FIXED: pv.me14e_gp101,
-    SSXType.EXTRUDER: pv.ioc12_gp15,
+    SSXType.EXTRUDER: pv.ioc13_gp15,
 }
 
 
@@ -55,7 +55,7 @@ def get_detector_type(detector_stage: DetectorMotion) -> Generator[Msg, None, De
 
 def _move_detector_stage(detector_stage: DetectorMotion, target: float) -> MsgGenerator:
     SSX_LOGGER.info(f"Moving detector stage to target position: {target}.")
-    yield from bps.mv(detector_stage.y, target)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.y, target)
 
 
 # Workaround in case the PV value has been set to the detector name
