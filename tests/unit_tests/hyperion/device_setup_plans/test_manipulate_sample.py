@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
+from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
     move_phi_chi_omega,
     move_x_y_z,
