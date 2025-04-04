@@ -149,7 +149,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 @patch(
@@ -238,7 +238,7 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 @patch(
