@@ -32,7 +32,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -42,7 +42,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -90,7 +90,7 @@ BASIC_PRE_SETUP_DOC = {
 }
 
 BASIC_POST_SETUP_DOC = {
-    "aperture_scatterguard-selected_aperture": ApertureValue.ROBOT_LOAD,
+    "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
     "aperture_scatterguard-radius": None,
     "aperture_scatterguard-aperture-x": 15,
     "aperture_scatterguard-aperture-y": 16,
@@ -332,30 +332,40 @@ def robot_load_composite(
 
 @pytest.fixture
 def robot_load_and_energy_change_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio, eiger
+    smargon,
+    dcm,
+    robot,
+    aperture_scatterguard,
+    oav,
+    webcam,
+    thawer,
+    lower_gonio,
+    vfm,
+    mirror_voltages,
+    undulator_dcm,
+    xbpm_feedback,
+    attenuator,
 ) -> RobotLoadAndEnergyChangeComposite:
-    composite: RobotLoadAndEnergyChangeComposite = MagicMock()
-    composite.smargon = smargon
-    composite.dcm = dcm
-    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
-    composite.robot = robot
-    composite.aperture_scatterguard = aperture_scatterguard
+    composite = RobotLoadAndEnergyChangeComposite(
+        vfm,
+        mirror_voltages,
+        dcm,
+        undulator_dcm,
+        xbpm_feedback,
+        attenuator,
+        robot,
+        webcam,
+        lower_gonio,
+        thawer,
+        oav,
+        smargon,
+        aperture_scatterguard,
+    )
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
-    composite.oav = oav
-    composite.webcam = webcam
-    composite.lower_gonio = lower_gonio
-    composite.thawer = thawer
-    composite.eiger = eiger
+    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
+
     return composite
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
 def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str):

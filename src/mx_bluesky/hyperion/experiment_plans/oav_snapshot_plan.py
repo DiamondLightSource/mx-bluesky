@@ -34,9 +34,7 @@ def setup_beamline_for_OAV(
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
     yield from bps.abs_set(backlight, BacklightPosition.IN, group=group)
     yield from bps.abs_set(
-        aperture_scatterguard,
-        ApertureValue.ROBOT_LOAD,
-        group=group,
+        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group=group
     )
 
 
@@ -44,11 +42,9 @@ def oav_snapshot_plan(
     composite: OavSnapshotComposite,
     parameters: WithSnapshot,
     oav_parameters: OAVParameters,
-    wait: bool = True,
 ) -> MsgGenerator:
     if not parameters.take_snapshots:
         return
-    yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
     yield from _setup_oav(composite, parameters, oav_parameters)
     for omega in parameters.snapshot_omegas_deg or []:
         yield from _take_oav_snapshot(composite, omega)
@@ -61,7 +57,7 @@ def _setup_oav(
 ):
     yield from setup_general_oav_params(composite.oav, oav_parameters)
     yield from bps.abs_set(
-        composite.oav.snapshot.directory,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        composite.oav.snapshot.directory,
         str(parameters.snapshot_directory),
     )
 
@@ -71,14 +67,14 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
         composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
     )
     time_now = datetime.now()
-    filename = f"{time_now.strftime('%H%M%S')}_oav_snapshot_{omega:.0f}"
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{omega:.0f}"
     yield from bps.abs_set(
-        composite.oav.snapshot.filename,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        composite.oav.snapshot.filename,
         filename,
         group=OAV_SNAPSHOT_SETUP_SHOT,
     )
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
-    yield from bps.trigger(composite.oav.snapshot, wait=True)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.trigger(composite.oav.snapshot, wait=True)
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
-    yield from bps.read(composite.oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(composite.oav)
     yield from bps.save()

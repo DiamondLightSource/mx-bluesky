@@ -4,6 +4,7 @@ import pprint
 import time
 from datetime import datetime
 
+import bluesky.plan_stubs as bps
 import requests
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, MappingType
@@ -53,7 +54,6 @@ def call_nexgen(
             total_numb_imgs = parameters.num_images
             pump_status = parameters.pump_status
 
-    filename_prefix = parameters.filename
     filename_prefix = cagetstring(Eiger.pv.filenameRBV)
     meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()
@@ -62,10 +62,10 @@ def call_nexgen(
     while time.time() - t0 < max_wait:
         if meta_h5.exists():
             SSX_LOGGER.info(f"Found {meta_h5} after {time.time() - t0:.1f} seconds")
-            time.sleep(5)
+            yield from bps.sleep(5)
             break
         SSX_LOGGER.debug(f"Waiting for {meta_h5}")
-        time.sleep(1)
+        yield from bps.sleep(1)
     if not meta_h5.exists():
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return

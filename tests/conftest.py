@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import pydantic
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -58,6 +59,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
+from dodal.utils import AnyDeviceFactory
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
@@ -83,6 +85,9 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
     TriggerConstants,
 )
+from mx_bluesky.common.utils.exceptions import (
+    CrystalNotFoundException,
+)
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -91,22 +96,119 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
+from .unit_tests.conftest import device_factories_for_beamline
+
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
+
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 1000,
+        "n_voxels": 35,
+        "total_count": 1000,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
+TEST_RESULT_BELOW_THRESHOLD = [
+    {
+        "centre_of_mass": [2, 3, 4],
+        "max_voxel": [2, 3, 4],
+        "max_count": 2,
+        "n_voxels": 1,
+        "total_count": 2,
+        "bounding_box": [[1, 2, 3], [2, 3, 4]],
+    }
+]
+
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
+    {
+        "centre_of_mass": [0.5, 0.5, 0.5],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
+    {
+        "centre_of_mass": [0.0, 0.0, 0.0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_COM = [
+    {
+        "centre_of_mass": [-0.0001, -0.0001, -0.0001],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[0, 0, 0], [3, 4, 4]],
+    }
+]
+# These are the uncorrected coordinate from zocalo
+TEST_RESULT_OUT_OF_BOUNDS_BB = [
+    {
+        "centre_of_mass": [0, 0, 0],
+        "max_voxel": [0, 0, 0],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+    }
+]
+
+
+@pytest.fixture(scope="session")
+def active_device_factories() -> set[AnyDeviceFactory]:
+    """Obtain the set of device factories that should have their caches cleared
+    after every test invocation.
+
+    Override this in sub-packages for the specific beamlines under test."""
+    return device_factories_for_beamline(i03)
 
 
 def raw_params_from_file(filename):
@@ -294,7 +396,7 @@ def done_status():
 
 @pytest.fixture
 def eiger(done_status):
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
     eiger.unstage = MagicMock(return_value=done_status)
@@ -303,7 +405,7 @@ def eiger(done_status):
 
 @pytest.fixture
 def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
+    smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
     set_mock_value(smargon.x.user_readback, 0.0)
@@ -330,7 +432,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def zebra(RE):
-    zebra = i03.zebra(fake_with_ophyd_sim=True)
+    zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
         set_mock_value(zebra.pc.arm.armed, demand.value)
@@ -342,41 +444,41 @@ def zebra(RE):
 
 @pytest.fixture
 def zebra_shutter(RE):
-    return i03.sample_shutter(fake_with_ophyd_sim=True)
+    return i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def backlight():
-    backlight = i03.backlight(fake_with_ophyd_sim=True)
+    backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
 def fast_grid_scan():
-    return i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def detector_motion(RE):
-    det = i03.detector_motion(fake_with_ophyd_sim=True)
+    det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_async_motor(det.z):
         yield det
 
 
 @pytest.fixture
 def undulator():
-    return i03.undulator(fake_with_ophyd_sim=True)
+    return i03.undulator(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def s4_slit_gaps():
-    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+def s4_slit_gaps() -> S4SlitGaps:
+    return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def synchrotron(RE):
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
     return synchrotron
@@ -387,7 +489,7 @@ def oav(test_config_files, RE):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
 
     zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
@@ -406,33 +508,32 @@ def oav(test_config_files, RE):
 
 @pytest.fixture
 def flux():
-    return i03.flux(fake_with_ophyd_sim=True)
+    return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def pin_tip():
-    return i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def ophyd_pin_tip_detection():
     RunEngine()  # A RE is needed to start the bluesky loop
-    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
-    return pin_tip_detection
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
     return robot
 
 
 @pytest.fixture
-def attenuator(RE):
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+async def attenuator(RE):
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
     @AsyncStatus.wrap
@@ -451,7 +552,7 @@ def beamstop_i03(
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
     ):
-        beamstop = i03.beamstop(fake_with_ophyd_sim=True)
+        beamstop = i03.beamstop(connect_immediately=True, mock=True)
         patch_motor(beamstop.x_mm)
         patch_motor(beamstop.y_mm)
         patch_motor(beamstop.z_mm)
@@ -467,8 +568,8 @@ def beamstop_i03(
 
 @pytest.fixture
 def xbpm_feedback(done_status):
-    xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
+    xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -486,14 +587,14 @@ def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
 
 @pytest.fixture
 def dcm(RE, sim_run_engine):
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
 @pytest.fixture
 def vfm(RE):
-    vfm = i03.vfm(fake_with_ophyd_sim=True)
+    vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
@@ -504,7 +605,7 @@ def vfm(RE):
 
 @pytest.fixture
 def lower_gonio(RE):
-    lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
+    lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
@@ -515,7 +616,7 @@ def lower_gonio(RE):
 
 @pytest.fixture
 def mirror_voltages():
-    voltages = i03.mirror_voltages(fake_with_ophyd_sim=True)
+    voltages = i03.mirror_voltages(mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(return_value=NullStatus())
@@ -528,7 +629,8 @@ def mirror_voltages():
 @pytest.fixture
 def undulator_dcm(RE, sim_run_engine, dcm):
     undulator_dcm = i03.undulator_dcm(
-        fake_with_ophyd_sim=True,
+        connect_immediately=True,
+        mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
@@ -538,23 +640,23 @@ def undulator_dcm(RE, sim_run_engine, dcm):
 
 @pytest.fixture
 def webcam(RE) -> Generator[Webcam, Any, Any]:
-    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
 def thawer(RE) -> Generator[Thawer, Any, Any]:
-    yield i03.thawer(fake_with_ophyd_sim=True)
+    yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
-    yield i03.sample_shutter(fake_with_ophyd_sim=True)
+    yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
+async def aperture_scatterguard(RE):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -580,7 +682,7 @@ def aperture_scatterguard(RE):
             scatterguard_y=14,
             radius=20,
         ),
-        ApertureValue.ROBOT_LOAD: AperturePosition(
+        ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
             aperture_y=16,
             aperture_z=2,
@@ -605,7 +707,7 @@ def aperture_scatterguard(RE):
             ),
         ),
     ):
-        ap_sg = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
+        ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
     with (
         patch_async_motor(ap_sg.aperture.x),
         patch_async_motor(ap_sg.aperture.y),
@@ -684,7 +786,7 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-
+    undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -708,7 +810,7 @@ def fake_create_rotation_devices(
 
 @pytest.fixture
 def zocalo(done_status):
-    zoc = i03.zocalo(fake_with_ophyd_sim=True)
+    zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
     return zoc
@@ -748,7 +850,7 @@ async def panda(RE: RunEngine):
                 await sig.connect(mock=True)
                 setattr(device, name, sig)
 
-    panda = i03.panda(fake_with_ophyd_sim=True)
+    panda = i03.panda(connect_immediately=True, mock=True)
     await set_mock_blocks(
         panda,
         {
@@ -788,7 +890,7 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 @pytest.fixture
 def panda_fast_grid_scan(RE):
-    return i03.panda_fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -805,27 +907,32 @@ async def fake_fgs_composite(
     dcm,
     panda,
     backlight,
+    s4_slit_gaps,
 ):
-    fake_composite = FlyScanXRayCentreComposite(
+    fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger(fake_with_ophyd_sim=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
+        eiger=i03.eiger(connect_immediately=True, mock=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
-        undulator=i03.undulator(fake_with_ophyd_sim=True),
+        undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,
-        zebra=i03.zebra(fake_with_ophyd_sim=True),
+        zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
         panda=panda,
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
-        robot=i03.robot(fake_with_ophyd_sim=True),
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        robot=i03.robot(connect_immediately=True, mock=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -1198,6 +1305,13 @@ class TestData(OavGridSnapshotTestEvents):
         "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
+    test_gridscan3d_stop_document_with_crystal_exception: RunStop = {
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+        "exit_status": "fail",
+        "reason": f"{CrystalNotFoundException()}",
+    }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
@@ -1491,4 +1605,31 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
         TEST_DATA_COLLECTION_GROUP_ID,
         list(range(12, 24)),
         list(range(56, 68)),
+    )
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clear_device_factory_caches_after_every_test(active_device_factories):
+    yield None
+    for f in active_device_factories:
+        f.cache_clear()  # type: ignore
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class XBPMAndTransmissionWrapperComposite:
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    attenuator: BinaryFilterAttenuator
+    dcm: DCM
+
+
+@pytest.fixture
+def xbpm_and_transmission_wrapper_composite(
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+    dcm: DCM,
+) -> XBPMAndTransmissionWrapperComposite:
+    return XBPMAndTransmissionWrapperComposite(
+        undulator, xbpm_feedback, attenuator, dcm
     )

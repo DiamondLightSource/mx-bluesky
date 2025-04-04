@@ -9,8 +9,8 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.xspress3.xspress3 import Xspress3
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 class AttenuationOptimisationFailedException(Exception):

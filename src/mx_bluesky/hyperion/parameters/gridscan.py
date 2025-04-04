@@ -36,7 +36,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
-            exposure_time=self.exposure_time_s,
+            exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
@@ -47,12 +47,13 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
+            or self.features.use_gpu_results,
             **optional_args,
         )
 
 
-class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFeatures):
+class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGridScan):
     """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
@@ -72,7 +73,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFe
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
-            exposure_time=self.exposure_time_s,
+            exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
@@ -83,7 +84,8 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan, WithHyperionUDCFe
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo,
+            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
+            or self.features.use_gpu_results,
             **optional_args,
         )
 

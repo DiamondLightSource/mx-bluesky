@@ -9,12 +9,10 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
-    StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -92,83 +90,6 @@ def test_nexus_handler_only_writes_once(
     nexus_writer.assert_called_once()
     assert cb.writer is not None
     cb.writer.create_nexus_file.assert_called_once()  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
-    ispyb_store,
-    zocalo_trigger_class,
-    nexus_writer,
-    RE: RunEngine,
-    params: RotationScan,
-    do_rotation_scan,
-):
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    zocalo_trigger = zocalo_trigger_class.return_value
-
-    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-    ispyb_callback.params = params
-    with pytest.raises(ISPyBDepositionNotMade):
-        RE.subscribe(nexus_callback)
-        RE.subscribe(ispyb_callback)
-        RE(do_rotation_scan)
-    zocalo_trigger.run_start.assert_not_called()  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
-def test_ispyb_triggered_before_zocalo(
-    ispyb_store, zocalo_trigger_class, nexus_writer, RE: RunEngine, do_rotation_scan
-):
-    mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
-    returned_ids = IspybIds(data_collection_group_id=0, data_collection_ids=(0,))
-    mock_store_in_ispyb_instance.begin_deposition.return_value = returned_ids
-    mock_store_in_ispyb_instance.update_deposition.return_value = returned_ids
-
-    ispyb_store.return_value = mock_store_in_ispyb_instance
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore
-
-    parent_mock = MagicMock()
-    parent_mock.attach_mock(zocalo_trigger_class.return_value, "zocalo")
-    parent_mock.attach_mock(mock_store_in_ispyb_instance, "ispyb")
-
-    RE.subscribe(nexus_callback)
-    RE.subscribe(ispyb_callback)
-    RE(do_rotation_scan)
-
-    call_names = [call[0] for call in parent_mock.method_calls]
-
-    assert "ispyb.begin_deposition" in call_names
-    assert "zocalo.run_start" in call_names
-
-    assert call_names.index("ispyb.begin_deposition") < call_names.index(
-        "zocalo.run_start"
-    )
 
 
 @patch(

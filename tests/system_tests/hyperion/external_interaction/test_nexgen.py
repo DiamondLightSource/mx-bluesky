@@ -7,8 +7,8 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -55,7 +55,7 @@ def test_params(tmpdir):
         ),
     ],
 )
-@pytest.mark.s03
+@pytest.mark.system_test
 def test_rotation_nexgen(
     test_params: RotationScan,
     tmpdir,
@@ -137,7 +137,10 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
 
 def _run_imginfo(filename):
     process = subprocess.run(
-        ["utility_scripts/run_imginfo.sh", filename], text=True, capture_output=True
+        # This file is provided in the system test docker image
+        ["/usr/local/bin/imginfo", filename],
+        text=True,
+        capture_output=True,
     )
     assert process.returncode != 2, "imginfo is not available"
     assert process.returncode == 0, (
@@ -162,7 +165,7 @@ def _fake_rotation_scan(
         }
     )
     def plan():
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             rotation_devices.aperture_scatterguard,
             rotation_devices.attenuator,
             rotation_devices.flux,
