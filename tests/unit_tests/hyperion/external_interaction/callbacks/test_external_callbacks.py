@@ -75,9 +75,9 @@ def test_setup_threads(_):
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.sleep")
 def test_wait_for_threads_forever_calls_time_sleep(mock_sleep: MagicMock):
     thread_that_stops_after_one_call = MagicMock()
-    thread_that_stops_after_one_call.is_alive.return_value = [True, False]
+    thread_that_stops_after_one_call.is_alive.side_effect = [True, False]
 
     mock_threads = [thread_that_stops_after_one_call, MagicMock()]
 
     wait_for_threads_forever(mock_threads)
-    assert mock_sleep.call_count == 2
+    assert mock_sleep.call_count == 1
