@@ -8,23 +8,30 @@ from dodal.devices.motors import SixAxisGonio
 from ophyd_async.epics.motor import Motor
 
 
-def set_axis_to_max_velocity(axis: Motor, group):
+def set_axis_to_max_velocity(axis: Motor):
     max_vel = yield from bps.rd(axis.max_velocity)
-    yield from bps.abs_set(axis.velocity, max_vel, group=group)
+    yield from bps.mv(axis.velocity, max_vel)
 
 
-def one_nd_step(detectors, step, pos_cache, omega_axis: Motor, omega_rotation):
+def one_nd_step(
+    detectors,
+    step,
+    pos_cache,
+    omega_axis: Motor,
+    omega_rotation: float,
+    omega_velocity: float,
+):
     def move():
         yield from bps.checkpoint()
         grp = short_uid("set")
         for motor, pos in step.items():
             yield from bps.abs_set(motor, pos, group=grp)
-        yield from set_axis_to_max_velocity(omega_axis, grp)
-        yield from bps.abs_set(omega_axis, 0)
+        yield from set_axis_to_max_velocity(omega_axis)
+        yield from bps.abs_set(omega_axis, 0, grp)
         yield from bps.wait(group=grp)
 
     yield from move()
-    yield from bps.mv(omega_axis.velocity, 1.0)
+    yield from bps.mv(omega_axis.velocity, omega_velocity)
     yield from bps.mv(omega_axis, omega_rotation)
 
 
@@ -34,19 +41,24 @@ def serial_collection(
     x_step_size: float,
     y_step_size: float,
     omega_rotation: float,
+    omega_velocity: float,
     gonio: SixAxisGonio = inject("gonio"),
 ):
     yield from rel_grid_scan(
         [],
         gonio.y,
         0,
-        y_step_size * y_steps,
+        y_step_size * (y_steps - 1),
         y_steps,
         gonio.x,
         0,
-        x_step_size * x_steps,
+        x_step_size * (x_steps - 1),
         x_steps,
         per_step=partial(
-            one_nd_step, omega_axis=gonio.omega, omega_rotation=omega_rotation
+            one_nd_step,
+            omega_axis=gonio.omega,
+            omega_rotation=omega_rotation,
+            omega_velocity=omega_velocity,
         ),
+        snake_axes=True,
     )
