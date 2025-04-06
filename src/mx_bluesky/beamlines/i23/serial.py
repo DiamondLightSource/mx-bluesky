@@ -54,7 +54,7 @@ def serial_collection(
         0,
         x_step_size * (x_steps - 1),
         x_steps,
-        per_step=partial(
+        per_step=partial(  # type: ignore
             one_nd_step,
             omega_axis=gonio.omega,
             omega_rotation=omega_rotation,
