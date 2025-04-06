@@ -39,6 +39,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
@@ -101,7 +102,7 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 
 
 def create_parameters_for_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridScanWithEdgeDetect,
+    grid_scan_with_edge_params: GridCommon,
     grid_parameters: GridParamUpdate,
 ) -> HyperionSpecifiedThreeDGridScan:
     params_json = grid_scan_with_edge_params.model_dump()
@@ -113,7 +114,7 @@ def create_parameters_for_flyscan_xray_centre(
 
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetect,
+    parameters: GridCommon,
     oav_params: OAVParameters,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"

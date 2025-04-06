@@ -44,7 +44,7 @@ dependencies = [
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
-    "ophyd-async >= 0.9.0a2",
+    "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
     "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@7e3dc9b796fe5d559f1baf4e13da0b369d0de27f",
 ]
