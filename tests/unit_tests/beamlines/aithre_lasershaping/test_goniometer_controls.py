@@ -76,11 +76,19 @@ async def test_jog_sample_up_down(RE: RunEngine, goniometer: Goniometer):
     set_mock_value(goniometer.omega.user_readback, 60)
 
     RE(jog_sample(JogDirection.UP, 2, goniometer))
+    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0.5)
+    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+        math.sqrt(3) / 2
+    )
+
+    RE(jog_sample(JogDirection.UP, 2, goniometer))
     assert await goniometer.sampz.user_readback.get_value() == pytest.approx(1)
     assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
         math.sqrt(3)
     )
 
     RE(jog_sample(JogDirection.DOWN, 2, goniometer))
-    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0)
-    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(0)
+    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0.5)
+    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+        math.sqrt(3) / 2
+    )
