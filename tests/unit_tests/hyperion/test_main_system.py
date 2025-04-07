@@ -503,6 +503,8 @@ def test_when_context_created_then_contains_expected_number_of_plans(
 
         plan_names = context.plans.keys()
 
-        assert "rotation_scan" in plan_names
+        # assert "rotation_scan" in plan_names
+        # May want to add back in if we change name of multi_rotation_scan to rotation_scan
+        assert "multi_rotation_scan" in plan_names
         assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names

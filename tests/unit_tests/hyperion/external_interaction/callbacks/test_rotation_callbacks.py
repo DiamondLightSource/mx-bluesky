@@ -11,7 +11,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import multi_rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
@@ -45,7 +45,7 @@ def activate_callbacks(cbs: tuple[RotationNexusFileCallback, RotationISPyBCallba
 def do_rotation_scan(
     params: MultiRotationScan, fake_create_rotation_devices, oav_parameters_for_rotation
 ):
-    return rotation_scan(
+    return multi_rotation_scan(
         fake_create_rotation_devices, params, oav_parameters_for_rotation
     )
 
@@ -152,7 +152,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         params.sample_id = sample_id
 
         RE(
-            rotation_scan(
+            multi_rotation_scan(
                 fake_create_rotation_devices, params, oav_parameters_for_rotation
             )
         )
