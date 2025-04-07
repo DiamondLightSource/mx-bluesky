@@ -52,7 +52,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,
     },
-    "multi_rotation_scan": {
+    "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
         "param_type": MultiRotationScan,
     },
