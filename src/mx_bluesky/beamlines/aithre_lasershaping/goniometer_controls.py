@@ -1,9 +1,19 @@
 import math
+from enum import StrEnum
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
+
+
+class JogDirection(StrEnum):
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
+    ZPLUS = "z_plus"
+    ZMINUS = "z_minus"
 
 
 def rotate_goniometer_relative(
@@ -21,24 +31,26 @@ def change_goniometer_turn_speed(
 
 
 def jog_sample(
-    direction: str, increment_size: float, goniometer: Goniometer = inject("goniometer")
+    direction: JogDirection,
+    increment_size: float,
+    goniometer: Goniometer = inject("goniometer"),
 ) -> MsgGenerator:
     """Adjust the goniometer stage positions vertically"""
     direction_map = {
-        "right": (goniometer.x, 1),
-        "left": (goniometer.x, -1),
-        "z_plus": (goniometer.z, 1),
-        "z_minus": (goniometer.z, -1),
+        JogDirection.RIGHT: (goniometer.x, 1),
+        JogDirection.LEFT: (goniometer.x, -1),
+        JogDirection.ZPLUS: (goniometer.z, 1),
+        JogDirection.ZMINUS: (goniometer.z, -1),
     }
 
     if direction in direction_map:
         axis, sign = direction_map[direction]
         yield from bps.mvr(axis, sign * increment_size)
-    elif direction in {"up", "down"}:
+    elif direction in {JogDirection.UP, JogDirection.DOWN}:
         omega: float = yield from bps.rd(goniometer.omega)
         z_component = (math.cos(math.radians(omega))) * increment_size
         y_component = (math.sin(math.radians(omega))) * increment_size
-        sign = 1 if direction == "up" else -1
+        sign = 1 if direction == JogDirection.UP else -1
 
         yield from bps.rel_set(
             goniometer.sampz, sign * z_component, group="gonio_stage"
