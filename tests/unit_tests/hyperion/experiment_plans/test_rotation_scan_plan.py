@@ -67,9 +67,6 @@ from ....conftest import (
     raw_params_from_file,
     remap_upsert_columns,
 )
-from ..external_interaction.conftest import *  # noqa # for fixtures
-
-# from .conftest import fake_read
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
