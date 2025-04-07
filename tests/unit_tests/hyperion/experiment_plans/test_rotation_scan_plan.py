@@ -32,7 +32,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
     calculate_motion_profile,
-    multi_rotation_scan,
+    rotation_scan,
     rotation_scan_plan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -74,7 +74,7 @@ def run_full_rotation_plan(
         fake_read,
     ):
         RE(
-            multi_rotation_scan(
+            rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -182,11 +182,7 @@ def test_rotation_scan(
     oav_parameters_for_rotation: OAVParameters,
 ):
     composite = fake_create_rotation_devices
-    RE(
-        multi_rotation_scan(
-            composite, test_rotation_params, oav_parameters_for_rotation
-        )
-    )
+    RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 
@@ -299,7 +295,7 @@ def test_cleanup_happens(
         # check that failure is handled in composite plan
         with pytest.raises(MyTestException) as exc:
             RE(
-                multi_rotation_scan(
+                rotation_scan(
                     fake_create_rotation_devices,
                     test_rotation_params,
                     oav_parameters_for_rotation,
@@ -344,7 +340,7 @@ def rotation_scan_simulated_messages(
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
 
     return sim_run_engine.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -532,7 +528,7 @@ def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_p
     test_rotation_params.snapshot_omegas_deg = None
 
     msgs = sim_run_engine.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -584,7 +580,7 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
     msgs = sim_run_engine.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -701,7 +697,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
         ),
     ):
         RE(
-            multi_rotation_scan(
+            rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -738,7 +734,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
         ),
     ):
         RE(
-            multi_rotation_scan(
+            rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -758,7 +754,7 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
     )
     with pytest.raises(BeamstopException):
         sim_run_engine.simulate_plan(
-            multi_rotation_scan(
+            rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -817,7 +813,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         ),
     ):
         RE(
-            multi_rotation_scan(
+            rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,

@@ -362,7 +362,7 @@ def _move_and_rotation(
     )
 
 
-def multi_rotation_scan(
+def rotation_scan(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,

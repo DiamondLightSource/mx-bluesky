@@ -31,7 +31,7 @@ from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
-    multi_rotation_scan,
+    rotation_scan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
@@ -89,7 +89,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         fake_create_rotation_devices.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,
@@ -166,7 +166,7 @@ def _run_multi_rotation_plan(
     for cb in callbacks:
         RE.subscribe(cb)
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE(multi_rotation_scan(devices, params, oav_params))
+        RE(rotation_scan(devices, params, oav_params))
 
 
 @patch(
@@ -192,7 +192,7 @@ def test_full_multi_rotation_plan_docs_emitted(
 
     assert (
         outer_plan_start_doc := DocumentCapturer.assert_doc(
-            docs, "start", matches_fields=({"plan_name": "multi_rotation_scan"})
+            docs, "start", matches_fields=({"plan_name": "rotation_scan"})
         )
     )
     outer_uid = outer_plan_start_doc[1]["uid"]
@@ -706,7 +706,7 @@ def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_
     oav_parameters_for_rotation: OAVParameters,
 ):
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,
@@ -737,7 +737,7 @@ def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     oav_parameters_for_rotation: OAVParameters,
 ):
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        multi_rotation_scan(
+        rotation_scan(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,

@@ -16,13 +16,13 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan impor
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    multi_rotation_scan,
+    rotation_scan,
 )
 
 __all__ = [
     "flyscan_xray_centre",
     "grid_detect_then_xray_centre",
     "pin_tip_centre_then_xray_centre",
-    "multi_rotation_scan",
+    "rotation_scan",
     "load_centre_collect_full",
 ]
