@@ -211,7 +211,7 @@ def test_start_i24_with_eiger(
     fake_datetime.now.return_value = expected_start
     dummy_params_without_pp.chip_map = [1, 2]
     assert dummy_params_without_pp.total_num_images == 800
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     expected_beam_settings = BeamSettings(
         wavelength_in_a=0.6,
         beam_size_in_um=(7.0, 7.0),
@@ -437,7 +437,7 @@ async def test_main_fixed_target_plan(
     dummy_params_without_pp,
 ):
     mock_get_chip_prog.return_value = MagicMock()
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     fake_datasize.return_value = 400
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",

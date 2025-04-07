@@ -102,7 +102,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     dcm = undulator_dcm.dcm_ref()
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
     d_spacing_a: float = yield from bps.rd(
-        undulator_dcm.dcm_ref().crystal_metadata_d_spacing
+        undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
@@ -110,7 +110,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         linear_interpolation_lut(
             *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
         ),
-        dcm.pitch_in_mrad,
+        dcm.xtal_1.pitch_in_mrad,
         bragg_deg,
     )
     yield from dcm_pitch_adjuster(DCM_GROUP)
@@ -122,7 +122,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         linear_interpolation_lut(
             *parse_lookup_table(undulator_dcm.roll_energy_table_path)
         ),
-        dcm.roll_in_mrad,
+        dcm.xtal_1.roll_in_mrad,
         bragg_deg,
     )
     yield from dcm_roll_adjuster(DCM_GROUP)
