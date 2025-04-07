@@ -15,6 +15,7 @@ from mx_bluesky.beamlines.aithre_lasershaping import (
     jog_sample,
     rotate_goniometer_relative,
 )
+from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import JogDirection
 
 
 @pytest.fixture
@@ -57,8 +58,8 @@ def test_change_goniometer_turn_speed(
 @pytest.mark.parametrize(
     "directions, axis",
     [
-        (("right", "left"), "x"),
-        (("z_plus", "z_minus"), "z"),
+        ((JogDirection.RIGHT, JogDirection.LEFT), "x"),
+        ((JogDirection.ZPLUS, JogDirection.ZMINUS), "z"),
     ],
 )
 async def test_jog_sample_x_z(RE: RunEngine, goniometer: Goniometer, directions, axis):
@@ -74,12 +75,12 @@ async def test_jog_sample_x_z(RE: RunEngine, goniometer: Goniometer, directions,
 async def test_jog_sample_up_down(RE: RunEngine, goniometer: Goniometer):
     set_mock_value(goniometer.omega.user_readback, 60)
 
-    RE(jog_sample("up", 2, goniometer))
+    RE(jog_sample(JogDirection.UP, 2, goniometer))
     assert await goniometer.sampz.user_readback.get_value() == pytest.approx(1)
     assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
         math.sqrt(3)
     )
 
-    RE(jog_sample("down", 2, goniometer))
+    RE(jog_sample(JogDirection.DOWN, 2, goniometer))
     assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0)
     assert await goniometer.sampy.user_readback.get_value() == pytest.approx(0)
