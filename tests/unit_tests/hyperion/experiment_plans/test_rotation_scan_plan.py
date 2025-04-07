@@ -627,17 +627,17 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: (
-            msg.command == "open_run"
-            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
-        ),
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "eiger_do_arm"
         and msg.args[0] == 1
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "open_run"
+            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,

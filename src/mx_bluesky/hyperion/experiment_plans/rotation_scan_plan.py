@@ -384,6 +384,7 @@ def multi_rotation_scan(
             "full_num_of_images": parameters.num_images,
             "meta_data_run_number": parameters.detector_params.run_number,
             "activate_callbacks": [
+                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],
