@@ -44,9 +44,9 @@ dependencies = [
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
-    "ophyd-async >= 0.9.0a2",
+    "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@08b603354b178a3bc54aed2e5ad89de4e5fc05be",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@b481ffa8ef63a9da0e97451df09363c42802abe0",
 ]
 
 
@@ -71,7 +71,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright<1.1.398",           # Remove pin when https://github.com/DiamondLightSource/mx-bluesky/issues/951 fixed
+    "pyright",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
@@ -154,7 +154,7 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
-    # https://github.com/bluesky/ophyd-async/issues/838
+    # https://github.com/bluesky/ophyd-async/issues/838 and https://github.com/seperman/deepdiff/issues/536
     "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests

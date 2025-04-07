@@ -6,12 +6,25 @@ from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
     change_goniometer_turn_speed,
+    rotate_goniometer_relative,
 )
 
 
 @pytest.fixture
 def goniometer(RE: RunEngine) -> Goniometer:
     return aithre.goniometer(connect_immediately=True, mock=True)
+
+
+def test_goniometer_relative_rotation(
+    sim_run_engine: RunEngineSimulator, goniometer: Goniometer
+):
+    msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(15, goniometer))
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-omega"
+        and msg.args[0] == 15,
+    )
 
 
 def test_change_goniometer_turn_speed(
