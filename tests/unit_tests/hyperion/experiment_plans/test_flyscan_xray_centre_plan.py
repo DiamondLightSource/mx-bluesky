@@ -21,6 +21,9 @@ from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.flyscan_xray_centre_plan import (
+    wait_for_gridscan_valid,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -53,7 +56,6 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_fetch_results,
-    wait_for_gridscan_valid,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
@@ -257,7 +259,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @pytest.mark.skip(
@@ -311,7 +313,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         RE: RunEngine,
     ):
-        from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
+        from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
         motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
             np.array([1, 2, 3])
@@ -343,7 +345,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch(
@@ -382,7 +384,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -426,7 +428,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -509,7 +511,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -553,7 +555,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")

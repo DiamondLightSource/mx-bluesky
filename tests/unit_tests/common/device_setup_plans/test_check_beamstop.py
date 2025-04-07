@@ -1,9 +1,9 @@
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import (
+from mx_bluesky.common.device_setup_plans.check_beamstop import (
     BeamstopException,
     check_beamstop,
 )

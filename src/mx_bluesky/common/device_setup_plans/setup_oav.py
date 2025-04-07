@@ -6,15 +6,15 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
-from mx_bluesky.hyperion.parameters.constants import CONST
-
-# Helper function to make sure we set the waiting groups correctly
-set_using_group = partial(bps.abs_set, group=CONST.WAIT.READY_FOR_OAV)
+from mx_bluesky.common.parameters.constants import BeamlineConstants
 
 
 def setup_pin_tip_detection_params(
-    pin_tip_detect_device: PinTipDetection, parameters: OAVParameters
+    pin_tip_detect_device: PinTipDetection,
+    parameters: OAVParameters,
+    group: BeamlineConstants,
 ):
+    set_using_group = partial(bps.abs_set, group=group)
     # select which blur to apply to image
     yield from set_using_group(
         pin_tip_detect_device.preprocess_operation, parameters.preprocess
@@ -54,7 +54,10 @@ def setup_pin_tip_detection_params(
     )
 
 
-def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
+def setup_general_oav_params(
+    oav: OAV, parameters: OAVParameters, group: BeamlineConstants
+):
+    set_using_group = partial(bps.abs_set, group=group)
     yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
     yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
     yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
@@ -72,10 +75,13 @@ def pre_centring_setup_oav(
     oav: OAV,
     parameters: OAVParameters,
     pin_tip_detection_device: PinTipDetection,
+    group: BeamlineConstants,
 ):
     """
     Setup OAV PVs with required values.
     """
-    yield from setup_general_oav_params(oav, parameters)
-    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
-    yield from bps.wait(CONST.WAIT.READY_FOR_OAV)
+    yield from setup_general_oav_params(oav, parameters, group)
+    yield from setup_pin_tip_detection_params(
+        pin_tip_detection_device, parameters, group
+    )
+    yield from bps.wait(group.WAIT.READY_FOR_OAV)
