@@ -52,10 +52,9 @@ def jog_sample(
         y_component = (math.sin(math.radians(omega))) * increment_size
         sign = 1 if direction == JogDirection.UP else -1
 
-        yield from bps.rel_set(
-            goniometer.sampz, sign * z_component, group="gonio_stage"
+        yield from bps.mvr(
+            goniometer.sampz,
+            sign * z_component,
+            goniometer.sampy,
+            sign * y_component,
         )
-        yield from bps.rel_set(
-            goniometer.sampy, sign * y_component, group="gonio_stage"
-        )
-        yield from bps.wait("gonio_stage")
