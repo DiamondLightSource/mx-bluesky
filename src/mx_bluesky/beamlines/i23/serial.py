@@ -27,7 +27,7 @@ def one_nd_step(
         for motor, pos in step.items():
             yield from bps.abs_set(motor, pos, group=grp)
         yield from set_axis_to_max_velocity(omega_axis)
-        yield from bps.abs_set(omega_axis, 0, grp)
+        yield from bps.abs_set(omega_axis, 0, group=grp)
         yield from bps.wait(group=grp)
 
     yield from move()
@@ -44,6 +44,8 @@ def serial_collection(
     omega_velocity: float,
     gonio: SixAxisGonio = inject("gonio"),
 ):
+    """This plan runs a software controlled serial collection. i.e it moves in a snaked
+    grid and does a small rotation collection at each point."""
     yield from rel_grid_scan(
         [],
         gonio.y,

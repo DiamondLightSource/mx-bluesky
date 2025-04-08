@@ -1,9 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.motors import SixAxisGonio
+from dodal.devices.util.test_utils import patch_motor
 from ophyd_async.core import init_devices
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 
@@ -12,6 +15,9 @@ from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 def mock_gonio():
     with init_devices(mock=True):
         gonio = SixAxisGonio("", name="gonio")
+    patch_motor(gonio.x)
+    patch_motor(gonio.y)
+    patch_motor(gonio.omega)
     return gonio
 
 
@@ -118,3 +124,11 @@ def test_omega_set_to_0_at_max_velo_during_grid_move(
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "test"
     )
+
+
+async def test_serial_collection_can_run_in_real_RE(
+    RE: RunEngine, mock_gonio: SixAxisGonio
+):
+    RE(serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio))
+    assert get_mock_put(mock_gonio.x.user_setpoint).call_count == 4 * 4 + 1
+    assert get_mock_put(mock_gonio.y.user_setpoint).call_count == 4 * 4 + 1
