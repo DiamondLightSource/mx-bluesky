@@ -166,4 +166,11 @@ class BeamlineConstants:
     WAIT = PlanGroupCheckpointConstants()
     HARDWARE = HardwareConstants()
     DESCRIPTORS = DocDescriptorNames()
+    PARAM = ExperimentParamConstants()
+    PLAN = PlanNameConstants()
+    SIM = SimConstants()
+    DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()
+    DESCRIPTORS = DocDescriptorNames()
+    TRIGGER = TriggerConstants()
+    ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     # Need to flesh this out
