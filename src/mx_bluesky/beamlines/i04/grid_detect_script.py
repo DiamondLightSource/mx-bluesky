@@ -22,7 +22,10 @@ def main():
         wait_for_connection=True,
     )
     composite = create_devices(context)
-    parameters = OAVParameters()
+    parameters = OAVParameters(
+        context="gridDetection",
+        oav_config_json="/dls_sw/i04/software/daq_configuration/json/OAVCentring.json",
+    )
     RE = RunEngine(call_returns_result=True)
     RE(
         grid_detection_plan(
