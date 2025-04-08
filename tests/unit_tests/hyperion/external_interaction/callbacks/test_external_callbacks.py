@@ -13,6 +13,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     setup_callbacks,
     setup_logging,
     setup_threads,
+    wait_for_threads_forever,
 )
 
 
@@ -69,3 +70,14 @@ def test_setup_threads(_):
     assert isinstance(dispatcher, RemoteDispatcher)
     assert isinstance(start_proxy, Callable)
     assert isinstance(start_dispatcher, Callable)
+
+
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.sleep")
+def test_wait_for_threads_forever_calls_time_sleep(mock_sleep: MagicMock):
+    thread_that_stops_after_one_call = MagicMock()
+    thread_that_stops_after_one_call.is_alive.side_effect = [True, False]
+
+    mock_threads = [thread_that_stops_after_one_call, MagicMock()]
+
+    wait_for_threads_forever(mock_threads)
+    assert mock_sleep.call_count == 1
