@@ -5,6 +5,10 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.motors import SixAxisGonio
 from dodal.devices.util.test_utils import patch_motor
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    ZebraShutter,
+    ZebraShutterControl,
+)
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put
 
@@ -22,10 +26,12 @@ def mock_gonio():
 
 
 def test_when_grid_scan_called_then_expected_x_y_set(
-    sim_run_engine: RunEngineSimulator, mock_gonio: SixAxisGonio
+    sim_run_engine: RunEngineSimulator,
+    mock_gonio: SixAxisGonio,
+    zebra_shutter: ZebraShutter,
 ):
     msgs = sim_run_engine.simulate_plan(
-        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio)
+        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio, zebra_shutter)
     )
     x_moves = [
         msg for msg in msgs if msg.command == "set" and msg.obj.name == "gonio-x"
@@ -41,10 +47,12 @@ def test_when_grid_scan_called_then_expected_x_y_set(
 
 
 def test_omega_moves_twice_for_every_point(
-    sim_run_engine: RunEngineSimulator, mock_gonio: SixAxisGonio
+    sim_run_engine: RunEngineSimulator,
+    mock_gonio: SixAxisGonio,
+    zebra_shutter: ZebraShutter,
 ):
     msgs = sim_run_engine.simulate_plan(
-        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio)
+        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio, zebra_shutter)
     )
     omega_moves = [
         msg for msg in msgs if msg.command == "set" and msg.obj.name == "gonio-omega"
@@ -127,8 +135,43 @@ def test_omega_set_to_0_at_max_velo_during_grid_move(
 
 
 async def test_serial_collection_can_run_in_real_RE(
-    RE: RunEngine, mock_gonio: SixAxisGonio
+    RE: RunEngine, mock_gonio: SixAxisGonio, zebra_shutter: ZebraShutter
 ):
-    RE(serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio))
+    RE(serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio, zebra_shutter))
     assert get_mock_put(mock_gonio.x.user_setpoint).call_count == 4 * 4 + 1
     assert get_mock_put(mock_gonio.y.user_setpoint).call_count == 4 * 4 + 1
+
+
+async def test_serial_collection_sets_shutter_to_auto_then_manual(
+    sim_run_engine: RunEngineSimulator,
+    mock_gonio: SixAxisGonio,
+    zebra_shutter: ZebraShutter,
+):
+    msgs = sim_run_engine.simulate_plan(
+        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio, zebra_shutter)
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "sample_shutter-control_mode"
+        and msg.args[0] == ZebraShutterControl.AUTO,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "sample_shutter-control_mode"
+        and msg.args[0] == ZebraShutterControl.MANUAL,
+    )
+
+
+async def test_given_serial_collection_throws_exception_then_sets_shutter_to_manual(
+    RE: RunEngine,
+    mock_gonio: SixAxisGonio,
+    zebra_shutter: ZebraShutter,
+):
+    mock_gonio.x.set = MagicMock(side_effect=ValueError())
+    with pytest.raises(ValueError):
+        RE(serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_gonio, zebra_shutter))
+
+    assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.MANUAL
