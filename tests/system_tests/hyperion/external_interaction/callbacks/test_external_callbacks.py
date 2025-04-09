@@ -26,7 +26,7 @@ from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    multi_rotation_scan,
+    rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -196,7 +196,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE_with_external_callbacks(
-            multi_rotation_scan(
+            rotation_scan(
                 composite_for_rotation_scan,
                 params_for_rotation_scan,
                 oav_parameters_for_rotation,
