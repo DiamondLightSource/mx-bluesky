@@ -386,7 +386,7 @@ def eiger(action, args_list):
             SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
+    caput(pv.eiger_wavelength, caget(pv.dcm_wavelength))
     caput(pv.eiger_omegaincr, 0.0)
     sleep(0.1)
     # Setup common to all collections ###
