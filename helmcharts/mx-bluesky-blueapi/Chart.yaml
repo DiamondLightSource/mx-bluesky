@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mx-bluesky-blueapi
+description: mx-bluesky bluesky
+type: application
+# version of the chart
+version: 0.0.1

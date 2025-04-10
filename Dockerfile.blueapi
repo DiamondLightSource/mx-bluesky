@@ -1,0 +1,12 @@
+FROM ghcr.io/diamondlightsource/blueapi:latest
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt update -y && apt upgrade -y
+# Needed for python cv2 dependency
+RUN apt install -y libgl1 libglib2.0-0
+
+COPY --from=build /venv/ /venv/
+ENV PATH=/venv/bin:$PATH
+
+RUN pip install mx-bluesky
