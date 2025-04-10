@@ -44,9 +44,9 @@ dependencies = [
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
-    "ophyd-async >= 0.9.0a2",
+    "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@d0c5b227201c5fee6506e80e14acc83e293ee3ce",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@d987ce7e1523dfa425a30fda630b38c1bf5676cb",
 ]
 
 
@@ -154,6 +154,8 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    # https://github.com/bluesky/ophyd-async/issues/838 and https://github.com/seperman/deepdiff/issues/536
+    "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -209,6 +211,7 @@ lint.select = [
     "SLF",    # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
     "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
     "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
+    "TID251", # banned api - https://docs.astral.sh/ruff/rules/banned-api/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -217,8 +220,11 @@ lint.extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
-# Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "B023", "RUF018"]
+# Remove this line to forbid private member access, walrys operators in asserts, banned api in tests
+"tests/**/*" = ["SLF001", "B023", "RUF018", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"time.sleep".msg = "Use bps.sleep instead. # noqa will disable this rule for that line. See https://github.com/DiamondLightSource/mx-bluesky/issues/925"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

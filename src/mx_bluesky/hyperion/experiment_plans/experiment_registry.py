@@ -48,10 +48,6 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "param_type": GridScanWithEdgeDetect,
     },
-    "rotation_scan": {
-        "setup": rotation_scan_plan.create_devices,
-        "param_type": RotationScan,
-    },
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,

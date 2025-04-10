@@ -94,6 +94,8 @@ from mx_bluesky.common.utils.log import (
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
 TEST_GRAYLOG_PORT = 5555
 
 TEST_RESULT_LARGE = [

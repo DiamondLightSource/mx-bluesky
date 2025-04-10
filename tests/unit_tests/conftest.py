@@ -235,6 +235,14 @@ def run_generic_ispyb_handler_setup(
 
 
 @pytest.fixture
+async def zebra_fast_grid_scan():
+    zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    set_mock_value(zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(zebra_fast_grid_scan.position_counter, 0)
+    return zebra_fast_grid_scan
+
+
+@pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
@@ -251,12 +259,8 @@ async def fake_fgs_composite(
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
         smargon=smargon,
         synchrotron=synchrotron,
-        zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
     )
 
@@ -283,8 +287,6 @@ async def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
-    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     return fake_composite

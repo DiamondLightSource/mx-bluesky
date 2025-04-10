@@ -90,12 +90,13 @@ def mock_plan():
 def beamline_specific(
     fake_fgs_composite: FlyScanEssentialDevices,
     test_fgs_params: SpecifiedThreeDGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScan,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan=MagicMock(),
         tidy_plan=MagicMock(),
         set_flyscan_params_plan=MagicMock(),
-        fgs_motors=fake_fgs_composite.zebra_fast_grid_scan,
+        fgs_motors=zebra_fast_grid_scan,
         read_pre_flyscan_plan=MagicMock(),
         read_during_collection_plan=MagicMock(),
     )
@@ -615,6 +616,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
+        zebra_fast_grid_scan: ZebraFastGridScan,
     ):
         id_1, id_2 = 100, 200
 
@@ -637,7 +639,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             kickoff_and_complete_gridscan(
-                fake_fgs_composite.zebra_fast_grid_scan,
+                zebra_fast_grid_scan,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
                 scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
