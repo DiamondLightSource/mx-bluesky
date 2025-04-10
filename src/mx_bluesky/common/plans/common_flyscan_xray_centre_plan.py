@@ -46,7 +46,7 @@ from mx_bluesky.common.utils.exceptions import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
+from mx_bluesky.common.xrc_result import XRayCentreResult
 
 
 # Defaulting to a null plan saves
@@ -73,7 +73,6 @@ class BeamlineSpecificFGSFeatures:
         ..., MsgGenerator
     ]  # Eventually replace with https://github.com/DiamondLightSource/mx-bluesky/issues/819
     read_during_collection_plan: Callable[..., MsgGenerator]
-    plan_after_getting_xrc_results: Callable[..., MsgGenerator] = null_plan
 
 
 def construct_beamline_specific_FGS_features(
@@ -83,7 +82,6 @@ def construct_beamline_specific_FGS_features(
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: list[Readable],
     signals_to_read_during_collection: list[Readable],
-    plan_after_getting_xrc_results=null_plan,
 ) -> BeamlineSpecificFGSFeatures:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
@@ -103,9 +101,6 @@ def construct_beamline_specific_FGS_features(
 
         signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event
         document whilst the gridscan motion is in progress
-
-        plan_after_getting_xrc_results (Callable): Optional plan which is ran after x-ray centring results have
-        been retrieved from Zocalo.
     """
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
@@ -126,7 +121,6 @@ def construct_beamline_specific_FGS_features(
         fgs_motors,
         read_pre_flyscan_plan,
         read_during_collection_plan,
-        plan_after_getting_xrc_results,
     )
 
 
@@ -157,24 +151,9 @@ def common_flyscan_xray_centre(
     plan using the results; and tidying up devices after the plan is complete.
     """
 
-    xrc_event_handler = XRayCentreEventHandler()
-
-    @bpp.subs_decorator(xrc_event_handler)
-    def flyscan_and_fetch_results() -> MsgGenerator:
-        yield from ispyb_activation_wrapper(
-            flyscan_gridscan(composite, parameters, beamline_specific),
-            parameters,
-        )
-
-    yield from flyscan_and_fetch_results()
-
-    xray_centre_results = xrc_event_handler.xray_centre_results
-    assert xray_centre_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
-
-    yield from beamline_specific.plan_after_getting_xrc_results(
-        composite, parameters, xray_centre_results[0]
+    yield from ispyb_activation_wrapper(
+        flyscan_gridscan(composite, parameters, beamline_specific),
+        parameters,
     )
 
 

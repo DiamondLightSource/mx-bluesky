@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, patch
 
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
@@ -8,6 +9,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
+from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
@@ -34,6 +36,7 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     flyscan_gridscan,
     run_gridscan_and_fetch_results,
 )
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedException,
     construct_hyperion_specific_features,
@@ -322,9 +325,6 @@ class TestFlyscanXrayCentrePlan:
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.change_aperture_then_move_to_xtal",
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.bps.wait"
     )
     @patch(
@@ -334,26 +334,17 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_check_topup,
         mock_wait,
-        mock_change_aperture,
         sim_run_engine: RunEngineSimulator,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     ):
-        # Get around the assertion error at the end of the plan
-        mock_xrc_event = MagicMock()
-        mock_xrc_event.xray_centre_results = TEST_RESULT_LARGE
-
         simulate_xrc_result(
             sim_run_engine, fake_fgs_composite.zocalo, TEST_RESULT_LARGE
         )
 
-        with patch(
-            "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.XRayCentreEventHandler",
-            return_value=mock_xrc_event,
-        ):
-            msgs = sim_run_engine.simulate_plan(
-                hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params)
-            )
+        msgs = sim_run_engine.simulate_plan(
+            hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params)
+        )
 
         # Assert order: pause -> open run -> close run -> unpause (set attenuator)
         msgs = assert_message_and_return_remaining(
@@ -398,3 +389,74 @@ class TestFlyscanXrayCentrePlan:
             RE(hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         mock_verify_gap.assert_called_once()
+
+    @patch(
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        autospec=True,
+    )
+    async def test_results_adjusted_and_event_raised(
+        self,
+        run_gridscan: MagicMock,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        RE_with_subs: ReWithSubs,
+    ):
+        RE, _ = RE_with_subs
+
+        x_ray_centre_event_handler = XRayCentreEventHandler()
+        RE.subscribe(x_ray_centre_event_handler)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, TestData.test_result_large)
+
+        def plan():
+            yield from run_gridscan_and_fetch_results(
+                fake_fgs_composite,
+                test_fgs_params,
+                beamline_specific,
+            )
+
+        RE(plan())
+
+        actual = x_ray_centre_event_handler.xray_centre_results
+        expected = XRayCentreResult(
+            centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
+            bounding_box_mm=(
+                np.array([0.15, 0.15, 0.15]),
+                np.array([0.75, 0.75, 0.65]),
+            ),
+            max_count=105062,
+            total_count=2387574,
+        )
+        assert actual and len(actual) == 1
+        assert all(isclose(actual[0].centre_of_mass_mm, expected.centre_of_mass_mm))
+        assert all(isclose(actual[0].bounding_box_mm[0], expected.bounding_box_mm[0]))
+        assert all(isclose(actual[0].bounding_box_mm[1], expected.bounding_box_mm[1]))
+
+    @patch(
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+        MagicMock(),
+    )
+    def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
+        self,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        RE: RunEngine,
+    ):
+        callback = XRayCentreEventHandler()
+        RE.subscribe(callback)
+
+        mock_zocalo_trigger(
+            fake_fgs_composite.zocalo,
+            TestData.test_result_medium
+            + TestData.test_result_below_threshold
+            + TestData.test_result_small,
+        )
+        RE(
+            run_gridscan_and_fetch_results(
+                fake_fgs_composite, test_fgs_params, beamline_specific
+            )
+        )
+
+        assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
+        assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
