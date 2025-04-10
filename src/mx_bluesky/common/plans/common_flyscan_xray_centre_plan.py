@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -11,18 +10,13 @@ import numpy as np
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.protocols import Readable
-from bluesky.utils import MsgGenerator, make_decorator
-from dodal.devices.attenuator.attenuator import (
-    ReadOnlyAttenuator,
-)
+from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
-    ZebraFastGridScan,
 )
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
@@ -36,7 +30,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
-    EnvironmentConstants,
     GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -62,22 +55,12 @@ def null_plan(*args):
     yield from bps.null()
 
 
-null_decorator = make_decorator(null_plan())
-
-T = TypeVar("T", bound=ReadOnlyAttenuator)  # Ensures T is always a subclass of A
-
-
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class FlyScanEssentialDevices:
     eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
     synchrotron: Synchrotron
-    zebra: Zebra
     zocalo: ZocaloResults
     smargon: Smargon
-
-
-NullPlanType = Callable[[], MsgGenerator]
 
 
 @dataclasses.dataclass
@@ -179,7 +162,7 @@ def common_flyscan_xray_centre(
     @bpp.subs_decorator(xrc_event_handler)
     def flyscan_and_fetch_results() -> MsgGenerator:
         yield from ispyb_activation_wrapper(
-            flyscan_xray_centre_no_move(composite, parameters, beamline_specific),
+            flyscan_gridscan(composite, parameters, beamline_specific),
             parameters,
         )
 
@@ -195,7 +178,7 @@ def common_flyscan_xray_centre(
     )
 
 
-def flyscan_xray_centre_no_move(
+def flyscan_gridscan(
     composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
@@ -203,7 +186,6 @@ def flyscan_xray_centre_no_move(
     """Perform a flyscan and determine the centres of interest"""
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
-    composite.zocalo.zocalo_environment = EnvironmentConstants.ZOCALO_ENV
 
     @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -332,17 +314,11 @@ def run_gridscan(
     fgs_composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
-    md={  # noqa
-        "plan_name": PlanNameConstants.GRIDSCAN_MAIN,
-    },
 ):
-    # Currently gridscan only works for omega 0, see #
+    # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(fgs_composite.smargon.omega, 0)
 
-    # We only subscribe to the communicator callback for run_gridscan, so this is where
-    # we should generate an event reading the values which need to be included in the
-    # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()
 

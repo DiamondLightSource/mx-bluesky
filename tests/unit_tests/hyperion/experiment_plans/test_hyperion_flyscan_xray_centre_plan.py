@@ -31,7 +31,7 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
     common_flyscan_xray_centre,
-    flyscan_xray_centre_no_move,
+    flyscan_gridscan,
     run_gridscan_and_fetch_results,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -261,7 +261,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
         msgs = sim_run_engine.simulate_plan(
-            flyscan_xray_centre_no_move(
+            flyscan_gridscan(
                 fgs_composite_with_panda_pcap, fgs_params_use_panda, beamline_specific
             )
         )

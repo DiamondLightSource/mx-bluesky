@@ -20,7 +20,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    flyscan_xray_centre_no_move,
+    flyscan_gridscan,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -100,6 +100,14 @@ def detect_grid_and_do_gridscan(
             parameters.box_size_um,
         )
 
+    if parameters.selected_aperture:
+        # Start moving the aperture/scatterguard into position without moving it in
+        yield from bps.prepare(
+            composite.aperture_scatterguard,
+            parameters.selected_aperture,
+            group=CONST.WAIT.GRID_READY_FOR_DC,
+        )
+
     yield from run_grid_detection_plan(
         oav_params,
         snapshot_template,
@@ -143,7 +151,7 @@ def detect_grid_and_do_gridscan(
 
     beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
 
-    yield from flyscan_xray_centre_no_move(xrc_composite, params, beamline_specific)
+    yield from flyscan_gridscan(xrc_composite, params, beamline_specific)
 
 
 def grid_detect_then_xray_centre(
