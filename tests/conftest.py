@@ -92,7 +92,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -1438,7 +1438,7 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = RotationScan(
+    dummy_params = MultiRotationScan(
         **default_raw_params(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -1449,7 +1449,7 @@ def dummy_rotation_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
