@@ -14,7 +14,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraFastGridScan,
 )
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -82,3 +82,24 @@ class GridDetectThenXRayCentreComposite:
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
     sample_shutter: ZebraShutter
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class i04FlyScanXRayCentreComposite(FlyScanEssentialDevices):
+    """All devices which are directly or indirectly required by this plan"""
+
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: BinaryFilterAttenuator
+    dcm: DCM
+    eiger: EigerDetector
+    flux: Flux
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    synchrotron: Synchrotron
+    zebra: Zebra
+    zocalo: ZocaloResults
+    robot: BartRobot
+    sample_shutter: ZebraShutter
+    backlight: Backlight
+    xbpm_feedback: XBPMFeedback
+    zebra_fast_grid_scan: ZebraFastGridScan

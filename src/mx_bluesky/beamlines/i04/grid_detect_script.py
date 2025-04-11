@@ -1,9 +1,9 @@
 from blueapi.core import BlueskyContext
+from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.utils import get_beamline_based_on_environment_variable
 
-import mx_bluesky.common.experiment_plans.oav_grid_detection_plan as oav_grid_detection_plan
 from mx_bluesky.beamlines.i04.parameters.constants import CONST
 from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     create_devices,
@@ -23,26 +23,28 @@ def main():
     )
     composite = create_devices(context)
     parameters = OAVParameters(
-        context="gridDetection",
+        context="xrayCentring",
         oav_config_json="/dls_sw/i04/software/daq_configuration/json/OAVCentring.json",
     )
     RE = RunEngine(call_returns_result=True)
-    RE(
-        grid_detection_plan(
+
+    @bpp.run_decorator()
+    def my_plan():
+        yield from grid_detection_plan(
             composite=composite,
             parameters=parameters,
             snapshot_template="test_{angle}",
             snapshot_dir="/dls_sw/i04/software/bluesky/scratch",
-            grid_width_microns=161.2,
+            grid_width_microns=600,
             box_size_um=20,
             group=CONST,
         )
-    )
+    RE(my_plan())
 
 
 def setup_context(wait_for_connection: bool = True) -> BlueskyContext:
     context = BlueskyContext()
-    context.with_plan_module(oav_grid_detection_plan)
+    #context.with_plan_module(oav_grid_detection_plan)
     # context.with_plan_module(i04_plans)
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
@@ -51,3 +53,7 @@ def setup_context(wait_for_connection: bool = True) -> BlueskyContext:
 
     LOGGER.info(f"Plans found in context: {context.plan_functions.keys()}")
     return context
+
+
+if __name__ == "__main__":
+    main()

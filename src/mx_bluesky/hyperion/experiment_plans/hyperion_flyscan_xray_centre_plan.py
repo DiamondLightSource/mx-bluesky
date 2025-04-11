@@ -32,11 +32,9 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_panda_flyscan,
     tidy_up_zebra_after_gridscan,
 )
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
+    i04FlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
@@ -78,6 +76,51 @@ def hyperion_flyscan_xray_centre(
         yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
 
     yield from decorated_flyscan_plan()
+
+
+def construct_i04_specific_features(
+    fgs_composite: i04FlyScanXRayCentreComposite,
+    parameters: HyperionSpecifiedThreeDGridScan,
+):
+    """
+    Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
+    """
+
+    signals_to_read_pre_flyscan = [
+        fgs_composite.undulator.current_gap,
+        fgs_composite.synchrotron.synchrotron_mode,
+        fgs_composite.s4_slit_gaps.xgap,
+        fgs_composite.s4_slit_gaps.ygap,
+        fgs_composite.smargon.x,
+        fgs_composite.smargon.y,
+        fgs_composite.smargon.z,
+        fgs_composite.dcm.energy_in_kev,
+    ]
+
+    signals_to_read_during_collection = [
+        fgs_composite.aperture_scatterguard,
+        fgs_composite.attenuator.actual_transmission,
+        fgs_composite.flux.flux_reading,
+        fgs_composite.dcm.energy_in_kev,
+        fgs_composite.eiger.bit_depth,
+    ]
+
+    setup_trigger_plan = _zebra_triggering_setup
+    tidy_plan = partial(_generic_tidy, group="flyscan_zebra_tidy", wait=True)
+    set_flyscan_params_plan = partial(
+        set_fast_grid_scan_params,
+        fgs_composite.zebra_fast_grid_scan,
+        parameters.FGS_params,
+    )
+    fgs_motors = fgs_composite.zebra_fast_grid_scan
+    return construct_beamline_specific_FGS_features(
+        setup_trigger_plan,
+        tidy_plan,
+        set_flyscan_params_plan,
+        fgs_motors,
+        signals_to_read_pre_flyscan,
+        signals_to_read_during_collection,
+    )
 
 
 def construct_hyperion_specific_features(
@@ -133,7 +176,6 @@ def construct_hyperion_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
-        plan_after_getting_xrc_results=change_aperture_then_move_to_xtal,
     )
 
 

@@ -28,7 +28,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.constants import BeamlineConstants, OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     flyscan_gridscan,
@@ -40,12 +40,12 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
+    construct_i04_specific_features,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
-    HyperionFlyScanXRayCentreComposite,
+    i04FlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -72,6 +72,7 @@ def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
     oav_params: OAVParameters,
+    group: BeamlineConstants,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
@@ -97,7 +98,7 @@ def detect_grid_and_do_gridscan(
             str(snapshot_dir),
             parameters.grid_width_um,
             parameters.box_size_um,
-            group=CONST,
+            group=group,
         )
 
     if parameters.selected_aperture:
@@ -124,12 +125,11 @@ def detect_grid_and_do_gridscan(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    xrc_composite = HyperionFlyScanXRayCentreComposite(
+    xrc_composite = i04FlyScanXRayCentreComposite(
         aperture_scatterguard=composite.aperture_scatterguard,
         attenuator=composite.attenuator,
         backlight=composite.backlight,
         eiger=composite.eiger,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
         flux=composite.flux,
         s4_slit_gaps=composite.s4_slit_gaps,
         smargon=composite.smargon,
@@ -138,7 +138,6 @@ def detect_grid_and_do_gridscan(
         xbpm_feedback=composite.xbpm_feedback,
         zebra=composite.zebra,
         zocalo=composite.zocalo,
-        panda=composite.panda,
         zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
         dcm=composite.dcm,
         robot=composite.robot,
@@ -149,7 +148,7 @@ def detect_grid_and_do_gridscan(
         parameters, grid_params_callback.get_grid_parameters()
     )
 
-    beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
+    beamline_specific = construct_i04_specific_features(xrc_composite, params)
 
     yield from flyscan_gridscan(xrc_composite, params, beamline_specific)
 
@@ -175,11 +174,7 @@ def grid_detect_then_xray_centre(
     @subs_decorator(flyscan_event_handler)
     def plan_to_perform():
         yield from ispyb_activation_wrapper(
-            detect_grid_and_do_gridscan(
-                composite,
-                parameters,
-                oav_params,
-            ),
+            detect_grid_and_do_gridscan(composite, parameters, oav_params, group=CONST),
             parameters,
         )
 
