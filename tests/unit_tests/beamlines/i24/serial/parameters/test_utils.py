@@ -62,3 +62,21 @@ def test_get_chip_map(fake_caget: MagicMock):
 
     assert len(chip_map) == 2
     assert chip_map == [1, 3]
+
+
+def test_get_chip_format_for_custom_from_web_ui_fails_if_no_data_passed():
+    with pytest.raises(ValueError):
+        get_chip_format(ChipType.Custom, None, "web")
+
+
+def test_get_chip_format_for_custom_from_web_ui():
+    test_custom_chip = ChipType["Custom"]
+    test_format_from_web = [10, 2, 0.2, 0.2]
+    chip_format = get_chip_format(
+        test_custom_chip, test_format_from_web, "web"
+    ).model_dump()
+
+    assert chip_format["x_num_steps"] == 10
+    assert chip_format["y_num_steps"] == 2
+    assert chip_format["x_step_size"] == 0.2 and chip_format["y_step_size"] == 0.2
+    assert chip_format["y_blocks"] == 1
