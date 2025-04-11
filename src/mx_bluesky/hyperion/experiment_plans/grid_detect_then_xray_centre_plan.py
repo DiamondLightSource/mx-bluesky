@@ -2,34 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.backlight import Backlight, BacklightPosition
-from dodal.devices.dcm import DCM
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
-from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
-from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -50,51 +30,27 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    flyscan_gridscan,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    flyscan_xray_centre_no_move,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite:
-    """All devices which are directly or indirectly required by this plan"""
-
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: BinaryFilterAttenuator
-    backlight: Backlight
-    beamstop: Beamstop
-    dcm: DCM
-    detector_motion: DetectorMotion
-    eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
-    flux: Flux
-    oav: OAV
-    pin_tip_detection: PinTipDetection
-    smargon: Smargon
-    synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
-    xbpm_feedback: XBPMFeedback
-    zebra: Zebra
-    zocalo: ZocaloResults
-    panda: HDFPanda
-    panda_fast_grid_scan: PandAFastGridScan
-    robot: BartRobot
-    sample_shutter: ZebraShutter
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
@@ -168,31 +124,34 @@ def detect_grid_and_do_gridscan(
         group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
-    yield from flyscan_xray_centre_no_move(
-        HyperionFlyScanXRayCentreComposite(
-            aperture_scatterguard=composite.aperture_scatterguard,
-            attenuator=composite.attenuator,
-            backlight=composite.backlight,
-            eiger=composite.eiger,
-            panda_fast_grid_scan=composite.panda_fast_grid_scan,
-            flux=composite.flux,
-            s4_slit_gaps=composite.s4_slit_gaps,
-            smargon=composite.smargon,
-            undulator=composite.undulator,
-            synchrotron=composite.synchrotron,
-            xbpm_feedback=composite.xbpm_feedback,
-            zebra=composite.zebra,
-            zocalo=composite.zocalo,
-            panda=composite.panda,
-            zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
-            dcm=composite.dcm,
-            robot=composite.robot,
-            sample_shutter=composite.sample_shutter,
-        ),
-        create_parameters_for_flyscan_xray_centre(
-            parameters, grid_params_callback.get_grid_parameters()
-        ),
+    xrc_composite = HyperionFlyScanXRayCentreComposite(
+        aperture_scatterguard=composite.aperture_scatterguard,
+        attenuator=composite.attenuator,
+        backlight=composite.backlight,
+        eiger=composite.eiger,
+        panda_fast_grid_scan=composite.panda_fast_grid_scan,
+        flux=composite.flux,
+        s4_slit_gaps=composite.s4_slit_gaps,
+        smargon=composite.smargon,
+        undulator=composite.undulator,
+        synchrotron=composite.synchrotron,
+        xbpm_feedback=composite.xbpm_feedback,
+        zebra=composite.zebra,
+        zocalo=composite.zocalo,
+        panda=composite.panda,
+        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
+        dcm=composite.dcm,
+        robot=composite.robot,
+        sample_shutter=composite.sample_shutter,
     )
+
+    params = create_parameters_for_flyscan_xray_centre(
+        parameters, grid_params_callback.get_grid_parameters()
+    )
+
+    beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
+
+    yield from flyscan_gridscan(xrc_composite, params, beamline_specific)
 
 
 def grid_detect_then_xray_centre(

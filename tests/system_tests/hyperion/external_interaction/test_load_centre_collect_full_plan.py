@@ -28,9 +28,9 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    WarningException,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
