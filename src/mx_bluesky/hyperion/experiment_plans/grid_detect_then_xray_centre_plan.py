@@ -28,6 +28,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from dodal.devices.aperturescatterguard import (
+    ApertureValue,
+)
 from mx_bluesky.common.parameters.constants import BeamlineConstants, OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
@@ -42,6 +45,7 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_i04_specific_features,
 )
+from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import setup_beamline_for_OAV
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
@@ -91,6 +95,12 @@ def detect_grid_and_do_gridscan(
             pin_tip_detection=composite.pin_tip_detection,
         )
 
+        yield from bps.abs_set(composite.backlight, BacklightPosition.IN, group=group, wait=True)
+        # yield from bps.abs_set(
+        # composite.aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group=group, wait=True
+        # )
+        
+
         yield from grid_detection_plan(
             grid_detect_composite,
             oav_params,
@@ -100,6 +110,8 @@ def detect_grid_and_do_gridscan(
             parameters.box_size_um,
             group=group,
         )
+
+        LOGGER.info("Doing apperture bit")
 
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in

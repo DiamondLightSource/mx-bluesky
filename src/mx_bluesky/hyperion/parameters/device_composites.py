@@ -85,6 +85,61 @@ class GridDetectThenXRayCentreComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class HyperionGridDetectThenXRayCentreComposite(GridDetectThenXRayCentreComposite):
+    """All devices which are directly or indirectly required by this plan"""
+
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: BinaryFilterAttenuator
+    backlight: Backlight
+    beamstop: Beamstop
+    dcm: DCM
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    zebra_fast_grid_scan: ZebraFastGridScan
+    flux: Flux
+    oav: OAV
+    pin_tip_detection: PinTipDetection
+    smargon: Smargon
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    zebra: Zebra
+    zocalo: ZocaloResults
+    panda: HDFPanda
+    panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
+    sample_shutter: ZebraShutter
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectThenXRayCentreComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: BinaryFilterAttenuator
+    backlight: Backlight
+    beamstop: Beamstop
+    dcm: DCM
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    zebra_fast_grid_scan: ZebraFastGridScan
+    flux: Flux
+    oav: OAV
+    pin_tip_detection: PinTipDetection
+    smargon: Smargon
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    xbpm_feedback: XBPMFeedback
+    zebra: Zebra
+    zocalo: ZocaloResults
+    robot: BartRobot
+    sample_shutter: ZebraShutter
+
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class i04FlyScanXRayCentreComposite(FlyScanEssentialDevices):
     """All devices which are directly or indirectly required by this plan"""
 

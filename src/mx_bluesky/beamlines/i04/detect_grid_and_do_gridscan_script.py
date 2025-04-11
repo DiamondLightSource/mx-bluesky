@@ -38,6 +38,7 @@ def main():
         num_triggers=10,
         use_roi_mode=True,
         det_dist_to_beam_converter_path="/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt",
+        expected_energy_ev = 13000
     )
     composite = create_devices(context)
 
@@ -49,7 +50,7 @@ def main():
             "/dls/i04/data/2025/cm40608-2/test_grid_scans/snapshots"
         ),
         file_name="test",
-        storage_directory="/dls/i04/data/2025/cm40608-2/test_grid_scans",
+        storage_directory="/dls/i04/data/2025/cm40608-2/test_grid_scans2",
         exposure_time_s=0.005,
         detector_distance_mm=1000,
         omega_start_deg=0.0,
@@ -63,6 +64,7 @@ def main():
     )
     parameters.box_size_um = 20
     parameters.grid_width_um = 600
+    parameters.demand_energy_ev = 13000
     RE = RunEngine(call_returns_result=True)
 
     @bpp.run_decorator()

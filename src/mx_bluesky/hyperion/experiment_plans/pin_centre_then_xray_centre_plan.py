@@ -99,6 +99,7 @@ def pin_centre_then_flyscan_plan(
             composite,
             grid_detect_params,
             oav_params,
+
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)

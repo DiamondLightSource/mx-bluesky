@@ -84,8 +84,7 @@ class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGr
             use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
-            or self.features.use_gpu_results,
+            enable_dev_shm=False,
             **optional_args,
         )
 

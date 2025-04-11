@@ -46,7 +46,7 @@ class GridCommon(
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
+    selected_aperture: ApertureValue | None = Field(default=ApertureValue.LARGE)
 
     tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
