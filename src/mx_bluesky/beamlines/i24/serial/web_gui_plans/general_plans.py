@@ -19,7 +19,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _move_on_mouse_click_plan,
 )
-from mx_bluesky.beamlines.i24.serial.log import _read_visit_directory_from_file
+from mx_bluesky.beamlines.i24.serial.log import (
+    SSX_LOGGER,
+    _read_visit_directory_from_file,
+)
 from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
@@ -40,6 +43,7 @@ def gui_move_backlight(
 ) -> MsgGenerator:
     bl_pos = BacklightPositions(position)
     yield from bps.abs_set(backlight, bl_pos, wait=True)
+    SSX_LOGGER.debug(f"Backlight moved to {bl_pos.value}")
 
 
 @bpp.run_decorator()
@@ -79,6 +83,7 @@ def gui_move_detector(
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable
+    SSX_LOGGER.debug(f"Detector move done, resetting general PV to {det}")
     caput(pv.me14e_gp101, det)
 
 

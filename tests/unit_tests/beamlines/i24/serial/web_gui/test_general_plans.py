@@ -29,20 +29,18 @@ def test_gui_sleep(fake_sleep, RE):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
-async def test_gui_move_detector(fake_caput, detector_stage, RE):
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.SSX_LOGGER")
+async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, RE):
     RE(gui_move_detector("eiger", detector_stage))
     fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP101", "eiger")
 
     assert await detector_stage.y.user_readback.get_value() == -22.0
+    mock_logger.debug.assert_called_once()
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.rd")
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.mv")
 def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
-    def fake_generator(value):
-        yield from bps.null()
-        return value
-
     fake_rd.side_effect = [fake_generator(1.25), fake_generator(1.25)]
 
     with (
@@ -86,14 +84,16 @@ def test_gui_set_parameters_raises_error_for_empty_map(mock_det_type, RE):
 )
 def test_gui_stage_move_on_click(fake_move_plan, oav, pmac, RE):
     RE(gui_stage_move_on_click((200, 200), oav, pmac))
-    fake_move_plan.assert_called_once()
+    fake_move_plan.assert_called_once_with(oav, pmac, (200, 200))
 
 
 @pytest.mark.parametrize("position", ["In", "Out", "White In"])
-async def test_gui_move_backlight(position, backlight, RE):
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.SSX_LOGGER")
+async def test_gui_move_backlight(mock_logger, position, backlight, RE):
     RE(gui_move_backlight(position, backlight))
 
     assert (
         await backlight.backlight_position.pos_level.get_value()
         == BacklightPositions(position)
     )
+    mock_logger.debug.assert_called_with(f"Backlight moved to {position}")
