@@ -104,6 +104,32 @@ def gui_set_parameters(
     laser_delay: float,
     pre_pump: float,
 ) -> MsgGenerator:
+    """Set the parameter model for the data collection.
+
+    Args:
+        sub_dir (str): subdirectory of the visit to write data in.
+        chip_name (str): a name identifying the current chip collection, will be used \
+            as filename.
+        exp_time (float): exposure time of each window shot, in s.
+        det_dist (float): sample-detector distance, in mm.
+        transmission (float): requested beam intensity transmission, expressed as \
+            a fraction, e.g. 0.3.
+        n_shots (int): number of times each window should be collected.
+        chip_type (str): type of chip in use.
+        map_type (str): if an Oxford chip is used, define whether it's a full chip \
+            collection or lite mapping is in use. For all other chip, this will be None.
+        chip_format (list[int|float]): for a custom chip, a list of the number of x,y \
+            steps and the x,y step size. For an Oxford chip, the list should be empty \
+            if collecting a full chip and a list of the block numbers to scan for a \
+            lite collection.
+        checker_pattern (bool): whether checker_pattern is turned on, ie. only every \
+            other window in a block gets collected
+        pump_probe (str): pump probe setting.
+        laser_dwell (float): laser exposure time for pump probe collections, in s.
+        laser_delay (float): delay between laser exposure and collection, in s.
+        pre_pump (float): pre-pump exposure time for a pump probe short2 collection, \
+            ie a pump-in-probe where the collection starts during the pump.
+    """
     # NOTE still a work in progress, adding to it as the ui grows
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
