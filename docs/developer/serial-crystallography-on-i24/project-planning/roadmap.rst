@@ -7,7 +7,7 @@ board <https://github.com/orgs/DiamondLightSource/projects/10/views/2>`__
 Ongoing list of TODOs (Updated 04/2025)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Bluesky:
+**Bluesky**:
 
 1. Use callbacks for file IO, eg. to write parameter and map files, nexus writer and ispyb deposition.
    - Improve nexgen-server use
@@ -28,7 +28,7 @@ Bluesky:
 
 6. Reinstate full mapping code using bluesky.
 
-React UI:
+**React UI**:
 
 1. Prepare generic react components to match the features in the edms.
    - Components for things currently managed by general purpose PVs (eg. mapping, pump probe).
