@@ -9,33 +9,39 @@ Ongoing list of TODOs (Updated 04/2025)
 
 **Bluesky**:
 
-1. Use callbacks for file IO, eg. to write parameter and map files, nexus writer and ispyb deposition.
+1. Set up blueapi and run mx-bluesky on the beamline kubernetes cluster. I24 should be due to get one in shutdown 4 2024.
+
+2. Improve/fix the issues with the PMAC ProgramRunner: it should monitor the counter PV as well as the status PV.
+
+3. Use callbacks for file IO, eg. to write parameter and map files, nexus writer and ispyb deposition.
+
    - Improve nexgen-server use
 
-2. Set up blueapi and run mx-bluesky on the beamline kubernetes cluster. I24 should be due to get one in shutdown 4 2024.
-
-3. Convert detector set up to use bluesky plans and ophyd_async devices.
+4. Convert detector set up to use bluesky plans and ophyd_async devices.
 
    - Eiger device in dodal needs to be converted to ophyd_async and updated to work with different Eigers on several beamlines. This work is dependent on other work out of the scope of this project, see `Dodal#700 <https://github.com/DiamondLightSource/dodal/issues/700>`__ and linked issues.
+   - Update JF code for serial, move devices into dodal and merge it.
    - Investigate using the existing Pilatus in ophyd_async which writes HDF5 instead of CBFs, but we may want to make a CBF-writing Pilatus. However, the Pilatus detector is due to be removed soon.
 
-4. Start integrating Panda, at least for fixed-target collections.
+5. Start integrating Panda, at least for fixed-target collections.
 
-5. Implementation of serial tools to be used at XFELS.
+6. Implementation of serial tools to be used at XFELS.
 
    - Reinstate removed code from sacla and move it to bluesky.
    - Add any plans/devices that might be needed for other locations.
 
-6. Reinstate full mapping code using bluesky.
+7. Reinstate full mapping code using bluesky.
 
 **React UI**:
 
 1. Prepare generic react components to match the features in the edms.
+
    - Components for things currently managed by general purpose PVs (eg. mapping, pump probe).
    - Set up collection parameters
    - Move hardware: eg. detector stage
    - Monitor beamline state
 2. Move the moveonclick to the wbe UI
+
    - Component for the OAV viewer on the UI.
    - Components to set the zoom and move the backlight using bluesky plans.
    - Look into drawing the crosshair in epics.
@@ -50,6 +56,12 @@ Ongoing list of TODOs (Updated 04/2025)
    * - Work Ongoing
      - Rough Timeline
      - Completed
+   * - PMAC ProgramRunner updates/fixes
+     - Apr. 24
+     - :material-regular:`pending;2em`
+   * - Update/improve coordinate system maker on the PMAC
+     - Apr. /May 25
+     - :material-regular:`pending;2em`
    * - Convert the current detector set up code to bluesky plans using the device
      - Dependent on `FastCS Eiger issues <https://github.com/bluesky/ophyd-async/issues?q=is%3Aissue+is%3Aopen+eiger>`__ being completed
      - :material-regular:`pending;2em`
@@ -67,9 +79,6 @@ Ongoing list of TODOs (Updated 04/2025)
      - :material-regular:`pending;2em`
    * - Deploy a first basic version of the web UI
      - May 25
-     - :material-regular:`pending;2em`
-   * - Update/improve coordinate system maker on the PMAC
-     - Apr. /May 25
      - :material-regular:`pending;2em`
    * - Fully test extruder collections
      - Nov. 24
