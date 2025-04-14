@@ -210,25 +210,21 @@ class TestFlyscanXrayCentrePlan:
     def test_if_smargon_speed_over_limit_then_log_error(
         self,
         mock_kickoff_and_complete: MagicMock,
-        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
-        test_fgs_params.x_step_size_um = 10000
-        test_fgs_params.detector_params.exposure_time_s = 0.01
+        fgs_params_use_panda.x_step_size_um = 10000
+        fgs_params_use_panda.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
-        try:
+        with pytest.raises(SmargonSpeedException):
             RE(
                 run_gridscan_and_fetch_results(
-                    fake_fgs_composite, test_fgs_params, beamline_specific
+                    fake_fgs_composite, fgs_params_use_panda, beamline_specific
                 )
             )
-        except SmargonSpeedException:
-            assert test_fgs_params.features.use_panda_for_gridscan
-        else:
-            assert not test_fgs_params.features.use_panda_for_gridscan
 
     @patch(
         "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.set_panda_directory",
