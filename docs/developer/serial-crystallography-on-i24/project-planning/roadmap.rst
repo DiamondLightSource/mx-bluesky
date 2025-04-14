@@ -31,12 +31,12 @@ Ongoing list of TODOs:
    - Components for things currently managed by general purpose PVs (eg. map).
    - OAV viewer.
 
-7. Start integrating Panda, at least for fixed-target collections. 
+7. Start integrating Panda, at least for fixed-target collections.
 8. Implementation of serial tools to be used at XFELS.
 
    - Reinstate removed code from sacla and move it to bluesky.
    - Add any plans/devices that might be needed for other locations.
-  
+
 9. Reinstate full mapping code using bluesky.
 
 (TBC…)
@@ -54,7 +54,7 @@ Ongoing list of TODOs:
      - :material-regular:`pending;2em`
    * - Fix permissions and allow for user collections
      - Dec. 24 / Jan. 25
-     - :material-regular:`pending;2em`
+     - :material-regular:`check;2em`
    * - Convert the current detector set up code to bluesky plans using the device
      - Dependent on `FastCS Eiger issues <https://github.com/bluesky/ophyd-async/issues?q=is%3Aissue+is%3Aopen+eiger>`__ being completed
      - :material-regular:`pending;2em`
@@ -70,15 +70,15 @@ Ongoing list of TODOs:
    * - Refactor logger
      - Nov. 24
      - :material-regular:`pending;2em`
-   * - Improve current alignment (moveonclick)
+   * - Improve current alignment - use multiple zooms (moveonclick)
      - Nov. 24
-     - :material-regular:`pending;2em`
+     - :material-regular:`check;2em`
    * - Set up a PV backend, eg. ``pvws``, for web GUI on the beamline.
      - Jan. 25
-     - :material-regular:`pending;2em`
-   * - Prepare React components to switch from EDM to a web GUI
+     - :material-regular:`check;2em`
+   * - Prepare first React components to switch from EDM to a web GUI
      - Dec. 24 / Jan. 25
-     - :material-regular:`pending;2em`
+     - :material-regular:`check;2em`
    * - Move the OAV viewer to a web GUI
      - Jan. 25 / Feb. 25
      - :material-regular:`pending;2em`
