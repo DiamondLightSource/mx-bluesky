@@ -37,10 +37,12 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     run_gridscan_and_fetch_results,
 )
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    _gridscan_with_undulator_checks,
+)
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedException,
     construct_hyperion_specific_features,
-    hyperion_flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -315,11 +317,16 @@ class TestFlyscanXrayCentrePlan:
         mock_check_and_pause: MagicMock,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):
         fake_run_gridscan.side_effect = Exception
         with pytest.raises(Exception):  # noqa: B017
-            RE(hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+            RE(
+                _gridscan_with_undulator_checks(
+                    fake_fgs_composite, test_fgs_params, beamline_specific
+                )
+            )
 
         # Called once on exception and once on close_run
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
@@ -337,13 +344,16 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         simulate_xrc_result(
             sim_run_engine, fake_fgs_composite.zocalo, TEST_RESULT_LARGE
         )
 
         msgs = sim_run_engine.simulate_plan(
-            hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params)
+            _gridscan_with_undulator_checks(
+                fake_fgs_composite, test_fgs_params, beamline_specific
+            )
         )
 
         # Assert order: pause -> open run -> close run -> unpause (set attenuator)
@@ -383,10 +393,15 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+        beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         mock_plan.side_effect = CompleteException
         with pytest.raises(CompleteException):
-            RE(hyperion_flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+            RE(
+                _gridscan_with_undulator_checks(
+                    fake_fgs_composite, test_fgs_params, beamline_specific
+                )
+            )
 
         mock_verify_gap.assert_called_once()
 

@@ -10,6 +10,9 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.plans.preprocessors.verify_undulator_gap import (
+    verify_undulator_gap_before_run_decorator,
+)
 
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -21,7 +24,11 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
     flyscan_gridscan,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -152,7 +159,22 @@ def detect_grid_and_do_gridscan(
 
     beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
 
-    yield from flyscan_gridscan(xrc_composite, params, beamline_specific)
+    yield from _gridscan_with_undulator_checks(xrc_composite, params, beamline_specific)
+
+
+def _gridscan_with_undulator_checks(
+    composite: HyperionFlyScanXRayCentreComposite,
+    params: HyperionSpecifiedThreeDGridScan,
+    beamline_specific: BeamlineSpecificFGSFeatures,
+):
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite, params.transmission_frac
+    )
+    @verify_undulator_gap_before_run_decorator(composite)
+    def _inner():
+        yield from flyscan_gridscan(composite, params, beamline_specific)
+
+    yield from _inner()
 
 
 def grid_detect_then_xray_centre(

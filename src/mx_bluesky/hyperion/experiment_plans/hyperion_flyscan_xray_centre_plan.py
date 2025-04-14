@@ -4,23 +4,14 @@ from functools import partial
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
-from dodal.plans.preprocessors.verify_undulator_gap import (
-    verify_undulator_gap_before_run_decorator,
-)
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    common_flyscan_xray_centre,
     construct_beamline_specific_FGS_features,
 )
-from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -40,41 +31,6 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 
 class SmargonSpeedException(Exception):
     pass
-
-
-def create_devices(context: BlueskyContext) -> HyperionFlyScanXRayCentreComposite:
-    """Creates the devices required for the plan and connect to them"""
-    return device_composite_from_context(context, HyperionFlyScanXRayCentreComposite)
-
-
-def hyperion_flyscan_xray_centre(
-    composite: HyperionFlyScanXRayCentreComposite,
-    parameters: HyperionSpecifiedThreeDGridScan,
-) -> MsgGenerator:
-    """Create the plan to run the grid scan based on provided parameters.
-
-    The ispyb handler should be added to the whole gridscan as we want to capture errors
-    at any point in it.
-
-    Args:
-        parameters (HyperionSpecifiedThreeDGridScan): The parameters to run the scan.
-
-    Returns:
-        Generator: The plan for the gridscan
-    """
-    beamline_specific = construct_hyperion_specific_features(composite, parameters)
-    parameters.features.update_self_from_server()
-    composite.zocalo.use_cpu_and_gpu = parameters.features.compare_cpu_and_gpu_zocalo
-    composite.zocalo.use_gpu = parameters.features.use_gpu_results
-
-    @verify_undulator_gap_before_run_decorator(composite)
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite, parameters.transmission_frac
-    )
-    def decorated_flyscan_plan():
-        yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
-
-    yield from decorated_flyscan_plan()
 
 
 def construct_hyperion_specific_features(
