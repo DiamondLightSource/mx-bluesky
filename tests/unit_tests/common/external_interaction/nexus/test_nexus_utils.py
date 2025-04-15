@@ -22,7 +22,7 @@ def test_vds_type_is_expected_based_on_bit_depth(
 
 @pytest.fixture
 def scan_points(test_rotation_params) -> AxesPoints:
-    return test_rotation_params.scan_points
+    return next(test_rotation_params.single_rotation_scans).scan_points
 
 
 @pytest.mark.parametrize(

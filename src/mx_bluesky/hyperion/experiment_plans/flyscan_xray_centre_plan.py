@@ -32,6 +32,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import HardwareConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
 from mx_bluesky.common.plans.read_hardware import (
     standard_read_hardware_during_collection,
@@ -157,7 +158,7 @@ def flyscan_xray_centre(
         xray_centre_results[0],
         composite.smargon,
         composite.aperture_scatterguard,
-        parameters,
+        parameters.FGS_params.set_stub_offsets,
     )
 
 
@@ -262,7 +263,7 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: HyperionFlyScanXRayCentreComposite,
-    parameters: HyperionSpecifiedThreeDGridScan,
+    parameters: SpecifiedThreeDGridScan,
     feature_controlled: _FeatureControlled,
     md={  # noqa
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
