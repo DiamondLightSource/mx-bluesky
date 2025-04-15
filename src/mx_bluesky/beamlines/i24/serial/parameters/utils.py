@@ -21,17 +21,17 @@ def get_chip_format(
 ) -> ChipDescription:
     """Get the default parameter values for the requested chip type.
 
-    For an Oxford-type chip, the default values are hard coded as the dimensions are \
-    always the same. For a Custom chip instead, the number of steps and step size in \
-    each direction must be entered throught the GUI - web or edm. If the collection is \
-    run through the edm, the values will be read from the general purpose PVs set on \
-    there. If instead the plan is run from the web UI, the values will be passed in the \
+    For an Oxford-type chip, the default values are hard coded as the dimensions are
+    always the same. For a Custom chip instead, the number of steps and step size in
+    each direction must be entered throught the GUI - web or edm. If the collection is
+    run through the edm, the values will be read from the general purpose PVs set on
+    there. If instead the plan is run from the web UI, the values will be passed in the
     form of a list/tuple of 4 values.
 
     Args:
         chip_type (ChipType): Chip in use
-        custom_format (Sequence[int | float], optional): Number and size of steps input \
-            from the web ui. Format should be: [int, int, float, float]. \
+        custom_format (Sequence[int | float], optional): Number and size of steps input
+            from the web ui. Format should be: [int, int, float, float].
             Defaults to None.
         origin (str, optional): UI in use, can be either web or edm. Defaults to edm.
     """
