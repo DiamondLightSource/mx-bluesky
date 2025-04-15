@@ -11,7 +11,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import multi_rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
@@ -22,14 +22,14 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from .....conftest import raw_params_from_file
 
 
 @pytest.fixture
 def params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -43,9 +43,9 @@ def activate_callbacks(cbs: tuple[RotationNexusFileCallback, RotationISPyBCallba
 
 @pytest.fixture
 def do_rotation_scan(
-    params: RotationScan, fake_create_rotation_devices, oav_parameters_for_rotation
+    params: MultiRotationScan, fake_create_rotation_devices, oav_parameters_for_rotation
 ):
-    return rotation_scan(
+    return multi_rotation_scan(
         fake_create_rotation_devices, params, oav_parameters_for_rotation
     )
 
@@ -118,7 +118,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     RE.subscribe(ispyb_callback)
     RE(do_rotation_scan)
 
-    assert ispyb_callback.activity_gated_stop.call_count == 2
+    assert ispyb_callback.activity_gated_stop.call_count == 3
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
@@ -129,7 +129,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
 def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
-    params: RotationScan,
+    params: MultiRotationScan,
     fake_create_rotation_devices,
     oav_parameters_for_rotation,
 ):
@@ -152,7 +152,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         params.sample_id = sample_id
 
         RE(
-            rotation_scan(
+            multi_rotation_scan(
                 fake_create_rotation_devices, params, oav_parameters_for_rotation
             )
         )
@@ -198,7 +198,7 @@ n_images_store_id = [
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     n_images: int,
     store_id: bool,
-    params: RotationScan,
+    params: MultiRotationScan,
 ):
     cb = RotationISPyBCallback()
     cb.active = True
@@ -207,9 +207,9 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         "time": 0,
         "uid": "abc123",
     }
-
     params.sample_id = 987678
-    params.scan_width_deg = n_images / 10
+    for scan_params in params.rotation_scans:
+        scan_params.scan_width_deg = n_images / 10
     if n_images < 200:
         params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images

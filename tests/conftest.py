@@ -107,7 +107,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from .unit_tests.conftest import device_factories_for_beamline
 
@@ -364,7 +364,7 @@ def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -373,7 +373,7 @@ def test_rotation_params():
 
 @pytest.fixture
 def test_rotation_params_nomove():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
@@ -1559,7 +1559,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = RotationScan(
+    dummy_params = MultiRotationScan(
         **default_raw_params(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
