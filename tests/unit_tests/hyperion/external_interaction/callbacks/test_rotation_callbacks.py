@@ -91,7 +91,7 @@ def test_nexus_handler_only_writes_once(
     assert cb.writer is not None
     cb.writer.create_nexus_file.assert_called_once()  # type: ignore
 
-
+@patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
 )
