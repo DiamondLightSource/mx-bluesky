@@ -146,14 +146,14 @@ def populate_parameters_from_agamemnon(agamemnon_params):
                 "n": pin_type.expected_number_of_crystals,
             },
             "robot_load_then_centre": {
-                "storage_directory": visit_directory + "/xraycentring",
+                "storage_directory": str(visit_directory) + "/xraycentring",
                 "file_name": file_name,
                 "tip_offset_um": pin_type.full_width / 2,
                 "grid_width_um": pin_type.full_width,
             },
             "multi_rotation_scan": {
                 "comment": first_collection["comment"],
-                "storage_directory": visit_directory,
+                "storage_directory": str(visit_directory),
                 "exposure_time_s": first_collection["exposure_time"],
                 "file_name": file_name,
                 "transmission_frac": first_collection["transmission"],
