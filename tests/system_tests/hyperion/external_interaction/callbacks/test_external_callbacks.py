@@ -20,7 +20,9 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from zmq.utils.monitor import recv_monitor_message
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import flyscan_gridscan
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+    common_flyscan_xray_centre,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -153,7 +155,11 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params
     )
 
-    RE(flyscan_gridscan(fgs_composite_for_fake_zocalo, dummy_params, beamline_specific))
+    RE(
+        common_flyscan_xray_centre(
+            fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
+        )
+    )
 
     # Check that we we emitted a valid reading from the zocalo device
     zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore

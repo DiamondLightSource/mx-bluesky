@@ -20,14 +20,10 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
-    ZOCALO_STAGE_GROUP,
     XrcResult,
     get_full_processing_results,
 )
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
-)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     GridscanParamConstants,
@@ -35,7 +31,10 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.inner_plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.inner_plans.do_fgs import (
+    ZOCALO_STAGE_GROUP,
+    kickoff_and_complete_gridscan,
+)
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_plan,
 )
@@ -47,12 +46,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-
-
-# Defaulting to a null plan saves
-# needing to write 'assert not None' everywhere
-def null_plan(*args):
-    yield from bps.null()
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -73,6 +66,7 @@ class BeamlineSpecificFGSFeatures:
         ..., MsgGenerator
     ]  # Eventually replace with https://github.com/DiamondLightSource/mx-bluesky/issues/819
     read_during_collection_plan: Callable[..., MsgGenerator]
+    get_xrc_results_from_zocalo: bool
 
 
 def construct_beamline_specific_FGS_features(
@@ -82,6 +76,7 @@ def construct_beamline_specific_FGS_features(
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: list[Readable],
     signals_to_read_during_collection: list[Readable],
+    get_xrc_results_from_zocalo: bool = False,
 ) -> BeamlineSpecificFGSFeatures:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
@@ -101,6 +96,9 @@ def construct_beamline_specific_FGS_features(
 
         signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event
         document whilst the gridscan motion is in progress
+
+        get_xrc_results_from_zocalo (bool): If true, fetch grid scan results from zocalo after completion, as well as
+        update the ispyb comment field with information about the results. See fetch_xrc_results_from_zocalo
     """
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
@@ -121,6 +119,7 @@ def construct_beamline_specific_FGS_features(
         fgs_motors,
         read_pre_flyscan_plan,
         read_during_collection_plan,
+        get_xrc_results_from_zocalo,
     )
 
 
@@ -147,75 +146,72 @@ def common_flyscan_xray_centre(
 
     With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan
     x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data
-    to ispyb; triggering zocalo; reading hardware before and during the scan; optionally performing a
-    plan using the results; and tidying up devices after the plan is complete.
+    to ispyb; triggering zocalo; reading hardware before and during the scan; and tidying up devices after
+    the plan is complete. Optionally fetch results from zocalo after completing the grid scan.
+
+    There are a few recommended decorators to use with this plan, see: ispyb_activation_decorator,
+    verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
     """
 
-    yield from ispyb_activation_wrapper(
-        flyscan_gridscan(composite, parameters, beamline_specific),
-        parameters,
-    )
+    def _decorated_flyscan():
+        @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
+        @bpp.run_decorator(  # attach experiment metadata to the start document
+            md={
+                "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
+                "mx_bluesky_parameters": parameters.model_dump_json(),
+                "activate_callbacks": [
+                    "GridscanNexusFileCallback",
+                ],
+            }
+        )
+        @bpp.finalize_decorator(lambda: beamline_specific.tidy_plan(composite))
+        def run_gridscan_and_tidy(
+            fgs_composite: FlyScanEssentialDevices,
+            params: SpecifiedThreeDGridScan,
+            beamline_specific: BeamlineSpecificFGSFeatures,
+        ) -> MsgGenerator:
+            yield from beamline_specific.setup_trigger_plan(fgs_composite, parameters)
 
+            LOGGER.info("Starting grid scan")
+            yield from bps.stage(
+                fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
+            )  # connect to zocalo and make sure the queue is clear
+            yield from run_gridscan(fgs_composite, params, beamline_specific)
 
-def flyscan_gridscan(
-    composite: FlyScanEssentialDevices,
-    parameters: SpecifiedThreeDGridScan,
-    beamline_specific: BeamlineSpecificFGSFeatures,
-) -> MsgGenerator:
-    """Perform a flyscan and determine the centres of interest"""
+            LOGGER.info("Grid scan finished")
+
+            if beamline_specific.get_xrc_results_from_zocalo:
+                yield from fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
+
+        yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
-
-    @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
-    @bpp.run_decorator(  # attach experiment metadata to the start document
-        md={
-            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
-            "activate_callbacks": [
-                "GridscanNexusFileCallback",
-            ],
-        }
-    )
-    @bpp.finalize_decorator(lambda: beamline_specific.tidy_plan(composite))
-    def run_gridscan_and_fetch_and_tidy(
-        fgs_composite: FlyScanEssentialDevices,
-        params: SpecifiedThreeDGridScan,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-    ) -> MsgGenerator:
-        yield from run_gridscan_and_fetch_results(
-            fgs_composite, params, beamline_specific
-        )
-
-    yield from run_gridscan_and_fetch_and_tidy(composite, parameters, beamline_specific)
+    yield from _decorated_flyscan()
 
 
-@bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_AND_MOVE)
-@bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_AND_MOVE})
-def run_gridscan_and_fetch_results(
-    fgs_composite: FlyScanEssentialDevices,
+def fetch_xrc_results_from_zocalo(
+    zocalo_results: ZocaloResults,
     parameters: SpecifiedThreeDGridScan,
-    beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
-    """A multi-run plan which runs a gridscan, gets the results from zocalo
-    and fires an event with the centres of mass determined by zocalo"""
+    """
+    Run after completing common_grid_scan to access results from Zocalo, using the same
+    ZocaloResults device which was staged during the grid scan.
 
-    yield from beamline_specific.setup_trigger_plan(fgs_composite, parameters)
+    The RunEngine should be subscribed to XRayCentreEventHandler before running this plan,
+    after which the results can be accessed through XRayCentreEventHandler.xray_centre_results
+    """
 
-    LOGGER.info("Starting grid scan")
-    yield from bps.stage(
-        fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
-    )  # connect to zocalo and make sure the queue is clear
-    yield from run_gridscan(fgs_composite, parameters, beamline_specific)
+    LOGGER.info("Getting X-ray center Zocalo results...")
 
-    LOGGER.info("Grid scan finished, getting results.")
-
-    try:
+    @bpp.set_run_key_decorator(ZOCALO_READING_PLAN_NAME)
+    @bpp.run_decorator(md={"subplan_name": ZOCALO_READING_PLAN_NAME})
+    def _inner():
         with TRACER.start_span("wait_for_zocalo"):
             yield from bps.trigger_and_read(
-                [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
+                [zocalo_results], name=ZOCALO_READING_PLAN_NAME
             )
             LOGGER.info("Zocalo triggered and read, interpreting results.")
-            xrc_results = yield from get_full_processing_results(fgs_composite.zocalo)
+            xrc_results = yield from get_full_processing_results(zocalo_results)
             LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
             filtered_results = [
                 result
@@ -238,53 +234,7 @@ def run_gridscan_and_fetch_results(
                 raise CrystalNotFoundException()
             yield from _fire_xray_centre_result_event(flyscan_results)
 
-    finally:
-        # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
-        LOGGER.info("Turning off Eiger dev/shm streaming")
-        yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-
-        # Wait on everything before returning to GDA (particularly apertures), can be removed
-        # when we do not return to GDA here
-        yield from bps.wait()
-
-
-def _xrc_result_in_boxes_to_result_in_mm(
-    xrc_result: XrcResult, parameters: SpecifiedThreeDGridScan
-) -> XRayCentreResult:
-    fgs_params = parameters.FGS_params
-    xray_centre = fgs_params.grid_position_to_motor_position(
-        np.array(xrc_result["centre_of_mass"])
-    )
-    # A correction is applied to the bounding box to map discrete grid coordinates to
-    # the corners of the box in motor-space; we do not apply this correction
-    # to the xray-centre as it is already in continuous space and the conversion has
-    # been performed already
-    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
-    # so we subtract half a box to get the corner of the box
-    return XRayCentreResult(
-        centre_of_mass_mm=xray_centre,
-        bounding_box_mm=(
-            fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][0]) - 0.5
-            ),
-            fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][1]) - 0.5
-            ),
-        ),
-        max_count=xrc_result["max_count"],
-        total_count=xrc_result["total_count"],
-    )
-
-
-@bpp.set_run_key_decorator(PlanNameConstants.FLYSCAN_RESULTS)
-def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
-    def empty_plan():
-        return iter([])
-
-    yield from bpp.run_wrapper(
-        empty_plan(),
-        md={"xray_centre_results": [dataclasses.asdict(r) for r in results]},
-    )
+    yield from _inner()
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
@@ -337,3 +287,48 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise SampleException("Scan invalid - pin too long/short/bent and out of range")
+
+
+def _xrc_result_in_boxes_to_result_in_mm(
+    xrc_result: XrcResult, parameters: SpecifiedThreeDGridScan
+) -> XRayCentreResult:
+    fgs_params = parameters.FGS_params
+    xray_centre = fgs_params.grid_position_to_motor_position(
+        np.array(xrc_result["centre_of_mass"])
+    )
+    # A correction is applied to the bounding box to map discrete grid coordinates to
+    # the corners of the box in motor-space; we do not apply this correction
+    # to the xray-centre as it is already in continuous space and the conversion has
+    # been performed already
+    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
+    # so we subtract half a box to get the corner of the box
+    return XRayCentreResult(
+        centre_of_mass_mm=xray_centre,
+        bounding_box_mm=(
+            fgs_params.grid_position_to_motor_position(
+                np.array(xrc_result["bounding_box"][0]) - 0.5
+            ),
+            fgs_params.grid_position_to_motor_position(
+                np.array(xrc_result["bounding_box"][1]) - 0.5
+            ),
+        ),
+        max_count=xrc_result["max_count"],
+        total_count=xrc_result["total_count"],
+    )
+
+
+def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
+    def empty_plan():
+        return iter([])
+
+    yield from bpp.set_run_key_wrapper(
+        bpp.run_wrapper(
+            empty_plan(),
+            md={
+                PlanNameConstants.FLYSCAN_RESULTS: [
+                    dataclasses.asdict(r) for r in results
+                ]
+            },
+        ),
+        PlanNameConstants.FLYSCAN_RESULTS,
+    )

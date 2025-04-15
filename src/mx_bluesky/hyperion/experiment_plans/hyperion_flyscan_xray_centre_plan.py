@@ -86,6 +86,7 @@ def construct_hyperion_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
+        get_xrc_results_from_zocalo=True,
     )
 
 
@@ -99,6 +100,10 @@ def _generic_tidy(
     LOGGER.info("Tidying up Zocalo")
     # make sure we don't consume any other results
     yield from bps.unstage(fgs_composite.zocalo, group=group, wait=wait)
+
+    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
+    LOGGER.info("Turning off Eiger dev/shm streaming")
+    yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
 
 
 def _panda_tidy(fgs_composite: HyperionFlyScanXRayCentreComposite):

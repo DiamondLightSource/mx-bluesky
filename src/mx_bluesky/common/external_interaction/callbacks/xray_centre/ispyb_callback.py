@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 from bluesky import preprocessors as bpp
-from bluesky.utils import MsgGenerator
+from bluesky.utils import MsgGenerator, make_decorator
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     get_processing_results_from_event,
@@ -71,6 +71,9 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     )
 
 
+ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
+
+
 class GridscanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -99,10 +102,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
         self.data_collection_group_info: DataCollectionGroupInfo | None
+        self._ready_for_read_zocalo = False
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
+            self._ready_for_read_zocalo = True
+
         if doc.get("subplan_name") == PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -146,11 +152,16 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_event(self, doc: Event):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
+
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
         if descriptor_name == ZOCALO_READING_PLAN_NAME:
+            assert self._ready_for_read_zocalo, (
+                "Tried to read zocalo before ispyb_callback recieved a DO_FGS run"
+            )  # TODO test assertion error
             self._handle_zocalo_read_event(doc)
+            self._ready_for_read_zocalo = False
         elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(

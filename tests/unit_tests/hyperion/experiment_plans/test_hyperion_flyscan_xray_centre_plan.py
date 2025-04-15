@@ -33,9 +33,9 @@ from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
     common_flyscan_xray_centre,
-    flyscan_gridscan,
-    run_gridscan_and_fetch_results,
+    fetch_xrc_results_from_zocalo,
 )
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     _gridscan_with_undulator_checks,
@@ -195,11 +195,13 @@ class TestFlyscanXrayCentrePlan:
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
-            yield from run_gridscan_and_fetch_results(
+            yield from common_flyscan_xray_centre(
                 fake_fgs_composite,
                 test_fgs_params,
                 beamline_specific,
             )
+
+        ispyb_cb._ready_for_read_zocalo = True
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
@@ -221,7 +223,7 @@ class TestFlyscanXrayCentrePlan:
         # this exception should only be raised if we're using the panda
         with pytest.raises(SmargonSpeedException):
             RE(
-                run_gridscan_and_fetch_results(
+                common_flyscan_xray_centre(
                     fake_fgs_composite, fgs_params_use_panda, beamline_specific
                 )
             )
@@ -262,7 +264,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
         msgs = sim_run_engine.simulate_plan(
-            flyscan_gridscan(
+            common_flyscan_xray_centre(
                 fgs_composite_with_panda_pcap, fgs_params_use_panda, beamline_specific
             )
         )
@@ -377,7 +379,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan_and_fetch_results",
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     @patch(
         "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
@@ -420,10 +422,8 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TestData.test_result_large)
 
         def plan():
-            yield from run_gridscan_and_fetch_results(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
+            yield from fetch_xrc_results_from_zocalo(
+                fake_fgs_composite.zocalo, test_fgs_params
             )
 
         RE(plan())
@@ -463,11 +463,68 @@ class TestFlyscanXrayCentrePlan:
             + TestData.test_result_below_threshold
             + TestData.test_result_small,
         )
-        RE(
-            run_gridscan_and_fetch_results(
-                fake_fgs_composite, test_fgs_params, beamline_specific
-            )
-        )
+        RE(fetch_xrc_results_from_zocalo(fake_fgs_composite.zocalo, test_fgs_params))
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
+
+    @patch(
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        autospec=True,
+    )
+    def test_when_gridscan_finds_no_xtal_ispyb_comment_appended_to(
+        self,
+        run_gridscan: MagicMock,
+        RE_with_subs: ReWithSubs,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+    ):
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+
+        def wrapped_gridscan_and_move():
+            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
+            yield from common_flyscan_xray_centre(
+                fake_fgs_composite,
+                test_fgs_params,
+                beamline_specific,
+            )
+
+        ispyb_cb._ready_for_read_zocalo = True
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
+        with pytest.raises(CrystalNotFoundException):
+            RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
+
+        app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
+        app_to_comment.assert_called()
+        append_aperture_call = app_to_comment.call_args_list[0].args[1]
+        append_zocalo_call = app_to_comment.call_args_list[-1].args[1]
+        assert "Aperture:" in append_aperture_call
+        assert "Zocalo found no crystals in this gridscan" in append_zocalo_call
+
+    @patch(
+        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        autospec=True,
+    )
+    def test_when_gridscan_finds_no_xtal_exception_is_raised(
+        self,
+        run_gridscan: MagicMock,
+        RE_with_subs: ReWithSubs,
+        test_fgs_params: HyperionSpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+    ):
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+
+        def wrapped_gridscan_and_move():
+            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
+            yield from common_flyscan_xray_centre(
+                fake_fgs_composite,
+                test_fgs_params,
+                beamline_specific,
+            )
+
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
+        ispyb_cb._ready_for_read_zocalo = True
+        with pytest.raises(CrystalNotFoundException):
+            RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))

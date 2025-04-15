@@ -25,7 +25,7 @@ from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    flyscan_gridscan,
+    common_flyscan_xray_centre,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
@@ -172,7 +172,7 @@ def _gridscan_with_undulator_checks(
     )
     @verify_undulator_gap_before_run_decorator(composite)
     def _inner():
-        yield from flyscan_gridscan(composite, params, beamline_specific)
+        yield from common_flyscan_xray_centre(composite, params, beamline_specific)
 
     yield from _inner()
 
