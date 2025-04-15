@@ -181,7 +181,9 @@ def test_load_motion_program_data(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
 )
@@ -258,7 +260,9 @@ def test_start_i24_with_eiger(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.write_userlog"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
 )
@@ -313,7 +317,9 @@ def test_run_aborted_plan(fake_dcid: MagicMock, pmac: PMAC, RE, done_status):
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.finish_i24"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
 async def test_tidy_up_after_collection_plan(
@@ -405,7 +411,11 @@ async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.call_nexgen"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
 async def test_main_fixed_target_plan(
+    fake_sleep,
     fake_nexgen,
     fake_dcid,
     mock_get_chip_prog,
@@ -492,7 +502,11 @@ async def test_main_fixed_target_plan(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.read_parameters"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
 def test_setup_tasks_in_run_fixed_target_plan(
+    fake_sleep,
     fake_read,
     fake_mkdir,
     mock_beam_center,

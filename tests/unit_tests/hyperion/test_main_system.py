@@ -297,7 +297,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
             "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         ],
         [
-            "/rotation_scan/start",
+            "/multi_rotation_scan/start",
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         ],
         [
@@ -512,6 +512,8 @@ def test_when_context_created_then_contains_expected_number_of_plans(
             context = setup_context(wait_for_connection=False)
         plan_names = context.plans.keys()
 
-        assert "rotation_scan" in plan_names
+        # assert "rotation_scan" in plan_names
+        # May want to add back in if we change name of multi_rotation_scan to rotation_scan
+        assert "multi_rotation_scan" in plan_names
         assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names

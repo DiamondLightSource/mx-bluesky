@@ -39,7 +39,7 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-    rotation_scan,
+    multi_rotation_scan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -50,7 +50,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
@@ -479,7 +479,7 @@ def test_ispyb_deposition_in_gridscan(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
-    params_for_rotation_scan: RotationScan,
+    params_for_rotation_scan: MultiRotationScan,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
     fetch_comment: Callable[..., Any],
@@ -491,7 +491,7 @@ def test_ispyb_deposition_in_rotation_plan(
     RE.subscribe(ispyb_cb)
 
     RE(
-        rotation_scan(
+        multi_rotation_scan(
             composite_for_rotation_scan,
             params_for_rotation_scan,
             oav_parameters_for_rotation,
@@ -505,13 +505,13 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_0"
+        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_0"
         ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_90"
+        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_90"
         ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_180"
+        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_180"
         ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{6}_oav_snapshot_270"
+        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_270"
         ".png",
     }
 

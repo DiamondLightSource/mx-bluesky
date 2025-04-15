@@ -7,14 +7,13 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    parameters: HyperionSpecifiedThreeDGridScan | None = None,
+    set_stub_offsets: bool | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
@@ -36,7 +35,7 @@ def change_aperture_then_move_to_xtal(
 
     # TODO support for setting stub offsets in multipin
     # https://github.com/DiamondLightSource/mx-bluesky/issues/552
-    if parameters and parameters.FGS_params.set_stub_offsets:
+    if set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
         yield from bps.mv(smargon.stub_offsets, StubPosition.CURRENT_AS_CENTER)
 
