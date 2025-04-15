@@ -12,11 +12,6 @@ from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
-    MxBlueskyParameters,
-    TopNByMaxCountSelection,
-    WithCentreSelection,
-    WithOptionalEnergyChange,
-    WithSample,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -24,12 +19,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
-)
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
@@ -37,20 +27,6 @@ MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
-
-
-class AgamemnonLoadCentreCollect(
-    MxBlueskyParameters,
-    WithVisit,
-    WithSample,
-    WithCentreSelection,
-    WithHyperionUDCFeatures,
-    WithOptionalEnergyChange,
-):
-    """Experiment parameters to compare against GDA populated LoadCentreCollect."""
-
-    robot_load_then_centre: RobotLoadThenCentre
-    multi_rotation_scan: MultiRotationScan
 
 
 @dataclasses.dataclass
@@ -135,15 +111,6 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     )
 
 
-def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
-    assert parameters.get("sample"), "instruction does not have a sample"
-    return {
-        "sample_id": parameters["sample"]["id"],
-        "sample_puck": parameters["sample"]["container"],
-        "sample_pin": parameters["sample"]["position"],
-    }
-
-
 def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
     try:
         first_collection: dict = parameters["collection"][0]
@@ -159,88 +126,56 @@ def get_param_version() -> SemanticVersion:
     return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
 
 
-def create_robot_load_then_centre_params_from_agamemnon(
-    parameters: dict,
-) -> RobotLoadThenCentre:
-    visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
-    with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
-    visit_directory, file_name = path.split(parameters["prefix"])
-    return RobotLoadThenCentre(
-        parameter_model_version=get_param_version(),
-        storage_directory=visit_directory + "/xraycentring",
-        visit=visit,
-        detector_distance_mm=detector_distance,
-        snapshot_directory=visit_directory + "/snapshots",
-        file_name=file_name,
-        **with_energy_params,
-        **with_sample_params,
-    )
-
-
-def create_rotation_params_from_agamemnon(
-    parameters: dict,
-) -> MultiRotationScan:
-    visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
-    with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
-    visit_directory, file_name = path.split(parameters["prefix"])
-
-    first_collection = parameters["collection"][0]
-
-    return MultiRotationScan.model_validate(
+def populate_parameters_from_agamemnon(agamemnon_params):
+    visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
+    first_collection = agamemnon_params["collection"][0]
+    visit_directory, file_name = path.split(agamemnon_params["prefix"])
+    return LoadCentreCollect.model_validate(
         {
             "parameter_model_version": get_param_version(),
-            "comment": first_collection["comment"],
-            "storage_directory": visit_directory,
-            "detector_distance_mm": detector_distance,
-            **with_energy_params,
-            "exposure_time_s": first_collection["exposure_time"],
-            "file_name": file_name,
-            "sample_id": with_sample_params["sample_id"],
             "visit": visit,
-            "transmission_frac": first_collection["transmission"],
-            "rotation_increment_deg": first_collection["omega_increment"],
-            "ispyb_experiment_type": first_collection["experiment_type"],
-            "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
-            "rotation_scans": [
-                {
-                    "scan_width_deg": (
-                        first_collection["number_of_images"]
-                        * first_collection["omega_increment"]
-                    ),
-                    "omega_start_deg": first_collection["omega_start"],
-                    "phi_start_deg": first_collection["phi_start"],
-                }
-            ],
+            "detector_distance_mm": detector_distance,
+            "sample_id": agamemnon_params["sample"]["id"],
+            "sample_puck": agamemnon_params["sample"]["container"],
+            "sample_pin": agamemnon_params["sample"]["position"],
+            **with_energy_params,
+            "select_centres": {
+                "name": "TopNByMaxCount",
+                "n": pin_type.expected_number_of_crystals,
+            },
+            "robot_load_then_centre": {
+                "storage_directory": visit_directory + "/xraycentring",
+                "file_name": file_name,
+                "tip_offset_um": pin_type.full_width / 2,
+                "grid_width_um": pin_type.full_width,
+            },
+            "multi_rotation_scan": {
+                "comment": first_collection["comment"],
+                "storage_directory": visit_directory,
+                "exposure_time_s": first_collection["exposure_time"],
+                "file_name": file_name,
+                "transmission_frac": first_collection["transmission"],
+                "rotation_increment_deg": first_collection["omega_increment"],
+                "ispyb_experiment_type": first_collection["experiment_type"],
+                "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
+                "rotation_scans": [
+                    {
+                        "scan_width_deg": (
+                            first_collection["number_of_images"]
+                            * first_collection["omega_increment"]
+                        ),
+                        "omega_start_deg": first_collection["omega_start"],
+                        "phi_start_deg": first_collection["phi_start"],
+                    }
+                ],
+            },
         }
     )
 
 
-def populate_parameters_from_agamemnon(agamemnon_params):
-    visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
-    with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
-    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
-    robot_load_params = create_robot_load_then_centre_params_from_agamemnon(
-        agamemnon_params
-    )
-    rotation_parameters = create_rotation_params_from_agamemnon(agamemnon_params)
-    return AgamemnonLoadCentreCollect(
-        parameter_model_version=SemanticVersion.validate_from_str(
-            str(PARAMETER_VERSION)
-        ),
-        visit=visit,
-        detector_distance_mm=detector_distance,
-        select_centres=TopNByMaxCountSelection(n=pin_type.expected_number_of_crystals),
-        robot_load_then_centre=robot_load_params,
-        multi_rotation_scan=rotation_parameters,
-        **with_sample_params,
-        **with_energy_params,
-    )
-
-
-def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect:
+def create_parameters_from_agamemnon() -> LoadCentreCollect:
     beamline_name = get_beamline_name("i03")
     agamemnon_params = get_next_instruction(beamline_name)
 

@@ -338,7 +338,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     )
     assert robot_load_params.file_name == "test_xtal"
     assert robot_load_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+        "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
     )
 
 
