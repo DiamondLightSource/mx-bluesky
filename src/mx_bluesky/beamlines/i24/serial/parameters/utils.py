@@ -23,7 +23,7 @@ def get_chip_format(
 
     For an Oxford-type chip, the default values are hard coded as the dimensions are
     always the same. For a Custom chip instead, the number of steps and step size in
-    each direction must be entered throught the GUI - web or edm. If the collection is
+    each direction must be entered through the GUI - web or edm. If the collection is
     run through the edm, the values will be read from the general purpose PVs set on
     there. If instead the plan is run from the web UI, the values will be passed in the
     form of a list/tuple of 4 values.
