@@ -345,7 +345,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-@patch("mx_bluesky.hyperion.parameters.os", new=MagicMock())
+@patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     mock_requests: MagicMock,
 ):
