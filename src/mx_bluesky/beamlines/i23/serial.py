@@ -1,10 +1,15 @@
 from functools import partial
 
 from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from bluesky.plans import rel_grid_scan
 from bluesky.utils import short_uid
 from dodal.common import inject
 from dodal.devices.motors import SixAxisGonio
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    ZebraShutter,
+    ZebraShutterControl,
+)
 from ophyd_async.epics.motor import Motor
 
 
@@ -43,24 +48,33 @@ def serial_collection(
     omega_rotation: float,
     omega_velocity: float,
     gonio: SixAxisGonio = inject("gonio"),
+    shutter: ZebraShutter = inject("shutter"),
 ):
     """This plan runs a software controlled serial collection. i.e it moves in a snaked
     grid and does a small rotation collection at each point."""
-    yield from rel_grid_scan(
-        [],
-        gonio.y,
-        0,
-        y_step_size * (y_steps - 1),
-        y_steps,
-        gonio.x,
-        0,
-        x_step_size * (x_steps - 1),
-        x_steps,
-        per_step=partial(  # type: ignore
-            one_nd_step,
-            omega_axis=gonio.omega,
-            omega_rotation=omega_rotation,
-            omega_velocity=omega_velocity,
+
+    def cleanup():
+        yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL)
+
+    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.AUTO)
+    yield from bpp.contingency_wrapper(
+        rel_grid_scan(
+            [],
+            gonio.y,
+            0,
+            y_step_size * (y_steps - 1),
+            y_steps,
+            gonio.x,
+            0,
+            x_step_size * (x_steps - 1),
+            x_steps,
+            per_step=partial(  # type: ignore
+                one_nd_step,
+                omega_axis=gonio.omega,
+                omega_rotation=omega_rotation,
+                omega_velocity=omega_velocity,
+            ),
+            snake_axes=True,
         ),
-        snake_axes=True,
+        final_plan=cleanup,
     )
