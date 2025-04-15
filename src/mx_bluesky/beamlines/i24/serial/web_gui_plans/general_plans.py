@@ -131,6 +131,7 @@ def gui_set_parameters(
             ie a pump-in-probe where the collection starts during the pump.
     """
     # NOTE still a work in progress, adding to it as the ui grows
+    # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
     detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
