@@ -192,7 +192,7 @@ def create_rotation_params_from_agamemnon(
         {
             "parameter_model_version": get_param_version(),
             "comment": first_collection["comment"],
-            "storage_directory": visit_directory,
+            "storage_directory": str(visit_directory),
             "detector_distance_mm": detector_distance,
             **with_energy_params,
             "exposure_time_s": first_collection["exposure_time"],
