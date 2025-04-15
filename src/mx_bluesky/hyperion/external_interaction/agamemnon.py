@@ -175,11 +175,14 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     )
 
 
-def create_parameters_from_agamemnon() -> LoadCentreCollect:
+def create_parameters_from_agamemnon() -> LoadCentreCollect | None:
     beamline_name = get_beamline_name("i03")
     agamemnon_params = get_next_instruction(beamline_name)
-
-    return populate_parameters_from_agamemnon(agamemnon_params)
+    return (
+        populate_parameters_from_agamemnon(agamemnon_params)
+        if agamemnon_params
+        else None
+    )
 
 
 def compare_params(load_centre_collect_params):

@@ -61,7 +61,7 @@
                 "max": 900.0,
                 "min": 170.0
             },
-            "exposure_time_s": {
+            "exposure_time": {
                 "max": 10.0,
                 "min": 0.002
             },

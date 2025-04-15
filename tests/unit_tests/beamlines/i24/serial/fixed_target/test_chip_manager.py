@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
@@ -27,6 +26,8 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
     upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
+
+from ..conftest import fake_generator
 
 chipmap_str = """01status    P3011       1
 02status    P3021       0
@@ -70,10 +71,6 @@ def test_read_parameters(
     detector_stage,
     RE,
 ):
-    def fake_generator(value):
-        yield from bps.null()
-        return value
-
     mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
     fake_rd.side_effect = [fake_generator(0.3)]
@@ -280,10 +277,6 @@ def test_fiducial_writes_correct_values_to_file(
     patch_mtr.return_value = mtr_values
 
     pos = (1.02, 4.5, 0.0)
-
-    def fake_generator(value):
-        yield from bps.null()
-        return value
 
     patch_read.side_effect = [
         fake_generator(pos[0]),
