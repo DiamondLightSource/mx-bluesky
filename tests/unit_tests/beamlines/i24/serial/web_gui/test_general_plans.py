@@ -1,6 +1,5 @@
 from unittest.mock import ANY, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from dodal.devices.i24.dual_backlight import BacklightPositions
 
@@ -15,10 +14,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_stage_move_on_click,
 )
 
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
+from ..conftest import fake_generator
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.sleep")
