@@ -131,7 +131,7 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
         return (match.group("visit"), detector_distance)
 
     raise ValueError(
-        f"Agamemnon prefix '{prefix}' does not match MX-General root structure"
+        f"Agamemnon prefix '{prefix}' does not match expected root structure"
     )
 
 
