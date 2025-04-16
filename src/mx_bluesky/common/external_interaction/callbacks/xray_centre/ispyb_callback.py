@@ -159,7 +159,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if descriptor_name == ZOCALO_READING_PLAN_NAME:
             assert self._ready_for_read_zocalo, (
                 "Tried to read zocalo before ispyb_callback recieved a DO_FGS run"
-            )  # TODO test assertion error
+            )
             self._handle_zocalo_read_event(doc)
             self._ready_for_read_zocalo = False
         elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:

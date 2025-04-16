@@ -144,13 +144,14 @@ def common_flyscan_xray_centre(
         of this plan: For example triggering setup and tidy up plans, as well as what to do with the
         centering results.
 
-    With a minimum set of devices and parameters, prepares for; performs; and tidies up from a flyscan
-    x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; pushing data
-    to ispyb; triggering zocalo; reading hardware before and during the scan; and tidying up devices after
+    With a minimum set of devices and parameters, prepares for; performs; and tidies up a flyscan
+    x-ray-center plan. This includes: Configuring desired triggering; writing nexus files; triggering zocalo;
+    reading hardware before and during the scan; and tidying up devices after
     the plan is complete. Optionally fetch results from zocalo after completing the grid scan.
 
-    There are a few recommended decorators to use with this plan, see: ispyb_activation_decorator,
-    verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
+    This plan will also push data to ispyb when used with the ispyb_activation_decorator.
+
+    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
     """
 
     def _decorated_flyscan():
