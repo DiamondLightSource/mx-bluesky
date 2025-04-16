@@ -1,4 +1,3 @@
-import math
 from enum import StrEnum
 
 import bluesky.plan_stubs as bps
@@ -35,26 +34,15 @@ def jog_sample(
     increment_size: float,
     goniometer: Goniometer = inject("goniometer"),
 ) -> MsgGenerator:
-    """Adjust the goniometer stage positions vertically"""
+    """Adjust the goniometer stage positions"""
     direction_map = {
         JogDirection.RIGHT: (goniometer.x, 1),
         JogDirection.LEFT: (goniometer.x, -1),
         JogDirection.ZPLUS: (goniometer.z, 1),
         JogDirection.ZMINUS: (goniometer.z, -1),
+        JogDirection.UP: (goniometer.vertical_position, 1),
+        JogDirection.DOWN: (goniometer.vertical_position, -1),
     }
 
-    if direction in direction_map:
-        axis, sign = direction_map[direction]
-        yield from bps.mvr(axis, sign * increment_size)
-    elif direction in {JogDirection.UP, JogDirection.DOWN}:
-        omega: float = yield from bps.rd(goniometer.omega)
-        z_component = (math.cos(math.radians(omega))) * increment_size
-        y_component = (math.sin(math.radians(omega))) * increment_size
-        sign = 1 if direction == JogDirection.UP else -1
-
-        yield from bps.mvr(
-            goniometer.sampz,
-            sign * z_component,
-            goniometer.sampy,
-            sign * y_component,
-        )
+    axis, sign = direction_map[direction]
+    yield from bps.mvr(axis, sign * increment_size)
