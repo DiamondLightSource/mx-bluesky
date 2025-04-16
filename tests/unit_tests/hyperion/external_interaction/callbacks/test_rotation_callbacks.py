@@ -50,6 +50,7 @@ def do_rotation_scan(
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
