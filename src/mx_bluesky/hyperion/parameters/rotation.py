@@ -76,7 +76,7 @@ class RotationExperiment(DiffractionExperimentWithSample, WithHyperionUDCFeature
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
+            directory=str(self.storage_directory),
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
             omega_start=omega_start_deg,
