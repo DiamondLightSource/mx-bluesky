@@ -75,6 +75,7 @@ def test_nexus_handler_gets_documents_in_plan(
     assert CONST.PLAN.ROTATION_OUTER in subplans
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
