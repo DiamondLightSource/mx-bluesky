@@ -330,8 +330,9 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     zebra,
     shutter,
     dummy_params,
+    dcm,
 ):
-    RE(tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid))
+    RE(tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid, dcm))
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
@@ -340,7 +341,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None)
+    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
 
 @patch(
