@@ -25,7 +25,7 @@ def test_call_nexgen_for_extruder(
     fake_read_text.return_value = ""
     with patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests") as patch_request:
         with patch("mx_bluesky.beamlines.i24.serial.write_nexus.time.sleep"):
-            call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200))
+            RE(call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200)))
             patch_request.post.assert_called_once()
 
     assert patch_request.post.call_args.kwargs["json"]["expt_type"] == "extruder"
@@ -54,7 +54,7 @@ def test_call_nexgen_for_fixed_target(
     fake_read_text.return_value = ""
     with patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests") as patch_request:
         with patch("mx_bluesky.beamlines.i24.serial.write_nexus.time.sleep"):
-            call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200))
+            RE(call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200)))
             patch_request.post.assert_called_once()
 
     assert patch_request.post.call_args.kwargs["json"]["expt_type"] == "fixed-target"

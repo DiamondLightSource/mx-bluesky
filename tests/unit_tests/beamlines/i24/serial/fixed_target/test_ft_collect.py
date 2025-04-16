@@ -444,7 +444,7 @@ async def test_main_fixed_target_plan(
         new=TEST_LUT,
     ):
         with patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sleep"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
         ):
             RE(
                 main_fixed_target_plan(

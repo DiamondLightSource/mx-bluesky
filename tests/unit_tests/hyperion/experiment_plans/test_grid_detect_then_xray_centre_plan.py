@@ -201,6 +201,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     assert not activations
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,

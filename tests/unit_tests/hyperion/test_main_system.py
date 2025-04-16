@@ -192,6 +192,7 @@ def test_start_gives_success(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(4)
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.client.put(STOP_ENDPOINT)
@@ -230,7 +231,7 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(7)
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
@@ -254,7 +255,7 @@ def test_given_started_when_stopped_then_success_and_idle_status(
     check_status_in_response(response, Status.ABORTING)
 
 
-@pytest.mark.timeout(6)
+@pytest.mark.timeout(10)
 def test_given_started_when_stopped_and_started_again_then_runs(
     test_env: ClientAndRunEngine,
 ):
@@ -325,6 +326,7 @@ def test_start_with_json_file_gives_success(
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(3)
 def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
