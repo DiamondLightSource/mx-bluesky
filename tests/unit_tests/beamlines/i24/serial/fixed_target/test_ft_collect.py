@@ -437,22 +437,25 @@ async def test_main_fixed_target_plan(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
-        RE(
-            main_fixed_target_plan(
-                zebra,
-                pmac,
-                aperture,
-                backlight,
-                beamstop,
-                detector_stage,
-                shutter,
-                dcm,
-                mirrors,
-                eiger_beam_center,
-                dummy_params_without_pp,
-                fake_dcid,
+        with patch(
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+        ):
+            RE(
+                main_fixed_target_plan(
+                    zebra,
+                    pmac,
+                    aperture,
+                    backlight,
+                    beamstop,
+                    detector_stage,
+                    shutter,
+                    dcm,
+                    mirrors,
+                    eiger_beam_center,
+                    dummy_params_without_pp,
+                    fake_dcid,
+                )
             )
-        )
 
     mock_beam_x = get_mock_put(eiger_beam_center.beam_x)
     mock_pmac_str = get_mock_put(pmac.pmac_string)

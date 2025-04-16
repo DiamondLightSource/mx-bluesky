@@ -109,6 +109,7 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
             exceptions[key] = mapping_value
 
 
+@pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     test_params: RotationScan,
     tmpdir,
@@ -228,6 +229,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
         )
 
 
+@pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_file(
     test_params: RotationScan,
     tmpdir,

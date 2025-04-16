@@ -126,6 +126,7 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     assert len(list(read_disabled_messages)) == total_disabled_reads
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
