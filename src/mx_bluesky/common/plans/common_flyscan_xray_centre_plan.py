@@ -8,7 +8,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pydantic
-from blueapi.core import BlueskyContext
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
@@ -38,7 +37,6 @@ from mx_bluesky.common.plans.inner_plans.do_fgs import (
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
@@ -98,7 +96,7 @@ def construct_beamline_specific_FGS_features(
         document whilst the gridscan motion is in progress
 
         get_xrc_results_from_zocalo (bool): If true, fetch grid scan results from zocalo after completion, as well as
-        update the ispyb comment field with information about the results. See fetch_xrc_results_from_zocalo
+        update the ispyb comment field with information about the results. See _fetch_xrc_results_from_zocalo
     """
     read_pre_flyscan_plan = partial(
         read_hardware_plan,
@@ -121,11 +119,6 @@ def construct_beamline_specific_FGS_features(
         read_during_collection_plan,
         get_xrc_results_from_zocalo,
     )
-
-
-def create_devices(context: BlueskyContext) -> FlyScanEssentialDevices:
-    """Creates the devices required for the plan and connect to them"""
-    return device_composite_from_context(context, FlyScanEssentialDevices)
 
 
 def common_flyscan_xray_centre(
@@ -182,7 +175,7 @@ def common_flyscan_xray_centre(
             LOGGER.info("Grid scan finished")
 
             if beamline_specific.get_xrc_results_from_zocalo:
-                yield from fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
+                yield from _fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
 
         yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
 
@@ -190,16 +183,15 @@ def common_flyscan_xray_centre(
     yield from _decorated_flyscan()
 
 
-def fetch_xrc_results_from_zocalo(
+def _fetch_xrc_results_from_zocalo(
     zocalo_results: ZocaloResults,
     parameters: SpecifiedThreeDGridScan,
 ) -> MsgGenerator:
     """
-    Run after completing common_grid_scan to access results from Zocalo, using the same
-    ZocaloResults device which was staged during the grid scan.
+    Get XRC results from the ZocaloResults device which was staged during a grid scan,
+    and store them in XRayCentreEventHandler.xray_centre_results by firing an event.
 
-    The RunEngine should be subscribed to XRayCentreEventHandler before running this plan,
-    after which the results can be accessed through XRayCentreEventHandler.xray_centre_results
+    The RunEngine must be subscribed to XRayCentreEventHandler for this plan to work.
     """
 
     LOGGER.info("Getting X-ray center Zocalo results...")

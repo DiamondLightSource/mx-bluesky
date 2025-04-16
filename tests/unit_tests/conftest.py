@@ -16,8 +16,8 @@ from event_model.documents import Event
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -32,7 +32,11 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    EnvironmentConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     FlyScanEssentialDevices,
@@ -107,6 +111,20 @@ def mock_beamline_module_filepaths(bl_name, bl_module):
         beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
             "tests/test_data/i04_beamlineParameters"
         )
+
+
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
+    return (
+        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=SpecifiedThreeDGridScan,
+            emit=ZocaloCallback(
+                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+            ),
+        ),
+    )
 
 
 @pytest.fixture

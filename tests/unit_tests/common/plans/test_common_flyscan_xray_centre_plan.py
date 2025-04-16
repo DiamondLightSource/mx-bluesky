@@ -21,9 +21,6 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -45,8 +42,8 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
+    _fetch_xrc_results_from_zocalo,
     common_flyscan_xray_centre,
-    fetch_xrc_results_from_zocalo,
     kickoff_and_complete_gridscan,
     run_gridscan,
     wait_for_gridscan_valid,
@@ -67,6 +64,7 @@ from tests.unit_tests.hyperion.experiment_plans.conftest import mock_zocalo_trig
 
 from ....conftest import TestData
 from ...conftest import (
+    create_gridscan_callbacks,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
@@ -638,7 +636,7 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TestData.test_result_large)
 
         def plan():
-            yield from fetch_xrc_results_from_zocalo(
+            yield from _fetch_xrc_results_from_zocalo(
                 fake_fgs_composite.zocalo, test_fgs_params
             )
 
@@ -680,7 +678,7 @@ class TestFlyscanXrayCentrePlan:
             + TestData.test_result_below_threshold
             + TestData.test_result_small,
         )
-        RE(fetch_xrc_results_from_zocalo(fake_fgs_composite.zocalo, test_fgs_params))
+        RE(_fetch_xrc_results_from_zocalo(fake_fgs_composite.zocalo, test_fgs_params))
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
