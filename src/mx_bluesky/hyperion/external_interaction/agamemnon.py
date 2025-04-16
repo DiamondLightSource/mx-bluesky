@@ -27,6 +27,9 @@ from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
+from mx_bluesky.hyperion.parameters.rotation import (
+    MultiRotationScan,
+)
 
 T = TypeVar("T", bound=WithVisit)
 AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
@@ -47,6 +50,7 @@ class AgamemnonLoadCentreCollect(
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
     robot_load_then_centre: RobotLoadThenCentre
+    multi_rotation_scan: MultiRotationScan
 
 
 @dataclasses.dataclass
@@ -174,6 +178,45 @@ def create_robot_load_then_centre_params_from_agamemnon(
     )
 
 
+def create_rotation_params_from_agamemnon(
+    parameters: dict,
+) -> MultiRotationScan:
+    visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
+    with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
+    with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
+    visit_directory, file_name = path.split(parameters["prefix"])
+
+    first_collection = parameters["collection"][0]
+
+    return MultiRotationScan.model_validate(
+        {
+            "parameter_model_version": get_param_version(),
+            "comment": first_collection["comment"],
+            "storage_directory": str(visit_directory),
+            "detector_distance_mm": detector_distance,
+            **with_energy_params,
+            "exposure_time_s": first_collection["exposure_time"],
+            "file_name": file_name,
+            "sample_id": with_sample_params["sample_id"],
+            "visit": visit,
+            "transmission_frac": first_collection["transmission"],
+            "rotation_increment_deg": first_collection["omega_increment"],
+            "ispyb_experiment_type": first_collection["experiment_type"],
+            "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
+            "rotation_scans": [
+                {
+                    "scan_width_deg": (
+                        first_collection["number_of_images"]
+                        * first_collection["omega_increment"]
+                    ),
+                    "omega_start_deg": first_collection["omega_start"],
+                    "phi_start_deg": first_collection["phi_start"],
+                }
+            ],
+        }
+    )
+
+
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
@@ -182,6 +225,7 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     robot_load_params = create_robot_load_then_centre_params_from_agamemnon(
         agamemnon_params
     )
+    rotation_parameters = create_rotation_params_from_agamemnon(agamemnon_params)
     return AgamemnonLoadCentreCollect(
         parameter_model_version=SemanticVersion.validate_from_str(
             str(PARAMETER_VERSION)
@@ -190,16 +234,20 @@ def populate_parameters_from_agamemnon(agamemnon_params):
         detector_distance_mm=detector_distance,
         select_centres=TopNByMaxCountSelection(n=pin_type.expected_number_of_crystals),
         robot_load_then_centre=robot_load_params,
+        multi_rotation_scan=rotation_parameters,
         **with_sample_params,
         **with_energy_params,
     )
 
 
-def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect:
+def create_parameters_from_agamemnon() -> AgamemnonLoadCentreCollect | None:
     beamline_name = get_beamline_name("i03")
     agamemnon_params = get_next_instruction(beamline_name)
-
-    return populate_parameters_from_agamemnon(agamemnon_params)
+    return (
+        populate_parameters_from_agamemnon(agamemnon_params)
+        if agamemnon_params
+        else None
+    )
 
 
 def compare_params(load_centre_collect_params):

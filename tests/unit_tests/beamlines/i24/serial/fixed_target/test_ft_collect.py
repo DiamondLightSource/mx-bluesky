@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
@@ -35,17 +34,12 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     BeamSettings,
 )
 
-from ..conftest import TEST_LUT
+from ..conftest import TEST_LUT, fake_generator
 
 chipmap_str = """01status    P3011       1
 02status    P3021       0
 03status    P3031       0
 04status    P3041       0"""
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
 
 
 def test_calculate_collection_timeout(dummy_params_without_pp):

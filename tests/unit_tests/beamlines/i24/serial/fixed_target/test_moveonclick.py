@@ -1,6 +1,5 @@
 from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import cv2 as cv
 import pytest
 from dodal.devices.i24.pmac import PMAC
@@ -15,12 +14,9 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     update_ui,
 )
 
+from ..conftest import fake_generator
+
 ZOOMCALIBRATOR = 6
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
 
 
 @pytest.mark.parametrize(
