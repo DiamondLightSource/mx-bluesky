@@ -15,7 +15,6 @@ from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
     TopNByMaxCountSelection,
     WithCentreSelection,
-    WithOptionalEnergyChange,
     WithSample,
     WithVisit,
 )
@@ -45,7 +44,6 @@ class AgamemnonLoadCentreCollect(
     WithSample,
     WithCentreSelection,
     WithHyperionUDCFeatures,
-    WithOptionalEnergyChange,
 ):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
@@ -204,6 +202,8 @@ def create_rotation_params_from_agamemnon(
             "exposure_time_s": first_collection["exposure_time"],
             "file_name": file_name,
             "sample_id": with_sample_params["sample_id"],
+            "sample_puck": with_sample_params["sample_puck"],
+            "sample_pin": with_sample_params["sample_pin"],
             "visit": visit,
             "transmission_frac": first_collection["transmission"],
             "rotation_increment_deg": first_collection["omega_increment"],
@@ -217,6 +217,8 @@ def create_rotation_params_from_agamemnon(
                     ),
                     "omega_start_deg": first_collection["omega_start"],
                     "phi_start_deg": first_collection["phi_start"],
+                    "chi_start_deg": first_collection["chi"],
+                    "rotation_direction": "Positive",
                 }
             ],
         }
@@ -226,7 +228,6 @@ def create_rotation_params_from_agamemnon(
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
     robot_load_params = create_robot_load_then_centre_params_from_agamemnon(
         agamemnon_params
@@ -242,7 +243,6 @@ def populate_parameters_from_agamemnon(agamemnon_params):
         robot_load_then_centre=robot_load_params,
         multi_rotation_scan=rotation_parameters,
         **with_sample_params,
-        **with_energy_params,
     )
 
 
