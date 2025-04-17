@@ -281,6 +281,7 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@patch("dodal.devices.detector.detector.Path", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
