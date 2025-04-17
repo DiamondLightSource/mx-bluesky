@@ -16,6 +16,9 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+    upload_chip_map_to_geobrick,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _move_on_mouse_click_plan,
 )
@@ -44,6 +47,12 @@ def gui_move_backlight(
     bl_pos = BacklightPositions(position)
     yield from bps.abs_set(backlight, bl_pos, wait=True)
     SSX_LOGGER.debug(f"Backlight moved to {bl_pos.value}")
+
+
+@bpp.run_decorator()
+def gui_set_zoom_level(position: str, oav: OAV = inject("oav")) -> MsgGenerator:
+    yield from bps.abs_set(oav.zoom_controller, position, wait="True")
+    SSX_LOGGER.debug(f"Setting zoom level to {position}")
 
 
 @bpp.run_decorator()
@@ -103,6 +112,7 @@ def gui_set_parameters(
     laser_dwell: float,
     laser_delay: float,
     pre_pump: float,
+    pmac: PMAC = inject("pmac"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -165,5 +175,16 @@ def gui_set_parameters(
         "pre_pump_exposure_s": pre_pump,
     }
     # TODO run the run_fixed_target plan once params are set (GUI not ready yet)
-    yield from bps.sleep(0.5)
-    return FixedTargetParameters(**params)
+
+    parameters = FixedTargetParameters(**params)
+
+    def abort_plan(pmac: PMAC):
+        yield from bps.trigger(pmac.abort_program, wait=True)
+
+    if parameters.chip_map:
+        yield from bpp.contingency_wrapper(
+            upload_chip_map_to_geobrick(pmac, parameters.chip_map),
+            except_plan=lambda e: (yield from abort_plan(pmac)),
+            auto_raise=False,
+        )
+    yield from bps.sleep(1)
