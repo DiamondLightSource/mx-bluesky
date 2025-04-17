@@ -15,7 +15,6 @@ from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
     TopNByMaxCountSelection,
     WithCentreSelection,
-    WithOptionalEnergyChange,
     WithSample,
     WithVisit,
 )
@@ -24,6 +23,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
@@ -45,7 +45,6 @@ class AgamemnonLoadCentreCollect(
     WithSample,
     WithCentreSelection,
     WithHyperionUDCFeatures,
-    WithOptionalEnergyChange,
 ):
     """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
@@ -165,6 +164,7 @@ def create_robot_load_then_centre_params_from_agamemnon(
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(parameters)
     with_sample_params = get_withsample_parameters_from_agamemnon(parameters)
     with_energy_params = get_withenergy_parameters_from_agamemnon(parameters)
+    pin_type = get_pin_type_from_agamemnon_parameters(parameters)
     visit_directory, file_name = path.split(parameters["prefix"])
     return RobotLoadThenCentre(
         parameter_model_version=get_param_version(),
@@ -172,7 +172,13 @@ def create_robot_load_then_centre_params_from_agamemnon(
         visit=visit,
         detector_distance_mm=detector_distance,
         snapshot_directory=visit_directory + "/snapshots",
+        omega_start_deg=0.0,
+        chi_start_deg=0.0,
+        transmission_frac=1.0,
+        tip_offset_um=pin_type.full_width / 2,
+        grid_width_um=pin_type.full_width,
         file_name=file_name,
+        features=HyperionFeatureFlags(use_gpu_results=True),
         **with_energy_params,
         **with_sample_params,
     )
@@ -198,6 +204,8 @@ def create_rotation_params_from_agamemnon(
             "exposure_time_s": first_collection["exposure_time"],
             "file_name": file_name,
             "sample_id": with_sample_params["sample_id"],
+            "sample_puck": with_sample_params["sample_puck"],
+            "sample_pin": with_sample_params["sample_pin"],
             "visit": visit,
             "transmission_frac": first_collection["transmission"],
             "rotation_increment_deg": first_collection["omega_increment"],
@@ -211,6 +219,8 @@ def create_rotation_params_from_agamemnon(
                     ),
                     "omega_start_deg": first_collection["omega_start"],
                     "phi_start_deg": first_collection["phi_start"],
+                    "chi_start_deg": first_collection["chi"],
+                    "rotation_direction": "Positive",
                 }
             ],
         }
@@ -220,7 +230,6 @@ def create_rotation_params_from_agamemnon(
 def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
     robot_load_params = create_robot_load_then_centre_params_from_agamemnon(
         agamemnon_params
@@ -236,7 +245,6 @@ def populate_parameters_from_agamemnon(agamemnon_params):
         robot_load_then_centre=robot_load_params,
         multi_rotation_scan=rotation_parameters,
         **with_sample_params,
-        **with_energy_params,
     )
 
 
