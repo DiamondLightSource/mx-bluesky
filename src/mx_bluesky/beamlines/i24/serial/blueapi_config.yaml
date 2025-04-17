@@ -11,6 +11,6 @@ api:
   cors:
     allow_credentials: True
     origins: 
-      - "http://localhost:5173"
+      - "*"
 stomp:
   host: i24-control.diamond.ac.uk
