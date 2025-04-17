@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import re
+import traceback
 from os import path
 from typing import Any, TypeVar
 
@@ -203,10 +204,12 @@ def compare_params(load_centre_collect_params):
             LOGGER.info(
                 f"Different parameters found when directly reading from Hyperion: {differences}"
             )
-    except (ValueError, KeyError) as e:
-        LOGGER.warning(f"Failed to compare parameters: {e}")
-    except Exception as e:
-        LOGGER.warning(f"Unexpected error occurred. Failed to compare parameters: {e}")
+    except (ValueError, KeyError):
+        LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
+    except Exception:
+        LOGGER.warning(
+            f"Unexpected error occurred. Failed to compare parameters: {traceback.format_exc()}"
+        )
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
