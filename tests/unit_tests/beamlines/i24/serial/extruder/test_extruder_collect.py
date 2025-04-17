@@ -1,6 +1,5 @@
 from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from ophyd_async.testing import get_mock_put, set_mock_value
@@ -18,7 +17,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
-from ..conftest import TEST_LUT
+from ..conftest import TEST_LUT, fake_generator
 
 
 @pytest.fixture
@@ -60,11 +59,6 @@ def dummy_beam_settings():
     return BeamSettings(
         wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(120.4, 127.6)
     )
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
 
 
 @patch(
