@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from deepdiff.diff import DeepDiff
+from dodal.devices.zebra.zebra import RotationDirection
 from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
@@ -28,6 +29,10 @@ EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "demand_energy_ev": 12700.045934258673,
     "tip_offset_um": 300,
     "grid_width_um": 600,
+    "omega_start_deg": 0,
+    "chi_start_deg": 0,
+    "features": {"use_gpu_results": True},
+    "transmission_frac": 1.0,
 }
 
 EXPECTED_ROTATION_PARAMS = {
@@ -41,7 +46,13 @@ EXPECTED_ROTATION_PARAMS = {
     "transmission_frac": 0.5,
     "ispyb_experiment_type": IspybExperimentType.CHARACTERIZATION,
     "rotation_scans": [
-        RotationScanPerSweep(omega_start_deg=0.0, phi_start_deg=0.0, scan_width_deg=360)
+        RotationScanPerSweep(
+            omega_start_deg=0.0,
+            phi_start_deg=0.0,
+            scan_width_deg=360,
+            rotation_direction=RotationDirection.POSITIVE,
+            chi_start_deg=0.0,
+        )
     ],
 }
 
@@ -61,7 +72,6 @@ EXPECTED_PARAMETERS = LoadCentreCollect.model_validate(
         },
         "robot_load_then_centre": EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS,
         "multi_rotation_scan": EXPECTED_ROTATION_PARAMS,
-        "demand_energy_ev": 12700.045934258673,
     }
 )
 

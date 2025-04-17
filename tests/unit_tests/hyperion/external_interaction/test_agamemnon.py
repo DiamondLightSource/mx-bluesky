@@ -4,6 +4,7 @@ from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
@@ -332,6 +333,12 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     assert robot_load_params.sample_puck == 40
     assert robot_load_params.sample_pin == 3
     assert robot_load_params.demand_energy_ev == 12700.045934258673
+    assert robot_load_params.omega_start_deg == 0.0
+    assert robot_load_params.chi_start_deg == 0.0
+    assert robot_load_params.transmission_frac == 1.0
+    assert robot_load_params.tip_offset_um == 300.0
+    assert robot_load_params.grid_width_um == 600.0
+    assert robot_load_params.features.use_gpu_results
     assert str(robot_load_params.parameter_model_version) == "5.3.0"
     assert (
         robot_load_params.storage_directory
@@ -346,6 +353,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
+@patch("dodal.devices.detector.detector.Path", new=MagicMock())
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     mock_requests: MagicMock,
 ):
@@ -366,9 +374,15 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert rotation_params.comment == "Complete_P1_sweep1 "
     assert rotation_params.ispyb_experiment_type == "Characterization"
 
+    assert rotation_params.sample_puck == 40
+    assert rotation_params.sample_pin == 3
+
     individual_scans = list(rotation_params.single_rotation_scans)
     assert len(individual_scans) == 1
     assert individual_scans[0].scan_points["omega"][1] == 0.1
+    assert individual_scans[0].phi_start_deg == 0.0
+    assert individual_scans[0].chi_start_deg == 0.0
+    assert individual_scans[0].rotation_direction == RotationDirection.POSITIVE
 
     assert rotation_params.demand_energy_ev == 12700.045934258673
     assert str(rotation_params.parameter_model_version) == "5.3.0"

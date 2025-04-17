@@ -140,7 +140,6 @@ def populate_parameters_from_agamemnon(agamemnon_params):
             "sample_id": agamemnon_params["sample"]["id"],
             "sample_puck": agamemnon_params["sample"]["container"],
             "sample_pin": agamemnon_params["sample"]["position"],
-            **with_energy_params,
             "select_centres": {
                 "name": "TopNByMaxCount",
                 "n": pin_type.expected_number_of_crystals,
@@ -150,6 +149,11 @@ def populate_parameters_from_agamemnon(agamemnon_params):
                 "file_name": file_name,
                 "tip_offset_um": pin_type.full_width / 2,
                 "grid_width_um": pin_type.full_width,
+                "omega_start_deg": 0.0,
+                "chi_start_deg": first_collection["chi"],
+                "transmission_frac": 1.0,
+                "features": {"use_gpu_results": True},
+                **with_energy_params,
             },
             "multi_rotation_scan": {
                 "comment": first_collection["comment"],
@@ -168,8 +172,11 @@ def populate_parameters_from_agamemnon(agamemnon_params):
                         ),
                         "omega_start_deg": first_collection["omega_start"],
                         "phi_start_deg": first_collection["phi_start"],
+                        "chi_start_deg": first_collection["chi"],
+                        "rotation_direction": "Positive",
                     }
                 ],
+                **with_energy_params,
             },
         }
     )
