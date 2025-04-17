@@ -41,7 +41,7 @@ dependencies = [
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
-    "blueapi >= 0.5.0",
+    "blueapi == 0.10.1",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
     "ophyd-async >= 0.10.0a2",

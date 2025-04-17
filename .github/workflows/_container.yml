@@ -33,11 +33,22 @@ jobs:
           file: Dockerfile.release
           load: true
 
+      - name: Build and export Dockerfile.blueapi to local cache
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.blueapi
+          load: true
+
       - name: Create tags for publishing image
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: |
+            ghcr.io/${{ github.repository }}
+            ghcr.io/${{ github.repository }}-blueapi
           tags: |
             type=ref,event=tag
             type=raw,value=latest
@@ -52,6 +63,18 @@ jobs:
         with:
           context: .
           file: Dockerfile.release
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Push Dockerfile.blueapi image to container registry
+        if: github.ref_type == 'tag'
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.blueapi
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
