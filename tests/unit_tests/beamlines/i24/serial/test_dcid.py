@@ -22,7 +22,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 def test_read_beam_info_from_hardware(
     dcm: DCM, mirrors: FocusMirrorsMode, eiger_beam_center: DetectorBeamCenter, RE
 ):
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     expected_beam_x = 1605 * 0.075
     expected_beam_y = 1702 * 0.075
 
