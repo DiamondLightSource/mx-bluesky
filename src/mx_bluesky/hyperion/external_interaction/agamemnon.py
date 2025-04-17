@@ -195,7 +195,6 @@ def create_parameters_from_agamemnon() -> LoadCentreCollect | None:
 def compare_params(load_centre_collect_params):
     try:
         parameters = create_parameters_from_agamemnon()
-
         # Log differences against GDA populated parameters
         differences = DeepDiff(
             parameters, load_centre_collect_params, math_epsilon=1e-5
