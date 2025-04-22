@@ -69,11 +69,6 @@ class EnvironmentConstants:
 
 
 @dataclass(frozen=True)
-class TriggerConstants:
-    ZOCALO = "trigger_zocalo_on"
-
-
-@dataclass(frozen=True)
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17

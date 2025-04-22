@@ -69,7 +69,6 @@ def run_zocalo_with_dev_ispyb(
             @bpp.run_decorator(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-                    CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
                     "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
                     "mx_bluesky_parameters": dummy_params.model_dump_json(),
                 }
