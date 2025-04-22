@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.hutch_shutter import (
@@ -81,6 +82,11 @@ def dummy_params_ex():
         "pump_status": False,
     }
     return ExtruderParameters(**params)
+
+
+def fake_generator(value):
+    yield from bps.null()
+    return value
 
 
 def patch_motor(motor: Motor, initial_position: float = 0):
