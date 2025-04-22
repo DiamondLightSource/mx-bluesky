@@ -55,6 +55,7 @@ class PlanNameConstants:
     ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
+    ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
     FLYSCAN_RESULTS = "xray_centre_results"
