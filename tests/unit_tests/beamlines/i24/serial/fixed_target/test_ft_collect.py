@@ -288,7 +288,7 @@ def test_finish_i24(
 
     fake_reset_zebra.assert_called_once()
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None)
+    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
     mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])

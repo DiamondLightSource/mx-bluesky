@@ -6,7 +6,7 @@ from dodal.devices.focusing_mirror import (
     MirrorStripe,
     MirrorVoltages,
 )
-from dodal.devices.undulator_dcm import UndulatorDCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,

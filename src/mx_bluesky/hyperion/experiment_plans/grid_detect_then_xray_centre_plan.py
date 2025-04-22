@@ -11,12 +11,12 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight, BacklightPosition
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
