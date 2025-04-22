@@ -1,0 +1,14 @@
+ # See https://github.com/DiamondLightSource/mx-bluesky/issues/1004
+FROM ghcr.io/diamondlightsource/blueapi:0.10.1
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt update -y && apt upgrade -y
+# Needed for python cv2 dependency
+RUN apt install -y libgl1 libglib2.0-0
+
+RUN /venv/bin/pip install mx-bluesky
+
+# Needed so that Blueapi's setup-scratch stage has permission to modify dependencies installed 
+# in the above pip installation
+RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
