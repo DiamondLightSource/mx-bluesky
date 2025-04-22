@@ -12,9 +12,9 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon

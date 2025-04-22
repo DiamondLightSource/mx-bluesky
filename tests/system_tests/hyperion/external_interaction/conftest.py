@@ -12,11 +12,11 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -55,7 +55,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
@@ -387,7 +387,9 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 
 @pytest.fixture
-def params_for_rotation_scan(test_rotation_params: RotationScan) -> RotationScan:
+def params_for_rotation_scan(
+    test_rotation_params: MultiRotationScan,
+) -> MultiRotationScan:
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71

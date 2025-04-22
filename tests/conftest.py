@@ -33,12 +33,12 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -107,7 +107,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from .unit_tests.conftest import device_factories_for_beamline
 
@@ -364,7 +364,7 @@ def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -373,7 +373,7 @@ def test_rotation_params():
 
 @pytest.fixture
 def test_rotation_params_nomove():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
@@ -574,13 +574,13 @@ def xbpm_feedback(done_status):
     beamline_utils.clear_devices()
 
 
-def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
+def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
-    set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
-    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing, 3.13475)
-    patch_motor(dcm.roll_in_mrad)
-    patch_motor(dcm.pitch_in_mrad)
+    set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    patch_motor(dcm.xtal_1.roll_in_mrad)
+    patch_motor(dcm.xtal_1.pitch_in_mrad)
     patch_motor(dcm.offset_in_mm)
     return dcm
 
@@ -633,7 +633,7 @@ def undulator_dcm(RE, sim_run_engine, dcm):
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
     yield undulator_dcm
     beamline_utils.clear_devices()
 
@@ -1559,7 +1559,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = RotationScan(
+    dummy_params = MultiRotationScan(
         **default_raw_params(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
