@@ -207,6 +207,7 @@ commands =
 # Runs the system tests locally
 [testenv:localsystemtests]
 setenv =
+    DOCKER=podman
     DODAL_TEST_MODE=true
     ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
     ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
