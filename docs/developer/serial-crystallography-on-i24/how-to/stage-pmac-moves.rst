@@ -1,3 +1,23 @@
+=================================
+PMAC-run operations on I24 serial
+=================================
+
+Several operations in a fixed target (FT) collection are run vie the PMAC, by sending a command to the ``PMAC_STRING`` PV
+Among these:
+
+- Kickoff data collection
+- Stage moves
+- Laser control
+
+
+Data collection via the PMAC
+----------------------------
+
+
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+
+
 Stage motor moves using the PMAC device
 ---------------------------------------
 
@@ -17,6 +37,8 @@ to motors. The axes allocations defined for the chip stages set up are:
    #3->Z
 
 When an X-axis move is executed, the #1 motor will make the move.
+
+It should be noted that the PMAC coordinate system used by I24 serial is number 2, which can be specified in a PMAC string by starting the command with ``&2``.
 
 When running chip collections, the stage motors are moved via the `PMAC
 device <https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i24/pmac.py>`__
@@ -81,7 +103,7 @@ Theory for this computation
 
 The plan needs information stored in a few files:
 
-* The motor directions are stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/motor_directions.txt.`` The motor number multiplied by the motor direction should give the positive chip direction. 
+* The motor directions are stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/motor_directions.txt.`` The motor number multiplied by the motor direction should give the positive chip direction.
 * The scale values for x,y,z, the skew value and the sign of Sx, Sy, Sz are all stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/cs_maker.json``
 * The fiducials 1 and 2 positions are written to file when selecting the fiducials (Setting fiducial 0 instead sends a homing command directly to the pmac_string PV)
 
@@ -106,3 +128,16 @@ the following pmac_strings:
    "#1->10000X+0Y+0Z"
    "#2->+0X-10000Y+0Z"
    "#3->0X+0Y-10000Z"
+
+
+
+Laser control
+-------------
+
+The ``laser_control`` plan switches a laser on and off by sending PMAC_STRINGS that set a pair of M-variables.
+M-variables point to a location in memory and are usually used for user access or I/O operations - in this case they have to do with position compare settings.
+
+The M-variables used here are M712/M711 for laser1 and M812/M811 for laser2.
+M711 and M811 are set to 1, while and the value set to M712/M812 indicates when the triggering happens, eg:
+   M712 = 0 if triggering on the falling edge -> laser off
+   M712 = 1 if triggering on the rising edge -> laser on
