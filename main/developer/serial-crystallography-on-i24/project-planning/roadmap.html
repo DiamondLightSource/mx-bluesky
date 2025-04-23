@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Roadmap &#8212; mx-bluesky 1.0.1.dev216+g984022578 documentation</title>
+    <title>Roadmap &#8212; mx-bluesky 1.0.1.dev217+g73c7c36f4 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=3468097c"></script>
+    <script src="../../../_static/documentation_options.js?v=64e27596"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -413,7 +413,7 @@
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Roadmap</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../how-to/environment-setup.html">Set up for serial experiments on I24</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../how-to/run-a-collection.html">Run a collection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/stage-pmac-moves.html">Stage motor moves using the PMAC device</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how-to/pmac-docs.html">PMAC-run operations on I24 serial</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
@@ -501,35 +501,22 @@
 <h1>Roadmap<a class="headerlink" href="#roadmap" title="Link to this heading">#</a></h1>
 <p>For a closer look at the ongoing work: <a class="reference external" href="https://github.com/orgs/DiamondLightSource/projects/10/views/2">I24ssx
 board</a></p>
-<p>Ongoing list of TODOs:</p>
+<section id="ongoing-list-of-todos-updated-04-2025">
+<h2>Ongoing list of TODOs (Updated 04/2025)<a class="headerlink" href="#ongoing-list-of-todos-updated-04-2025" title="Link to this heading">#</a></h2>
+<p><strong>Bluesky</strong>:</p>
 <ol class="arabic simple">
-<li><p>Improve alignment of chip: get it to work correctly for multiple
-zooms.</p>
+<li><p>Set up blueapi and run mx-bluesky on the beamline kubernetes cluster. I24 should be due to get one in shutdown 4 2024.</p></li>
+<li><p>Improve/fix the issues with the PMAC ProgramRunner: it should monitor the counter PV as well as the status PV.</p></li>
+<li><p>Use callbacks for file IO, eg. to write parameter and map files, nexus writer and ispyb deposition.</p>
 <ul class="simple">
-<li><p>Close to being completed (see issue #44)</p></li>
-</ul>
-</li>
-<li><p>Refactor and fix the logger.</p></li>
-<li><p>Use callbacks for file IO, eg. to write parameter and map files, nexus writer and ispyb deposition.</p></li>
-<li><p>Solution for enabling users to run mx-bluesky instead of old scripts: blocked by permission issues.</p>
-<ul class="simple">
-<li><p>This should also allow us to stop using the Pilatus to make directories during an Eiger collection.</p></li>
-<li><p>The preferred permanent solution is to run mx-bluesky on the beamline kubernetes cluster. I24 should be due to get on in shutdown 4 2024.</p></li>
-<li><p>Other possibility is to run the <code class="docutils literal notranslate"><span class="pre">blueapi</span></code> server on procServ. An example of this has now been set up on ws002 on the beamline and is being tested.</p></li>
-<li><p>A temporary workaround in place for beamline staff, who should be starting to run this for testing/in house beamtimes. Staff have started using this set up in September 24.</p></li>
+<li><p>Improve nexgen-server use</p></li>
 </ul>
 </li>
 <li><p>Convert detector set up to use bluesky plans and ophyd_async devices.</p>
 <ul class="simple">
 <li><p>Eiger device in dodal needs to be converted to ophyd_async and updated to work with different Eigers on several beamlines. This work is dependent on other work out of the scope of this project, see <a class="reference external" href="https://github.com/DiamondLightSource/dodal/issues/700">Dodal#700</a> and linked issues.</p></li>
+<li><p>Update JF code for serial, move devices into dodal and merge it.</p></li>
 <li><p>Investigate using the existing Pilatus in ophyd_async which writes HDF5 instead of CBFs, but we may want to make a CBF-writing Pilatus. However, the Pilatus detector is due to be removed soon.</p></li>
-</ul>
-</li>
-<li><p>Start looking into moving away from edm screens towards a web-based GUI.</p>
-<ul class="simple">
-<li><p>Prepare generic react components to match the features in the edms.</p></li>
-<li><p>Components for things currently managed by general purpose PVs (eg. map).</p></li>
-<li><p>OAV viewer.</p></li>
 </ul>
 </li>
 <li><p>Start integrating Panda, at least for fixed-target collections.</p></li>
@@ -541,7 +528,25 @@ zooms.</p>
 </li>
 <li><p>Reinstate full mapping code using bluesky.</p></li>
 </ol>
-<p>(TBC…)</p>
+<p><strong>React UI</strong>:</p>
+<ol class="arabic simple">
+<li><p>Prepare generic react components to match the features in the edms.</p>
+<ul class="simple">
+<li><p>Components for things currently managed by general purpose PVs (eg. mapping, pump probe).</p></li>
+<li><p>Set up collection parameters</p></li>
+<li><p>Move hardware: eg. detector stage</p></li>
+<li><p>Monitor beamline state</p></li>
+</ul>
+</li>
+<li><p>Move the moveonclick to the wbe UI</p>
+<ul class="simple">
+<li><p>Component for the OAV viewer on the UI.</p></li>
+<li><p>Components to set the zoom and move the backlight using bluesky plans.</p></li>
+<li><p>Look into drawing the crosshair in epics.</p></li>
+<li><p>Refactor moveonclick code.</p></li>
+</ul>
+</li>
+</ol>
 <div class="pst-scrollable-table-container"><table class="table" id="id1">
 <caption><span class="caption-text">Rough Roadmap</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
@@ -556,12 +561,12 @@ zooms.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>Fully test extruder collections</p></td>
-<td><p>Nov. 24</p></td>
+<tr class="row-even"><td><p>PMAC ProgramRunner updates/fixes</p></td>
+<td><p>Apr. 24</p></td>
 <td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
 </tr>
-<tr class="row-odd"><td><p>Fix permissions and allow for user collections</p></td>
-<td><p>Dec. 24 / Jan. 25</p></td>
+<tr class="row-odd"><td><p>Update/improve coordinate system maker on the PMAC</p></td>
+<td><p>Apr. /May 25</p></td>
 <td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
 </tr>
 <tr class="row-even"><td><p>Convert the current detector set up code to bluesky plans using the device</p></td>
@@ -576,35 +581,43 @@ zooms.</p>
 <td><p>Dec. 24</p></td>
 <td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
 </tr>
-<tr class="row-odd"><td><p>Set up callback for parameter and map file I/O</p></td>
-<td><p>Dec. 24</p></td>
+<tr class="row-odd"><td><p>Prepare first React components to switch from EDM to a web GUI</p></td>
+<td><p>Dec. 24 / Jan. 25</p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
+</tr>
+<tr class="row-even"><td><p>Move the OAV viewer to a web GUI</p></td>
+<td><p>May / Jun. 25</p></td>
 <td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
+</tr>
+<tr class="row-odd"><td><p>Deploy a first basic version of the web UI</p></td>
+<td><p>May 25</p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
+</tr>
+<tr class="row-even"><td><p>Fully test extruder collections</p></td>
+<td><p>Nov. 24</p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
+</tr>
+<tr class="row-odd"><td><p>Fix permissions and allow for user collections</p></td>
+<td><p>Dec. 24 / Jan. 25</p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
 </tr>
 <tr class="row-even"><td><p>Refactor logger</p></td>
 <td><p>Nov. 24</p></td>
-<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
 </tr>
-<tr class="row-odd"><td><p>Improve current alignment (moveonclick)</p></td>
+<tr class="row-odd"><td><p>Improve current alignment - use multiple zooms (moveonclick)</p></td>
 <td><p>Nov. 24</p></td>
-<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
 </tr>
 <tr class="row-even"><td><p>Set up a PV backend, eg. <code class="docutils literal notranslate"><span class="pre">pvws</span></code>, for web GUI on the beamline.</p></td>
 <td><p>Jan. 25</p></td>
-<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
-</tr>
-<tr class="row-odd"><td><p>Prepare React components to switch from EDM to a web GUI</p></td>
-<td><p>Dec. 24 / Jan. 25</p></td>
-<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
-</tr>
-<tr class="row-even"><td><p>Move the OAV viewer to a web GUI</p></td>
-<td><p>Jan. 25 / Feb. 25</p></td>
-<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-pending" viewBox="0 0 24 24" aria-hidden="true"><g><rect fill="none" height="24" width="24"></rect></g><g><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M7,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C8.5,12.83,7.83,13.5,7,13.5z M12,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C13.5,12.83,12.83,13.5,12,13.5z M17,13.5c-0.83,0-1.5-0.67-1.5-1.5 c0-0.83,0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5C18.5,12.83,17.83,13.5,17,13.5z"></path></g></svg></p></td>
+<td><p><svg version="4.0.0.63c5cb3" width="2.0em" height="2.0em" class="sd-material-icon sd-material-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg></p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <section id="experiment-types-required">
-<h2>Experiment types required<a class="headerlink" href="#experiment-types-required" title="Link to this heading">#</a></h2>
+<h3>Experiment types required<a class="headerlink" href="#experiment-types-required" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Extruder</p>
 <ul>
@@ -632,8 +645,8 @@ work done by beamline staff on the PMAC program
 </ul>
 <p>Details of zebra settings for each type:
 <a class="reference external" href="https://confluence.diamond.ac.uk/display/MXTech/Zebra+settings+I24">https://confluence.diamond.ac.uk/display/MXTech/Zebra+settings+I24</a></p>
-<p>Note that most of the set up for the fixed target is actually done by
-the PMAC via PMAC strings.</p>
+<p>Note that most of the set up for the fixed target is actually done internally
+by the PMAC, via sending PMAC strings.</p>
 <hr class="docutils" />
 <p>Old roadmap for reference</p>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -722,6 +735,7 @@ tests</p></td>
 </div>
 </section>
 </section>
+</section>
 
 
                 </article>
@@ -770,7 +784,10 @@ tests</p></td>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#experiment-types-required">Experiment types required</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ongoing-list-of-todos-updated-04-2025">Ongoing list of TODOs (Updated 04/2025)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#experiment-types-required">Experiment types required</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
