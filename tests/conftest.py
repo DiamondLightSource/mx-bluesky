@@ -238,12 +238,6 @@ def raw_params_from_file(filename):
         return json.loads(f.read())
 
 
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
-):
-    return raw_params_from_file(json_file)
-
-
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)
@@ -1611,7 +1605,7 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 @pytest.fixture
 def dummy_rotation_params():
     dummy_params = MultiRotationScan(
-        **default_raw_params(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
