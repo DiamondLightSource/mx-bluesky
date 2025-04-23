@@ -345,7 +345,7 @@ def beamline_parameters():
 def test_fgs_params():
     return HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_grid_scan_parameters.json"
         )
     )
 
