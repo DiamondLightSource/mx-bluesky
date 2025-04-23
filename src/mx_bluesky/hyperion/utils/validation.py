@@ -11,8 +11,8 @@ from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -21,7 +21,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -36,38 +36,41 @@ def test_params(filename_stub, dir):
         with open(filename) as f:
             return json.loads(f.read())
 
-    params = RotationScan(
+    params = MultiRotationScan(
         **get_params(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
+    for scan_params in params.rotation_scans:
+        scan_params.x_start_um = 0
+        scan_params.y_start_um = 0
+        scan_params.z_start_um = 0
+        scan_params.scan_width_deg = 360
     params.file_name = filename_stub
-    params.scan_width_deg = 360
     params.demand_energy_ev = 12700
     params.storage_directory = str(dir)
-    params.x_start_um = 0
-    params.y_start_um = 0
-    params.z_start_um = 0
     params.exposure_time_s = 0.004
     return params
 
 
 def fake_rotation_scan(
-    parameters: RotationScan,
+    parameters: MultiRotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
+    single_scan_parameters = next(parameters.single_rotation_scans)
+
     @bpp.subs_decorator(subscription)
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": single_scan_parameters.model_dump_json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
     def plan():
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             rotation_devices.aperture_scatterguard,
             rotation_devices.attenuator,
             rotation_devices.flux,
@@ -79,27 +82,30 @@ def fake_rotation_scan(
 
 
 def fake_create_rotation_devices():
-    beamstop = i03.beamstop(fake_with_ophyd_sim=True)
-    eiger = i03.eiger(fake_with_ophyd_sim=True)
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    zebra = i03.zebra(fake_with_ophyd_sim=True)
-    detector_motion = i03.detector_motion(fake_with_ophyd_sim=True)
-    backlight = i03.backlight(fake_with_ophyd_sim=True)
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-    flux = i03.flux(fake_with_ophyd_sim=True)
-    undulator = i03.undulator(fake_with_ophyd_sim=True)
-    aperture_scatterguard = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
-    dcm = i03.dcm(fake_with_ophyd_sim=True)
-    robot = i03.robot(fake_with_ophyd_sim=True)
+    beamstop = i03.beamstop(connect_immediately=True, mock=True)
+    eiger = i03.eiger(connect_immediately=True, mock=True)
+    smargon = i03.smargon(connect_immediately=True, mock=True)
+    zebra = i03.zebra(connect_immediately=True, mock=True)
+    detector_motion = i03.detector_motion(connect_immediately=True, mock=True)
+    backlight = i03.backlight(mock=True)
+    attenuator = i03.attenuator(connect_immediately=True, mock=True)
+    flux = i03.flux(connect_immediately=True, mock=True)
+    undulator = i03.undulator(connect_immediately=True, mock=True)
+    aperture_scatterguard = i03.aperture_scatterguard(
+        connect_immediately=True, mock=True
+    )
+    synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
+    s4_slit_gaps = i03.s4_slit_gaps(connect_immediately=True, mock=True)
+    dcm = i03.dcm(connect_immediately=True, mock=True)
+    robot = i03.robot(connect_immediately=True, mock=True)
     oav = i03.oav(
-        fake_with_ophyd_sim=True,
+        connect_immediately=True,
+        mock=True,
         params=OAVConfig(
             zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
         ),
     )
-    xbpm_feedback = i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
@@ -120,13 +126,13 @@ def fake_create_rotation_devices():
         zebra=zebra,
         robot=robot,
         oav=oav,
-        sample_shutter=i03.sample_shutter(fake_with_ophyd_sim=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
         xbpm_feedback=xbpm_feedback,
     )
 
 
 def sim_rotation_scan_to_create_nexus(
-    test_params: RotationScan,
+    test_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     filename_stub,
     RE,

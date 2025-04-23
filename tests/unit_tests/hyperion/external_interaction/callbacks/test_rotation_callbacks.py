@@ -9,12 +9,10 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
-    StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
-from mx_bluesky.hyperion.external_interaction.callbacks.common.callback_util import (
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import multi_rotation_scan
+from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -24,14 +22,14 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from .....conftest import raw_params_from_file
 
 
 @pytest.fixture
 def params():
-    return RotationScan(
+    return MultiRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -45,13 +43,14 @@ def activate_callbacks(cbs: tuple[RotationNexusFileCallback, RotationISPyBCallba
 
 @pytest.fixture
 def do_rotation_scan(
-    params: RotationScan, fake_create_rotation_devices, oav_parameters_for_rotation
+    params: MultiRotationScan, fake_create_rotation_devices, oav_parameters_for_rotation
 ):
-    return rotation_scan(
+    return multi_rotation_scan(
         fake_create_rotation_devices, params, oav_parameters_for_rotation
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -77,6 +76,7 @@ def test_nexus_handler_gets_documents_in_plan(
     assert CONST.PLAN.ROTATION_OUTER in subplans
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -92,83 +92,6 @@ def test_nexus_handler_only_writes_once(
     nexus_writer.assert_called_once()
     assert cb.writer is not None
     cb.writer.create_nexus_file.assert_called_once()  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
-    ispyb_store,
-    zocalo_trigger_class,
-    nexus_writer,
-    RE: RunEngine,
-    params: RotationScan,
-    do_rotation_scan,
-):
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    zocalo_trigger = zocalo_trigger_class.return_value
-
-    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-    ispyb_callback.params = params
-    with pytest.raises(ISPyBDepositionNotMade):
-        RE.subscribe(nexus_callback)
-        RE.subscribe(ispyb_callback)
-        RE(do_rotation_scan)
-    zocalo_trigger.run_start.assert_not_called()  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
-def test_ispyb_triggered_before_zocalo(
-    ispyb_store, zocalo_trigger_class, nexus_writer, RE: RunEngine, do_rotation_scan
-):
-    mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
-    returned_ids = IspybIds(data_collection_group_id=0, data_collection_ids=(0,))
-    mock_store_in_ispyb_instance.begin_deposition.return_value = returned_ids
-    mock_store_in_ispyb_instance.update_deposition.return_value = returned_ids
-
-    ispyb_store.return_value = mock_store_in_ispyb_instance
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore
-
-    parent_mock = MagicMock()
-    parent_mock.attach_mock(zocalo_trigger_class.return_value, "zocalo")
-    parent_mock.attach_mock(mock_store_in_ispyb_instance, "ispyb")
-
-    RE.subscribe(nexus_callback)
-    RE.subscribe(ispyb_callback)
-    RE(do_rotation_scan)
-
-    call_names = [call[0] for call in parent_mock.method_calls]
-
-    assert "ispyb.begin_deposition" in call_names
-    assert "zocalo.run_start" in call_names
-
-    assert call_names.index("ispyb.begin_deposition") < call_names.index(
-        "zocalo.run_start"
-    )
 
 
 @patch(
@@ -197,10 +120,11 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     RE.subscribe(ispyb_callback)
     RE(do_rotation_scan)
 
-    assert ispyb_callback.activity_gated_stop.call_count == 2
+    assert ispyb_callback.activity_gated_stop.call_count == 3
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
@@ -208,7 +132,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
 def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
-    params: RotationScan,
+    params: MultiRotationScan,
     fake_create_rotation_devices,
     oav_parameters_for_rotation,
 ):
@@ -231,7 +155,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         params.sample_id = sample_id
 
         RE(
-            rotation_scan(
+            multi_rotation_scan(
                 fake_create_rotation_devices, params, oav_parameters_for_rotation
             )
         )
@@ -277,7 +201,7 @@ n_images_store_id = [
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     n_images: int,
     store_id: bool,
-    params: RotationScan,
+    params: MultiRotationScan,
 ):
     cb = RotationISPyBCallback()
     cb.active = True
@@ -286,9 +210,9 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         "time": 0,
         "uid": "abc123",
     }
-
     params.sample_id = 987678
-    params.scan_width_deg = n_images / 10
+    for scan_params in params.rotation_scans:
+        scan_params.scan_width_deg = n_images / 10
     if n_images < 200:
         params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images

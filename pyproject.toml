@@ -44,9 +44,9 @@ dependencies = [
     "blueapi >= 0.5.0",
     "daq-config-server >= 0.1.1",
     "ophyd == 1.9.0",
-    "ophyd-async >= 0.8a5",
-    "bluesky >= 1.13",
-    "dls-dodal == 1.39.0",
+    "ophyd-async >= 0.10.0a2",
+    "bluesky >= 1.13.1",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@5af4b5e7f93c8acbbb6c0aced0d4f425e7829807",
 ]
 
 
@@ -75,6 +75,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
+    "pytest-timeout",
     "pytest",
     "ruff",
     "sphinx-autobuild",
@@ -94,6 +95,7 @@ hyperion = "mx_bluesky.hyperion.__main__:main"
 hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
 hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
 hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
+redis_to_murko = "mx_bluesky.beamlines.i04.redis_to_murko_forwarder:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/mx-bluesky"
@@ -114,20 +116,24 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+timeout = 1
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
+    "system_test: marks tests as a system test",
 ]
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
     # Ignore deprecation warning from sqlalchemy
     "ignore::sqlalchemy.exc.MovedIn20Warning",
+    # Remove when there's a fix for https://github.com/DiamondLightSource/ispyb-api/issues/233
+    "ignore::sqlalchemy.exc.SADeprecationWarning",
     # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
     "ignore::DeprecationWarning:wheel",
     # Ophyd status objects in tests
@@ -147,6 +153,11 @@ filterwarnings = [
     "ignore:.*custom tp_new.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
+    # Ignore warning about deprecations in python-workflows encountered during system tests
+    # https://github.com/DiamondLightSource/python-workflows/issues/188
+    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    # https://github.com/bluesky/ophyd-async/issues/838 and https://github.com/seperman/deepdiff/issues/536
+    "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -165,10 +176,12 @@ legacy_tox_ini = """
 [tox]
 skipsdist=True
 
-[testenv:{pre-commit,type-checking,tests,docs}]
+[testenv:{pre-commit,type-checking,tests,docs,systemtests}]
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
+setenv =
+    systemtests: DODAL_TEST_MODE=true
 allowlist_externals =
     pytest
     pre-commit
@@ -180,6 +193,7 @@ commands =
     type-checking: pyright src tests {posargs}
     tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+    systemtests: pytest --junit-xml=systemtests_output.xml -m system_test tests/system_tests
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
         docs/developer/hyperion/reference/param_hierarchy.puml"
@@ -189,14 +203,17 @@ commands_pre =
 src = ["src", "tests"]
 line-length = 88
 lint.select = [
-    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "B",      # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",     # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",      # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",      # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",      # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",      # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",     # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF",    # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
+    "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
+    "TID251", # banned api - https://docs.astral.sh/ruff/rules/banned-api/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -205,8 +222,11 @@ lint.extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
-# Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "B023"]
+# Remove this line to forbid private member access, walrys operators in asserts, banned api in tests
+"tests/**/*" = ["SLF001", "B023", "RUF018", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"time.sleep".msg = "Use bps.sleep instead. # noqa will disable this rule for that line. See https://github.com/DiamondLightSource/mx-bluesky/issues/925"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

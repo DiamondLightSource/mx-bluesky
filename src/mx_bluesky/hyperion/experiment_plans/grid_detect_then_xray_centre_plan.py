@@ -11,12 +11,12 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight, BacklightPosition
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -39,7 +39,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -50,10 +53,6 @@ from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import 
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
-)
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    XRayCentreEventHandler,
     flyscan_xray_centre_no_move,
 )
 from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
@@ -61,11 +60,13 @@ from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
     grid_detection_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.utils.context import device_composite_from_context
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -101,7 +102,7 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 
 
 def create_parameters_for_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridScanWithEdgeDetect,
+    grid_scan_with_edge_params: GridCommon,
     grid_parameters: GridParamUpdate,
 ) -> HyperionSpecifiedThreeDGridScan:
     params_json = grid_scan_with_edge_params.model_dump()
@@ -113,7 +114,7 @@ def create_parameters_for_flyscan_xray_centre(
 
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetect,
+    parameters: GridCommon,
     oav_params: OAVParameters,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
@@ -142,6 +143,14 @@ def detect_grid_and_do_gridscan(
             parameters.box_size_um,
         )
 
+    if parameters.selected_aperture:
+        # Start moving the aperture/scatterguard into position without moving it in
+        yield from bps.prepare(
+            composite.aperture_scatterguard,
+            parameters.selected_aperture,
+            group=CONST.WAIT.GRID_READY_FOR_DC,
+        )
+
     yield from run_grid_detection_plan(
         oav_params,
         snapshot_template,
@@ -159,7 +168,7 @@ def detect_grid_and_do_gridscan(
     )
 
     yield from flyscan_xray_centre_no_move(
-        FlyScanXRayCentreComposite(
+        HyperionFlyScanXRayCentreComposite(
             aperture_scatterguard=composite.aperture_scatterguard,
             attenuator=composite.attenuator,
             backlight=composite.backlight,

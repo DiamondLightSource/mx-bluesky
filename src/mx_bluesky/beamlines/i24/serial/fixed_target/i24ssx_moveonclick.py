@@ -33,8 +33,7 @@ def _get_beam_centre(oav: OAV):
 
 def _calculate_zoom_calibrator(oav: OAV):
     """Set the scale for the zoom calibrator for the pmac moves."""
-    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    # zoomcalibrator = 1.547 - (0.03 * currentzoom) + (0.0001634 * currentzoom**2)
+    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)
     zoomcalibrator = (
         1.285
         - (0.02866 * currentzoom)
@@ -223,6 +222,6 @@ def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
 if __name__ == "__main__":
     RE = RunEngine(call_returns_result=True)
     # Get devices out of dodal
-    oav: OAV = i24.oav()
-    pmac: PMAC = i24.pmac()
+    oav: OAV = i24.oav(connect_immediately=True)
+    pmac: PMAC = i24.pmac(connect_immediately=True)
     start_viewer(oav, pmac, RE)

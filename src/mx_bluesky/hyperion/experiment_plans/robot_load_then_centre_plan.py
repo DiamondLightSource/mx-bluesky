@@ -3,7 +3,6 @@ from __future__ import annotations
 from math import isclose
 from typing import cast
 
-import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
@@ -11,13 +10,14 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.dcm import DCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -27,7 +27,6 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
-from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -40,12 +39,6 @@ from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
-)
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    XRayCentreEventHandler,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -106,7 +99,7 @@ class RobotLoadThenCentreComposite:
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
-    from mx_bluesky.hyperion.utils.context import device_composite_from_context
+    from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadThenCentreComposite)
 
@@ -133,27 +126,6 @@ def _robot_load_then_flyscan_plan(
     )
 
     yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
-
-
-def robot_load_then_centre(
-    composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentre,
-) -> MsgGenerator:
-    """Perform pin-tip detection followed by a flyscan to determine centres of interest.
-    Performs a robot load if necessary. Centre on the best diffracting centre.
-    """
-
-    xray_centre_event_handler = XRayCentreEventHandler()
-
-    yield from bpp.subs_wrapper(
-        robot_load_then_xray_centre(composite, parameters), xray_centre_event_handler
-    )
-    flyscan_results = xray_centre_event_handler.xray_centre_results
-    if flyscan_results is not None:
-        yield from change_aperture_then_move_to_xtal(
-            flyscan_results[0], composite.smargon, composite.aperture_scatterguard
-        )
-    # else no chi change, no need to recentre.
 
 
 def robot_load_then_xray_centre(

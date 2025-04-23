@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from pprint import pformat
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -138,7 +137,7 @@ def enter_hutch(
     detector_stage: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
-    yield from bps.mv(detector_stage.z, SAFE_DET_Z)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.z, SAFE_DET_Z)
     SSX_LOGGER.debug("Detector moved.")
 
 
@@ -257,7 +256,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.info(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.info(f"Pump delay time {parameters.laser_delay_s}")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "fastchip",
                 [
                     filepath,
@@ -278,7 +277,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "quickshot",
                 [
                     filepath,
@@ -310,7 +309,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.debug(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.debug(f"Pump delay time {parameters.laser_delay_s}")
-            sup.eiger(
+            yield from sup.eiger(
                 "triggered",
                 [
                     filepath,
@@ -318,6 +317,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_extruder_with_pump_probe_plan(
                 zebra,
@@ -331,7 +331,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.eiger(
+            yield from sup.eiger(
                 "quickshot",
                 [
                     filepath,
@@ -339,6 +339,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_quickshot_plan(
                 zebra, parameters.exposure_time_s, parameters.num_images, wait=True
@@ -393,13 +394,15 @@ def main_extruder_plan(
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
     yield from arm_zebra(zebra)
-    sleep(GATE_START)  # Sleep for the same length of gate_start, hard coded to 1
+    yield from bps.sleep(
+        GATE_START
+    )  # bps.sleep for the same length of gate_start, hard coded to 1
     i = 0
     text_list = ["|", "/", "-", "\\"]
     while True:
         line_of_text = "\r\t\t\t Waiting   " + 30 * (f"{text_list[i % 4]}")
         flush_print(line_of_text)
-        sleep(0.5)
+        yield from bps.sleep(0.5)
         i += 1
         zebra_arm_status = yield from bps.rd(zebra.pc.arm.armed)
         if zebra_arm_status == 0:  # not zebra.pc.is_armed():
@@ -429,7 +432,7 @@ def collection_aborted_plan(
         caput(pv.pilat_acquire, 0)
     elif detector_name == "eiger":
         caput(pv.eiger_acquire, 0)
-    sleep(0.5)
+    yield from bps.sleep(0.5)
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=True)
 
@@ -440,6 +443,7 @@ def tidy_up_at_collection_end_plan(
     shutter: HutchShutter,
     parameters: ExtruderParameters,
     dcid: DCID,
+    dcm: DCM,
 ) -> MsgGenerator:
     """A plan to tidy up at the end of a collection, successful or aborted.
 
@@ -452,9 +456,9 @@ def tidy_up_at_collection_end_plan(
 
     # Clean Up
     if parameters.detector_name == "pilatus":
-        sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")
@@ -475,7 +479,7 @@ def collection_complete_plan(
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
 
-    sleep(0.5)
+    yield from bps.sleep(0.5)
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=False)
@@ -533,7 +537,9 @@ def run_extruder_plan(
             )
         ),
         final_plan=lambda: (
-            yield from tidy_up_at_collection_end_plan(zebra, shutter, parameters, dcid)
+            yield from tidy_up_at_collection_end_plan(
+                zebra, shutter, parameters, dcid, dcm
+            )
         ),
         auto_raise=False,
     )

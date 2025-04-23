@@ -1,4 +1,3 @@
-import dataclasses
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -17,7 +16,7 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
-    robot_load_then_centre,
+    robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -68,35 +67,6 @@ def mock_pin_centre_then_flyscan_plan(_, __):
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
     MagicMock(return_value=iter([])),
 )
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
-    autospec=True,
-)
-def test_robot_load_then_centre_centres_on_the_first_flyscan_result(
-    mock_change_aperture_then_move_to_xtal: MagicMock,
-    mock_centring_plan: MagicMock,
-    robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentre,
-):
-    RE = RunEngine()
-
-    RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
-
-    mock_change_aperture_then_move_to_xtal.assert_called_once()
-    assert (
-        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
-        == FLYSCAN_RESULT_MED
-    )
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    side_effect=mock_pin_centre_then_flyscan_plan,
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
-    MagicMock(return_value=iter([])),
-)
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
@@ -104,7 +74,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 ):
     RE = RunEngine()
 
-    RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
+    RE(robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params))
     composite_passed = mock_centring_plan.call_args[0][0]
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
 
@@ -136,7 +106,7 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     sim_run_engine.simulate_plan(
-        robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
     )
     det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
     assert det_params.expected_energy_ev == 11100
@@ -166,7 +136,7 @@ def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set
         "dcm-energy_in_kev",
     )
     sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params_no_energy,
         )
@@ -198,7 +168,7 @@ def run_simulating_smargon_wait(
     )
 
     return sim_run_engine.simulate_plan(
-        robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
     )
 
 
@@ -222,7 +192,7 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
     )
     messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set" and msg.obj.name == "eiger_do_arm"
@@ -249,18 +219,7 @@ def mock_current_sample(sim_run_engine: RunEngineSimulator, sample: SampleLocati
 
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    MagicMock(
-        return_value=iter(
-            [
-                Msg("centre_plan"),
-                Msg(
-                    "open_run",
-                    run=CONST.PLAN.FLYSCAN_RESULTS,
-                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
-                ),
-            ]
-        )
-    ),
+    MagicMock(return_value=iter([Msg("centre_plan")])),
 )
 def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_then_eiger_not_staged_and_centring_not_run(
     robot_load_composite: RobotLoadThenCentreComposite,
@@ -273,7 +232,7 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
     robot_load_then_centre_params.chi_start_deg = None
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -295,22 +254,7 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
 
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    MagicMock(
-        return_value=iter(
-            [
-                Msg("centre_plan"),
-                Msg(
-                    "open_run",
-                    run=CONST.PLAN.FLYSCAN_RESULTS,
-                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
-                ),
-            ]
-        )
-    ),
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
-    MagicMock(return_value=iter([Msg("change_aperture_then_move_to_xtal")])),
+    MagicMock(return_value=iter([Msg("centre_plan")])),
 )
 def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_then_eiger_staged_and_centring_run(
     robot_load_composite: RobotLoadThenCentreComposite,
@@ -323,7 +267,7 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
     robot_load_then_centre_params.chi_start_deg = 30
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -343,29 +287,10 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
         lambda msg: msg.command == "centre_plan",
     )
 
-    messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "change_aperture_then_move_to_xtal"
-    )
-
 
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    MagicMock(
-        return_value=iter(
-            [
-                Msg("centre_plan"),
-                Msg(
-                    "open_run",
-                    run=CONST.PLAN.FLYSCAN_RESULTS,
-                    xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
-                ),
-            ]
-        )
-    ),
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.change_aperture_then_move_to_xtal",
-    MagicMock(return_value=iter([Msg("change_aperture_then_move_to_xtal")])),
+    MagicMock(return_value=iter([Msg("centre_plan")])),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
@@ -382,7 +307,7 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
     robot_load_then_centre_params.chi_start_deg = None
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -400,9 +325,6 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "centre_plan",
-    )
-    messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "change_aperture_then_move_to_xtal"
     )
 
 
@@ -425,7 +347,7 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
     robot_load_then_centre_params.chi_start_deg = 30
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -448,13 +370,7 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
 
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
-    MagicMock(
-        return_value=iter(
-            [
-                Msg("centre_plan"),
-            ]
-        )
-    ),
+    MagicMock(return_value=iter([Msg("centre_plan")])),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
@@ -471,7 +387,7 @@ def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
     robot_load_then_centre_params.chi_start_deg = 30
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -500,7 +416,7 @@ def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
     robot_load_then_centre_params.chi_start_deg = None
 
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_centre(
+        robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,
         )
@@ -530,25 +446,29 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
     )
     with pytest.raises(BeamstopException):
         sim_run_engine.simulate_plan(
-            robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
+            robot_load_then_xray_centre(
+                robot_load_composite, robot_load_then_centre_params
+            )
         )
 
 
+@pytest.mark.timeout(2)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
 def test_box_size_passed_through_to_gridscan(
+    mock_detect_grid: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
     RE: RunEngine,
 ):
     robot_load_then_centre_params.box_size_um = 25
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
-    ) as mock_detect_grid:
-        RE(
-            robot_load_then_centre(
-                robot_load_composite,
-                robot_load_then_centre_params,
-            )
+    RE(
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            robot_load_then_centre_params,
         )
-        detect_grid_call = mock_detect_grid.mock_calls[0]
-        assert detect_grid_call.args[1].box_size_um == 25
+    )
+    detect_grid_call = mock_detect_grid.mock_calls[0]
+    assert detect_grid_call.args[1].box_size_um == 25

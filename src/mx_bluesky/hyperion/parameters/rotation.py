@@ -75,7 +75,7 @@ class RotationExperiment(DiffractionExperimentWithSample, WithHyperionUDCFeature
         return DetectorParams(
             detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
-            exposure_time=self.exposure_time_s,
+            exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
@@ -192,7 +192,3 @@ class MultiRotationScan(RotationExperiment, SplitScan):
             self._num_images_per_scan()[0],
             len(self._num_images_per_scan()),
         )
-
-    @property
-    def ispyb_params(self):  # pyright: ignore
-        raise ValueError("Please get ispyb params from one of the individual scans")

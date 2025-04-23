@@ -5,7 +5,6 @@ START=1
 SKIP_STARTUP_CONNECTION=false
 VERBOSE_EVENT_LOGGING=false
 IN_DEV=false
-EXTERNAL_CALLBACK_SERVICE=false
 
 for option in "$@"; do
     case $option in
@@ -27,9 +26,6 @@ for option in "$@"; do
             ;;
         --verbose-event-logging)
             VERBOSE_EVENT_LOGGING=true
-            ;;
-        --external-callbacks)
-            EXTERNAL_CALLBACK_SERVICE=true
             ;;
 
         --help|--info|--h)
@@ -119,11 +115,9 @@ if [[ $START == 1 ]]; then
 
     #Add future arguments here
     declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
-                                    ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
-                                    ["EXTERNAL_CALLBACK_SERVICE"]="$EXTERNAL_CALLBACK_SERVICE" )
+                                    ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
     declare -A h_only_arg_strings=( ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection"
-                                    ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
-                                    ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
+                                    ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
 
     declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
     declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
@@ -146,9 +140,7 @@ if [[ $START == 1 ]]; then
 
     unset PYEPICS_LIBCA
     hyperion `echo $h_commands;`>$start_log_path  2>&1 &
-    if [ $EXTERNAL_CALLBACK_SERVICE == true ]; then
-        hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
-    fi
+    hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     echo "$(date) Waiting for Hyperion to start"
 
     for i in {1..30}

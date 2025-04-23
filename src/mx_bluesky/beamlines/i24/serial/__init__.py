@@ -1,3 +1,12 @@
+from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
+    gui_gonio_move_on_click,
+    gui_move_backlight,
+    gui_move_detector,
+    gui_set_parameters,
+    gui_sleep,
+    gui_stage_move_on_click,
+)
+
 from .extruder.i24ssx_Extruder_Collect_py3v2 import (
     enter_hutch,
     initialise_extruder,
@@ -43,4 +52,11 @@ __all__ = [
     "pumpprobe_calc",
     "setup_collection_logs",
     "clean_up_log_config_at_end",
+    # GUI plans
+    "gui_stage_move_on_click",
+    "gui_gonio_move_on_click",
+    "gui_sleep",
+    "gui_move_detector",
+    "gui_set_parameters",
+    "gui_move_backlight",
 ]

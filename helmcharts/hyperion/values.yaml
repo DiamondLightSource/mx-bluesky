@@ -1,0 +1,20 @@
+application:
+  containerPort: 5005
+  servicePort: 80
+  imageRepository: ghcr.io/diamondlightsource
+  # i03-hyperion user and group
+  runAsUser: 36101
+  runAsGroup: 36101
+  supplementalGroups: []
+  beamline: i03
+  dev: false
+  logDir: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
+  dataDir: "/dls/i03/data"
+  # These should be overridden at install time
+  projectDir: SET_ON_INSTALL
+  appVersion: SET_ON_INSTALL
+  externalHostname: i03-hyperion.diamond.ac.uk
+dodal:
+  projectDir: SET_ON_INSTALL
+service:
+  type: NodePort

@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -16,6 +14,7 @@ from ......conftest import (
     TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
+    remap_upsert_columns,
 )
 
 EXPECTED_DATA_COLLECTION = {
@@ -47,47 +46,11 @@ EXPECTED_DATA_COLLECTION = {
 }
 
 
-@pytest.fixture
-def rotation_start_outer_doc_without_snapshots(
-    test_rotation_start_outer_document, dummy_rotation_params
-):
-    return test_rotation_start_outer_document
-
-
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_start(
-    mock_ispyb_conn, rotation_start_outer_doc_without_snapshots
-):
-    callback = RotationISPyBCallback()
-
-    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)
-    mx = mx_acquisition_from_conn(mock_ispyb_conn)
-    assert_upsert_call_with(
-        mx.upsert_data_collection_group.mock_calls[0],
-        mx.get_data_collection_group_params(),
-        {
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "SAD",
-            "sampleid": TEST_SAMPLE_ID,
-        },
-    )
-    assert_upsert_call_with(
-        mx.upsert_data_collection.mock_calls[0],
-        mx.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
-    )
-
-
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
-    new=MagicMock(return_value=EXPECTED_START_TIME),
-)
-def test_activity_gated_start_with_snapshot_parameters(
-    mock_ispyb_conn, test_rotation_start_outer_document
-):
+def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
 
     callback.activity_gated_start(test_rotation_start_outer_document)
@@ -112,9 +75,7 @@ def test_activity_gated_start_with_snapshot_parameters(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_hardware_read_events(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
-):
+def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
@@ -140,10 +101,12 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "comments": "Sample position (µm): (158, 24, 3) test ",
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         },
+    )
+    mx.update_data_collection_append_comments.assert_called_with(
+        TEST_DATA_COLLECTION_IDS[0], "Sample position (µm): (158, 24, 3)", " "
     )
     expected_data = TestData.test_event_document_pre_data_collection["data"]
     assert_upsert_call_with(
@@ -162,9 +125,7 @@ def test_hardware_read_events(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_flux_read_events(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
-):
+def test_flux_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
@@ -208,10 +169,10 @@ def test_flux_read_events(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_oav_rotation_snapshot_triggered_event(
-    mock_ispyb_conn, dummy_rotation_params, rotation_start_outer_doc_without_snapshots
+    mock_ispyb_conn, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)  # pyright: ignore
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
@@ -288,7 +249,7 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
 
 
 def test_comment_correct_after_hardware_read(
-    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
+    mock_ispyb_conn, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["mx_bluesky_parameters"] = (
@@ -301,6 +262,11 @@ def test_comment_correct_after_hardware_read(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
+    dc_upsert_dict = remap_upsert_columns(
+        mx.get_data_collection_params(),
+        mx.upsert_data_collection.mock_calls[0].args[0],
+    )
+    assert dc_upsert_dict["comments"] == "a lovely unit test"
 
     mx.upsert_data_collection_group.reset_mock()
     mx.upsert_data_collection.reset_mock()
@@ -319,8 +285,10 @@ def test_comment_correct_after_hardware_read(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "comments": "Sample position (µm): (158, 24, 3) a lovely unit test ",
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         },
+    )
+    mx.update_data_collection_append_comments.assert_called_with(
+        TEST_DATA_COLLECTION_IDS[0], "Sample position (µm): (158, 24, 3)", " "
     )

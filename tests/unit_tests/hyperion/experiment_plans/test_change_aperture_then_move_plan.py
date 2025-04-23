@@ -4,10 +4,10 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
 
+from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
@@ -36,7 +36,10 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     test_fgs_params.features.set_stub_offsets = set_stub_offsets
     msgs = sim_run_engine.simulate_plan(
         change_aperture_then_move_to_xtal(
-            simple_flyscan_hit, smargon, aperture_scatterguard, test_fgs_params
+            simple_flyscan_hit,
+            smargon,
+            aperture_scatterguard,
+            test_fgs_params.FGS_params.set_stub_offsets,
         )
     )
 

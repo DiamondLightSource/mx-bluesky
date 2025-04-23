@@ -36,7 +36,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 
-from .conftest import assert_event
+from ...conftest import assert_event
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def fake_devices(
     params = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=params)
+    oav = i03.oav(connect_immediately=True, mock=True, params=params)
     zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
         return_value=zoom_levels_list
@@ -58,7 +58,7 @@ def fake_devices(
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    pin_tip_detection = i03.pin_tip_detection(connect_immediately=True, mock=True)
     pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         return_value=SampleLocation(
             8,
@@ -232,10 +232,12 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     test_config_files: dict[str, str],
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
     tmp_path: Path,
+    dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
     cb = GridscanISPyBCallback(param_type=GridCommonWithHyperionDetectorParams)
+    cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     RE.subscribe(cb)
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):

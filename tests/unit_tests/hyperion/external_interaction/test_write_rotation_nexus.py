@@ -11,10 +11,10 @@ from bluesky.run_engine import RunEngine
 from h5py import Dataset, ExternalLink, Group
 
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_during_collection,
+from mx_bluesky.common.plans.read_hardware import (
+    standard_read_hardware_during_collection,
 )
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -64,7 +64,7 @@ def fake_rotation_scan(
         }
     )
     def plan():
-        yield from read_hardware_during_collection(
+        yield from standard_read_hardware_during_collection(
             rotation_devices.aperture_scatterguard,
             rotation_devices.attenuator,
             rotation_devices.flux,
@@ -109,6 +109,7 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
             exceptions[key] = mapping_value
 
 
+@pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     test_params: RotationScan,
     tmpdir,
@@ -228,6 +229,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
         )
 
 
+@pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_file(
     test_params: RotationScan,
     tmpdir,

@@ -1,37 +1,31 @@
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
+from mx_bluesky.common.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
-from mx_bluesky.hyperion.experiment_plans.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 def change_aperture_then_move_to_xtal(
     best_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    parameters: HyperionSpecifiedThreeDGridScan | None = None,
+    set_stub_offsets: bool | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
     * Centre on the centre-of-mass
     * Reset the stub offsets if specified by params"""
-    if best_hit.bounding_box_mm is not None:
-        bounding_box_size = numpy.abs(
-            best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
-        )
-        with TRACER.start_span("change_aperture"):
-            yield from set_aperture_for_bbox_mm(
-                aperture_scatterguard,
-                bounding_box_size,
-            )
-    else:
-        LOGGER.warning("No bounding box size received")
+    bounding_box_size = numpy.abs(
+        best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
+    )
+    yield from set_aperture_for_bbox_mm(
+        aperture_scatterguard,
+        bounding_box_size,
+    )
 
     # once we have the results, go to the appropriate position
     LOGGER.info("Moving to centre of mass.")
@@ -41,13 +35,9 @@ def change_aperture_then_move_to_xtal(
 
     # TODO support for setting stub offsets in multipin
     # https://github.com/DiamondLightSource/mx-bluesky/issues/552
-    if parameters and parameters.FGS_params.set_stub_offsets:
+    if set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
-        yield from bps.mv(
-            # See: https://github.com/bluesky/bluesky/issues/1809
-            smargon.stub_offsets,  # type: ignore
-            StubPosition.CURRENT_AS_CENTER,  # type: ignore
-        )
+        yield from bps.mv(smargon.stub_offsets, StubPosition.CURRENT_AS_CENTER)
 
 
 def set_aperture_for_bbox_mm(
@@ -56,12 +46,12 @@ def set_aperture_for_bbox_mm(
 ):
     """Sets aperture size based on bbox_size.
 
-    This function determines the aperture size needed to accomodate the bounding box
+    This function determines the aperture size needed to accommodate the bounding box
     of a crystal. The x-axis length of the bounding box is used, setting the aperture
     to Medium if this is less than 50um, and Large otherwise.
 
     Args:
-        aperture_device: The aperture scatter gaurd device we are controlling.
+        aperture_device: The aperture scatter guard device we are controlling.
         bbox_size_mm: The [x,y,z] lengths, in mm, of a bounding box
         containing a crystal. This describes (in no particular order):
         * The maximum width a crystal occupies
@@ -81,14 +71,4 @@ def set_aperture_for_bbox_mm(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
-    @bpp.set_run_key_decorator("change_aperture")
-    @bpp.run_decorator(
-        md={
-            "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.value,
-        }
-    )
-    def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture)
-
-    yield from set_aperture()
+    yield from bps.abs_set(aperture_device, new_selected_aperture)

@@ -4,7 +4,6 @@ Fixed target data collection
 
 from datetime import datetime
 from pathlib import Path
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -362,7 +361,7 @@ def start_i24(
             f"Fastchip Pilatus setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.pilatus(
+        yield from sup.pilatus(
             "fastchip",
             [
                 filepath,
@@ -407,7 +406,7 @@ def start_i24(
         caput(pv.pilat_acquire, "1")  # Arm pilatus
         yield from arm_zebra(zebra)
         caput(pv.pilat_filename, filename)
-        sleep(1.5)
+        yield from bps.sleep(1.5)
 
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.info("Using Eiger detector")
@@ -423,7 +422,7 @@ def start_i24(
             f"Triggered Eiger setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.eiger(
+        yield from sup.eiger(
             "triggered",
             [
                 filepath,
@@ -431,6 +430,7 @@ def start_i24(
                 parameters.total_num_images,
                 parameters.exposure_time_s,
             ],
+            dcm,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -468,7 +468,7 @@ def start_i24(
             )
         yield from arm_zebra(zebra)
 
-        sleep(1.5)
+        yield from bps.sleep(1.5)
 
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
@@ -501,12 +501,12 @@ def finish_i24(
         SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.pilatus("return-to-normal", None)
-        sleep(0.2)
+        yield from sup.pilatus("return-to-normal", None)
+        yield from bps.sleep(0.2)
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")
@@ -595,7 +595,7 @@ def main_fixed_target_plan(
 
     SSX_LOGGER.info("Moving to Start")
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # Now ready for data collection. Open fast shutter (zebra gate)
     SSX_LOGGER.info("Opening fast shutter.")
@@ -668,7 +668,7 @@ def tidy_up_after_collection_plan(
     """
     SSX_LOGGER.info("Closing fast shutter")
     yield from close_fast_shutter(zebra)
-    sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # This probably should go in main then
     if parameters.detector_name == "pilatus":
@@ -678,7 +678,7 @@ def tidy_up_after_collection_plan(
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
-    sleep(0.5)
+    yield from bps.sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 

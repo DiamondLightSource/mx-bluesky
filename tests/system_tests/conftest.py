@@ -1,12 +1,18 @@
+import os
 import re
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
+from functools import partial
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
+from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
+from PIL import Image
+
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -119,6 +125,15 @@ DATA_COLLECTION_COLUMN_MAP = {
 }
 
 
+@pytest.fixture(autouse=True)
+def use_dev_ispyb_unless_overridden_by_environment():
+    ispyb_config_path = os.environ.get(
+        "ISPYB_CONFIG_PATH", CONST.SIM.DEV_ISPYB_DATABASE_CFG
+    )
+    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
+        yield ispyb_config_path
+
+
 @pytest.fixture
 def undulator_for_system_test(undulator):
     set_mock_value(undulator.current_gap, 1.11)
@@ -130,7 +145,7 @@ def oav_for_system_test(test_config_files):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
     set_mock_value(oav.cam.array_size_y, 768)
 
@@ -142,6 +157,21 @@ def oav_for_system_test(test_config_files):
     size_in_pixels = 0.1 * 1000 / 1.25
     set_mock_value(oav.grid_snapshot.box_width, size_in_pixels)
 
+    # Rotation snapshots
+    @AsyncStatus.wrap
+    async def trigger_with_test_image(self):
+        with Image.open(
+            "tests/test_data/test_images/generate_snapshot_input.png"
+        ) as image:
+            await self.post_processing(image)
+
+    oav.snapshot.trigger = MagicMock(
+        side_effect=partial(trigger_with_test_image, oav.snapshot)
+    )
+    oav.grid_snapshot.trigger = MagicMock(
+        side_effect=partial(trigger_with_test_image, oav.grid_snapshot)
+    )
+
     empty_response = AsyncMock(spec=ClientResponse)
     empty_response.read.return_value = b""
 
@@ -149,8 +179,6 @@ def oav_for_system_test(test_config_files):
         patch(
             "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
         ) as mock_get,
-        patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
-        patch("dodal.devices.oav.snapshots.snapshot_with_beam_centre.draw_crosshair"),
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
         set_mock_value(oav.zoom_controller.level, "1.0")

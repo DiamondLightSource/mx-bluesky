@@ -1,0 +1,83 @@
+{
+    "collect": {
+        "collection": [
+            {
+                "chi": 0.0,
+                "comment": "Complete_P1_sweep1 ",
+                "experiment_type": "Characterization",
+                "centring_mode": "XRAY",
+                "distance": 180.8,
+                "resolution": 1.4,
+                "exposure_time": 0.002,
+                "kappa": 0.0,
+                "number_of_images": 3600,
+                "omega_increment": 0.1,
+                "omega_overlap": 0.0,
+                "omega_start": 0.0,
+                "phi_increment": 0.0,
+                "phi_overlap": 0.0,
+                "phi_start": 0.0,
+                "preferred_beam_size_x": 80.0,
+                "preferred_beam_size_y": 20.0,
+                "scan_axis": "omega",
+                "transmission": 0.5,
+                "two_theta": 0.0,
+                "wavelength": 0.97625
+            },
+            {
+                "chi": 30.0,
+                "comment": "Complete_P1_sweep1 ",
+                "experiment_type": "OSC",
+                "centring_mode": "XRAY",
+                "distance": 180.8,
+                "resolution": 1.4,
+                "exposure_time": 0.002,
+                "kappa": 0.0,
+                "number_of_images": 3600,
+                "omega_increment": 0.1,
+                "omega_overlap": 0.0,
+                "omega_start": 0.0,
+                "phi_increment": 0.0,
+                "phi_overlap": 0.0,
+                "phi_start": 0.0,
+                "preferred_beam_size_x": 80.0,
+                "preferred_beam_size_y": 20.0,
+                "scan_axis": "omega",
+                "transmission": 0.5,
+                "two_theta": 0.0,
+                "wavelength": 0.97625
+            }
+        ],
+        "sample": {
+            "container": 40,
+            "id": 12345,
+            "name": "spartacus",
+            "position": 3,
+            "subLocation": null,
+            "loopType": "multipin_6x50+10"
+        },
+        "recipe_limits": {
+            "distance": {
+                "max": 900.0,
+                "min": 170.0
+            },
+            "exposure_time": {
+                "max": 10.0,
+                "min": 0.002
+            },
+            "resolution": {
+                "max": 35.0,
+                "min": 0.7
+            },
+            "transmission": {
+                "max": 1.0,
+                "min": 0.0
+            },
+            "wavelength": {
+                "max": 2.06675,
+                "min": 0.68876
+            }
+        },
+        "prefix": "/dls/tmp/data/year/cm00000-0/auto/test/test_xtal"
+    }
+}

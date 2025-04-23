@@ -12,14 +12,14 @@ from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
+from dodal.devices.i03.dcm import DCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
@@ -54,7 +54,7 @@ class RobotLoadAndEnergyChangeComposite:
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadAndEnergyChangeComposite:
-    from mx_bluesky.hyperion.utils.context import device_composite_from_context
+    from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadAndEnergyChangeComposite)
 
@@ -95,21 +95,19 @@ def prepare_for_robot_load(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon
 ):
     yield from bps.abs_set(
-        aperture_scatterguard,
-        ApertureValue.ROBOT_LOAD,
-        group="prepare_robot_load",
+        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group="prepare_robot_load"
     )
 
-    yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
 
     # fmt: off
     yield from bps.mv(
-        smargon.x, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        smargon.y, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        smargon.z, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        smargon.omega, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        smargon.chi, 0,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        smargon.phi, 0  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        smargon.x, 0,
+        smargon.y, 0,
+        smargon.z, 0,
+        smargon.omega, 0,
+        smargon.chi, 0,
+        smargon.phi, 0
     )
     # fmt: on
 
@@ -122,11 +120,6 @@ def do_robot_load(
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
-    error_code = yield from bps.rd(composite.robot.error_code)
-    # Reset robot if light curtains were tripped
-    if error_code == 40:
-        yield from bps.trigger(composite.robot.reset, wait=True)
-
     yield from bps.abs_set(
         composite.robot,
         sample_location,
@@ -138,7 +131,7 @@ def do_robot_load(
     yield from bps.wait("robot_load")
 
     yield from bps.abs_set(
-        composite.thawer.thaw_for_time_s,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        composite.thawer.thaw_for_time_s,
         thawing_time,
         group="thawing_finished",
     )
@@ -200,7 +193,7 @@ def robot_load_and_snapshots(
 
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
     yield from bps.read(composite.robot.barcode)
-    yield from bps.read(composite.oav.snapshot)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.read(composite.oav.snapshot)
     yield from bps.read(composite.webcam)
     yield from bps.save()
 
