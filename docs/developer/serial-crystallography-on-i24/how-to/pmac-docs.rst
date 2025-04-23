@@ -2,7 +2,8 @@
 PMAC-run operations on I24 serial
 =================================
 
-Several operations in a fixed target (FT) collection are run vie the PMAC, by sending a command to the ``PMAC_STRING`` PV
+
+Several operations in a fixed target (FT) collection are run vie the PMAC, by sending a command to the ``PMAC_STRING`` PV.
 
 Among these:
 
@@ -10,6 +11,8 @@ Among these:
 - Kickoff data collection
 - Laser control
 
+
+For reference, see also the PMAC device implementation in dodal: `PMAC docs <https://diamondlightsource.github.io/dodal/main/reference/generated/dodal.devices.i24.pmac.html>`_
 
 
 Stage motor moves using the PMAC device
@@ -44,19 +47,31 @@ in a couple of different ways.
    -  Using a JOG command ``J:{const}``, to jog the motor a specified
       distance from the current position. For example, this will move
       motor Y by 10 motor steps:
-      ``python      yield from bps.abs_set(pmac.pmac_string, "#2J:10")``
+
+      .. code:: python
+
+         yield from bps.abs_set(pmac.pmac_string, "#2J:10")
+
 
    -  The ``hmz`` strings are homing commands which will reset the
       encoders counts to 0 for the axis. All three motors are homed by
       sending the string: ``#1hmz#2hmz#3hmz``. In the plans this is done
       by triggering the home move:
-      ``python       yield from bps.trigger(pmac.home)``
+
+      .. code:: python
+
+         yield from bps.trigger(pmac.home)
+
 
    -  Another pmac_string that can start a move has the format
       ``!x..y..``. This is a command designed to blend any ongoing move
       into a new position. A common one through the serial collection
       code is ``!x0y0z0``, which will start a move to 0 for all motors.
-      ``python      yield from bps.trigger(pmac.to_xyz_zero)``
+
+      .. code:: python
+
+         yield from bps.trigger(pmac.to_xyz_zero)
+
 
 2. The stage motors can also be moved directly through the existing PVs
    ``ME14E-MO-CHIP-01:{X,Y,Z}``, for example:
@@ -64,6 +79,7 @@ in a couple of different ways.
    .. code:: python
 
       yield from bps.mv(pmac.x, 0, pmac.y, 1)
+
 
 Notes on the coordinate system for a fixed-target collection
 ============================================================
@@ -97,7 +113,7 @@ Theory for this computation
 
 The plan needs information stored in a few files:
 
-* The motor directions are stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/motor_directions.txt.`` The motor number multiplied by the motor direction should give the positive chip direction.
+* The motor directions are stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/motor_direction.txt.`` The motor number multiplied by the motor direction should give the positive chip direction.
 * The scale values for x,y,z, the skew value and the sign of Sx, Sy, Sz are all stored in ``src/mx_bluesky/i24/serial/parameters/fixed_target/cs/cs_maker.json``
 * The fiducials 1 and 2 positions are written to file when selecting the fiducials (Setting fiducial 0 instead sends a homing command directly to the pmac_string PV)
 
