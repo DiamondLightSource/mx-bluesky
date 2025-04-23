@@ -24,8 +24,9 @@ def test_call_nexgen_for_extruder(
     fake_path.return_value = True
     fake_read_text.return_value = ""
     with patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests") as patch_request:
-        RE(call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200)))
-        patch_request.post.assert_called_once()
+        with patch("mx_bluesky.beamlines.i24.serial.write_nexus.time.sleep"):
+            RE(call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200)))
+            patch_request.post.assert_called_once()
 
     assert patch_request.post.call_args.kwargs["json"]["expt_type"] == "extruder"
 
@@ -52,8 +53,9 @@ def test_call_nexgen_for_fixed_target(
     fake_path.return_value = True
     fake_read_text.return_value = ""
     with patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests") as patch_request:
-        RE(call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200)))
-        patch_request.post.assert_called_once()
+        with patch("mx_bluesky.beamlines.i24.serial.write_nexus.time.sleep"):
+            RE(call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200)))
+            patch_request.post.assert_called_once()
 
     assert patch_request.post.call_args.kwargs["json"]["expt_type"] == "fixed-target"
     assert patch_request.post.call_args.kwargs["json"]["filename"] == expected_filename

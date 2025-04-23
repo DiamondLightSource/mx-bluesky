@@ -186,11 +186,13 @@ def check_status_in_response(response_object, expected_result: Status):
     )
 
 
+@pytest.mark.timeout(5)
 def test_start_gives_success(test_env: ClientAndRunEngine):
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(4)
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.client.put(STOP_ENDPOINT)
@@ -198,6 +200,7 @@ def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.IDLE)
 
 
+@pytest.mark.timeout(5)
 def test_getting_status_after_start_sent_returns_busy(
     test_env: ClientAndRunEngine,
 ):
@@ -228,12 +231,14 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
+@pytest.mark.timeout(7)
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.FAILED)
 
 
+@pytest.mark.timeout(5)
 def test_given_started_when_stopped_then_success_and_idle_status(
     test_env: ClientAndRunEngine,
 ):
@@ -250,6 +255,7 @@ def test_given_started_when_stopped_then_success_and_idle_status(
     check_status_in_response(response, Status.ABORTING)
 
 
+@pytest.mark.timeout(10)
 def test_given_started_when_stopped_and_started_again_then_runs(
     test_env: ClientAndRunEngine,
 ):
@@ -263,6 +269,7 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     test_env.mock_run_engine.RE_takes_time = False
 
 
+@pytest.mark.timeout(5)
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine,
 ):
@@ -278,6 +285,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
+@pytest.mark.timeout(5)
 @pytest.mark.parametrize(
     "endpoint, test_file",
     [
@@ -318,6 +326,7 @@ def test_start_with_json_file_gives_success(
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(3)
 def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
@@ -485,7 +494,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 @patch(
-    "dodal.devices.undulator_dcm.get_beamline_parameters",
+    "dodal.devices.i03.undulator_dcm.get_beamline_parameters",
     return_value={"DCM_Perp_Offset_FIXED": 111},
 )
 def test_when_context_created_then_contains_expected_number_of_plans(
@@ -499,8 +508,10 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         os.environ,
         {"BEAMLINE": "i03"},
     ):
-        context = setup_context(wait_for_connection=False)
-
+        with patch(
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+        ):
+            context = setup_context(wait_for_connection=False)
         plan_names = context.plans.keys()
 
         # assert "rotation_scan" in plan_names

@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal == 1.44.0",
+    "dls-dodal >= 1.44.0",
 ]
 
 
@@ -75,6 +75,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
+    "pytest-timeout",
     "pytest",
     "ruff",
     "sphinx-autobuild",
@@ -115,6 +116,7 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+timeout = 1
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",

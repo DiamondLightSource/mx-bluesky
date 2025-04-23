@@ -9,10 +9,10 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
+from dodal.devices.i03.dcm import DCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.undulator import Undulator
-from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
 from mx_bluesky.common.parameters.constants import PlanNameConstants
