@@ -3,6 +3,7 @@ PMAC-run operations on I24 serial
 =================================
 
 Several operations in a fixed target (FT) collection are run vie the PMAC, by sending a command to the ``PMAC_STRING`` PV
+
 Among these:
 
 - Stage moves
