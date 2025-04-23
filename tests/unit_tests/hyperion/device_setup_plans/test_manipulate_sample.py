@@ -3,16 +3,13 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.smargon import Smargon
 
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
     move_phi_chi_omega,
     move_x_y_z,
 )
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
-)
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
 @pytest.mark.parametrize(
@@ -61,21 +58,16 @@ async def test_move_aperture_does_nothing_when_none_selected(
 @patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_move_x_y_z(
     bps_abs_set: MagicMock,
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    smargon: Smargon,
     RE: RunEngine,
     motor_position: list[float],
     expected_moves: list[float | None],
 ):
-    RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))  # type: ignore
+    RE(move_x_y_z(smargon, *motor_position))  # type: ignore
     expected_calls = [
         call(axis, pos, group="move_x_y_z")
         for axis, pos in zip(
-            [
-                fake_fgs_composite.smargon.x,
-                fake_fgs_composite.smargon.y,
-                fake_fgs_composite.smargon.z,
-            ],
+            [smargon.x, smargon.y, smargon.z],
             expected_moves,
             strict=False,
         )
@@ -102,21 +94,16 @@ def test_move_x_y_z(
 @patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_move_phi_chi_omega(
     bps_abs_set: MagicMock,
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
-    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    smargon: Smargon,
     RE: RunEngine,
     motor_position: list[float],
     expected_moves: list[float | None],
 ):
-    RE(move_phi_chi_omega(fake_fgs_composite.smargon, *motor_position))  # type: ignore
+    RE(move_phi_chi_omega(smargon, *motor_position))  # type: ignore
     expected_calls = [
         call(axis, pos, group="move_phi_chi_omega")
         for axis, pos in zip(
-            [
-                fake_fgs_composite.smargon.phi,
-                fake_fgs_composite.smargon.chi,
-                fake_fgs_composite.smargon.omega,
-            ],
+            [smargon.phi, smargon.chi, smargon.omega],
             expected_moves,
             strict=False,
         )
