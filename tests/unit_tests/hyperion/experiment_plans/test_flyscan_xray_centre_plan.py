@@ -136,11 +136,6 @@ def RE_with_subs(
 
 
 @pytest.fixture
-def mock_ispyb():
-    return MagicMock()
-
-
-@pytest.fixture
 def feature_controlled(
     fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
     test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
