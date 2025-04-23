@@ -317,6 +317,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_extruder_with_pump_probe_plan(
                 zebra,
@@ -338,6 +339,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_quickshot_plan(
                 zebra, parameters.exposure_time_s, parameters.num_images, wait=True
@@ -441,6 +443,7 @@ def tidy_up_at_collection_end_plan(
     shutter: HutchShutter,
     parameters: ExtruderParameters,
     dcid: DCID,
+    dcm: DCM,
 ) -> MsgGenerator:
     """A plan to tidy up at the end of a collection, successful or aborted.
 
@@ -455,7 +458,7 @@ def tidy_up_at_collection_end_plan(
     if parameters.detector_name == "pilatus":
         yield from sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
-        yield from sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")
@@ -534,7 +537,9 @@ def run_extruder_plan(
             )
         ),
         final_plan=lambda: (
-            yield from tidy_up_at_collection_end_plan(zebra, shutter, parameters, dcid)
+            yield from tidy_up_at_collection_end_plan(
+                zebra, shutter, parameters, dcid, dcm
+            )
         ),
         auto_raise=False,
     )

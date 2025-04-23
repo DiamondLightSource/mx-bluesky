@@ -8,7 +8,7 @@ from dodal.devices.focusing_mirror import (
     MirrorStripe,
     MirrorVoltages,
 )
-from dodal.devices.undulator_dcm import UndulatorDCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
@@ -116,14 +116,14 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-pitch_in_mrad"
+        and msg.obj.name == "dcm-xtal_1-pitch_in_mrad"
         and abs(msg.args[0] - -0.78229639) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-roll_in_mrad"
+        and msg.obj.name == "dcm-xtal_1-roll_in_mrad"
         and abs(msg.args[0] - -0.2799) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )

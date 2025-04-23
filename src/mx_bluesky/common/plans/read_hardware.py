@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.dcm import DCM
+from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -43,7 +43,7 @@ def standard_read_hardware_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    dcm: DCM,
+    dcm: BaseDCM,
     smargon: Smargon,
 ):
     LOGGER.info("Reading status of beamline for callbacks, pre collection.")
@@ -63,7 +63,7 @@ def standard_read_hardware_during_collection(
     aperture_scatterguard: ApertureScatterguard,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    dcm: DCM,
+    dcm: BaseDCM,
     detector: EigerDetector,
 ):
     signals_to_read_during_collection = [

@@ -6,6 +6,7 @@ from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.util.lookup_tables import (
@@ -377,7 +378,7 @@ def pilatus(action, args_list):
     return 0
 
 
-def eiger(action, args_list):
+def eiger(action, args_list, dcm: DCM):
     SSX_LOGGER.debug("***** Entering Eiger")
     SSX_LOGGER.info(f"Setup eiger - {action}")
     if args_list:
@@ -385,7 +386,8 @@ def eiger(action, args_list):
             SSX_LOGGER.debug(f"Argument: {arg}")
     # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
+    dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
+    caput(pv.eiger_wavelength, dcm_wavelength_a)
     caput(pv.eiger_omegaincr, 0.0)
     yield from bps.sleep(0.1)
     # Setup common to all collections ###
