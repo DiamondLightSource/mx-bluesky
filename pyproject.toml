@@ -202,7 +202,7 @@ commands_pre =
 setenv =
     DODAL_TEST_MODE=true
 commands =
-    pytest --junit-xml=systemtests_output.xml -m system_test tests/system_tests
+    pytest --junit-xml=systemtests_output.xml -m system_test --timeout=60 tests/system_tests
 
 # Runs the system tests locally
 [testenv:localsystemtests]
@@ -212,7 +212,7 @@ setenv =
     ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
     ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
 commands =
-    pytest -m system_test tests/system_tests
+    pytest -m system_test --timeout=60 tests/system_tests
 """
 
 [tool.ruff]
