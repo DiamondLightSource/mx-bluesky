@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>hyperion &#8212; mx-bluesky 1.0.1.dev221+gf76b4c3f7 documentation</title>
+    <title>hyperion &#8212; mx-bluesky 1.0.1.dev222+gd15349651 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=355a18e4"></script>
+    <script src="../../../_static/documentation_options.js?v=e4dc2c42"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -499,7 +499,6 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="hyperion">
 <h1>hyperion<a class="headerlink" href="#hyperion" title="Link to this heading">#</a></h1>
-<p><img alt="Tests" src="https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg" /> <a class="reference external" href="https://codecov.io/gh/DiamondLightSource/hyperion"><img alt="codecov" src="https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8" /></a></p>
 <p>Repository for the Hyperion project to implement Unattended Data Collections on the Diamond MX beamlines using the <a class="reference external" href="https://nsls-ii.github.io/bluesky/">BlueSky</a> / Ophyd framework from BNL.</p>
 <p>Currently the software is able to:</p>
 <ul class="simple">
@@ -539,8 +538,7 @@
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">#</a></h2>
-<p>Unit tests can be run with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">-m</span> <span class="pre">&quot;not</span> <span class="pre">s03&quot;</span> <span class="pre">--random-order</span></code>. To see log output from tests you can turn on logging with the <code class="docutils literal notranslate"><span class="pre">--logging</span></code> command line option and then use the <code class="docutils literal notranslate"><span class="pre">-s</span></code> command line option to print logs into the console. So to run the unit tests such that all logs are at printed to the terminal, you can use <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">-m</span> <span class="pre">&quot;not</span> <span class="pre">s03&quot;</span> <span class="pre">--random-order</span> <span class="pre">--logging</span> <span class="pre">-s</span></code>. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the <code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">&quot;&lt;test</span> <span class="pre">name</span> <span class="pre">pattern&gt;&quot;</span></code> option.</p>
-<p>To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils</p>
+<p>Unit tests can be run with <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">--random-order</span></code>. To see log output from tests you can turn on logging with the <code class="docutils literal notranslate"><span class="pre">--logging</span></code> command line option and then use the <code class="docutils literal notranslate"><span class="pre">-s</span></code> command line option to print logs into the console. So to run the unit tests such that all logs are at printed to the terminal, you can use <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">--random-order</span> <span class="pre">--logging</span> <span class="pre">-s</span></code>. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the <code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">&quot;&lt;test</span> <span class="pre">name</span> <span class="pre">pattern&gt;&quot;</span></code> option.</p>
 <p>To fake interaction and processing with Zocalo, you can run <code class="docutils literal notranslate"><span class="pre">fake_zocalo/dls_start_fake_zocalo.sh</span></code>, and make sure to run <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span> <span class="pre">dials/latest</span></code> before starting hyperion (in the same terminal).</p>
 </section>
 <section id="tracing">
