@@ -269,7 +269,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
     return_value=iter([Msg(command="robot_load_and_change_energy")]),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([Msg(command="multi_rotation_scan")]),
 )
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
@@ -347,7 +347,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -378,7 +378,7 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -483,7 +483,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
     new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
 )
 def test_load_centre_collect_full_plan_multiple_centres(
@@ -619,7 +619,7 @@ def test_box_size_passed_through_to_gridscan(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(

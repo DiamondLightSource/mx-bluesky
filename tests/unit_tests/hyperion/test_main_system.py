@@ -299,7 +299,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
         ],
         [
             "/multi_rotation_scan/start",
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
         ],
         [
             "/pin_tip_centre_then_xray_centre/start",
