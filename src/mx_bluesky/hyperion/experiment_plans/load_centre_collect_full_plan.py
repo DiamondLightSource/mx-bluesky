@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     MultiRotationScan,
     RotationScanComposite,
-    multi_rotation_scan,
+    multi_rotation_scan_internal,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -109,6 +109,6 @@ def load_centre_collect_full(
             multi_rotation.demand_energy_ev
             == parameters.robot_load_then_centre.demand_energy_ev
         ), "Setting a different energy for gridscan and rotation is not supported"
-        yield from multi_rotation_scan(composite, multi_rotation, oav_params)
+        yield from multi_rotation_scan_internal(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()

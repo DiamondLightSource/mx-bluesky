@@ -31,7 +31,7 @@ from .....conftest import raw_params_from_file
 def params():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
 

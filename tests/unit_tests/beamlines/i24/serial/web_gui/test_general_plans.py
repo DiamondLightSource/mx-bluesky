@@ -30,7 +30,7 @@ async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, RE):
     RE(gui_move_detector("eiger", detector_stage))
     fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP101", "eiger")
 
-    assert await detector_stage.y.user_readback.get_value() == -22.0
+    assert await detector_stage.y.user_readback.get_value() == 59.0
     mock_logger.debug.assert_called_once()
 
 

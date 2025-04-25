@@ -16,13 +16,13 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 
 
 def test_get_detector_type(RE, detector_stage: DetectorMotion):
-    set_mock_value(detector_stage.y.user_readback, -22)
+    set_mock_value(detector_stage.y.user_readback, -59)
     det_type = RE(get_detector_type(detector_stage)).plan_result
     assert det_type.name == "eiger"
 
 
 def test_get_detector_type_finds_pilatus(RE, detector_stage: DetectorMotion):
-    set_mock_value(detector_stage.y.user_readback, 566)
+    set_mock_value(detector_stage.y.user_readback, 647)
     det_type = RE(get_detector_type(detector_stage)).plan_result
     assert det_type.name == "pilatus"
 
