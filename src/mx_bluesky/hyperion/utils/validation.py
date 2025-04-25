@@ -38,7 +38,7 @@ def test_params(filename_stub, dir):
 
     params = MultiRotationScan(
         **get_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
     for scan_params in params.rotation_scans:
