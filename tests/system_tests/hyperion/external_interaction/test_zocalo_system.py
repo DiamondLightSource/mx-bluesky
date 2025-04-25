@@ -5,6 +5,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 from dodal.utils import is_test_mode
 
@@ -15,6 +16,7 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
+from mx_bluesky.common.plans.read_hardware import read_hardware_for_zocalo
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
@@ -46,8 +48,8 @@ results exchange, with the routing key 'xrc.i03'
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
 )
-def fake_fgs_plan():
-    yield from bps.sleep(0)
+def fake_fgs_plan(eiger: EigerDetector):
+    yield from read_hardware_for_zocalo(eiger)
 
 
 @pytest.fixture
@@ -56,6 +58,7 @@ def run_zocalo_with_dev_ispyb(
     dummy_ispyb_3d,
     RE: RunEngine,
     zocalo_for_fake_zocalo: ZocaloResults,
+    eiger: EigerDetector,
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.file_name = sample_name
@@ -69,13 +72,12 @@ def run_zocalo_with_dev_ispyb(
             @bpp.run_decorator(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-                    CONST.TRIGGER.ZOCALO: PlanNameConstants.DO_FGS,
                     "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
                     "mx_bluesky_parameters": dummy_params.model_dump_json(),
                 }
             )
             def inner_plan():
-                yield from fake_fgs_plan()
+                yield from fake_fgs_plan(eiger)
                 yield from bps.trigger_and_read(
                     [zocalo_for_fake_zocalo], name=ZOCALO_READING_PLAN_NAME
                 )

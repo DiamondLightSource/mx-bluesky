@@ -55,6 +55,7 @@ class PlanNameConstants:
     ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
+    ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
     FLYSCAN_RESULTS = "xray_centre_results"
@@ -65,11 +66,6 @@ class PlanNameConstants:
 @dataclass(frozen=True)
 class EnvironmentConstants:
     ZOCALO_ENV = ZOCALO_ENV_FROM_DODAL
-
-
-@dataclass(frozen=True)
-class TriggerConstants:
-    ZOCALO = "trigger_zocalo_on"
 
 
 @dataclass(frozen=True)

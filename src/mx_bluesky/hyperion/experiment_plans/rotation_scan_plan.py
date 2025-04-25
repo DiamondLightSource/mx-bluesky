@@ -30,6 +30,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -367,6 +368,26 @@ def multi_rotation_scan(
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
+        }
+    )
+    def _wrapped_multi_rotation_scan():
+        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
+
+    yield from _wrapped_multi_rotation_scan()
+
+
+def multi_rotation_scan_internal(
+    composite: RotationScanComposite,
+    parameters: MultiRotationScan,
+    oav_params: OAVParameters | None = None,
+) -> MsgGenerator:
     parameters.features.update_self_from_server()
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
@@ -384,7 +405,6 @@ def multi_rotation_scan(
             "full_num_of_images": parameters.num_images,
             "meta_data_run_number": parameters.detector_params.run_number,
             "activate_callbacks": [
-                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],

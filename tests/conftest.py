@@ -83,7 +83,6 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     PlanNameConstants,
-    TriggerConstants,
 )
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -366,7 +365,7 @@ def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 def test_rotation_params():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
 
@@ -375,7 +374,7 @@ def test_rotation_params():
 def test_rotation_params_nomove():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters_nomove.json"
         )
     )
 
@@ -1292,7 +1291,6 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
@@ -1336,7 +1334,6 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
@@ -1561,7 +1558,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 def dummy_rotation_params():
     dummy_params = MultiRotationScan(
         **default_raw_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID
