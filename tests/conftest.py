@@ -72,6 +72,7 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -199,6 +200,24 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
     }
 ]
+
+
+@dataclass(frozen=True)
+class SimConstants:
+    BEAMLINE = "BL03S"
+    # The following are values present in the system test ispyb database
+    ST_VISIT = "cm14451-2"
+    ST_SAMPLE_ID = 398810
+    ST_CONTAINER_ID = 34864
+
+
+@pytest.fixture(autouse=True, scope="session")
+def ispyb_config_path():
+    ispyb_config_path = os.environ.get(
+        "ISPYB_CONFIG_PATH", "tests/test_data/test_config.cfg"
+    )
+    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
+        yield ispyb_config_path
 
 
 @pytest.fixture(scope="session")

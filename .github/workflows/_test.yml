@@ -51,7 +51,9 @@ jobs:
           pip-install: ".[dev]"
 
       - name: Run tests
-        run: tox -e tests -- -m "not dlstbx" --timeout=1
+        # Longer timeout for CI due to likelihood of cold caches,
+        # cloud infra hw contention etc.
+        run: tox -e tests -- -m "not dlstbx" --timeout=2
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

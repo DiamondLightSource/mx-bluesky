@@ -42,7 +42,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 from ....conftest import (
@@ -419,6 +418,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
+    ispyb_config_path: str,
 ):
     callback = RotationISPyBCallback()
     mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
@@ -439,7 +439,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        assert instantiation_call.args[0] == CONST.SIM.ISPYB_CONFIG
+        assert instantiation_call.args[0] == ispyb_config_path
         assert ispyb_store_calls[0][0] == "begin_deposition"
         assert ispyb_store_calls[1][0] == "update_deposition"
         assert ispyb_store_calls[2][0] == "update_deposition"
