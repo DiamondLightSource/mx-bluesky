@@ -42,7 +42,7 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
     raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_scan_parameters.json"
     )
 )
 
@@ -291,7 +291,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     [
         [
             START_ENDPOINT,
-            "tests/test_data/parameter_json_files/good_test_parameters.json",
+            "tests/test_data/parameter_json_files/good_test_grid_scan_parameters.json",
         ],
         [
             "/grid_detect_then_xray_centre/start",
@@ -331,7 +331,7 @@ def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngi
     test_env.mock_run_engine.RE_takes_time = False
 
     with open(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_scan_parameters.json"
     ) as test_params_file:
         test_params = test_params_file.read()
 
