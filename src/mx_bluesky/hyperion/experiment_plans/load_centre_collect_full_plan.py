@@ -88,8 +88,8 @@ def load_centre_collect_full(
             initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
 
             locations_to_collect_um = [
-                np.array([initial_x_mm, initial_y_mm, initial_z_mm])
-            ] * 1000
+                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000
+            ]
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()

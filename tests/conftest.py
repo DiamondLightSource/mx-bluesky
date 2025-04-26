@@ -13,7 +13,6 @@ from inspect import get_annotations
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
@@ -733,7 +732,7 @@ async def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg.selected_aperture, ApertureValue.SMALL))
+        await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
