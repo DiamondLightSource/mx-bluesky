@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -29,19 +30,16 @@ async def test_move_aperture_goes_to_correct_position(
     RE: RunEngine,
     set_position,
 ):
-    with patch.object(aperture_scatterguard, "set") as mock_set:
-        RE(move_aperture_if_required(aperture_scatterguard, set_position))
-        mock_set.assert_called_once_with(
-            set_position,
-        )
+    RE(move_aperture_if_required(aperture_scatterguard, set_position))
+    last_pos = get_mock_put(aperture_scatterguard.selected_aperture).call_args[0]
+    assert last_pos == (set_position,)
 
 
 async def test_move_aperture_does_nothing_when_none_selected(
     aperture_scatterguard: ApertureScatterguard, RE: RunEngine
 ):
-    with patch.object(aperture_scatterguard, "set") as mock_set:
-        RE(move_aperture_if_required(aperture_scatterguard, None))
-        mock_set.assert_not_called()
+    RE(move_aperture_if_required(aperture_scatterguard, None))
+    get_mock_put(aperture_scatterguard.selected_aperture)
 
 
 @pytest.mark.parametrize(

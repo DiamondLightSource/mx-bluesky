@@ -448,7 +448,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
@@ -508,7 +508,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )

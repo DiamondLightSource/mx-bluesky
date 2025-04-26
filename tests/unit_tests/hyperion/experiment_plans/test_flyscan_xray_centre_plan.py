@@ -374,10 +374,6 @@ class TestFlyscanXrayCentrePlan:
         move_xyz.assert_called_once()
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -391,7 +387,6 @@ class TestFlyscanXrayCentrePlan:
         mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
@@ -418,10 +413,6 @@ class TestFlyscanXrayCentrePlan:
         assert fgs_composite_with_panda_pcap.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -435,7 +426,6 @@ class TestFlyscanXrayCentrePlan:
         mock_load_panda: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params_panda_zebra: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,

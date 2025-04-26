@@ -733,7 +733,7 @@ async def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ApertureValue.SMALL))
+        RE(bps.abs_set(ap_sg.selected_aperture, ApertureValue.SMALL))
 
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
