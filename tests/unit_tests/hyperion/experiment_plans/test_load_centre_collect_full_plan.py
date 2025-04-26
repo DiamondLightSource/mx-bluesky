@@ -646,6 +646,6 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
 
     rotation_scans = mock_rotation_scan.call_args.args[1].rotation_scans
     assert len(rotation_scans) == 1
-    assert rotation_scans[0].x_start_um == 1.1
-    assert rotation_scans[0].y_start_um == 2.2
-    assert rotation_scans[0].z_start_um == 3.3
+    assert rotation_scans[0].x_start_um == 1100
+    assert rotation_scans[0].y_start_um == 2200
+    assert rotation_scans[0].z_start_um == 3300
