@@ -192,7 +192,3 @@ class MultiRotationScan(RotationExperiment, SplitScan):
             self._num_images_per_scan()[0],
             len(self._num_images_per_scan()),
         )
-
-    @property
-    def ispyb_params(self):  # pyright: ignore
-        raise ValueError("Please get ispyb params from one of the individual scans")

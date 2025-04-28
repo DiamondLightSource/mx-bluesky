@@ -33,12 +33,12 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -72,6 +72,7 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -83,7 +84,6 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     PlanNameConstants,
-    TriggerConstants,
 )
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -200,6 +200,24 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
     }
 ]
+
+
+@dataclass(frozen=True)
+class SimConstants:
+    BEAMLINE = "BL03S"
+    # The following are values present in the system test ispyb database
+    ST_VISIT = "cm14451-2"
+    ST_SAMPLE_ID = 398810
+    ST_CONTAINER_ID = 34864
+
+
+@pytest.fixture(autouse=True, scope="session")
+def ispyb_config_path():
+    ispyb_config_path = os.environ.get(
+        "ISPYB_CONFIG_PATH", "tests/test_data/test_config.cfg"
+    )
+    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
+        yield ispyb_config_path
 
 
 @pytest.fixture(scope="session")
@@ -366,7 +384,7 @@ def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 def test_rotation_params():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
 
@@ -375,7 +393,7 @@ def test_rotation_params():
 def test_rotation_params_nomove():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters_nomove.json"
         )
     )
 
@@ -574,13 +592,13 @@ def xbpm_feedback(done_status):
     beamline_utils.clear_devices()
 
 
-def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
+def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
-    set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
-    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing, 3.13475)
-    patch_motor(dcm.roll_in_mrad)
-    patch_motor(dcm.pitch_in_mrad)
+    set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    patch_motor(dcm.xtal_1.roll_in_mrad)
+    patch_motor(dcm.xtal_1.pitch_in_mrad)
     patch_motor(dcm.offset_in_mm)
     return dcm
 
@@ -633,7 +651,7 @@ def undulator_dcm(RE, sim_run_engine, dcm):
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
     yield undulator_dcm
     beamline_utils.clear_devices()
 
@@ -715,7 +733,7 @@ async def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ApertureValue.SMALL))
+        RE(bps.abs_set(ap_sg.selected_aperture, ApertureValue.SMALL))
 
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
@@ -1292,7 +1310,6 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_type": "generator",
         "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
@@ -1336,7 +1353,6 @@ class TestData(OavGridSnapshotTestEvents):
         "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
         "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
         "mx_bluesky_parameters": dummy_params().model_dump_json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
@@ -1561,7 +1577,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 def dummy_rotation_params():
     dummy_params = MultiRotationScan(
         **default_raw_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID

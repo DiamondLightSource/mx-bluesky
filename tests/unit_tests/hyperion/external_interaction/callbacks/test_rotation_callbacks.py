@@ -31,7 +31,7 @@ from .....conftest import raw_params_from_file
 def params():
     return MultiRotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
 
@@ -50,6 +50,7 @@ def do_rotation_scan(
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -75,6 +76,7 @@ def test_nexus_handler_gets_documents_in_plan(
     assert CONST.PLAN.ROTATION_OUTER in subplans
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -122,6 +124,7 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,

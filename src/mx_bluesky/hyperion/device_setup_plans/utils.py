@@ -3,13 +3,13 @@ from collections.abc import Generator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg
-from dodal.devices.dcm import DCM
 from dodal.devices.detector import (
     DetectorParams,
 )
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.dcm import DCM
 
 from mx_bluesky.hyperion.device_setup_plans.check_beamstop import check_beamstop
 from mx_bluesky.hyperion.device_setup_plans.position_detector import (

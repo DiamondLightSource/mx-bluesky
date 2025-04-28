@@ -154,7 +154,6 @@ dcm_gap = "BL24I-MO-DCM-01:GAP"
 dcm_roll1 = "BL24I-MO-DCM-01:XTAL1:ROLL"
 dcm_roll2 = "BL24I-MO-DCM-01:XTAL2:ROLL"
 dcm_pitch2 = "BL24I-MO-DCM-01:XTAL2:PITCH"
-dcm_lambda = "BL24I-MO-DCM-01:LAMBDA"
 dcm_energy = "BL24I-MO-DCM-01:ENERGY"
 
 # S2
