@@ -32,7 +32,7 @@ from mx_bluesky.common.parameters.components import WithSnapshot
                 "snapshot_omegas_deg": [0, 270],
                 "use_grid_snapshots": True,
             },
-            does_not_raise(),
+            pytest.raises(ValidationError),
         ],
         [
             {
@@ -49,6 +49,13 @@ from mx_bluesky.common.parameters.components import WithSnapshot
                 "use_grid_snapshots": True,
             },
             pytest.raises(ValidationError),
+        ],
+        [
+            {
+                "snapshot_directory": Path("/tmp"),
+                "use_grid_snapshots": True,
+            },
+            does_not_raise(),
         ],
     ],
 )

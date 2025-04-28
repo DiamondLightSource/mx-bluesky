@@ -2,10 +2,11 @@ import os
 from collections.abc import Sequence
 from functools import partial
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
+from _pytest.fixtures import FixtureRequest
 from bluesky.preprocessors import run_decorator, set_run_key_decorator
 from bluesky.run_engine import RunEngine
 from dodal.devices.areadetector.plugins.MJPG import MJPG
@@ -33,12 +34,6 @@ def params_take_snapshots():
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
-
-
-@pytest.fixture
-def params_generate_from_grid_snapshots(params_take_snapshots):
-    params_take_snapshots.use_grid_snapshots = True
-    return params_take_snapshots
 
 
 @pytest.fixture
@@ -87,8 +82,9 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
     oav: OAV,
     smargon: Smargon,
     snapshot_directory: Path,
-    params: WithSnapshot,
     chis: Sequence[int] = [0],
+    grid_smargon_mm: tuple[float, float, float] = (-0.614, 0.0259, 0.250),
+    rotation_smargon_mm: tuple[float, float, float] = (-0.4634, 0.0187, 0.2482),
 ):
     @set_run_key_decorator(CONST.PLAN.ROTATION_MAIN)
     @run_decorator(
@@ -117,7 +113,6 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
             "with_snapshot": WithSnapshot.model_validate(
                 {
                     "snapshot_directory": snapshot_directory,
-                    "snapshot_omegas_deg": [0, 270],
                     "use_grid_snapshots": True,
                 }
             ).model_dump_json(),
@@ -128,7 +123,14 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         rotation_snapshot_dir = snapshot_directory / "rotation_snapshots"
         os.mkdir(grid_snapshot_dir)
         os.mkdir(rotation_snapshot_dir)
-        yield from bps.mv(smargon.x, -0.614, smargon.y, 0.0259, smargon.z, 0.250)
+        yield from bps.mv(
+            smargon.x,
+            grid_smargon_mm[0],
+            smargon.y,
+            grid_smargon_mm[1],
+            smargon.z,
+            grid_smargon_mm[2],
+        )
         for omega in (
             0,
             -90,
@@ -147,7 +149,14 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
             yield from bps.read(oav)  # Capture base image path
             yield from bps.read(smargon)  # Capture base image sample x, y, z, omega
             yield from bps.save()
-        yield from bps.mv(smargon.x, -0.4634, smargon.y, 0.0187, smargon.z, 0.2482)
+        yield from bps.mv(
+            smargon.x,
+            rotation_smargon_mm[0],
+            smargon.y,
+            rotation_smargon_mm[1],
+            smargon.z,
+            rotation_smargon_mm[2],
+        )
         yield from bps.wait()
         for chi in chis:
             yield from rotation_plan(rotation_snapshot_dir, chi)
@@ -156,14 +165,9 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
 
 
 class TestGeneratedSnapshots:
-    @pytest.fixture
-    def next_snapshot(self):
-        return MagicMock(
-            side_effect=[
-                "tests/test_data/test_images/thau_1_91_0.png",
-                "tests/test_data/test_images/thau_1_91_90.png",
-            ]
-        )
+    @pytest.fixture()
+    def next_snapshot(self, request: FixtureRequest):
+        return MagicMock(side_effect=request.param)
 
     @pytest.fixture()
     def test_config_files(self):
@@ -179,14 +183,54 @@ class TestGeneratedSnapshots:
         return oav_with_snapshots
 
     @pytest.mark.parametrize("chis", [[0], [0, 30]])
+    @pytest.mark.parametrize(
+        "next_snapshot, expected_0_img, expected_270_img, grid_smargon_mm, "
+        "rotation_smargon_mm",
+        [
+            [
+                [
+                    "tests/test_data/test_images/thau_1_91_0.png",
+                    "tests/test_data/test_images/thau_1_91_90.png",
+                ],
+                "thau_1_91_expected_0.png",
+                "thau_1_91_expected_270.png",
+                (-0.614, 0.0259, 0.250),
+                (-0.4634, 0.0187, 0.2482),
+            ],
+            [
+                [
+                    "tests/test_data/test_images/thau_1_91_0.png",
+                    "tests/test_data/test_images/thau_1_91_90.png",
+                ],
+                "thau_1_91_expected_0.png",
+                "thau_1_91_expected_270.png",
+                (-0.614, 0.0259, 0.250),
+                (-0.4634, 0.0187, 0.2482),
+            ],
+            [
+                [
+                    "tests/test_data/test_images/ins_15_33_0.png",
+                    "tests/test_data/test_images/ins_15_33_90.png",
+                ],
+                "ins_15_33_expected_0.png",
+                "ins_15_33_expected_270.png",
+                (0.4678, -0.5481, -0.3128),
+                (0.335, -0.532, -0.243),
+            ],
+        ],
+        indirect=["next_snapshot"],
+    )
     def test_snapshot_callback_generate_snapshot_from_gridscan(
         self,
         tmp_path: Path,
         RE: RunEngine,
         snapshot_oav_with_1x_zoom: OAV,
         smargon: Smargon,
-        params_generate_from_grid_snapshots: RotationScan,
         chis: Sequence[int],
+        expected_0_img: str,
+        expected_270_img: str,
+        grid_smargon_mm: tuple[float, float, float],
+        rotation_smargon_mm: tuple[float, float, float],
     ):
         downstream_cb = Mock()
         callback = BeamDrawingCallback(emit=downstream_cb)
@@ -197,8 +241,9 @@ class TestGeneratedSnapshots:
                 snapshot_oav_with_1x_zoom,
                 smargon,
                 tmp_path,
-                params_generate_from_grid_snapshots,
                 chis,
+                grid_smargon_mm,
+                rotation_smargon_mm,
             )
         )
 
@@ -221,8 +266,8 @@ class TestGeneratedSnapshots:
             for omega, expected_image_path in zip(
                 [0, 270],
                 [
-                    "tests/test_data/test_images/thau_1_91_expected_0.png",
-                    "tests/test_data/test_images/thau_1_91_expected_270.png",
+                    f"tests/test_data/test_images/{expected_0_img}",
+                    f"tests/test_data/test_images/{expected_270_img}",
                 ],
                 strict=False,
             ):
@@ -239,6 +284,61 @@ class TestGeneratedSnapshots:
                     == generated_image_path
                 )
                 i += 1
+
+    @pytest.mark.parametrize(
+        "next_snapshot",
+        [
+            [
+                "tests/test_data/test_images/thau_1_91_0.png",
+                "tests/test_data/test_images/thau_1_91_90.png",
+            ]
+        ],
+        indirect=True,
+    )
+    @pytest.mark.parametrize(
+        "expected_px_1, expected_px_2, grid_smargon_mm, rotation_smargon_mm",
+        [
+            [(397.0, 373.0), (397.0, 373.0), (0, 0, 0), (0, 0, 0)],
+            [(497.0, 373.0), (497.0, 373.0), (0, 0, 0), (0.287, 0, 0)],
+            [(397.0, 473.0), (397.0, 373.0), (0, 0, 0), (0, 0.287, 0)],
+            [(397.0, 373.0), (397.0, 473.0), (0, 0, 0), (0, 0, 0.287)],
+        ],
+    )
+    @patch(
+        "mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback.draw_crosshair"
+    )
+    def test_draw_crosshair_in_expected_position(
+        self,
+        mock_draw_crosshair,
+        snapshot_oav_with_1x_zoom,
+        smargon,
+        tmp_path,
+        RE,
+        expected_px_1,
+        expected_px_2,
+        grid_smargon_mm,
+        rotation_smargon_mm,
+    ):
+        callback = BeamDrawingCallback()
+
+        RE.subscribe(callback)
+        RE(
+            simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
+                snapshot_oav_with_1x_zoom,
+                smargon,
+                tmp_path,
+                [0],
+                grid_smargon_mm,
+                rotation_smargon_mm,
+            )
+        )
+
+        mock_draw_crosshair.assert_has_calls(
+            [
+                call(ANY, expected_px_1[0], expected_px_1[1]),
+                call(ANY, expected_px_2[0], expected_px_2[1]),
+            ]
+        )
 
 
 def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(

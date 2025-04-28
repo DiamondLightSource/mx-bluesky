@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from collections.abc import Iterator
-from math import cos, sin
+from math import cos, pi, sin
 
 from dodal.devices.oav.snapshots.snapshot_image_processing import (
     compute_beam_centre_pixel_xy_for_mm_position,
@@ -193,7 +193,6 @@ class BeamDrawingCallback(PlanReactiveCallback):
         snapshot_info: _SnapshotInfo,
         current_sample_pos_mm: tuple[float, float, float],
     ) -> tuple[float, float]:
-        assert snapshot_info.omega in (0, -90), "Unexpected base snapshot angle"
         return self._project_xyz_to_xy(
             (
                 (current_sample_pos_mm[0] - snapshot_info.sample_pos_mm[0]),
@@ -206,7 +205,10 @@ class BeamDrawingCallback(PlanReactiveCallback):
     def _project_xyz_to_xy(
         self, xyz: tuple[float, float, float], omega_deg: float
     ) -> tuple[float, float]:
-        return (xyz[0], xyz[1] * cos(omega_deg) + xyz[2] * sin(omega_deg))
+        return (
+            xyz[0],
+            xyz[1] * cos(-omega_deg * pi / 180) + xyz[2] * sin(-omega_deg * pi / 180),
+        )
 
     def _generate_snapshot_zero_offset(
         self,

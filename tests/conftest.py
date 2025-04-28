@@ -68,8 +68,8 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
-from pydantic.dataclasses import dataclass
 from PIL import Image
+from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 

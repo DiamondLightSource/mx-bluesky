@@ -114,6 +114,19 @@ class MxBlueskyParameters(BaseModel):
 
 
 class WithSnapshot(BaseModel):
+    """
+    Configures how snapshot images are created.
+    Attributes:
+        snapshot_directory: Path to the directory where snapshot images will be stored
+        snapshot_omegas_deg: list of omega values at which snapshots will be taken. For
+            gridscans, this attribute is ignored.
+        use_grid_snapshots: This may be specified for rotation snapshots to speed up rotation
+            execution. If set to True then rotation snapshots are generated from the
+            previously captured grid snapshots. Otherwise they are captured using
+            freshly captured snapshots during the rotation.
+            plan.
+    """
+
     snapshot_directory: Path
     snapshot_omegas_deg: list[float] | None = None
     use_grid_snapshots: bool = False
@@ -124,8 +137,8 @@ class WithSnapshot(BaseModel):
 
     @model_validator(mode="after")
     def _validate_omegas_with_grid_snapshots(self) -> Self:
-        assert not self.use_grid_snapshots or self.snapshot_omegas_deg == [0, 270], (
-            "Invalid snapshot omegas requested with use_grid_snapshots"
+        assert not self.use_grid_snapshots or self.snapshot_omegas_deg is None, (
+            "snapshot_omegas may not be specified with use_grid_snapshots"
         )
         return self
 

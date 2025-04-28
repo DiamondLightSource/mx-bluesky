@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
 from pathlib import Path
@@ -69,7 +70,6 @@ from ...conftest import (
     compare_actual_and_expected,
     compare_comment,
 )
-
 
 SNAPSHOT_GENERATION_ZOCALO_RESULT = [
     {
@@ -852,10 +852,7 @@ class TestGenerateSnapshot:
             [
                 fetch_datacollection_attribute(rotation_dc_ids[i], col)
                 for col in ["xtalSnapshotFullPath1", "xtalSnapshotFullPath2"]
-                for i in (
-                    0,
-                    1,
-                )
+                for i in (0, 1)
             ],
             strict=False,
         ):
