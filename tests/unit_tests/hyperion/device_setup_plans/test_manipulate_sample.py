@@ -38,8 +38,10 @@ async def test_move_aperture_goes_to_correct_position(
 async def test_move_aperture_does_nothing_when_none_selected(
     aperture_scatterguard: ApertureScatterguard, RE: RunEngine
 ):
+    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
     RE(move_aperture_if_required(aperture_scatterguard, None))
-    get_mock_put(aperture_scatterguard.selected_aperture)
+    mock_put = get_mock_put(aperture_scatterguard.selected_aperture)
+    mock_put.assert_not_called()
 
 
 @pytest.mark.parametrize(
