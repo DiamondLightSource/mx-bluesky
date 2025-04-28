@@ -162,10 +162,6 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
@@ -177,7 +173,6 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params: HyperionSpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
@@ -195,8 +190,6 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
                 beamline_specific,
             )
-
-        ispyb_cb._ready_for_read_zocalo = True
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0

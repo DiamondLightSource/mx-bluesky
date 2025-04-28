@@ -15,7 +15,6 @@ from dodal.devices.detector.det_dim_constants import (
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
-from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
@@ -578,17 +577,12 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        return_value=NullStatus(),
-    )
-    @patch(
         "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_succeeds_and_results_fetched_ispyb_comment_appended_to(
         self,
         run_gridscan: MagicMock,
-        aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
@@ -604,9 +598,6 @@ class TestFlyscanXrayCentrePlan:
                 beamline_specific,
             )
 
-        ispyb_cb._ready_for_read_zocalo = (
-            True  # needed since we're mocking run_gridscan
-        )
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
         beamline_specific.get_xrc_results_from_zocalo = True
         RE(ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params))
@@ -706,7 +697,6 @@ class TestFlyscanXrayCentrePlan:
                 beamline_specific,
             )
 
-        ispyb_cb._ready_for_read_zocalo = True
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         with pytest.raises(CrystalNotFoundException):
             RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
@@ -742,26 +732,5 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        ispyb_cb._ready_for_read_zocalo = True
         with pytest.raises(CrystalNotFoundException):
             RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
-
-    def test_error_if_read_zocalo_before_gridscan(
-        self,
-        RE_with_subs: ReWithSubs,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params: SpecifiedThreeDGridScan,
-    ):
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs
-
-        def ispyb_activate_and_read_zocalo():
-            yield from ispyb_activation_wrapper(
-                bps.trigger_and_read(
-                    [fake_fgs_composite.zocalo],
-                    name=ZOCALO_READING_PLAN_NAME,
-                ),
-                test_fgs_params,
-            )
-
-        with pytest.raises(AssertionError):
-            RE(ispyb_activate_and_read_zocalo())

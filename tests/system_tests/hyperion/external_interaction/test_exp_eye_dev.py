@@ -1,4 +1,3 @@
-import os
 from time import sleep
 
 import pytest
@@ -12,9 +11,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     ExpeyeInteraction,
 )
 
-CONTAINER_ID = int(os.environ.get("ST_CONTAINER_ID", 288588))
-
-SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5289780))
+from ....conftest import SimConstants
 
 
 @pytest.mark.system_test
@@ -34,13 +31,15 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     when it's run.
     """
     proposal, session = get_proposal_and_session_from_visit_string(
-        os.environ.get("ST_VISIT", "cm37235-2")
+        SimConstants.ST_VISIT
     )
     BARCODE = "test_barcode"
 
     expeye = ExpeyeInteraction()
 
-    robot_action_id = expeye.start_load(proposal, session, SAMPLE_ID, 40, 3)
+    robot_action_id = expeye.start_load(
+        proposal, session, SimConstants.ST_SAMPLE_ID, 40, 3
+    )
 
     sleep(0.5)
 
@@ -64,7 +63,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     response = response.json()
     assert response["robotActionId"] == robot_action_id
     assert response["status"] == "ERROR"
-    assert response["sampleId"] == SAMPLE_ID
+    assert response["sampleId"] == SimConstants.ST_SAMPLE_ID
     assert response["sampleBarcode"] == BARCODE
     assert response["message"] == expected_message
 
@@ -73,8 +72,8 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
 def test_update_sample_updates_the_sample_status():
     sample_handling = ExpeyeInteraction()
     output_sample = sample_handling.update_sample_status(
-        SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
+        SimConstants.ST_SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
     expected_status = "ERROR - sample"
     assert output_sample.bl_sample_status == expected_status
-    assert output_sample.container_id == CONTAINER_ID
+    assert output_sample.container_id == SimConstants.ST_CONTAINER_ID

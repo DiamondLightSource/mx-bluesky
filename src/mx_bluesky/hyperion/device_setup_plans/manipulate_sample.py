@@ -47,7 +47,7 @@ def move_aperture_if_required(
     else:
         LOGGER.info(f"Setting aperture position to {aperture_value}")
         yield from bps.abs_set(
-            aperture_scatterguard,
+            aperture_scatterguard.selected_aperture,
             aperture_value,
             group=group,
         )

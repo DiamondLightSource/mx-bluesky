@@ -430,6 +430,7 @@ def start_i24(
                 parameters.total_num_images,
                 parameters.exposure_time_s,
             ],
+            dcm,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -505,7 +506,7 @@ def finish_i24(
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        yield from sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")
@@ -628,6 +629,8 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         pmac.collection_time, total_collection_time, group="setup_pmac"
     )
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
+    _sig = yield from bps.rd(pmac.collection_time)
+    SSX_LOGGER.warning(f"This was set for collection time {_sig}")
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():

@@ -102,12 +102,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
         self.data_collection_group_info: DataCollectionGroupInfo | None
-        self._ready_for_read_zocalo = False
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
-            self._ready_for_read_zocalo = True
 
         if doc.get("subplan_name") == PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
@@ -157,11 +155,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
         if descriptor_name == ZOCALO_READING_PLAN_NAME:
-            assert self._ready_for_read_zocalo, (
-                "Tried to read zocalo before ispyb_callback recieved a DO_FGS run"
-            )
             self._handle_zocalo_read_event(doc)
-            self._ready_for_read_zocalo = False
         elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(

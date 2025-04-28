@@ -452,6 +452,7 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
         )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )

@@ -34,7 +34,7 @@ def setup_beamline_for_OAV(
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
     yield from bps.abs_set(backlight, BacklightPosition.IN, group=group)
     yield from bps.abs_set(
-        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group=group
+        aperture_scatterguard.selected_aperture, ApertureValue.OUT_OF_BEAM, group=group
     )
 
 

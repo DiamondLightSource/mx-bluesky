@@ -62,6 +62,7 @@ def grid_detect_devices_with_oav_config_params(
     return grid_detect_devices
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
@@ -111,6 +112,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
@@ -201,6 +203,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     assert not activations
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,
