@@ -73,7 +73,7 @@ class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
-    THAWING_TIME = 20
+    THAWING_TIME = 40
     TIP_OFFSET_UM = 0
 
     # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
