@@ -55,6 +55,7 @@ class PlanNameConstants:
     ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
+    ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
     FLYSCAN_RESULTS = "xray_centre_results"
@@ -68,16 +69,11 @@ class EnvironmentConstants:
 
 
 @dataclass(frozen=True)
-class TriggerConstants:
-    ZOCALO = "trigger_zocalo_on"
-
-
-@dataclass(frozen=True)
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
-    THAWING_TIME = 20
+    THAWING_TIME = 40
     TIP_OFFSET_UM = 0
 
     # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
@@ -134,16 +130,6 @@ class DeviceSettingsConstants:
     PANDA_FLYSCAN_SETTINGS_DIR = os.path.abspath(
         f"{ROOT_DIR}/hyperion/resources/panda/"
     )
-
-
-@dataclass(frozen=True)
-class SimConstants:
-    BEAMLINE = "BL03S"
-    INSERTION_PREFIX = "SR03S"
-    # this one is for unit tests
-    ISPYB_CONFIG = "tests/test_data/test_config.cfg"
-    # this one is for system tests
-    DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
 
 
 class Actions(Enum):

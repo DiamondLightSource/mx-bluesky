@@ -12,8 +12,6 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
-    SimConstants,
-    TriggerConstants,
 )
 
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
@@ -42,15 +40,12 @@ class I03Constants:
 @dataclass(frozen=True)
 class HyperionConstants:
     DESCRIPTORS = DocDescriptorNames()
-    TRIGGER = TriggerConstants()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
-    SIM = SimConstants()
-    TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
     CONFIG_SERVER_URL = (

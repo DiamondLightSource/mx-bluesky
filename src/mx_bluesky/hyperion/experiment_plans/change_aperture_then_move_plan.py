@@ -71,4 +71,4 @@ def set_aperture_for_bbox_mm(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
-    yield from bps.abs_set(aperture_device, new_selected_aperture)
+    yield from bps.abs_set(aperture_device.selected_aperture, new_selected_aperture)

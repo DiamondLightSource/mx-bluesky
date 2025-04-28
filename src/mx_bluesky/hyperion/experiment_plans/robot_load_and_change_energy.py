@@ -95,7 +95,9 @@ def prepare_for_robot_load(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon
 ):
     yield from bps.abs_set(
-        aperture_scatterguard, ApertureValue.OUT_OF_BEAM, group="prepare_robot_load"
+        aperture_scatterguard.selected_aperture,
+        ApertureValue.OUT_OF_BEAM,
+        group="prepare_robot_load",
     )
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)

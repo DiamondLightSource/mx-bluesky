@@ -290,7 +290,6 @@ def pilatus(action, args_list):
         for arg in args_list:
             SSX_LOGGER.debug(f"Argument: {arg}")
 
-    # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
 
@@ -384,7 +383,6 @@ def eiger(action, args_list, dcm: DCM):
     if args_list:
         for arg in args_list:
             SSX_LOGGER.debug(f"Argument: {arg}")
-    # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
     dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
     caput(pv.eiger_wavelength, dcm_wavelength_a)

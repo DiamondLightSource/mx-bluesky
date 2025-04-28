@@ -46,7 +46,7 @@ dependencies = [
     "ophyd == 1.9.0",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@5af4b5e7f93c8acbbb6c0aced0d4f425e7829807",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -75,6 +75,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
+    "pytest-timeout",
     "pytest",
     "ruff",
     "sphinx-autobuild",
@@ -115,8 +116,8 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+timeout = 1
 markers = [
-    "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
@@ -174,27 +175,43 @@ legacy_tox_ini = """
 [tox]
 skipsdist=True
 
-[testenv:{pre-commit,type-checking,tests,docs,systemtests}]
+[testenv]
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
-setenv =
-    systemtests: DODAL_TEST_MODE=true
 allowlist_externals =
     pytest
     pre-commit
     pyright
     sphinx-build
     sphinx-autobuild
+
+[testenv:{pre-commit,type-checking,tests,docs}]
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: pyright src tests {posargs}
     tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-    systemtests: pytest --junit-xml=systemtests_output.xml -m system_test tests/system_tests
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
         docs/developer/hyperion/reference/param_hierarchy.puml"
+
+# Runs the system tests in CI
+[testenv:systemtests]
+setenv =
+    DODAL_TEST_MODE=true
+commands =
+    pytest --junit-xml=systemtests_output.xml -m system_test --timeout=60 tests/system_tests
+
+# Runs the system tests locally
+[testenv:localsystemtests]
+setenv =
+    DOCKER=podman
+    DODAL_TEST_MODE=true
+    ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
+    ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
+commands =
+    pytest -m system_test --timeout=60 tests/system_tests
 """
 
 [tool.ruff]
