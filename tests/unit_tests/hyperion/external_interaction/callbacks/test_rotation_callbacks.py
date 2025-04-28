@@ -124,10 +124,13 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
-@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan._move_and_rotation",
+    MagicMock(),
 )
 def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
