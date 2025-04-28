@@ -46,7 +46,7 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj is aperture_scatterguard
+        and msg.obj is aperture_scatterguard.selected_aperture
         and msg.args[0] == ApertureValue.MEDIUM,
     )
     msgs = assert_message_and_return_remaining(
