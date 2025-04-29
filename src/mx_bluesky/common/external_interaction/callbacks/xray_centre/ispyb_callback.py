@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 from bluesky import preprocessors as bpp
-from bluesky.utils import MsgGenerator
+from bluesky.utils import MsgGenerator, make_decorator
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     get_processing_results_from_event,
@@ -71,6 +71,9 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     )
 
 
+ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
+
+
 class GridscanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -103,6 +106,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
+
         if doc.get("subplan_name") == PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -146,6 +150,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_event(self, doc: Event):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
+
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
