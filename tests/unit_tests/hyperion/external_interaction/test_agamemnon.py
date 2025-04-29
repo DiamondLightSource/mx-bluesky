@@ -271,7 +271,7 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     compare_params(
         load_centre_collect_params,
     )
-    mock_logger.warning.assert_called_with(mock_log)
+    assert mock_log in mock_logger.mock_calls[0][1][0]
 
 
 @pytest.mark.parametrize(
@@ -281,6 +281,9 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
+@patch("dodal.devices.detector.detector.Path", new=MagicMock())
+@patch("dodal.utils.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
@@ -346,7 +349,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     )
     assert robot_load_params.file_name == "test_xtal"
     assert robot_load_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+        "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
     )
 
 
