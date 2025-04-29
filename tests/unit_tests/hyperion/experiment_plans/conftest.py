@@ -104,7 +104,7 @@ BASIC_POST_SETUP_DOC = {
 
 
 @pytest.fixture
-def grid_detect_devices(
+async def grid_detect_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_i03: Beamstop,
@@ -125,8 +125,8 @@ def grid_detect_devices(
     undulator,
     undulator_dcm,
     dcm,
-) -> GridDetectThenXRayCentreComposite:
-    return GridDetectThenXRayCentreComposite(
+):
+    yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,

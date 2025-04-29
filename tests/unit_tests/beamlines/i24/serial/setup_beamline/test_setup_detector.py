@@ -8,6 +8,7 @@ from ophyd_async.testing import set_mock_value
 from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
+    EXPT_TYPE_DETECTOR_PVS,
     DetRequest,
     _get_requested_detector,
     get_detector_type,
@@ -44,13 +45,27 @@ def test_get_requested_detector_raises_error_for_invalid_value(fake_caget):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector.caget")
+@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector.caput")
+@pytest.mark.parametrize(
+    "requested_detector_value, serial_type, detector_target",
+    [
+        (DetRequest.eiger.value, SSXType.FIXED, Eiger.det_y_target),
+        (DetRequest.pilatus.value, SSXType.EXTRUDER, Pilatus.det_y_target),
+    ],
+)
 async def test_setup_detector_stage(
-    fake_caget, detector_stage: DetectorMotion, RE: RunEngine
+    fake_caput,
+    fake_caget,
+    requested_detector_value,
+    serial_type,
+    detector_target,
+    detector_stage: DetectorMotion,
+    RE: RunEngine,
 ):
-    fake_caget.return_value = DetRequest.eiger.value
-    RE(setup_detector_stage(SSXType.FIXED, detector_stage))
-    assert await detector_stage.y.user_setpoint.get_value() == Eiger.det_y_target
-
-    fake_caget.return_value = DetRequest.pilatus.value
-    RE(setup_detector_stage(SSXType.EXTRUDER, detector_stage))
-    assert await detector_stage.y.user_setpoint.get_value() == Pilatus.det_y_target
+    fake_caget.return_value = requested_detector_value
+    RE(setup_detector_stage(serial_type, detector_stage))
+    fake_caput.assert_called_once_with(
+        EXPT_TYPE_DETECTOR_PVS[serial_type],
+        _get_requested_detector(requested_detector_value),
+    )
+    assert await detector_stage.y.user_setpoint.get_value() == detector_target
