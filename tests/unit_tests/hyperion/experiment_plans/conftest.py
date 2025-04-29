@@ -345,6 +345,7 @@ def robot_load_and_energy_change_composite(
     undulator_dcm,
     xbpm_feedback,
     attenuator,
+    backlight,
 ) -> RobotLoadAndEnergyChangeComposite:
     composite = RobotLoadAndEnergyChangeComposite(
         vfm,
@@ -360,6 +361,7 @@ def robot_load_and_energy_change_composite(
         oav,
         smargon,
         aperture_scatterguard,
+        backlight,
     )
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
