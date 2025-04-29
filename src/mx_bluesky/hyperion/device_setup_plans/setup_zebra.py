@@ -42,6 +42,8 @@ def bluesky_retry(func: Callable):
         yield from bpp.contingency_wrapper(
             func(*args, **kwargs), except_plan=log_and_retry, auto_raise=False
         )
+        # See https://github.com/bluesky/bluesky/issues/1795 for why we need to specify a group
+        yield from bps.wait("unused group ")
 
     return newfunc
 

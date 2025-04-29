@@ -1,6 +1,8 @@
+import asyncio
 from unittest.mock import MagicMock, call
 
 import pytest
+from bluesky import FailedStatus
 from bluesky import plan_stubs as bps
 from bluesky.protocols import Movable
 from dodal.devices.zebra.zebra import (
@@ -11,6 +13,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
 )
+from ophyd_async.core import AsyncStatus
 
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     bluesky_retry,
@@ -128,3 +131,33 @@ async def test_configure_zebra_and_shutter_for_auto(
     assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
     assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
+
+
+def test_bluesky_retry_raises_previously_thrown_exceptions(RE):
+    mock_device = MagicMock(spec=Movable)
+    other_mock_device = MagicMock(spec=Movable)
+
+    @AsyncStatus.wrap
+    async def fake_set():
+        raise MyException()
+
+    @AsyncStatus.wrap
+    async def good_fake_set():
+        await asyncio.sleep(0)
+
+    mock_device.set = fake_set
+    other_mock_device.set = good_fake_set
+
+    @bluesky_retry
+    def my_plan():
+        yield from bps.abs_set(other_mock_device)
+
+    def bad_set():
+        yield from bps.abs_set(mock_device)
+
+    def combined_plan():
+        yield from bad_set()
+        yield from my_plan()
+
+    with pytest.raises(FailedStatus):
+        RE(combined_plan())
