@@ -134,30 +134,30 @@ async def test_configure_zebra_and_shutter_for_auto(
 
 
 def test_bluesky_retry_raises_previously_thrown_exceptions(RE):
-    mock_device = MagicMock(spec=Movable)
-    other_mock_device = MagicMock(spec=Movable)
+    bad_mock_device = MagicMock(spec=Movable)
+    good_mock_device = MagicMock(spec=Movable)
 
     @AsyncStatus.wrap
-    async def fake_set():
+    async def bad_fake_set():
         raise MyException()
 
     @AsyncStatus.wrap
     async def good_fake_set():
         await asyncio.sleep(0)
 
-    mock_device.set = fake_set
-    other_mock_device.set = good_fake_set
+    bad_mock_device.set = bad_fake_set
+    good_mock_device.set = good_fake_set
 
     @bluesky_retry
-    def my_plan():
-        yield from bps.abs_set(other_mock_device)
+    def good_set():
+        yield from bps.abs_set(good_mock_device)
 
     def bad_set():
-        yield from bps.abs_set(mock_device)
+        yield from bps.abs_set(bad_mock_device)
 
     def combined_plan():
         yield from bad_set()
-        yield from my_plan()
+        yield from good_set()
 
     with pytest.raises(FailedStatus):
         RE(combined_plan())
