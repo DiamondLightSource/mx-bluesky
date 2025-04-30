@@ -104,7 +104,7 @@ def load_centre_collect_full(
         multi_rotation.rotation_scans.clear()
 
         sweep_state: RotationDirection | None = None
-        is_alternating = multi_rotation.features.alternate_rotation_direction
+        is_alternating = parameters.features.alternate_rotation_direction
         for location in locations_to_collect_um:
             for rot in rotation_template:
                 combination, sweep_state = _generate_rotation_scan(
