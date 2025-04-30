@@ -4,6 +4,7 @@ Fixed target data collection
 
 from datetime import datetime
 from pathlib import Path
+from traceback import format_exception
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -521,12 +522,12 @@ def finish_i24(
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
-def run_aborted_plan(pmac: PMAC, dcid: DCID):
+def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
     """Plan to send pmac_strings to tell the PMAC when a collection has been aborted, \
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning("Data Collection Aborted")
+    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
@@ -734,7 +735,7 @@ def run_fixed_target_plan(
             parameters,
             dcid,
         ),
-        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid)),
+        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
                 zebra, pmac, shutter, dcm, parameters, dcid
