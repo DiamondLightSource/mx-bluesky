@@ -28,7 +28,7 @@ class I03Constants:
     USE_PANDA_FOR_GRIDSCAN = False
     SET_STUB_OFFSETS = False
     OMEGA_FLIP = True
-    ALTERNATE_ROTATION_DIRECTION = True
+    ALTERNATE_ROTATION_DIRECTION = False
 
     # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
     # processed results.
