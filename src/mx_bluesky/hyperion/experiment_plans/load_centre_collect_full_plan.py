@@ -135,10 +135,10 @@ def _generate_rotation_scan(
         scan.z_start_um,
     ) = location
 
-    if is_alternating:
-        if state is None:
-            state = scan_template.rotation_direction
+    if state is None:
+        state = scan_template.rotation_direction
 
+    if is_alternating:
         if state != scan.rotation_direction:
             start = scan.omega_start_deg
             rotation_sign = scan.rotation_direction.multiplier
