@@ -618,7 +618,7 @@ def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
+async def aperture_scatterguard(RE):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
