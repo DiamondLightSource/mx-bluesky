@@ -19,7 +19,7 @@ from ophyd_async.testing import set_mock_value
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.common.plans.do_fgs import kickoff_and_complete_gridscan
+from mx_bluesky.common.plans.inner_plans.do_fgs import kickoff_and_complete_gridscan
 
 
 @pytest.fixture
@@ -38,8 +38,8 @@ def fgs_devices(RE):
     }
 
 
-@patch("mx_bluesky.common.plans.do_fgs.read_hardware_for_zocalo")
-@patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary")
+@patch("mx_bluesky.common.plans.inner_plans.do_fgs.read_hardware_for_zocalo")
+@patch("mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary")
 def test_kickoff_and_complete_gridscan_correct_messages(
     mock_check_topup,
     mock_read_hardware,
@@ -127,7 +127,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
 
     set_mock_value(fgs_device.status, 1)
 
-    with patch("mx_bluesky.common.plans.do_fgs.bps.complete"):
+    with patch("mx_bluesky.common.plans.inner_plans.do_fgs.bps.complete"):
         RE(
             kickoff_and_complete_gridscan(
                 fgs_device,
@@ -145,7 +145,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     assert test_callback.event_data[0] == "eiger_odin_file_writer_id"
 
 
-@patch("mx_bluesky.common.plans.do_fgs.check_topup_and_wait_if_necessary")
+@patch("mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary")
 def test_error_if_kickoff_and_complete_gridscan_parameters_wrong_lengths(
     mock_check_topup, sim_run_engine: RunEngineSimulator, fgs_devices
 ):

@@ -469,7 +469,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
@@ -529,7 +529,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
@@ -648,17 +648,17 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "eiger_do_arm"
-        and msg.args[0] == 1
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         lambda msg: (
             msg.command == "open_run"
             and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
         ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "eiger_do_arm"
+        and msg.args[0] == 1
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -787,6 +787,7 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
         )
 
 
+@pytest.mark.timeout(2)
 @pytest.mark.parametrize(
     "omega_flip, rotation_direction, expected_start_angle, "
     "expected_start_angle_with_runup, expected_zebra_direction",
@@ -1115,6 +1116,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
         }
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
@@ -1252,6 +1254,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
+    ispyb_config_path: str,
 ):
     callback = RotationISPyBCallback()
     mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
@@ -1272,7 +1275,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        assert instantiation_call.args[0] == CONST.SIM.ISPYB_CONFIG
+        assert instantiation_call.args[0] == ispyb_config_path
         assert ispyb_store_calls[0][0] == "begin_deposition"
         assert ispyb_store_calls[1][0] == "update_deposition"
         assert ispyb_store_calls[2][0] == "update_deposition"

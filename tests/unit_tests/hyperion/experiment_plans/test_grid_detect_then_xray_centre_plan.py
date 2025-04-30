@@ -17,15 +17,17 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -60,8 +62,9 @@ def grid_detect_devices_with_oav_config_params(
     return grid_detect_devices
 
 
+@pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 async def test_detect_grid_and_do_gridscan(
@@ -95,7 +98,7 @@ async def test_detect_grid_and_do_gridscan(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan.assert_called_once_with(ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
@@ -109,8 +112,9 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
 
 
+@pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
@@ -149,7 +153,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
@@ -199,12 +203,13 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     assert not activations
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
     side_effect=_fake_flyscan,
 )
@@ -237,7 +242,7 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre_no_move",
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 def test_grid_detect_then_xray_centre_activates_ispyb_callback(

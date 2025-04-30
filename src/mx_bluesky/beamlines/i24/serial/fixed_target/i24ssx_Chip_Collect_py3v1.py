@@ -4,6 +4,7 @@ Fixed target data collection
 
 from datetime import datetime
 from pathlib import Path
+from traceback import format_exception
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -430,6 +431,7 @@ def start_i24(
                 parameters.total_num_images,
                 parameters.exposure_time_s,
             ],
+            dcm,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -505,7 +507,7 @@ def finish_i24(
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        yield from sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")
@@ -520,12 +522,12 @@ def finish_i24(
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
-def run_aborted_plan(pmac: PMAC, dcid: DCID):
+def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
     """Plan to send pmac_strings to tell the PMAC when a collection has been aborted, \
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning("Data Collection Aborted")
+    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
@@ -628,6 +630,8 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         pmac.collection_time, total_collection_time, group="setup_pmac"
     )
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
+    _sig = yield from bps.rd(pmac.collection_time)
+    SSX_LOGGER.warning(f"This was set for collection time {_sig}")
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
@@ -731,7 +735,7 @@ def run_fixed_target_plan(
             parameters,
             dcid,
         ),
-        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid)),
+        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
                 zebra, pmac, shutter, dcm, parameters, dcid

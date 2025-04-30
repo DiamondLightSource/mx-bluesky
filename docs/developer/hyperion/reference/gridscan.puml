@@ -77,7 +77,7 @@ GridParamUpdate --> HyperionThreeDGridScan : combines with GridScanWithEdgeDetec
 
 class experiment_plans {
     grid_detect_then_xray_centre()
-    flyscan_xray_centre_no_move()
+    common_flyscan_xray_centre()
     create_parameters_for_flyscan_xray_centre(GridScanWithEdgeDetect, GridParamUpdate) -> HyperionThreeDGridScan
 }
 

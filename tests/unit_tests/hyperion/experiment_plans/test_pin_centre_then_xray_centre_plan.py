@@ -11,10 +11,10 @@ from dodal.devices.i03.beamstop import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
+from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -292,7 +292,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj == grid_detect_devices.aperture_scatterguard.selected_aperture
         and msg.args == (ApertureValue.OUT_OF_BEAM,)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
