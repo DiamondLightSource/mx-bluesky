@@ -7,6 +7,7 @@ from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.zebra.zebra import RotationDirection
 
 import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
@@ -24,6 +25,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.parameters.rotation import RotationScanPerSweep
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -48,6 +50,8 @@ def load_centre_collect_full(
     * If X-ray centring finds a diffracting centre then move to that centre and
     * do a collection with the specified parameters.
     """
+    parameters.features.update_self_from_server()
+
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
     oav_config_file = oav_params.oav_config_json
@@ -99,14 +103,13 @@ def load_centre_collect_full(
 
         multi_rotation.rotation_scans.clear()
 
+        sweep_state: RotationDirection | None = None
+        is_alternating = multi_rotation.features.alternate_rotation_direction
         for location in locations_to_collect_um:
             for rot in rotation_template:
-                combination = rot.model_copy()
-                (
-                    combination.x_start_um,
-                    combination.y_start_um,
-                    combination.z_start_um,
-                ) = location
+                combination, sweep_state = _generate_rotation_scan(
+                    rot, location, is_alternating, sweep_state
+                )
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = RotationScan.model_validate(multi_rotation)
 
@@ -117,3 +120,31 @@ def load_centre_collect_full(
         yield from rotation_scan_internal(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()
+
+
+def _generate_rotation_scan(
+    scan_template: RotationScanPerSweep,
+    location: np.ndarray,
+    is_alternating: bool,
+    state: RotationDirection | None,
+) -> tuple[RotationScanPerSweep, RotationDirection]:
+    scan = scan_template.model_copy()
+    (
+        scan.x_start_um,
+        scan.y_start_um,
+        scan.z_start_um,
+    ) = location
+
+    if is_alternating:
+        if state is None:
+            state = scan_template.rotation_direction
+
+        if state != scan.rotation_direction:
+            start = scan.omega_start_deg
+            rotation_sign = scan.rotation_direction.multiplier
+            end = start + rotation_sign * scan.scan_width_deg
+            scan.omega_start_deg = end
+            scan.rotation_direction = state
+        state = state.opposite
+
+    return scan, state
