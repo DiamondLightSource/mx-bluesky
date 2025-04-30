@@ -337,24 +337,28 @@ def grid_detect_then_xray_centre_composite(
 
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
-    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
     done_status: NullStatus,
 ) -> HyperionFlyScanXRayCentreComposite:
-    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
-    fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
-    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
+    set_mock_value(
+        hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
+    )
+    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
+    hyperion_flyscan_xrc_composite.smargon.stub_offsets.set = MagicMock(
+        return_value=done_status
+    )  # type: ignore
     callback_on_mock_put(
-        fake_fgs_composite.zebra_fast_grid_scan.run_cmd,
+        hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.run_cmd,
         lambda *args, **kwargs: set_mock_value(
-            fake_fgs_composite.zebra_fast_grid_scan.status, 1
+            hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.status, 1
         ),
     )
-    fake_fgs_composite.zebra_fast_grid_scan.complete = MagicMock(
+    hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
         return_value=NullStatus()
     )
-    fake_fgs_composite.zocalo = zocalo_for_fake_zocalo
-    return fake_fgs_composite
+    hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
+    return hyperion_flyscan_xrc_composite
 
 
 @pytest.fixture

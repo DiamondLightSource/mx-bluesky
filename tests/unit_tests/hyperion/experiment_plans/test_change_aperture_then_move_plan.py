@@ -30,16 +30,16 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     simple_flyscan_hit: XRayCentreResult,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
     set_stub_offsets: bool,
 ):
-    test_fgs_params.features.set_stub_offsets = set_stub_offsets
+    hyperion_fgs_params.features.set_stub_offsets = set_stub_offsets
     msgs = sim_run_engine.simulate_plan(
         change_aperture_then_move_to_xtal(
             simple_flyscan_hit,
             smargon,
             aperture_scatterguard,
-            test_fgs_params.FGS_params.set_stub_offsets,
+            hyperion_fgs_params.FGS_params.set_stub_offsets,
         )
     )
 

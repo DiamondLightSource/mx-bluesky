@@ -42,12 +42,13 @@ def _fake_flyscan(*args):
 
 
 def test_full_grid_scan(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan, test_config_files: dict[str, str]
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_config_files: dict[str, str],
 ):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
         devices,
-        cast(GridScanWithEdgeDetect, test_fgs_params),
+        cast(GridScanWithEdgeDetect, hyperion_fgs_params),
         test_config_files["oav_config_json"],
     )
     assert isinstance(plan, Generator)

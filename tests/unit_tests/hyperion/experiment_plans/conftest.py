@@ -224,7 +224,7 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 
 
 @pytest.fixture
-def mock_subscriptions(test_fgs_params):
+def mock_subscriptions():
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",

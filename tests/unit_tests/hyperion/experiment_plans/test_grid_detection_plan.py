@@ -230,7 +230,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
@@ -243,7 +243,8 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
         RE(
             ispyb_activation_wrapper(
-                do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+                do_grid_and_edge_detect(composite, params, tmp_path),
+                hyperion_fgs_params,
             )
         )
 
@@ -292,7 +293,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
@@ -303,7 +304,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 
     RE(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path), hyperion_fgs_params
         )
     )
 
