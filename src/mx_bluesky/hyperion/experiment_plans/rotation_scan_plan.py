@@ -363,7 +363,7 @@ def _move_and_rotation(
     )
 
 
-def multi_rotation_scan(
+def rotation_scan(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
@@ -377,13 +377,13 @@ def multi_rotation_scan(
             ),
         }
     )
-    def _wrapped_multi_rotation_scan():
-        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
 
-    yield from _wrapped_multi_rotation_scan()
+    yield from _wrapped_rotation_scan()
 
 
-def multi_rotation_scan_internal(
+def rotation_scan_internal(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
