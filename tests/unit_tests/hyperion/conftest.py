@@ -187,7 +187,9 @@ def test_multi_rotation_params():
 
 @pytest.fixture
 def beamstop_i03(
-    beamline_parameters: GDABeamlineParameters, sim_run_engine: RunEngineSimulator
+    beamline_parameters: GDABeamlineParameters,
+    sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
