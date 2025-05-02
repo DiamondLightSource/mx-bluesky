@@ -114,6 +114,7 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
 
 def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
     try:
+        print(f"PARAMETERS {parameters}")
         first_collection: dict = parameters["collection"][0]
         wavelength = first_collection.get("wavelength")
         assert isinstance(wavelength, float)
