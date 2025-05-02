@@ -55,6 +55,8 @@ async def RE():
         if time.monotonic() > timeout:
             raise TimeoutError("This really shouldn't happen but just in case...")
     yield RE
+    # RunEngine creates its own loop if we did not supply it, we must terminate it
+    RE.loop.call_soon_threadsafe(RE.loop.stop)
 
 
 MOCK_DAQ_CONFIG_PATH = "tests/devices/unit_tests/test_daq_configuration"
