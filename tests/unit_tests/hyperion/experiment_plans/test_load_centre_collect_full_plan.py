@@ -599,7 +599,10 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )
-@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    MagicMock(),
+)
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
     composite: LoadCentreCollectComposite,
@@ -646,6 +649,6 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
 
     rotation_scans = mock_rotation_scan.call_args.args[1].rotation_scans
     assert len(rotation_scans) == 1
-    assert rotation_scans[0].x_start_um == 1.1
-    assert rotation_scans[0].y_start_um == 2.2
-    assert rotation_scans[0].z_start_um == 3.3
+    assert rotation_scans[0].x_start_um == 1100
+    assert rotation_scans[0].y_start_um == 2200
+    assert rotation_scans[0].z_start_um == 3300

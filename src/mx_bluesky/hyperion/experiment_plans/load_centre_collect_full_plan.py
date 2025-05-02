@@ -83,11 +83,13 @@ def load_centre_collect_full(
         else:
             # If the xray centring hasn't found a result but has not thrown an error it
             # means that we do not need to recentre and can collect where we are
-            initial_x = yield from bps.rd(composite.smargon.x.user_readback)
-            initial_y = yield from bps.rd(composite.smargon.y.user_readback)
-            initial_z = yield from bps.rd(composite.smargon.z.user_readback)
+            initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
+            initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
+            initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
 
-            locations_to_collect_um = [np.array([initial_x, initial_y, initial_z])]
+            locations_to_collect_um = [
+                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000
+            ]
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()

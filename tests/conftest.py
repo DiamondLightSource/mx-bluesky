@@ -14,7 +14,6 @@ from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
@@ -378,7 +377,7 @@ def done_status():
 
 
 @pytest.fixture
-def eiger(done_status):
+def eiger(done_status, RE: RunEngine):
     eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
@@ -414,7 +413,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
-def zebra(RE):
+def zebra(RE: RunEngine):
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
@@ -426,41 +425,41 @@ def zebra(RE):
 
 
 @pytest.fixture
-def zebra_shutter(RE):
+def zebra_shutter(RE: RunEngine):
     return i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def backlight():
+def backlight(RE: RunEngine):
     backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
-def fast_grid_scan():
+def fast_grid_scan(RE: RunEngine):
     return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def detector_motion(RE):
+def detector_motion(RE: RunEngine):
     det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_async_motor(det.z):
         yield det
 
 
 @pytest.fixture
-def undulator():
+def undulator(RE: RunEngine):
     return i03.undulator(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def s4_slit_gaps():
+def s4_slit_gaps(RE: RunEngine):
     return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def synchrotron(RE):
+def synchrotron(RE: RunEngine):
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -468,7 +467,7 @@ def synchrotron(RE):
 
 
 @pytest.fixture
-def oav(test_config_files, RE):
+def oav(test_config_files, RE: RunEngine):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -490,25 +489,22 @@ def oav(test_config_files, RE):
 
 
 @pytest.fixture
-def flux():
+def flux(RE: RunEngine):
     return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def pin_tip():
+def pin_tip(RE: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def ophyd_pin_tip_detection():
-    RunEngine()  # A RE is needed to start the bluesky loop
-    pin_tip_detection = i03.pin_tip_detection(connect_immediately=True, mock=True)
-    return pin_tip_detection
+def ophyd_pin_tip_detection(RE: RunEngine):
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def robot(done_status):
-    RunEngine()  # A RE is needed to start the bluesky loop
+def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
@@ -516,7 +512,7 @@ def robot(done_status):
 
 
 @pytest.fixture
-def attenuator(RE):
+def attenuator(RE: RunEngine):
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
@@ -530,7 +526,7 @@ def attenuator(RE):
 
 
 @pytest.fixture
-def xbpm_feedback(done_status):
+def xbpm_feedback(done_status, RE: RunEngine):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
@@ -549,14 +545,14 @@ def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
 
 
 @pytest.fixture
-def dcm(RE, sim_run_engine):
+def dcm(RE: RunEngine, sim_run_engine):
     dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
 @pytest.fixture
-def vfm(RE):
+def vfm(RE: RunEngine):
     vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -567,7 +563,7 @@ def vfm(RE):
 
 
 @pytest.fixture
-def lower_gonio(RE):
+def lower_gonio(RE: RunEngine):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
     with (
         patch_motor(lower_gonio.x),
@@ -578,7 +574,7 @@ def lower_gonio(RE):
 
 
 @pytest.fixture
-def mirror_voltages():
+def mirror_voltages(RE: RunEngine):
     voltages = i03.mirror_voltages(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
@@ -590,7 +586,7 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(RE, sim_run_engine, dcm):
+def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
         mock=True,
@@ -602,24 +598,24 @@ def undulator_dcm(RE, sim_run_engine, dcm):
 
 
 @pytest.fixture
-def webcam(RE) -> Generator[Webcam, Any, Any]:
+def webcam(RE: RunEngine) -> Generator[Webcam, Any, Any]:
     webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
-def thawer(RE) -> Generator[Thawer, Any, Any]:
+def thawer(RE: RunEngine) -> Generator[Thawer, Any, Any]:
     yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
+def sample_shutter(RE: RunEngine) -> Generator[ZebraShutter, Any, Any]:
     yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
+async def aperture_scatterguard(RE: RunEngine):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -678,7 +674,7 @@ def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg.selected_aperture, ApertureValue.SMALL))
+        await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
@@ -721,7 +717,7 @@ def fake_create_devices(
 
 
 @pytest.fixture
-def zocalo(done_status):
+def zocalo(done_status, RE: RunEngine):
     zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
@@ -796,7 +792,7 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 
 @pytest.fixture
-def panda_fast_grid_scan(RE):
+def panda_fast_grid_scan(RE: RunEngine):
     return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
 
 
