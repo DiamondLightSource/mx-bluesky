@@ -26,7 +26,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
+    _get_logging_dirs,
     tag_filter,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
@@ -93,14 +93,16 @@ def setup_logging(dev_mode: bool):
         (ISPYB_ZOCALO_CALLBACK_LOGGER, "hyperion_ispyb_callback.log"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
     ]:
+        logging_path, debug_logging_path = _get_logging_dirs()
         if logger.handlers == []:
             handlers = set_up_all_logging_handlers(
                 logger,
-                _get_logging_dir(),
+                logging_path,
                 filename,
                 dev_mode,
-                error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
-                graylog_port=CONST.GRAYLOG_PORT,
+                ERROR_LOG_BUFFER_LINES,
+                CONST.GRAYLOG_PORT,
+                debug_logging_path,
             )
             handlers["graylog_handler"].addFilter(tag_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")

@@ -157,10 +157,9 @@ def test_callback_loggers_log_to_own_files(
     hyperion_logger = log.LOGGER
     ISPYB_ZOCALO_CALLBACK_LOGGER = log.ISPYB_ZOCALO_CALLBACK_LOGGER
     nexus_logger = log.NEXUS_LOGGER
+    logging_path, _ = log._get_logging_dirs()
     for logger in [ISPYB_ZOCALO_CALLBACK_LOGGER, nexus_logger]:
-        set_up_all_logging_handlers(
-            logger, log._get_logging_dir(), logger.name, True, 10000
-        )
+        set_up_all_logging_handlers(logger, logging_path, logger.name, True, 10000)
 
     hyperion_logger.info("test_hyperion")
     ISPYB_ZOCALO_CALLBACK_LOGGER.info("test_ispyb")
@@ -215,8 +214,8 @@ def test_get_logging_dir_uses_env_var(mock_mkdir: MagicMock):
         "mx_bluesky.common.utils.log.environ.get",
         side_effect=lambda var: mock_get_log_dir(var),
     ):
-        assert log._get_logging_dir() == Path("test_dir")
-        mock_mkdir.assert_called_once()
+        assert log._get_logging_dirs() == (Path("test_dir"), Path("test_dir"))
+        assert mock_mkdir.call_count == 2
 
 
 @patch("mx_bluesky.common.utils.log.Path.mkdir")
@@ -231,14 +230,20 @@ def test_get_logging_dir_uses_beamline_if_no_dir_env_var(mock_mkdir: MagicMock):
         "mx_bluesky.common.utils.log.environ.get",
         side_effect=lambda var: mock_get_log_dir(var),
     ):
-        assert log._get_logging_dir() == Path("/dls_sw/test/logs/bluesky/")
-        mock_mkdir.assert_called_once()
+        assert log._get_logging_dirs() == (
+            Path("/dls_sw/test/logs/bluesky/"),
+            Path("/dls/tmp/test/logs/bluesky/"),
+        )
+        assert mock_mkdir.call_count == 2
 
 
 @patch("mx_bluesky.common.utils.log.Path.mkdir")
 def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock):
-    assert log._get_logging_dir() == Path("/tmp/logs/bluesky")
-    mock_mkdir.assert_called_once()
+    assert log._get_logging_dirs() == (
+        Path("/tmp/logs/bluesky"),
+        Path("/tmp/logs/bluesky"),
+    )
+    assert mock_mkdir.call_count == 2
 
 
 @pytest.mark.skip_log_setup
