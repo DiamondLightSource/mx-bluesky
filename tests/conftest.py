@@ -549,7 +549,7 @@ def attenuator(RE: RunEngine):
 def beamstop_i03(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
-    RE: RunEngine
+    RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
