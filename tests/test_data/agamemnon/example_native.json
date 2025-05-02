@@ -1,0 +1,84 @@
+{
+  "collect": {
+    "collection": [
+      {
+        "centring_mode": "XRAY",
+        "chi": 0.0,
+        "comment": "Complete_P1_sweep1 ",
+        "distance": 237.01718766601735,
+        "dose": 4.492894736842104,
+        "experiment_type": "OSC",
+        "exposure_time": 0.003,
+        "kappa": 0.0,
+        "number_of_images": 3600,
+        "omega_increment": 0.1,
+        "omega_overlap": 0.0,
+        "omega_start": 0.0,
+        "phi_increment": 0.0,
+        "phi_overlap": 0.0,
+        "phi_start": 0.0,
+        "resolution": 1.7,
+        "scan_axis": "omega",
+        "transmission": 0.1426315789473684,
+        "two_theta": 0.0,
+        "wavelength": 0.97625
+      },
+      {
+        "centring_mode": "XRAY",
+        "chi": 30,
+        "comment": "Complete_P1_sweep1 ",
+        "distance": 237.01718766601735,
+        "dose": 4.492894736842104,
+        "experiment_type": "OSC",
+        "exposure_time": 0.003,
+        "kappa": 0.0,
+        "number_of_images": 3600,
+        "omega_increment": 0.1,
+        "omega_overlap": 0.0,
+        "omega_start": 0.0,
+        "phi_increment": 0.0,
+        "phi_overlap": 0.0,
+        "phi_start": 0.0,
+        "resolution": 1.7,
+        "scan_axis": "omega",
+        "transmission": 0.1426315789473684,
+        "two_theta": 0.0,
+        "wavelength": 0.97625
+      }
+    ],
+    "prefix": "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/CBLBA-x00242",
+    "recipe_limits": {
+      "distance": {
+        "max": 800.0,
+        "min": 150.0
+      },
+      "exposure_time": {
+        "max": 1.0,
+        "min": 0.003
+      },
+      "priority": {
+        "min": -99
+      },
+      "resolution": {
+        "max": 30.0,
+        "min": 0.64
+      },
+      "transmission": {
+        "max": 0.3
+      },
+      "wavelength": {
+        "max": 2.06675,
+        "min": 0.52
+      }
+    },
+    "sample": {
+      "container": 5,
+      "id": 6501159,
+      "loopType": null,
+      "name": "CBLBA-x00242",
+      "position": 5,
+      "subLocation": null
+    },
+    "visit": "mx34598-77"
+  }
+}
