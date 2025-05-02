@@ -19,6 +19,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from mx_bluesky.common.utils.log import LOGGER
 
 ZEBRA_STATUS_TIMEOUT = 30
+EVENT_LOOP_ITERATIONS = 5
 
 
 def bluesky_retry(func: Callable):
@@ -35,6 +36,11 @@ def bluesky_retry(func: Callable):
 
     @wraps(func)
     def newfunc(*args, **kwargs):
+        # Let event loop run a few times so that past failed statuses will raise exceptions.
+        # See https://github.com/DiamondLightSource/mx-bluesky/issues/1031
+        for _ in range(EVENT_LOOP_ITERATIONS):
+            yield from bps.null()
+
         def log_and_retry(exception):
             LOGGER.error(f"Function {func.__name__} failed with {exception}, retrying")
             yield from func(*args, **kwargs)
@@ -42,8 +48,6 @@ def bluesky_retry(func: Callable):
         yield from bpp.contingency_wrapper(
             func(*args, **kwargs), except_plan=log_and_retry, auto_raise=False
         )
-        # See https://github.com/bluesky/bluesky/issues/1795 for why we need to specify a group
-        yield from bps.wait("unused group ")
 
     return newfunc
 
