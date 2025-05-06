@@ -11,7 +11,7 @@ from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfig
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (

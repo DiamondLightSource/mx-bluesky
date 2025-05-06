@@ -11,7 +11,7 @@ from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (

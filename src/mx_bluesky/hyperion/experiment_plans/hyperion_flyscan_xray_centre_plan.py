@@ -9,7 +9,7 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_FGS_features,
 )
 from mx_bluesky.common.utils.log import LOGGER
