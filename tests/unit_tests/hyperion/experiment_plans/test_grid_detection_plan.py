@@ -30,11 +30,8 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
-    HyperionSpecifiedThreeDGridScan,
-)
 
 from ...conftest import assert_event
 
@@ -230,13 +227,13 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback(param_type=GridCommonWithHyperionDetectorParams)
+    cb = GridscanISPyBCallback(param_type=GridCommon)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     RE.subscribe(cb)
 
@@ -292,7 +289,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
