@@ -13,6 +13,11 @@ from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+    FlyScanEssentialDevices,
+    common_flyscan_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -26,11 +31,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
     PlanNameConstants,
-)
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
-    common_flyscan_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     _gridscan_with_undulator_checks,
@@ -105,7 +105,7 @@ class TestFlyscanXrayCentrePlan:
         return_value=NullStatus(),
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     @patch(
@@ -162,7 +162,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     @patch(
@@ -195,7 +195,7 @@ class TestFlyscanXrayCentrePlan:
         assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
     )
     def test_if_smargon_speed_over_limit_then_log_error(
         self,
@@ -229,7 +229,7 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(side_effect=_custom_msg("disarm_panda")),
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         new=MagicMock(side_effect=_custom_msg("do_gridscan")),
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
@@ -294,7 +294,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
         self,
@@ -321,7 +321,7 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.bps.wait"
     )
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
     )
     def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
         self,
@@ -367,7 +367,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     @patch(
         "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",

@@ -20,7 +20,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from zmq.utils.monitor import recv_monitor_message
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
 from mx_bluesky.common.utils.log import LOGGER

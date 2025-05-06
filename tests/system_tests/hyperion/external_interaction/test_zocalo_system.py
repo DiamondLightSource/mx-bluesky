@@ -9,6 +9,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 from dodal.utils import is_test_mode
 
+from mx_bluesky.common.experiment_plans.read_hardware import read_hardware_for_zocalo
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -16,7 +17,6 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.plans.read_hardware import read_hardware_for_zocalo
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
