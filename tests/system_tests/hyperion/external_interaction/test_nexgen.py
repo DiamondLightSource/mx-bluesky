@@ -60,7 +60,7 @@ def test_params(tmpdir):
 def test_rotation_nexgen(
     test_params: RotationScan,
     tmpdir,
-    fake_create_rotation_devices: RotationScanComposite,
+    composite_for_rotation_scan: RotationScanComposite,
     test_data_directory,
     prefix,
     reference_file,
@@ -74,7 +74,7 @@ def test_rotation_nexgen(
         f"{test_data_directory}/{meta_file}", f"{tmpdir}/{prefix}_{run_number}_meta.h5"
     )
 
-    fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
+    composite_for_rotation_scan.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
 
@@ -84,7 +84,7 @@ def test_rotation_nexgen(
     ):
         RE(
             _fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
+                test_params, RotationNexusFileCallback(), composite_for_rotation_scan
             )
         )
 

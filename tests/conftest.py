@@ -28,17 +28,14 @@ from dodal.common.beamlines.beamline_parameters import (
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
-    ApertureScatterguard,
     ApertureValue,
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.backlight import Backlight
-from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -47,7 +44,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra import ArmDemand
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import XrcResult, ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -690,31 +687,32 @@ def test_config_files():
     }
 
 
-@pytest.fixture()
-def fake_create_devices(
-    beamstop_i03: Beamstop,
-    eiger: EigerDetector,
-    smargon: Smargon,
-    zebra: Zebra,
-    detector_motion: DetectorMotion,
-    aperture_scatterguard: ApertureScatterguard,
-    backlight: Backlight,
-):
-    mock_omega_sets = MagicMock(return_value=NullStatus())
+@pytest.fixture
+def beamstop_i03(
+    beamline_parameters: GDABeamlineParameters,
+    sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+    ):
+        beamstop = i03.beamstop(connect_immediately=True, mock=True)
+        patch_motor(beamstop.x_mm)
+        patch_motor(beamstop.y_mm)
+        patch_motor(beamstop.z_mm)
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+        sim_run_engine.add_read_handler_for(
+            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        )
+        yield beamstop
+        beamline_utils.clear_devices()
 
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
 
-    devices = {
-        "beamstop": beamstop_i03,
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-        "ap_sg": aperture_scatterguard,
-    }
-    return devices
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 
 
 @pytest.fixture
