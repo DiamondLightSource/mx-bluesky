@@ -104,7 +104,7 @@ def flush_debug_handler() -> str:
 
 
 def _get_logging_dirs() -> tuple[Path, Path]:
-    """Get the path to write the mx_bluesky log files to.
+    """Get the paths to write the mx_bluesky log files to.
 
     Log location can be specified in the LOG_DIR environment variable, otherwise MX bluesky logs are written to 'dls_sw/ixx/logs/bluesky'.
     This directory will be created if it is not found
@@ -112,8 +112,7 @@ def _get_logging_dirs() -> tuple[Path, Path]:
     Logs are written to ./tmp/logs/bluesky if BEAMLINE environment variable is not found
 
     Returns:
-        logging_path (Path): Path to the log file for the file handler to write to.
-        debug_logging_path (Path): Path to the log directory for the debug log file handlers to write to.
+        tuple[Path, Path]: Paths to the standard log file and to the debug log file, for the file handlers to write to
     """
 
     logging_str = environ.get("LOG_DIR")
