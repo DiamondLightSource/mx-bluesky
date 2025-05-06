@@ -31,7 +31,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
@@ -101,7 +100,6 @@ def do_grid_and_edge_detect(composite, parameters, tmp_dir):
         snapshot_template="test_{angle}",
         grid_width_microns=161.2,
         box_size_um=20,
-        group=CONST,
     )
 
 
@@ -187,7 +185,6 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
             box_size_um=box_size_um,
-            group=CONST,
         )
 
     RE(decorated())

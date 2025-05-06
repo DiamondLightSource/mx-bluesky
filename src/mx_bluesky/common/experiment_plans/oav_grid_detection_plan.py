@@ -17,7 +17,7 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
-from mx_bluesky.common.parameters.constants import BeamlineConstants
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, HardwareConstants
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
@@ -64,7 +64,6 @@ def grid_detection_plan(
     snapshot_dir: str,
     grid_width_microns: float,
     box_size_um: float,
-    group: BeamlineConstants,
 ):
     """
     Creates the parameters for two grids that are 90 degrees from each other and
@@ -87,7 +86,7 @@ def grid_detection_plan(
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
-    yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection, group)
+    yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection)
 
     LOGGER.info("OAV Centring: Camera set up")
 
@@ -104,7 +103,7 @@ def grid_detection_plan(
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
-        yield from bps.sleep(group.HARDWARE.OAV_REFRESH_DELAY)
+        yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from catch_exception_and_warn(
             PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detection
@@ -164,7 +163,7 @@ def grid_detection_plan(
         yield from bps.abs_set(oav.grid_snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.grid_snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.grid_snapshot, wait=True)
-        yield from bps.create(group.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
+        yield from bps.create(DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED)
 
         yield from bps.read(oav)
         yield from bps.read(smargon)

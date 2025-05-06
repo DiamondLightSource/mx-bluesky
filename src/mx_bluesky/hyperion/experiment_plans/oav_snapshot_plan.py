@@ -55,7 +55,7 @@ def _setup_oav(
     parameters: WithSnapshot,
     oav_parameters: OAVParameters,
 ):
-    yield from setup_general_oav_params(composite.oav, oav_parameters, group=CONST)
+    yield from setup_general_oav_params(composite.oav, oav_parameters)
     yield from bps.abs_set(
         composite.oav.snapshot.directory,
         str(parameters.snapshot_directory),

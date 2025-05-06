@@ -104,7 +104,6 @@ def detect_grid_and_do_gridscan(
             str(snapshot_dir),
             parameters.grid_width_um,
             parameters.box_size_um,
-            group=CONST,
         )
 
     if parameters.selected_aperture:
