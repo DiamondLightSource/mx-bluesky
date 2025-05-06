@@ -17,9 +17,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_xy_data_collection_info,
@@ -167,21 +164,17 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def _handle_zocalo_read_event(self, doc):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
-        crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
             crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
-        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-            f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
-        )
 
-        self.data_collection_group_info.comments = (
-            self.data_collection_group_info.comments or ""
-        ) + crystal_summary
+            self.data_collection_group_info.comments = (
+                self.data_collection_group_info.comments or ""
+            ) + crystal_summary
 
-        self.ispyb.append_to_comment(
-            self.ispyb_ids.data_collection_ids[0], crystal_summary
-        )
+            self.ispyb.append_to_comment(
+                self.ispyb_ids.data_collection_ids[0], crystal_summary
+            )
 
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
