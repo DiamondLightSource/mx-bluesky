@@ -1,12 +1,11 @@
 import re
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
+from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -78,9 +77,6 @@ def run_zocalo_with_dev_ispyb(
             )
             def inner_plan():
                 yield from fake_fgs_plan(eiger)
-                yield from bps.trigger_and_read(
-                    [zocalo_for_fake_zocalo], name=ZOCALO_READING_PLAN_NAME
-                )
 
             yield from inner_plan()
 

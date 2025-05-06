@@ -6,9 +6,6 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
-from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
-)
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -149,9 +146,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
-        if descriptor_name == ZOCALO_READING_PLAN_NAME:
-            self._handle_zocalo_read_event(doc)
-        elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
+        if descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos
@@ -162,19 +157,18 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return doc
 
-    def _handle_zocalo_read_event(self, doc):
+    def _add_processing_time_to_comment(self, processing_start_time: float):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
-        if self._processing_start_time is not None:
-            proc_time = time() - self._processing_start_time
-            crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
+        proc_time = time() - processing_start_time
+        crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
 
-            self.data_collection_group_info.comments = (
-                self.data_collection_group_info.comments or ""
-            ) + crystal_summary
+        self.data_collection_group_info.comments = (
+            self.data_collection_group_info.comments or ""
+        ) + crystal_summary
 
-            self.ispyb.append_to_comment(
-                self.ispyb_ids.data_collection_ids[0], crystal_summary
-            )
+        self.ispyb.append_to_comment(
+            self.ispyb_ids.data_collection_ids[0], crystal_summary
+        )
 
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
@@ -293,10 +287,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             if exception_type:
                 doc["reason"] = message
                 self.data_collection_group_info.comments = message
-                self.ispyb.update_data_collection_group_table(
-                    self.data_collection_group_info,
-                    self.ispyb_ids.data_collection_group_id,
-                )
+            elif self._processing_start_time:
+                self._add_processing_time_to_comment(self._processing_start_time)
+            self.ispyb.update_data_collection_group_table(
+                self.data_collection_group_info,
+                self.ispyb_ids.data_collection_group_id,
+            )
             self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)

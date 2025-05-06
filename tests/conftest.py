@@ -9,7 +9,6 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
 from functools import partial
-from inspect import get_annotations
 from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
@@ -53,10 +52,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.devices.zocalo import XrcResult, ZocaloResults
-from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
-)
+from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -1159,12 +1155,6 @@ def simulate_xrc_result(
         )
 
 
-def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
-    keys = get_annotations(XrcResult).keys()
-    results_by_key = {k: [r[k] for r in test_results] for k in keys}
-    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
-
-
 # The remaining code in this conftest is utility for external interaction tests. See https://github.com/DiamondLightSource/mx-bluesky/issues/699 for
 # a better organisation of this
 
@@ -1494,15 +1484,6 @@ class TestData(OavGridSnapshotTestEvents):
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
-    test_descriptor_document_zocalo_reading: EventDescriptor = {
-        "uid": "unique_id_zocalo_reading",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ZOCALO_READING_PLAN_NAME,
-    }  # type:ignore
-    test_zocalo_reading_event: Event = {
-        "descriptor": "unique_id_zocalo_reading",
-        "data": generate_xrc_result_event("zocalo", []),
-    }  # type:ignore
 
     test_result_large = [
         {

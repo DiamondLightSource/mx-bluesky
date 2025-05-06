@@ -189,14 +189,9 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_zocalo_reading
-        )
         ispyb_handler.data_collection_group_info = (
             dummy_rotation_data_collection_group_info
         )
-        ispyb_handler.activity_gated_event(td.test_zocalo_reading_event)
-
         assert (
             ispyb_handler.ispyb.append_to_comment.call_args.args[1]  # type:ignore
             == "Zocalo processing took 98.00 s."

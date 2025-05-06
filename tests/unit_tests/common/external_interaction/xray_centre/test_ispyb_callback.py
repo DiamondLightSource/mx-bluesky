@@ -347,9 +347,6 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read.assert_called_once()
 
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_zocalo_read_event",
-    )
-    @patch(
         "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_oav_grid_snapshot_triggered",
     )
     @patch(
@@ -363,7 +360,6 @@ class TestXrayCentreISPyBCallback:
         mock_update_data_collection_group_table,
         mock_update_deposition,
         mock__handle_oav_grid_snapshot_triggered,
-        mock__handle_zocalo_read_event,
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
