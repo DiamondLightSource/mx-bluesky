@@ -150,7 +150,7 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup, CONST)
+    yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup)
 
     tip = yield from move_pin_into_view(pin_tip_detect, smargon)
     yield from offset_and_move(tip)
