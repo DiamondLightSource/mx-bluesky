@@ -7,15 +7,11 @@ from functools import partial
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-import pydantic
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
 )
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
@@ -29,6 +25,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
+from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.plans.inner_plans.do_fgs import (
     ZOCALO_STAGE_GROUP,
@@ -44,14 +41,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices:
-    eiger: EigerDetector
-    synchrotron: Synchrotron
-    zocalo: ZocaloResults
-    smargon: Smargon
 
 
 @dataclasses.dataclass
