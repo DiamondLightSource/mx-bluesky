@@ -4,12 +4,10 @@ from collections.abc import Callable, Sequence
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar
 
-import numpy as np
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
-    get_processing_results_from_event,
 )
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
@@ -172,32 +170,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         crystal_summary = ""
         if self._processing_start_time is not None:
             proc_time = time() - self._processing_start_time
-            crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
-        bboxes: list[np.ndarray] = []
+            crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
-        )
-
-        raw_results = get_processing_results_from_event("zocalo", doc)
-        if len(raw_results) > 0:
-            for n, res in enumerate(raw_results):
-                bb = res["bounding_box"]
-                diff = np.array(bb[1]) - np.array(bb[0])
-                bboxes.append(diff)
-
-                nicely_formatted_com = [
-                    f"{np.round(com, 2)}" for com in res["centre_of_mass"]
-                ]
-                crystal_summary += (
-                    f"Crystal {n + 1}: "
-                    f"Strength {res['total_count']}; "
-                    f"Position (grid boxes) {nicely_formatted_com}; "
-                    f"Size (grid boxes) {bboxes[n]}; "
-                )
-        else:
-            crystal_summary += "Zocalo found no crystals in this gridscan."
-        assert self.ispyb_ids.data_collection_ids, (
-            "No data collection to add results to"
         )
 
         self.data_collection_group_info.comments = (

@@ -115,16 +115,6 @@ async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_t
 
 
 @pytest.mark.system_test
-async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("NO_DIFF")
-
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Zocalo found no crystals in this gridscan." in comment
-
-
-@pytest.mark.system_test
 async def test_zocalo_adds_nonzero_comment_time(
     run_zocalo_with_dev_ispyb, fetch_comment
 ):
@@ -136,26 +126,3 @@ async def test_zocalo_adds_nonzero_comment_time(
     time_s = float(match.group(1))
     assert time_s > 0
     assert time_s < 180
-
-
-@pytest.mark.system_test
-async def test_given_a_single_crystal_result_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Crystal 1" in comment
-    assert "Strength" in comment
-    assert "Size (grid boxes)" in comment
-
-
-@pytest.mark.system_test
-async def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("MULTI_X")
-
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Crystal 1" and "Crystal 2" in comment
-    assert "Strength" in comment
-    assert "Position (grid boxes)" in comment

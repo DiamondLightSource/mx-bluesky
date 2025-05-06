@@ -199,5 +199,5 @@ class TestXrayCentreIspybHandler:
 
         assert (
             ispyb_handler.ispyb.append_to_comment.call_args.args[1]  # type:ignore
-            == "Zocalo processing took 98.00 s. Zocalo found no crystals in this gridscan."
+            == "Zocalo processing took 98.00 s."
         )
