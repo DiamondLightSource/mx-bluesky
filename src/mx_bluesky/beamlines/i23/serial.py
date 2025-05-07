@@ -5,6 +5,7 @@ from bluesky.plans import rel_grid_scan
 from bluesky.utils import short_uid
 from dodal.common import inject
 from dodal.devices.motors import SixAxisGonio
+from dodal.devices.positioner import Positioner1D
 from ophyd_async.epics.motor import Motor
 
 
@@ -42,10 +43,13 @@ def serial_collection(
     y_step_size: float,
     omega_rotation: float,
     omega_velocity: float,
+    detector: Positioner1D = inject("detector"),
     gonio: SixAxisGonio = inject("gonio"),
 ):
     """This plan runs a software controlled serial collection. i.e it moves in a snaked
     grid and does a small rotation collection at each point."""
+    if (yield from bps.rd(detector.stage_position)) != "In":
+        yield from bps.mv(detector, "In")
     yield from rel_grid_scan(
         [],
         gonio.y,
