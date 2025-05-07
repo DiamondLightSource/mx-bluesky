@@ -13,6 +13,9 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -21,6 +24,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -31,6 +37,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -341,3 +350,11 @@ def grid_detection_callback_with_detected_grid():
             "z_step_size_um": 0.1,
         }
         yield callback
+
+
+@pytest.fixture
+def beamline_specific(
+    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(fake_fgs_composite, test_fgs_params)
