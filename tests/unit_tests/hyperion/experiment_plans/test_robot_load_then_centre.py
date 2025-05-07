@@ -11,7 +11,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -80,7 +80,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     for name, value in vars(composite_passed).items():
         assert value == getattr(robot_load_composite, name)
 
-    for name in GridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
+    for name in HyperionGridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
         assert getattr(composite_passed, name), f"{name} not in composite"
 
     assert isinstance(params_passed, PinTipCentreThenXrayCentre)
