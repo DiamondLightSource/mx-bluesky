@@ -92,7 +92,7 @@ from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
+    _get_logging_dirs,
     do_default_logging_setup,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -280,11 +280,12 @@ def pytest_runtest_setup(item):
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
+        logging_path, _ = _get_logging_dirs()
         if ISPYB_ZOCALO_CALLBACK_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
                 ISPYB_ZOCALO_CALLBACK_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
@@ -293,7 +294,7 @@ def pytest_runtest_setup(item):
             print("Initialising nexus logger for tests")
             set_up_all_logging_handlers(
                 NEXUS_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
