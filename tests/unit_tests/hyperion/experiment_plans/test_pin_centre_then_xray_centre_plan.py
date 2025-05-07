@@ -16,7 +16,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -56,7 +56,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
 ):
@@ -103,7 +103,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     RE = RunEngine()
@@ -135,7 +135,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_pin_tip_centre: MagicMock,
     mock_grid_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -223,7 +223,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
     mock_pin_tip_centre_plan,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
@@ -264,7 +264,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
 def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
@@ -360,7 +360,7 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
 
 def test_pin_tip_centre_then_xray_centre_fails_with_exception_when_no_beamstop(
     sim_run_engine: RunEngineSimulator,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
     sim_run_engine.add_read_handler_for(
