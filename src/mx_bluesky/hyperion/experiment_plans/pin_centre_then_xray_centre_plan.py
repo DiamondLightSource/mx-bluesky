@@ -18,9 +18,6 @@ from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
-    GridDetectionCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -109,23 +106,15 @@ def pin_centre_then_flyscan_plan(
 
         grid_detect_params = create_parameters_for_grid_detection(parameters)
         oav_params = OAVParameters("xrayCentring", oav_config_file)
-        grid_params_callback = GridDetectionCallback()
-        params = create_parameters_for_flyscan_xray_centre(
-            parameters, grid_params_callback.get_grid_parameters()
-        )
         xrc_composite = create_hyperion_xrc_composite(composite)
-        xrc_params = create_parameters_for_flyscan_xray_centre(
-            parameters, grid_params_callback.get_grid_parameters()
-        )
-        beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
 
         yield from detect_grid_and_do_gridscan(
-            composite=composite,
-            parameters=grid_detect_params,
-            oav_params=oav_params,
-            xrc_composite=xrc_composite,
-            xrc_params=xrc_params,
-            beamline_specific=beamline_specific,
+            composite,
+            grid_detect_params,
+            oav_params,
+            xrc_composite,
+            create_parameters_for_flyscan_xray_centre,
+            construct_hyperion_specific_features,
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
