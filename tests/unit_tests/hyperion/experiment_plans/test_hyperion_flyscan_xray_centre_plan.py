@@ -111,7 +111,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     @pytest.mark.skip(
@@ -168,7 +168,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
+        "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.move_x_y_z",
         autospec=True,
     )
     async def test_when_gridscan_finished_then_dev_shm_disabled(

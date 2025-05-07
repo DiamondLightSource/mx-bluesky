@@ -164,7 +164,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         RE: RunEngine,
     ):
-        from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
+        from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
         motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
             np.array([1, 2, 3])

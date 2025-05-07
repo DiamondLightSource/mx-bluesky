@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from dodal.beamlines import i03
+from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -71,10 +72,23 @@ def test_multi_rotation_params():
     )
 
 
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
+
+
 @pytest.fixture
-def test_panda_fgs_params(hyperion_fgs_params: HyperionSpecifiedThreeDGridScan):
-    hyperion_fgs_params.features.use_panda_for_gridscan = True
-    return hyperion_fgs_params
+def test_fgs_params():
+    return HyperionSpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
+        )
+    )
+
+
+@pytest.fixture
+def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
+    test_fgs_params.features.use_panda_for_gridscan = True
+    return test_fgs_params
 
 
 @pytest.fixture

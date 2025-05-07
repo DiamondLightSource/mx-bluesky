@@ -37,7 +37,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
