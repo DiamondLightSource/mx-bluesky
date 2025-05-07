@@ -39,7 +39,7 @@ class ExperimentRegistryEntry(TypedDict):
 
 
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
-    "grid_detect_then_xray_centre": {
+    "hyperion_grid_detect_then_xray_centre": {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "param_type": GridScanWithEdgeDetect,
     },
