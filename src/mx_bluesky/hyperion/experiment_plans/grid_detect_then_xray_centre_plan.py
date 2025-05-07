@@ -10,14 +10,10 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
-    GridDetectionCallback,
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
-from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -42,10 +38,10 @@ def create_devices(
 
 
 def create_parameters_for_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridCommon,
+    parameters: GridCommon,
     grid_parameters: GridParamUpdate,
 ) -> HyperionSpecifiedThreeDGridScan:
-    params_json = grid_scan_with_edge_params.model_dump()
+    params_json = parameters.model_dump()
     params_json.update(grid_parameters)
     flyscan_xray_centre_parameters = HyperionSpecifiedThreeDGridScan(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
@@ -87,32 +83,17 @@ def hyperion_grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
 
-    grid_params_callback = GridDetectionCallback()
-
-    xrc_params = create_parameters_for_flyscan_xray_centre(
-        parameters, grid_params_callback.get_grid_parameters()
-    )
-
     xrc_composite = create_hyperion_xrc_composite(composite)
 
-    params = create_parameters_for_flyscan_xray_centre(
-        parameters, grid_params_callback.get_grid_parameters()
-    )
-
-    beamline_specific = construct_hyperion_specific_features(xrc_composite, params)
-
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite, params.transmission_frac
-    )
     @verify_undulator_gap_before_run_decorator(composite)
-    def plan_to_execute():
+    def plan_to_perform():
         yield from grid_detect_then_xray_centre(
             composite=composite,
             parameters=parameters,
             xrc_composite=xrc_composite,
-            xrc_params=xrc_params,
-            beamline_specific=beamline_specific,
+            setup_xrc_params=create_parameters_for_flyscan_xray_centre,
+            construct_beamline_specific=construct_hyperion_specific_features,
             oav_config=oav_config,
         )
 
-    yield from plan_to_execute()
+    yield from plan_to_perform()
