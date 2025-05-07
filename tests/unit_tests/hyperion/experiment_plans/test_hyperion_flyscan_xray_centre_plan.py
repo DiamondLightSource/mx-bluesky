@@ -33,7 +33,6 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedException,
-    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -69,16 +68,6 @@ def fgs_params_use_panda(
     feature_flags.use_panda_for_gridscan = True
     hyperion_fgs_params.features = feature_flags
     return hyperion_fgs_params
-
-
-@pytest.fixture
-def beamline_specific(
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-) -> BeamlineSpecificFGSFeatures:
-    return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
-    )
 
 
 def _custom_msg(command_name: str):
