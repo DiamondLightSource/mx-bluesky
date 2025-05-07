@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Protocol
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -29,6 +30,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
+    GridParamUpdate,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
@@ -42,6 +44,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
 
@@ -49,8 +54,8 @@ def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
     xrc_composite: FlyScanEssentialDevices,
-    xrc_params: SpecifiedThreeDGridScan,
-    beamline_specific: BeamlineSpecificFGSFeatures,
+    setup_xrc_params: SetupXRCParamsAfterGridDetect,
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
@@ -74,8 +79,8 @@ def grid_detect_then_xray_centre(
                 parameters,
                 oav_params,
                 xrc_composite,
-                xrc_params,
-                beamline_specific,
+                setup_xrc_params,
+                construct_beamline_specific,
             ),
             parameters,
         )
@@ -105,8 +110,8 @@ def detect_grid_and_do_gridscan(
     parameters: GridCommon,
     oav_params: OAVParameters,
     xrc_composite: FlyScanEssentialDevices,
-    xrc_params: SpecifiedThreeDGridScan,
-    beamline_specific: BeamlineSpecificFGSFeatures,
+    setup_xrc_params: SetupXRCParamsAfterGridDetect,
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
@@ -165,5 +170,31 @@ def detect_grid_and_do_gridscan(
     #     zocalo=composite.zocalo,
     #     smargon=composite.smargon,
     # )
+    xrc_params = setup_xrc_params(
+        parameters, grid_params_callback.get_grid_parameters()
+    )
+    beamline_specific = construct_beamline_specific(xrc_composite, xrc_params)
 
-    yield from common_flyscan_xray_centre(xrc_composite, xrc_params, beamline_specific)
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite, xrc_params.transmission_frac
+    )
+    def plan_to_perform():
+        yield from common_flyscan_xray_centre(
+            xrc_composite, xrc_params, beamline_specific
+        )
+
+    yield from plan_to_perform()
+
+
+class SetupXRCParamsAfterGridDetect(Protocol):
+    def __call__(
+        self, parameters: GridCommon, grid_parameters: GridParamUpdate
+    ) -> SpecifiedThreeDGridScan: ...
+
+
+class ConstructBeamlineSpecificFeatures(Protocol):
+    def __call__(
+        self,
+        xrc_composite: FlyScanEssentialDevices,
+        xrc_parameters: SpecifiedThreeDGridScan,
+    ) -> BeamlineSpecificFGSFeatures: ...
