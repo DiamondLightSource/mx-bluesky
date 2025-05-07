@@ -12,6 +12,7 @@ from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
@@ -51,6 +52,7 @@ class RobotLoadAndEnergyChangeComposite:
     oav: OAV
     smargon: Smargon
     aperture_scatterguard: ApertureScatterguard
+    backlight: Backlight
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadAndEnergyChangeComposite:
@@ -168,6 +170,8 @@ def robot_load_and_snapshots(
     thawing_time: float,
     demand_energy_ev: float | None,
 ):
+    yield from bps.abs_set(composite.backlight, BacklightPosition.IN, group="snapshot")
+
     robot_load_plan = do_robot_load(
         composite,
         location,
@@ -190,6 +194,8 @@ def robot_load_and_snapshots(
         ),
         except_plan=raise_exception_if_moved_out_of_cryojet,
     )
+
+    yield from bps.wait(group="snapshot")
 
     yield from take_robot_snapshots(composite.oav, composite.webcam, snapshot_directory)
 

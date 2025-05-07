@@ -12,7 +12,7 @@ from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 
 
 @pytest.fixture
-def mock_gonio():
+def mock_gonio(RE: RunEngine):
     with init_devices(mock=True):
         gonio = SixAxisGonio("", name="gonio")
     patch_motor(gonio.x)

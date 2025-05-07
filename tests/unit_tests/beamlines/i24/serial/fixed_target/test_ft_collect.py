@@ -300,12 +300,18 @@ def test_finish_i24(
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-def test_run_aborted_plan(fake_dcid: MagicMock, pmac: PMAC, RE, done_status):
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
+def test_run_aborted_plan(
+    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, RE, done_status
+):
     pmac.abort_program.trigger = MagicMock(return_value=done_status)
-    RE(run_aborted_plan(pmac, fake_dcid))
+    RE(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
 
     pmac.abort_program.trigger.assert_called_once()
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
+    assert "Test Exception" in mock_log.warning.mock_calls[0].args[0]
 
 
 @patch(

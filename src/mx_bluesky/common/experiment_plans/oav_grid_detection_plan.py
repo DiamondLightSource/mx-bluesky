@@ -14,13 +14,13 @@ from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
 from dodal.devices.oav.utils import PinNotFoundException, wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.device_setup_plans.setup_oav import (
+    pre_centring_setup_oav,
+)
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, HardwareConstants
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.setup_oav import (
-    pre_centring_setup_oav,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
@@ -103,7 +103,7 @@ def grid_detection_plan(
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
-        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
+        yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from catch_exception_and_warn(
             PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detection
@@ -163,7 +163,7 @@ def grid_detection_plan(
         yield from bps.abs_set(oav.grid_snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.grid_snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.grid_snapshot, wait=True)
-        yield from bps.create(CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED)
+        yield from bps.create(DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED)
 
         yield from bps.read(oav)
         yield from bps.read(smargon)

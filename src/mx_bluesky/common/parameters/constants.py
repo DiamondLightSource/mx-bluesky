@@ -90,6 +90,7 @@ class GridscanParamConstants:
     OMEGA_1 = 0.0
     OMEGA_2 = 90.0
     PANDA_RUN_UP_DISTANCE_MM = 0.2
+    ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
 
 @dataclass(frozen=True)

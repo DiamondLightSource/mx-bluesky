@@ -21,7 +21,7 @@ def call_nexgen(
     parameters: ExtruderParameters | FixedTargetParameters,
     wavelength_in_a: float,
     beam_center_in_pix: tuple[float, float],
-    start_time: datetime | None = None,
+    start_time: datetime,
 ):
     """Call the nexus writer by sending a request to nexgen-server.
 
@@ -32,7 +32,7 @@ def call_nexgen(
         parameters (SerialAndLaserExperiment): Collection parameters.
         wavelength_in_a (float): Wavelength, in A.
         beam_center_in_pix (list[float]): Beam center position on detector, in pixels.
-        start_time (datetime, optional): Collection start time.
+        start_time (datetime): Collection start time.
 
     Raises:
         ValueError: For a wrong experiment type passed (either unknwon or not matched \
@@ -96,7 +96,7 @@ def call_nexgen(
         "visitpath": os.fspath(meta_h5.parent),
         "wavelength": wavelength_in_a,
         "bit_depth": bit_depth,
-        "start_time": start_time,
+        "start_time": start_time.isoformat(),
     }
     SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
     SSX_LOGGER.info(pprint.pformat(payload))
