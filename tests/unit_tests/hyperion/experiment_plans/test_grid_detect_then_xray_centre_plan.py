@@ -67,7 +67,7 @@ def grid_detect_devices_with_oav_config_params(
     "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
-async def test_detect_grid_and_do_gridscan(
+async def test_detect_grid_and_do_gridscan_in_real_RE(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,

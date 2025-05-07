@@ -113,7 +113,7 @@ def detect_grid_and_do_gridscan(
         yield from bps.prepare(
             composite.aperture_scatterguard,
             parameters.selected_aperture,
-            group="prepare_aperture",
+            group=CONST.WAIT.PREPARE_APERTURE,
         )
 
     yield from run_grid_detection_plan(
@@ -126,7 +126,7 @@ def detect_grid_and_do_gridscan(
         composite.backlight, BacklightPosition.OUT, group=CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    yield from bps.wait("prepare_aperture")
+    yield from bps.wait(CONST.WAIT.PREPARE_APERTURE)
     yield from move_aperture_if_required(
         composite.aperture_scatterguard,
         parameters.selected_aperture,
