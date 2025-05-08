@@ -37,7 +37,6 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     setup_sample_environment,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -215,7 +214,6 @@ def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationScan,
     motion_values: RotationMotionProfile,
-    oav_params: OAVParameters = OavConstants.OAV_CONFIG_JSON,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
     about a fixed axis - for now this axis is limited to omega.
@@ -231,7 +229,6 @@ def rotation_scan_plan(
     def _rotation_scan_plan(
         motion_values: RotationMotionProfile,
         composite: RotationScanComposite,
-        oav_params: OAVParameters,
     ):
         axis = composite.smargon.omega
 
@@ -306,7 +303,7 @@ def rotation_scan_plan(
             composite.eiger,
         )
 
-    yield from _rotation_scan_plan(motion_values, composite, oav_params)
+    yield from _rotation_scan_plan(motion_values, composite)
 
 
 def _cleanup_plan(composite: RotationScanComposite, **kwargs):
@@ -359,7 +356,7 @@ def _move_and_rotation(
                 group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
-    yield from rotation_scan_plan(composite, params, motion_values, oav_params)
+    yield from rotation_scan_plan(composite, params, motion_values)
 
 
 def multi_rotation_scan(
