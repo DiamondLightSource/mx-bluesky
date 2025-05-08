@@ -50,6 +50,7 @@ def load_centre_collect_full(
     """
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
+    oav_config_file = oav_params.oav_config_json
 
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
@@ -64,7 +65,9 @@ def load_centre_collect_full(
     def plan_with_callback_subs():
         flyscan_event_handler = XRayCentreEventHandler()
         yield from subs_wrapper(
-            robot_load_then_xray_centre(composite, parameters.robot_load_then_centre),
+            robot_load_then_xray_centre(
+                composite, parameters.robot_load_then_centre, oav_config_file
+            ),
             flyscan_event_handler,
         )
 

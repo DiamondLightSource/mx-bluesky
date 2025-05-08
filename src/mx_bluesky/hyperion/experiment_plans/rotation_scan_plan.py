@@ -356,11 +356,7 @@ def _move_and_rotation(
                 group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
-    yield from rotation_scan_plan(
-        composite,
-        params,
-        motion_values,
-    )
+    yield from rotation_scan_plan(composite, params, motion_values)
 
 
 def multi_rotation_scan(
