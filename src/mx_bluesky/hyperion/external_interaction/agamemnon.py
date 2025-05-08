@@ -132,8 +132,33 @@ def populate_parameters_from_agamemnon(agamemnon_params):
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
-    first_collection = agamemnon_params["collection"][0]
+    collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
+
+    rotation_scan_per_sweeps = [
+        {
+            "scan_width_deg": (
+                collection["number_of_images"] * collection["omega_increment"]
+            ),
+            "omega_start_deg": collection["omega_start"],
+            "phi_start_deg": collection["phi_start"],
+            "chi_start_deg": collection["chi"],
+            "rotation_direction": "Positive",
+        }
+        for collection in collections
+    ]
+    first_collection = collections[0]
+
+    for field in [
+        "exposure_time",
+        "transmission",
+        "omega_increment",
+        "experiment_type",
+    ]:
+        assert all(c[field] == first_collection[field] for c in collections), (
+            f"All collections must have the same {field}"
+        )
+
     return LoadCentreCollect.model_validate(
         {
             "parameter_model_version": get_param_version(),
@@ -166,18 +191,7 @@ def populate_parameters_from_agamemnon(agamemnon_params):
                 "rotation_increment_deg": first_collection["omega_increment"],
                 "ispyb_experiment_type": first_collection["experiment_type"],
                 "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
-                "rotation_scans": [
-                    {
-                        "scan_width_deg": (
-                            first_collection["number_of_images"]
-                            * first_collection["omega_increment"]
-                        ),
-                        "omega_start_deg": first_collection["omega_start"],
-                        "phi_start_deg": first_collection["phi_start"],
-                        "chi_start_deg": first_collection["chi"],
-                        "rotation_direction": "Positive",
-                    }
-                ],
+                "rotation_scans": rotation_scan_per_sweeps,
                 **with_energy_params,
             },
         }
