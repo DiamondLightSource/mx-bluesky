@@ -378,20 +378,24 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert rotation_params.detector_params.omega_start == 0.0
     assert rotation_params.detector_params.exposure_time_s == 0.002
     assert rotation_params.detector_params.num_images_per_trigger == 3600
-    assert rotation_params.num_images == 3600
+    assert rotation_params.num_images == 7200
     assert rotation_params.transmission_frac == 0.5
     assert rotation_params.comment == "Complete_P1_sweep1 "
-    assert rotation_params.ispyb_experiment_type == "Characterization"
+    assert rotation_params.ispyb_experiment_type == "OSC"
 
     assert rotation_params.sample_puck == 40
     assert rotation_params.sample_pin == 3
 
     individual_scans = list(rotation_params.single_rotation_scans)
-    assert len(individual_scans) == 1
+    assert len(individual_scans) == 2
     assert individual_scans[0].scan_points["omega"][1] == 0.1
     assert individual_scans[0].phi_start_deg == 0.0
     assert individual_scans[0].chi_start_deg == 0.0
     assert individual_scans[0].rotation_direction == RotationDirection.POSITIVE
+    assert individual_scans[1].scan_points["omega"][1] == 0.1
+    assert individual_scans[1].phi_start_deg == 0.0
+    assert individual_scans[1].chi_start_deg == 30.0
+    assert individual_scans[1].rotation_direction == RotationDirection.POSITIVE
 
     assert rotation_params.demand_energy_ev == 12700.045934258673
     assert str(rotation_params.parameter_model_version) == "5.3.0"
@@ -418,7 +422,7 @@ def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_popuplate_parameters_creates_multiple_rotations_for_native_collection(
+def test_populate_parameters_creates_multiple_rotations_for_native_collection(
     agamemnon_response,
 ):
     agamemnon_params = get_next_instruction("i03")

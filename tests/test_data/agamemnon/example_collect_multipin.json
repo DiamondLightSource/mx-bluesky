@@ -4,7 +4,7 @@
             {
                 "chi": 0.0,
                 "comment": "Complete_P1_sweep1 ",
-                "experiment_type": "Characterization",
+                "experiment_type": "OSC",
                 "centring_mode": "XRAY",
                 "distance": 180.8,
                 "resolution": 1.4,
