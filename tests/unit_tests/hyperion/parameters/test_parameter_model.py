@@ -6,13 +6,13 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    create_parameters_for_flyscan_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    create_parameters_for_flyscan_xray_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
 )
@@ -250,8 +250,11 @@ def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
     )
     assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
     flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
-        grid_detect_then_xrc_params, get_empty_grid_parameters()
+        grid_detect_then_xrc_params,
+        get_empty_grid_parameters(),
+        HyperionSpecifiedThreeDGridScan,
     )
+    assert type(flyscan_xrc_params) is HyperionSpecifiedThreeDGridScan
     assert flyscan_xrc_params.detector_params.enable_dev_shm
     assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
     assert flyscan_xrc_params.features.use_panda_for_gridscan

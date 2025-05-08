@@ -402,7 +402,7 @@ def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str
 @pytest.fixture
 def grid_detection_callback_with_detected_grid():
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
         autospec=True,
     ) as callback:
         callback.return_value.get_grid_parameters.return_value = {
