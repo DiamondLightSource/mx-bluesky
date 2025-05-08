@@ -1,8 +1,4 @@
-from unittest.mock import MagicMock, call
-
 import pytest
-from bluesky import plan_stubs as bps
-from bluesky.protocols import Movable
 from dodal.devices.zebra.zebra import (
     I03Axes,
     Zebra,
@@ -13,7 +9,6 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 )
 
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
-    bluesky_retry,
     configure_zebra_and_shutter_for_auto_shutter,
     setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
@@ -85,36 +80,6 @@ async def test_zebra_cleanup(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
 
 class MyException(Exception):
     pass
-
-
-def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
-    mock_device = MagicMock(spec=Movable)
-
-    @bluesky_retry
-    def my_plan(value):
-        yield from bps.abs_set(mock_device, value)
-
-    mock_device.set.side_effect = [MyException(), done_status]
-
-    RE(my_plan(10))
-
-    assert mock_device.set.mock_calls == [call(10), call(10)]
-
-
-def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE, done_status):
-    mock_device = MagicMock(spec=Movable)
-
-    @bluesky_retry
-    def my_plan(value):
-        yield from bps.abs_set(mock_device, value)
-
-    exception_2 = MyException()
-    mock_device.set.side_effect = [MyException(), exception_2]
-
-    with pytest.raises(MyException) as e:
-        RE(my_plan(10))
-
-    assert e.value == exception_2
 
 
 async def test_configure_zebra_and_shutter_for_auto(
