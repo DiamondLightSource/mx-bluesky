@@ -414,7 +414,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, test_fgs_params: HyperionSpecifiedThreeDGridScan
+    mock_setup, hyperion_fgs_params: HyperionSpecifiedThreeDGridScan
 ):
     mock_setup = MagicMock()
     with patch.dict(
@@ -429,7 +429,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(lambda: None, test_fgs_params, "multi_rotation_scan")
+        runner.start(lambda: None, hyperion_fgs_params, "multi_rotation_scan")
         mock_setup.assert_called_once()
         runner.shutdown()
 

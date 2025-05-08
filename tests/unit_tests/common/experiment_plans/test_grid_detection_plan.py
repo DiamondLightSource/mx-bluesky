@@ -240,7 +240,8 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
         RE(
             ispyb_activation_wrapper(
-                do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+                do_grid_and_edge_detect(composite, params, tmp_path),
+                test_fgs_params,
             )
         )
 

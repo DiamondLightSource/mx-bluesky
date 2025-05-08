@@ -32,7 +32,6 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
-    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -48,12 +47,13 @@ def _fake_flyscan(*args):
 
 
 def test_full_grid_scan(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan, test_config_files: dict[str, str]
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_config_files: dict[str, str],
 ):
     devices = MagicMock()
     plan = hyperion_grid_detect_then_xray_centre(
         devices,
-        cast(GridScanWithEdgeDetect, test_fgs_params),
+        cast(GridScanWithEdgeDetect, hyperion_fgs_params),
         test_config_files["oav_config_json"],
     )
     assert isinstance(plan, Generator)
@@ -71,7 +71,7 @@ def construct_beamline_specific(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
-async def test_detect_grid_and_do_gridscan(
+async def test_detect_grid_and_do_gridscan_in_real_RE(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
@@ -221,40 +221,6 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     assert not activations
 
 
-@pytest.mark.timeout(2)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
-    autospec=True,
-    side_effect=_fake_flyscan,
-)
-def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
-    mock_flyscan: MagicMock,
-    mock_change_aperture_then_move_to_xtal: MagicMock,
-    grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
-    test_full_grid_scan_params: GridScanWithEdgeDetect,
-    test_config_files: dict[str, str],
-    pin_tip_detection_with_found_pin: PinTipDetection,
-    RE: RunEngine,
-):
-    RE(
-        hyperion_grid_detect_then_xray_centre(
-            grid_detect_devices_with_oav_config_params,
-            test_full_grid_scan_params,
-            test_config_files["oav_config_json"],
-        )
-    )
-    mock_change_aperture_then_move_to_xtal.assert_called_once()
-
-    assert (
-        mock_change_aperture_then_move_to_xtal.mock_calls[0].args[0]
-        == FLYSCAN_RESULT_MED
-    )
-
-
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
@@ -262,8 +228,9 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
+    side_effect=_fake_flyscan,
 )
-def test_grid_detect_then_xray_centre_activates_ispyb_callback(
+def msgs_from_simulated_grid_detect_then_xray_centre(
     mock_flyscan,
     mock_grid_detection_plan,
     sim_run_engine: RunEngineSimulator,
@@ -304,7 +271,7 @@ def test_grid_detect_then_xray_centre_activates_ispyb_callback(
             ]
         ],
     )
-    msgs = sim_run_engine.simulate_plan(
+    return sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
             grid_detect_devices_with_oav_config_params,
             test_full_grid_scan_params,
@@ -314,8 +281,61 @@ def test_grid_detect_then_xray_centre_activates_ispyb_callback(
         )
     )
 
+
+def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
+    msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
+):
+    msgs = assert_message_and_return_remaining(
+        msgs_from_simulated_grid_detect_then_xray_centre,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-x"
+        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-y"
+        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
+    )
     assert_message_and_return_remaining(
         msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon-z"
+        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
+    )
+
+
+def test_grid_detect_then_xray_centre_activates_ispyb_callback(
+    msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
+):
+    assert_message_and_return_remaining(
+        msgs_from_simulated_grid_detect_then_xray_centre,
         lambda msg: msg.command == "open_run"
         and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+    )
+
+
+def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_moving_in(
+    msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
+):
+    msgs = assert_message_and_return_remaining(
+        msgs_from_simulated_grid_detect_then_xray_centre,
+        lambda msg: msg.command == "prepare"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == ApertureValue.SMALL,
+    )
+
+    aperture_prepare_group = msgs[0].kwargs.get("group")
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == aperture_prepare_group,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL,
     )

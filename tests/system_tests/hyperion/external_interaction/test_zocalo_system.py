@@ -1,12 +1,11 @@
 import re
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
+from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
 from mx_bluesky.common.experiment_plans.read_hardware import read_hardware_for_zocalo
@@ -78,9 +77,6 @@ def run_zocalo_with_dev_ispyb(
             )
             def inner_plan():
                 yield from fake_fgs_plan(eiger)
-                yield from bps.trigger_and_read(
-                    [zocalo_for_fake_zocalo], name=ZOCALO_READING_PLAN_NAME
-                )
 
             yield from inner_plan()
 
@@ -115,16 +111,6 @@ async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_t
 
 
 @pytest.mark.system_test
-async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("NO_DIFF")
-
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Zocalo found no crystals in this gridscan." in comment
-
-
-@pytest.mark.system_test
 async def test_zocalo_adds_nonzero_comment_time(
     run_zocalo_with_dev_ispyb, fetch_comment
 ):
@@ -136,26 +122,3 @@ async def test_zocalo_adds_nonzero_comment_time(
     time_s = float(match.group(1))
     assert time_s > 0
     assert time_s < 180
-
-
-@pytest.mark.system_test
-async def test_given_a_single_crystal_result_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Crystal 1" in comment
-    assert "Strength" in comment
-    assert "Size (grid boxes)" in comment
-
-
-@pytest.mark.system_test
-async def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
-    run_zocalo_with_dev_ispyb, fetch_comment
-):
-    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("MULTI_X")
-
-    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert "Crystal 1" and "Crystal 2" in comment
-    assert "Strength" in comment
-    assert "Position (grid boxes)" in comment

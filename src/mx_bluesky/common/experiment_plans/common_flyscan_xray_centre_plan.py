@@ -14,7 +14,6 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
     XrcResult,
     get_full_processing_results,
 )
@@ -185,38 +184,28 @@ def _fetch_xrc_results_from_zocalo(
 
     LOGGER.info("Getting X-ray center Zocalo results...")
 
-    @bpp.set_run_key_decorator(ZOCALO_READING_PLAN_NAME)
-    @bpp.run_decorator(md={"subplan_name": ZOCALO_READING_PLAN_NAME})
-    def _inner():
-        with TRACER.start_span("wait_for_zocalo"):
-            yield from bps.trigger_and_read(
-                [zocalo_results], name=ZOCALO_READING_PLAN_NAME
-            )
-            LOGGER.info("Zocalo triggered and read, interpreting results.")
-            xrc_results = yield from get_full_processing_results(zocalo_results)
-            LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
-            filtered_results = [
-                result
-                for result in xrc_results
-                if result["total_count"]
-                >= GridscanParamConstants.ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
-            ]
-            discarded_count = len(xrc_results) - len(filtered_results)
-            if discarded_count > 0:
-                LOGGER.info(
-                    f"Removed {discarded_count} results because below threshold"
-                )
-            if filtered_results:
-                flyscan_results = [
-                    _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
-                    for xr in filtered_results
-                ]
-            else:
-                LOGGER.warning("No X-ray centre received")
-                raise CrystalNotFoundException()
-            yield from _fire_xray_centre_result_event(flyscan_results)
-
-    yield from _inner()
+    yield from bps.trigger(zocalo_results)
+    LOGGER.info("Zocalo triggered and read, interpreting results.")
+    xrc_results = yield from get_full_processing_results(zocalo_results)
+    LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
+    filtered_results = [
+        result
+        for result in xrc_results
+        if result["total_count"]
+        >= GridscanParamConstants.ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
+    ]
+    discarded_count = len(xrc_results) - len(filtered_results)
+    if discarded_count > 0:
+        LOGGER.info(f"Removed {discarded_count} results because below threshold")
+    if filtered_results:
+        flyscan_results = [
+            _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
+            for xr in filtered_results
+        ]
+    else:
+        LOGGER.warning("No X-ray centre received")
+        raise CrystalNotFoundException()
+    yield from _fire_xray_centre_result_event(flyscan_results)
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
