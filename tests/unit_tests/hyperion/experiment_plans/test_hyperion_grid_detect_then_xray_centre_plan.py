@@ -2,12 +2,8 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
-from mx_bluesky.common.parameters.constants import (
-    PlanNameConstants,
-)
 from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     hyperion_grid_detect_then_xray_centre,
 )
@@ -17,14 +13,9 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
 )
-from tests.conftest import (
-    RunEngineSimulator,
-)
 from tests.unit_tests.common.plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
 )
-
-from ....conftest import TEST_RESULT_LARGE, simulate_xrc_result
 
 
 class TestHyperionGridDetectThenXrayCentrePlan:
@@ -40,8 +31,10 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
         autospec=True,
     )
+    @patch("bluesky.plan_stubs.sleep", autospec=True)
     def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
         self,
+        mock_sleep,
         mock_common_flyscan_xray_centre: MagicMock,
         mock_unpause_and_set_transmission: MagicMock,
         mock_check_and_pause: MagicMock,
@@ -65,60 +58,28 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.bps.wait"
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     )
     @patch(
-        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.bps.abs_set",
     )
-    def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
-        self,
-        mock_check_topup,
-        mock_wait,
-        sim_run_engine: RunEngineSimulator,
-        test_full_grid_scan_params: GridScanWithEdgeDetect,
-        grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
-        test_config_files,
-    ):
-        simulate_xrc_result(
-            sim_run_engine,
-            grid_detect_devices_with_oav_config_params.zocalo,
-            TEST_RESULT_LARGE,
-        )
-
-        msgs = sim_run_engine.simulate_plan(
-            hyperion_grid_detect_then_xray_centre(
-                grid_detect_devices_with_oav_config_params,
-                test_full_grid_scan_params,
-                test_config_files["oav_config_json"],
-            )
-        )
-
-        # Assert order: pause -> open run -> close run -> unpause (set attenuator)
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "open_run"
-            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
-        )
-
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "close_run"
-            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
-        )
-
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "attenuator"
-            and msg.args == (1.0,),
-        )
-
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.move_aperture_if_required",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.stage",
+    )
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo",
     )
     @patch(
         "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
@@ -126,13 +87,22 @@ class TestHyperionGridDetectThenXrayCentrePlan:
     def test_hyperion_grid_detect_then_xray_centre_does_undulator_check_before_collection(
         self,
         mock_verify_gap: MagicMock,
-        mock_plan: MagicMock,
+        mock_fetch_zocalo_results: MagicMock,
+        mock_run_gridscan: MagicMock,
+        mock_bps_stage: MagicMock,
+        mock_create_parameters: MagicMock,
+        mock_grid_params_callback: MagicMock,
+        mock_move_aperture_if_required: MagicMock,
+        mock_bps_abs_set: MagicMock,
+        mock_grid_detection_plan: MagicMock,
         RE: RunEngine,
         test_full_grid_scan_params: GridScanWithEdgeDetect,
         grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
         test_config_files,
+        hyperion_fgs_params,
     ):
-        mock_plan.side_effect = CompleteException
+        mock_create_parameters.return_value = hyperion_fgs_params
+        mock_run_gridscan.side_effect = CompleteException
         with pytest.raises(CompleteException):
             RE(
                 hyperion_grid_detect_then_xray_centre(
