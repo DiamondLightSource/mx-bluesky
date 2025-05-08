@@ -3,6 +3,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
@@ -36,23 +37,25 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+        autospec=True,
     )
     def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
         self,
-        fake_run_gridscan: MagicMock,
+        mock_common_flyscan_xray_centre: MagicMock,
         mock_unpause_and_set_transmission: MagicMock,
         mock_check_and_pause: MagicMock,
-        grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
+        grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
         test_full_grid_scan_params: GridScanWithEdgeDetect,
         test_config_files,
+        pin_tip_detection_with_found_pin: PinTipDetection,
         RE: RunEngine,
     ):
-        fake_run_gridscan.side_effect = Exception
+        mock_common_flyscan_xray_centre.side_effect = Exception
         with pytest.raises(Exception):  # noqa: B017
             RE(
                 hyperion_grid_detect_then_xray_centre(
-                    grid_detect_devices,
+                    grid_detect_devices_with_oav_config_params,
                     test_full_grid_scan_params,
                     test_config_files["oav_config_json"],
                 )
@@ -73,16 +76,18 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         mock_wait,
         sim_run_engine: RunEngineSimulator,
         test_full_grid_scan_params: GridScanWithEdgeDetect,
-        grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
+        grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
         test_config_files,
     ):
         simulate_xrc_result(
-            sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE
+            sim_run_engine,
+            grid_detect_devices_with_oav_config_params.zocalo,
+            TEST_RESULT_LARGE,
         )
 
         msgs = sim_run_engine.simulate_plan(
             hyperion_grid_detect_then_xray_centre(
-                grid_detect_devices,
+                grid_detect_devices_with_oav_config_params,
                 test_full_grid_scan_params,
                 test_config_files["oav_config_json"],
             )
@@ -124,14 +129,14 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         mock_plan: MagicMock,
         RE: RunEngine,
         test_full_grid_scan_params: GridScanWithEdgeDetect,
-        grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
+        grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
         test_config_files,
     ):
         mock_plan.side_effect = CompleteException
         with pytest.raises(CompleteException):
             RE(
                 hyperion_grid_detect_then_xray_centre(
-                    grid_detect_devices,
+                    grid_detect_devices_with_oav_config_params,
                     test_full_grid_scan_params,
                     test_config_files["oav_config_json"],
                 )
