@@ -15,7 +15,6 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -29,31 +28,6 @@ def create_devices(
 ) -> HyperionGridDetectThenXRayCentreComposite:
     return device_composite_from_context(
         context, HyperionGridDetectThenXRayCentreComposite
-    )
-
-
-def create_hyperion_xrc_composite(
-    composite: HyperionGridDetectThenXRayCentreComposite,
-):
-    return HyperionFlyScanXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        eiger=composite.eiger,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
-        flux=composite.flux,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        smargon=composite.smargon,
-        undulator=composite.undulator,
-        synchrotron=composite.synchrotron,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-        panda=composite.panda,
-        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
-        dcm=composite.dcm,
-        robot=composite.robot,
-        sample_shutter=composite.sample_shutter,
     )
 
 
