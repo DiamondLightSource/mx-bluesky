@@ -26,7 +26,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     hyperion_grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
