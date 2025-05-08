@@ -24,10 +24,9 @@ def mock_gonio(RE: RunEngine):
 
 
 @pytest.fixture
-def mock_detector():
+def mock_detector(RE: RunEngine):
     with init_devices(mock=True):
         detector = Positioner1D("", I23DetectorPositions)
-    patch_motor(detector._stage_motion)
     return detector
 
 
@@ -137,6 +136,22 @@ def test_omega_set_to_0_at_max_velo_during_grid_move(
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "test"
+    )
+
+
+def test_detector_moves_in_at_experiment_start(
+    sim_run_engine: RunEngineSimulator,
+    mock_detector: Positioner1D,
+    mock_gonio: SixAxisGonio,
+):
+    msgs = sim_run_engine.simulate_plan(
+        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_detector, mock_gonio)
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "detector-stage_position"
+        and msg.args[0] == "In",
     )
 
 
