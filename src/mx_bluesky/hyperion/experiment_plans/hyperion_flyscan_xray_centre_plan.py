@@ -12,8 +12,6 @@ from dodal.devices.fast_grid_scan import (
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_FGS_features,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -36,14 +34,12 @@ class SmargonSpeedException(Exception):
 
 
 def construct_hyperion_specific_features(
-    xrc_composite: FlyScanEssentialDevices,
-    xrc_parameters: SpecifiedThreeDGridScan,
+    xrc_composite: HyperionFlyScanXRayCentreComposite,
+    xrc_parameters: HyperionSpecifiedThreeDGridScan,
 ):
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
     """
-    assert isinstance(xrc_composite, HyperionFlyScanXRayCentreComposite)
-    assert isinstance(xrc_parameters, HyperionSpecifiedThreeDGridScan)
     signals_to_read_pre_flyscan = [
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
