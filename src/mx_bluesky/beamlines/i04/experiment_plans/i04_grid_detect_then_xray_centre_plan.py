@@ -21,6 +21,9 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
@@ -31,9 +34,6 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     _generic_tidy,
     _zebra_triggering_setup,
 )
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 
 
 def create_devices(
@@ -43,23 +43,26 @@ def create_devices(
 
 
 def i04_grid_detect_then_xray_centre(
-    composite: HyperionGridDetectThenXRayCentreComposite,
+    composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
-    A plan which combines the collection of snapshots from the OAV and the determination
+    An plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
 
     @verify_undulator_gap_before_run_decorator(composite)
     def plan_to_perform():
-        yield from grid_detect_then_xray_centre(
-            composite=composite,
-            parameters=parameters,
-            xrc_params_type=SpecifiedThreeDGridScan,
-            construct_beamline_specific=construct_i04_specific_features,
-            oav_config=oav_config,
+        yield from ispyb_activation_wrapper(
+            grid_detect_then_xray_centre(
+                composite=composite,
+                parameters=parameters,
+                xrc_params_type=SpecifiedThreeDGridScan,
+                construct_beamline_specific=construct_i04_specific_features,
+                oav_config=oav_config,
+            ),
+            parameters,
         )
 
     yield from plan_to_perform()
