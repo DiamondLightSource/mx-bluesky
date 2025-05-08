@@ -67,11 +67,10 @@ def _setup_oav(
 
 def _generate_oav_snapshots(composite: OavSnapshotComposite, params: WithSnapshot):
     """Generate rotation snapshots from previously captured grid snapshots"""
-    for omega in 0, 270:
-        snapshot_path = str(
-            params.snapshot_directory / (_snapshot_filename(omega) + ".png")
-        )
-        yield from bps.abs_set(composite.oav.snapshot.last_saved_path, snapshot_path)
+    yield from bps.abs_set(
+        composite.oav.snapshot.directory, str(params.snapshot_directory)
+    )
+    for _ in 0, 270:
         yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
         yield from bps.read(composite.oav)
         yield from bps.read(composite.smargon)

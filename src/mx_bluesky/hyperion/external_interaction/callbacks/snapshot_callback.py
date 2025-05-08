@@ -1,7 +1,9 @@
 import dataclasses
 import re
 from collections.abc import Iterator
-from math import cos, pi, sin
+from datetime import datetime
+from math import cos, radians, sin
+from pathlib import Path
 
 from dodal.devices.oav.snapshots.snapshot_image_processing import (
     compute_beam_centre_pixel_xy_for_mm_position,
@@ -16,6 +18,8 @@ from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callb
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK_LOGGER
+
+COMPRESSION_LEVEL = 6
 
 
 @dataclasses.dataclass
@@ -167,7 +171,14 @@ class BeamDrawingCallback(PlanReactiveCallback):
             CALLBACK_LOGGER.info(
                 f"Generating snapshot at {current_sample_pos_mm} from base snapshot {snapshot_info}"
             )
-            output_snapshot_path = data["oav-snapshot-last_saved_path"]
+            output_snapshot_directory = data["oav-snapshot-directory"]
+            base_file_stem = Path(snapshot_info.snapshot_path).stem
+            output_snapshot_filename = _snapshot_filename(
+                base_file_stem, snapshot_info.omega
+            )
+            output_snapshot_path = (
+                f"{output_snapshot_directory}/{output_snapshot_filename}.png"
+            )
             self._generate_snapshot_at(
                 snapshot_info,
                 output_snapshot_path,
@@ -185,7 +196,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 snapshot_info,
                 output_snapshot_path,
             )
-            data["oav-snapshot-last_saved_path"] = output_snapshot_path
+        data["oav-snapshot-last_saved_path"] = output_snapshot_path
         return doc
 
     def _image_plane_offset_mm(
@@ -207,7 +218,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
     ) -> tuple[float, float]:
         return (
             xyz[0],
-            xyz[1] * cos(-omega_deg * pi / 180) + xyz[2] * sin(-omega_deg * pi / 180),
+            xyz[1] * cos(-radians(omega_deg)) + xyz[2] * sin(-radians(omega_deg)),
         )
 
     def _generate_snapshot_zero_offset(
@@ -241,4 +252,10 @@ class BeamDrawingCallback(PlanReactiveCallback):
             base_snapshot_info.microns_per_pixel,
         )
         draw_crosshair(image, x_px, y_px)
-        image.save(output_snapshot_path, format="png")
+        image.save(output_snapshot_path, format="png", compress_level=COMPRESSION_LEVEL)
+
+
+def _snapshot_filename(grid_snapshot_name, omega):
+    time_now = datetime.now()
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{grid_snapshot_name}_{omega:.0f}"
+    return filename

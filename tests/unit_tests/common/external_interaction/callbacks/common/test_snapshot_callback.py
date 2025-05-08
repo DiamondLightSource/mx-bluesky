@@ -48,13 +48,23 @@ def oav_with_snapshots(oav: OAV, next_snapshot):
     @AsyncStatus.wrap
     async def fake_trigger(mjpg: MJPG):
         with Image.open(next_snapshot()) as image:
-            await mjpg.post_processing(image)
+            # don't do full post-processing to save on slow PIL image save calls
+            await mjpg._save_image(image)
 
     oav.snapshot.trigger = MagicMock(side_effect=partial(fake_trigger, oav.snapshot))
     oav.grid_snapshot.trigger = MagicMock(
         side_effect=partial(fake_trigger, oav.grid_snapshot)
     )
     yield oav
+
+
+@pytest.fixture(autouse=True)
+def optimise_pil_for_speed():
+    with patch(
+        "mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback.COMPRESSION_LEVEL",
+        1,
+    ):
+        yield
 
 
 def simple_rotation_snapshot_plan(
@@ -93,14 +103,11 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         }
     )
     def rotation_plan(rotation_snapshot_dir: Path, chi: float):
-        for omega in (
+        yield from bps.abs_set(oav.snapshot.directory, str(rotation_snapshot_dir))
+        for _omega in (
             0,
             270,
         ):
-            yield from bps.abs_set(
-                oav.snapshot.last_saved_path,
-                str(rotation_snapshot_dir / f"my_snapshot_prefix_{chi}_{omega}.png"),
-            )
             yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
             yield from bps.read(oav)  # Capture path info for generated snapshot
             yield from bps.read(smargon)  # Capture the current sample x, y, z
@@ -262,8 +269,8 @@ class TestGeneratedSnapshots:
         ]
 
         i = 0
-        for chi in chis:
-            for omega, expected_image_path in zip(
+        for _chi in chis:
+            for _omega, expected_image_path in zip(
                 [0, 270],
                 [
                     f"tests/test_data/test_images/{expected_0_img}",
@@ -271,17 +278,12 @@ class TestGeneratedSnapshots:
                 ],
                 strict=False,
             ):
-                generated_image_path = str(
-                    tmp_path
-                    / f"rotation_snapshots/my_snapshot_prefix_{chi}_{omega}.png"
-                )
+                generated_image_path = rotation_snapshot_events[i][
+                    "oav-snapshot-last_saved_path"
+                ]
                 assert_images_pixelwise_equal(
                     generated_image_path,
                     expected_image_path,
-                )
-                assert (
-                    rotation_snapshot_events[i]["oav-snapshot-last_saved_path"]
-                    == generated_image_path
                 )
                 i += 1
 

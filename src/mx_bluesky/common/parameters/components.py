@@ -123,8 +123,7 @@ class WithSnapshot(BaseModel):
         use_grid_snapshots: This may be specified for rotation snapshots to speed up rotation
             execution. If set to True then rotation snapshots are generated from the
             previously captured grid snapshots. Otherwise they are captured using
-            freshly captured snapshots during the rotation.
-            plan.
+            freshly captured snapshots during the rotation plan.
     """
 
     snapshot_directory: Path

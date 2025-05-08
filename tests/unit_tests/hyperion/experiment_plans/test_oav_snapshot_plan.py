@@ -177,19 +177,16 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         for msg in msgs
         if msg.command == "set" and msg.obj is oav_snapshot_composite.smargon.omega
     ]
-    for omega in 0, 90:
-        expected_snapshot_path = (
-            str(oav_snapshot_params.snapshot_directory)
-            + f"{fixed_datetime}_oav_snapshot_{omega}.png"
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: (
-                msg.command == "set"
-                and msg.obj is oav_snapshot_composite.oav.snapshot.last_saved_path
-                and bool(expected_snapshot_path)
-            ),
-        )
+    expected_snapshot_directory = str(oav_snapshot_params.snapshot_directory)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is oav_snapshot_composite.oav.snapshot.directory
+            and msg.args[0] == expected_snapshot_directory
+        ),
+    )
+    for _ in 0, 90:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "create"
