@@ -33,8 +33,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -43,6 +45,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+)
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
@@ -363,7 +368,7 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
-    grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
@@ -382,6 +387,8 @@ def test_ispyb_deposition_in_gridscan(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
+            HyperionSpecifiedThreeDGridScan,
+            construct_hyperion_specific_features,
         )
     )
 
