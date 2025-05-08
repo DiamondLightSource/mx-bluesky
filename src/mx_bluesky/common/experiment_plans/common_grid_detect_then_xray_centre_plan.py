@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -47,14 +48,21 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
+
+TFlyScanEssentialDevices = TypeVar(
+    "TFlyScanEssentialDevices", bound=FlyScanEssentialDevices, contravariant=True
+)
+TSpecifiedThreeDGridScan = TypeVar(
+    "TSpecifiedThreeDGridScan", bound=SpecifiedThreeDGridScan, contravariant=True
+)
 
 
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
-    xrc_composite: FlyScanEssentialDevices,
-    setup_xrc_params: SetupXRCParamsAfterGridDetect,
+    xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
@@ -78,8 +86,7 @@ def grid_detect_then_xray_centre(
                 composite,
                 parameters,
                 oav_params,
-                xrc_composite,
-                setup_xrc_params,
+                xrc_params_type,
                 construct_beamline_specific,
             ),
             parameters,
@@ -109,8 +116,7 @@ def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
     oav_params: OAVParameters,
-    xrc_composite: FlyScanEssentialDevices,
-    setup_xrc_params: SetupXRCParamsAfterGridDetect,
+    xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
@@ -164,37 +170,42 @@ def detect_grid_and_do_gridscan(
         parameters.selected_aperture,
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
-    # xrc_composite = FlyScanEssentialDevices(
-    #     eiger=composite.eiger,
-    #     synchrotron=composite.synchrotron,
-    #     zocalo=composite.zocalo,
-    #     smargon=composite.smargon,
-    # )
-    xrc_params = setup_xrc_params(
-        parameters, grid_params_callback.get_grid_parameters()
+    xrc_params = create_parameters_for_flyscan_xray_centre(
+        parameters, grid_params_callback.get_grid_parameters(), xrc_params_type
     )
-    beamline_specific = construct_beamline_specific(xrc_composite, xrc_params)
+    beamline_specific = construct_beamline_specific(composite, xrc_params)
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite, xrc_params.transmission_frac
     )
     def plan_to_perform():
-        yield from common_flyscan_xray_centre(
-            xrc_composite, xrc_params, beamline_specific
-        )
+        yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
 
     yield from plan_to_perform()
 
 
-class SetupXRCParamsAfterGridDetect(Protocol):
-    def __call__(
-        self, parameters: GridCommon, grid_parameters: GridParamUpdate
-    ) -> SpecifiedThreeDGridScan: ...
-
-
-class ConstructBeamlineSpecificFeatures(Protocol):
+class ConstructBeamlineSpecificFeatures(
+    Protocol[TFlyScanEssentialDevices, TSpecifiedThreeDGridScan]
+):
     def __call__(
         self,
-        xrc_composite: FlyScanEssentialDevices,
-        xrc_parameters: SpecifiedThreeDGridScan,
+        xrc_composite: TFlyScanEssentialDevices,
+        xrc_parameters: TSpecifiedThreeDGridScan,
     ) -> BeamlineSpecificFGSFeatures: ...
+
+
+def create_parameters_for_flyscan_xray_centre(
+    parameters: GridCommon,
+    grid_parameters: GridParamUpdate,
+    xrc_params_type: type[SpecifiedThreeDGridScan],
+) -> SpecifiedThreeDGridScan:
+    params_json = parameters.model_dump()
+    params_json.update(grid_parameters)
+    flyscan_xray_centre_parameters = xrc_params_type(**params_json)
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
+    return flyscan_xray_centre_parameters
+
+
+@dataclasses.dataclass
+class BeamlineSpecificGridDetectThenFGSFeatures:
+    xrc_params_type: type[SpecifiedThreeDGridScan]

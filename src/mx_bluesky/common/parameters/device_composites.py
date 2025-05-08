@@ -44,7 +44,7 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite:
+class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -53,17 +53,13 @@ class GridDetectThenXRayCentreComposite:
     beamstop: Beamstop
     dcm: BaseDCM
     detector_motion: DetectorMotion
-    eiger: EigerDetector
     zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
-    smargon: Smargon
-    synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     undulator: Undulator
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
-    zocalo: ZocaloResults
     robot: BartRobot
     sample_shutter: ZebraShutter

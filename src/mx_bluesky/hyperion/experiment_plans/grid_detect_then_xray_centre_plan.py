@@ -9,13 +9,8 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
-    GridParamUpdate,
-)
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -35,17 +30,6 @@ def create_devices(
     return device_composite_from_context(
         context, HyperionGridDetectThenXRayCentreComposite
     )
-
-
-def create_parameters_for_flyscan_xray_centre(
-    parameters: GridCommon,
-    grid_parameters: GridParamUpdate,
-) -> HyperionSpecifiedThreeDGridScan:
-    params_json = parameters.model_dump()
-    params_json.update(grid_parameters)
-    flyscan_xray_centre_parameters = HyperionSpecifiedThreeDGridScan(**params_json)
-    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
-    return flyscan_xray_centre_parameters
 
 
 def create_hyperion_xrc_composite(
@@ -83,15 +67,12 @@ def hyperion_grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
 
-    xrc_composite = create_hyperion_xrc_composite(composite)
-
     @verify_undulator_gap_before_run_decorator(composite)
     def plan_to_perform():
         yield from grid_detect_then_xray_centre(
             composite=composite,
             parameters=parameters,
-            xrc_composite=xrc_composite,
-            setup_xrc_params=create_parameters_for_flyscan_xray_centre,
+            xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_hyperion_specific_features,
             oav_config=oav_config,
         )

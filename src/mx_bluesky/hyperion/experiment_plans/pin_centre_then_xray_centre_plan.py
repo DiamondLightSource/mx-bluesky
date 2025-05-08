@@ -25,10 +25,6 @@ from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    create_hyperion_xrc_composite,
-    create_parameters_for_flyscan_xray_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -45,6 +41,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
     PinTipCentreThenXrayCentre,
 )
 
@@ -106,14 +103,12 @@ def pin_centre_then_flyscan_plan(
 
         grid_detect_params = create_parameters_for_grid_detection(parameters)
         oav_params = OAVParameters("xrayCentring", oav_config_file)
-        xrc_composite = create_hyperion_xrc_composite(composite)
 
         yield from detect_grid_and_do_gridscan(
             composite,
             grid_detect_params,
             oav_params,
-            xrc_composite,
-            create_parameters_for_flyscan_xray_centre,
+            HyperionSpecifiedThreeDGridScan,
             construct_hyperion_specific_features,
         )
 
