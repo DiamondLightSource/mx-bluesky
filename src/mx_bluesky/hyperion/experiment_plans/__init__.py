@@ -3,7 +3,7 @@
 The __all__ list in here are the plans that are externally available from outside Hyperion.
 """
 
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     hyperion_grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (

@@ -8,7 +8,7 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     hyperion_grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
