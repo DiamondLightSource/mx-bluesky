@@ -781,7 +781,7 @@ class TestGenerateSnapshot:
         )
         os.mkdir(load_centre_collect_params.robot_load_then_centre.snapshot_directory)
         load_centre_collect_params.multi_rotation_scan.use_grid_snapshots = True
-        load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = [0, 270]
+        load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = None
         load_centre_collect_composite.zocalo.my_zocalo_result = (
             SNAPSHOT_GENERATION_ZOCALO_RESULT
         )
