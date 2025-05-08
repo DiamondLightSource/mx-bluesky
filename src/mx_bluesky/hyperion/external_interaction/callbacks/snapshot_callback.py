@@ -173,9 +173,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
             )
             output_snapshot_directory = data["oav-snapshot-directory"]
             base_file_stem = Path(snapshot_info.snapshot_path).stem
-            output_snapshot_filename = _snapshot_filename(
-                base_file_stem, snapshot_info.omega
-            )
+            output_snapshot_filename = _snapshot_filename(base_file_stem)
             output_snapshot_path = (
                 f"{output_snapshot_directory}/{output_snapshot_filename}.png"
             )
@@ -255,7 +253,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
         image.save(output_snapshot_path, format="png", compress_level=COMPRESSION_LEVEL)
 
 
-def _snapshot_filename(grid_snapshot_name, omega):
+def _snapshot_filename(grid_snapshot_name):
     time_now = datetime.now()
-    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{grid_snapshot_name}_{omega:.0f}"
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{grid_snapshot_name}"
     return filename

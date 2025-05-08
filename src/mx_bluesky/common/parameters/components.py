@@ -132,7 +132,7 @@ class WithSnapshot(BaseModel):
 
     @property
     def take_snapshots(self) -> bool:
-        return bool(self.snapshot_omegas_deg)
+        return bool(self.snapshot_omegas_deg) or self.use_grid_snapshots
 
     @model_validator(mode="after")
     def _validate_omegas_with_grid_snapshots(self) -> Self:

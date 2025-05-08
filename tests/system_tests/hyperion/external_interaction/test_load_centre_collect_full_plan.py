@@ -743,10 +743,6 @@ class TestGenerateSnapshot:
             "display_config": "tests/test_data/test_daq_configuration/display.configuration",
         }
 
-    @patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.OavConstants.OAV_CONFIG_JSON",
-        "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-    )
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,
@@ -757,11 +753,12 @@ class TestGenerateSnapshot:
         next_oav_system_test_image: MagicMock,
         RE: RunEngine,
         tmp_path: Path,
+        test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
     ):
         oav_parameters = OAVParameters(
-            oav_config_json="tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
+            oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )
         next_fake_snapshot = iter(
@@ -825,8 +822,8 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_ROTATION_SNAPSHOT_VALUES = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0\\.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_270\\.png",
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
         }
 
         rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
