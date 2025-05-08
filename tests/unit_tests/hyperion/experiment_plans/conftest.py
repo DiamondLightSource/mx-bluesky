@@ -425,7 +425,9 @@ def grid_detection_callback_with_detected_grid():
 
 @pytest.fixture
 def beamline_specific(
-    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
-    return construct_hyperion_specific_features(fake_fgs_composite, test_fgs_params)
+    return construct_hyperion_specific_features(
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    )
