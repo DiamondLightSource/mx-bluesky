@@ -46,19 +46,19 @@ The diagram below shows the x,y,z directions of the smargon motor coordinate sys
 
 * The pin runs from -ve x to +ve x
 * y is +ve towards the ceiling when :math:`\omega = 0`.
-* z is +ve towards the detector/oav and parallel to the beam when :math:`\omega = 0`.
+* z is +ve towards the detector/away from the oav and parallel to the beam when :math:`\omega = 0`.
 * The x and y coordinates of the image are also shown, the image feed has x from left to right, y from top to bottom, with the pin to the right of the image.
 * |ohgr| rotates from the y axis at :math:`\omega = 0` (the floor to ceiling).
 
 :math:`\omega = 0`
 
 
-.. image:: ../../../images/207301740-b8d62a18-bf9d-4da8-a151-a53c8ac52b8d.png
+.. image:: ../../../images/motor-coords-omega-0.svg
 
 
 :math:`\omega = \alpha`
 
-.. image:: ../../../images/207302310-2657d82a-dcaf-4495-b4ce-c713f06a5759.png
+.. image:: ../../../images/motor-coords-omega-alpha.svg
 
 
 OAV Image Coordinate System
