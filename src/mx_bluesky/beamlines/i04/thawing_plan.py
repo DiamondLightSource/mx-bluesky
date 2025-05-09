@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
-from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
+from dodal.devices.i04.constants import RedisConstants
 from dodal.common import inject
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
@@ -14,6 +14,9 @@ from dodal.devices.thawer import Thawer, ThawerStates
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
 
+MURKO_REDIS_DB = RedisConstants.MURKO_REDIS_DB
+REDIS_HOST = RedisConstants.REDIS_HOST
+REDIS_PASSWORD = RedisConstants.REDIS_PASSWORD
 
 def thaw_and_stream_to_redis(
     time_to_thaw: float,

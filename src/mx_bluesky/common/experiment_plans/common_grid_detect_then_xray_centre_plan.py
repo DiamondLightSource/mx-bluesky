@@ -145,13 +145,14 @@ def detect_grid_and_do_gridscan(
             parameters.box_size_um,
         )
 
-    if parameters.selected_aperture:
-        # Start moving the aperture/scatterguard into position without moving it in
-        yield from bps.prepare(
-            composite.aperture_scatterguard,
-            parameters.selected_aperture,
-            group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
-        )
+    # if parameters.selected_aperture:
+    #     # Start moving the aperture/scatterguard into position without moving it in
+    #     yield from bps.prepare(
+    #         composite.aperture_scatterguard,
+    #         parameters.selected_aperture,
+    #         group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
+    #     )
+    #     yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
 
     yield from run_grid_detection_plan(
         oav_params,
@@ -166,6 +167,8 @@ def detect_grid_and_do_gridscan(
     )
 
     yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
+    LOGGER.info("Waiting for everything")
+    yield from bps.wait()
     yield from move_aperture_if_required(
         composite.aperture_scatterguard,
         parameters.selected_aperture,

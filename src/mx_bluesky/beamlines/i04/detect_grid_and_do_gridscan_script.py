@@ -1,47 +1,49 @@
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from blueapi.core import BlueskyContext
 from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
+from dodal.devices.detector import DetectorParams
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.utils import get_beamline_based_on_environment_variable
 from pydantic_extra_types.semantic_version import SemanticVersion
-from dodal.devices.aperturescatterguard import ApertureValue
-from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
-    create_devices,
-    i04_grid_detect_then_xray_centre,
-)
+
 from mx_bluesky.beamlines.i04.parameters.constants import CONST
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import ispyb_activation_wrapper
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
+)
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    create_devices,
+    detect_grid_and_do_gridscan,
 )
 from mx_bluesky.hyperion.parameters.gridscan import GridScanWithEdgeDetect
 
 
 def main():
     do_default_logging_setup(CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True)
-    LOGGER.info("Testing i04_grid_detect_then_xray_centre plan")
-
-    context = setup_context(wait_for_connection=True)
+    LOGGER.info("Testing grid_detection_plan on i04")
+    context = setup_context(
+        wait_for_connection=True,
+    )
+    detector_params = DetectorParams(
+        exposure_time_s=0.005,
+        directory="/dls/i04/data/2025/cm40608-2/test_grid_scans",
+        prefix="test",
+        detector_distance=1000,
+        omega_start=0,
+        omega_increment=0,
+        num_images_per_trigger=1,
+        num_triggers=10,
+        use_roi_mode=True,
+        det_dist_to_beam_converter_path="/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt",
+        expected_energy_ev = 13000
+    )
     composite = create_devices(context)
-    parameters = get_parameters()
-    oav_config_json = "/dls_sw/i04/software/daq_configuration/json/OAVCentring.json"
 
-    RE = RunEngine(call_returns_result=True)
-
-    def my_plan():
-        yield from (
-            i04_grid_detect_then_xray_centre(
-                composite=composite, parameters=parameters, oav_config=oav_config_json
-            )
-        )
-
-    RE(my_plan())
-
-
-def get_parameters():
-    params = GridCommon(
+    parameters = GridScanWithEdgeDetect(
         sample_id=6388287,
         parameter_model_version=SemanticVersion.validate_from_str("5.0.0"),
         visit="cm40608-2",
@@ -56,11 +58,25 @@ def get_parameters():
         grid_width_um=600,
         transmission_frac=1.0,
         box_size_um=20,
-        demand_energy_ev=13000,
-        det_dist_to_beam_converter_path = "/dls_sw/i04/software/gda/config/lookupTables/DetDistToBeamXYConverter.txt",
-        selected_aperture=ApertureValue.LARGE)
+    )
+    oav_params = OAVParameters(
+        context="xrayCentring",
+        oav_config_json="/dls_sw/i04/software/daq_configuration/json/OAVCentring.json",
+    )
+    parameters.box_size_um = 20
+    parameters.grid_width_um = 600
+    parameters.demand_energy_ev = 13000
+    RE = RunEngine(call_returns_result=True)
+    
+    def my_plan():
+        yield from ispyb_activation_wrapper((detect_grid_and_do_gridscan(
+            composite=composite,
+            parameters=parameters,
+            oav_params=oav_params,
+            group=CONST,
+        )), parameters)
 
-    return params
+    RE(my_plan())
 
 
 def setup_context(wait_for_connection: bool = True) -> BlueskyContext:

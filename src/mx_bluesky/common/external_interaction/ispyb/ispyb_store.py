@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import numpy as np
 from collections.abc import Sequence
 from dataclasses import asdict
 from typing import TYPE_CHECKING
@@ -21,7 +21,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_session_id_from_visit,
 )
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -295,4 +295,8 @@ class StoreInIspyb:
     @staticmethod
     @TRACER.start_as_current_span("_upsert_data_collection")
     def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
+        LOGGER.info(f"params.valus = {(params)}")
+        for param, value in params.items():
+            if type(value) is np.float64:
+                params[param] = float(value)
         return conn.mx_acquisition.upsert_data_collection(list(params.values()))

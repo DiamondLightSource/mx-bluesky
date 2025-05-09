@@ -14,6 +14,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.beamlines.i04.parameters.device_composites import (
     I04FlyScanXRayCentreComposite,
 )
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import change_aperture_then_move_to_xtal
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_FGS_features,
@@ -21,20 +22,27 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import ZocaloCallback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import GridscanNexusFileCallback
+from mx_bluesky.common.parameters.constants import EnvironmentConstants, OavConstants, PlanNameConstants
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     _generic_tidy,
     _zebra_triggering_setup,
 )
-
+from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import setup_beamline_for_OAV
+from mx_bluesky.hyperion.parameters.gridscan import GridScanWithEdgeDetect
+from dodal.devices.mx_phase1.beamstop import Beamstop
+import bluesky.preprocessors as bpp
 
 def create_devices(
     context: BlueskyContext,
@@ -52,21 +60,48 @@ def i04_grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
 
-    @verify_undulator_gap_before_run_decorator(composite)
-    def plan_to_perform():
-        yield from ispyb_activation_wrapper(
-            grid_detect_then_xray_centre(
-                composite=composite,
-                parameters=parameters,
-                xrc_params_type=SpecifiedThreeDGridScan,
-                construct_beamline_specific=construct_i04_specific_features,
-                oav_config=oav_config,
-            ),
-            parameters,
+    yield from setup_beamline_for_OAV(
+            composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
+    callbacks = create_gridscan_callbacks()
+    flyscan_event_handler = XRayCentreEventHandler()
 
-    yield from plan_to_perform()
 
+    @bpp.subs_decorator(flyscan_event_handler)
+    @bpp.subs_decorator(callbacks)
+    @verify_undulator_gap_before_run_decorator(composite)
+    def grid_detect_then_xray_centre_with_callbacks():
+        yield from grid_detect_then_xray_centre(
+            composite=composite,
+            parameters=parameters,
+            xrc_params_type=SpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_i04_specific_features,
+            oav_config=oav_config,
+        )
+    yield from grid_detect_then_xray_centre_with_callbacks()
+    flyscan_results = flyscan_event_handler.xray_centre_results
+    assert flyscan_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
+    yield from change_aperture_then_move_to_xtal(
+        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
+    )
+    
+        
+    
+
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
+    return (
+        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommon,
+            emit=ZocaloCallback(
+                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+            ),
+        ),
+    )
 
 def construct_i04_specific_features(
     xrc_composite: I04FlyScanXRayCentreComposite,
