@@ -1,4 +1,5 @@
 import json
+from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
@@ -275,7 +276,7 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
 
 
 @pytest.fixture
-def agamemnon_response(request) -> str:
+def agamemnon_response(request) -> Generator[str, None, None]:
     with (
         patch("mx_bluesky.common.parameters.components.os", new=MagicMock()),
         patch(
