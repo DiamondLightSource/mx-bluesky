@@ -44,13 +44,13 @@ def serial_collection(
     y_step_size: float,
     omega_rotation: float,
     omega_velocity: float,
-    detector: Positioner1D = inject("detector"),
+    detector_motion: Positioner1D = inject("detector_motion"),
     gonio: SixAxisGonio = inject("gonio"),
 ):
     """This plan runs a software controlled serial collection. i.e it moves in a snaked
     grid and does a small rotation collection at each point."""
 
-    yield from bps.mv(detector.stage_position, I23DetectorPositions.IN)
+    yield from bps.mv(detector_motion.stage_position, I23DetectorPositions.IN)
     yield from rel_grid_scan(
         [],
         gonio.y,
