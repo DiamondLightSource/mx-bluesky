@@ -12,28 +12,39 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.testing import get_mock_put
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+    _fire_xray_centre_result_event,
+)
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    ConstructBeamlineSpecificFeatures,
+    detect_grid_and_do_gridscan,
+    grid_detect_then_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    _fire_xray_centre_result_event,
-)
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    detect_grid_and_do_gridscan,
-    grid_detect_then_xray_centre,
+from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
+    hyperion_grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 
-from ....conftest import OavGridSnapshotTestEvents
+from ....conftest import (
+    TEST_RESULT_LARGE,
+    OavGridSnapshotTestEvents,
+    simulate_xrc_result,
+)
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
@@ -46,7 +57,7 @@ def test_full_grid_scan(
     test_config_files: dict[str, str],
 ):
     devices = MagicMock()
-    plan = grid_detect_then_xray_centre(
+    plan = hyperion_grid_detect_then_xray_centre(
         devices,
         cast(GridScanWithEdgeDetect, hyperion_fgs_params),
         test_config_files["oav_config_json"],
@@ -54,18 +65,16 @@ def test_full_grid_scan(
     assert isinstance(plan, Generator)
 
 
-@pytest.fixture
-def grid_detect_devices_with_oav_config_params(
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
-    test_config_files: dict[str, str],
-) -> GridDetectThenXRayCentreComposite:
-    set_mock_value(grid_detect_devices.oav.zoom_controller.level, "7.5x")
-    return grid_detect_devices
+@pytest.fixture()
+def construct_beamline_specific(
+    beamline_specific: BeamlineSpecificFGSFeatures,
+) -> ConstructBeamlineSpecificFeatures:
+    return lambda xrc_composite, xrc_parameters: beamline_specific
 
 
 @pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 async def test_detect_grid_and_do_gridscan_in_real_RE(
@@ -75,13 +84,16 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     composite = grid_detect_devices_with_oav_config_params
-
     RE(
         ispyb_activation_wrapper(
             _do_detect_grid_and_gridscan_then_wait_for_backlight(
-                composite, test_config_files, test_full_grid_scan_params
+                composite,
+                test_config_files,
+                test_full_grid_scan_params,
+                construct_beamline_specific,
             ),
             test_full_grid_scan_params,
         )
@@ -103,19 +115,24 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
-    composite, test_config_files, test_full_grid_scan_params
+    composite,
+    test_config_files,
+    test_full_grid_scan_params,
+    construct_beamline_specific_xrc_features,
 ):
     yield from detect_grid_and_do_gridscan(
         composite,
         parameters=test_full_grid_scan_params,
         oav_params=OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+        xrc_params_type=HyperionSpecifiedThreeDGridScan,
+        construct_beamline_specific=construct_beamline_specific_xrc_features,
     )
     yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
 
 
 @pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
@@ -125,6 +142,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
     pin_tip_detection_with_found_pin: PinTipDetection,
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
@@ -134,6 +152,8 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
                 grid_detect_devices_with_oav_config_params,
                 parameters=test_full_grid_scan_params,
                 oav_params=oav_params,
+                xrc_params_type=HyperionSpecifiedThreeDGridScan,
+                construct_beamline_specific=construct_beamline_specific,
             ),
             test_full_grid_scan_params,
         )
@@ -150,11 +170,11 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
@@ -164,6 +184,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     sim_run_engine: RunEngineSimulator,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
     sim_run_engine.add_handler_for_callback_subscribes()
@@ -192,6 +213,8 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
             grid_detect_devices_with_oav_config_params,
             test_full_grid_scan_params,
             OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+            xrc_params_type=HyperionSpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_beamline_specific,
         )
     )
 
@@ -204,13 +227,13 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     assert not activations
 
 
-@pytest.fixture
+@pytest.fixture()
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
     side_effect=_fake_flyscan,
 )
@@ -221,6 +244,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     mock_grid_detection_plan.return_value = iter(
         [
@@ -258,7 +282,9 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
         grid_detect_then_xray_centre(
             grid_detect_devices_with_oav_config_params,
             test_full_grid_scan_params,
-            test_config_files["oav_config_json"],
+            xrc_params_type=HyperionSpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_beamline_specific,
+            oav_config=test_config_files["oav_config_json"],
         )
     )
 
@@ -319,4 +345,72 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL,
+    )
+
+
+@patch("bluesky.plan_stubs.sleep", autospec=True)
+@patch(
+    "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+)
+def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+    mock_create_parameters: MagicMock,
+    mock_grid_detection_callback: MagicMock,
+    mock_grid_detection_plan: MagicMock,
+    mock_check_topup: MagicMock,
+    mock_wait: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
+    test_config_files,
+    construct_beamline_specific,
+    hyperion_fgs_params,
+):
+    mock_create_parameters.return_value = hyperion_fgs_params
+    simulate_xrc_result(
+        sim_run_engine,
+        grid_detect_devices_with_oav_config_params.zocalo,
+        TEST_RESULT_LARGE,
+    )
+
+    msgs = sim_run_engine.simulate_plan(
+        detect_grid_and_do_gridscan(
+            grid_detect_devices_with_oav_config_params,
+            test_full_grid_scan_params,
+            OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+            xrc_params_type=HyperionSpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_beamline_specific,
+        )
+    )
+
+    # Assert order: pause -> open run -> close run -> unpause (set attenuator)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run"
+        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "close_run"
+        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args == (1.0,),
     )

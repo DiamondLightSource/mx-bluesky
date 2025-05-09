@@ -17,11 +17,11 @@ from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    common_flyscan_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_decorator,
-)
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    common_flyscan_xray_centre,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV

@@ -25,6 +25,9 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -33,8 +36,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -46,6 +49,10 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -126,7 +133,7 @@ async def grid_detect_devices(
     undulator_dcm,
     dcm,
 ):
-    yield GridDetectThenXRayCentreComposite(
+    yield HyperionGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -150,6 +157,15 @@ async def grid_detect_devices(
         robot=MagicMock(spec=BartRobot),
         sample_shutter=zebra_shutter,
     )
+
+
+@pytest.fixture
+def grid_detect_devices_with_oav_config_params(
+    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
+    test_config_files: dict[str, str],
+) -> HyperionGridDetectThenXRayCentreComposite:
+    set_mock_value(grid_detect_devices.oav.zoom_controller.level, "7.5x")
+    return grid_detect_devices
 
 
 @pytest.fixture
@@ -386,7 +402,7 @@ def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str
 @pytest.fixture
 def grid_detection_callback_with_detected_grid():
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
         autospec=True,
     ) as callback:
         callback.return_value.get_grid_parameters.return_value = {
@@ -405,3 +421,13 @@ def grid_detection_callback_with_detected_grid():
             "z_step_size_um": 0.1,
         }
         yield callback
+
+
+@pytest.fixture
+def beamline_specific(
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    )
