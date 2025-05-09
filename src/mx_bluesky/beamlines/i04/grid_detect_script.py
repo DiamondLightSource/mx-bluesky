@@ -9,6 +9,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import ispyb_activation_wrapper
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
@@ -30,7 +31,7 @@ def main():
 
     @bpp.run_decorator()
     def my_plan():
-        yield from grid_detection_plan(
+        yield from ispyb_activation_wrapper(grid_detection_plan(
             composite=composite,
             parameters=parameters,
             snapshot_template="test_{angle}",
@@ -38,7 +39,7 @@ def main():
             grid_width_microns=600,
             box_size_um=20,
             group=CONST,
-        )
+        ), parameters)
     RE(my_plan())
 
 

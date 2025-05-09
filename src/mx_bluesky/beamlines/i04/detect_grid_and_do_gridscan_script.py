@@ -10,6 +10,8 @@ from dodal.utils import get_beamline_based_on_environment_variable
 from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.beamlines.i04.parameters.constants import CONST
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import create_gridscan_callbacks
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import ispyb_activation_wrapper
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
@@ -22,8 +24,7 @@ from mx_bluesky.hyperion.parameters.gridscan import GridScanWithEdgeDetect
 
 
 def main():
-    do_default_logging_setup(CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True)
-    LOGGER.info("Testing grid_detection_plan on i04")
+    do_default_logging_setup(CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False)
     context = setup_context(
         wait_for_connection=True,
     )
@@ -67,14 +68,15 @@ def main():
     parameters.demand_energy_ev = 13000
     RE = RunEngine(call_returns_result=True)
 
+    @bpp.subs_decorator(create_gridscan_callbacks())
     @bpp.run_decorator()
     def my_plan():
-        yield from detect_grid_and_do_gridscan(
+        yield from ispyb_activation_wrapper(detect_grid_and_do_gridscan(
             composite=composite,
             parameters=parameters,
             oav_params=oav_params,
-            group=CONST,
-        )
+            group=CONST), parameters)
+        
 
     RE(my_plan())
 

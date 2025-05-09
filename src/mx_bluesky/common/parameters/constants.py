@@ -33,7 +33,7 @@ class OavConstants:
         "tests/test_data/test_OAVCentring.json"
         if TEST_MODE
         else (
-            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+            "/dls_sw/i04/software/daq_configuration/json/OAVCentring.json"
         )
     )
 
