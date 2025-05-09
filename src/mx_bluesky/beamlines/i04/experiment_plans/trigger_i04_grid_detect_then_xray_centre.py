@@ -51,7 +51,7 @@ def get_parameters():
         file_name="test",
         storage_directory="/dls/i04/data/2025/cm40608-2/test_grid_scans2",
         exposure_time_s=0.005,
-        detector_distance_mm=1000,
+        detector_distance_mm=400,
         omega_start_deg=0.0,
         grid_width_um=600,
         transmission_frac=1.0,

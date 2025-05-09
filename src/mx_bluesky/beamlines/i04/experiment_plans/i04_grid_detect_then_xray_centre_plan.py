@@ -34,6 +34,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     _generic_tidy,
@@ -67,7 +68,6 @@ def i04_grid_detect_then_xray_centre(
     flyscan_event_handler = XRayCentreEventHandler()
 
 
-    @bpp.subs_decorator(flyscan_event_handler)
     @bpp.subs_decorator(callbacks)
     @verify_undulator_gap_before_run_decorator(composite)
     def grid_detect_then_xray_centre_with_callbacks():
@@ -79,13 +79,10 @@ def i04_grid_detect_then_xray_centre(
             oav_config=oav_config,
         )
     yield from grid_detect_then_xray_centre_with_callbacks()
-    flyscan_results = flyscan_event_handler.xray_centre_results
-    assert flyscan_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
-    yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
-    )
+
+    yield from setup_beamline_for_OAV(
+            composite.smargon, composite.backlight, composite.aperture_scatterguard
+        )
     
         
     
