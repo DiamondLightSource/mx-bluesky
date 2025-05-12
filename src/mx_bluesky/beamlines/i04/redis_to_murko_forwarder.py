@@ -6,7 +6,7 @@ from typing import TypedDict
 
 import numpy as np
 import zmq
-from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
+from dodal.devices.i04.constants import RedisConstants
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
@@ -139,9 +139,9 @@ class RedisListener:
 
     def __init__(
         self,
-        redis_host=REDIS_HOST,
-        redis_password=REDIS_PASSWORD,
-        db=MURKO_REDIS_DB,
+        redis_host=RedisConstants.REDIS_HOST,
+        redis_password=RedisConstants.REDIS_PASSWORD,
+        db=RedisConstants.MURKO_REDIS_DB,
         redis_channel="murko",
     ):
         self.redis_client = StrictRedis(

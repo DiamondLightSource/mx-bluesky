@@ -3,8 +3,10 @@ from functools import partial
 from bluesky import plan_stubs as bps
 from bluesky.plans import rel_grid_scan
 from bluesky.utils import short_uid
+from dodal.beamlines.i23 import I23DetectorPositions
 from dodal.common import inject
 from dodal.devices.motors import SixAxisGonio
+from dodal.devices.positioner import Positioner1D
 from ophyd_async.epics.motor import Motor
 
 
@@ -42,10 +44,13 @@ def serial_collection(
     y_step_size: float,
     omega_rotation: float,
     omega_velocity: float,
+    detector_motion: Positioner1D = inject("detector_motion"),
     gonio: SixAxisGonio = inject("gonio"),
 ):
     """This plan runs a software controlled serial collection. i.e it moves in a snaked
     grid and does a small rotation collection at each point."""
+
+    yield from bps.mv(detector_motion.stage_position, I23DetectorPositions.IN)
     yield from rel_grid_scan(
         [],
         gonio.y,
