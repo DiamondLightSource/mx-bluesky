@@ -1,4 +1,6 @@
 #!/bin/bash
+# This is invoked by hyperion_restart() in GDA, but can also be used to run hyperion 
+# locally from a dev environment
 
 STOP=0
 START=1
@@ -25,18 +27,26 @@ for option in "$@"; do
             ;;
 
         --help|--info|--h)
-        
-        #Combine help from here and help from mx_bluesky.hyperion
             source .venv/bin/activate
-            python -m hyperion --help
-            echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
-            echo " "
-            echo "Operations"
-            echo "  --stop                  Used to stop a currently running instance of Hyperion. Will override any other operations"
-            echo "                          options"
-            echo "  --no-start              Used to specify that the script should be run without starting the server."
-            echo " "
-            echo "By default this script will start an Hyperion server unless the --no-start flag is specified."
+            echo "`basename $0` [options]"
+            cat <<END
+
+This script must be run from a beamline control machine unless --dev is specified.
+
+Options:
+  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline
+  --stop                  Used to stop a currently running instance of Hyperion. Will override any other operations
+                          options.
+  --no-start              Used to specify that the script should be run without starting the server.
+  --skip-startup-connection
+                          Do not connect to devices at startup
+  --dev                   Enable dev mode to run from a local workspace on a development machine.
+                          Implied if BEAMLINE is not set.
+  --verbose-event-logging Enable verbose event logging
+  --help                  This help
+
+By default this script will start an Hyperion server unless the --no-start flag is specified.
+END
             exit 0
             ;;
         -*|--*)
@@ -78,20 +88,22 @@ if [[ $STOP == 1 ]]; then
 fi
 
 if [[ $START == 1 ]]; then
+    RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     if [ $IN_DEV == false ]; then
         check_user
-
         ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
-        export ISPYB_CONFIG_PATH
-
+    else
+        ISPYB_CONFIG_PATH="$RELATIVE_SCRIPT_DIR/tests/test_data/ispyb_test_credentials.cfg"
+        ZOCALO_CONFIG="$RELATIVE_SCRIPT_DIR/tests/test_data/zocalo-test-configuration.yaml"
+        export ZOCALO_CONFIG
     fi
+    export ISPYB_CONFIG_PATH
 
     kill_active_apps
 
     module unload controls_dev
     module load dials
 
-    RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
     if [ -z "$LOG_DIR" ]; then
@@ -133,7 +145,9 @@ if [[ $START == 1 ]]; then
     done
 
     unset PYEPICS_LIBCA
+    echo "Starting hyperion with hyperion $h_commands, start_log is $start_log_path"
     hyperion `echo $h_commands;`>$start_log_path  2>&1 &
+    echo "Starting hyperion-callbacks with hyperion-callbacks $cb_commands, start_log is $callback_start_log_path"
     hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     echo "$(date) Waiting for Hyperion to start"
 
