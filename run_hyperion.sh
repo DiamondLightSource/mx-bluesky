@@ -12,6 +12,7 @@ for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
             BEAMLINE="${option#*=}"
+            export BEAMLINE
             shift
             ;;
         --stop)
