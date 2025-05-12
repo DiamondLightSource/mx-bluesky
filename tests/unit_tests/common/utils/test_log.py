@@ -147,17 +147,16 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
         assert "test_dodal" in handler_messages
 
 
+@pytest.mark.parametrize("dev_mode", [True, False])
 @pytest.mark.skip_log_setup
-def test_callback_loggers_log_to_own_files(
-    clear_and_mock_loggers,
-):
+def test_callback_loggers_log_to_own_files(clear_and_mock_loggers, dev_mode: bool):
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     hyperion_logger = log.LOGGER
     ISPYB_ZOCALO_CALLBACK_LOGGER = log.ISPYB_ZOCALO_CALLBACK_LOGGER
     nexus_logger = log.NEXUS_LOGGER
-    logging_path, _ = log._get_logging_dirs()
+    logging_path, _ = log._get_logging_dirs(dev_mode)
     for logger in [ISPYB_ZOCALO_CALLBACK_LOGGER, nexus_logger]:
         set_up_all_logging_handlers(logger, logging_path, logger.name, True, 10000)
 
@@ -202,44 +201,40 @@ def test_log_writes_debug_file_on_error(clear_and_mock_loggers):
     assert "error happens" in messages
 
 
+@pytest.mark.parametrize("dev_mode", [True, False])
 @patch("mx_bluesky.common.utils.log.Path.mkdir")
-def test_get_logging_dir_uses_env_var(mock_mkdir: MagicMock):
-    def mock_get_log_dir(variable: str):
-        if variable == "LOG_DIR":
-            return "test_dir"
-        else:
-            return "other_dir"
-
-    with patch(
-        "mx_bluesky.common.utils.log.environ.get",
-        side_effect=lambda var: mock_get_log_dir(var),
-    ):
-        assert log._get_logging_dirs() == (Path("test_dir"), Path("test_dir"))
+def test_get_logging_dir_uses_env_var(mock_mkdir: MagicMock, dev_mode: bool):
+    with patch.dict(os.environ, {"LOG_DIR": "test_dir", "DEBUG_LOG_DIR": "other_dir"}):
+        assert log._get_logging_dirs(dev_mode) == (Path("test_dir"), Path("other_dir"))
         assert mock_mkdir.call_count == 2
 
 
+@pytest.mark.parametrize(
+    "dev_mode, expected_log_dir, expected_debug_log_dir",
+    [
+        [True, "/tmp/logs/bluesky/", "/tmp/logs/bluesky/"],
+        [False, "/dls_sw/test/logs/bluesky/", "/dls/tmp/test/logs/bluesky/"],
+    ],
+)
 @patch("mx_bluesky.common.utils.log.Path.mkdir")
-def test_get_logging_dir_uses_beamline_if_no_dir_env_var(mock_mkdir: MagicMock):
-    def mock_get_log_dir(variable: str):
-        if variable == "LOG_DIR":
-            return None
-        elif variable == "BEAMLINE":
-            return "test"
-
-    with patch(
-        "mx_bluesky.common.utils.log.environ.get",
-        side_effect=lambda var: mock_get_log_dir(var),
-    ):
-        assert log._get_logging_dirs() == (
-            Path("/dls_sw/test/logs/bluesky/"),
-            Path("/dls/tmp/test/logs/bluesky/"),
+def test_get_logging_dir_uses_beamline_if_no_dir_env_var(
+    mock_mkdir: MagicMock,
+    dev_mode: bool,
+    expected_log_dir: str,
+    expected_debug_log_dir: str,
+):
+    with patch.dict(os.environ, {"BEAMLINE": "test"}, clear=True):
+        assert log._get_logging_dirs(dev_mode) == (
+            Path(expected_log_dir),
+            Path(expected_debug_log_dir),
         )
         assert mock_mkdir.call_count == 2
 
 
+@pytest.mark.parametrize("dev_mode", [True, False])
 @patch("mx_bluesky.common.utils.log.Path.mkdir")
-def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock):
-    assert log._get_logging_dirs() == (
+def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock, dev_mode: bool):
+    assert log._get_logging_dirs(dev_mode) == (
         Path("/tmp/logs/bluesky"),
         Path("/tmp/logs/bluesky"),
     )
