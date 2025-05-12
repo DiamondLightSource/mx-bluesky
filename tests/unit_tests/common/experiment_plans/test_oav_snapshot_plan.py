@@ -11,13 +11,13 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
-from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 
 from ....conftest import raw_params_from_file
 
@@ -49,7 +49,7 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
     )
 
 
-@patch("mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime)
+@patch("mx_bluesky.common.experiment_plans.oav_snapshot_plan.datetime", spec=datetime)
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     mock_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
 ):
