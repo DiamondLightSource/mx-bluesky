@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 
+import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.fast_grid_scan import (
@@ -21,10 +22,23 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    ispyb_activation_wrapper,
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    setup_beamline_for_OAV,
 )
-from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
+from mx_bluesky.common.parameters.constants import (
+    EnvironmentConstants,
+    OavConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
@@ -51,21 +65,38 @@ def i04_grid_detect_then_xray_centre(
     An plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
+    yield from setup_beamline_for_OAV(
+        composite.smargon, composite.backlight, composite.aperture_scatterguard
+    )
 
+    callbacks = create_gridscan_callbacks()
+
+    @bpp.subs_decorator(callbacks)
     @verify_undulator_gap_before_run_decorator(composite)
-    def plan_to_perform():
-        yield from ispyb_activation_wrapper(
-            grid_detect_then_xray_centre(
-                composite=composite,
-                parameters=parameters,
-                xrc_params_type=SpecifiedThreeDGridScan,
-                construct_beamline_specific=construct_i04_specific_features,
-                oav_config=oav_config,
-            ),
-            parameters,
+    def grid_detect_then_xray_centre_with_callbacks():
+        yield from grid_detect_then_xray_centre(
+            composite=composite,
+            parameters=parameters,
+            xrc_params_type=SpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_i04_specific_features,
+            oav_config=oav_config,
         )
 
-    yield from plan_to_perform()
+    yield from grid_detect_then_xray_centre_with_callbacks()
+
+
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridscanISPyBCallback
+]:
+    return (
+        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanISPyBCallback(
+            param_type=GridCommon,
+            emit=ZocaloCallback(
+                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+            ),
+        ),
+    )
 
 
 def construct_i04_specific_features(
