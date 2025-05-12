@@ -26,7 +26,11 @@ from mx_bluesky.common.parameters.constants import (
     HardwareConstants,
 )
 
-DETECTOR_SIZE_PER_BEAMLINE = {"i02-1": EIGER2_X_9M_SIZE, "dev": EIGER2_X_16M_SIZE}
+DETECTOR_SIZE_PER_BEAMLINE = {
+    "i02-1": EIGER2_X_9M_SIZE,
+    "dev": EIGER2_X_16M_SIZE,
+    "I03": EIGER2_X_16M_SIZE,
+}
 
 
 class GridCommon(
