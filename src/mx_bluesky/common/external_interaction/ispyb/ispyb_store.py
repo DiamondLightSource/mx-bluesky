@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import ispyb
 import ispyb.sqlalchemy
+import numpy as np
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
@@ -280,7 +281,9 @@ class StoreInIspyb:
                 conn, data_collection_info.visit_string
             )
         params |= {
-            k: v for k, v in asdict(data_collection_info).items() if k != "visit_string"
+            k: v.item() if isinstance(v, np.generic) else v  # Convert to native types
+            for k, v in asdict(data_collection_info).items()
+            if k != "visit_string"
         }
 
         return params
