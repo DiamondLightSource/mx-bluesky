@@ -9,9 +9,9 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
     SampleHandlingCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
-from mx_bluesky.common.utils.exceptions import SampleException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    SampleException,
 )
 
 TEST_SAMPLE_ID = 123456

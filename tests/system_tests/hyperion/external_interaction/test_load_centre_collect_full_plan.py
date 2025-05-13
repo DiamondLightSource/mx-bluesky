@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
 from pathlib import Path
@@ -18,6 +17,7 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 from PIL import Image
 
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
@@ -27,10 +27,9 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    WarningException,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -55,6 +54,7 @@ from ....conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_OUT_OF_BOUNDS_BB,
     TEST_RESULT_OUT_OF_BOUNDS_COM,
+    SimConstants,
     raw_params_from_file,
 )
 from ...conftest import (
@@ -63,16 +63,14 @@ from ...conftest import (
     compare_comment,
 )
 
-SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
-
 
 @pytest.fixture
 def load_centre_collect_params():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
-    json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
-    json_dict["sample_id"] = SAMPLE_ID
+    json_dict["visit"] = SimConstants.ST_VISIT
+    json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     return LoadCentreCollect(**json_dict)
 
 
@@ -125,7 +123,7 @@ def load_centre_collect_composite(
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": SAMPLE_ID,
+    "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,

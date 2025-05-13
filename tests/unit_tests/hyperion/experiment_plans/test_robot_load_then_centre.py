@@ -4,11 +4,11 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -452,6 +452,7 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
         )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )

@@ -21,7 +21,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -36,33 +36,36 @@ def test_params(filename_stub, dir):
         with open(filename) as f:
             return json.loads(f.read())
 
-    params = RotationScan(
+    params = MultiRotationScan(
         **get_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
+    for scan_params in params.rotation_scans:
+        scan_params.x_start_um = 0
+        scan_params.y_start_um = 0
+        scan_params.z_start_um = 0
+        scan_params.scan_width_deg = 360
     params.file_name = filename_stub
-    params.scan_width_deg = 360
     params.demand_energy_ev = 12700
     params.storage_directory = str(dir)
-    params.x_start_um = 0
-    params.y_start_um = 0
-    params.z_start_um = 0
     params.exposure_time_s = 0.004
     return params
 
 
 def fake_rotation_scan(
-    parameters: RotationScan,
+    parameters: MultiRotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
+    single_scan_parameters = next(parameters.single_rotation_scans)
+
     @bpp.subs_decorator(subscription)
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": single_scan_parameters.model_dump_json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
@@ -129,7 +132,7 @@ def fake_create_rotation_devices():
 
 
 def sim_rotation_scan_to_create_nexus(
-    test_params: RotationScan,
+    test_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     filename_stub,
     RE,

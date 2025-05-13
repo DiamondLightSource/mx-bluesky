@@ -10,11 +10,11 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03 import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -30,6 +30,12 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.manipulate_sample import (
+    cleanup_sample_environment,
+    move_phi_chi_omega,
+    move_x_y_z,
+    setup_sample_environment,
+)
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
@@ -41,12 +47,6 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
-    cleanup_sample_environment,
-    move_phi_chi_omega,
-    move_x_y_z,
-    setup_sample_environment,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     setup_zebra_for_rotation,
@@ -363,61 +363,27 @@ def _move_and_rotation(
     )
 
 
-def rotation_scan(
+def multi_rotation_scan(
     composite: RotationScanComposite,
-    parameters: RotationScan,
+    parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
-    parameters.features.update_self_from_server()
-
-    if not oav_params:
-        oav_params = OAVParameters(context="xrayCentring")
-
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite,
-        parameters.transmission_frac,
-    )
-    @verify_undulator_gap_before_run_decorator(composite)
-    @bpp.set_run_key_decorator("rotation_scan")
-    @bpp.run_decorator(  # attach experiment metadata to the start document
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
         md={
-            "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
+            "activate_callbacks": ["BeamDrawingCallback"],
             "with_snapshot": parameters.model_dump_json(
                 include=WithSnapshot.model_fields.keys()  # type: ignore
             ),
-            "activate_callbacks": [
-                "BeamDrawingCallback",
-                "RotationISPyBCallback",
-                "RotationNexusFileCallback",
-            ],
         }
     )
-    def rotation_scan_plan_with_stage_and_cleanup(
-        params: RotationScan,
-    ):
-        eiger: EigerDetector = composite.eiger
-        eiger.set_detector_parameters(params.detector_params)
+    def _wrapped_multi_rotation_scan():
+        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
 
-        @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
-        def rotation_with_cleanup_and_stage(params: RotationScan):
-            yield from _move_and_rotation(composite, params, oav_params)
-
-        LOGGER.info("setting up and staging eiger...")
-        yield from start_preparing_data_collection_then_do_plan(
-            composite.beamstop,
-            eiger,
-            composite.detector_motion,
-            params.detector_distance_mm,
-            rotation_with_cleanup_and_stage(params),
-            group=CONST.WAIT.ROTATION_READY_FOR_DC,
-        )
-        yield from bps.unstage(eiger)
-
-    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
+    yield from _wrapped_multi_rotation_scan()
 
 
-def multi_rotation_scan(
+def multi_rotation_scan_internal(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
