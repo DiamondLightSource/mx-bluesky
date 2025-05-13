@@ -93,7 +93,7 @@ def setup_logging(dev_mode: bool):
         (ISPYB_ZOCALO_CALLBACK_LOGGER, "hyperion_ispyb_callback.log"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
     ]:
-        logging_path, debug_logging_path = _get_logging_dirs()
+        logging_path, debug_logging_path = _get_logging_dirs(dev_mode)
         if logger.handlers == []:
             handlers = set_up_all_logging_handlers(
                 logger,
