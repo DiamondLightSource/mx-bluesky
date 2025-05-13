@@ -279,9 +279,10 @@ def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
     skip_startup_connection: bool = False,
+    dev_mode: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
     context = setup_context(
-        wait_for_connection=not skip_startup_connection,
+        wait_for_connection=not skip_startup_connection, dev_mode=dev_mode
     )
     runner = BlueskyRunner(
         RE,
@@ -317,7 +318,7 @@ def create_targets():
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
     app, runner = create_app(
-        skip_startup_connection=args.skip_startup_connection,
+        skip_startup_connection=args.skip_startup_connection, dev_mode=args.dev_mode
     )
     return app, runner, hyperion_port, args.dev_mode
 
