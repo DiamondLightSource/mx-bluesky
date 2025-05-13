@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>hyperion &#8212; mx-bluesky 1.0.1.dev243+g29e7c47b6 documentation</title>
+    <title>hyperion &#8212; mx-bluesky 1.0.1.dev244+g4a7c282ee documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=ad3bb1a8"></script>
+    <script src="../../../_static/documentation_options.js?v=b376d3d5"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -522,17 +522,17 @@
 <h1>Controlling the Gridscan Externally (e.g. from GDA)<a class="headerlink" href="#controlling-the-gridscan-externally-e-g-from-gda" title="Link to this heading">#</a></h1>
 <section id="starting-the-bluesky-runner">
 <h2>Starting the bluesky runner<a class="headerlink" href="#starting-the-bluesky-runner" title="Link to this heading">#</a></h2>
-<p>You can start the bluesky runner by running <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span></code>. Note that this will fail on a developer machine unless you have a simulated beamline running, instead you should do <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span> <span class="pre">--dev</span> <span class="pre">--skip-startup-connection</span></code>, which will give you a running instance (note that without hardware trying to run a plan on this will fail). The <code class="docutils literal notranslate"><span class="pre">--dev</span></code> flag ensures that logging will not be sent to the production Graylog.</p>
-<p>This script will determine whether you are on a beamline or a production machine based on the <code class="docutils literal notranslate"><span class="pre">BEAMLINE</span></code> environment variable. If on a beamline Hyperion will run with <code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.log on the shared file system.</p>
+<p>The bluesky runner is (re)started in production by GDA when it invokes <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span></code>.</p>
+<p>If you wish to attempt to run from a developer machine, then (if you are able to connect all devices)
+you may <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span> <span class="pre">--dev</span> <span class="pre">--beamline=&lt;beamline&gt;</span></code>, which will give you a running instance albeit with
+read-only devices. The <code class="docutils literal notranslate"><span class="pre">--dev</span></code> flag ensures that logging will not be sent to the production Graylog/output folders.</p>
+<p>This script will determine which beamline you are on based on the <code class="docutils literal notranslate"><span class="pre">BEAMLINE</span></code> environment variable. If on a
+beamline Hyperion will run with <code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.log on the shared file system.</p>
 <p>If in a dev environment Hyperion will log to a local graylog instance instead and into a file at <code class="docutils literal notranslate"><span class="pre">./tmp/dev/hyperion.log</span></code>. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the <code class="docutils literal notranslate"><span class="pre">setup_graylog.sh</span></code> script.</p>
 <p>This uses the generic defaults for a local graylog instance. It can be accessed on <code class="docutils literal notranslate"><span class="pre">localhost:9000</span></code> where the username and password for the graylog portal are both admin.</p>
 <p>The hyperion python module can also be run directly without the startup script. It takes the same command line options, including:</p>
 <p><code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging of the Bluesky event documents can be enabled with the flag</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">hyperion</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">verbose</span><span class="o">-</span><span class="n">event</span><span class="o">-</span><span class="n">logging</span>
-</pre></div>
-</div>
-<p>Lastly, you can choose to skip running the hardware connection scripts on startup with the flag</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">hyperion</span> <span class="o">--</span><span class="n">skip</span><span class="o">-</span><span class="n">startup</span><span class="o">-</span><span class="n">connection</span>
 </pre></div>
 </div>
 </section>
