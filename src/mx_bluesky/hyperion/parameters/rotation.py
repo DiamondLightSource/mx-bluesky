@@ -42,7 +42,8 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
         omega_start_deg: The initial angle of the rotation in degrees (default 0)
         scan_width_deg: The sweep of the rotation in degrees, this must be positive (default 360)
         rotation_direction: Indicates the direction of rotation, if RotationDirection.POSITIVE
-            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE)
+            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE).
+            See "Hyperion Coordinate Systems" in the documentation.
         nexus_vds_start_img: The frame number of the first frame captured during the rotation
     """
 
