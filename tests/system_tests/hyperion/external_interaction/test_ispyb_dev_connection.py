@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from copy import deepcopy
 from typing import Any, Literal
 
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -330,6 +331,33 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     )
     for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
+
+
+def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
+    dummy_params,
+    dummy_data_collection_group_info,
+    dummy_scan_data_info_for_begin_xy,
+    dummy_scan_data_info_for_begin_xz,
+    ispyb_config_path: str,
+):
+    ispyb: StoreInIspyb = StoreInIspyb(ispyb_config_path)
+    experiment_type = IspybExperimentType.GRIDSCAN_3D
+    scan_data_infos = [dummy_scan_data_info_for_begin_xy]
+    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
+        scan_data_infos += [dummy_scan_data_info_for_begin_xz]
+    ispyb_ids: IspybIds = ispyb.begin_deposition(
+        dummy_data_collection_group_info, scan_data_infos
+    )
+    scan_data_infos = generate_scan_data_infos(
+        dummy_params, dummy_scan_data_info_for_begin_xy, experiment_type, ispyb_ids
+    )
+    scan_data_infos[-1].data_collection_info.xbeam = np.float64(
+        scan_data_infos[-1].data_collection_info.xbeam
+    )
+    scan_data_infos[-1].data_collection_info.ybeam = np.float64(
+        scan_data_infos[-1].data_collection_info.ybeam
+    )
+    ispyb_ids = ispyb.update_deposition(ispyb_ids, scan_data_infos)
 
 
 @pytest.mark.system_test
