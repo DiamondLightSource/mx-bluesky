@@ -42,7 +42,6 @@ Options:
   --skip-startup-connection
                           Do not connect to devices at startup
   --dev                   Enable dev mode to run from a local workspace on a development machine.
-                          Implied if BEAMLINE is not set.
   --verbose-event-logging Enable verbose event logging
   --help                  This help
 
@@ -73,9 +72,9 @@ check_user () {
 }
 
 if [ -z "${BEAMLINE}" ]; then
-    echo "BEAMLINE parameter not set, assuming running on a dev machine."
-    echo "If you would like to run not in dev use the option -b, --beamline=BEAMLNE to set it manually"
-    IN_DEV=true
+    echo "BEAMLINE environment variable is not set and the --beamline parameter is not specified."
+    echo "Please set the option -b, --beamline=BEAMLINE to set it manually"
+    exit 1
 fi
 
 if [[ $STOP == 1 ]]; then

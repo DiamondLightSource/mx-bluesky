@@ -271,8 +271,11 @@ class FlushLogs(Resource):
 def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
+    dev_mode: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
-    context = setup_context()
+    context = setup_context(
+        dev_mode=dev_mode
+    )
     runner = BlueskyRunner(
         RE,
         context=context,
@@ -305,7 +308,9 @@ def create_targets():
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    app, runner = create_app()
+    app, runner = create_app(
+        dev_mode=args.dev_mode
+    )
     return app, runner, hyperion_port, args.dev_mode
 
 

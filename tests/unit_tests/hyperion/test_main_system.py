@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from sys import argv
 from time import sleep
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from blueapi.core import BlueskyContext
@@ -118,6 +118,15 @@ TEST_EXPTS = {
         "param_type": HyperionSpecifiedThreeDGridScan,
     },
 }
+
+
+@pytest.fixture
+def mock_setup_context(request: pytest.FixtureRequest):
+    with (
+        patch("mx_bluesky.hyperion.__main__.setup_context") as mock_setup_context,
+        patch("mx_bluesky.hyperion.__main__.BlueskyRunner"),
+    ):
+        yield mock_setup_context
 
 
 @pytest.fixture
@@ -458,12 +467,13 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert caplog.records[-1].levelname == "WARNING"
 
 
+@pytest.mark.parametrize("dev_mode", [True, False])
 @patch(
     "dodal.devices.i03.undulator_dcm.get_beamline_parameters",
     return_value={"DCM_Perp_Offset_FIXED": 111},
 )
 def test_when_context_created_then_contains_expected_number_of_plans(
-    get_beamline_parameters,
+    get_beamline_parameters, dev_mode
 ):
     from dodal.beamlines import i03
 
@@ -475,8 +485,9 @@ def test_when_context_created_then_contains_expected_number_of_plans(
     ):
         with patch(
             "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
-        ):
-            context = setup_context()
+        ) as mock_with_dodal_module:
+            context = setup_context(dev_mode=dev_mode)
+            mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
         plan_names = context.plans.keys()
 
         # assert "rotation_scan" in plan_names
@@ -484,3 +495,14 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         assert "multi_rotation_scan" in plan_names
         assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names
+
+
+@pytest.mark.parametrize("dev_mode", [False, True])
+def test_create_app_passes_through_dev_mode(
+    dev_mode: bool, mock_setup_context: MagicMock
+):
+    mock_run_engine = MagicMock()
+
+    create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
+
+    mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
