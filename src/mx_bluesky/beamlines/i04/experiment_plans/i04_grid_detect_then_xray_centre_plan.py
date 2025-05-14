@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
@@ -107,8 +108,12 @@ def get_ready_for_oav_and_close_shutter(
     aperture_scatterguard: ApertureScatterguard,
     detector_motion: DetectorMotion,
 ):
-    yield from setup_beamline_for_OAV(smargon, backlight, aperture_scatterguard)
-    yield from cleanup_sample_environment(detector_motion)
+    group = "get_ready_for_oav_and_close_shutter"
+    yield from setup_beamline_for_OAV(
+        smargon, backlight, aperture_scatterguard, group=group
+    )
+    yield from cleanup_sample_environment(detector_motion, group=group)
+    yield from bps.wait(group)
 
 
 def create_gridscan_callbacks() -> tuple[
