@@ -441,15 +441,25 @@ def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
 ):
-    sim_run_engine.add_read_handler_for(
-        robot_load_composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # sim_run_engine.add_read_handler_for(
+    #     robot_load_composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.UNKNOWN}
+
+    sim_run_engine.add_handler(
+        "locate",
+        locate_beamstop,
+        robot_load_composite.beamstop.selected_pos.name,
     )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            robot_load_then_xray_centre(
-                robot_load_composite, robot_load_then_centre_params
+    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
+        with pytest.raises(BeamstopException):
+            sim_run_engine.simulate_plan(
+                robot_load_then_xray_centre(
+                    robot_load_composite, robot_load_then_centre_params
+                )
             )
-        )
 
 
 @pytest.mark.timeout(2)

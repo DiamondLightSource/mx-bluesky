@@ -412,16 +412,25 @@ def test_load_centre_collect_fails_with_exception_when_no_beamstop(
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_read_handler_for(
-        composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    )
+    # sim_run_engine.add_read_handler_for(
+    #     composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.UNKNOWN}
 
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            load_centre_collect_full(
-                composite, load_centre_collect_params, oav_parameters_for_rotation
+    sim_run_engine.add_handler(
+        "locate",
+        locate_beamstop,
+        composite.beamstop.selected_pos.name,
+    )
+    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
+        with pytest.raises(BeamstopException):
+            sim_run_engine.simulate_plan(
+                load_centre_collect_full(
+                    composite, load_centre_collect_params, oav_parameters_for_rotation
+                )
             )
-        )
 
 
 def test_can_deserialize_top_n_by_max_count_params(

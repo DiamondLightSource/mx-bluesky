@@ -561,12 +561,17 @@ def beamstop_i03(
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
         set_mock_value(beamstop.z_mm.user_readback, 30.0)
 
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
         def locate_beamstop(_):
             return {"readback": BeamstopPositions.DATA_COLLECTION}
 
         sim_run_engine.add_handler(
             "locate", locate_beamstop, beamstop.selected_pos.name
         )
+
         yield beamstop
         beamline_utils.clear_devices()
 

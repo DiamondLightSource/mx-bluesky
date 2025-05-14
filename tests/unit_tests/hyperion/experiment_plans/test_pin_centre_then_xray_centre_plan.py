@@ -363,12 +363,22 @@ def test_pin_tip_centre_then_xray_centre_fails_with_exception_when_no_beamstop(
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
-    sim_run_engine.add_read_handler_for(
-        grid_detect_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # sim_run_engine.add_read_handler_for(
+    #     grid_detect_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.UNKNOWN}
+
+    sim_run_engine.add_handler(
+        "locate",
+        locate_beamstop,
+        grid_detect_devices.beamstop.selected_pos.name,
     )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            pin_tip_centre_then_xray_centre(
-                grid_detect_devices, test_pin_centre_then_xray_centre_params
+    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
+        with pytest.raises(BeamstopException):
+            sim_run_engine.simulate_plan(
+                pin_tip_centre_then_xray_centre(
+                    grid_detect_devices, test_pin_centre_then_xray_centre_params
+                )
             )
-        )

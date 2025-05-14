@@ -753,17 +753,27 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
     test_rotation_params: MultiRotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    sim_run_engine.add_read_handler_for(
-        fake_create_rotation_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # sim_run_engine.add_read_handler_for(
+    #     fake_create_rotation_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.UNKNOWN}
+
+    sim_run_engine.add_handler(
+        "locate",
+        locate_beamstop,
+        fake_create_rotation_devices.beamstop.selected_pos.name,
     )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            multi_rotation_scan(
-                fake_create_rotation_devices,
-                test_rotation_params,
-                oav_parameters_for_rotation,
+    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
+        with pytest.raises(BeamstopException):
+            sim_run_engine.simulate_plan(
+                multi_rotation_scan(
+                    fake_create_rotation_devices,
+                    test_rotation_params,
+                    oav_parameters_for_rotation,
+                )
             )
-        )
 
 
 @pytest.mark.timeout(2)
