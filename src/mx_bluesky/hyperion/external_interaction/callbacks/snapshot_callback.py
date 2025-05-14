@@ -19,7 +19,7 @@ from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER as CALLBACK_LOGGER
 
-COMPRESSION_LEVEL = 6
+COMPRESSION_LEVEL = 6  # 6 is the default compression level for PIL if not specified
 
 
 @dataclasses.dataclass
