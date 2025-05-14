@@ -313,6 +313,7 @@ def main():
         ),
         daemon=True,
     )
+
     flask_thread.start()
     LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
     runner.wait_on_queue()

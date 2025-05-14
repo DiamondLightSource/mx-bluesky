@@ -27,6 +27,7 @@ class I03Constants:
     USE_PANDA_FOR_GRIDSCAN = False
     SET_STUB_OFFSETS = False
     OMEGA_FLIP = True
+    ALERT_MANAGER_URL = "https://CONFIGURE_ME"
     ALTERNATE_ROTATION_DIRECTION = True
 
     # Turns on GPU processing for zocalo and uses the results that come back

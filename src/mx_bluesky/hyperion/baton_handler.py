@@ -7,6 +7,10 @@ from dodal.devices.baton import Baton
 
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import find_device_in_context
+from mx_bluesky.common.external_interaction.alerting import set_alerting_service
+from mx_bluesky.common.external_interaction.alerting.alert_manager import (
+    AlertManagerAlertService,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
@@ -17,6 +21,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import (
@@ -103,6 +108,10 @@ def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
 
     In the case of 1. or 2. hyperion will immediately release the baton. In the case of
     3. the baton will be released after the next collection has finished."""
+
+    flags = HyperionFeatureFlags()
+    flags.update_self_from_server()
+    set_alerting_service(AlertManagerAlertService(flags.alert_manager_url))
 
     baton = _get_baton(context)
     yield from wait_for_hyperion_requested(baton)
