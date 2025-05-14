@@ -45,9 +45,3 @@ def test_fgs_params(request):
     )
     params.file_name = "dummy"
     yield params
-
-
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
-):
-    return raw_params_from_file(json_file)
