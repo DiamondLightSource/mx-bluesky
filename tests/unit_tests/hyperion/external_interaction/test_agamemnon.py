@@ -1,4 +1,5 @@
 import json
+from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
@@ -274,39 +275,47 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     assert mock_log in mock_logger.mock_calls[0][1][0]
 
 
+@pytest.fixture
+def agamemnon_response(request) -> Generator[str, None, None]:
+    with (
+        patch("mx_bluesky.common.parameters.components.os", new=MagicMock()),
+        patch(
+            "mx_bluesky.hyperion.external_interaction.agamemnon.requests"
+        ) as mock_requests,
+        open(request.param) as json_file,
+    ):
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+        yield example_json
+
+
 @pytest.mark.parametrize(
-    "agamemnon_params",
-    ["example_collect.json", "example_collect_multipin.json"],
+    "agamemnon_response",
+    [
+        "tests/test_data/agamemnon/example_collect.json",
+        "tests/test_data/agamemnon/example_collect_multipin.json",
+    ],
+    indirect=True,
 )
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @patch("dodal.utils.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
-    mock_requests: MagicMock,
     mock_logger: MagicMock,
-    agamemnon_params: str,
+    agamemnon_response: str,
     load_centre_collect_params: LoadCentreCollect,
 ):
-    with open(f"tests/test_data/agamemnon/{agamemnon_params}") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     compare_params(load_centre_collect_params)
     mock_logger.warning.assert_not_called()
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_populate_parameters_from_agamemnon_contains_expected_data(
-    mock_requests: MagicMock,
-):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect.json"],
+    indirect=True,
+)
+def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
     hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
     assert hyperion_params.visit == "cm00000-0"
@@ -318,15 +327,14 @@ def test_populate_parameters_from_agamemnon_contains_expected_data(
     assert hyperion_params.select_centres.n == 1
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect.json"],
+    indirect=True,
+)
 def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     agamemnon_params = get_next_instruction("i03")
     hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
     robot_load_params = hyperion_params.robot_load_then_centre
@@ -353,17 +361,16 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     )
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect.json"],
+    indirect=True,
+)
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     agamemnon_params = get_next_instruction("i03")
     hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
     rotation_params = hyperion_params.multi_rotation_scan
@@ -372,20 +379,24 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert rotation_params.detector_params.omega_start == 0.0
     assert rotation_params.detector_params.exposure_time_s == 0.002
     assert rotation_params.detector_params.num_images_per_trigger == 3600
-    assert rotation_params.num_images == 3600
+    assert rotation_params.num_images == 7200
     assert rotation_params.transmission_frac == 0.5
     assert rotation_params.comment == "Complete_P1_sweep1 "
-    assert rotation_params.ispyb_experiment_type == "Characterization"
+    assert rotation_params.ispyb_experiment_type == "OSC"
 
     assert rotation_params.sample_puck == 40
     assert rotation_params.sample_pin == 3
 
     individual_scans = list(rotation_params.single_rotation_scans)
-    assert len(individual_scans) == 1
+    assert len(individual_scans) == 2
     assert individual_scans[0].scan_points["omega"][1] == 0.1
     assert individual_scans[0].phi_start_deg == 0.0
     assert individual_scans[0].chi_start_deg == 0.0
     assert individual_scans[0].rotation_direction == RotationDirection.POSITIVE
+    assert individual_scans[1].scan_points["omega"][1] == 0.1
+    assert individual_scans[1].phi_start_deg == 0.0
+    assert individual_scans[1].chi_start_deg == 30.0
+    assert individual_scans[1].rotation_direction == RotationDirection.POSITIVE
 
     assert rotation_params.demand_energy_ev == 12700.045934258673
     assert str(rotation_params.parameter_model_version) == "5.3.0"
@@ -396,27 +407,36 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     )
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_populate_multipin_parameters_from_agamemnon(
-    mock_requests: MagicMock,
-):
-    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect_multipin.json"],
+    indirect=True,
+)
+def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
     hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
     assert hyperion_params.select_centres.n == 6
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_get_withenergy_parameters_from_agamemnon(mock_requests: MagicMock):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
+def test_populate_parameters_creates_multiple_rotations_for_native_collection(
+    agamemnon_response,
+):
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params.multi_rotation_scan.rotation_scans) == 2
 
+
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect.json"],
+    indirect=True,
+)
+def test_get_withenergy_parameters_from_agamemnon(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
     demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] == 12700.045934258673
@@ -437,13 +457,13 @@ def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
     assert params is None
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect_multipin.json"],
+    indirect=True,
+)
 def test_create_parameters_from_agamemnon_does_not_return_none_if_queue_is_not_empty(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
     params = create_parameters_from_agamemnon()
     assert params is not None
