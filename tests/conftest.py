@@ -68,6 +68,7 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -1645,3 +1646,16 @@ def xbpm_and_transmission_wrapper_composite(
     return XBPMAndTransmissionWrapperComposite(
         undulator, xbpm_feedback, attenuator, dcm
     )
+
+
+def assert_images_pixelwise_equal(actual, expected):
+    with Image.open(expected) as expected_image:
+        expected_bytes = expected_image.tobytes()
+        with Image.open(actual) as actual_image:
+            actual_bytes = actual_image.tobytes()
+            # assert tries to be clever and takes forever if this is inlined and
+            # the comparison fails
+            bytes_expected_bytes = actual_bytes == expected_bytes
+            assert bytes_expected_bytes, (
+                f"Actual and expected images differ, {actual} != {expected}"
+            )

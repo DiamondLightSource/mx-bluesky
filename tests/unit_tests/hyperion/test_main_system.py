@@ -142,7 +142,7 @@ def test_env(request: pytest.FixtureRequest):
             MagicMock(return_value=mock_context),
         ),
     ):
-        app, runner = create_app({"TESTING": True}, mock_run_engine, True)  # type: ignore
+        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -338,32 +338,30 @@ def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngi
     check_status_in_response(response, Status.FAILED)
 
 
-test_argument_combinations = [
-    (
-        [
-            "--dev",
-        ],
-        (True, False, False, False),
-    ),
-    ([], (False, False, False, False)),
-    (
-        [
-            "--dev",
-            "--skip-startup-connection",
-            "--verbose-event-logging",
-        ],
-        (True, True, True),
-    ),
-]
-
-
-@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
+@pytest.mark.parametrize(
+    ["arg_list", "parsed_arg_values"],
+    [
+        (
+            [
+                "--dev",
+            ],
+            (True, False),
+        ),
+        ([], (False, False)),
+        (
+            [
+                "--dev",
+                "--verbose-event-logging",
+            ],
+            (True, True),
+        ),
+    ],
+)
 def test_cli_args_parse(arg_list, parsed_arg_values):
     argv[1:] = arg_list
     test_args = parse_cli_args()
     assert test_args.dev_mode == parsed_arg_values[0]
     assert test_args.verbose_event_logging == parsed_arg_values[1]
-    assert test_args.skip_startup_connection == parsed_arg_values[2]
 
 
 @pytest.mark.skip(
@@ -402,7 +400,6 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
         BlueskyRunner(
             RE=MagicMock(),
             context=context,
-            skip_startup_connection=False,
         )
 
     zebra.wait_for_connection.assert_called()
@@ -413,7 +410,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.create_devices",
     autospec=True,
 )
-def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
+def test_when_blueskyrunner_initiated_then_setup_called_upon_start(
     mock_setup, hyperion_fgs_params: HyperionSpecifiedThreeDGridScan
 ):
     mock_setup = MagicMock()
@@ -427,39 +424,11 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         },
         clear=True,
     ):
-        runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
+        runner = BlueskyRunner(MagicMock(), MagicMock())
         mock_setup.assert_not_called()
         runner.start(lambda: None, hyperion_fgs_params, "multi_rotation_scan")
         mock_setup.assert_called_once()
         runner.shutdown()
-
-
-def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup():
-    mock_setup = MagicMock()
-    with patch.dict(
-        "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
-        {
-            "hyperion_flyscan_xray_centre": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "rotation_scan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "other_plan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "yet_another_plan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-        },
-        clear=True,
-    ):
-        BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=False)
-        assert mock_setup.call_count == 4
 
 
 def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
@@ -507,7 +476,7 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         with patch(
             "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
         ):
-            context = setup_context(wait_for_connection=False)
+            context = setup_context()
         plan_names = context.plans.keys()
 
         # assert "rotation_scan" in plan_names
