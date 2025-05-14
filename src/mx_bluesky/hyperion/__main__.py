@@ -82,7 +82,6 @@ class BlueskyRunner:
         self,
         RE: RunEngine,
         context: BlueskyContext,
-        skip_startup_connection=False,
     ) -> None:
         self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -100,12 +99,6 @@ class BlueskyRunner:
 
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
-
-        self.skip_startup_connection = skip_startup_connection
-        if not self.skip_startup_connection:
-            LOGGER.info("Initialising dodal devices...")
-            for plan_name in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan_name]["setup"](context)
 
     def start(
         self,
@@ -278,15 +271,11 @@ class FlushLogs(Resource):
 def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
-    skip_startup_connection: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
-    context = setup_context(
-        wait_for_connection=not skip_startup_connection,
-    )
+    context = setup_context()
     runner = BlueskyRunner(
         RE,
         context=context,
-        skip_startup_connection=skip_startup_connection,
     )
     app = Flask(__name__)
     if test_config:
@@ -316,9 +305,7 @@ def create_targets():
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    app, runner = create_app(
-        skip_startup_connection=args.skip_startup_connection,
-    )
+    app, runner = create_app()
     return app, runner, hyperion_port, args.dev_mode
 
 

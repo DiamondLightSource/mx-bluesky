@@ -4,9 +4,6 @@
 
 for option in "$@"; do
     case $option in
-        --skip-startup-connection)
-            SKIP_STARTUP_CONNECTION=true
-            ;;
         --dev)
             IN_DEV=true
             ;;
@@ -42,10 +39,8 @@ start_log_path=$LOG_DIR/start_log.log
 callback_start_log_path=$LOG_DIR/callback_start_log.log
 
 #Add future arguments here
-declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
-                                ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
-declare -A h_only_arg_strings=( ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection"
-                                ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
+declare -A h_only_args=( ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
+declare -A h_only_arg_strings=( ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
 
 declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
 declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
