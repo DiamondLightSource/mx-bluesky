@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import numpy
 import pydantic
 import pytest
+from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
@@ -549,18 +550,26 @@ def beamstop_i03(
     RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+        "dodal.beamlines.i03.get_beamline_parameters",
+        return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
         patch_motor(beamstop.x_mm)
         patch_motor(beamstop.y_mm)
         patch_motor(beamstop.z_mm)
+
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
         set_mock_value(beamstop.z_mm.user_readback, 30.0)
-        sim_run_engine.add_read_handler_for(
-            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+
+        beamstop.selected_pos.locate = MagicMock()
+        beamstop.selected_pos.locate.return_value = Location(
+            readback=BeamstopPositions.DATA_COLLECTION
         )
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
         yield beamstop
         beamline_utils.clear_devices()
 
