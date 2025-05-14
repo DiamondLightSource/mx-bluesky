@@ -5,7 +5,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import Msg
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.mx_phase1.beamstop import Beamstop
+from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 
 from mx_bluesky.common.device_setup_plans.check_beamstop import check_beamstop
 from mx_bluesky.common.device_setup_plans.position_detector import (
@@ -41,6 +41,9 @@ def start_preparing_data_collection_then_do_plan(
         yield from set_shutter(detector_motion, ShutterState.OPEN, group)
         yield from plan_to_run
 
+    yield from bps.abs_set(
+        beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, wait=True
+        )
     yield from check_beamstop(beamstop)
     yield from bpp.contingency_wrapper(
         wrapped_plan(),
