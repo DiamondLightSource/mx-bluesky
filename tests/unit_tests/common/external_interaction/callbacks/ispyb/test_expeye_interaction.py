@@ -23,7 +23,7 @@ def test_when_start_load_called_then_correct_expected_url_posted_to_with_expecte
     mock_post,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.start_load("test", 3, 700, 10, 5)
+    expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5)
 
     mock_post.assert_called_once()
     assert (
@@ -44,7 +44,7 @@ def test_when_start_load_called_then_correct_expected_url_posted_to_with_expecte
 def test_when_start_called_then_returns_id(mock_post):
     mock_post.return_value.json.return_value = {"robotActionId": 190}
     expeye_interactor = ExpeyeInteraction()
-    robot_id = expeye_interactor.start_load("test", 3, 700, 10, 5)
+    robot_id = expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5)
     assert robot_id == 190
 
 
@@ -55,7 +55,7 @@ def test_when_bad_response_no_json_handled_correctly(mock_post):
 
     expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
-        expeye_interactor.start_load("test", 3, 700, 10, 5)
+        expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5)
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.post")
@@ -63,7 +63,7 @@ def test_when_start_load_called_then_use_correct_token(
     mock_post,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.start_load("test", 3, 700, 10, 5)
+    expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5)
 
     assert isinstance(auth := mock_post.call_args.kwargs["auth"], BearerAuth)
     assert auth.token == "notatoken"
@@ -75,16 +75,16 @@ def test_given_server_does_not_respond_when_start_load_called_then_error(mock_po
 
     expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
-        expeye_interactor.start_load("test", 3, 700, 10, 5)
+        expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5)
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")
-def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
+def test_when_end_robot_action_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
     # mocks HTTP PATCH
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.end_load(3, "success", "")
+    expeye_interactor.end_robot_action(3, "success", "")
 
     mock_patch.assert_called_once()
     assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
@@ -97,11 +97,11 @@ def test_when_end_load_called_with_success_then_correct_expected_url_posted_to_w
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")
-def test_when_end_load_called_with_failure_then_correct_expected_url_posted_to_with_expected_data(
+def test_when_end_robot_action_called_with_failure_then_correct_expected_url_posted_to_with_expected_data(
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.end_load(3, "fail", "bad")
+    expeye_interactor.end_robot_action(3, "fail", "bad")
 
     mock_patch.assert_called_once()
     assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
@@ -114,23 +114,25 @@ def test_when_end_load_called_with_failure_then_correct_expected_url_posted_to_w
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")
-def test_when_end_load_called_then_use_correct_token(
+def test_when_end_robot_action_called_then_use_correct_token(
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.end_load(3, "success", "")
+    expeye_interactor.end_robot_action(3, "success", "")
 
     assert isinstance(auth := mock_patch.call_args.kwargs["auth"], BearerAuth)
     assert auth.token == "notatoken"
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")
-def test_given_server_does_not_respond_when_end_load_called_then_error(mock_patch):
+def test_given_server_does_not_respond_when_end_robot_action_called_then_error(
+    mock_patch,
+):
     mock_patch.return_value.ok = False
 
     expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
-        expeye_interactor.end_load(1, "", "")
+        expeye_interactor.end_robot_action(1, "", "")
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")

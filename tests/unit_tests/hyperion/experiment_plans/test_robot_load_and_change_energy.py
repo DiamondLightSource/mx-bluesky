@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     robot_load_and_change_energy_plan,
     take_robot_snapshots,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
@@ -170,7 +170,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
@@ -197,7 +197,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
-    exp_eye.return_value.start_load.return_value = action_id
+    exp_eye.return_value.start_robot_action.return_value = action_id
 
     RE(
         robot_load_and_change_energy_plan(
@@ -205,11 +205,15 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
         )
     )
 
-    exp_eye.return_value.start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
+    exp_eye.return_value.start_robot_action.assert_called_once_with(
+        "LOAD", "cm31105", 4, 12345, 40, 3
+    )
     exp_eye.return_value.update_barcode_and_snapshots.assert_called_once_with(
         action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    exp_eye.return_value.end_load.assert_called_once_with(action_id, "success", "OK")
+    exp_eye.return_value.end_robot_action.assert_called_once_with(
+        action_id, "success", "OK"
+    )
 
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")

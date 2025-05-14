@@ -1,6 +1,7 @@
 import configparser
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Literal
 
 from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
@@ -74,17 +75,19 @@ class ExpeyeInteraction:
         self._base_url = url
         self._auth = BearerAuth(token)
 
-    def start_load(
+    def start_robot_action(
         self,
+        action_type: Literal["LOAD", "UNLOAD"],
         proposal_reference: str,
         visit_number: int,
         sample_id: int,
         dewar_location: int,
         container_location: int,
     ) -> RobotActionID:
-        """Create a robot load entry in ispyb.
+        """Create a robot action entry in ispyb.
 
         Args:
+            action_type ("LOAD" | "UNLOAD"): The robot action being performed
             proposal_reference (str): The proposal of the experiment e.g. cm37235
             visit_number (int): The visit number for the proposal, usually this can be
                                 found added to the end of the proposal e.g. the data for
@@ -103,7 +106,7 @@ class ExpeyeInteraction:
         data = {
             "startTimestamp": get_current_time_string(),
             "sampleId": sample_id,
-            "actionType": "LOAD",
+            "actionType": action_type,
             "containerLocation": container_location,
             "dewarLocation": dewar_location,
         }
@@ -134,7 +137,7 @@ class ExpeyeInteraction:
         }
         _send_and_get_response(self._auth, url, data, patch)
 
-    def end_load(self, action_id: RobotActionID, status: str, reason: str):
+    def end_robot_action(self, action_id: RobotActionID, status: str, reason: str):
         """Finish an existing robot action, providing final information about how it went
 
         Args:

@@ -37,8 +37,8 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
 
     expeye = ExpeyeInteraction()
 
-    robot_action_id = expeye.start_load(
-        proposal, session, SimConstants.ST_SAMPLE_ID, 40, 3
+    robot_action_id = expeye.start_robot_action(
+        "LOAD", proposal, session, SimConstants.ST_SAMPLE_ID, 40, 3
     )
 
     sleep(0.5)
@@ -54,7 +54,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
 
     sleep(0.5)
 
-    expeye.end_load(robot_action_id, "fail", message)
+    expeye.end_robot_action(robot_action_id, "fail", message)
 
     get_robot_data_url = f"{expeye._base_url}/robot-actions/{robot_action_id}"
     response = get(get_robot_data_url, auth=expeye._auth)

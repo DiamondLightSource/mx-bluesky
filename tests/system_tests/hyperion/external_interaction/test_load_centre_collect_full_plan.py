@@ -42,7 +42,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -258,8 +258,8 @@ def test_execute_load_centre_collect_full(
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     robot_load_cb = RobotLoadISPyBCallback()
     # robot_load_cb.expeye = MagicMock()
-    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
-    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_robot_action = MagicMock()
     robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
@@ -279,7 +279,7 @@ def test_execute_load_centre_collect_full(
         load_centre_collect_params.visit
     )
     expected_sample_id = load_centre_collect_params.sample_id
-    robot_load_cb.expeye.start_load.assert_called_once_with(
+    robot_load_cb.expeye.start_robot_action.assert_called_once_with(
         expected_proposal, expected_visit, expected_sample_id, 2, 6
     )
     # TODO re-enable this https://github.com/DiamondLightSource/mx-bluesky/issues/690
@@ -289,7 +289,7 @@ def test_execute_load_centre_collect_full(
     #     "/tmp/dls/i03/data/2024/cm31105-4/auto/123457/xraycentring/snapshots/160705_webcam_after_load.png",
     #     "/tmp/snapshot1.png",
     # )
-    robot_load_cb.expeye.end_load.assert_called_once_with(1234, "success", "OK")
+    robot_load_cb.expeye.end_robot_action.assert_called_once_with(1234, "success", "OK")
 
     # Compare gridscan collection
     compare_actual_and_expected(
@@ -602,8 +602,8 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     robot_load_cb = RobotLoadISPyBCallback()
-    robot_load_cb.expeye.start_load = MagicMock(return_value=1234)
-    robot_load_cb.expeye.end_load = MagicMock()
+    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_robot_action = MagicMock()
     robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
