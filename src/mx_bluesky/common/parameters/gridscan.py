@@ -185,34 +185,3 @@ class SpecifiedThreeDGridScan(
     @property
     def num_images(self) -> int:
         return len(self.scan_points["sam_x"])
-
-    @property
-    def detector_params(self):
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or DetectorParamConstants.BEAM_XY_LUT_PATH
-        )
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None, (
-            "Detector distance must be filled before generating DetectorParams"
-        )
-        return DetectorParams(
-            detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[
-                get_beamline_name("dev")
-            ],
-            expected_energy_ev=self.demand_energy_ev,
-            exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
-            prefix=self.file_name,
-            detector_distance=self.detector_distance_mm,
-            omega_start=self.omega_start_deg or 0,
-            omega_increment=0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
-            trigger_mode=self.trigger_mode,
-            **optional_args,
-        )
