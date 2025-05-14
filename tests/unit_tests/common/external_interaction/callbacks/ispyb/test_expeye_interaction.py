@@ -41,6 +41,29 @@ def test_when_start_load_called_then_correct_expected_url_posted_to_with_expecte
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.post")
+def test_when_start_load_called_with_barcode_then_expected_data_posted(
+    mock_post,
+):
+    expeye_interactor = ExpeyeInteraction()
+    expeye_interactor.start_robot_action("LOAD", "test", 3, 700, 10, 5, "my_barcode")
+
+    mock_post.assert_called_once()
+    assert (
+        mock_post.call_args.args[0]
+        == "http://blah/proposals/test/sessions/3/robot-actions"
+    )
+    expected_data = {
+        "startTimestamp": ANY,
+        "sampleId": 700,
+        "actionType": "LOAD",
+        "containerLocation": 5,
+        "dewarLocation": 10,
+        "sampleBarcode": "my_barcode",
+    }
+    assert mock_post.call_args.kwargs["json"] == expected_data
+
+
+@patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.post")
 def test_when_start_called_then_returns_id(mock_post):
     mock_post.return_value.json.return_value = {"robotActionId": 190}
     expeye_interactor = ExpeyeInteraction()
