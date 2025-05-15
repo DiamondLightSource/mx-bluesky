@@ -39,6 +39,9 @@ class I03Constants:
 
 @dataclass(frozen=True)
 class HyperionConstants:
+    WAIT = PlanGroupCheckpointConstants()
+    HARDWARE = HardwareConstants()
+    DESCRIPTORS = DocDescriptorNames()
     DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()

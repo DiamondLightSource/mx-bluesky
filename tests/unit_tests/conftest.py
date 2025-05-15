@@ -16,6 +16,9 @@ from event_model.documents import Event
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    FlyScanEssentialDevices,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -38,9 +41,6 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    FlyScanEssentialDevices,
-)
 from tests.conftest import raw_params_from_file
 
 
