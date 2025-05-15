@@ -2,18 +2,18 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import aithre
-from dodal.devices.aithre_lasershaping.goniometer import Goniometer
+from dodal.devices.aithre_lasershaping.goniometer import AithreGoniometer
 
 from mx_bluesky.beamlines.aithre_lasershaping import check_omega_performance
 
 
 @pytest.fixture
-def goniometer(RE: RunEngine) -> Goniometer:
+def goniometer(RE: RunEngine) -> AithreGoniometer:
     return aithre.goniometer(connect_immediately=True, mock=True)
 
 
 def test_goniometer_omega_performance_check(
-    sim_run_engine: RunEngineSimulator, goniometer: Goniometer
+    sim_run_engine: RunEngineSimulator, goniometer: AithreGoniometer
 ):
     msgs = sim_run_engine.simulate_plan(check_omega_performance(goniometer))
     assert len(msgs) == 132
