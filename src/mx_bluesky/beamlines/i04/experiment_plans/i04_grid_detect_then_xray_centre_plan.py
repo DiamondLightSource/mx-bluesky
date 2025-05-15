@@ -45,6 +45,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
+    PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
@@ -75,7 +76,7 @@ def i04_grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
     yield from setup_beamline_for_OAV(
-        composite.smargon, composite.backlight, composite.aperture_scatterguard
+        composite.smargon, composite.backlight, composite.aperture_scatterguard, wait=True
     )
 
     callbacks = create_gridscan_callbacks()
@@ -108,6 +109,7 @@ def get_ready_for_oav_and_close_shutter(
     aperture_scatterguard: ApertureScatterguard,
     detector_motion: DetectorMotion,
 ):
+    yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     yield from setup_beamline_for_OAV(
         smargon, backlight, aperture_scatterguard, group=group

@@ -33,7 +33,7 @@ def main():
     def my_plan():
         yield from (
             i04_grid_detect_then_xray_centre(
-                composite=composite, parameters=parameters, oav_config=oav_config_json
+                composite=composite, parameters=parameters, oav_config=oav_config_json, udc=False
             )
         )
 
