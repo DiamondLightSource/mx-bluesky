@@ -1,6 +1,6 @@
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.devices.aithre_lasershaping.goniometer import Goniometer
+from dodal.devices.aithre_lasershaping.goniometer import AithreGoniometer
 
 DEFAULT_VELOCITIES = [5.0, 10.0, 20.0, 40.0, 80.0, 90.0]
 DEFAULT_POSITIONS = [
@@ -18,7 +18,7 @@ DEFAULT_POSITIONS = [
 
 
 def check_omega_performance(
-    goniometer: Goniometer,
+    goniometer: AithreGoniometer,
     velocities: list[float] = DEFAULT_VELOCITIES,
     values: list[float] = DEFAULT_POSITIONS,
 ) -> MsgGenerator:
