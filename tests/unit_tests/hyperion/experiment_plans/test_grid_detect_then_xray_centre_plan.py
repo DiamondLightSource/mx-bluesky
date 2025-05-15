@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Generator
 from typing import cast
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -87,11 +87,21 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
         )
     )
 
-    # Check backlight was moved OUT
-    get_mock_put(composite.backlight.position).assert_called_once_with(
-        BacklightPosition.OUT, wait=ANY
+    # Check backlight was moved IN for grid detect then OUT for gridscan
+    backlight_mock = get_mock_put(composite.backlight.position)
+    backlight_mock.assert_has_calls(
+        [call(BacklightPosition.IN, wait=True), call(BacklightPosition.OUT, wait=True)],
+        any_order=False,
     )
+    assert backlight_mock.call_count == 2
 
+    # Check aperture was moved out of beam for grid detect
+    assert (
+        call(ApertureValue.OUT_OF_BEAM, wait=True)
+        in get_mock_put(
+            composite.aperture_scatterguard.selected_aperture
+        ).call_args_list
+    )
     # Check aperture was changed to SMALL
     assert (
         await composite.aperture_scatterguard.selected_aperture.get_value()
