@@ -49,6 +49,9 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
+from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
+    setup_beamline_for_OAV,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
@@ -105,6 +108,13 @@ def detect_grid_and_do_gridscan(
             parameters.grid_width_um,
             parameters.box_size_um,
         )
+
+    yield from setup_beamline_for_OAV(
+        composite.smargon,
+        composite.backlight,
+        composite.aperture_scatterguard,
+        wait=True,
+    )
 
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in
