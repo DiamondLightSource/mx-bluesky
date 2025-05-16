@@ -45,6 +45,9 @@ def start_preparing_data_collection_then_do_plan(
 
     def wrapped_plan():
         yield from bps.abs_set(eiger.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        yield from bps.abs_set(
+            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, wait=True
+        )
         if detector_distance_mm:
             yield from set_detector_z_position(
                 detector_motion, detector_distance_mm, group
@@ -52,9 +55,6 @@ def start_preparing_data_collection_then_do_plan(
         yield from set_shutter(detector_motion, ShutterState.OPEN, group)
         yield from plan_to_run
 
-    yield from bps.abs_set(
-        beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, wait=True
-    )
     yield from check_beamstop(beamstop)
     yield from bpp.contingency_wrapper(
         wrapped_plan(),
