@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, SupportsInt, cast
+from typing import Literal, Self, SupportsInt, cast
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
@@ -114,12 +114,32 @@ class MxBlueskyParameters(BaseModel):
 
 
 class WithSnapshot(BaseModel):
+    """
+    Configures how snapshot images are created.
+    Attributes:
+        snapshot_directory: Path to the directory where snapshot images will be stored
+        snapshot_omegas_deg: list of omega values at which snapshots will be taken. For
+            gridscans, this attribute is ignored.
+        use_grid_snapshots: This may be specified for rotation snapshots to speed up rotation
+            execution. If set to True then rotation snapshots are generated from the
+            previously captured grid snapshots. Otherwise they are captured using
+            freshly captured snapshots during the rotation plan.
+    """
+
     snapshot_directory: Path
     snapshot_omegas_deg: list[float] | None = None
+    use_grid_snapshots: bool = False
 
     @property
     def take_snapshots(self) -> bool:
-        return bool(self.snapshot_omegas_deg)
+        return bool(self.snapshot_omegas_deg) or self.use_grid_snapshots
+
+    @model_validator(mode="after")
+    def _validate_omegas_with_grid_snapshots(self) -> Self:
+        assert not self.use_grid_snapshots or self.snapshot_omegas_deg is None, (
+            "snapshot_omegas may not be specified with use_grid_snapshots"
+        )
+        return self
 
 
 class WithOptionalEnergyChange(BaseModel):
