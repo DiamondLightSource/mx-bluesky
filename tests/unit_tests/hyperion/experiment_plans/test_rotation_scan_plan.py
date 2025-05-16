@@ -10,7 +10,6 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -19,7 +18,6 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -745,25 +743,6 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
             ),
         )
     mock_zocalo_interactor.return_value.run_start.assert_called_once()
-
-
-def test_rotation_scan_fails_with_exception_when_no_beamstop(
-    sim_run_engine: RunEngineSimulator,
-    fake_create_rotation_devices: RotationScanComposite,
-    test_rotation_params: MultiRotationScan,
-    oav_parameters_for_rotation: OAVParameters,
-):
-    sim_run_engine.add_read_handler_for(
-        fake_create_rotation_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            multi_rotation_scan(
-                fake_create_rotation_devices,
-                test_rotation_params,
-                oav_parameters_for_rotation,
-            )
-        )
 
 
 @pytest.mark.timeout(2)

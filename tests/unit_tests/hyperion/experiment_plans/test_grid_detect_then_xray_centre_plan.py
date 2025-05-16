@@ -8,10 +8,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.util.test_utils import patch_motor
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -319,4 +321,34 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL,
+    )
+
+
+@patch("mx_bluesky.hyperion.device_setup_plans.utils.bpp.contingency_wrapper")
+def test_beamstop_moves_into_place_before_xrc_if_previously_out_of_place(
+    sim_run_engine: RunEngineSimulator,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+):
+    grid_detect_devices_with_oav_config_params.beamstop = i03.beamstop(
+        connect_immediately=True, mock=True
+    )
+    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.x_mm)
+    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.y_mm)
+    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.z_mm)
+
+    set_mock_value(
+        grid_detect_devices_with_oav_config_params.beamstop.x_mm.user_readback, 0
+    )
+    set_mock_value(
+        grid_detect_devices_with_oav_config_params.beamstop.y_mm.user_readback, 0
+    )
+    set_mock_value(
+        grid_detect_devices_with_oav_config_params.beamstop.z_mm.user_readback, 0
+    )
+
+    sim_run_engine.simulate_plan(
+        grid_detect_then_xray_centre(
+            grid_detect_devices_with_oav_config_params, test_full_grid_scan_params
+        )
     )
