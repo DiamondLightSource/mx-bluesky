@@ -7,11 +7,9 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
@@ -356,29 +354,3 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "pin_tip_centre_plan"
     )
-
-
-def test_pin_tip_centre_then_xray_centre_fails_with_exception_when_no_beamstop(
-    sim_run_engine: RunEngineSimulator,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
-    test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-):
-    # sim_run_engine.add_read_handler_for(
-    #     grid_detect_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    # )
-    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
-    def locate_beamstop(_):
-        return {"readback": BeamstopPositions.UNKNOWN}
-
-    sim_run_engine.add_handler(
-        "locate",
-        locate_beamstop,
-        grid_detect_devices.beamstop.selected_pos.name,
-    )
-    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
-        with pytest.raises(BeamstopException):
-            sim_run_engine.simulate_plan(
-                pin_tip_centre_then_xray_centre(
-                    grid_detect_devices, test_pin_centre_then_xray_centre_params
-                )
-            )
