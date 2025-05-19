@@ -1,22 +1,19 @@
 from functools import partial
 from pathlib import Path
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
-    prepare_for_robot_load,
     robot_load_and_change_energy_plan,
     take_robot_snapshots,
 )
@@ -144,29 +141,6 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
             1000,
             sim_run_engine,
         )
-
-
-async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
-    aperture_scatterguard: ApertureScatterguard, smargon: Smargon, done_status
-):
-    smargon.stub_offsets.set = MagicMock(return_value=done_status)
-    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
-
-    set_mock_value(smargon.x.user_setpoint, 10)
-    set_mock_value(smargon.z.user_setpoint, 5)
-    set_mock_value(smargon.omega.user_setpoint, 90)
-
-    RE = RunEngine()
-    RE(prepare_for_robot_load(aperture_scatterguard, smargon))
-
-    assert await smargon.x.user_setpoint.get_value() == 0
-    assert await smargon.z.user_setpoint.get_value() == 0
-    assert await smargon.omega.user_setpoint.get_value() == 0
-
-    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
-        ApertureValue.OUT_OF_BEAM, wait=ANY
-    )
 
 
 @patch(

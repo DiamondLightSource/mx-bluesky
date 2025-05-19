@@ -32,7 +32,7 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
-def raise_exception_if_moved_out_of_cryojet(exception):
+def _raise_exception_if_moved_out_of_cryojet(exception):
     yield from bps.null()
     if isinstance(exception, MoveTooLarge):
         raise Exception(
@@ -56,7 +56,7 @@ def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZPositi
             "lower_gonio",
             wait_for_all=False,
         ),
-        except_plan=raise_exception_if_moved_out_of_cryojet,
+        except_plan=_raise_exception_if_moved_out_of_cryojet,
     )
     return "reset-lower_gonio"
 
@@ -119,7 +119,7 @@ def robot_unload(
             yield from wait_for_smargon_not_disabled(smargon)
 
         gonio_finished = yield from do_plan_while_lower_gonio_at_home(
-            _unload, lower_gonio
+            _unload(), lower_gonio
         )
         yield from bps.wait(gonio_finished)
 

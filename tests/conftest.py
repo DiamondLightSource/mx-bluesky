@@ -604,8 +604,19 @@ def vfm(RE: RunEngine):
 
 
 @pytest.fixture
-def lower_gonio(RE: RunEngine):
+def lower_gonio(
+    RE: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
+
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_gonio(_):
+        return {"readback": 0}
+
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
