@@ -155,17 +155,15 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
+    robot = robot_load_and_energy_change_composite.robot
+    webcam = robot_load_and_energy_change_composite.webcam
     set_mock_value(
         robot_load_and_energy_change_composite.oav.snapshot.last_saved_path,
         "test_oav_snapshot",
-    )  # type: ignore
-    set_mock_value(
-        robot_load_and_energy_change_composite.webcam.last_saved_path,
-        "test_webcam_snapshot",
     )
-    robot_load_and_energy_change_composite.webcam.trigger = MagicMock(
-        return_value=NullStatus()
-    )
+    set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
+    webcam.trigger = MagicMock(return_value=NullStatus())
+    set_mock_value(robot.barcode, "BARCODE")
 
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
@@ -188,6 +186,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
             "sampleBarcode": "BARCODE",
             "xtalSnapshotBefore": "test_webcam_snapshot",
             "xtalSnapshotAfter": "test_oav_snapshot",
+            "containerLocation": 3,
+            "dewarLocation": 40,
+            "sampleId": 12345,
         },
     )
     exp_eye.return_value.end_robot_action.assert_called_once_with(

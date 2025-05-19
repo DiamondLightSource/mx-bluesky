@@ -109,7 +109,7 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
 @bpp.run_decorator(md=metadata)
 def successful_robot_load_plan(robot: BartRobot, oav: OAV, webcam: Webcam):
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
-    yield from bps.read(robot.barcode)
+    yield from bps.read(robot)
     yield from bps.read(oav.snapshot)
     yield from bps.read(webcam)
     yield from bps.save()
@@ -137,6 +137,9 @@ def test_given_plan_reads_robot_then_data_put_in_ispyb(
 
     set_mock_value(oav.snapshot.last_saved_path, "test_oav_snapshot")
     set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
+    set_mock_value(robot.sample_id, SAMPLE_ID)
+    set_mock_value(robot.current_pin, SAMPLE_PIN)
+    set_mock_value(robot.current_puck, SAMPLE_PUCK)
 
     RE(successful_robot_load_plan(robot, oav, webcam))
 
@@ -149,6 +152,9 @@ def test_given_plan_reads_robot_then_data_put_in_ispyb(
             "sampleBarcode": "BARCODE",
             "xtalSnapshotBefore": "test_webcam_snapshot",
             "xtalSnapshotAfter": "test_oav_snapshot",
+            "containerLocation": SAMPLE_PIN,
+            "dewarLocation": SAMPLE_PUCK,
+            "sampleId": SAMPLE_ID,
         },
     )
     expeye.return_value.end_robot_action.assert_called_once_with(

@@ -41,7 +41,7 @@ from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfig
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
@@ -525,7 +525,14 @@ def ophyd_pin_tip_detection(RE: RunEngine):
 def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
-    robot.set = MagicMock(return_value=done_status)
+
+    @AsyncStatus.wrap
+    async def fake_load(val: SampleLocation):
+        set_mock_value(robot.current_pin, val.pin)
+        set_mock_value(robot.current_puck, val.puck)
+        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+
+    robot.set = MagicMock(side_effect=fake_load)
     return robot
 
 

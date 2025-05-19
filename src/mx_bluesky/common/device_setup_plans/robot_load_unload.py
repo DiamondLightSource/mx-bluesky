@@ -108,10 +108,7 @@ def robot_unload(
     )
     def do_robot_unload_and_send_to_ispyb():
         yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
-        yield from bps.read(robot.barcode)
-        yield from bps.read(robot.sample_id)
-        yield from bps.read(robot.current_pin)
-        yield from bps.read(robot.current_puck)
+        yield from bps.read(robot)
         yield from bps.save()
 
         def _unload():

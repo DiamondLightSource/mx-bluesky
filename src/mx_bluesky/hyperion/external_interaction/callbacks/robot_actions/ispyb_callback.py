@@ -72,6 +72,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             # I03 uses webcam/oav snapshots in place of before/after snapshots
             data = {
                 "sampleBarcode": event_data["robot-barcode"],
+                "sampleId": event_data["robot-sample_id"],
+                "containerLocation": event_data["robot-current_pin"],
+                "dewarLocation": event_data["robot-current_puck"],
                 "xtalSnapshotBefore": event_data["webcam-last_saved_path"],
                 "xtalSnapshotAfter": event_data["oav-snapshot-last_saved_path"],
             }

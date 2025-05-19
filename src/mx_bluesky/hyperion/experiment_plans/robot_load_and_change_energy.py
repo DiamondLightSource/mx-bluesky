@@ -80,9 +80,12 @@ def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
 def do_robot_load(
     composite: RobotLoadAndEnergyChangeComposite,
     sample_location: SampleLocation,
+    sample_id: int,
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
+    yield from bps.abs_set(composite.robot.next_sample_id, sample_id, wait=True)
+
     yield from bps.abs_set(
         composite.robot,
         sample_location,
@@ -116,6 +119,7 @@ def robot_load_and_snapshots(
     composite: RobotLoadAndEnergyChangeComposite,
     location: SampleLocation,
     snapshot_directory: Path,
+    sample_id: int,
     thawing_time: float,
     demand_energy_ev: float | None,
 ):
@@ -124,6 +128,7 @@ def robot_load_and_snapshots(
     robot_load_plan = do_robot_load(
         composite,
         location,
+        sample_id,
         demand_energy_ev,
         thawing_time,
     )
@@ -163,6 +168,7 @@ def robot_load_and_change_energy_plan(
                 composite,
                 sample_location,
                 params.snapshot_directory,
+                params.sample_id,
                 params.thawing_time,
                 params.demand_energy_ev,
             ),
