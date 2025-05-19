@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>hyperion &#8212; mx-bluesky 1.0.1.dev249+g3bd72f119 documentation</title>
+    <title>hyperion &#8212; mx-bluesky 1.0.1.dev250+gef5d178ba documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=13042dce"></script>
+    <script src="../../../_static/documentation_options.js?v=4e1e8b07"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -523,18 +523,16 @@
 <section id="starting-the-bluesky-runner">
 <h2>Starting the bluesky runner<a class="headerlink" href="#starting-the-bluesky-runner" title="Link to this heading">#</a></h2>
 <p>The bluesky runner is (re)started in production by GDA when it invokes <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span></code>.</p>
+<p>This script will determine which beamline you are on based on the <code class="docutils literal notranslate"><span class="pre">BEAMLINE</span></code> environment variable. If on a
+beamline Hyperion will run with <code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging, sending its logs to both production graylog and to the
+beamline/log/bluesky/hyperion.log on the shared file system.</p>
 <p>If you wish to attempt to run from a developer machine, then (if you are able to connect all devices)
 you may <code class="docutils literal notranslate"><span class="pre">run_hyperion.sh</span> <span class="pre">--dev</span> <span class="pre">--beamline=&lt;beamline&gt;</span></code>, which will give you a running instance albeit with
-read-only devices. The <code class="docutils literal notranslate"><span class="pre">--dev</span></code> flag ensures that logging will not be sent to the production Graylog/output folders.</p>
-<p>This script will determine which beamline you are on based on the <code class="docutils literal notranslate"><span class="pre">BEAMLINE</span></code> environment variable. If on a
-beamline Hyperion will run with <code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.log on the shared file system.</p>
+read-only devices. The <code class="docutils literal notranslate"><span class="pre">--dev</span></code> flag ensures that logging will not be sent to the production Graylog/output folders
+and that hyperion will create mock devices.</p>
 <p>If in a dev environment Hyperion will log to a local graylog instance instead and into a file at <code class="docutils literal notranslate"><span class="pre">./tmp/dev/hyperion.log</span></code>. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the <code class="docutils literal notranslate"><span class="pre">setup_graylog.sh</span></code> script.</p>
 <p>This uses the generic defaults for a local graylog instance. It can be accessed on <code class="docutils literal notranslate"><span class="pre">localhost:9000</span></code> where the username and password for the graylog portal are both admin.</p>
 <p>The hyperion python module can also be run directly without the startup script. It takes the same command line options, including:</p>
-<p><code class="docutils literal notranslate"><span class="pre">INFO</span></code> level logging of the Bluesky event documents can be enabled with the flag</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">hyperion</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">verbose</span><span class="o">-</span><span class="n">event</span><span class="o">-</span><span class="n">logging</span>
-</pre></div>
-</div>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">#</a></h2>
