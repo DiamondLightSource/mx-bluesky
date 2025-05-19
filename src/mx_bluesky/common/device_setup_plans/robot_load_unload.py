@@ -94,13 +94,12 @@ def robot_unload(
     visit: str,
 ):
     yield from prepare_for_robot_load(aperture_scatterguard, smargon)
+    sample_id = yield from bps.rd(robot.sample_id)
 
     @bpp.run_decorator(
         md={
             "subplan_name": CONST.PLAN.ROBOT_LOAD,
-            "metadata": {
-                "visit": visit,
-            },
+            "metadata": {"visit": visit, "sample_id": sample_id},
             "activate_callbacks": [
                 "RobotLoadISPyBCallback",
             ],

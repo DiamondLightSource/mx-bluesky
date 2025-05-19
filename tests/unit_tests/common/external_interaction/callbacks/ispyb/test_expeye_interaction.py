@@ -1,6 +1,8 @@
+from typing import Any
 from unittest.mock import ANY, patch
 
 import pytest
+from event_model.documents import Event
 from requests import JSONDecodeError
 
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
@@ -8,6 +10,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
     _get_base_url_and_token,
+    create_update_data_from_event_doc,
 )
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 
@@ -160,3 +163,37 @@ def test_update_sample_status(
     mock_patch.assert_called_with(
         "http://blah/samples/12345", auth=ANY, json=expected_json
     )
+
+
+def event_with_data(data: dict[str, Any]):
+    return Event(
+        {
+            "data": data,
+            "time": 0,
+            "uid": "",
+            "timestamps": {},
+            "descriptor": "",
+            "seq_num": 0,
+        }
+    )
+
+
+def test_update_data_from_event_single_entry():
+    mapping = {"device-reading": "ispybEntry"}
+    data = event_with_data({"device-reading": 100})
+    update = create_update_data_from_event_doc(mapping, data)
+    assert update == {"ispybEntry": 100}
+
+
+def test_update_data_from_event_all_entries_present():
+    mapping = {"device-reading": "ispybEntry", "device-reading-2": "ispybEntry2"}
+    data = event_with_data({"device-reading": 100, "device-reading-2": 200})
+    update = create_update_data_from_event_doc(mapping, data)
+    assert update == {"ispybEntry": 100, "ispybEntry2": 200}
+
+
+def test_update_data_from_event_some_entries_present():
+    mapping = {"device-reading": "ispybEntry", "device-reading-2": "ispybEntry2"}
+    data = event_with_data({"device-reading": 100})
+    update = create_update_data_from_event_doc(mapping, data)
+    assert update == {"ispybEntry": 100}

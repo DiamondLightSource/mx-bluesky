@@ -12,12 +12,23 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
     RobotActionID,
+    create_update_data_from_event_doc,
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
+
+
+robot_update_mapping = {
+    "robot-barcode": "sampleBarcode",
+    "robot-current_pin": "containerLocation",
+    "robot-current_puck": "dewarLocation",
+    # I03 uses webcam/oav snapshots in place of before/after snapshots
+    "webcam-last_saved_path": "xtalSnapshotBefore",
+    "oav-snapshot-last_saved_path": "xtalSnapshotAfter",
+}
 
 
 class RobotLoadISPyBCallback(PlanReactiveCallback):
@@ -65,16 +76,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             assert self.action_id is not None, (
                 "ISPyB Robot load callback event called unexpectedly"
             )
-            event_data = doc["data"]
             # I03 uses webcam/oav snapshots in place of before/after snapshots
-            data = {
-                "sampleBarcode": event_data["robot-barcode"],
-                "containerLocation": event_data["robot-current_pin"],
-                "dewarLocation": event_data["robot-current_puck"],
-                "xtalSnapshotBefore": event_data["webcam-last_saved_path"],
-                "xtalSnapshotAfter": event_data["oav-snapshot-last_saved_path"],
-            }
-            self.expeye.update_robot_action(self.action_id, data)
+            update_data = create_update_data_from_event_doc(robot_update_mapping, doc)
+            self.expeye.update_robot_action(self.action_id, update_data)
 
         return super().activity_gated_event(doc)
 

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Literal
 
+from event_model.documents import Event
 from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
 
@@ -62,6 +63,19 @@ class BLSampleStatus(StrEnum):
 assert all(len(value) <= 20 for value in BLSampleStatus), (
     "Column size limit of 20 for BLSampleStatus"
 )
+
+
+def create_update_data_from_event_doc(
+    mapping: dict[str, str], event: Event
+) -> dict[str, Any]:
+    """Given a mapping between bluesky event data and an event itself this function will
+    create a dict that can be used to update exp-eye."""
+    event_data = event["data"]
+    return {
+        target_key: event_data[source_key]
+        for source_key, target_key in mapping.items()
+        if source_key in event_data
+    }
 
 
 class ExpeyeInteraction:

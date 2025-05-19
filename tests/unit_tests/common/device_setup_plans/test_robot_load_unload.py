@@ -131,16 +131,11 @@ def test_when_unload_plan_run_then_unload_ispyb_deposition_made(
     RE.subscribe(callback)
 
     set_mock_value(robot.sample_id, expected_sample_id := 1234)
-    set_mock_value(robot.current_pin, expected_sample_pin := 12)
-    set_mock_value(robot.current_puck, expected_sample_puck := 45)
+    set_mock_value(robot.current_pin, 12)
+    set_mock_value(robot.current_puck, 45)
 
     RE(robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"))
 
     mock_expeye.start_robot_action.assert_called_once_with(
-        "UNLOAD",
-        "cm37235",
-        "2",
-        expected_sample_id,
-        expected_sample_pin,
-        expected_sample_puck,
+        "LOAD", "cm37235", 2, expected_sample_id
     )
