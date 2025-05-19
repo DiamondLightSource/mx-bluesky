@@ -4,12 +4,14 @@ from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     PinType,
     SinglePin,
     compare_params,
+    create_parameters_from_agamemnon,
     get_next_instruction,
     get_pin_type_from_agamemnon_parameters,
     get_withenergy_parameters_from_agamemnon,
@@ -269,7 +271,7 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     compare_params(
         load_centre_collect_params,
     )
-    mock_logger.warning.assert_called_with(mock_log)
+    assert mock_log in mock_logger.mock_calls[0][1][0]
 
 
 @pytest.mark.parametrize(
@@ -279,6 +281,9 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
 @patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
+@patch("dodal.devices.detector.detector.Path", new=MagicMock())
+@patch("dodal.utils.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
     mock_requests: MagicMock,
     mock_logger: MagicMock,
@@ -331,6 +336,12 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     assert robot_load_params.sample_puck == 40
     assert robot_load_params.sample_pin == 3
     assert robot_load_params.demand_energy_ev == 12700.045934258673
+    assert robot_load_params.omega_start_deg == 0.0
+    assert robot_load_params.chi_start_deg == 0.0
+    assert robot_load_params.transmission_frac == 1.0
+    assert robot_load_params.tip_offset_um == 300.0
+    assert robot_load_params.grid_width_um == 600.0
+    assert robot_load_params.features.use_gpu_results
     assert str(robot_load_params.parameter_model_version) == "5.3.0"
     assert (
         robot_load_params.storage_directory
@@ -338,6 +349,49 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     )
     assert robot_load_params.file_name == "test_xtal"
     assert robot_load_params.snapshot_directory == PosixPath(
+        "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
+    )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
+@patch("dodal.devices.detector.detector.Path", new=MagicMock())
+def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
+    rotation_params = hyperion_params.multi_rotation_scan
+    assert rotation_params.visit == "cm00000-0"
+    assert isclose(rotation_params.detector_distance_mm, 180.8)  # type: ignore
+    assert rotation_params.detector_params.omega_start == 0.0
+    assert rotation_params.detector_params.exposure_time_s == 0.002
+    assert rotation_params.detector_params.num_images_per_trigger == 3600
+    assert rotation_params.num_images == 3600
+    assert rotation_params.transmission_frac == 0.5
+    assert rotation_params.comment == "Complete_P1_sweep1 "
+    assert rotation_params.ispyb_experiment_type == "Characterization"
+
+    assert rotation_params.sample_puck == 40
+    assert rotation_params.sample_pin == 3
+
+    individual_scans = list(rotation_params.single_rotation_scans)
+    assert len(individual_scans) == 1
+    assert individual_scans[0].scan_points["omega"][1] == 0.1
+    assert individual_scans[0].phi_start_deg == 0.0
+    assert individual_scans[0].chi_start_deg == 0.0
+    assert individual_scans[0].rotation_direction == RotationDirection.POSITIVE
+
+    assert rotation_params.demand_energy_ev == 12700.045934258673
+    assert str(rotation_params.parameter_model_version) == "5.3.0"
+    assert rotation_params.storage_directory == "/dls/tmp/data/year/cm00000-0/auto/test"
+    assert rotation_params.file_name == "test_xtal"
+    assert rotation_params.snapshot_directory == PosixPath(
         "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
     )
 
@@ -372,3 +426,24 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
     agamemnon_params = {}
     demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] is None
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
+    mock_requests,
+):
+    mock_requests.get.return_value.content = json.dumps({"collect": {}})
+    params = create_parameters_from_agamemnon()
+    assert params is None
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+def test_create_parameters_from_agamemnon_does_not_return_none_if_queue_is_not_empty(
+    mock_requests: MagicMock,
+):
+    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+    params = create_parameters_from_agamemnon()
+    assert params is not None

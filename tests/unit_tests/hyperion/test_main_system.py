@@ -34,7 +34,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from ...conftest import raw_params_from_file
 from ..conftest import mock_beamline_module_filepaths
 
-FGS_ENDPOINT = "/flyscan_xray_centre/"
+FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
@@ -42,7 +42,7 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
     raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
     )
 )
 
@@ -142,7 +142,7 @@ def test_env(request: pytest.FixtureRequest):
             MagicMock(return_value=mock_context),
         ),
     ):
-        app, runner = create_app({"TESTING": True}, mock_run_engine, True)  # type: ignore
+        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -186,11 +186,13 @@ def check_status_in_response(response_object, expected_result: Status):
     )
 
 
+@pytest.mark.timeout(5)
 def test_start_gives_success(test_env: ClientAndRunEngine):
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(4)
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.client.put(STOP_ENDPOINT)
@@ -198,6 +200,7 @@ def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.IDLE)
 
 
+@pytest.mark.timeout(5)
 def test_getting_status_after_start_sent_returns_busy(
     test_env: ClientAndRunEngine,
 ):
@@ -228,12 +231,14 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
+@pytest.mark.timeout(7)
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.FAILED)
 
 
+@pytest.mark.timeout(5)
 def test_given_started_when_stopped_then_success_and_idle_status(
     test_env: ClientAndRunEngine,
 ):
@@ -250,6 +255,7 @@ def test_given_started_when_stopped_then_success_and_idle_status(
     check_status_in_response(response, Status.ABORTING)
 
 
+@pytest.mark.timeout(10)
 def test_given_started_when_stopped_and_started_again_then_runs(
     test_env: ClientAndRunEngine,
 ):
@@ -263,6 +269,7 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     test_env.mock_run_engine.RE_takes_time = False
 
 
+@pytest.mark.timeout(5)
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine,
 ):
@@ -278,20 +285,17 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
+@pytest.mark.timeout(5)
 @pytest.mark.parametrize(
     "endpoint, test_file",
     [
-        [
-            START_ENDPOINT,
-            "tests/test_data/parameter_json_files/good_test_parameters.json",
-        ],
         [
             "/grid_detect_then_xray_centre/start",
             "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         ],
         [
-            "/rotation_scan/start",
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+            "/multi_rotation_scan/start",
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
         ],
         [
             "/pin_tip_centre_then_xray_centre/start",
@@ -318,6 +322,7 @@ def test_start_with_json_file_gives_success(
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.timeout(3)
 def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
@@ -333,32 +338,30 @@ def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngi
     check_status_in_response(response, Status.FAILED)
 
 
-test_argument_combinations = [
-    (
-        [
-            "--dev",
-        ],
-        (True, False, False, False),
-    ),
-    ([], (False, False, False, False)),
-    (
-        [
-            "--dev",
-            "--skip-startup-connection",
-            "--verbose-event-logging",
-        ],
-        (True, True, True),
-    ),
-]
-
-
-@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
+@pytest.mark.parametrize(
+    ["arg_list", "parsed_arg_values"],
+    [
+        (
+            [
+                "--dev",
+            ],
+            (True, False),
+        ),
+        ([], (False, False)),
+        (
+            [
+                "--dev",
+                "--verbose-event-logging",
+            ],
+            (True, True),
+        ),
+    ],
+)
 def test_cli_args_parse(arg_list, parsed_arg_values):
     argv[1:] = arg_list
     test_args = parse_cli_args()
     assert test_args.dev_mode == parsed_arg_values[0]
     assert test_args.verbose_event_logging == parsed_arg_values[1]
-    assert test_args.skip_startup_connection == parsed_arg_values[2]
 
 
 @pytest.mark.skip(
@@ -397,7 +400,6 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
         BlueskyRunner(
             RE=MagicMock(),
             context=context,
-            skip_startup_connection=False,
         )
 
     zebra.wait_for_connection.assert_called()
@@ -405,56 +407,28 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices",
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.create_devices",
     autospec=True,
 )
-def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, test_fgs_params: HyperionSpecifiedThreeDGridScan
+def test_when_blueskyrunner_initiated_then_setup_called_upon_start(
+    mock_setup, hyperion_fgs_params: HyperionSpecifiedThreeDGridScan
 ):
     mock_setup = MagicMock()
     with patch.dict(
         "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
         {
-            "flyscan_xray_centre": {
+            "multi_rotation_scan": {
                 "setup": mock_setup,
                 "param_type": MagicMock(),
             },
         },
         clear=True,
     ):
-        runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
+        runner = BlueskyRunner(MagicMock(), MagicMock())
         mock_setup.assert_not_called()
-        runner.start(lambda: None, test_fgs_params, "flyscan_xray_centre")
+        runner.start(lambda: None, hyperion_fgs_params, "multi_rotation_scan")
         mock_setup.assert_called_once()
         runner.shutdown()
-
-
-def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup():
-    mock_setup = MagicMock()
-    with patch.dict(
-        "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
-        {
-            "flyscan_xray_centre": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "rotation_scan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "other_plan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-            "yet_another_plan": {
-                "setup": mock_setup,
-                "param_type": MagicMock(),
-            },
-        },
-        clear=True,
-    ):
-        BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=False)
-        assert mock_setup.call_count == 4
 
 
 def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
@@ -485,7 +459,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 @patch(
-    "dodal.devices.undulator_dcm.get_beamline_parameters",
+    "dodal.devices.i03.undulator_dcm.get_beamline_parameters",
     return_value={"DCM_Perp_Offset_FIXED": 111},
 )
 def test_when_context_created_then_contains_expected_number_of_plans(
@@ -499,10 +473,14 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         os.environ,
         {"BEAMLINE": "i03"},
     ):
-        context = setup_context(wait_for_connection=False)
-
+        with patch(
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+        ):
+            context = setup_context()
         plan_names = context.plans.keys()
 
-        assert "rotation_scan" in plan_names
+        # assert "rotation_scan" in plan_names
+        # May want to add back in if we change name of multi_rotation_scan to rotation_scan
+        assert "multi_rotation_scan" in plan_names
         assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names

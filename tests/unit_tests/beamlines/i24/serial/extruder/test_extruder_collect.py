@@ -1,6 +1,5 @@
 from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from ophyd_async.testing import get_mock_put, set_mock_value
@@ -18,7 +17,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 
-from ..conftest import TEST_LUT
+from ..conftest import TEST_LUT, fake_generator
 
 
 @pytest.fixture
@@ -60,11 +59,6 @@ def dummy_beam_settings():
     return BeamSettings(
         wavelength_in_a=0.6, beam_size_in_um=(7, 7), beam_center_in_mm=(120.4, 127.6)
     )
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
 
 
 @patch(
@@ -280,7 +274,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     dummy_params_pp,
 ):
     fake_start_time = MagicMock()
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     # Mock end of data collection (zebra disarmed)
     fake_read.side_effect = [fake_generator(0)]
     mock_pilatus_temp.side_effect = [fake_generator("test_00001_#####.cbf")]
@@ -336,8 +330,9 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     zebra,
     shutter,
     dummy_params,
+    dcm,
 ):
-    RE(tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid))
+    RE(tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid, dcm))
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
@@ -346,7 +341,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None)
+    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
 
 @patch(

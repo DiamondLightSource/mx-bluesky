@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
@@ -16,8 +15,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-    PMAC_MOVE_TIME,
-    calculate_collection_timeout,
     finish_i24,
     get_chip_prog_values,
     get_prog_num,
@@ -35,38 +32,12 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     BeamSettings,
 )
 
-from ..conftest import TEST_LUT
+from ..conftest import TEST_LUT, fake_generator
 
 chipmap_str = """01status    P3011       1
 02status    P3021       0
 03status    P3031       0
 04status    P3041       0"""
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
-
-
-def test_calculate_collection_timeout(dummy_params_without_pp):
-    assert dummy_params_without_pp.total_num_images == 400
-    expected_collection_time = (
-        dummy_params_without_pp.total_num_images
-        * dummy_params_without_pp.exposure_time_s
-    )
-    buffer = dummy_params_without_pp.total_num_images * PMAC_MOVE_TIME + 600
-    timeout = calculate_collection_timeout(dummy_params_without_pp)
-
-    assert timeout == expected_collection_time + buffer
-
-
-def test_calculate_collection_timeout_for_eava(dummy_params_with_pp):
-    assert dummy_params_with_pp.total_num_images == 400
-    buffer = dummy_params_with_pp.total_num_images * PMAC_MOVE_TIME + 600
-    expected_pump_and_probe_time = 12.05
-    timeout = calculate_collection_timeout(dummy_params_with_pp)
-
-    assert timeout == expected_pump_and_probe_time + buffer
 
 
 @patch(
@@ -211,7 +182,7 @@ def test_start_i24_with_eiger(
     fake_datetime.now.return_value = expected_start
     dummy_params_without_pp.chip_map = [1, 2]
     assert dummy_params_without_pp.total_num_images == 800
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     expected_beam_settings = BeamSettings(
         wavelength_in_a=0.6,
         beam_size_in_um=(7.0, 7.0),
@@ -294,7 +265,7 @@ def test_finish_i24(
 
     fake_reset_zebra.assert_called_once()
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None)
+    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
     mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
@@ -306,12 +277,18 @@ def test_finish_i24(
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-def test_run_aborted_plan(fake_dcid: MagicMock, pmac: PMAC, RE, done_status):
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+)
+def test_run_aborted_plan(
+    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, RE, done_status
+):
     pmac.abort_program.trigger = MagicMock(return_value=done_status)
-    RE(run_aborted_plan(pmac, fake_dcid))
+    RE(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
 
     pmac.abort_program.trigger.assert_called_once()
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
+    assert "Test Exception" in mock_log.warning.mock_calls[0].args[0]
 
 
 @patch(
@@ -348,11 +325,8 @@ async def test_tidy_up_after_collection_plan(
     mock_finish.assert_called_once()
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.calculate_collection_timeout"
-)
 async def test_kick_off_and_complete_collection(
-    fake_collection_time, pmac, dummy_params_with_pp, RE, done_status
+    pmac, dummy_params_with_pp, RE, done_status
 ):
     pmac.run_program.kickoff = MagicMock(return_value=done_status)
     pmac.run_program.complete = MagicMock(return_value=done_status)
@@ -366,11 +340,9 @@ async def test_kick_off_and_complete_collection(
         pmac.pmac_string,
         lambda *args, **kwargs: asyncio.create_task(go_high_then_low()),  # type: ignore
     )
-    fake_collection_time.return_value = 2.0
     res = RE(kickoff_and_complete_collection(pmac, dummy_params_with_pp))
 
     assert await pmac.program_number.get_value() == 14
-    assert await pmac.collection_time.get_value() == 2.0
 
     pmac.run_program.kickoff.assert_called_once()
     pmac.run_program.complete.assert_called_once()
@@ -378,14 +350,10 @@ async def test_kick_off_and_complete_collection(
     assert res.exit_status == "success"
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.calculate_collection_timeout"
-)
 @patch("dodal.devices.i24.pmac.DEFAULT_TIMEOUT", 0.1)
 async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
-    fake_collection_time, pmac, dummy_params_without_pp, RE
+    pmac, dummy_params_without_pp, RE
 ):
-    fake_collection_time.return_value = 1.0
     pmac.run_program.KICKOFF_TIMEOUT = 0.1
     set_mock_value(pmac.scanstatus, 0)
     with pytest.raises(FailedStatus):
@@ -437,28 +405,31 @@ async def test_main_fixed_target_plan(
     dummy_params_without_pp,
 ):
     mock_get_chip_prog.return_value = MagicMock()
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     fake_datasize.return_value = 400
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
-        RE(
-            main_fixed_target_plan(
-                zebra,
-                pmac,
-                aperture,
-                backlight,
-                beamstop,
-                detector_stage,
-                shutter,
-                dcm,
-                mirrors,
-                eiger_beam_center,
-                dummy_params_without_pp,
-                fake_dcid,
+        with patch(
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+        ):
+            RE(
+                main_fixed_target_plan(
+                    zebra,
+                    pmac,
+                    aperture,
+                    backlight,
+                    beamstop,
+                    detector_stage,
+                    shutter,
+                    dcm,
+                    mirrors,
+                    eiger_beam_center,
+                    dummy_params_without_pp,
+                    fake_dcid,
+                )
             )
-        )
 
     mock_beam_x = get_mock_put(eiger_beam_center.beam_x)
     mock_pmac_str = get_mock_put(pmac.pmac_string)

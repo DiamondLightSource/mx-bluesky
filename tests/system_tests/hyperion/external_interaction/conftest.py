@@ -12,11 +12,11 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03 import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -50,15 +50,15 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
+    SimConstants,
     fake_read,
     pin_tip_edge_data,
     raw_params_from_file,
@@ -144,8 +144,8 @@ def get_blsample(Session: Callable, bl_sample_id: int) -> BLSample:
 
 
 @pytest.fixture
-def sqlalchemy_sessionmaker() -> sessionmaker:
-    url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
+def sqlalchemy_sessionmaker(ispyb_config_path) -> sessionmaker:
+    url = ispyb.sqlalchemy.url(ispyb_config_path)
     engine = create_engine(url, connect_args={"use_pure": True})
     return sessionmaker(engine)
 
@@ -194,28 +194,21 @@ def dummy_params():
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
     )
-    dummy_params.visit = os.environ.get("ST_VISIT", "cm31105-5")
-    dummy_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", dummy_params.sample_id))
+    dummy_params.visit = SimConstants.ST_VISIT
+    dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
     return dummy_params
 
 
 @pytest.fixture
-def dummy_ispyb(
-    use_dev_ispyb_unless_overridden_by_environment, dummy_params
-) -> StoreInIspyb:
-    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
-
-
-@pytest.fixture
-def dummy_ispyb_3d(
-    use_dev_ispyb_unless_overridden_by_environment, dummy_params
-) -> StoreInIspyb:
-    return StoreInIspyb(use_dev_ispyb_unless_overridden_by_environment)
+def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
+    return StoreInIspyb(ispyb_config_path)
 
 
 @pytest.fixture
 def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+    os.environ["ZOCALO_CONFIG"] = os.environ.get(
+        "ZOCALO_CONFIG", "/dls_sw/apps/zocalo/live/configuration.yaml"
+    )
 
 
 @pytest_asyncio.fixture
@@ -344,24 +337,28 @@ def grid_detect_then_xray_centre_composite(
 
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
-    fake_fgs_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
     done_status: NullStatus,
 ) -> HyperionFlyScanXRayCentreComposite:
-    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
-    fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
-    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
+    set_mock_value(
+        hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
+    )
+    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
+    hyperion_flyscan_xrc_composite.smargon.stub_offsets.set = MagicMock(
+        return_value=done_status
+    )  # type: ignore
     callback_on_mock_put(
-        fake_fgs_composite.zebra_fast_grid_scan.run_cmd,
+        hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.run_cmd,
         lambda *args, **kwargs: set_mock_value(
-            fake_fgs_composite.zebra_fast_grid_scan.status, 1
+            hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.status, 1
         ),
     )
-    fake_fgs_composite.zebra_fast_grid_scan.complete = MagicMock(
+    hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
         return_value=NullStatus()
     )
-    fake_fgs_composite.zocalo = zocalo_for_fake_zocalo
-    return fake_fgs_composite
+    hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
+    return hyperion_flyscan_xrc_composite
 
 
 @pytest.fixture
@@ -387,12 +384,14 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 
 @pytest.fixture
-def params_for_rotation_scan(test_rotation_params: RotationScan) -> RotationScan:
+def params_for_rotation_scan(
+    test_rotation_params: MultiRotationScan,
+) -> MultiRotationScan:
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71
-    test_rotation_params.visit = os.environ.get("ST_VISIT", "cm31105-4")
-    test_rotation_params.sample_id = int(os.environ.get("ST_SAMPLE_ID", 123456))
+    test_rotation_params.visit = SimConstants.ST_VISIT
+    test_rotation_params.sample_id = SimConstants.ST_SAMPLE_ID
     return test_rotation_params
 
 
