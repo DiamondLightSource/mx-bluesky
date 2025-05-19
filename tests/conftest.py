@@ -544,18 +544,29 @@ def beamstop_i03(
     RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+        "dodal.beamlines.i03.get_beamline_parameters",
+        return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
         patch_motor(beamstop.x_mm)
         patch_motor(beamstop.y_mm)
         patch_motor(beamstop.z_mm)
+
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
         set_mock_value(beamstop.z_mm.user_readback, 30.0)
-        sim_run_engine.add_read_handler_for(
-            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
         )
+
         yield beamstop
         beamline_utils.clear_devices()
 
