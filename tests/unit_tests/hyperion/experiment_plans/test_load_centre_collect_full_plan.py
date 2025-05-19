@@ -8,7 +8,7 @@ from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03 import BeamstopPositions
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -16,7 +16,6 @@ from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
@@ -406,31 +405,44 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     mock_rotation_scan.assert_not_called()
 
 
-def test_load_centre_collect_fails_with_exception_when_no_beamstop(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.MultiRotationScan.model_validate"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.home_and_reset_wrapper"
+)
+def test_load_centre_collect_moves_beamstop_into_place(
+    mock_home_reset_wrapper: MagicMock,
+    mock_pin_tip_plan: MagicMock,
+    mock_model_validate: MagicMock,
+    mock_multi_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    # sim_run_engine.add_read_handler_for(
-    #     composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    # )
-    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
-    def locate_beamstop(_):
-        return {"readback": BeamstopPositions.UNKNOWN}
-
-    sim_run_engine.add_handler(
-        "locate",
-        locate_beamstop,
-        composite.beamstop.selected_pos.name,
+    fake_model = MagicMock()
+    fake_model.demand_energy_ev = (
+        load_centre_collect_params.robot_load_then_centre.demand_energy_ev
     )
-    with patch("mx_bluesky.hyperion.device_setup_plans.utils.bps.abs_set"):
-        with pytest.raises(BeamstopException):
-            sim_run_engine.simulate_plan(
-                load_centre_collect_full(
-                    composite, load_centre_collect_params, oav_parameters_for_rotation
-                )
-            )
+    mock_model_validate.return_value = fake_model
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
 
 
 def test_can_deserialize_top_n_by_max_count_params(
