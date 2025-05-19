@@ -4,7 +4,6 @@
 
 STOP=0
 START=1
-VERBOSE_EVENT_LOGGING=false
 IN_DEV=false
 
 for option in "$@"; do
@@ -23,9 +22,6 @@ for option in "$@"; do
         --dev)
             IN_DEV=true
             ;;
-        --verbose-event-logging)
-            VERBOSE_EVENT_LOGGING=true
-            ;;
 
         --help|--info|--h)
             source .venv/bin/activate
@@ -42,7 +38,6 @@ Options:
   --skip-startup-connection
                           Do not connect to devices at startup
   --dev                   Enable dev mode to run from a local workspace on a development machine.
-  --verbose-event-logging Enable verbose event logging
   --help                  This help
 
 By default this script will start an Hyperion server unless the --no-start flag is specified.
@@ -122,19 +117,11 @@ if [[ $START == 1 ]]; then
     source .venv/bin/activate
 
     #Add future arguments here
-    declare -A h_only_args=( ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
-    declare -A h_only_arg_strings=( ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
 
     declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
     declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
     h_commands=()
-    for i in "${!h_only_args[@]}"
-    do
-        if [ "${h_only_args[$i]}" != false ]; then 
-            h_commands+="${h_only_arg_strings[$i]} ";
-        fi;
-    done
     cb_commands=()
     for i in "${!h_and_cb_args[@]}"
     do

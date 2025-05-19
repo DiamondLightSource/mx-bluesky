@@ -19,9 +19,6 @@ from pydantic.dataclasses import dataclass
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.exceptions import WarningException
@@ -42,8 +39,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import setup_context
-
-VERBOSE_EVENT_LOGGING: bool | None = None
 
 
 @dataclass
@@ -96,9 +91,6 @@ class BlueskyRunner:
         LOGGER.info("Connecting to external callback ZMQ proxy...")
         self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
         RE.subscribe(self.publisher)
-
-        if VERBOSE_EVENT_LOGGING:
-            RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     def start(
         self,
@@ -273,9 +265,7 @@ def create_app(
     RE: RunEngine = RunEngine({}),
     dev_mode: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
-    context = setup_context(
-        dev_mode=dev_mode
-    )
+    context = setup_context(dev_mode=dev_mode)
     runner = BlueskyRunner(
         RE,
         context=context,
@@ -308,9 +298,7 @@ def create_targets():
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    app, runner = create_app(
-        dev_mode=args.dev_mode
-    )
+    app, runner = create_app(dev_mode=args.dev_mode)
     return app, runner, hyperion_port, args.dev_mode
 
 

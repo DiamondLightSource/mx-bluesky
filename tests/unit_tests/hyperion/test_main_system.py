@@ -354,23 +354,15 @@ def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngi
             [
                 "--dev",
             ],
-            (True, False),
+            (True,),
         ),
-        ([], (False, False)),
-        (
-            [
-                "--dev",
-                "--verbose-event-logging",
-            ],
-            (True, True),
-        ),
+        ([], (False,)),
     ],
 )
 def test_cli_args_parse(arg_list, parsed_arg_values):
     argv[1:] = arg_list
     test_args = parse_cli_args()
     assert test_args.dev_mode == parsed_arg_values[0]
-    assert test_args.verbose_event_logging == parsed_arg_values[1]
 
 
 @pytest.mark.skip(
