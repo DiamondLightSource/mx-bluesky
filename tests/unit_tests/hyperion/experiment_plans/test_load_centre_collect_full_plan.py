@@ -415,10 +415,10 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.home_and_reset_wrapper"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_plan_while_lower_gonio_at_home",
+    new=MagicMock(),
 )
 def test_load_centre_collect_moves_beamstop_into_place(
-    mock_home_reset_wrapper: MagicMock,
     mock_pin_tip_then_flyscan_plan: MagicMock,
     mock_model_validate: MagicMock,
     mock_multi_rotation_scan: MagicMock,
