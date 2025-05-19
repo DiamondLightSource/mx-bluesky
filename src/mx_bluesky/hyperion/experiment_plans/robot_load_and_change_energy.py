@@ -136,7 +136,7 @@ def robot_load_and_snapshots(
     yield from take_robot_snapshots(composite.oav, composite.webcam, snapshot_directory)
 
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
-    yield from bps.read(composite.robot.barcode)
+    yield from bps.read(composite.robot)
     yield from bps.read(composite.oav.snapshot)
     yield from bps.read(composite.webcam)
     yield from bps.save()

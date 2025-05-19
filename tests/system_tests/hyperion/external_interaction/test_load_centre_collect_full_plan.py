@@ -260,7 +260,7 @@ def test_execute_load_centre_collect_full(
     # robot_load_cb.expeye = MagicMock()
     robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
     robot_load_cb.expeye.end_robot_action = MagicMock()
-    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
+    robot_load_cb.expeye.update_robot_action = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
@@ -604,7 +604,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     robot_load_cb = RobotLoadISPyBCallback()
     robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
     robot_load_cb.expeye.end_robot_action = MagicMock()
-    robot_load_cb.expeye.update_barcode_and_snapshots = MagicMock()
+    robot_load_cb.expeye.update_robot_action = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )

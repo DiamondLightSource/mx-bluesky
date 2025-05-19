@@ -68,13 +68,14 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             assert self.action_id is not None, (
                 "ISPyB Robot load callback event called unexpectedly"
             )
-            barcode = doc["data"]["robot-barcode"]
-            oav_snapshot = doc["data"]["oav-snapshot-last_saved_path"]
-            webcam_snapshot = doc["data"]["webcam-last_saved_path"]
+            event_data = doc["data"]
             # I03 uses webcam/oav snapshots in place of before/after snapshots
-            self.expeye.update_barcode_and_snapshots(
-                self.action_id, barcode, webcam_snapshot, oav_snapshot
-            )
+            data = {
+                "sampleBarcode": event_data["robot-barcode"],
+                "xtalSnapshotBefore": event_data["webcam-last_saved_path"],
+                "xtalSnapshotAfter": event_data["oav-snapshot-last_saved_path"],
+            }
+            self.expeye.update_robot_action(self.action_id, data)
 
         return super().activity_gated_event(doc)
 

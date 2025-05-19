@@ -1,7 +1,7 @@
 import configparser
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
@@ -117,28 +117,19 @@ class ExpeyeInteraction:
         response = _send_and_get_response(self._auth, url, data, post)
         return response["robotActionId"]
 
-    def update_barcode_and_snapshots(
+    def update_robot_action(
         self,
         action_id: RobotActionID,
-        barcode: str,
-        snapshot_before_path: str,
-        snapshot_after_path: str,
+        data: dict[str, Any],
     ):
-        """Update the barcode and snapshots of an existing robot action.
+        """Update an existing robot action to contain additional info.
 
         Args:
             action_id (RobotActionID): The id of the action to update
-            barcode (str): The barcode to give the action
-            snapshot_before_path (str): Path to the snapshot before robot load
-            snapshot_after_path (str): Path to the snapshot after robot load
+            data (dict): The data to update with, where the keys match those expected
+                         by exp-eye.
         """
         url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
-
-        data = {
-            "sampleBarcode": barcode,
-            "xtalSnapshotBefore": snapshot_before_path,
-            "xtalSnapshotAfter": snapshot_after_path,
-        }
         _send_and_get_response(self._auth, url, data, patch)
 
     def end_robot_action(self, action_id: RobotActionID, status: str, reason: str):

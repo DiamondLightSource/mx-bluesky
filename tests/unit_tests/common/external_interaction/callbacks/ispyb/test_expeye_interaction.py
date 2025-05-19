@@ -159,21 +159,19 @@ def test_given_server_does_not_respond_when_end_robot_action_called_then_error(
 
 
 @patch("mx_bluesky.common.external_interaction.ispyb.exp_eye_store.patch")
-def test_when_update_barcode_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
+def test_when_update_robot_action_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.update_barcode_and_snapshots(
-        3, "test", "/tmp/before.jpg", "/tmp/after.jpg"
-    )
-
-    mock_patch.assert_called_once()
-    assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
     expected_data = {
         "sampleBarcode": "test",
         "xtalSnapshotBefore": "/tmp/before.jpg",
         "xtalSnapshotAfter": "/tmp/after.jpg",
     }
+    expeye_interactor.update_robot_action(3, expected_data)
+
+    mock_patch.assert_called_once()
+    assert mock_patch.call_args.args[0] == "http://blah/robot-actions/3"
     assert mock_patch.call_args.kwargs["json"] == expected_data
 
 
