@@ -35,6 +35,14 @@ metadata = {
     ],
 }
 
+update_doc_data = {
+    "sampleBarcode": "BARCODE",
+    "xtalSnapshotBefore": "test_webcam_snapshot",
+    "xtalSnapshotAfter": "test_oav_snapshot",
+    "containerLocation": SAMPLE_PIN,
+    "dewarLocation": SAMPLE_PUCK,
+}
+
 
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
@@ -54,7 +62,7 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
     RE(my_plan())
 
     expeye.return_value.start_robot_action.assert_called_once_with(
-        "LOAD", "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+        "LOAD", "cm31105", 4, 231412
     )
     expeye.return_value.end_robot_action.assert_called_once_with(
         ACTION_ID, "success", "OK"
@@ -83,7 +91,7 @@ def test_given_failing_plan_then_exception_detail(
         RE(my_plan())
 
     expeye.return_value.start_robot_action.assert_called_once_with(
-        "LOAD", "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+        "LOAD", "cm31105", 4, 231412
     )
     expeye.return_value.end_robot_action.assert_called_once_with(
         ACTION_ID, "fail", "BAD"
@@ -144,18 +152,10 @@ def test_given_plan_reads_robot_then_data_put_in_ispyb(
     RE(successful_robot_load_plan(robot, oav, webcam))
 
     expeye.return_value.start_robot_action.assert_called_once_with(
-        "LOAD", "cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN
+        "LOAD", "cm31105", 4, 231412
     )
     expeye.return_value.update_robot_action.assert_called_once_with(
-        ACTION_ID,
-        {
-            "sampleBarcode": "BARCODE",
-            "xtalSnapshotBefore": "test_webcam_snapshot",
-            "xtalSnapshotAfter": "test_oav_snapshot",
-            "containerLocation": SAMPLE_PIN,
-            "dewarLocation": SAMPLE_PUCK,
-            "sampleId": SAMPLE_ID,
-        },
+        ACTION_ID, update_doc_data
     )
     expeye.return_value.end_robot_action.assert_called_once_with(
         ACTION_ID, "success", "OK"

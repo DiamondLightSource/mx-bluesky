@@ -81,9 +81,6 @@ class ExpeyeInteraction:
         proposal_reference: str,
         visit_number: int,
         sample_id: int,
-        dewar_location: int,
-        container_location: int,
-        barcode: str | None = None,
     ) -> RobotActionID:
         """Create a robot action entry in ispyb.
 
@@ -94,9 +91,6 @@ class ExpeyeInteraction:
                                 found added to the end of the proposal e.g. the data for
                                 visit number 2 of proposal cm37235 is in cm37235-2
             sample_id (int): The id of the sample in the database
-            dewar_location (int): Which puck in the dewar the sample is in
-            container_location (int): Which pin in that puck has the sample
-            barcode (str | None): The barcode of the sample, defaults to None
 
         Returns:
             RobotActionID: The id of the robot load action that is created
@@ -107,13 +101,9 @@ class ExpeyeInteraction:
 
         data = {
             "startTimestamp": get_current_time_string(),
-            "sampleId": sample_id,
             "actionType": action_type,
-            "containerLocation": container_location,
-            "dewarLocation": dewar_location,
+            "sampleId": sample_id,
         }
-        if barcode:
-            data["sampleBarcode"] = barcode
         response = _send_and_get_response(self._auth, url, data, post)
         return response["robotActionId"]
 

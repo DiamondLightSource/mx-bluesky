@@ -178,7 +178,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     )
 
     exp_eye.return_value.start_robot_action.assert_called_once_with(
-        "LOAD", "cm31105", 4, 12345, 40, 3
+        "LOAD", "cm31105", 4, 12345
     )
     exp_eye.return_value.update_robot_action.assert_called_once_with(
         action_id,
@@ -188,7 +188,6 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
             "xtalSnapshotAfter": "test_oav_snapshot",
             "containerLocation": 3,
             "dewarLocation": 40,
-            "sampleId": 12345,
         },
     )
     exp_eye.return_value.end_robot_action.assert_called_once_with(

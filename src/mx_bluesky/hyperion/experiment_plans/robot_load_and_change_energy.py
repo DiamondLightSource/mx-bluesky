@@ -174,12 +174,7 @@ def robot_load_and_change_energy_plan(
             ),
             md={
                 "subplan_name": CONST.PLAN.ROBOT_LOAD,
-                "metadata": {
-                    "visit": params.visit,
-                    "sample_id": params.sample_id,
-                    "sample_puck": sample_location.puck,
-                    "sample_pin": sample_location.pin,
-                },
+                "metadata": {"visit": params.visit, "sample_id": params.sample_id},
                 "activate_callbacks": [
                     "RobotLoadISPyBCallback",
                 ],

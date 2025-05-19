@@ -24,7 +24,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
     def __init__(self) -> None:
         ISPYB_ZOCALO_CALLBACK_LOGGER.debug("Initialising ISPyB Robot Load Callback")
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
-        self._metadata: dict | None = None
+        self._sample_id: int | None = None
 
         self.run_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
@@ -40,18 +40,15 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 f"ISPyB robot load callback received: {doc}"
             )
             self.run_uid = doc.get("uid")
-            self._metadata = doc.get("metadata")
-            assert isinstance(self._metadata, dict)
+            metadata = doc.get("metadata")
+            assert isinstance(metadata, dict)
+            self._sample_id = metadata["sample_id"]
+            assert isinstance(self._sample_id, int)
             proposal, session = get_proposal_and_session_from_visit_string(
-                self._metadata["visit"]
+                metadata["visit"]
             )
             self.action_id = self.expeye.start_robot_action(
-                "LOAD",
-                proposal,
-                session,
-                self._metadata["sample_id"],
-                self._metadata["sample_puck"],
-                self._metadata["sample_pin"],
+                "LOAD", proposal, session, self._sample_id
             )
         return super().activity_gated_start(doc)
 
@@ -72,7 +69,6 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             # I03 uses webcam/oav snapshots in place of before/after snapshots
             data = {
                 "sampleBarcode": event_data["robot-barcode"],
-                "sampleId": event_data["robot-sample_id"],
                 "containerLocation": event_data["robot-current_pin"],
                 "dewarLocation": event_data["robot-current_puck"],
                 "xtalSnapshotBefore": event_data["webcam-last_saved_path"],
@@ -92,12 +88,12 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             )
             exit_status = doc.get("exit_status")
             assert exit_status, "Exit status not available in stop document!"
-            assert self._metadata, "Metadata not received before stop document."
+            assert self._sample_id, "Robot has not been read from during plan."
             reason = doc.get("reason") or "OK"
 
             self.expeye.end_robot_action(self.action_id, exit_status, reason)
             self.expeye.update_sample_status(
-                self._metadata["sample_id"],
+                self._sample_id,
                 BLSampleStatus.LOADED
                 if exit_status == "success"
                 else BLSampleStatus.ERROR_BEAMLINE,
