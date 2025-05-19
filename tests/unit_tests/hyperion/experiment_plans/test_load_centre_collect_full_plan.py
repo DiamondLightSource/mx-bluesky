@@ -105,7 +105,7 @@ def composite(
     composite.oav.zoom_controller.level.describe = AsyncMock(
         return_value={"level": {"choices": zoom_levels_list}}
     )
-    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
+    set_mock_value(composite.oav.zoom_controller.level, "1.0x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
