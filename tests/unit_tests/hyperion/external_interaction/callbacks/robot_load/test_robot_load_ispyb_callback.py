@@ -116,7 +116,7 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
 
 @bpp.run_decorator(md=metadata)
 def successful_robot_load_plan(robot: BartRobot, oav: OAV, webcam: Webcam):
-    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
     yield from bps.read(robot)
     yield from bps.read(oav.snapshot)
     yield from bps.read(webcam)
