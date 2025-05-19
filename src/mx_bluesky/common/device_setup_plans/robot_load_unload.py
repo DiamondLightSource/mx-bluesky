@@ -98,7 +98,7 @@ def robot_unload(
 
     @bpp.run_decorator(
         md={
-            "subplan_name": CONST.PLAN.ROBOT_LOAD,
+            "subplan_name": CONST.PLAN.ROBOT_UNLOAD,
             "metadata": {"visit": visit, "sample_id": sample_id},
             "activate_callbacks": [
                 "RobotLoadISPyBCallback",
@@ -106,7 +106,7 @@ def robot_unload(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
-        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
+        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
         yield from bps.read(robot)
         yield from bps.save()
 

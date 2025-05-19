@@ -46,7 +46,8 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
             "ISPyB robot load callback received start document."
         )
-        if doc.get("subplan_name") == CONST.PLAN.ROBOT_LOAD:
+        subplan = doc.get("subplan_name")
+        if subplan == CONST.PLAN.ROBOT_LOAD or subplan == CONST.PLAN.ROBOT_UNLOAD:
             ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
                 f"ISPyB robot load callback received: {doc}"
             )
@@ -59,7 +60,10 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 metadata["visit"]
             )
             self.action_id = self.expeye.start_robot_action(
-                "LOAD", proposal, session, self._sample_id
+                "LOAD" if subplan == CONST.PLAN.ROBOT_LOAD else "UNLOAD",
+                proposal,
+                session,
+                self._sample_id,
             )
         return super().activity_gated_start(doc)
 
@@ -71,7 +75,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if (
             event_descriptor
-            and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_LOAD
+            and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_UPDATE
         ):
             assert self.action_id is not None, (
                 "ISPyB Robot load callback event called unexpectedly"
@@ -92,7 +96,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             )
             exit_status = doc.get("exit_status")
             assert exit_status, "Exit status not available in stop document!"
-            assert self._sample_id, "Robot has not been read from during plan."
+            assert self._sample_id is not None, "Stop called before start"
             reason = doc.get("reason") or "OK"
 
             self.expeye.end_robot_action(self.action_id, exit_status, reason)

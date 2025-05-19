@@ -1,7 +1,9 @@
 from unittest.mock import ANY, MagicMock, patch
 
-from bluesky.run_engine import Msg, RunEngine
+import pytest
+from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.robot import BartRobot
@@ -119,7 +121,7 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         )
 
 
-def test_when_unload_plan_run_then_unload_ispyb_deposition_made(
+def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
     RE: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
@@ -131,11 +133,76 @@ def test_when_unload_plan_run_then_unload_ispyb_deposition_made(
     RE.subscribe(callback)
 
     set_mock_value(robot.sample_id, expected_sample_id := 1234)
-    set_mock_value(robot.current_pin, 12)
-    set_mock_value(robot.current_puck, 45)
 
     RE(robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"))
 
     mock_expeye.start_robot_action.assert_called_once_with(
-        "LOAD", "cm37235", 2, expected_sample_id
+        "UNLOAD", "cm37235", 2, expected_sample_id
     )
+
+
+def test_when_unload_plan_run_then_full_ispyb_deposition_made(
+    RE: RunEngine,
+    robot: BartRobot,
+    smargon: Smargon,
+    aperture_scatterguard: ApertureScatterguard,
+    lower_gonio: XYZPositioner,
+):
+    callback = RobotLoadISPyBCallback()
+    callback.expeye = (mock_expeye := MagicMock())
+    RE.subscribe(callback)
+
+    set_mock_value(robot.sample_id, expected_sample_id := 1234)
+    set_mock_value(robot.current_pin, expected_pin := 12)
+    set_mock_value(robot.current_puck, expected_puck := 45)
+    set_mock_value(robot.barcode, expected_barcode := "BARCODE")
+
+    action_id = 1098
+    mock_expeye.start_robot_action.return_value = action_id
+
+    RE(robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"))
+
+    mock_expeye.start_robot_action.assert_called_once_with(
+        "UNLOAD", "cm37235", 2, expected_sample_id
+    )
+    mock_expeye.update_robot_action.assert_called_once_with(
+        action_id,
+        {
+            "sampleBarcode": expected_barcode,
+            "containerLocation": expected_pin,
+            "dewarLocation": expected_puck,
+        },
+    )
+    mock_expeye.end_robot_action.assert_called_once_with(action_id, "success", "OK")
+
+
+@patch(
+    "mx_bluesky.common.device_setup_plans.robot_load_unload.wait_for_smargon_not_disabled"
+)
+def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
+    mock_wait_for_smargon: MagicMock,
+    RE: RunEngine,
+    robot: BartRobot,
+    smargon: Smargon,
+    aperture_scatterguard: ApertureScatterguard,
+    lower_gonio: XYZPositioner,
+):
+    class TestException(Exception): ...
+
+    callback = RobotLoadISPyBCallback()
+    callback.expeye = (mock_expeye := MagicMock())
+    RE.subscribe(callback)
+    mock_wait_for_smargon.side_effect = TestException("Bad Error")
+
+    action_id = 1098
+    mock_expeye.start_robot_action.return_value = action_id
+
+    with pytest.raises(TestException):
+        RE(
+            robot_unload(
+                robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"
+            )
+        )
+
+    mock_expeye.start_robot_action.assert_called_once_with("UNLOAD", "cm37235", 2, ANY)
+    mock_expeye.end_robot_action.assert_called_once_with(action_id, "fail", "Bad Error")
