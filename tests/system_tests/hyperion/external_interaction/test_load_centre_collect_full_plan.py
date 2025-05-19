@@ -280,7 +280,7 @@ def test_execute_load_centre_collect_full(
     )
     expected_sample_id = load_centre_collect_params.sample_id
     robot_load_cb.expeye.start_robot_action.assert_called_once_with(
-        expected_proposal, expected_visit
+        expected_proposal, expected_visit, expected_sample_id
     )
     # TODO re-enable this https://github.com/DiamondLightSource/mx-bluesky/issues/690
     # robot_load_cb.expeye.update_barcode_and_snapshots.assert_called_once_with(

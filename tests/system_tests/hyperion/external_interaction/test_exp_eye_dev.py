@@ -38,7 +38,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     expeye = ExpeyeInteraction()
 
     robot_action_id = expeye.start_robot_action(
-        "LOAD", proposal, session, SimConstants.ST_SAMPLE_ID, 40, 3
+        "LOAD", proposal, session, SimConstants.ST_SAMPLE_ID
     )
 
     sleep(0.5)
@@ -48,7 +48,14 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     test_folder = "/dls/i03/data/2024/cm37235-2/xtal_snapshots"
     oav_snapshot = test_folder + "/235855_load_after_0.0.png"
     webcam_snapshot = test_folder + "/235855_webcam.jpg"
-    expeye.update_robot_action(robot_action_id, BARCODE, oav_snapshot, webcam_snapshot)
+    expeye.update_robot_action(
+        robot_action_id,
+        {
+            "sampleBarcode": BARCODE,
+            "xtalSnapshotBefore": oav_snapshot,
+            "xtalSnapshotAfter": webcam_snapshot,
+        },
+    )
 
     sleep(0.5)
 
