@@ -27,12 +27,12 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
-    hyperion_grid_detect_then_xray_centre,
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    PlanGroupCheckpointConstants,
+    PlanNameConstants,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
@@ -47,7 +47,11 @@ from ....conftest import (
     OavGridSnapshotTestEvents,
     simulate_xrc_result,
 )
-from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
+from ...hyperion.experiment_plans.conftest import (
+    FLYSCAN_RESULT_LOW,
+    FLYSCAN_RESULT_MED,
+    sim_fire_event_on_open_run,
+)
 
 
 def _fake_flyscan(*args):
@@ -55,13 +59,16 @@ def _fake_flyscan(*args):
 
 
 def test_full_grid_scan(
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_full_grid_scan_params: HyperionSpecifiedThreeDGridScan,
     test_config_files: dict[str, str],
+    construct_beamline_specific,
 ):
     devices = MagicMock()
-    plan = hyperion_grid_detect_then_xray_centre(
+    plan = grid_detect_then_xray_centre(
         devices,
-        cast(GridScanWithEdgeDetect, hyperion_fgs_params),
+        cast(GridScanWithEdgeDetect, test_full_grid_scan_params),
+        SpecifiedThreeDGridScan,
+        construct_beamline_specific,
         test_config_files["oav_config_json"],
     )
     assert isinstance(plan, Generator)
@@ -129,7 +136,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
         xrc_params_type=HyperionSpecifiedThreeDGridScan,
         construct_beamline_specific=construct_beamline_specific_xrc_features,
     )
-    yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
+    yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
 
 
 @pytest.mark.timeout(2)
@@ -253,14 +260,14 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
             Msg("save_oav_grids"),
             Msg(
                 "open_run",
-                run=CONST.PLAN.FLYSCAN_RESULTS,
+                run=DocDescriptorNames.FLYSCAN_RESULTS,
                 xray_centre_results=[dataclasses.asdict(FLYSCAN_RESULT_MED)],
             ),
         ]
     )
 
     sim_run_engine.add_handler_for_callback_subscribes()
-    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    sim_fire_event_on_open_run(sim_run_engine, DocDescriptorNames.FLYSCAN_RESULTS)
     sim_run_engine.add_callback_handler_for_multiple(
         "save_oav_grids",
         [

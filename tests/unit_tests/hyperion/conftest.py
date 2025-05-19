@@ -11,7 +11,6 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 )
 from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -107,14 +106,6 @@ def dummy_params_2d():
     )
     raw_params["z_steps"] = 1
     return HyperionSpecifiedThreeDGridScan(**raw_params)
-
-
-@pytest.fixture
-def test_full_grid_scan_params():
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
-    )
-    return GridScanWithEdgeDetect(**params)
 
 
 def dummy_rotation_data_collection_group_info():

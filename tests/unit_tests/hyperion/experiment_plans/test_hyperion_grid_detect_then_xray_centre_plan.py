@@ -1,3 +1,5 @@
+from collections.abc import Generator
+from typing import cast
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
@@ -12,13 +14,27 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
+    HyperionSpecifiedThreeDGridScan,
 )
-from tests.unit_tests.common.plans.test_common_flyscan_xray_centre_plan import (
+from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
 )
 
 
 class TestHyperionGridDetectThenXrayCentrePlan:
+    def test_full_hyperion_grid_scan(
+        self,
+        hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+        test_config_files: dict[str, str],
+    ):
+        devices = MagicMock()
+        plan = hyperion_grid_detect_then_xray_centre(
+            devices,
+            cast(GridScanWithEdgeDetect, hyperion_fgs_params),
+            test_config_files["oav_config_json"],
+        )
+        assert isinstance(plan, Generator)
+
     @patch(
         "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
         autospec=True,
