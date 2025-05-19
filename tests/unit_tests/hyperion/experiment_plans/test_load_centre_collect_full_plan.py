@@ -8,7 +8,7 @@ from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -16,10 +16,10 @@ from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    WarningException,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -106,7 +106,7 @@ def composite(
     composite.oav.zoom_controller.level.describe = AsyncMock(
         return_value={"level": {"choices": zoom_levels_list}}
     )
-    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
+    set_mock_value(composite.oav.zoom_controller.level, "1.0x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
@@ -269,7 +269,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
     return_value=iter([Msg(command="robot_load_and_change_energy")]),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([Msg(command="multi_rotation_scan")]),
 )
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
@@ -347,7 +347,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -378,7 +378,7 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -483,7 +483,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
     new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
 )
 def test_load_centre_collect_full_plan_multiple_centres(
@@ -595,8 +595,13 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    MagicMock(),
 )
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
@@ -617,7 +622,7 @@ def test_box_size_passed_through_to_gridscan(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -644,6 +649,6 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
 
     rotation_scans = mock_rotation_scan.call_args.args[1].rotation_scans
     assert len(rotation_scans) == 1
-    assert rotation_scans[0].x_start_um == 1.1
-    assert rotation_scans[0].y_start_um == 2.2
-    assert rotation_scans[0].z_start_um == 3.3
+    assert rotation_scans[0].x_start_um == 1100
+    assert rotation_scans[0].y_start_um == 2200
+    assert rotation_scans[0].z_start_um == 3300

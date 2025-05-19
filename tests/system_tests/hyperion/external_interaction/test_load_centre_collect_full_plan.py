@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -16,8 +17,11 @@ from ispyb.sqlalchemy import BLSample
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
-from PIL import Image
 
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
+    GridParamUpdate,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
@@ -27,10 +31,12 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    WarningException,
+)
+from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    detect_grid_and_do_gridscan,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -55,6 +61,8 @@ from ....conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_OUT_OF_BOUNDS_BB,
     TEST_RESULT_OUT_OF_BOUNDS_COM,
+    SimConstants,
+    assert_images_pixelwise_equal,
     raw_params_from_file,
 )
 from ...conftest import (
@@ -63,7 +71,16 @@ from ...conftest import (
     compare_comment,
 )
 
-SAMPLE_ID = int(os.environ.get("ST_SAMPLE_ID", 5461074))
+SNAPSHOT_GENERATION_ZOCALO_RESULT = [
+    {
+        "centre_of_mass": [7.25, 12.2, 5.38],
+        "max_voxel": [7, 12, 5],
+        "max_count": 50000,
+        "n_voxels": 35,
+        "total_count": 100000,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
 
 
 @pytest.fixture
@@ -71,8 +88,8 @@ def load_centre_collect_params():
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/example_load_centre_collect_params.json"
     )
-    json_dict["visit"] = os.environ.get("ST_VISIT", "cm37235-4")
-    json_dict["sample_id"] = SAMPLE_ID
+    json_dict["visit"] = SimConstants.ST_VISIT
+    json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     return LoadCentreCollect(**json_dict)
 
 
@@ -125,7 +142,7 @@ def load_centre_collect_composite(
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": SAMPLE_ID,
+    "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,
@@ -605,7 +622,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
 
 
 @pytest.mark.system_test
-def test_execute_load_centre_collect_rotation_snapshots(
+def test_execute_load_centre_collect_capture_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -656,9 +673,6 @@ def test_execute_load_centre_collect_rotation_snapshots(
         fetch_datacollection_attribute,
     )
 
-    expected_bytes = Image.open(
-        "tests/test_data/test_images/generate_snapshot_output.png"
-    ).tobytes()
     for column in [
         "xtalSnapshotFullPath1",
         "xtalSnapshotFullPath2",
@@ -666,5 +680,177 @@ def test_execute_load_centre_collect_rotation_snapshots(
         "xtalSnapshotFullPath4",
     ]:
         filename = fetch_datacollection_attribute(rotation_dc_ids[0], column)
-        actual_bytes = Image.open(filename).tobytes()
-        assert actual_bytes == expected_bytes, f"Expected image differed for {column}"
+        assert_images_pixelwise_equal(
+            filename, "tests/test_data/test_images/generate_snapshot_output.png"
+        )
+
+
+@pytest.fixture
+def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
+    load_centre_collect_composite: LoadCentreCollectComposite,
+):
+    wrapped = detect_grid_and_do_gridscan
+
+    # Before we do the grid scan, pretend we detected the pin at this position and move to it
+    # This is the base snapshot position
+    def wrapper(*args, **kwargs):
+        yield from bps.mv(
+            load_centre_collect_composite.smargon.x,
+            -0.614,
+            load_centre_collect_composite.smargon.y,
+            0.0259,
+            load_centre_collect_composite.smargon.z,
+            0.250,
+        )
+
+        yield from wrapped(*args, **kwargs)
+
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
+    ) as patched_detect_grid:
+        patched_detect_grid.side_effect = wrapper
+        yield patched_detect_grid
+
+
+@pytest.fixture
+def grid_detect_for_snapshot_generation():
+    fake_grid_params = GridParamUpdate(
+        x_start_um=-598.4,
+        y_start_um=-215.3,
+        y2_start_um=-215.3,
+        z_start_um=150.6,
+        z2_start_um=150.6,
+        x_steps=30,
+        y_steps=20,
+        z_steps=13,
+        x_step_size_um=20,
+        y_step_size_um=20,
+        z_step_size_um=20,
+    )
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback"
+    ) as gdc:
+        gdc.return_value.get_grid_parameters.return_value = fake_grid_params
+        yield fake_grid_params
+
+
+class TestGenerateSnapshot:
+    @pytest.fixture()
+    def test_config_files(self):
+        return {
+            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
+            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
+            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
+        }
+
+    @pytest.mark.system_test
+    def test_load_centre_collect_generate_rotation_snapshots(
+        self,
+        load_centre_collect_composite: LoadCentreCollectComposite,
+        load_centre_collect_params: LoadCentreCollect,
+        grid_detect_for_snapshot_generation: GridParamUpdate,
+        patch_detect_grid_and_do_gridscan_with_detected_pin_position: MagicMock,
+        next_oav_system_test_image: MagicMock,
+        RE: RunEngine,
+        tmp_path: Path,
+        test_config_files: dict,
+        fetch_datacollection_attribute: Callable[..., Any],
+        fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    ):
+        oav_parameters = OAVParameters(
+            oav_config_json=test_config_files["oav_config_json"],
+            context="xrayCentring",
+        )
+        next_fake_snapshot = iter(
+            [
+                # 1 extra for robot load
+                "tests/test_data/test_images/thau_1_91_0.png",
+                "tests/test_data/test_images/thau_1_91_0.png",
+                "tests/test_data/test_images/thau_1_91_90.png",
+            ]
+        )
+
+        next_oav_system_test_image.side_effect = lambda: next(next_fake_snapshot)
+
+        load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
+        load_centre_collect_params.robot_load_then_centre.snapshot_directory = (
+            tmp_path / "grid_snapshots"
+        )
+        os.mkdir(load_centre_collect_params.robot_load_then_centre.snapshot_directory)
+        load_centre_collect_params.multi_rotation_scan.use_grid_snapshots = True
+        load_centre_collect_params.multi_rotation_scan.snapshot_omegas_deg = None
+        load_centre_collect_composite.zocalo.my_zocalo_result = (
+            SNAPSHOT_GENERATION_ZOCALO_RESULT
+        )
+
+        ispyb_gridscan_cb = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        ispyb_rotation_cb = RotationISPyBCallback()
+        snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
+        RE.subscribe(ispyb_gridscan_cb)
+        RE.subscribe(snapshot_callback)
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters,
+            )
+        )
+
+        EXPECTED_GRID_SNAPSHOT_VALUES_0 = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
+            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
+        }
+        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
+            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
+        }
+        grid_dcg_id = ispyb_gridscan_cb.ispyb_ids.data_collection_group_id
+        grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)
+        compare_actual_and_expected(
+            grid_dc_ids[0],
+            EXPECTED_GRID_SNAPSHOT_VALUES_0,
+            fetch_datacollection_attribute,
+        )
+        compare_actual_and_expected(
+            grid_dc_ids[1],
+            EXPECTED_GRID_SNAPSHOT_VALUES_1,
+            fetch_datacollection_attribute,
+        )
+
+        EXPECTED_ROTATION_SNAPSHOT_VALUES = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
+        }
+
+        rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
+        rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
+        compare_actual_and_expected(
+            rotation_dc_ids[0],
+            EXPECTED_ROTATION_SNAPSHOT_VALUES,
+            fetch_datacollection_attribute,
+        )
+        compare_actual_and_expected(
+            rotation_dc_ids[1],
+            EXPECTED_ROTATION_SNAPSHOT_VALUES,
+            fetch_datacollection_attribute,
+        )
+
+        for expected_path, actual_path in zip(
+            [
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
+                "tests/test_data/test_images/thau_1_91_expected_270.png",
+                "tests/test_data/test_images/thau_1_91_expected_270.png",
+            ],
+            [
+                fetch_datacollection_attribute(rotation_dc_ids[i], col)
+                for col in ["xtalSnapshotFullPath1", "xtalSnapshotFullPath2"]
+                for i in (0, 1)
+            ],
+            strict=False,
+        ):
+            assert_images_pixelwise_equal(actual_path, expected_path)

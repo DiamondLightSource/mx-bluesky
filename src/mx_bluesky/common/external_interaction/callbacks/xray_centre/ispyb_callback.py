@@ -4,13 +4,8 @@ from collections.abc import Callable, Sequence
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar
 
-import numpy as np
 from bluesky import preprocessors as bpp
-from bluesky.utils import MsgGenerator
-from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
-    get_processing_results_from_event,
-)
+from bluesky.utils import MsgGenerator, make_decorator
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -18,9 +13,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
-)
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
@@ -71,6 +63,9 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     )
 
 
+ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
+
+
 class GridscanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -103,6 +98,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
+
         if doc.get("subplan_name") == PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -146,12 +142,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_event(self, doc: Event):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
+
         doc = super().activity_gated_event(doc)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
-        if descriptor_name == ZOCALO_READING_PLAN_NAME:
-            self._handle_zocalo_read_event(doc)
-        elif descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
+        if descriptor_name == DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos
@@ -162,38 +157,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return doc
 
-    def _handle_zocalo_read_event(self, doc):
+    def _add_processing_time_to_comment(self, processing_start_time: float):
         assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
-        crystal_summary = ""
-        if self._processing_start_time is not None:
-            proc_time = time() - self._processing_start_time
-            crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
-        bboxes: list[np.ndarray] = []
-        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-            f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
-        )
-
-        raw_results = get_processing_results_from_event("zocalo", doc)
-        if len(raw_results) > 0:
-            for n, res in enumerate(raw_results):
-                bb = res["bounding_box"]
-                diff = np.array(bb[1]) - np.array(bb[0])
-                bboxes.append(diff)
-
-                nicely_formatted_com = [
-                    f"{np.round(com, 2)}" for com in res["centre_of_mass"]
-                ]
-                crystal_summary += (
-                    f"Crystal {n + 1}: "
-                    f"Strength {res['total_count']}; "
-                    f"Position (grid boxes) {nicely_formatted_com}; "
-                    f"Size (grid boxes) {bboxes[n]}; "
-                )
-        else:
-            crystal_summary += "Zocalo found no crystals in this gridscan."
-        assert self.ispyb_ids.data_collection_ids, (
-            "No data collection to add results to"
-        )
+        proc_time = time() - processing_start_time
+        crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
 
         self.data_collection_group_info.comments = (
             self.data_collection_group_info.comments or ""
@@ -320,10 +287,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             if exception_type:
                 doc["reason"] = message
                 self.data_collection_group_info.comments = message
-                self.ispyb.update_data_collection_group_table(
-                    self.data_collection_group_info,
-                    self.ispyb_ids.data_collection_group_id,
-                )
+            elif self._processing_start_time:
+                self._add_processing_time_to_comment(self._processing_start_time)
+            self.ispyb.update_data_collection_group_table(
+                self.data_collection_group_info,
+                self.ispyb_ids.data_collection_group_id,
+            )
             self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self._tag_doc(doc)

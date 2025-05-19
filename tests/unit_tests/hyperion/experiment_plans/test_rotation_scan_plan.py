@@ -10,7 +10,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -19,12 +19,12 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
 )
@@ -448,7 +448,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
@@ -508,7 +508,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.OUT_OF_BEAM
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
@@ -627,17 +627,17 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "eiger_do_arm"
-        and msg.args[0] == 1
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         lambda msg: (
             msg.command == "open_run"
             and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
         ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "eiger_do_arm"
+        and msg.args[0] == 1
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -766,6 +766,7 @@ def test_rotation_scan_fails_with_exception_when_no_beamstop(
         )
 
 
+@pytest.mark.timeout(2)
 @pytest.mark.parametrize(
     "omega_flip, rotation_direction, expected_start_angle, "
     "expected_start_angle_with_runup, expected_zebra_direction",

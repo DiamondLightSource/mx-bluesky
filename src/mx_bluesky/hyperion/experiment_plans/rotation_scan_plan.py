@@ -13,7 +13,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03 import Beamstop
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -30,6 +30,13 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.manipulate_sample import (
+    cleanup_sample_environment,
+    move_phi_chi_omega,
+    move_x_y_z,
+    setup_sample_environment,
+)
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
@@ -40,12 +47,6 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
-    cleanup_sample_environment,
-    move_phi_chi_omega,
-    move_x_y_z,
-    setup_sample_environment,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     setup_zebra_for_rotation,
@@ -355,14 +356,30 @@ def _move_and_rotation(
                 group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
-    yield from rotation_scan_plan(
-        composite,
-        params,
-        motion_values,
-    )
+    yield from rotation_scan_plan(composite, params, motion_values)
 
 
 def multi_rotation_scan(
+    composite: RotationScanComposite,
+    parameters: MultiRotationScan,
+    oav_params: OAVParameters | None = None,
+) -> MsgGenerator:
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
+        }
+    )
+    def _wrapped_multi_rotation_scan():
+        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
+
+    yield from _wrapped_multi_rotation_scan()
+
+
+def multi_rotation_scan_internal(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
     oav_params: OAVParameters | None = None,
@@ -384,7 +401,6 @@ def multi_rotation_scan(
             "full_num_of_images": parameters.num_images,
             "meta_data_run_number": parameters.detector_params.run_number,
             "activate_callbacks": [
-                "BeamDrawingCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],
