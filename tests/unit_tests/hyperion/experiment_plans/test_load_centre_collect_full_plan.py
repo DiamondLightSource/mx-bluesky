@@ -419,7 +419,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
 )
 def test_load_centre_collect_moves_beamstop_into_place(
     mock_home_reset_wrapper: MagicMock,
-    mock_pin_tip_plan: MagicMock,
+    mock_pin_tip_then_flyscan_plan: MagicMock,
     mock_model_validate: MagicMock,
     mock_multi_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
@@ -431,6 +431,11 @@ def test_load_centre_collect_moves_beamstop_into_place(
     fake_model.demand_energy_ev = (
         load_centre_collect_params.robot_load_then_centre.demand_energy_ev
     )
+
+    mock_pin_tip_then_flyscan_plan.return_value = iter(
+        [Msg("pin_tip_then_flyscan_plan")]
+    )
+
     mock_model_validate.return_value = fake_model
     msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full(
@@ -442,6 +447,9 @@ def test_load_centre_collect_moves_beamstop_into_place(
         predicate=lambda msg: msg.command == "set"
         and msg.obj.name == "beamstop-selected_pos"
         and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"
     )
 
 

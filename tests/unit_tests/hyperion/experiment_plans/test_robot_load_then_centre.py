@@ -439,11 +439,15 @@ def test_tip_offset_um_passed_to_pin_tip_centre_plan(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
 )
 def test_robot_load_then_centre_moves_beamstop_into_place(
-    mock_pin_centre_flyscan_plan,
+    mock_pin_centre_then_flyscan_plan,
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
 ):
+    mock_pin_centre_then_flyscan_plan.return_value = iter(
+        [Msg("pin_centre_then_flyscan_plan")]
+    )
+
     msgs = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
     )
@@ -452,6 +456,9 @@ def test_robot_load_then_centre_moves_beamstop_into_place(
         predicate=lambda msg: msg.command == "set"
         and msg.obj.name == "beamstop-selected_pos"
         and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_centre_then_flyscan_plan"
     )
 
 

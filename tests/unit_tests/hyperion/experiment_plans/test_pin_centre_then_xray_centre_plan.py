@@ -378,6 +378,8 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
     flyscan_event_handler.xray_centre_results = "dummy"
     mock_events_handler.return_value = flyscan_event_handler
 
+    mock_pin_centre_flyscan_plan.return_value = iter([Msg("pin_centre_flyscan_plan")])
+
     msgs = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             grid_detect_devices, test_pin_centre_then_xray_centre_params
@@ -389,4 +391,7 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
         predicate=lambda msg: msg.command == "set"
         and msg.obj.name == "beamstop-selected_pos"
         and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_centre_flyscan_plan"
     )

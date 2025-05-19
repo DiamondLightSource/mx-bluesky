@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
@@ -754,7 +755,8 @@ def test_rotation_scan_moves_beamstop_into_place(
 ):
     with patch(
         "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan"
-    ):
+    ) as mock_rotation_scan_plan:
+        mock_rotation_scan_plan.return_value = iter([Msg("rotation_scan_plan")])
         msgs = sim_run_engine.simulate_plan(
             multi_rotation_scan(
                 fake_create_rotation_devices,
@@ -767,6 +769,9 @@ def test_rotation_scan_moves_beamstop_into_place(
         predicate=lambda msg: msg.command == "set"
         and msg.obj.name == "beamstop-selected_pos"
         and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "rotation_scan_plan"
     )
 
 

@@ -8,12 +8,11 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.util.test_utils import patch_motor
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -324,31 +323,43 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
     )
 
 
-@patch("mx_bluesky.hyperion.device_setup_plans.utils.bpp.contingency_wrapper")
-def test_beamstop_moves_into_place_before_xrc_if_previously_out_of_place(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
+)
+def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
+    mock_change_aperture_then_move_to_xtal: MagicMock,
+    mock_events_handler: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
     sim_run_engine: RunEngineSimulator,
     grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
 ):
-    grid_detect_devices_with_oav_config_params.beamstop = i03.beamstop(
-        connect_immediately=True, mock=True
-    )
-    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.x_mm)
-    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.y_mm)
-    patch_motor(grid_detect_devices_with_oav_config_params.beamstop.z_mm)
+    flyscan_event_handler = MagicMock()
+    flyscan_event_handler.xray_centre_results = "dummy"
+    mock_events_handler.return_value = flyscan_event_handler
 
-    set_mock_value(
-        grid_detect_devices_with_oav_config_params.beamstop.x_mm.user_readback, 0
+    mock_grid_detect_then_xray_centre.return_value = iter(
+        [Msg("grid_detect_then_xray_centre")]
     )
-    set_mock_value(
-        grid_detect_devices_with_oav_config_params.beamstop.y_mm.user_readback, 0
-    )
-    set_mock_value(
-        grid_detect_devices_with_oav_config_params.beamstop.z_mm.user_readback, 0
-    )
-
-    sim_run_engine.simulate_plan(
+    msgs = sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
             grid_detect_devices_with_oav_config_params, test_full_grid_scan_params
         )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "grid_detect_then_xray_centre"
     )
