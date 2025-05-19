@@ -45,9 +45,12 @@ def oav_snapshot_plan(
 ) -> MsgGenerator:
     if not parameters.take_snapshots:
         return
-    yield from _setup_oav(composite, parameters, oav_parameters)
-    for omega in parameters.snapshot_omegas_deg or []:
-        yield from _take_oav_snapshot(composite, omega)
+    if parameters.use_grid_snapshots:
+        yield from _generate_oav_snapshots(composite, parameters)
+    else:
+        yield from _setup_oav(composite, parameters, oav_parameters)
+        for omega in parameters.snapshot_omegas_deg or []:
+            yield from _take_oav_snapshot(composite, omega)
 
 
 def _setup_oav(
@@ -62,12 +65,24 @@ def _setup_oav(
     )
 
 
+def _generate_oav_snapshots(composite: OavSnapshotComposite, params: WithSnapshot):
+    """Generate rotation snapshots from previously captured grid snapshots"""
+    yield from bps.abs_set(
+        composite.oav.snapshot.directory, str(params.snapshot_directory)
+    )
+    for _ in 0, 270:
+        yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
+        yield from bps.read(composite.oav)
+        yield from bps.read(composite.smargon)
+        yield from bps.save()
+
+
 def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
+    """Create new snapshots by triggering the OAV"""
     yield from bps.abs_set(
         composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
     )
-    time_now = datetime.now()
-    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{omega:.0f}"
+    filename = _snapshot_filename(omega)
     yield from bps.abs_set(
         composite.oav.snapshot.filename,
         filename,
@@ -78,3 +93,9 @@ def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
     yield from bps.read(composite.oav)
     yield from bps.save()
+
+
+def _snapshot_filename(omega):
+    time_now = datetime.now()
+    filename = f"{time_now.strftime('%H%M%S%f')[:8]}_oav_snapshot_{omega:.0f}"
+    return filename
