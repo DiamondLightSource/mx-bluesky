@@ -9,4 +9,4 @@ env:
 api:
   port: 25565
 stomp:
-  host: localhost
+  host: i24-control.diamond.ac.uk

@@ -5,15 +5,6 @@
         },
         {
             "path": "../../dodal"
-        },
-        {
-            "path": "../../BlueAPI"
-        },
-        {
-            "path": "../../i02-1-services"
-        },
-        {
-            "path": "../../i02-1-deployment"
         }
     ],
     "settings": {
