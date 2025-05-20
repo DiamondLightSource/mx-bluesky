@@ -19,6 +19,9 @@ from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    detect_grid_and_do_gridscan,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
@@ -34,9 +37,6 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
-)
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    detect_grid_and_do_gridscan,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -728,7 +728,7 @@ def grid_detect_for_snapshot_generation():
         z_step_size_um=20,
     )
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback"
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback"
     ) as gdc:
         gdc.return_value.get_grid_parameters.return_value = fake_grid_params
         yield fake_grid_params
