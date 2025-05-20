@@ -406,7 +406,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal"
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"

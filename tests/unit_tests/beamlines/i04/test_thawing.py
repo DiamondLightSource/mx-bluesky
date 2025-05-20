@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
-from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -50,9 +50,9 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 
 @pytest.fixture
 async def oav(RE: RunEngine) -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
+    oav_config = OAVConfig(ZOOM_LEVELS_XML)
     async with init_devices(mock=True, connect=True):
-        oav = OAV("", config=oav_config, name="fake_oav")
+        oav = OAVBeamCentrePV("", config=oav_config, name="fake_oav")
     zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
         return_value=zoom_levels_list
