@@ -78,6 +78,7 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
     return_value=iter([Msg(command="wait_for_smargon")]),
 )
 async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and_put_back_after(
+    patch_smargon_not_disabled: MagicMock,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -91,6 +92,8 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
+
+    sim_run_engine.add_read_handler_for(robot.sample_id, 1000)
 
     msgs = sim_run_engine.simulate_plan(
         robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "")
