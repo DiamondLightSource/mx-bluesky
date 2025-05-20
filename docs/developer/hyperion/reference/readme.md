@@ -25,26 +25,23 @@ Note that because Hyperion makes heavy use of [Dodal](https://github.com/Diamond
 
 ## Starting the bluesky runner
 
-The bluesky runner is (re)started in production by GDA when it invokes `run_hyperion.sh`. 
+The bluesky runner is (re)started in production by GDA when it invokes `run_hyperion.sh`.
+
+
+This script will determine which beamline you are on based on the `BEAMLINE` environment variable. If on a 
+beamline Hyperion will run with `INFO` level logging, sending its logs to both production graylog and to the
+beamline/log/bluesky/hyperion.log on the shared file system.
 
 If you wish to attempt to run from a developer machine, then (if you are able to connect all devices) 
 you may `run_hyperion.sh --dev --beamline=<beamline>`, which will give you a running instance albeit with
-read-only devices. The `--dev` flag ensures that logging will not be sent to the production Graylog/output folders.
-
-This script will determine which beamline you are on based on the `BEAMLINE` environment variable. If on a 
-beamline Hyperion will run with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.log on the shared file system.
+read-only devices. The `--dev` flag ensures that logging will not be sent to the production Graylog/output folders
+and that hyperion will create mock devices.
 
 If in a dev environment Hyperion will log to a local graylog instance instead and into a file at `./tmp/dev/hyperion.log`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
 
 This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
 
 The hyperion python module can also be run directly without the startup script. It takes the same command line options, including:
-
-`INFO` level logging of the Bluesky event documents can be enabled with the flag
-
-```
-python -m hyperion --dev --verbose-event-logging
-```
 
 ## Testing
 
