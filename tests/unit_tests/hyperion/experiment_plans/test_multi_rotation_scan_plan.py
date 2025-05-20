@@ -14,6 +14,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
 from ophyd.status import Status
@@ -107,19 +108,6 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         )
     )
 
-    def _assert_set_seq_and_return_remaining(remaining, name_value_pairs):
-        for name, value in name_value_pairs:
-            try:
-                remaining = assert_message_and_return_remaining(
-                    remaining,
-                    lambda msg: msg.command == "set"
-                    and msg.obj.name == name
-                    and msg.args == (value,),
-                )
-            except Exception as e:
-                raise Exception(f"Failed to find {name} being set to {value}") from e
-        return remaining
-
     for scan in test_multi_rotation_params.single_rotation_scans:
         motion_values = calculate_motion_profile(
             scan,
@@ -127,15 +115,18 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
             (await omega.max_velocity.get_value()),
         )
         # moving to the start position
-        msgs_within_arming = _assert_set_seq_and_return_remaining(
+        msgs_within_arming = assert_message_and_return_remaining(
             msgs_within_arming,
-            [
-                ("smargon-x", scan.x_start_um / 1000),  # type: ignore
-                ("smargon-y", scan.y_start_um / 1000),  # type: ignore
-                ("smargon-z", scan.z_start_um / 1000),  # type: ignore
-                ("smargon-phi", scan.phi_start_deg),
-                ("smargon-chi", scan.chi_start_deg),
-            ],
+            lambda msg: msg.command == "set"
+            and msg.obj == smargon
+            and msg.args[0]
+            == CombinedMove(
+                x=scan.x_start_um / 1000,  # type: ignore
+                y=scan.y_start_um / 1000,  # type: ignore
+                z=scan.z_start_um / 1000,  # type: ignore
+                phi=scan.phi_start_deg,
+                chi=scan.chi_start_deg,
+            ),
         )
         # arming the zebra
         msgs_within_arming = assert_message_and_return_remaining(
