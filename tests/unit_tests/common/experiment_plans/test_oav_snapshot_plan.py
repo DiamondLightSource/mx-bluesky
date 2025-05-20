@@ -53,7 +53,7 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
 @pytest.fixture(autouse=True)
 def fixed_datetime() -> Generator[str, None, None]:
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
+        "mx_bluesky.common.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
     ) as mock_datetime:
         mock_datetime.now.return_value = datetime.fromisoformat(
             "2024-06-07T10:06:23.12"
@@ -61,7 +61,6 @@ def fixed_datetime() -> Generator[str, None, None]:
         yield "10062312"
 
 
-@patch("mx_bluesky.common.experiment_plans.oav_snapshot_plan.datetime", spec=datetime)
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     fixed_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
 ):
