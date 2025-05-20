@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import bluesky.plan_stubs as bps
 import numpy as np
 import pydantic
@@ -7,7 +9,6 @@ from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.zebra.zebra import RotationDirection
 
 import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
@@ -103,13 +104,13 @@ def load_centre_collect_full(
 
         multi_rotation.rotation_scans.clear()
 
-        sweep_state: RotationDirection | None = None
         is_alternating = parameters.features.alternate_rotation_direction
+
+        generator = rotation_scan_generator(is_alternating)
+        next(generator)
         for location in locations_to_collect_um:
             for rot in rotation_template:
-                combination, sweep_state = _generate_rotation_scan(
-                    rot, location, is_alternating, sweep_state
-                )
+                combination = generator.send((rot, location))
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = RotationScan.model_validate(multi_rotation)
 
@@ -122,29 +123,25 @@ def load_centre_collect_full(
     yield from plan_with_callback_subs()
 
 
-def _generate_rotation_scan(
-    scan_template: RotationScanPerSweep,
-    location: np.ndarray,
+def rotation_scan_generator(
     is_alternating: bool,
-    state: RotationDirection | None,
-) -> tuple[RotationScanPerSweep, RotationDirection]:
-    scan = scan_template.model_copy()
-    (
-        scan.x_start_um,
-        scan.y_start_um,
-        scan.z_start_um,
-    ) = location
+) -> Generator[RotationScanPerSweep, tuple[RotationScanPerSweep, np.ndarray], None]:
+    scan_template, location = yield  # type: ignore
+    next_rotation_direction = scan_template.rotation_direction
+    while True:
+        scan = scan_template.model_copy()
+        (
+            scan.x_start_um,
+            scan.y_start_um,
+            scan.z_start_um,
+        ) = location
+        if is_alternating:
+            if next_rotation_direction != scan.rotation_direction:
+                start = scan.omega_start_deg
+                rotation_sign = scan.rotation_direction.multiplier
+                end = start + rotation_sign * scan.scan_width_deg
+                scan.omega_start_deg = end
+                scan.rotation_direction = next_rotation_direction
+            next_rotation_direction = next_rotation_direction.opposite
 
-    if state is None:
-        state = scan_template.rotation_direction
-
-    if is_alternating:
-        if state != scan.rotation_direction:
-            start = scan.omega_start_deg
-            rotation_sign = scan.rotation_direction.multiplier
-            end = start + rotation_sign * scan.scan_width_deg
-            scan.omega_start_deg = end
-            scan.rotation_direction = state
-        state = state.opposite
-
-    return scan, state
+        scan_template, location = yield scan
