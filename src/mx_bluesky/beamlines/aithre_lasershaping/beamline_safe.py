@@ -2,7 +2,7 @@ import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
-from dodal.devices.aithre_lasershaping.laser_robot import BeamlineSafe, LaserRobot
+from dodal.devices.aithre_lasershaping.laser_robot import ForceBit, LaserRobot
 
 
 def check_beamline_safe(
@@ -18,13 +18,12 @@ def check_beamline_safe(
     ]
 
     values: list[float] = []
-    for i in range(len(pvs)):
-        values.append((yield from bps.rd(pvs[i])))
+    for pv in pvs:
+        values.append((yield from bps.rd(pv)))
 
     set_value = (
-        BeamlineSafe.ON.value
+        ForceBit.ON.value
         if all(round(value, 3) == 0 for value in values)
-        else BeamlineSafe.NO.value
+        else ForceBit.NO.value
     )
     yield from bps.abs_set(robot.set_beamline_safe, set_value, wait=True)
-    return values
