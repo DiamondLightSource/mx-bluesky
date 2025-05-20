@@ -136,7 +136,7 @@ class WithSnapshot(BaseModel):
 
     @model_validator(mode="after")
     def _validate_omegas_with_grid_snapshots(self) -> Self:
-        assert not self.use_grid_snapshots or self.snapshot_omegas_deg is None, (
+        assert not self.use_grid_snapshots or not self.snapshot_omegas_deg, (
             "snapshot_omegas may not be specified with use_grid_snapshots"
         )
         return self
