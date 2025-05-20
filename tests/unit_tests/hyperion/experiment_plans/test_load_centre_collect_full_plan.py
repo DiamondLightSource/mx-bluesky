@@ -34,7 +34,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
+    RotationScan,
     RotationScanPerSweep,
 )
 
@@ -327,7 +327,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     rotation_scan_composite = mock_rotation_scan.mock_calls[0].args[0]
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
     assert isinstance(rotation_scan_composite, RotationScanComposite)
-    assert isinstance(rotation_scan_params, MultiRotationScan)
+    assert isinstance(rotation_scan_params, RotationScan)
     # XXX sample test file xyz conflicts with detected xyz
     # see https://github.com/DiamondLightSource/mx-bluesky/issues/563
     expected_rotation_scans = [
@@ -409,7 +409,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.MultiRotationScan.model_validate"
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
@@ -578,7 +578,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
         expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
 
     rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
-    assert isinstance(rotation_scan_params, MultiRotationScan)
+    assert isinstance(rotation_scan_params, RotationScan)
     _compare_rotation_scans(
         expected_rotation_scans, rotation_scan_params.rotation_scans
     )

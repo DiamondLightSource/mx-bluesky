@@ -18,7 +18,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    MultiRotationScan,
+    RotationScan,
     RotationScanComposite,
     rotation_scan_internal,
 )
@@ -108,7 +108,7 @@ def load_centre_collect_full(
                     combination.z_start_um,
                 ) = location
                 multi_rotation.rotation_scans.append(combination)
-        multi_rotation = MultiRotationScan.model_validate(multi_rotation)
+        multi_rotation = RotationScan.model_validate(multi_rotation)
 
         assert (
             multi_rotation.demand_energy_ev

@@ -36,7 +36,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa
@@ -182,7 +182,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 @pytest.mark.system_test
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
-    params_for_rotation_scan: MultiRotationScan,
+    params_for_rotation_scan: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
     composite_for_rotation_scan,

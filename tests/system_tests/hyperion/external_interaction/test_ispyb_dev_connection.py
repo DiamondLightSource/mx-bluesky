@@ -49,7 +49,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import SimConstants
 from ...conftest import (
@@ -506,7 +506,7 @@ def test_ispyb_deposition_in_gridscan(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
-    params_for_rotation_scan: MultiRotationScan,
+    params_for_rotation_scan: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
     fetch_comment: Callable[..., Any],

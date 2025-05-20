@@ -57,7 +57,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
     DocumentCapturer,
@@ -74,7 +74,7 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 def do_rotation_main_plan_for_tests(
     run_eng: RunEngine,
-    expt_params: RotationScan,
+    expt_params: SingleRotationScan,
     devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
@@ -90,7 +90,7 @@ def do_rotation_main_plan_for_tests(
 @pytest.fixture
 def run_full_rotation_plan(
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ) -> RotationScanComposite:
@@ -109,7 +109,7 @@ def run_full_rotation_plan(
 
 
 @pytest.fixture
-def motion_values(test_rotation_params: MultiRotationScan):
+def motion_values(test_rotation_params: RotationScan):
     params = next(test_rotation_params.single_rotation_scans)
     return calculate_motion_profile(
         params,
@@ -120,7 +120,7 @@ def motion_values(test_rotation_params: MultiRotationScan):
 
 def setup_and_run_rotation_plan_for_tests(
     RE: RunEngine,
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
@@ -140,7 +140,7 @@ def setup_and_run_rotation_plan_for_tests(
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
@@ -153,7 +153,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
     RE: RunEngine,
-    test_rotation_params_nomove: MultiRotationScan,
+    test_rotation_params_nomove: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
@@ -163,7 +163,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     )
 
 
-def test_rotation_scan_calculations(test_rotation_params: MultiRotationScan):
+def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     params = next(test_rotation_params.single_rotation_scans)
     params.features.omega_flip = False
     params.exposure_time_s = 0.2
@@ -202,7 +202,7 @@ def test_rotation_scan_calculations(test_rotation_params: MultiRotationScan):
 def test_rotation_scan(
     plan: MagicMock,
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -223,7 +223,7 @@ async def test_rotation_plan_zebra_settings(
     setup_and_run_rotation_plan_for_tests_standard: dict[str, Any],
 ) -> None:
     zebra: Zebra = setup_and_run_rotation_plan_for_tests_standard["zebra"]
-    params: RotationScan = setup_and_run_rotation_plan_for_tests_standard[
+    params: SingleRotationScan = setup_and_run_rotation_plan_for_tests_standard[
         "test_rotation_params"
     ]
 
@@ -233,10 +233,10 @@ async def test_rotation_plan_zebra_settings(
 
 async def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan: RotationScanComposite,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
 ) -> None:
     smargon: Smargon = run_full_rotation_plan.smargon
-    params: RotationScan = next(test_rotation_params.single_rotation_scans)
+    params: SingleRotationScan = next(test_rotation_params.single_rotation_scans)
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
@@ -278,7 +278,7 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     setup_and_run_rotation_plan_for_tests_nomove: dict[str, Any],
 ) -> None:
     smargon: Smargon = setup_and_run_rotation_plan_for_tests_nomove["smargon"]
-    params: RotationScan = setup_and_run_rotation_plan_for_tests_nomove[
+    params: SingleRotationScan = setup_and_run_rotation_plan_for_tests_nomove[
         "test_rotation_params"
     ]
     assert params.phi_start_deg is None
@@ -299,7 +299,7 @@ def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
     oav_parameters_for_rotation: OAVParameters,
@@ -332,7 +332,7 @@ def test_cleanup_happens(
 
 def test_rotation_plan_reads_hardware(
     fake_create_rotation_devices: RotationScanComposite,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     motion_values,
     sim_run_engine_for_rotation: RunEngineSimulator,
 ):
@@ -359,7 +359,7 @@ def test_rotation_plan_reads_hardware(
 def rotation_scan_simulated_messages(
     sim_run_engine: RunEngineSimulator,
     fake_create_rotation_devices: RotationScanComposite,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
@@ -375,7 +375,7 @@ def rotation_scan_simulated_messages(
 
 def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
     rotation_scan_simulated_messages,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
@@ -400,7 +400,7 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
 
 def test_rotation_scan_triggers_xbpm_then_pauses_xbpm_and_sets_transmission(
     rotation_scan_simulated_messages,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
@@ -422,7 +422,7 @@ def test_rotation_scan_triggers_xbpm_then_pauses_xbpm_and_sets_transmission(
 
 def test_rotation_scan_does_not_change_transmission_back_until_after_data_collected(
     rotation_scan_simulated_messages,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
@@ -488,7 +488,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
 
 
 def test_rotation_scan_resets_omega_waits_for_sample_env_complete_after_snapshots_before_hw_read(
-    test_rotation_params: MultiRotationScan, rotation_scan_simulated_messages
+    test_rotation_params: RotationScan, rotation_scan_simulated_messages
 ):
     params = next(test_rotation_params.single_rotation_scans)
     msgs = assert_message_and_return_remaining(
@@ -546,7 +546,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
 def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
@@ -600,7 +600,7 @@ def _add_sim_handlers_for_normal_operation(
 def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
@@ -708,7 +708,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
 def test_rotation_scan_correctly_triggers_ispyb_callback(
     mock_store_in_ispyb,
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -741,7 +741,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     mock_store_in_ispyb,
     mock_zocalo_interactor,
     RE: RunEngine,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -771,7 +771,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
 def test_rotation_scan_moves_beamstop_into_place(
     sim_run_engine: RunEngineSimulator,
     fake_create_rotation_devices: RotationScanComposite,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     with patch(
@@ -827,7 +827,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     expected_start_angle: float,
     expected_start_angle_with_runup: float,
     expected_zebra_direction: RotationDirection,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
@@ -879,7 +879,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             mock_callback.mock_calls,
         )
     )
-    event_params = RotationScan.model_validate_json(
+    event_params = SingleRotationScan.model_validate_json(
         rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
     )
     # event params are not transformed
@@ -892,7 +892,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
 
 def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     rotation_scan_simulated_messages,
-    test_rotation_params: MultiRotationScan,
+    test_rotation_params: RotationScan,
 ):
     msgs = rotation_scan_simulated_messages
     msgs = assert_message_and_return_remaining(
@@ -907,7 +907,7 @@ def test_multi_rotation_scan_params():
     raw_params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
     )
-    params = MultiRotationScan(**raw_params)
+    params = RotationScan(**raw_params)
     omega_starts = [s["omega_start_deg"] for s in raw_params["rotation_scans"]]
     for i, scan in enumerate(params.single_rotation_scans):
         assert scan.omega_start_deg == omega_starts[i]
@@ -923,7 +923,7 @@ def test_multi_rotation_scan_params():
 
 async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     fake_create_rotation_devices: RotationScanComposite,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     sim_run_engine_for_rotation: RunEngineSimulator,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1002,7 +1002,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
 
 def _run_multi_rotation_plan(
     RE: RunEngine,
-    params: MultiRotationScan,
+    params: RotationScan,
     devices: RotationScanComposite,
     callbacks: Sequence[Callable[[str, dict[str, Any]], Any]],
     oav_params: OAVParameters,
@@ -1020,7 +1020,7 @@ def _run_multi_rotation_plan(
 def test_full_multi_rotation_plan_docs_emitted(
     _,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1057,7 +1057,9 @@ def test_full_multi_rotation_plan_docs_emitted(
             "stop",
             matches_fields={"run_start": inner_run_docs[0][1]["uid"]},
         )
-        params = RotationScan(**json.loads(scan_docs[0][1]["mx_bluesky_parameters"]))
+        params = SingleRotationScan(
+            **json.loads(scan_docs[0][1]["mx_bluesky_parameters"])
+        )
         assert params == scan
         assert len(events := DocumentCapturer.get_matches(scan_docs, "event")) == 3
         DocumentCapturer.assert_events_and_data_in_order(
@@ -1091,7 +1093,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
     _,
     mock_nexus_writer: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1134,7 +1136,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
     feature_flags_update_with_omega_flip: MagicMock,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
     tmpdir,
@@ -1260,7 +1262,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
     ispyb_config_path: str,
@@ -1299,7 +1301,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     _,
     mock_ispyb_conn_multiscan,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1357,7 +1359,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
 def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     _,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1391,7 +1393,7 @@ def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1436,7 +1438,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1469,7 +1471,7 @@ def test_ispyb_triggered_before_zocalo(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1514,7 +1516,7 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1547,7 +1549,7 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
 
 def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(
     fake_create_rotation_devices: RotationScanComposite,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     sim_run_engine_for_rotation: RunEngineSimulator,
     oav_parameters_for_rotation: OAVParameters,
 ):
@@ -1578,7 +1580,7 @@ def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_
 
 def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     fake_create_rotation_devices: RotationScanComposite,
-    test_multi_rotation_params: MultiRotationScan,
+    test_multi_rotation_params: RotationScan,
     sim_run_engine_for_rotation: RunEngineSimulator,
     oav_parameters_for_rotation: OAVParameters,
 ):
