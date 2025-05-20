@@ -557,37 +557,37 @@ def test_load_centre_collect_full_plan_multiple_centres(
         msgs, lambda msg: msg.command == "multi_rotation_scan"
     )
 
-    def _rotation_at_first_position(chi=0):
+    def _rotation_at_first_position(direction: RotationDirection, chi):
         return {
-            "omega_start_deg": 10,
+            "omega_start_deg": 10 if direction == RotationDirection.NEGATIVE else -350,
             "chi_start_deg": chi,
             "x_start_um": 100,
             "y_start_um": 200,
             "z_start_um": 300,
-            "rotation_direction": RotationDirection.NEGATIVE,
+            "rotation_direction": direction,
         }
 
-    def _rotation_at_second_position(chi=0):
+    def _rotation_at_second_position(direction: RotationDirection, chi):
         return {
-            "omega_start_deg": 10,
+            "omega_start_deg": 10 if direction == RotationDirection.NEGATIVE else -350,
             "chi_start_deg": chi,
             "x_start_um": 400,
             "y_start_um": 500,
             "z_start_um": 600,
-            "rotation_direction": RotationDirection.NEGATIVE,
+            "rotation_direction": direction,
         }
 
     expected_rotation_scans = [
-        _rotation_at_first_position(0),
-        _rotation_at_first_position(30),
-        _rotation_at_first_position(0),
-        _rotation_at_first_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
+        _rotation_at_first_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_first_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_first_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_first_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
     ]
     for i in range(0, len(expected_rotation_scans)):
         expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
