@@ -29,7 +29,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     tag_filter,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
