@@ -15,7 +15,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 
 def not_implemented():
@@ -31,7 +31,6 @@ class ExperimentRegistryEntry(TypedDict):
     param_type: type[
         HyperionSpecifiedThreeDGridScan
         | GridScanWithEdgeDetect
-        | SingleRotationScan
         | RotationScan
         | PinTipCentreThenXrayCentre
         | LoadCentreCollect
