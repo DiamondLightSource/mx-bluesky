@@ -4,13 +4,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -55,7 +54,7 @@ def sample_is_not_loaded(sim_run_engine, sample_is_loaded):
     mock_current_sample(sim_run_engine, SampleLocation(1, 1))
 
 
-def mock_pin_centre_then_flyscan_plan(_, __):
+def mock_pin_centre_then_flyscan_plan(_, __, ___):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
@@ -436,20 +435,31 @@ def test_tip_offset_um_passed_to_pin_tip_centre_plan(
     )
 
 
-def test_robot_load_then_centre_fails_with_exception_when_no_beamstop(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+)
+def test_robot_load_then_centre_moves_beamstop_into_place(
+    mock_pin_centre_then_flyscan_plan,
     sim_run_engine: RunEngineSimulator,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
 ):
-    sim_run_engine.add_read_handler_for(
-        robot_load_composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    mock_pin_centre_then_flyscan_plan.return_value = iter(
+        [Msg("pin_centre_then_flyscan_plan")]
     )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            robot_load_then_xray_centre(
-                robot_load_composite, robot_load_then_centre_params
-            )
-        )
+
+    msgs = sim_run_engine.simulate_plan(
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_centre_then_flyscan_plan"
+    )
 
 
 @pytest.mark.timeout(2)

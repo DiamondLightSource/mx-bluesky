@@ -1,9 +1,10 @@
+from collections.abc import Generator
 from datetime import datetime
 from unittest.mock import patch
 
 import pydantic
 import pytest
-from bluesky.simulators import assert_message_and_return_remaining
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.areadetector.plugins.CAM import ColorMode
 from dodal.devices.backlight import Backlight
@@ -49,11 +50,20 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
     )
 
 
-@patch("mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime)
+@pytest.fixture(autouse=True)
+def fixed_datetime() -> Generator[str, None, None]:
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
+    ) as mock_datetime:
+        mock_datetime.now.return_value = datetime.fromisoformat(
+            "2024-06-07T10:06:23.12"
+        )
+        yield "10062312"
+
+
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
-    mock_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
+    fixed_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
 ):
-    mock_datetime.now.return_value = datetime.fromisoformat("2024-06-07T10:06:23.12")
     msgs = sim_run_engine.simulate_plan(
         oav_snapshot_plan(
             oav_snapshot_composite,
@@ -135,6 +145,62 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav"
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "save"
+        )
+
+
+def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_when_using_grid_snapshots(
+    fixed_datetime,
+    oav_snapshot_params: WithSnapshot,
+    oav_snapshot_composite: CompositeImpl,
+    oav_parameters_for_rotation: OAVParameters,
+    sim_run_engine: RunEngineSimulator,
+):
+    oav_snapshot_params.use_grid_snapshots = True
+    oav_snapshot_params.snapshot_omegas_deg = [0, 90]
+
+    msgs = sim_run_engine.simulate_plan(
+        oav_snapshot_plan(
+            oav_snapshot_composite, oav_snapshot_params, oav_parameters_for_rotation
+        )
+    )
+
+    assert not [
+        msg
+        for msg in msgs
+        if msg.command == "trigger" and msg.obj is oav_snapshot_composite.oav
+    ]
+    assert not [
+        msg
+        for msg in msgs
+        if msg.command == "set" and msg.obj is oav_snapshot_composite.smargon.omega
+    ]
+    expected_snapshot_directory = str(oav_snapshot_params.snapshot_directory)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is oav_snapshot_composite.oav.snapshot.directory
+            and msg.args[0] == expected_snapshot_directory
+        ),
+    )
+    for _ in 0, 90:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "create"
+            and msg.kwargs["name"]
+            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "read" and msg.obj is oav_snapshot_composite.oav,
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "read"
+            and msg.obj is oav_snapshot_composite.smargon,
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"

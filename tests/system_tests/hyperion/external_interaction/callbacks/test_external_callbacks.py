@@ -15,11 +15,11 @@ import zmq
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
-from dodal.devices.zocalo.zocalo_results import (
-    get_processing_results_from_event,
-)
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_decorator,
+)
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
@@ -38,7 +38,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
-from .....conftest import TestData, fake_read
+from .....conftest import fake_read
 from ..conftest import (  # noqa
     fetch_comment,
 )
@@ -155,19 +155,13 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params
     )
 
-    RE(
-        common_flyscan_xray_centre(
+    @ispyb_activation_decorator(dummy_params)
+    def wrapped_xray_centre():
+        yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
         )
-    )
 
-    # Check that we we emitted a valid reading from the zocalo device
-    zocalo_event = doc_catcher.event.call_args.args[0]  # type: ignore
-    # TestData.test_result_large is what fake_zocalo sends by default
-    assert (
-        get_processing_results_from_event("zocalo", zocalo_event)
-        == TestData.test_result_large
-    )
+    RE(wrapped_xray_centre())
 
     # get dcids from zocalo device
     dcid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcid.read()
@@ -183,8 +177,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     ispyb_comment = fetch_comment(dcid)
     assert ispyb_comment != ""
     assert "Zocalo processing took" in ispyb_comment
-    assert "Position (grid boxes) ['1.0', '2.0', '3.0']" in ispyb_comment
-    assert "Size (grid boxes) [6 6 5];" in ispyb_comment
 
 
 @pytest.mark.system_test

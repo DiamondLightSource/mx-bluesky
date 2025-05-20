@@ -9,7 +9,6 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
 from functools import partial
-from inspect import get_annotations
 from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
@@ -36,12 +35,16 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.flux import Flux
+from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
-from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
@@ -49,10 +52,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.devices.zocalo import XrcResult, ZocaloResults
-from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
-)
+from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -68,6 +68,7 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -88,9 +89,16 @@ from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
+    _get_logging_dirs,
     do_default_logging_setup,
 )
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
@@ -230,12 +238,6 @@ def raw_params_from_file(filename):
         return json.loads(f.read())
 
 
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
-):
-    return raw_params_from_file(json_file)
-
-
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)
@@ -269,11 +271,12 @@ def pytest_runtest_setup(item):
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
+        logging_path, _ = _get_logging_dirs(True)
         if ISPYB_ZOCALO_CALLBACK_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
                 ISPYB_ZOCALO_CALLBACK_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
@@ -282,7 +285,7 @@ def pytest_runtest_setup(item):
             print("Initialising nexus logger for tests")
             set_up_all_logging_handlers(
                 NEXUS_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
@@ -369,6 +372,15 @@ def i03_beamline_parameters():
         {"i03": "tests/test_data/test_beamline_parameters.txt"},
     ) as params:
         yield params
+
+
+@pytest.fixture
+def hyperion_fgs_params():
+    return HyperionSpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
+        )
+    )
 
 
 @pytest.fixture
@@ -523,6 +535,40 @@ def attenuator(RE: RunEngine):
     attenuator.set = MagicMock(side_effect=fake_attenuator_set)
 
     yield attenuator
+
+
+@pytest.fixture
+def beamstop_i03(
+    beamline_parameters: GDABeamlineParameters,
+    sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters",
+        return_value=beamline_parameters,
+    ):
+        beamstop = i03.beamstop(connect_immediately=True, mock=True)
+        patch_motor(beamstop.x_mm)
+        patch_motor(beamstop.y_mm)
+        patch_motor(beamstop.z_mm)
+
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
+        )
+
+        yield beamstop
+        beamline_utils.clear_devices()
 
 
 @pytest.fixture
@@ -716,6 +762,49 @@ def fake_create_devices(
     return devices
 
 
+@pytest.fixture()
+def fake_create_rotation_devices(
+    beamstop_i03: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: Undulator,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(return_value=NullStatus())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop_i03,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        smargon=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+    )
+
+
 @pytest.fixture
 def zocalo(done_status, RE: RunEngine):
     zoc = i03.zocalo(connect_immediately=True, mock=True)
@@ -782,6 +871,11 @@ async def panda(RE: RunEngine):
     return panda
 
 
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
+
+
 async def async_status_done():
     await asyncio.sleep(0)
 
@@ -794,6 +888,80 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 @pytest.fixture
 def panda_fast_grid_scan(RE: RunEngine):
     return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+async def hyperion_flyscan_xrc_composite(
+    smargon: Smargon,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    RE: RunEngine,
+    done_status,
+    attenuator,
+    xbpm_feedback,
+    synchrotron,
+    aperture_scatterguard,
+    zocalo,
+    dcm,
+    panda,
+    backlight,
+    s4_slit_gaps,
+) -> HyperionFlyScanXRayCentreComposite:
+    fake_composite = HyperionFlyScanXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        dcm=dcm,
+        # We don't use the eiger fixture here because .unstage() is used in some tests
+        eiger=i03.eiger(connect_immediately=True, mock=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
+        smargon=smargon,
+        undulator=i03.undulator(connect_immediately=True, mock=True),
+        synchrotron=synchrotron,
+        xbpm_feedback=xbpm_feedback,
+        zebra=i03.zebra(connect_immediately=True, mock=True),
+        zocalo=zocalo,
+        panda=panda,
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        robot=i03.robot(connect_immediately=True, mock=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
+    )
+
+    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    # unstage should be mocked on a per-test basis because several rely on unstage
+    fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
+    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
+
+    test_result = {
+        "centre_of_mass": [6, 6, 6],
+        "max_voxel": [5, 5, 5],
+        "max_count": 123456,
+        "n_voxels": 321,
+        "total_count": 999999,
+        "bounding_box": [[3, 3, 3], [9, 9, 9]],
+    }
+
+    @AsyncStatus.wrap
+    async def mock_complete(result):
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
+    fake_composite.zocalo.timeout_s = 3
+    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
+    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
+
+    set_mock_value(fake_composite.robot.barcode, "BARCODE")
+
+    return fake_composite
 
 
 def fake_read(obj, initial_positions, _):
@@ -991,12 +1159,6 @@ def simulate_xrc_result(
         sim_run_engine.add_read_handler_for(
             getattr(zocalo, k), numpy.array([r[k] for r in test_results])
         )
-
-
-def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
-    keys = get_annotations(XrcResult).keys()
-    results_by_key = {k: [r[k] for r in test_results] for k in keys}
-    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
 
 
 # The remaining code in this conftest is utility for external interaction tests. See https://github.com/DiamondLightSource/mx-bluesky/issues/699 for
@@ -1328,15 +1490,6 @@ class TestData(OavGridSnapshotTestEvents):
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
-    test_descriptor_document_zocalo_reading: EventDescriptor = {
-        "uid": "unique_id_zocalo_reading",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ZOCALO_READING_PLAN_NAME,
-    }  # type:ignore
-    test_zocalo_reading_event: Event = {
-        "descriptor": "unique_id_zocalo_reading",
-        "data": generate_xrc_result_event("zocalo", []),
-    }  # type:ignore
 
     test_result_large = [
         {
@@ -1463,7 +1616,7 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 @pytest.fixture
 def dummy_rotation_params():
     dummy_params = MultiRotationScan(
-        **default_raw_params(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
@@ -1498,3 +1651,16 @@ def xbpm_and_transmission_wrapper_composite(
     return XBPMAndTransmissionWrapperComposite(
         undulator, xbpm_feedback, attenuator, dcm
     )
+
+
+def assert_images_pixelwise_equal(actual, expected):
+    with Image.open(expected) as expected_image:
+        expected_bytes = expected_image.tobytes()
+        with Image.open(actual) as actual_image:
+            actual_bytes = actual_image.tobytes()
+            # assert tries to be clever and takes forever if this is inlined and
+            # the comparison fails
+            bytes_expected_bytes = actual_bytes == expected_bytes
+            assert bytes_expected_bytes, (
+                f"Actual and expected images differ, {actual} != {expected}"
+            )

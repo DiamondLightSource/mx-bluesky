@@ -7,14 +7,13 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -358,17 +357,41 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     )
 
 
-def test_pin_tip_centre_then_xray_centre_fails_with_exception_when_no_beamstop(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_centre_then_flyscan_plan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.XRayCentreEventHandler"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.change_aperture_then_move_to_xtal"
+)
+def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
+    mock_pin_centre_flyscan_plan: MagicMock,
+    mock_events_handler: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
     sim_run_engine: RunEngineSimulator,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
-    sim_run_engine.add_read_handler_for(
-        grid_detect_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            pin_tip_centre_then_xray_centre(
-                grid_detect_devices, test_pin_centre_then_xray_centre_params
-            )
+    flyscan_event_handler = MagicMock()
+    flyscan_event_handler.xray_centre_results = "dummy"
+    mock_events_handler.return_value = flyscan_event_handler
+
+    mock_pin_centre_flyscan_plan.return_value = iter([Msg("pin_centre_flyscan_plan")])
+
+    msgs = sim_run_engine.simulate_plan(
+        pin_tip_centre_then_xray_centre(
+            grid_detect_devices, test_pin_centre_then_xray_centre_params
         )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_centre_flyscan_plan"
+    )

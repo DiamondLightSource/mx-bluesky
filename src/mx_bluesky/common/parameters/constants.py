@@ -122,6 +122,7 @@ class PlanGroupCheckpointConstants:
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
+    PREPARE_APERTURE = "prepare_aperture"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

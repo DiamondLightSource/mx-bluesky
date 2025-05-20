@@ -4,16 +4,9 @@
 
 for option in "$@"; do
     case $option in
-        --skip-startup-connection)
-            SKIP_STARTUP_CONNECTION=true
-            ;;
         --dev)
             IN_DEV=true
             ;;
-        --verbose-event-logging)
-            VERBOSE_EVENT_LOGGING=true
-            ;;
-
         --help|--info|--h)
             echo "Arguments:"
             echo "  --dev start in development mode without external callbacks"
@@ -42,21 +35,10 @@ start_log_path=$LOG_DIR/start_log.log
 callback_start_log_path=$LOG_DIR/callback_start_log.log
 
 #Add future arguments here
-declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
-                                ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING" )
-declare -A h_only_arg_strings=( ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection"
-                                ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging" )
-
 declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
 declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
 h_commands=()
-for i in "${!h_only_args[@]}"
-do
-    if [ "${h_only_args[$i]}" != false ]; then 
-        h_commands+="${h_only_arg_strings[$i]} ";
-    fi;
-done
 cb_commands=()
 for i in "${!h_and_cb_args[@]}"
 do

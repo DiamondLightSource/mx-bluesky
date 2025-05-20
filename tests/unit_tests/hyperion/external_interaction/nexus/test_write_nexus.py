@@ -342,18 +342,20 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file: Nexus
     )
 
 
-@patch.dict(os.environ, {"BEAMLINE": "I03"})
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_nexus_writer_writes_beamline_name_correctly(
     test_fgs_params: HyperionSpecifiedThreeDGridScan,
 ):
     d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_fgs_params.num_images, d_size.width, d_size.height)
     nexus_writer = NexusWriter(test_fgs_params, data_shape, test_fgs_params.scan_points)
-    assert nexus_writer.source.beamline == "I03"
+    assert nexus_writer.source.beamline == "i03"
 
 
 def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
-    import dlstbx.swmr.h5check
+    # python-dlstbx is a private GH repo; dls_dev_env.sh symlinks it to /dls_sw dials install
+    # therefore pyright fails in CI unless we ignore it here
+    import dlstbx.swmr.h5check  # type: ignore
 
     nexus_writer_1, nexus_writer_2 = nexus_writers
 

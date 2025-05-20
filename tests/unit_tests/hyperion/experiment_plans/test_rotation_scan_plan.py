@@ -11,12 +11,13 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import h5py
 import numpy as np
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -36,7 +37,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
 )
@@ -768,23 +768,32 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     mock_zocalo_interactor.return_value.run_start.assert_called_once()
 
 
-def test_rotation_scan_fails_with_exception_when_no_beamstop(
+def test_rotation_scan_moves_beamstop_into_place(
     sim_run_engine: RunEngineSimulator,
     fake_create_rotation_devices: RotationScanComposite,
     test_rotation_params: MultiRotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    sim_run_engine.add_read_handler_for(
-        fake_create_rotation_devices.beamstop.selected_pos, BeamstopPositions.UNKNOWN
-    )
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan"
+    ) as mock_rotation_scan_plan:
+        mock_rotation_scan_plan.return_value = iter([Msg("rotation_scan_plan")])
+        msgs = sim_run_engine.simulate_plan(
             rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
             )
         )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "rotation_scan_plan"
+    )
 
 
 @pytest.mark.timeout(2)

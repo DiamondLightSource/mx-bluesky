@@ -141,7 +141,14 @@ def undulator_for_system_test(undulator):
 
 
 @pytest.fixture
-def oav_for_system_test(test_config_files):
+def next_oav_system_test_image():
+    return MagicMock(
+        return_value="tests/test_data/test_images/generate_snapshot_input.png"
+    )
+
+
+@pytest.fixture
+def oav_for_system_test(test_config_files, next_oav_system_test_image):
     parameters = OAVConfig(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -160,9 +167,7 @@ def oav_for_system_test(test_config_files):
     # Rotation snapshots
     @AsyncStatus.wrap
     async def trigger_with_test_image(self):
-        with Image.open(
-            "tests/test_data/test_images/generate_snapshot_input.png"
-        ) as image:
+        with Image.open(next_oav_system_test_image()) as image:
             await self.post_processing(image)
 
     oav.snapshot.trigger = MagicMock(
@@ -181,7 +186,7 @@ def oav_for_system_test(test_config_files):
         ) as mock_get,
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
-        set_mock_value(oav.zoom_controller.level, "1.0")
+        set_mock_value(oav.zoom_controller.level, "1.0x")
         zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
         oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
             return_value=zoom_levels_list
