@@ -1329,7 +1329,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         first_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[0].args[0])
         assert (
             first_upsert_data["axisend"] - first_upsert_data["axisstart"]
-            == rotation_params.scan_width_deg
+            == rotation_params.scan_width_deg * rotation_params.rotation_direction.multiplier
         )
         assert first_upsert_data["nimages"] == rotation_params.num_images
         second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])

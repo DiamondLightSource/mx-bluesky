@@ -639,7 +639,7 @@ def _rotation_at(
     new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
 )
 @patch(
@@ -682,6 +682,26 @@ def _rotation_at(
                 _rotation_at(0, POS_MED, -349, RotationDirection.POSITIVE),
             ),
         ],
+        [
+            (
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 0,
+                    "scan_width_deg": 360,
+                },
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 30,
+                    "scan_width_deg": 360,
+                },
+            ),
+            (
+                _rotation_at(0, POS_HIGH, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_HIGH, -350, RotationDirection.POSITIVE),
+                _rotation_at(0, POS_MED, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_MED, -350, RotationDirection.POSITIVE),
+            ),
+        ],
     ],
 )
 def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres(
@@ -698,7 +718,7 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
         self, "alternate_rotation_direction", True
     )
     load_centre_collect_with_top_n_params.multi_rotation_scan.rotation_scans = [
-        RotationScan.model_construct(**rs) for rs in rotation_scans
+        RotationScanPerSweep.model_construct(**rs) for rs in rotation_scans
     ]
     LoadCentreCollect.model_validate(load_centre_collect_with_top_n_params)
 
@@ -712,11 +732,16 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
         )
     )
 
+    multi_rotation_params = load_centre_collect_with_top_n_params.multi_rotation_scan
+    sweeps = multi_rotation_params.rotation_scans
     for i in range(0, len(expected_scans)):
-        expected_scans[i]["nexus_vds_start_img"] = 3590 * i
+        sweep_params = sweeps[i % len(sweeps)]
+        expected_scans[i]["nexus_vds_start_img"] = (
+            sweep_params.scan_width_deg * 10
+        ) * i
 
     rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
-    assert isinstance(rotation_scan_params, MultiRotationScan)
+    assert isinstance(rotation_scan_params, RotationScan)
     _compare_rotation_scans(expected_scans, rotation_scan_params.rotation_scans)
     assert rotation_scan_params.transmission_frac == 0.05
 
