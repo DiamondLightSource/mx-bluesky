@@ -137,6 +137,8 @@ def rotation_scan_generator(
         ) = location
         if is_alternating:
             if next_rotation_direction != scan.rotation_direction:
+                # If originally specified direction of the current scan is different
+                # from that required, swap the start and ends.
                 start = scan.omega_start_deg
                 rotation_sign = scan.rotation_direction.multiplier
                 end = start + rotation_sign * scan.scan_width_deg
