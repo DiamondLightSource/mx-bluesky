@@ -21,7 +21,7 @@ class HyperionFeatureFlags(FeatureFlags):
         set_stub_offsets:               If True then set the stub offsets after moving to the crystal (ignored for
             multi-centre)
         omega_flip:                     If True then invert the smargon omega motor rotation commands with respect to
-         the hyperion request.
+         the hyperion request. See "Hyperion Coordinate Systems" in the documentation.
     """
 
     @staticmethod

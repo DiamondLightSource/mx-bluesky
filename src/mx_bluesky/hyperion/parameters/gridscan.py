@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from dodal.devices.detector import (
-    DetectorParams,
-)
 from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
@@ -13,7 +10,6 @@ from mx_bluesky.common.parameters.gridscan import (
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
-from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 
 
 class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
@@ -23,34 +19,11 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
     # https://github.com/DiamondLightSource/hyperion/issues/1395"""
     @property
     def detector_params(self):
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+        params = super().detector_params
+        params.enable_dev_shm = (
+            self.features.compare_cpu_and_gpu_zocalo or self.features.use_gpu_results
         )
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None, (
-            "Detector distance must be filled before generating DetectorParams"
-        )
-        return DetectorParams(
-            detector_size_constants=I03Constants.DETECTOR,
-            expected_energy_ev=self.demand_energy_ev,
-            exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
-            prefix=self.file_name,
-            detector_distance=self.detector_distance_mm,
-            omega_start=self.omega_start_deg or 0,
-            omega_increment=0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
-            trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
-            or self.features.use_gpu_results,
-            **optional_args,
-        )
+        return params
 
 
 class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGridScan):
@@ -58,36 +31,14 @@ class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGr
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
     # https://github.com/DiamondLightSource/hyperion/issues/1395"""
+
     @property
     def detector_params(self):
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+        params = super().detector_params
+        params.enable_dev_shm = (
+            self.features.compare_cpu_and_gpu_zocalo or self.features.use_gpu_results
         )
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None, (
-            "Detector distance must be filled before generating DetectorParams"
-        )
-        return DetectorParams(
-            detector_size_constants=I03Constants.DETECTOR,
-            expected_energy_ev=self.demand_energy_ev,
-            exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
-            prefix=self.file_name,
-            detector_distance=self.detector_distance_mm,
-            omega_start=self.omega_start_deg or 0,
-            omega_increment=0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
-            trigger_mode=self.trigger_mode,
-            enable_dev_shm=self.features.compare_cpu_and_gpu_zocalo
-            or self.features.use_gpu_results,
-            **optional_args,
-        )
+        return params
 
     # Relative to common grid scan, stub offsets are defined by config server
     @property
