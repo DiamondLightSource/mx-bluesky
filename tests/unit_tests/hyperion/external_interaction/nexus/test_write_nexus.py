@@ -353,7 +353,9 @@ def test_nexus_writer_writes_beamline_name_correctly(
 
 
 def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
-    import dlstbx.swmr.h5check
+    # python-dlstbx is a private GH repo; dls_dev_env.sh symlinks it to /dls_sw dials install
+    # therefore pyright fails in CI unless we ignore it here
+    import dlstbx.swmr.h5check  # type: ignore
 
     nexus_writer_1, nexus_writer_2 = nexus_writers
 
