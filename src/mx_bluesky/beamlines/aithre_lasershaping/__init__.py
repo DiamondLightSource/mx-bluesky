@@ -3,6 +3,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.check_goniometer_performance impor
 )
 from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import (
     change_goniometer_turn_speed,
+    go_to_furthest_maximum,
     jog_sample,
     rotate_goniometer_relative,
 )
@@ -10,6 +11,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import (
 __all__ = [
     "check_omega_performance",
     "change_goniometer_turn_speed",
+    "go_to_furthest_maximum",
     "rotate_goniometer_relative",
     "jog_sample",
 ]

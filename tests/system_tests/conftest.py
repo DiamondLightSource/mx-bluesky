@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 from PIL import Image
@@ -149,7 +149,7 @@ def next_oav_system_test_image():
 
 @pytest.fixture
 def oav_for_system_test(test_config_files, next_oav_system_test_image):
-    parameters = OAVConfig(
+    parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=parameters)

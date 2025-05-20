@@ -12,6 +12,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
     change_goniometer_turn_speed,
+    go_to_furthest_maximum,
     jog_sample,
     rotate_goniometer_relative,
 )
@@ -53,6 +54,22 @@ def test_change_goniometer_turn_speed(
         and msg.obj.name == "goniometer-omega-velocity"
         and msg.args[0] == 40,
     )
+
+
+@pytest.mark.parametrize(
+    "initial_position, expected_set_value", [(-1, 3600), (0, 3600), (3600, -3600)]
+)
+async def test_go_to_furthest_maximum_real_run_engine(
+    goniometer: Goniometer,
+    initial_position: float,
+    expected_set_value: float,
+    RE: RunEngine,
+):
+    set_mock_value(goniometer.omega.user_readback, initial_position)
+
+    RE(go_to_furthest_maximum(goniometer))
+
+    assert await goniometer.omega.user_setpoint.get_value() == expected_set_value
 
 
 @pytest.mark.parametrize(
