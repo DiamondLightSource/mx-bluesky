@@ -29,6 +29,9 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
 )
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    setup_beamline_for_OAV,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
     GridParamUpdate,
@@ -81,6 +84,12 @@ def grid_detect_then_xray_centre(
 
     @subs_decorator(flyscan_event_handler)
     def plan_to_perform():
+        yield from setup_beamline_for_OAV(
+            composite.smargon,
+            composite.backlight,
+            composite.aperture_scatterguard,
+            wait=True,
+        )
         yield from ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
                 composite,
