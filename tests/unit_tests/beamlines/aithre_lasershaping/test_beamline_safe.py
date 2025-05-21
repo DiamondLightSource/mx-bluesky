@@ -61,6 +61,6 @@ async def test_beamline_safe_reads_safe_correctly(
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "robot-set_beamline_safe_on_robot"
+        and msg.obj.name == "robot-set_beamline_safe"
         and msg.args[0] == "On",
     )
