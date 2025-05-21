@@ -3,12 +3,11 @@ import json
 import os
 import shutil
 from pathlib import Path
-from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.read_hardware import (
@@ -101,9 +100,7 @@ def fake_create_rotation_devices():
     oav = i03.oav(
         connect_immediately=True,
         mock=True,
-        params=OAVConfig(
-            zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
-        ),
+        params=OAVConfigBeamCentre(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION),
     )
     xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
@@ -142,15 +139,11 @@ def sim_rotation_scan_to_create_nexus(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     nexus_path = Path(test_params.storage_directory) / nexus_filename
     assert os.path.isfile(nexus_path)
