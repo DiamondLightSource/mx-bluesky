@@ -5,7 +5,7 @@ from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.aithre_lasershaping.laser_robot import ForceBit, LaserRobot
 
 
-def set_beamline_safe(
+def set_beamline_safe_on_robot(
     robot: LaserRobot = inject("robot"), goniometer: Goniometer = inject("goniometer")
 ) -> MsgGenerator:
     """
