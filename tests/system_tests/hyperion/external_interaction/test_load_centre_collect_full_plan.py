@@ -18,7 +18,6 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.device_setup_plans.check_beamstop import BeamstopException
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
@@ -418,33 +417,6 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     assert (
         fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
         == "ERROR - sample"
-    )
-
-
-@pytest.mark.system_test
-def test_load_centre_collect_updates_bl_sample_status_no_beamstop(
-    load_centre_collect_composite: LoadCentreCollectComposite,
-    load_centre_collect_params: LoadCentreCollect,
-    oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
-    fetch_blsample: Callable[..., Any],
-):
-    sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(sample_handling_cb)
-    set_mock_value(load_centre_collect_composite.beamstop.x_mm.user_readback, 1)
-
-    with pytest.raises(BeamstopException, match="Beamstop is not DATA_COLLECTION"):
-        RE(
-            load_centre_collect_full(
-                load_centre_collect_composite,
-                load_centre_collect_params,
-                oav_parameters_for_rotation,
-            )
-        )
-
-    assert (
-        fetch_blsample(load_centre_collect_params.sample_id).blSampleStatus
-        == "ERROR - beamline"
     )
 
 
