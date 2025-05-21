@@ -1,4 +1,4 @@
-from mx_bluesky.beamlines.aithre_lasershaping.beamline_safe import check_beamline_safe
+from mx_bluesky.beamlines.aithre_lasershaping.beamline_safe import set_beamline_safe
 from mx_bluesky.beamlines.aithre_lasershaping.check_goniometer_performance import (
     check_omega_performance,
 )
@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import (
 )
 
 __all__ = [
-    "check_beamline_safe",
+    "set_beamline_safe",
     "check_omega_performance",
     "change_goniometer_turn_speed",
     "go_to_furthest_maximum",

@@ -5,7 +5,7 @@ from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.aithre_lasershaping.laser_robot import LaserRobot
 
-from mx_bluesky.beamlines.aithre_lasershaping import check_beamline_safe
+from mx_bluesky.beamlines.aithre_lasershaping import set_beamline_safe
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ async def test_beamline_safe_reads_unsafe_correctly(
 
     sim_run_engine.add_handler("locate", locate_pv, "goniometer-" + set_pv_name)
 
-    msgs = sim_run_engine.simulate_plan(check_beamline_safe(robot, goniometer))
+    msgs = sim_run_engine.simulate_plan(set_beamline_safe(robot, goniometer))
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
@@ -56,7 +56,7 @@ async def test_beamline_safe_reads_safe_correctly(
     robot: LaserRobot,
     goniometer: Goniometer,
 ):
-    msgs = sim_run_engine.simulate_plan(check_beamline_safe(robot, goniometer))
+    msgs = sim_run_engine.simulate_plan(set_beamline_safe(robot, goniometer))
 
     assert_message_and_return_remaining(
         msgs,

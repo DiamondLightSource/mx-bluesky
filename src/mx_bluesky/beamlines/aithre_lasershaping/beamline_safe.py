@@ -5,9 +5,16 @@ from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.aithre_lasershaping.laser_robot import ForceBit, LaserRobot
 
 
-def check_beamline_safe(
+def set_beamline_safe(
     robot: LaserRobot = inject("robot"), goniometer: Goniometer = inject("goniometer")
 ) -> MsgGenerator:
+    """
+    The beamline safe PV is used in the Aithre laser shaping system to indicate whether
+    the goniometer is in the correct position for the robot to load a sample. The robot
+    is trained to load at the goniometer zero position, so if the translation and
+    rotation axes of the goniometer are at zero, then the beamline safe PV bit is forced
+    on.
+    """
     pvs = [
         goniometer.x,
         goniometer.y,
