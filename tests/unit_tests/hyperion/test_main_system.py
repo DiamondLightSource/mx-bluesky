@@ -496,3 +496,7 @@ def test_create_app_passes_through_dev_mode(
     create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
+
+
+def test_main_configures_alerting_service():
+    assert False, "TODO"
