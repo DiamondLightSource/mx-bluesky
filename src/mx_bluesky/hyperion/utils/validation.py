@@ -7,7 +7,7 @@ from pathlib import Path
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.plans.read_hardware import (
@@ -100,9 +100,7 @@ def fake_create_rotation_devices():
     oav = i03.oav(
         connect_immediately=True,
         mock=True,
-        params=OAVConfig(
-            zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
-        ),
+        params=OAVConfigBeamCentre(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION),
     )
     xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
