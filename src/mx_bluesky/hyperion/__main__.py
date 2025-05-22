@@ -12,8 +12,6 @@ from blueapi.core import BlueskyContext
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
-from dodal.common.alerting import set_alerting_service
-from dodal.common.alerting.alert_manager import AlertManagerAlertService
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
@@ -38,7 +36,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     update_params_from_agamemnon,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.utils.context import setup_context
@@ -314,11 +311,6 @@ def main():
         ),
         daemon=True,
     )
-
-    feature_flags = HyperionFeatureFlags()
-    feature_flags.update_self_from_server()
-    if feature_flags.alert_manager_url:
-        set_alerting_service(AlertManagerAlertService(feature_flags.alert_manager_url))
 
     flask_thread.start()
     LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
