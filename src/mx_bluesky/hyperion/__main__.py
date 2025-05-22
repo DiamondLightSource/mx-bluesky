@@ -12,12 +12,12 @@ from blueapi.core import BlueskyContext
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
+from dodal.common.alerting import set_alerting_service
+from dodal.common.alerting.alert_manager import AlertManagerAlertService
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-from dodal.common.alerting import set_alerting_service
-from dodal.common.alerting.alert_manager import AlertManagerAlertService
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
