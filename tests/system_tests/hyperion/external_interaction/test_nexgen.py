@@ -2,7 +2,6 @@ import os
 import re
 import subprocess
 from os import environ
-from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
 import pytest
@@ -77,16 +76,11 @@ def test_rotation_nexgen(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
-
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            _fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        _fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     master_file = f"{tmpdir}/{prefix}_{run_number}_master.h5"
     _check_nexgen_output_passes_imginfo(
