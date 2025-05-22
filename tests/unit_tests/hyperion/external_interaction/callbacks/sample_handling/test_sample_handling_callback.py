@@ -4,8 +4,8 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
-from dodal.common.alerting import Metadata
 
+from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
@@ -31,7 +31,9 @@ def mock_expeye_cls():
 
 @pytest.fixture(autouse=True)
 def mock_alert_service():
-    with patch("dodal.common.alerting._service._alert_service") as service:
+    with patch(
+        "mx_bluesky.common.external_interaction.alerting._service._alert_service"
+    ) as service:
         yield service
 
 

@@ -1,7 +1,10 @@
-from dodal.common.alerting import Metadata, get_alerting_service
 from dodal.utils import get_beamline_name
 from event_model import RunStart, RunStop
 
+from mx_bluesky.common.external_interaction.alerting import (
+    Metadata,
+    get_alerting_service,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
