@@ -1,12 +1,11 @@
-import asyncio
-
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky import RunEngine
-from dodal.devices.i04.murko_results import MurkoResultsDevice
+from dodal.beamlines import i04
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.core import init_devices
 
+from mx_bluesky.beamlines.i04.thawing_plan import thaw_and_murko_centre
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import (
     LOGGER,
@@ -29,13 +28,33 @@ def main():
     do_default_logging_setup(CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False)
     RE = RunEngine()
     with init_devices():
-        murko_results = MurkoResultsDevice()
-        LOGGER.info("Starting Murko results trigger")
+        #     murko_results = MurkoResultsDevice()
+        #     LOGGER.info("Starting Murko results trigger")
 
-        async def run_trigger():
-            await murko_results.trigger()
+        #     async def run_trigger():
+        #         await murko_results.trigger()
 
-        asyncio.run(run_trigger())
+        #     asyncio.run(run_trigger())
+        robot = i04.robot()
+        thaw = i04.thawer()
+        smargon = i04.smargon()
+        oav = i04.oav()
+        oav_full_screen = i04.oav_full_screen()
+        murko = i04.murko_results()
+        forwarder = i04.oav_to_redis_forwarder()
+    RE(
+        thaw_and_murko_centre(
+            30,
+            360,
+            robot,
+            thaw,
+            smargon,
+            oav,
+            oav_full_screen,
+            murko,
+            forwarder,
+        )
+    )
 
     # RE = RunEngine(call_returns_result=True)
     # RE(my_plan(composite))
