@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ $.Release.Name }}-{{ $itemName }}"
+  namespace: "{{ $.Release.Namespace }}"
+  labels:
+    app.kubernetes.io/name: "{{ $itemName }}"
+    app.kubernetes.io/instance: "{{ $.Release.Name }}-{{ $itemName }}"
+    app.kubernetes.io/version: "{{ $.Chart.Version }}"
+    app.kubernetes.io/part-of: zocalo 
+data:
+  configuration.yaml: |-
+    version: 1
+
+    graylog:
+      plugin: graylog
+      {{- .Values.zocalo.graylog | toYaml | nindent 6 }}
+
+  {{- if .Values.zocalo.secrets }}
+  {{- range Values.zocalo.secrets }}
+    {{ .name }}: "/zocalo/secrets/{{ .fileName }}"
+  {{- end -}} {{/* range */}}
+  {{- end -}} {{/* if */}}
+
+
+    default-transport:
+      plugin: transport
+      default: {{ .Values.zocalo.defaultTransport }}
+
+    environments:
+
+      bluesky:
+        logging: graylog
+        plugins:
+          - default-transport
+        {{- if .Values.zocalo.secrets }}
+        {{- range .Values.zocalo.secrets }}
+          - {{ .name }}
+        {{- end -}} {{/* range */}}
+        {{- end -}} {{/* if */}}
