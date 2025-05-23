@@ -59,6 +59,19 @@ spec:
           hostPath:
             type: Directory
             path: "{{ .Values.application.dataDir }}"
+        - name: zocalo-config
+          configMap:
+            name: "{{ .Release.Name }}-zocalo-config"
+        - name: zocalo-secrets
+          projected:
+            defaultMode: 0444
+            sources:
+            {{- if .Values.zocalo.secrets }}
+            {{- range .Values.zocalo.secrets }}
+            - secret:
+                name: {{ .secretName }}
+            {{- end -}} {{/* range */}}
+            {{- end -}} {{/* if */}}
       containers:
       - name: hyperion
         image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}
@@ -122,7 +135,7 @@ spec:
           - name: ZOCALO_GO_HOSTNAME
             value: "{{ .Values.application.beamline }}-control"
           - name: ZOCALO_CONFIG
-            value: "/dls_sw/apps/zocalo/live/configuration.yaml"
+            value: "/zocalo/config/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
             value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.application.beamline }}.cfg"
           {{- end }}
@@ -157,4 +170,8 @@ spec:
             name: debuglogs
           - mountPath: "/dls/{{ .Values.application.beamline }}/data"
             name: data
+          - mountPath: "/zocalo/config"
+            name: zocalo-config
+          - mountPath: "/zocalo/secrets"
+            name: zocalo-secrets
       hostNetwork: true
