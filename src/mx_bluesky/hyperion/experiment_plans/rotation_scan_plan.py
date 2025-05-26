@@ -353,7 +353,7 @@ def _move_and_rotation(
             yield from bps.prepare(
                 composite.aperture_scatterguard,
                 params.selected_aperture,
-                group=CONST.WAIT.ROTATION_READY_FOR_DC,
+                group=CONST.WAIT.PREPARE_APERTURE,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(composite, params, motion_values)
