@@ -51,6 +51,7 @@ EXPECTED_ROTATION_PARAMS = {
             scan_width_deg=360,
             rotation_direction=RotationDirection.POSITIVE,
             chi_start_deg=0.0,
+            sample_id=12345,
         )
     ],
 }

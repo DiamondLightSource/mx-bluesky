@@ -1736,7 +1736,6 @@ def dummy_rotation_params(tmp_path):
             tmp_path,
         )
     )
-    dummy_params.sample_id = TEST_SAMPLE_ID
     return dummy_params
 
 
