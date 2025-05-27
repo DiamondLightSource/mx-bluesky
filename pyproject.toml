@@ -144,11 +144,6 @@ filterwarnings = [
     "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
     "ignore:.*pkg_resources.*:UserWarning",
-    # Ignore deprecation warning that gets promoted to SystemError from somewhere
-    # in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
-    # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
-    # The fix for this is in https://github.com/protocolbuffers/protobuf/pull/15999
-    # But this fix exists only in 3.27.0<=protobuf<4 and protobuf>=v5, not in 4.x that we depend on
     # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
     "ignore:.*custom tp_new.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
