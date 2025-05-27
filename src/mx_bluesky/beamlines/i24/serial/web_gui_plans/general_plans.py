@@ -51,7 +51,7 @@ def gui_move_backlight(
 
 @bpp.run_decorator()
 def gui_set_zoom_level(position: str, oav: OAV = inject("oav")) -> MsgGenerator:
-    yield from bps.abs_set(oav.zoom_controller, position, wait="True")
+    yield from bps.abs_set(oav.zoom_controller, position, wait=True)
     SSX_LOGGER.debug(f"Setting zoom level to {position}")
 
 
