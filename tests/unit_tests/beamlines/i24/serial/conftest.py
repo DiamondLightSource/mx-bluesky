@@ -5,6 +5,7 @@ from pathlib import Path
 import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines import i24
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import (
     HUTCH_SAFE_FOR_OPERATIONS,
     HutchShutter,
@@ -204,3 +205,10 @@ def mirrors(RE) -> FocusMirrorsMode:
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors
+
+
+@pytest.fixture
+def attenuator(RE) -> ReadOnlyAttenuator:
+    attenuator: ReadOnlyAttenuator = i24.attenuator(connect_immediately=True, mock=True)
+    set_mock_value(attenuator.actual_transmission, 1.0)
+    return attenuator
