@@ -1,8 +1,4 @@
-from collections.abc import Callable
-from functools import wraps
-
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.zebra.zebra import (
     ArmDemand,
@@ -19,31 +15,6 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from mx_bluesky.common.utils.log import LOGGER
 
 ZEBRA_STATUS_TIMEOUT = 30
-
-
-def bluesky_retry(func: Callable):
-    """Decorator that will retry the decorated plan if it fails.
-
-    Use this with care as it knows nothing about the state of the world when things fail.
-    If it is possible that your plan fails when the beamline is in a transient state that
-    the plan could not act on do not use this decorator without doing some more intelligent
-    clean up.
-
-    You should avoid using this decorator often in general production as it hides errors,
-    instead it should be used only for debugging these underlying errors.
-    """
-
-    @wraps(func)
-    def newfunc(*args, **kwargs):
-        def log_and_retry(exception):
-            LOGGER.error(f"Function {func.__name__} failed with {exception}, retrying")
-            yield from func(*args, **kwargs)
-
-        yield from bpp.contingency_wrapper(
-            func(*args, **kwargs), except_plan=log_and_retry, auto_raise=False
-        )
-
-    return newfunc
 
 
 def arm_zebra(zebra: Zebra):
@@ -105,7 +76,6 @@ def configure_zebra_and_shutter_for_auto_shutter(
     yield from set_shutter_auto_input(zebra, input, group=group)
 
 
-@bluesky_retry
 def setup_zebra_for_rotation(
     zebra: Zebra,
     zebra_shutter: ZebraShutter,
@@ -185,7 +155,6 @@ def setup_zebra_for_rotation(
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-@bluesky_retry
 def setup_zebra_for_gridscan(
     zebra: Zebra,
     zebra_shutter: ZebraShutter,
@@ -215,7 +184,6 @@ def setup_zebra_for_gridscan(
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-@bluesky_retry
 def tidy_up_zebra_after_gridscan(
     zebra: Zebra,
     zebra_shutter: ZebraShutter,
@@ -236,7 +204,6 @@ def tidy_up_zebra_after_gridscan(
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-@bluesky_retry
 def setup_zebra_for_panda_flyscan(
     zebra: Zebra,
     zebra_shutter: ZebraShutter,

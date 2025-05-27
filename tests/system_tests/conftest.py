@@ -1,18 +1,18 @@
 import os
 import re
+from collections.abc import Generator
 from decimal import Decimal
 from functools import partial
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 from PIL import Image
-
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -125,10 +125,10 @@ DATA_COLLECTION_COLUMN_MAP = {
 }
 
 
-@pytest.fixture(autouse=True)
-def use_dev_ispyb_unless_overridden_by_environment():
+@pytest.fixture(autouse=True, scope="session")
+def ispyb_config_path() -> Generator[str, Any, Any]:
     ispyb_config_path = os.environ.get(
-        "ISPYB_CONFIG_PATH", CONST.SIM.DEV_ISPYB_DATABASE_CFG
+        "ISPYB_CONFIG_PATH", "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
     )
     with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
         yield ispyb_config_path
@@ -141,8 +141,15 @@ def undulator_for_system_test(undulator):
 
 
 @pytest.fixture
-def oav_for_system_test(test_config_files):
-    parameters = OAVConfig(
+def next_oav_system_test_image():
+    return MagicMock(
+        return_value="tests/test_data/test_images/generate_snapshot_input.png"
+    )
+
+
+@pytest.fixture
+def oav_for_system_test(test_config_files, next_oav_system_test_image):
+    parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
@@ -160,9 +167,7 @@ def oav_for_system_test(test_config_files):
     # Rotation snapshots
     @AsyncStatus.wrap
     async def trigger_with_test_image(self):
-        with Image.open(
-            "tests/test_data/test_images/generate_snapshot_input.png"
-        ) as image:
+        with Image.open(next_oav_system_test_image()) as image:
             await self.post_processing(image)
 
     oav.snapshot.trigger = MagicMock(
@@ -181,7 +186,7 @@ def oav_for_system_test(test_config_files):
         ) as mock_get,
     ):
         mock_get.return_value.__aenter__.return_value = empty_response
-        set_mock_value(oav.zoom_controller.level, "1.0")
+        set_mock_value(oav.zoom_controller.level, "1.0x")
         zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
         oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
             return_value=zoom_levels_list

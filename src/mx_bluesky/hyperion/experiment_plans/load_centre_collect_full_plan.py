@@ -18,9 +18,9 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    MultiRotationScan,
+    RotationScan,
     RotationScanComposite,
-    multi_rotation_scan_internal,
+    rotation_scan_internal,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -50,6 +50,7 @@ def load_centre_collect_full(
     """
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
+    oav_config_file = oav_params.oav_config_json
 
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
@@ -64,7 +65,9 @@ def load_centre_collect_full(
     def plan_with_callback_subs():
         flyscan_event_handler = XRayCentreEventHandler()
         yield from subs_wrapper(
-            robot_load_then_xray_centre(composite, parameters.robot_load_then_centre),
+            robot_load_then_xray_centre(
+                composite, parameters.robot_load_then_centre, oav_config_file
+            ),
             flyscan_event_handler,
         )
 
@@ -83,11 +86,13 @@ def load_centre_collect_full(
         else:
             # If the xray centring hasn't found a result but has not thrown an error it
             # means that we do not need to recentre and can collect where we are
-            initial_x = yield from bps.rd(composite.smargon.x.user_readback)
-            initial_y = yield from bps.rd(composite.smargon.y.user_readback)
-            initial_z = yield from bps.rd(composite.smargon.z.user_readback)
+            initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
+            initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
+            initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
 
-            locations_to_collect_um = [np.array([initial_x, initial_y, initial_z])]
+            locations_to_collect_um = [
+                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000
+            ]
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()
@@ -103,12 +108,12 @@ def load_centre_collect_full(
                     combination.z_start_um,
                 ) = location
                 multi_rotation.rotation_scans.append(combination)
-        multi_rotation = MultiRotationScan.model_validate(multi_rotation)
+        multi_rotation = RotationScan.model_validate(multi_rotation)
 
         assert (
             multi_rotation.demand_energy_ev
             == parameters.robot_load_then_centre.demand_energy_ev
         ), "Setting a different energy for gridscan and rotation is not supported"
-        yield from multi_rotation_scan_internal(composite, multi_rotation, oav_params)
+        yield from rotation_scan_internal(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()

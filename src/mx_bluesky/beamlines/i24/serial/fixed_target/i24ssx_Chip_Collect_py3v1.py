@@ -4,6 +4,7 @@ Fixed target data collection
 
 from datetime import datetime
 from pathlib import Path
+from traceback import format_exception
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -50,52 +51,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     setup_zebra_for_fastchip_plan,
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
-
-# Move this in common place as part of
-# https://github.com/DiamondLightSource/mx-bluesky/pull/603
-PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
-
-
-def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
-    """Give an estimation of the time the plan should wait for the data collection \
-        to be finished.
-
-    For non-pump probe collections and collection with short delays, it should be \
-    enough to use the collection time plus a genereous 30s buffer.
-    For EAVA (Excite and visit again) collections instead, the laser dwell and laser \
-    delay times should be included in the calculation. For long dalays between pump \
-    and probe, the shutter opening time will also need to be taken into account.
-    For more details on the dynamics see
-    https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets.
-
-    Args:
-        parameters (FixedTargerParameters): The collection parameters.
-
-    Returns:
-        The estimated collection time, in s.
-    """
-    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 600
-    pump_setting = parameters.pump_repeat
-    collection_time = parameters.total_num_images * parameters.exposure_time_s
-    if pump_setting in [
-        PumpProbeSetting.NoPP,
-        PumpProbeSetting.Short1,
-        PumpProbeSetting.Short2,
-    ]:
-        timeout = collection_time + buffer
-    else:
-        # EAVA: Excite and visit again
-        num_windows = parameters.total_num_images / parameters.num_exposures
-        timeout = (
-            collection_time
-            + parameters.laser_dwell_s * num_windows  # type: ignore
-            + parameters.laser_delay_s
-            + buffer
-        )
-        if pump_setting == PumpProbeSetting.Medium1:
-            # Long delay between pump and probe, with fast shutter opening and closing.
-            timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
-    return timeout
 
 
 def write_userlog(
@@ -521,12 +476,12 @@ def finish_i24(
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
-def run_aborted_plan(pmac: PMAC, dcid: DCID):
+def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
     """Plan to send pmac_strings to tell the PMAC when a collection has been aborted, \
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning("Data Collection Aborted")
+    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
@@ -622,15 +577,7 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         parameters.chip.chip_type, parameters.map_type, parameters.pump_repeat
     )
     yield from bps.abs_set(pmac.program_number, prog_num, group="setup_pmac")
-    # Calculate approx collection time
-    total_collection_time = calculate_collection_timeout(parameters)
-    SSX_LOGGER.info(f"Estimated collection time: {total_collection_time}s.")
-    yield from bps.abs_set(
-        pmac.collection_time, total_collection_time, group="setup_pmac"
-    )
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
-    _sig = yield from bps.rd(pmac.collection_time)
-    SSX_LOGGER.warning(f"This was set for collection time {_sig}")
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
@@ -734,7 +681,7 @@ def run_fixed_target_plan(
             parameters,
             dcid,
         ),
-        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid)),
+        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
                 zebra, pmac, shutter, dcm, parameters, dcid

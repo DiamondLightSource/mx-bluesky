@@ -8,7 +8,7 @@ from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03.beamstop import BeamstopPositions
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -16,10 +16,9 @@ from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.device_setup_plans.check_beamstop import BeamstopException
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
+    WarningException,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -35,7 +34,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
 from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
+    RotationScan,
     RotationScanPerSweep,
 )
 
@@ -106,7 +105,7 @@ def composite(
     composite.oav.zoom_controller.level.describe = AsyncMock(
         return_value={"level": {"choices": zoom_levels_list}}
     )
-    set_mock_value(composite.oav.zoom_controller.level, "7.5x")
+    set_mock_value(composite.oav.zoom_controller.level, "1.0x")
 
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
@@ -269,7 +268,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
     return_value=iter([Msg(command="robot_load_and_change_energy")]),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     return_value=iter([Msg(command="multi_rotation_scan")]),
 )
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
@@ -328,7 +327,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     rotation_scan_composite = mock_rotation_scan.mock_calls[0].args[0]
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
     assert isinstance(rotation_scan_composite, RotationScanComposite)
-    assert isinstance(rotation_scan_params, MultiRotationScan)
+    assert isinstance(rotation_scan_params, RotationScan)
     # XXX sample test file xyz conflicts with detected xyz
     # see https://github.com/DiamondLightSource/mx-bluesky/issues/563
     expected_rotation_scans = [
@@ -347,7 +346,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -378,7 +377,7 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -406,22 +405,52 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     mock_rotation_scan.assert_not_called()
 
 
-def test_load_centre_collect_fails_with_exception_when_no_beamstop(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.home_and_reset_wrapper"
+)
+def test_load_centre_collect_moves_beamstop_into_place(
+    mock_home_reset_wrapper: MagicMock,
+    mock_pin_tip_then_flyscan_plan: MagicMock,
+    mock_model_validate: MagicMock,
+    mock_multi_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_read_handler_for(
-        composite.beamstop.selected_pos, BeamstopPositions.UNKNOWN
+    fake_model = MagicMock()
+    fake_model.demand_energy_ev = (
+        load_centre_collect_params.robot_load_then_centre.demand_energy_ev
     )
 
-    with pytest.raises(BeamstopException):
-        sim_run_engine.simulate_plan(
-            load_centre_collect_full(
-                composite, load_centre_collect_params, oav_parameters_for_rotation
-            )
+    mock_pin_tip_then_flyscan_plan.return_value = iter(
+        [Msg("pin_tip_then_flyscan_plan")]
+    )
+
+    mock_model_validate.return_value = fake_model
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
         )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"
+    )
 
 
 def test_can_deserialize_top_n_by_max_count_params(
@@ -483,7 +512,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
     new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
 )
 def test_load_centre_collect_full_plan_multiple_centres(
@@ -549,7 +578,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
         expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
 
     rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
-    assert isinstance(rotation_scan_params, MultiRotationScan)
+    assert isinstance(rotation_scan_params, RotationScan)
     _compare_rotation_scans(
         expected_rotation_scans, rotation_scan_params.rotation_scans
     )
@@ -599,7 +628,10 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )
-@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
+    MagicMock(),
+)
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
     composite: LoadCentreCollectComposite,
@@ -619,7 +651,7 @@ def test_box_size_passed_through_to_gridscan(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.multi_rotation_scan_internal",
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     return_value=iter([]),
 )
 @patch(
@@ -646,6 +678,6 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
 
     rotation_scans = mock_rotation_scan.call_args.args[1].rotation_scans
     assert len(rotation_scans) == 1
-    assert rotation_scans[0].x_start_um == 1.1
-    assert rotation_scans[0].y_start_um == 2.2
-    assert rotation_scans[0].z_start_um == 3.3
+    assert rotation_scans[0].x_start_um == 1100
+    assert rotation_scans[0].y_start_um == 2200
+    assert rotation_scans[0].z_start_um == 3300

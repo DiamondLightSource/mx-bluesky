@@ -10,7 +10,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE, SampleLocation
@@ -18,6 +18,11 @@ from dodal.devices.smargon import Smargon
 from numpy._typing._array_like import NDArray
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
+    OavGridDetectionComposite,
+    get_min_and_max_y_of_pin,
+    grid_detection_plan,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
 )
@@ -25,16 +30,8 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import WarningException
-from mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan import (
-    OavGridDetectionComposite,
-    get_min_and_max_y_of_pin,
-    grid_detection_plan,
-)
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
-    HyperionSpecifiedThreeDGridScan,
-)
 
 from ...conftest import assert_event
 
@@ -46,7 +43,7 @@ def fake_devices(
     backlight: Backlight,
     test_config_files: dict[str, str],
 ):
-    params = OAVConfig(
+    params = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=params)
@@ -204,7 +201,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
+    "mx_bluesky.common.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
     new=MagicMock(),
 )
 def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
@@ -230,20 +227,21 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback(param_type=GridCommonWithHyperionDetectorParams)
+    cb = GridscanISPyBCallback(param_type=GridCommon)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     RE.subscribe(cb)
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
         RE(
             ispyb_activation_wrapper(
-                do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+                do_grid_and_edge_detect(composite, params, tmp_path),
+                test_fgs_params,
             )
         )
 
@@ -292,7 +290,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
@@ -332,7 +330,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@patch("mx_bluesky.hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
+@patch("mx_bluesky.common.experiment_plans.oav_grid_detection_plan.LOGGER")
 async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     fake_logger: MagicMock,
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],

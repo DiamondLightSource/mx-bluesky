@@ -3,10 +3,10 @@ import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
 
+from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 
 
 def change_aperture_then_move_to_xtal(
@@ -71,4 +71,4 @@ def set_aperture_for_bbox_mm(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
-    yield from bps.abs_set(aperture_device, new_selected_aperture)
+    yield from bps.abs_set(aperture_device.selected_aperture, new_selected_aperture)
