@@ -9,6 +9,7 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
@@ -24,6 +25,11 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+    main_fixed_target_plan,
+    run_aborted_plan,
+    tidy_up_after_collection_plan,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     upload_chip_map_to_geobrick,
 )
@@ -35,6 +41,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import (
+    DetectorName,
     FixedTargetParameters,
     get_chip_format,
 )
@@ -42,19 +49,10 @@ from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
-from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline import (
-    get_beam_center_device,
-)
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
     get_detector_type,
 )
-
-# from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-#     main_fixed_target_plan,
-#     run_aborted_plan,
-#     tidy_up_after_collection_plan,
-# )
 
 
 @bpp.run_decorator()
@@ -139,6 +137,8 @@ def gui_set_parameters(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -219,11 +219,10 @@ def gui_set_parameters(
 
     # beam_center_device = get_beam_center_device(parameters.detector_name.value)
     SSX_LOGGER.warning("GETTING A BC HERE")
-    beam_center_device = yield from bpp.contingency_wrapper(  # noqa
-        get_beam_center_device(parameters.detector_name.value),
-        except_plan=lambda e: (yield from abort_plan(pmac)),
-        final_plan=final_plan,
-        auto_raise=False,
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
     )
     SSX_LOGGER.info("BEAM CENTER DEVICE READY")
 
@@ -231,35 +230,28 @@ def gui_set_parameters(
     dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
     SSX_LOGGER.info("HERE'S A DCID")
 
-    # if parameters.chip_map:
-    #     yield from bpp.contingency_wrapper(
-    #         upload_chip_map_to_geobrick(pmac, parameters.chip_map),
-    #         except_plan=lambda e: (yield from abort_plan(pmac)),
-    #         final_plan=final_plan,
-    #         auto_raise=False,
-    #     )
-    # yield from bpp.contingency_wrapper(
-    #     main_fixed_target_plan(
-    #         zebra,
-    #         pmac,
-    #         aperture,
-    #         backlight,
-    #         beamstop,
-    #         detector_stage,
-    #         shutter,
-    #         dcm,
-    #         mirrors,
-    #         beam_center_device,
-    #         parameters,
-    #         dcid,
-    #     ),
-    #     except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
-    #     final_plan=lambda: (
-    #         yield from tidy_up_after_collection_plan(
-    #             zebra, pmac, shutter, dcm, parameters, dcid
-    #         )
-    #     ),
-    #     auto_raise=False,
-    # )
+    yield from bpp.contingency_wrapper(
+        main_fixed_target_plan(
+            zebra,
+            pmac,
+            aperture,
+            backlight,
+            beamstop,
+            detector_stage,
+            shutter,
+            dcm,
+            mirrors,
+            beam_center_device,
+            parameters,
+            dcid,
+        ),
+        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
+        final_plan=lambda: (
+            yield from tidy_up_after_collection_plan(
+                zebra, pmac, shutter, dcm, parameters, dcid
+            )
+        ),
+        auto_raise=False,
+    )
     SSX_LOGGER.info("ALL DONE!")
     yield from bps.sleep(1)
