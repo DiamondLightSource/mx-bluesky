@@ -144,8 +144,6 @@ filterwarnings = [
     "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
     "ignore:.*pkg_resources.*:UserWarning",
-    # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
-    "ignore:.*custom tp_new.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     # Ignore warning about deprecations in python-workflows encountered during system tests
