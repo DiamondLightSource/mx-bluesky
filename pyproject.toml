@@ -128,6 +128,8 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
+    # Ophyd status objects in tests
+    "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
     # Ignore nondeterministic closing of log, RE, etc. before test end
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
