@@ -377,9 +377,6 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert rotation_params.comment == "Complete_P1_sweep1 "
     assert rotation_params.ispyb_experiment_type == "Characterization"
 
-    assert rotation_params.sample_puck == 40
-    assert rotation_params.sample_pin == 3
-
     individual_scans = list(rotation_params.single_rotation_scans)
     assert len(individual_scans) == 1
     assert individual_scans[0].scan_points["omega"][1] == 0.1

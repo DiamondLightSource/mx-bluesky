@@ -1620,7 +1620,6 @@ def dummy_rotation_params():
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
-    dummy_params.sample_id = TEST_SAMPLE_ID
     return dummy_params
 
 

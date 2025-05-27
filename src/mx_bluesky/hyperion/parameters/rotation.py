@@ -19,6 +19,7 @@ from scanspec.specs import Line
 
 from mx_bluesky.common.parameters.components import (
     DiffractionExperiment,
+    DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
@@ -106,7 +107,9 @@ class RotationExperiment(DiffractionExperiment, WithHyperionUDCFeatures):
             return aperture_position
 
 
-class SingleRotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
+class SingleRotationScan(
+    WithScan, RotationScanPerSweep, RotationExperiment, DiffractionExperimentWithSample
+):
     @property
     def detector_params(self):
         return self._detector_params(self.omega_start_deg)
