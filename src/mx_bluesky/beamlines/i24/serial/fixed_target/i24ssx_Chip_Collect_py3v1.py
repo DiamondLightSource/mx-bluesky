@@ -38,7 +38,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    DetectorName,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -649,6 +652,8 @@ def run_fixed_target_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -661,7 +666,11 @@ def run_fixed_target_plan(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
