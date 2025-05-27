@@ -1435,7 +1435,7 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
 )
-def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
+def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
@@ -1591,6 +1591,44 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     assert zocalo_callback.zocalo_interactor.run_end.call_count == len(
         test_multi_rotation_params.rotation_scans
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_uses_a_different_sample_id(
+    _,
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: RotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    _, ispyb_callback = create_rotation_callbacks()
+
+    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    deposition = mock_ispyb_store.return_value.begin_deposition
+    deposition.return_value = IspybIds(data_collection_ids=(123,))
+    ispyb_callback.emit_cb = MagicMock()
+
+    test_multi_rotation_params.rotation_scans[0].sample_id = 123
+    test_multi_rotation_params.rotation_scans[1].sample_id = 456
+    test_multi_rotation_params.rotation_scans[2].sample_id = 789
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [ispyb_callback],
+        oav_parameters_for_rotation,
+    )
+    assert deposition.mock_calls[0].args[1][0].data_collection_info.sample_id == 123
+    assert deposition.mock_calls[1].args[1][0].data_collection_info.sample_id == 456
+    assert deposition.mock_calls[2].args[1][0].data_collection_info.sample_id == 789
 
 
 def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(
