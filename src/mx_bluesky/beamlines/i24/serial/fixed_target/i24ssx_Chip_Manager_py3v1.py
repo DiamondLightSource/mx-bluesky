@@ -172,7 +172,7 @@ def read_parameters(
         "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
-        "checker_pattern": bool(caget(pv.me14e_gp111)),
+        "checker_pattern": bool(int(caget(pv.me14e_gp111))),
         "chip_map": chip_map,
         "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
         "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
