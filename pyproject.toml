@@ -142,6 +142,8 @@ filterwarnings = [
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
     # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
     "ignore:.*pkg_resources.*:DeprecationWarning",
+    # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
+    "ignore:.*pkg_resources.*:UserWarning",
     # Ignore deprecation warning that gets promoted to SystemError from somewhere
     # in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
     # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
