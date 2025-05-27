@@ -156,7 +156,8 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     RE.subscribe(ispyb_cb)
 
     for sample_id, same_dcgid in test_cases:
-        params.sample_id = sample_id
+        for sweep in params.rotation_scans:
+            sweep.sample_id = sample_id
 
         RE(
             rotation_scan(
