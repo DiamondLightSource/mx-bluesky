@@ -250,6 +250,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
     """
     SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
     SSX_LOGGER.info(f"Chipid {ChipType.Oxford}, width {OXFORD_CHIP_WIDTH}")
+    SSX_LOGGER.warning(f"MAP TO UPLOAD: {chip_map}")
     for block in range(1, 65):
         value = 1 if block in chip_map else 0
         pvar = PVAR_TEMPLATE % block
@@ -258,7 +259,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         # Wait for PMAC to be done processing PVAR string
         yield from bps.sleep(0.02)
-    SSX_LOGGER.debug("Upload parameters done.")
+    SSX_LOGGER.info("Upload parameters done.")
 
 
 @log_on_entry

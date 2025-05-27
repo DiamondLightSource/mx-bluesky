@@ -13,4 +13,5 @@ api:
     origins: 
       - "*"
 stomp:
+  enabled: True
   host: i24-control.diamond.ac.uk

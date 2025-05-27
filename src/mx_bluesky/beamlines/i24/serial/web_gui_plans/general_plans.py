@@ -6,11 +6,19 @@ import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beamstop import Beamstop
+from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.zebra.zebra import Zebra
 
+from mx_bluesky.beamlines.i24.serial.dcid import DCID
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
@@ -34,10 +42,19 @@ from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline import (
+    get_beam_center_device,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
     get_detector_type,
 )
+
+# from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+#     main_fixed_target_plan,
+#     run_aborted_plan,
+#     tidy_up_after_collection_plan,
+# )
 
 
 @bpp.run_decorator()
@@ -113,6 +130,15 @@ def gui_set_parameters(
     laser_delay: float,
     pre_pump: float,
     pmac: PMAC = inject("pmac"),
+    zebra: Zebra = inject("zebra"),
+    aperture: Aperture = inject("aperture"),
+    backlight: DualBacklight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    detector_stage: DetectorMotion = inject("detector_motion"),
+    shutter: HutchShutter = inject("shutter"),
+    dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: ReadOnlyAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -142,7 +168,6 @@ def gui_set_parameters(
     """
     # NOTE still a work in progress, adding to it as the ui grows
     # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
-    detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
@@ -179,12 +204,62 @@ def gui_set_parameters(
     parameters = FixedTargetParameters(**params)
 
     def abort_plan(pmac: PMAC):
+        SSX_LOGGER.warning("SOMETHING WENT WRONG, I AM ABORTING!")
         yield from bps.trigger(pmac.abort_program, wait=True)
 
+    def final_plan():
+        SSX_LOGGER.warning("Cleaning up...")
+        yield from bps.sleep(1)
+
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
+
     if parameters.chip_map:
-        yield from bpp.contingency_wrapper(
-            upload_chip_map_to_geobrick(pmac, parameters.chip_map),
-            except_plan=lambda e: (yield from abort_plan(pmac)),
-            auto_raise=False,
-        )
+        yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
+
+    # beam_center_device = get_beam_center_device(parameters.detector_name.value)
+    SSX_LOGGER.warning("GETTING A BC HERE")
+    beam_center_device = yield from bpp.contingency_wrapper(  # noqa
+        get_beam_center_device(parameters.detector_name.value),
+        except_plan=lambda e: (yield from abort_plan(pmac)),
+        final_plan=final_plan,
+        auto_raise=False,
+    )
+    SSX_LOGGER.info("BEAM CENTER DEVICE READY")
+
+    # DCID instance - do not create yet
+    dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
+    SSX_LOGGER.info("HERE'S A DCID")
+
+    # if parameters.chip_map:
+    #     yield from bpp.contingency_wrapper(
+    #         upload_chip_map_to_geobrick(pmac, parameters.chip_map),
+    #         except_plan=lambda e: (yield from abort_plan(pmac)),
+    #         final_plan=final_plan,
+    #         auto_raise=False,
+    #     )
+    # yield from bpp.contingency_wrapper(
+    #     main_fixed_target_plan(
+    #         zebra,
+    #         pmac,
+    #         aperture,
+    #         backlight,
+    #         beamstop,
+    #         detector_stage,
+    #         shutter,
+    #         dcm,
+    #         mirrors,
+    #         beam_center_device,
+    #         parameters,
+    #         dcid,
+    #     ),
+    #     except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
+    #     final_plan=lambda: (
+    #         yield from tidy_up_after_collection_plan(
+    #             zebra, pmac, shutter, dcm, parameters, dcid
+    #         )
+    #     ),
+    #     auto_raise=False,
+    # )
+    SSX_LOGGER.info("ALL DONE!")
     yield from bps.sleep(1)
