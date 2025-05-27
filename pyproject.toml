@@ -128,17 +128,11 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    # Ignore deprecation warning from sqlalchemy
-    "ignore::sqlalchemy.exc.MovedIn20Warning",
-    # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
-    "ignore::DeprecationWarning:wheel",
-    # Ophyd status objects in tests
-    "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
     # Ignore nondeterministic closing of log, RE, etc. before test end
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180 and freephil https://github.com/DiamondLightSource/nexgen/issues/349
     "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
     "ignore:.*pkg_resources.*:UserWarning",
