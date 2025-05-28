@@ -18,8 +18,8 @@ class AlertManagerAlertService(AlertService):
         self,
         alertmanager_url: str,
         graylog_stream: str = "66264f5519ccca6d1c9e4e03",
-        username: str = None,
-        password: str = None,
+        username: str | None = None,
+        password: str | None = None,
     ):
         self._username = username
         self._password = password
@@ -68,7 +68,7 @@ class AlertManagerAlertService(AlertService):
 
     def _session(self) -> requests.Session:
         session = requests.Session()
-        if self._username:
+        if self._username and self._password:
             session.auth = HTTPBasicAuth(self._username, self._password)
         session.headers["Accept"] = "application/json"
         return session

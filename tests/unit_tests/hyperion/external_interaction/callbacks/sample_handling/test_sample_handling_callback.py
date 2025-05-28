@@ -144,9 +144,7 @@ def test_sample_handling_callback_intercepts_general_exception(
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
 
-    with (
-        pytest.raises(exception_type),
-    ):
+    with pytest.raises(exception_type):
         RE(plan_with_general_exception(exception_type, message))
     mock_expeye_cls.return_value.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, expected_sample_status
@@ -236,9 +234,7 @@ def test_sample_handling_callback_raises_an_alert_when_beamline_error_occurs(
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
 
-    with (
-        pytest.raises(exception_type),
-    ):
+    with pytest.raises(exception_type):
         RE(plan_with_general_exception(exception_type, message))
 
     if expect_alert:

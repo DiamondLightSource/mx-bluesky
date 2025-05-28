@@ -75,7 +75,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
                 f"Hyperion encountered the following beamline error: {reason}",
                 {
                     Metadata.SAMPLE_ID: str(self._sample_id),
-                    Metadata.VISIT: self._visit,
+                    Metadata.VISIT: self._visit or "",
                     Metadata.CONTAINER: str(self._container),
                     Metadata.BEAMLINE: beamline,
                 },

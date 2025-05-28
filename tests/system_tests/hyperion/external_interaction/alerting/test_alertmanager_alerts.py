@@ -1,6 +1,8 @@
 import pytest
 
-from mx_bluesky.common.external_interaction.alerting import AlertManagerAlertService
+from mx_bluesky.common.external_interaction.alerting.alert_manager import (
+    AlertManagerAlertService,
+)
 
 ENDPOINT = "https://yqf46943-alertmanager.diamond.ac.uk"
 TEST_SAMPLE_ID = 123456
