@@ -1,7 +1,9 @@
 import os
 import re
 import subprocess
+from datetime import datetime
 from os import environ
+from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
 import pytest
@@ -54,6 +56,16 @@ def test_params(tmpdir):
             "ins_8_5_expected_output.txt",
         ),
     ],
+)
+@patch(
+    "mx_bluesky.common.external_interaction.nexus.nexus_utils.time",
+    new=MagicMock(
+        **{
+            "time.return_value": datetime.fromisoformat(
+                "2024-05-03T17:59:43Z"
+            ).timestamp()
+        }
+    ),
 )
 @pytest.mark.system_test
 def test_rotation_nexgen(
@@ -118,8 +130,6 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
                 i += 1
                 expected_line = f.readline().rstrip("\n")
                 actual_line = next(it_actual_lines)
-                if DATE_PATTERN.match(actual_line):
-                    continue
                 assert actual_line == expected_line, (
                     f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
                 )
