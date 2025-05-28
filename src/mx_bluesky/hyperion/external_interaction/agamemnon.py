@@ -201,13 +201,16 @@ def compare_params(load_centre_collect_params: LoadCentreCollect):
     try:
         lcc_requests = create_parameters_from_agamemnon()
         # Log differences against GDA populated parameters
-        differences = DeepDiff(
-            lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
-        )
-        if differences:
-            LOGGER.info(
-                f"Different parameters found when directly reading from Hyperion: {differences}"
+        if not lcc_requests:
+            LOGGER.info("Agamemnon returned no instructions")
+        else:
+            differences = DeepDiff(
+                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
             )
+            if differences:
+                LOGGER.info(
+                    f"Different parameters found when directly reading from Hyperion: {differences}"
+                )
     except (ValueError, KeyError):
         LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
     except Exception:

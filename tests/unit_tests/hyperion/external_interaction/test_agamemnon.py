@@ -338,28 +338,32 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 ):
     agamemnon_params = get_next_instruction("i03")
     hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
-    robot_load_params = hyperion_params_list[0].robot_load_then_centre
-    assert robot_load_params.visit == "cm00000-0"
-    assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
-    assert robot_load_params.sample_id == 12345
-    assert robot_load_params.sample_puck == 40
-    assert robot_load_params.sample_pin == 3
-    assert robot_load_params.demand_energy_ev == 12700.045934258673
-    assert robot_load_params.omega_start_deg == 0.0
-    assert robot_load_params.chi_start_deg == 0.0
-    assert robot_load_params.transmission_frac == 1.0
-    assert robot_load_params.tip_offset_um == 300.0
-    assert robot_load_params.grid_width_um == 600.0
-    assert robot_load_params.features.use_gpu_results
-    assert str(robot_load_params.parameter_model_version) == "5.3.0"
-    assert (
-        robot_load_params.storage_directory
-        == "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring"
-    )
-    assert robot_load_params.file_name == "test_xtal"
-    assert robot_load_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
-    )
+    assert len(hyperion_params_list) == 2
+    assert hyperion_params_list[0].robot_load_then_centre.chi_start_deg == 0.0
+    assert hyperion_params_list[1].robot_load_then_centre.chi_start_deg == 30.0
+    for robot_load_params in [
+        params.robot_load_then_centre for params in hyperion_params_list
+    ]:
+        assert robot_load_params.visit == "cm00000-0"
+        assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
+        assert robot_load_params.sample_id == 12345
+        assert robot_load_params.sample_puck == 40
+        assert robot_load_params.sample_pin == 3
+        assert robot_load_params.demand_energy_ev == 12700.045934258673
+        assert robot_load_params.omega_start_deg == 0.0
+        assert robot_load_params.transmission_frac == 1.0
+        assert robot_load_params.tip_offset_um == 300.0
+        assert robot_load_params.grid_width_um == 600.0
+        assert robot_load_params.features.use_gpu_results
+        assert str(robot_load_params.parameter_model_version) == "5.3.0"
+        assert (
+            robot_load_params.storage_directory
+            == "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring"
+        )
+        assert robot_load_params.file_name == "test_xtal"
+        assert robot_load_params.snapshot_directory == PosixPath(
+            "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
+        )
 
 
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
@@ -374,6 +378,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
 ):
     agamemnon_params = get_next_instruction("i03")
     hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params_list) == 2
     for hyperion_params in hyperion_params_list:
         rotation_params = hyperion_params.multi_rotation_scan
         assert rotation_params.visit == "cm00000-0"
@@ -431,7 +436,7 @@ def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_populate_parameters_creates_multiple_rotations_for_native_collection(
+def test_populate_parameters_creates_multiple_load_centre_collect_for_native_collection(
     agamemnon_response,
 ):
     agamemnon_params = get_next_instruction("i03")
