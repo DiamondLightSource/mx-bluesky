@@ -466,12 +466,12 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
+def test_create_parameters_from_agamemnon_returns_empty_list_if_queue_is_empty(
     mock_requests,
 ):
     mock_requests.get.return_value.content = json.dumps({"collect": {}})
     params = create_parameters_from_agamemnon()
-    assert params is None
+    assert params == []
 
 
 @pytest.mark.parametrize(
