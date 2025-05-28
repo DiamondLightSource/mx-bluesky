@@ -22,10 +22,6 @@ spec:
           hostPath:
             path: "/dls_sw/{{ .Values.application.beamline }}"
             type: Directory
-        - name: dls-sw-apps
-          hostPath:
-            path: "/dls_sw/apps"
-            type: Directory
         - name: dls-sw-dasc
           hostPath:
             path: "/dls_sw/dasc"
@@ -146,10 +142,6 @@ spec:
         volumeMounts:
           - mountPath: "/dls_sw/{{ .Values.application.beamline }}"
             name: dls-sw-bl
-            readOnly: true
-            mountPropagation: HostToContainer
-          - mountPath: "/dls_sw/apps"
-            name: dls-sw-apps
             readOnly: true
             mountPropagation: HostToContainer
           - mountPath: "/dls_sw/dasc"
