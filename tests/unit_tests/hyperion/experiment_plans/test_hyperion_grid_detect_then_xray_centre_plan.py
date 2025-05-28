@@ -47,10 +47,25 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
         autospec=True,
     )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+        autospec=True,
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        autospec=True,
+    )
     @patch("bluesky.plan_stubs.sleep", autospec=True)
     def test_flyscan_xray_centre_unpauses_xbpm_feedback_on_exception(
         self,
-        mock_sleep,
+        mock_sleep: MagicMock,
+        mock_grid_detection_callback: MagicMock,
+        mock_create_parameters_for_flyscan_xray_centre: MagicMock,
+        mock_grid_detection_plan: MagicMock,
         mock_common_flyscan_xray_centre: MagicMock,
         mock_unpause_and_set_transmission: MagicMock,
         mock_check_and_pause: MagicMock,
@@ -60,8 +75,11 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         pin_tip_detection_with_found_pin: PinTipDetection,
         RE: RunEngine,
     ):
-        mock_common_flyscan_xray_centre.side_effect = Exception
-        with pytest.raises(Exception):  # noqa: B017
+        class TestException(Exception):
+            pass
+
+        mock_common_flyscan_xray_centre.side_effect = TestException
+        with pytest.raises(TestException):  # noqa: B017
             RE(
                 hyperion_grid_detect_then_xray_centre(
                     grid_detect_devices_with_oav_config_params,

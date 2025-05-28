@@ -48,9 +48,6 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
-from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
-)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
@@ -185,13 +182,7 @@ def detect_grid_and_do_gridscan(
     )
     beamline_specific = construct_beamline_specific(composite, xrc_params)
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite, xrc_params.transmission_frac
-    )
-    def plan_to_perform():
-        yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
-
-    yield from plan_to_perform()
+    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
 
 
 class ConstructBeamlineSpecificFeatures(
