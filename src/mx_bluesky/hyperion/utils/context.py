@@ -5,11 +5,14 @@ import mx_bluesky.hyperion.experiment_plans as hyperion_plans
 from mx_bluesky.common.utils.log import LOGGER
 
 
-def setup_context() -> BlueskyContext:
+def setup_context(dev_mode: bool = False) -> BlueskyContext:
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
 
-    context.with_dodal_module(get_beamline_based_on_environment_variable())
+    context.with_dodal_module(
+        get_beamline_based_on_environment_variable(),
+        mock=dev_mode,
+    )
 
     LOGGER.info(f"Plans found in context: {context.plan_functions.keys()}")
 

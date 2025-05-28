@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from pathlib import Path
 from shutil import copy
 from unittest.mock import patch
@@ -22,7 +23,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import extract_metafile, raw_params_from_file
 
@@ -41,7 +42,7 @@ def test_params(tmpdir):
     param_dict["file_name"] = f"{tmpdir}/{TEST_FILENAME}"
     param_dict["scan_width_deg"] = 360.0
     param_dict["demand_energy_ev"] = 12700
-    params = RotationScan(**param_dict)
+    params = SingleRotationScan(**param_dict)
     params.x_start_um = 0
     params.y_start_um = 0
     params.z_start_um = 0
@@ -50,7 +51,7 @@ def test_params(tmpdir):
 
 
 def fake_rotation_scan(
-    parameters: RotationScan,
+    parameters: SingleRotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
@@ -111,7 +112,7 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
 
 @pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
@@ -125,16 +126,11 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
-
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
@@ -210,8 +206,10 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
                 "sample_chi": {"chi": np.isclose},
                 "sample_phi": {"phi": np.isclose},
             },
-            "end_time_estimated": b"test_timeZ",
-            "start_time": b"test_timeZ",
+            "_ignore": {
+                "end_time_estimated",
+                "start_time",
+            },
             "source": {
                 "name": b"Diamond Light Source",
                 "type": b"Synchrotron X-ray Source",
@@ -231,7 +229,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
 
 @pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
@@ -242,16 +240,11 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
-
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
@@ -262,8 +255,12 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         ) as example_nexus,
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
-        assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"  # type: ignore
-        assert hyperion_nexus["/entry/end_time_estimated"][()] == b"test_timeZ"  # type: ignore
+        start_time: bytes = hyperion_nexus["/entry/start_time"][()]  # type: ignore
+        end_time: bytes = hyperion_nexus["/entry/end_time_estimated"][()]  # type:ignore
+        assert type(start_time) is type(example_nexus["/entry/start_time"][()])  # type: ignore
+        assert type(end_time) is type(example_nexus["/entry/end_time"][()])  # type: ignore
+        assert datetime.fromisoformat(start_time.decode("UTF-8"))
+        assert datetime.fromisoformat(end_time.decode("UTF-8"))
 
         # we used to write the positions wrong...
         hyperion_omega: np.ndarray = np.array(
@@ -348,7 +345,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 @patch("mx_bluesky.common.external_interaction.nexus.write_nexus.NXmxFileWriter")
 def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     mock_nexus_writer,
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     bit_depth,
     expected_type,
@@ -358,19 +355,14 @@ def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(bit_depth)  # type: ignore
 
     RE = RunEngine({})
-
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
-        for call in write_vds_mock.mock_calls:
-            assert call.kwargs["vds_dtype"] == expected_type
+    for call in write_vds_mock.mock_calls:
+        assert call.kwargs["vds_dtype"] == expected_type
 
 
 def _compare_actual_and_expected_nexus_output(actual, expected, exceptions: dict):
@@ -484,7 +476,7 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                     )
 
 
-def test_override_parameters_override(test_params: RotationScan):
+def test_override_parameters_override(test_params: SingleRotationScan):
     writer = NexusWriter(
         test_params, (1, 2, 3), {}, full_num_of_images=82367, meta_data_run_number=9852
     )

@@ -25,7 +25,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping i
     populate_data_collection_info_for_rotation,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
@@ -62,7 +62,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             )
             hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
-            self.params = RotationScan.model_validate_json(hyperion_params)
+            self.params = SingleRotationScan.model_validate_json(hyperion_params)
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -86,7 +86,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
-                cast(RotationScan, self.params)
+                cast(SingleRotationScan, self.params)
             )
             data_collection_info = populate_remaining_data_collection_info(
                 self.params.comment,

@@ -10,6 +10,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.testing import get_mock_put, set_mock_value
@@ -383,4 +384,46 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL,
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
+)
+def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
+    mock_change_aperture_then_move_to_xtal: MagicMock,
+    mock_events_handler: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+):
+    flyscan_event_handler = MagicMock()
+    flyscan_event_handler.xray_centre_results = "dummy"
+    mock_events_handler.return_value = flyscan_event_handler
+
+    mock_grid_detect_then_xray_centre.return_value = iter(
+        [Msg("grid_detect_then_xray_centre")]
+    )
+    msgs = sim_run_engine.simulate_plan(
+        grid_detect_then_xray_centre(
+            grid_detect_devices_with_oav_config_params, test_full_grid_scan_params
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "beamstop-selected_pos"
+        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "grid_detect_then_xray_centre"
     )

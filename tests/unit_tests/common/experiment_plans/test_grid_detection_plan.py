@@ -10,7 +10,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE, SampleLocation
@@ -43,7 +43,7 @@ def fake_devices(
     backlight: Backlight,
     test_config_files: dict[str, str],
 ):
-    params = OAVConfig(
+    params = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=params)

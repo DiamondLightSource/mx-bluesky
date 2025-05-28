@@ -38,7 +38,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
-from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -99,7 +99,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -238,12 +238,6 @@ def raw_params_from_file(filename):
         return json.loads(f.read())
 
 
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
-):
-    return raw_params_from_file(json_file)
-
-
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)
@@ -277,7 +271,7 @@ def pytest_runtest_setup(item):
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
-        logging_path, _ = _get_logging_dirs()
+        logging_path, _ = _get_logging_dirs(True)
         if ISPYB_ZOCALO_CALLBACK_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
@@ -487,7 +481,7 @@ def synchrotron(RE: RunEngine):
 
 @pytest.fixture
 def oav(test_config_files, RE: RunEngine):
-    parameters = OAVConfig(
+    parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
@@ -551,18 +545,29 @@ def beamstop_i03(
     RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters", return_value=beamline_parameters
+        "dodal.beamlines.i03.get_beamline_parameters",
+        return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
         patch_motor(beamstop.x_mm)
         patch_motor(beamstop.y_mm)
         patch_motor(beamstop.z_mm)
+
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
         set_mock_value(beamstop.z_mm.user_readback, 30.0)
-        sim_run_engine.add_read_handler_for(
-            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
         )
+
         yield beamstop
         beamline_utils.clear_devices()
 
@@ -1611,8 +1616,8 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = MultiRotationScan(
-        **default_raw_params(
+    dummy_params = RotationScan(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
@@ -1622,7 +1627,7 @@ def dummy_rotation_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return MultiRotationScan(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
