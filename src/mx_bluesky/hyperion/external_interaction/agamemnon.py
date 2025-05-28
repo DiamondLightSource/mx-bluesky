@@ -136,30 +136,6 @@ def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreC
     collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
 
-    rotation_scan_per_sweeps = [
-        {
-            "scan_width_deg": (
-                collection["number_of_images"] * collection["omega_increment"]
-            ),
-            "omega_start_deg": collection["omega_start"],
-            "phi_start_deg": collection["phi_start"],
-            "chi_start_deg": collection["chi"],
-            "rotation_direction": "Positive",
-        }
-        for collection in collections
-    ]
-    first_collection = collections[0]
-
-    for field in [
-        "exposure_time",
-        "transmission",
-        "omega_increment",
-        "experiment_type",
-    ]:
-        assert all(c[field] == first_collection[field] for c in collections), (
-            f"All collections must have the same {field}"
-        )
-
     return [
         LoadCentreCollect.model_validate(
             {
@@ -179,25 +155,37 @@ def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreC
                     "tip_offset_um": pin_type.full_width / 2,
                     "grid_width_um": pin_type.full_width,
                     "omega_start_deg": 0.0,
-                    "chi_start_deg": first_collection["chi"],
+                    "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
                     "features": {"use_gpu_results": True},
                     **with_energy_params,
                 },
                 "multi_rotation_scan": {
-                    "comment": first_collection["comment"],
+                    "comment": collection["comment"],
                     "storage_directory": str(visit_directory),
-                    "exposure_time_s": first_collection["exposure_time"],
+                    "exposure_time_s": collection["exposure_time"],
                     "file_name": file_name,
-                    "transmission_frac": first_collection["transmission"],
-                    "rotation_increment_deg": first_collection["omega_increment"],
-                    "ispyb_experiment_type": first_collection["experiment_type"],
+                    "transmission_frac": collection["transmission"],
+                    "rotation_increment_deg": collection["omega_increment"],
+                    "ispyb_experiment_type": collection["experiment_type"],
                     "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
-                    "rotation_scans": rotation_scan_per_sweeps,
+                    "rotation_scans": [
+                        {
+                            "scan_width_deg": (
+                                collection["number_of_images"]
+                                * collection["omega_increment"]
+                            ),
+                            "omega_start_deg": collection["omega_start"],
+                            "phi_start_deg": collection["phi_start"],
+                            "chi_start_deg": collection["chi"],
+                            "rotation_direction": "Positive",
+                        }
+                    ],
                     **with_energy_params,
                 },
             }
         )
+        for collection in collections
     ]
 
 

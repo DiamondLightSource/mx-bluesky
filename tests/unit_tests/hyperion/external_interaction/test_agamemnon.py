@@ -400,9 +400,9 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
             "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
         )
 
-    individual_scans = [
-        list(hyperion_params_list[0].rotation_params.single_rotation_scans)
-    ] + [list(hyperion_params_list[1].rotation_params.single_rotation_scans)]
+    individual_scans = list(
+        hyperion_params_list[0].multi_rotation_scan.single_rotation_scans
+    ) + list(hyperion_params_list[1].multi_rotation_scan.single_rotation_scans)
     assert len(individual_scans) == 2
     assert individual_scans[0].scan_points["omega"][1] == 0.1
     assert individual_scans[0].phi_start_deg == 0.0
