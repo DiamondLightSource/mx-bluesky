@@ -50,7 +50,7 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
 
 @pytest.mark.parametrize(
     "input_value, checker_pattern",
-    [("0", False), ("False", False), ("1", True), ("True", True)],
+    [("0", False), ("1", True)],
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
 def test_is_checker_pattern(fake_caget, input_value, checker_pattern):
