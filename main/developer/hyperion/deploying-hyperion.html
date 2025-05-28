@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Building a deployable Docker image &#8212; mx-bluesky 1.0.1.dev259+ga406ff469 documentation</title>
+    <title>Building a deployable Docker image &#8212; mx-bluesky 1.0.1.dev260+g1662d561f documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=7ad4ef56"></script>
+    <script src="../../_static/documentation_options.js?v=fc783517"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -554,24 +554,35 @@ It will need the specific permission scopes as detailed in the <a class="referen
 </section>
 <section id="deploying-to-kubernetes">
 <h2>Deploying to kubernetes<a class="headerlink" href="#deploying-to-kubernetes" title="Link to this heading">#</a></h2>
-<p>Once the docker image is built, the image can be deployed to kubernetes using the <code class="docutils literal notranslate"><span class="pre">deploy_hyperion_to_k8s.sh</span></code> script</p>
+<p>Once the docker image is built, the image can be deployed to kubernetes using the <code class="docutils literal notranslate"><span class="pre">deploy_mx_bluesky_app_to_k8s.sh</span></code>
+script.</p>
+<section id="secrets">
+<h3>Secrets<a class="headerlink" href="#secrets" title="Link to this heading">#</a></h3>
+<p>The deployment requires the following secrets to be created with the corresponding zocalo rabbitmq credentials if they
+are not already present:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rmq-creds</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rmq-api-reader</span></code></p></li>
+</ul>
+</section>
 <section id="production-deployment">
 <h3>Production deployment<a class="headerlink" href="#production-deployment" title="Link to this heading">#</a></h3>
 <p>Then create and deploy the helm release</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_hyperion_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">checkout</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">prod</span> <span class="n">hyperion</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_mx_bluesky_app_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">appVersion</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">z</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">checkout</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">prod</span> <span class="n">hyperion</span> <span class="n">hyperion</span>
 </pre></div>
 </div>
 <p>This will run the <code class="docutils literal notranslate"><span class="pre">deploy_mx_bluesky.py</span></code> script to deploy the latest hyperion to <code class="docutils literal notranslate"><span class="pre">/dls_sw</span></code>.
 You will be prompted to log into the beamline cluster, then it will create a helm release “hyperion”.
 The source folders will be mounted as bind mounts to allow the pod to pick up changes in production.
-For production these are expected to be in the normal place defined in <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>.</p>
+For production these are expected to be in the normal place defined in <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>.
+If the non-k8s deployment of hyperion has already been performed, then omit <code class="docutils literal notranslate"><span class="pre">--checkout-to-prod</span></code>.</p>
 </section>
 <section id="development-deployment">
 <h3>Development deployment<a class="headerlink" href="#development-deployment" title="Link to this heading">#</a></h3>
 <p>From a development <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> workspace, either with a release image or using a development image built with the
 script
 above, you install a dev deployment to the cluster you are currently logged into with <code class="docutils literal notranslate"><span class="pre">kubectl</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_hyperion_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">repository</span><span class="o">=&lt;</span><span class="n">your</span> <span class="n">image</span> <span class="n">repo</span><span class="o">&gt;</span> <span class="n">hyperion</span><span class="o">-</span><span class="n">test</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_mx_bluesky_app_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">repository</span><span class="o">=&lt;</span><span class="n">your</span> <span class="n">image</span> <span class="n">repo</span><span class="o">&gt;</span> <span class="n">hyperion</span><span class="o">-</span><span class="n">test</span> <span class="n">hyperion</span>
 </pre></div>
 </div>
 <p>The dev deployment bind-mounts the current <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> workspace and <code class="docutils literal notranslate"><span class="pre">../dodal</span></code> into the container so that you can
@@ -641,6 +652,7 @@ script</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deploying-to-kubernetes">Deploying to kubernetes</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#secrets">Secrets</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#production-deployment">Production deployment</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#development-deployment">Development deployment</a></li>
 </ul>
