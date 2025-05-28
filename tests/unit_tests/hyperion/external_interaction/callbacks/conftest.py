@@ -1,11 +1,11 @@
 import pytest
 
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 
 @pytest.fixture
-def test_rotation_start_outer_document(dummy_rotation_params: MultiRotationScan):
+def test_rotation_start_outer_document(dummy_rotation_params: RotationScan):
     dummy_single_rotation_params = next(dummy_rotation_params.single_rotation_scans)
     return {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",

@@ -29,14 +29,14 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    multi_rotation_scan,
+    rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa
@@ -182,7 +182,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 @pytest.mark.system_test
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
-    params_for_rotation_scan: MultiRotationScan,
+    params_for_rotation_scan: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
     composite_for_rotation_scan,
@@ -200,7 +200,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE_with_external_callbacks(
-            multi_rotation_scan(
+            rotation_scan(
                 composite_for_rotation_scan,
                 params_for_rotation_scan,
                 oav_parameters_for_rotation,

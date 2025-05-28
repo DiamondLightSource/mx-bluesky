@@ -52,7 +52,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
@@ -383,8 +383,8 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 @pytest.fixture
 def params_for_rotation_scan(
-    test_rotation_params: MultiRotationScan,
-) -> MultiRotationScan:
+    test_rotation_params: RotationScan,
+) -> RotationScan:
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71

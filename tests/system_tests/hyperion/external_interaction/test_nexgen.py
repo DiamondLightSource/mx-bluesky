@@ -17,7 +17,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import extract_metafile, raw_params_from_file
 
@@ -29,7 +29,7 @@ def test_params(tmpdir):
     param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    params = RotationScan(**param_dict)
+    params = SingleRotationScan(**param_dict)
     params.demand_energy_ev = 12700
     params.scan_width_deg = 360
     params.storage_directory = "tests/test_data"
@@ -57,7 +57,7 @@ def test_params(tmpdir):
 )
 @pytest.mark.system_test
 def test_rotation_nexgen(
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
     test_data_directory,
@@ -147,7 +147,7 @@ def _run_imginfo(filename):
 
 
 def _fake_rotation_scan(
-    parameters: RotationScan,
+    parameters: SingleRotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):

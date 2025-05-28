@@ -22,7 +22,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import raw_params_from_file
 
@@ -150,7 +150,7 @@ def test_osc_is_used():
     )
     for osc in [0.001, 0.05, 0.1, 0.2, 0.75, 1, 1.43]:
         raw_params["rotation_increment_deg"] = osc
-        params = RotationScan(**raw_params)
+        params = SingleRotationScan(**raw_params)
         assert params.rotation_increment_deg == osc
         assert params.num_images == int(params.scan_width_deg / osc)
 
@@ -160,7 +160,7 @@ def test_selected_aperture_uses_default():
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     raw_params["selected_aperture"] = None
-    params = RotationScan(**raw_params)
+    params = SingleRotationScan(**raw_params)
     assert params.selected_aperture == ApertureValue.LARGE
 
 

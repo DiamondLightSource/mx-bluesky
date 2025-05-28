@@ -14,7 +14,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from tests.conftest import (
     default_raw_gridscan_params,
     raw_params_from_file,
@@ -55,7 +55,7 @@ def patch_open_to_prevent_dls_reads_in_tests():
 
 @pytest.fixture
 def test_rotation_params_nomove():
-    return MultiRotationScan(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters_nomove.json"
         )
@@ -64,7 +64,7 @@ def test_rotation_params_nomove():
 
 @pytest.fixture
 def test_multi_rotation_params():
-    return MultiRotationScan(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
         )

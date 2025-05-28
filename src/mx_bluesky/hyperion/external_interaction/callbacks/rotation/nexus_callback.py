@@ -16,7 +16,7 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -85,7 +85,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {hyperion_params}"
             )
-            parameters = RotationScan.model_validate_json(hyperion_params)
+            parameters = SingleRotationScan.model_validate_json(hyperion_params)
             NEXUS_LOGGER.info("Setting up nexus file...")
 
             det_size = (
