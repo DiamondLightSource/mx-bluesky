@@ -4,8 +4,10 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     hyperion_grid_detect_then_xray_centre,
 )
@@ -16,6 +18,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
+from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
 )
@@ -90,6 +93,82 @@ class TestHyperionGridDetectThenXrayCentrePlan:
 
         # Called once on exception and once on close_run
         mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
+
+    @patch("bluesky.plan_stubs.sleep", autospec=True)
+    @patch(
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
+    )
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
+    )
+    def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+        self,
+        mock_change_aperture_then_move: MagicMock,
+        mock_events_handler: MagicMock,
+        mock_create_parameters: MagicMock,
+        mock_grid_detection_callback: MagicMock,
+        mock_grid_detection_plan: MagicMock,
+        mock_check_topup: MagicMock,
+        mock_wait: MagicMock,
+        sim_run_engine: RunEngineSimulator,
+        test_full_grid_scan_params: GridScanWithEdgeDetect,
+        grid_detect_devices_with_oav_config_params: HyperionGridDetectThenXRayCentreComposite,
+        test_config_files,
+        hyperion_fgs_params,
+    ):
+        flyscan_event_handler = MagicMock()
+        flyscan_event_handler.xray_centre_results = "dummy"
+        mock_events_handler.return_value = flyscan_event_handler
+        mock_create_parameters.return_value = hyperion_fgs_params
+        simulate_xrc_result(
+            sim_run_engine,
+            grid_detect_devices_with_oav_config_params.zocalo,
+            TEST_RESULT_LARGE,
+        )
+
+        msgs = sim_run_engine.simulate_plan(
+            hyperion_grid_detect_then_xray_centre(
+                grid_detect_devices_with_oav_config_params,
+                test_full_grid_scan_params,
+                test_config_files["oav_config_json"],
+            ),
+        )
+
+        # Assert order: pause -> open run -> close run -> unpause (set attenuator)
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "open_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "close_run"
+            and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (1.0,),
+        )
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
