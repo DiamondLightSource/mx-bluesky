@@ -317,14 +317,15 @@ def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_g
 )
 def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    assert hyperion_params.visit == "cm00000-0"
-    assert isclose(hyperion_params.detector_distance_mm, 180.8)  # type: ignore
-    assert hyperion_params.sample_id == 12345
-    assert hyperion_params.sample_puck == 40
-    assert hyperion_params.sample_pin == 3
-    assert str(hyperion_params.parameter_model_version) == "5.3.0"
-    assert hyperion_params.select_centres.n == 1
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    for hyperion_params in hyperion_params_list:
+        assert hyperion_params.visit == "cm00000-0"
+        assert isclose(hyperion_params.detector_distance_mm, 180.8)  # type: ignore
+        assert hyperion_params.sample_id == 12345
+        assert hyperion_params.sample_puck == 40
+        assert hyperion_params.sample_pin == 3
+        assert str(hyperion_params.parameter_model_version) == "5.3.0"
+        assert hyperion_params.select_centres.n == 1
 
 
 @pytest.mark.parametrize(
@@ -336,8 +337,8 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     agamemnon_response,
 ):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    robot_load_params = hyperion_params.robot_load_then_centre
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    robot_load_params = hyperion_params_list[0].robot_load_then_centre
     assert robot_load_params.visit == "cm00000-0"
     assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
     assert robot_load_params.sample_id == 12345
@@ -372,22 +373,36 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     agamemnon_response,
 ):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    rotation_params = hyperion_params.multi_rotation_scan
-    assert rotation_params.visit == "cm00000-0"
-    assert isclose(rotation_params.detector_distance_mm, 180.8)  # type: ignore
-    assert rotation_params.detector_params.omega_start == 0.0
-    assert rotation_params.detector_params.exposure_time_s == 0.002
-    assert rotation_params.detector_params.num_images_per_trigger == 3600
-    assert rotation_params.num_images == 7200
-    assert rotation_params.transmission_frac == 0.5
-    assert rotation_params.comment == "Complete_P1_sweep1 "
-    assert rotation_params.ispyb_experiment_type == "OSC"
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    for hyperion_params in hyperion_params_list:
+        rotation_params = hyperion_params.multi_rotation_scan
+        assert rotation_params.visit == "cm00000-0"
+        assert isclose(rotation_params.detector_distance_mm, 180.8)  # type: ignore
+        assert rotation_params.detector_params.omega_start == 0.0
+        assert rotation_params.detector_params.exposure_time_s == 0.002
+        assert rotation_params.detector_params.num_images_per_trigger == 3600
+        assert rotation_params.num_images == 3600
+        assert rotation_params.transmission_frac == 0.5
+        assert rotation_params.comment == "Complete_P1_sweep1 "
+        assert rotation_params.ispyb_experiment_type == "OSC"
 
-    assert rotation_params.sample_puck == 40
-    assert rotation_params.sample_pin == 3
+        assert rotation_params.sample_puck == 40
+        assert rotation_params.sample_pin == 3
 
-    individual_scans = list(rotation_params.single_rotation_scans)
+        assert rotation_params.demand_energy_ev == 12700.045934258673
+        assert str(rotation_params.parameter_model_version) == "5.3.0"
+        assert (
+            rotation_params.storage_directory
+            == "/dls/tmp/data/year/cm00000-0/auto/test"
+        )
+        assert rotation_params.file_name == "test_xtal"
+        assert rotation_params.snapshot_directory == PosixPath(
+            "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+        )
+
+    individual_scans = [
+        list(hyperion_params_list[0].rotation_params.single_rotation_scans)
+    ] + [list(hyperion_params_list[1].rotation_params.single_rotation_scans)]
     assert len(individual_scans) == 2
     assert individual_scans[0].scan_points["omega"][1] == 0.1
     assert individual_scans[0].phi_start_deg == 0.0
@@ -398,14 +413,6 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert individual_scans[1].chi_start_deg == 30.0
     assert individual_scans[1].rotation_direction == RotationDirection.POSITIVE
 
-    assert rotation_params.demand_energy_ev == 12700.045934258673
-    assert str(rotation_params.parameter_model_version) == "5.3.0"
-    assert rotation_params.storage_directory == "/dls/tmp/data/year/cm00000-0/auto/test"
-    assert rotation_params.file_name == "test_xtal"
-    assert rotation_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
-    )
-
 
 @pytest.mark.parametrize(
     "agamemnon_response",
@@ -414,8 +421,9 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
 )
 def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    assert hyperion_params.select_centres.n == 6
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    for hyperion_params in hyperion_params_list:
+        assert hyperion_params.select_centres.n == 6
 
 
 @pytest.mark.parametrize(
@@ -427,8 +435,17 @@ def test_populate_parameters_creates_multiple_rotations_for_native_collection(
     agamemnon_response,
 ):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    assert len(hyperion_params.multi_rotation_scan.rotation_scans) == 2
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params_list) == 2
+    assert (
+        sum(
+            [
+                len(hyperion_params.multi_rotation_scan.rotation_scans)
+                for hyperion_params in hyperion_params_list
+            ]
+        )
+        == 2
+    )
 
 
 @pytest.mark.parametrize(
