@@ -38,7 +38,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
-from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -99,7 +99,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -477,7 +477,7 @@ def synchrotron(RE: RunEngine):
 
 @pytest.fixture
 def oav(test_config_files, RE: RunEngine):
-    parameters = OAVConfig(
+    parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
@@ -1612,7 +1612,7 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = MultiRotationScan(
+    dummy_params = RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
@@ -1623,7 +1623,7 @@ def dummy_rotation_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return MultiRotationScan(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )

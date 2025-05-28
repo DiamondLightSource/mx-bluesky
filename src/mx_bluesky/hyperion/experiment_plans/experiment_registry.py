@@ -15,7 +15,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan, RotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 
 def not_implemented():
@@ -32,7 +32,6 @@ class ExperimentRegistryEntry(TypedDict):
         HyperionSpecifiedThreeDGridScan
         | GridScanWithEdgeDetect
         | RotationScan
-        | MultiRotationScan
         | PinTipCentreThenXrayCentre
         | LoadCentreCollect
     ]
@@ -47,9 +46,9 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,
     },
-    "multi_rotation_scan": {
+    "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
-        "param_type": MultiRotationScan,
+        "param_type": RotationScan,
     },
     "load_centre_collect_full": {
         "setup": load_centre_collect_full_plan.create_devices,

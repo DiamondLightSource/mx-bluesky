@@ -60,8 +60,8 @@ from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
     RotationScan,
+    SingleRotationScan,
 )
 
 
@@ -116,7 +116,7 @@ class RotationMotionProfile:
 
 
 def calculate_motion_profile(
-    params: RotationScan,
+    params: SingleRotationScan,
     motor_time_to_speed_s: float,
     max_velocity_deg_s: float,
 ) -> RotationMotionProfile:
@@ -210,7 +210,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     motion_values: RotationMotionProfile,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
@@ -317,7 +317,7 @@ def _cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 def _move_and_rotation(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     oav_params: OAVParameters,
 ):
     motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
@@ -356,9 +356,9 @@ def _move_and_rotation(
     yield from rotation_scan_plan(composite, params, motion_values)
 
 
-def multi_rotation_scan(
+def rotation_scan(
     composite: RotationScanComposite,
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
@@ -370,15 +370,15 @@ def multi_rotation_scan(
             ),
         }
     )
-    def _wrapped_multi_rotation_scan():
-        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
 
-    yield from _wrapped_multi_rotation_scan()
+    yield from _wrapped_rotation_scan()
 
 
-def multi_rotation_scan_internal(
+def rotation_scan_internal(
     composite: RotationScanComposite,
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     parameters.features.update_self_from_server()
@@ -416,7 +416,7 @@ def multi_rotation_scan_internal(
                 }
             )
             def rotation_scan_core(
-                params: RotationScan,
+                params: SingleRotationScan,
             ):
                 yield from _move_and_rotation(composite, params, oav_params)
 

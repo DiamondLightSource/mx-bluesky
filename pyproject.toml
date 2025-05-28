@@ -46,7 +46,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@3cc6fa5512cb13852d8483d5d7a13affd8b585ff",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@3d36879f02343a920156bc608006242ffb8f89f1",
 ]
 
 
@@ -128,34 +128,21 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    # Ignore deprecation warning from sqlalchemy
-    "ignore::sqlalchemy.exc.MovedIn20Warning",
-    # Remove when there's a fix for https://github.com/DiamondLightSource/ispyb-api/issues/233
-    "ignore::sqlalchemy.exc.SADeprecationWarning",
-    # Ignore deprecation warning from setuptools_dso (remove when https://github.com/epics-base/setuptools_dso/issues/36 is released)
-    "ignore::DeprecationWarning:wheel",
     # Ophyd status objects in tests
     "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
     # Ignore nondeterministic closing of log, RE, etc. before test end
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180 and freephil https://github.com/DiamondLightSource/nexgen/issues/349
     "ignore:.*pkg_resources.*:DeprecationWarning",
-    # Ignore deprecation warning that gets promoted to SystemError from somewhere
-    # in protobuf https://github.com/protocolbuffers/protobuf/issues/12186
-    # SystemError: <class 'DeprecationWarning'> returned a result with an exception set"
-    # The fix for this is in https://github.com/protocolbuffers/protobuf/pull/15999
-    # But this fix exists only in 3.27.0<=protobuf<4 and protobuf>=v5, not in 4.x that we depend on
-    # https://github.com/open-telemetry/opentelemetry-python/pull/4206/commits addresses this but is not yet in a release
-    "ignore:.*custom tp_new.*:DeprecationWarning",
+    # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
+    "ignore:.*pkg_resources.*:UserWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
-    # https://github.com/bluesky/ophyd-async/issues/838 and https://github.com/seperman/deepdiff/issues/536
-    "ignore:Accessing this attribute on the instance is deprecated",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"

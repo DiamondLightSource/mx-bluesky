@@ -4,7 +4,7 @@ import pytest
 
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import (
     default_raw_gridscan_params,
@@ -21,7 +21,7 @@ def test_rotation_params():
     param_dict["file_name"] = "TEST_FILENAME"
     param_dict["demand_energy_ev"] = 12700
     param_dict["scan_width_deg"] = 360.0
-    params = RotationScan(**param_dict)
+    params = SingleRotationScan(**param_dict)
     params.x_start_um = 0
     params.y_start_um = 0
     params.z_start_um = 0
