@@ -14,6 +14,7 @@ from mx_bluesky.hyperion.baton_handler import (
     NO_USER,
     run_udc_when_requested,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 @pytest.fixture()
@@ -75,9 +76,14 @@ async def _assert_baton_released(baton: Baton):
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_released(
-    agamemnon: MagicMock, collection: MagicMock, baton: Baton, RE: RunEngine
+    agamemnon: MagicMock,
+    collection: MagicMock,
+    baton: Baton,
+    RE: RunEngine,
+    load_centre_collect_params: LoadCentreCollect,
 ):
     collection.side_effect = ValueError()
+    agamemnon.return_value = [load_centre_collect_params]
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(baton, MagicMock()))
     assert collection.call_count == 1
@@ -87,9 +93,14 @@ async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_rel
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 async def test_when_warning_exception_raised_in_collection_then_loop_continues(
-    agamemnon: MagicMock, collection: MagicMock, baton: Baton, RE: RunEngine
+    agamemnon: MagicMock,
+    collection: MagicMock,
+    baton: Baton,
+    RE: RunEngine,
+    load_centre_collect_params: LoadCentreCollect,
 ):
     collection.side_effect = [WarningException(), MagicMock(), ValueError()]
+    agamemnon.return_value = [load_centre_collect_params]
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(baton, MagicMock()))
     assert collection.call_count == 3
@@ -130,9 +141,14 @@ async def test_when_no_agamemnon_instructions_left_then_loop_stops_and_baton_rel
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
 async def test_when_other_user_requested_collection_finished_then_baton_released(
-    collection: MagicMock, agamemnon: MagicMock, baton: Baton, RE: RunEngine
+    collection: MagicMock,
+    agamemnon: MagicMock,
+    baton: Baton,
+    RE: RunEngine,
+    load_centre_collect_params: LoadCentreCollect,
 ):
     plan_continuing = MagicMock()
+    agamemnon.return_value = [load_centre_collect_params]
 
     def fake_collection_with_baton_request_part_way_through(*args):
         yield from bps.null()
