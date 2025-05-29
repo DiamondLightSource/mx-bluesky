@@ -20,9 +20,6 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.beamlines.i04.parameters.device_composites import (
     I04FlyScanXRayCentreComposite,
 )
-from mx_bluesky.common.device_setup_plans.manipulate_sample import (
-    cleanup_sample_environment,
-)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_FGS_features,
@@ -123,7 +120,11 @@ def get_ready_for_oav_and_close_shutter(
     yield from setup_beamline_for_OAV(
         smargon, backlight, aperture_scatterguard, group=group
     )
-    yield from cleanup_sample_environment(detector_motion, group=group)
+    yield from bps.abs_set(
+        detector_motion.shutter,
+        0,
+        group=group,
+    )
     yield from bps.wait(group)
 
 
