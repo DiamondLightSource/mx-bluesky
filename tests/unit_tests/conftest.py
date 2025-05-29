@@ -2,6 +2,7 @@ import asyncio
 import time
 from collections.abc import Callable
 from functools import partial
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -51,6 +52,9 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     PlanNameConstants,
+)
+from mx_bluesky.common.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -358,7 +362,7 @@ def test_full_grid_scan_params():
 
 
 @pytest.fixture
-async def grid_detect_devices(
+async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_i03: Beamstop,
@@ -380,7 +384,7 @@ async def grid_detect_devices(
     undulator_dcm,
     dcm,
 ):
-    yield HyperionGridDetectThenXRayCentreComposite(
+    yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -398,8 +402,6 @@ async def grid_detect_devices(
         xbpm_feedback=xbpm_feedback,
         zebra=zebra,
         zocalo=zocalo,
-        panda=MagicMock(spec=HDFPanda),
-        panda_fast_grid_scan=MagicMock(spec=PandAFastGridScan),
         dcm=dcm,
         robot=MagicMock(spec=BartRobot),
         sample_shutter=zebra_shutter,
@@ -407,9 +409,8 @@ async def grid_detect_devices(
 
 
 @pytest.fixture
-def grid_detect_devices_with_oav_config_params(
-    grid_detect_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_config_files: dict[str, str],
-) -> HyperionGridDetectThenXRayCentreComposite:
-    set_mock_value(grid_detect_devices.oav.zoom_controller.level, "7.5x")
-    return grid_detect_devices
+async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
+    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
+    composite.panda = MagicMock(spec=HDFPanda)
+    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    return composite

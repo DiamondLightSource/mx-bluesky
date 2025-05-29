@@ -85,13 +85,13 @@ def construct_beamline_specific(
 async def test_detect_grid_and_do_gridscan_in_real_RE(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
-    composite = grid_detect_devices_with_oav_config_params
+    composite = grid_detect_xrc_devices
     RE(
         ispyb_activation_wrapper(
             _do_detect_grid_and_gridscan_then_wait_for_backlight(
@@ -142,7 +142,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan: MagicMock,
-    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict,
@@ -154,7 +154,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     RE(
         ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
-                grid_detect_devices_with_oav_config_params,
+                grid_detect_xrc_devices,
                 parameters=test_full_grid_scan_params,
                 oav_params=oav_params,
                 xrc_params_type=HyperionSpecifiedThreeDGridScan,
@@ -185,7 +185,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     mock_flyscan,
     mock_grid_detection_plan,
-    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
@@ -215,7 +215,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 
     msgs = sim_run_engine.simulate_plan(
         detect_grid_and_do_gridscan(
-            grid_detect_devices_with_oav_config_params,
+            grid_detect_xrc_devices,
             test_full_grid_scan_params,
             OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
@@ -246,7 +246,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
     mock_flyscan,
     mock_grid_detection_plan,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: dict[str, str],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
@@ -285,7 +285,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
     )
     return sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
-            grid_detect_devices_with_oav_config_params,
+            grid_detect_xrc_devices,
             test_full_grid_scan_params,
             xrc_params_type=SpecifiedThreeDGridScan,
             construct_beamline_specific=construct_beamline_specific,
@@ -367,7 +367,7 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     mock_events_handler: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     test_config_files: dict,
@@ -381,7 +381,7 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     )
     msgs = sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
-            grid_detect_devices_with_oav_config_params,
+            grid_detect_xrc_devices,
             test_full_grid_scan_params,
             SpecifiedThreeDGridScan,
             construct_beamline_specific,
