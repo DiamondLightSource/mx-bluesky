@@ -113,7 +113,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
     @patch(
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
     )
-    def test_flyscan_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+    def test_hyperion_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
         self,
         mock_change_aperture_then_move: MagicMock,
         mock_events_handler: MagicMock,
