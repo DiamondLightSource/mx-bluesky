@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
-import pydantic
 from blueapi.core import BlueskyContext
-from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
@@ -17,23 +15,17 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, HardwareConstants
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    HardwareConstants,
+)
+from mx_bluesky.common.parameters.device_composites import OavGridDetectionComposite
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class OavGridDetectionComposite:
-    """All devices which are directly or indirectly required by this plan"""
-
-    backlight: Backlight
-    oav: OAV
-    smargon: Smargon
-    pin_tip_detection: PinTipDetection
 
 
 def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
