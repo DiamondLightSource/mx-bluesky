@@ -1,9 +1,9 @@
 Grid Detect Then Xray Centre
 ============================
 
-The aim of this page is to provide a general overview of the Hyperion ``grid_detect_then_xray_centre_plan``.
+The aim of this page is to provide a general overview of the ``grid_detect_then_xray_centre_plan``.
 
-Most of the code for the ``grid_detect_then_xray_centre_plan`` plan is in ``mx-bluesky/hyperion``. Some code is located in ``mx-bluesky/common`` and `dodal <https://github.com/DiamondLightSource/dodal>`_, and plans are increasingly being generalised and moved into ``mx-bluesky/common`` where possible. Therefore, the structure of the codebase is subject to change and this document should be updated accordingly.
+The code for the ``grid_detect_then_xray_centre`` plan is now entirely ``mx-bluesky/common/`` and `dodal <https://github.com/DiamondLightSource/dodal>`_. There is a new Hyperion entry point, ``hyperion_grid_detect_then_xray_centre`` which calls this common plan, setting up Hyperion features for it. There will soon be an i04 entry point that calls the common plan in the same way.
 
 There are then a number of plans that make up the ``grid_detect_then_xray_centre_plan`` plan. Some important ones:
 
@@ -11,7 +11,7 @@ There are then a number of plans that make up the ``grid_detect_then_xray_centre
 * :ref:`flyscan_xray_centre_plan<flyscan>` - Triggers a hardware-based grid scan and moves to the X-ray centre as returned from ``zocalo``.
 * :ref:`grid_detect_then_xray_centre_plan<grid-detect-xrc>` - This top-level plan performs an :ref:`OAV grid detection <grid-detect>` then a :ref:`flyscan x-ray centre <flyscan>`.
 
-The diagram below shows all the plans that make up the ``grid_detect_then_xray_centre_plan``. The colors indicate where these plans can be found.
+The diagram below shows all the plans that make up the ``grid_detect_then_xray_centre_plan``.
 
 .. image:: grid_detect_then_xray_centre.drawio.png
 
@@ -20,21 +20,22 @@ The diagram below shows all the plans that make up the ``grid_detect_then_xray_c
 Grid Detect Then Xray Centre Plan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/grid_detect_then_xray_centre_plan.py>`__ does the following, in roughly this order:
+`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/common/experiment_plans/common_grid_detect_then_xray_centre_plan.py>`__ does the following, in roughly this order:
 
 1. If called standalone, start preparing for data collection.
-2. Perform an :ref:`OAV grid detection <grid-detect>`.
-3. Convert the parameters calculated in step 2 into something we can send to the flyscan X-ray centre.
-4. Move the backlight out, set the aperture to small, and wait for the detector to finish moving.
-5. Perform a :ref:`flyscan X-ray centre <flyscan>`.
-6. Move the sample based on the results of step 5.
+2. Move the beamstop into place if it isn't already.
+3. Perform an :ref:`OAV grid detection <grid-detect>`.
+4. Convert the parameters calculated in step 2 into something we can send to the flyscan X-ray centre.
+5. Move the backlight out, set the aperture to small, and wait for the detector to finish moving.
+6. Perform a :ref:`flyscan X-ray centre <flyscan>`.
+7. Move the sample based on the results of step 5.
 
 .. _grid-detect:
 
 OAV Grid Detection
 ~~~~~~~~~~~~~~~~~~
 
-`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/oav_grid_detection_plan.py>`__ does the following, in roughly this order:
+`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/common/experiment_plans/oav_grid_detection_plan.py>`__ does the following, in roughly this order:
 
 1. Move to omega 0.
 2. Calculate the 2D grid size using the edge arrays from the OAV.
@@ -48,7 +49,7 @@ OAV Grid Detection
 Flyscan Xray Centre No Move
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/hyperion/experiment_plans/flyscan_xray_centre_plan.py>`__ does the following, in roughly this order:
+`This plan <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/common/experiment_plans/common_flyscan_xray_centre_plan.py>`__ does the following, in roughly this order:
 
 1. Move to the desired transmission (and turn off xbpm feedback).
 2. Move to omega 0.

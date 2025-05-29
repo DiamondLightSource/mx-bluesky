@@ -5,7 +5,7 @@ from typing import TypedDict
 
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from mx_bluesky.hyperion.experiment_plans import (
-    grid_detect_then_xray_centre_plan,
+    hyperion_grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
     pin_centre_then_xray_centre_plan,
 )
@@ -38,8 +38,8 @@ class ExperimentRegistryEntry(TypedDict):
 
 
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
-    "grid_detect_then_xray_centre": {
-        "setup": grid_detect_then_xray_centre_plan.create_devices,
+    "hyperion_grid_detect_then_xray_centre": {
+        "setup": hyperion_grid_detect_then_xray_centre_plan.create_devices,
         "param_type": GridScanWithEdgeDetect,
     },
     "pin_tip_centre_then_xray_centre": {
