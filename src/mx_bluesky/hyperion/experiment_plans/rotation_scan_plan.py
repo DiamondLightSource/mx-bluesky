@@ -19,7 +19,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -32,8 +32,6 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
-    move_phi_chi_omega,
-    move_x_y_z,
     setup_sample_environment,
 )
 from mx_bluesky.common.device_setup_plans.utils import (
@@ -330,19 +328,18 @@ def _move_and_rotation(
         return num / 1000 if num else num
 
     LOGGER.info("moving to position (if specified)")
-    yield from move_x_y_z(
+    yield from bps.abs_set(
         composite.smargon,
-        _div_by_1000_if_not_none(params.x_start_um),
-        _div_by_1000_if_not_none(params.y_start_um),
-        _div_by_1000_if_not_none(params.z_start_um),
+        CombinedMove(
+            x=_div_by_1000_if_not_none(params.x_start_um),
+            y=_div_by_1000_if_not_none(params.y_start_um),
+            z=_div_by_1000_if_not_none(params.z_start_um),
+            phi=params.phi_start_deg,
+            chi=params.chi_start_deg,
+        ),
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
-    yield from move_phi_chi_omega(
-        composite.smargon,
-        params.phi_start_deg,
-        params.chi_start_deg,
-        group=CONST.WAIT.MOVE_GONIO_TO_START,
-    )
+
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
         yield from setup_beamline_for_OAV(
