@@ -372,9 +372,6 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.bps.abs_set",
-)
-@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.move_aperture_if_required",
 )
 @patch(
@@ -382,9 +379,6 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.stage",
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
@@ -399,11 +393,9 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     mock_verify_gap: MagicMock,
     mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,
-    mock_bps_stage: MagicMock,
     mock_create_parameters: MagicMock,
     mock_grid_params_callback: MagicMock,
     mock_move_aperture_if_required: MagicMock,
-    mock_bps_abs_set: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
     RE: RunEngine,
