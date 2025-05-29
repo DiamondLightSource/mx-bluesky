@@ -1,3 +1,4 @@
+import os
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -8,13 +9,19 @@ from dodal.devices.baton import Baton
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
+    initialise_udc,
     run_udc_when_requested,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
+    LoadCentreCollectComposite,
+)
+from mx_bluesky.hyperion.utils.context import setup_context
 
 
 @pytest.fixture()
@@ -176,3 +183,24 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
     agamemnon.side_effect = [MagicMock(), MagicMock(), None]
     RE(run_udc_when_requested(baton, MagicMock()))
     default_state.assert_called_once()
+
+
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
+# @patch("mx_bluesky.hyperion.utils.context.get_beamline_based_on_environment_variable")
+def test_initialise_udc_reloads_all_devices(
+    RE: RunEngine,
+    # mock_get_beamline: MagicMock
+):
+    # mock_get_beamline.side_effect = lambda: importlib.import_module("unit_tests.hyperion.fake_beamline")
+    context = setup_context(True)
+    devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
+        context, LoadCentreCollectComposite
+    )
+
+    initialise_udc(context, True)
+
+    devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
+        context, LoadCentreCollectComposite
+    )
+
+    assert devices_before_reset.oav is not devices_after_reset.oav
