@@ -21,6 +21,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -191,6 +192,19 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
     }
 ]
+
+MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+mock_paths = [
+    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
+    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+]
+mock_attributes_table = {
+    "i03": mock_paths,
+    "i10": mock_paths,
+    "i04": mock_paths,
+    "i24": mock_paths,
+}
 
 
 @dataclass(frozen=True)
@@ -383,7 +397,13 @@ def i03_beamline_parameters():
         "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
         {"i03": "tests/test_data/test_beamline_parameters.txt"},
     ) as params:
-        yield params
+        with ExitStack() as context_stack:
+            for context_mgr in [
+                patch(f"dodal.beamlines.i03.{name}", value, create=True)
+                for name, value in mock_paths
+            ]:
+                context_stack.enter_context(context_mgr)
+            yield params
 
 
 @pytest.fixture
@@ -1784,3 +1804,9 @@ def assert_images_pixelwise_equal(actual, expected):
             assert bytes_expected_bytes, (
                 f"Actual and expected images differ, {actual} != {expected}"
             )
+
+
+def mock_beamline_module_filepaths(bl_name, bl_module):
+    if mock_attributes := mock_attributes_table.get(bl_name):
+        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
+        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
