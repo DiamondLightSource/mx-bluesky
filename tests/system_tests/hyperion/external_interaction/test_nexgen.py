@@ -58,13 +58,9 @@ def test_params(tmpdir):
     ],
 )
 @patch(
-    "mx_bluesky.common.external_interaction.nexus.nexus_utils.time",
+    "mx_bluesky.common.external_interaction.nexus.nexus_utils.time.time",
     new=MagicMock(
-        **{
-            "time.return_value": datetime.fromisoformat(
-                "2024-05-03T17:59:43Z"
-            ).timestamp()
-        }
+        return_value=datetime.fromisoformat("2024-05-03T17:59:43Z").timestamp()
     ),
 )
 @pytest.mark.system_test
