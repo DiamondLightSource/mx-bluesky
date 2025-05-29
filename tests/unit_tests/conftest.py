@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.common.beamlines import beamline_parameters
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -83,20 +82,6 @@ async def RE():
     RE.loop.call_soon_threadsafe(RE.loop.stop)
 
 
-MOCK_DAQ_CONFIG_PATH = "tests/devices/unit_tests/test_daq_configuration"
-mock_paths = [
-    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", "tests/devices/unit_tests/test_display.configuration"),
-    ("LOOK_UPTABLE_DIR", "tests/devices/i10/lookupTables/"),
-]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
-
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
@@ -127,14 +112,6 @@ def assert_event(mock_call, expected):
         actual = actual["data"]
     for k, v in expected.items():
         assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
-
-
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
-            "tests/test_data/i04_beamlineParameters"
-        )
 
 
 def create_gridscan_callbacks() -> tuple[
