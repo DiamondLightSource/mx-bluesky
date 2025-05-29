@@ -52,6 +52,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.preprocessors.preprocessors import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     _generic_tidy,
@@ -76,13 +79,19 @@ def i04_grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
     yield from setup_beamline_for_OAV(
-        composite.smargon, composite.backlight, composite.aperture_scatterguard, wait=True
+        composite.smargon,
+        composite.backlight,
+        composite.aperture_scatterguard,
+        wait=True,
     )
 
     callbacks = create_gridscan_callbacks()
 
     @bpp.subs_decorator(callbacks)
     @verify_undulator_gap_before_run_decorator(composite)
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
+    )
     def grid_detect_then_xray_centre_with_callbacks():
         yield from grid_detect_then_xray_centre(
             composite=composite,
