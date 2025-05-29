@@ -193,7 +193,7 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
 
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
-    "axisEnd": 370,
+    "axisEnd": -350,
     # "chiStart": 0, mx-bluesky 325
     "wavelength": 0.976254,
     "beamSizeAtSampleX": 0.02,
@@ -214,6 +214,8 @@ ROTATION_DC_EXPECTED_VALUES = {
 }
 
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
+    "axisStart": -350,
+    "axisEnd": 10,
     "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"
     "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123457/snapshots/\\d{"

@@ -12,6 +12,7 @@ from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.zebra.zebra import RotationDirection
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
@@ -47,6 +48,17 @@ from .conftest import (
 )
 
 GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION = "tests/test_data/parameter_json_files/good_test_load_centre_collect_params_multi_rotation.json"
+
+POS_HIGH = {
+    "x_start_um": 100,
+    "y_start_um": 200,
+    "z_start_um": 300,
+}
+POS_MED = {
+    "x_start_um": 400,
+    "y_start_um": 500,
+    "z_start_um": 600,
+}
 
 
 @pytest.fixture
@@ -338,6 +350,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
             "y_start_um": 500,
             "z_start_um": 600,
             "nexus_vds_start_img": 0,
+            "rotation_direction": RotationDirection.NEGATIVE,
         },
     ]
     _compare_rotation_scans(
@@ -544,35 +557,37 @@ def test_load_centre_collect_full_plan_multiple_centres(
         msgs, lambda msg: msg.command == "multi_rotation_scan"
     )
 
-    def _rotation_at_first_position(chi=0):
+    def _rotation_at_first_position(direction: RotationDirection, chi):
         return {
-            "omega_start_deg": 10,
+            "omega_start_deg": 10 if direction == RotationDirection.NEGATIVE else -350,
             "chi_start_deg": chi,
             "x_start_um": 100,
             "y_start_um": 200,
             "z_start_um": 300,
+            "rotation_direction": direction,
         }
 
-    def _rotation_at_second_position(chi=0):
+    def _rotation_at_second_position(direction: RotationDirection, chi):
         return {
-            "omega_start_deg": 10,
+            "omega_start_deg": 10 if direction == RotationDirection.NEGATIVE else -350,
             "chi_start_deg": chi,
             "x_start_um": 400,
             "y_start_um": 500,
             "z_start_um": 600,
+            "rotation_direction": direction,
         }
 
     expected_rotation_scans = [
-        _rotation_at_first_position(0),
-        _rotation_at_first_position(30),
-        _rotation_at_first_position(0),
-        _rotation_at_first_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
-        _rotation_at_second_position(0),
-        _rotation_at_second_position(30),
+        _rotation_at_first_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_first_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_first_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_first_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
+        _rotation_at_second_position(RotationDirection.NEGATIVE, 0),
+        _rotation_at_second_position(RotationDirection.POSITIVE, 30),
     ]
     for i in range(0, len(expected_rotation_scans)):
         expected_rotation_scans[i]["nexus_vds_start_img"] = 3600 * i
@@ -582,6 +597,152 @@ def test_load_centre_collect_full_plan_multiple_centres(
     _compare_rotation_scans(
         expected_rotation_scans, rotation_scan_params.rotation_scans
     )
+    assert rotation_scan_params.transmission_frac == 0.05
+
+
+def _rotation_at(
+    chi: float,
+    position: dict,
+    omega_start_deg: int,
+    rotation_direction: RotationDirection,
+) -> dict:
+    return {
+        "omega_start_deg": omega_start_deg,
+        "chi_start_deg": chi,
+        "rotation_direction": rotation_direction,
+    } | position
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    new=MagicMock(
+        side_effect=lambda *args, **kwargs: iter(
+            [
+                Msg(
+                    "open_run",
+                    xray_centre_results=[
+                        dataclasses.asdict(r)
+                        for r in [
+                            FLYSCAN_RESULT_HIGH,
+                            FLYSCAN_RESULT_MED,
+                        ]
+                    ],
+                    run=CONST.PLAN.FLYSCAN_RESULTS,
+                ),
+                Msg("close_run"),
+            ]
+        )
+    ),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
+    new=MagicMock(return_value=iter([Msg(command="robot_load_and_change_energy")])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
+    side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
+)
+@patch(
+    "mx_bluesky.common.external_interaction.config_server.FeatureFlags.update_self_from_server",
+    autospec=True,
+)
+@pytest.mark.parametrize(
+    "rotation_scans, expected_scans",
+    [
+        [
+            (
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 0,
+                    "scan_width_deg": 359,
+                },
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 30,
+                    "scan_width_deg": 359,
+                },
+            ),
+            (
+                _rotation_at(0, POS_HIGH, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_HIGH, -349, RotationDirection.POSITIVE),
+                _rotation_at(0, POS_MED, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_MED, -349, RotationDirection.POSITIVE),
+            ),
+        ],
+        [
+            (
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 0,
+                    "scan_width_deg": 359,
+                },
+            ),
+            (
+                _rotation_at(0, POS_HIGH, 10, RotationDirection.NEGATIVE),
+                _rotation_at(0, POS_MED, -349, RotationDirection.POSITIVE),
+            ),
+        ],
+        [
+            (
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 0,
+                    "scan_width_deg": 360,
+                },
+                {
+                    "omega_start_deg": 10,
+                    "chi_start_deg": 30,
+                    "scan_width_deg": 360,
+                },
+            ),
+            (
+                _rotation_at(0, POS_HIGH, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_HIGH, -350, RotationDirection.POSITIVE),
+                _rotation_at(0, POS_MED, 10, RotationDirection.NEGATIVE),
+                _rotation_at(30, POS_MED, -350, RotationDirection.POSITIVE),
+            ),
+        ],
+    ],
+)
+def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres(
+    mock_update_self_from_server: MagicMock,
+    mock_multi_rotation_scan: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    load_centre_collect_with_top_n_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    composite: LoadCentreCollectComposite,
+    rotation_scans: tuple[dict],
+    expected_scans: tuple[dict],
+):
+    mock_update_self_from_server.side_effect = lambda self: setattr(
+        self, "alternate_rotation_direction", True
+    )
+    load_centre_collect_with_top_n_params.multi_rotation_scan.rotation_scans = [
+        RotationScanPerSweep.model_construct(**rs) for rs in rotation_scans
+    ]
+    LoadCentreCollect.model_validate(load_centre_collect_with_top_n_params)
+
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite,
+            load_centre_collect_with_top_n_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    multi_rotation_params = load_centre_collect_with_top_n_params.multi_rotation_scan
+    sweeps = multi_rotation_params.rotation_scans
+    for i in range(0, len(expected_scans)):
+        sweep_params = sweeps[i % len(sweeps)]
+        expected_scans[i]["nexus_vds_start_img"] = (
+            sweep_params.scan_width_deg * 10
+        ) * i
+
+    rotation_scan_params = mock_multi_rotation_scan.mock_calls[0].args[1]
+    assert isinstance(rotation_scan_params, RotationScan)
+    _compare_rotation_scans(expected_scans, rotation_scan_params.rotation_scans)
     assert rotation_scan_params.transmission_frac == 0.05
 
 
@@ -598,6 +759,7 @@ def _compare_rotation_scans(
         assert rotation_scan.y_start_um == expected["y_start_um"]
         assert rotation_scan.z_start_um == expected["z_start_um"]
         assert rotation_scan.nexus_vds_start_img == expected["nexus_vds_start_img"]
+        assert rotation_scan.rotation_direction == expected["rotation_direction"]
 
 
 @patch("mx_bluesky.common.parameters.components.os.makedirs")

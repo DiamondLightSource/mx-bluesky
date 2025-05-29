@@ -11,7 +11,10 @@ def populate_data_collection_info_for_rotation(params: SingleRotationScan):
         n_images=params.num_images,
         axis_range=params.rotation_increment_deg,
         axis_start=params.omega_start_deg,
-        axis_end=(params.omega_start_deg + params.scan_width_deg),
+        axis_end=(
+            params.omega_start_deg
+            + params.scan_width_deg * params.rotation_direction.multiplier
+        ),
         kappa_start=params.kappa_start_deg,
     )
     return info

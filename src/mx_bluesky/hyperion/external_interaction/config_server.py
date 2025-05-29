@@ -22,6 +22,8 @@ class HyperionFeatureFlags(FeatureFlags):
             multi-centre)
         omega_flip:                     If True then invert the smargon omega motor rotation commands with respect to
          the hyperion request. See "Hyperion Coordinate Systems" in the documentation.
+        alternate_rotation_direction:   If True then the for multi-sample pins the rotation direction of
+         successive rotation scans is alternated between positive and negative.
     """
 
     @staticmethod
@@ -41,3 +43,4 @@ class HyperionFeatureFlags(FeatureFlags):
     use_gpu_results: bool = CONST.I03.USE_GPU_RESULTS
     set_stub_offsets: bool = CONST.I03.SET_STUB_OFFSETS
     omega_flip: bool = CONST.I03.OMEGA_FLIP
+    alternate_rotation_direction: bool = CONST.I03.ALTERNATE_ROTATION_DIRECTION
