@@ -462,9 +462,6 @@ async def test_main_fixed_target_plan(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup.get_beam_center_device"
-)
-@patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
 )
 @patch(
@@ -477,7 +474,6 @@ def test_setup_tasks_in_run_fixed_target_plan(
     fake_sleep,
     fake_read,
     fake_mkdir,
-    mock_beam_center,
     zebra,
     pmac,
     aperture,
@@ -487,6 +483,8 @@ def test_setup_tasks_in_run_fixed_target_plan(
     shutter,
     dcm,
     mirrors,
+    eiger_beam_center,
+    pilatus_beam_center,
     RE,
     dummy_params_without_pp,
 ):
@@ -512,8 +510,9 @@ def test_setup_tasks_in_run_fixed_target_plan(
                 dcm,
                 mirrors,
                 mock_attenuator,
+                eiger_beam_center,
+                pilatus_beam_center,
             )
         )
         fake_mkdir.assert_called_once()
-        mock_beam_center.assert_called_once()
         patch_upload.assert_called_once_with(pmac, dummy_params_without_pp.chip_map)

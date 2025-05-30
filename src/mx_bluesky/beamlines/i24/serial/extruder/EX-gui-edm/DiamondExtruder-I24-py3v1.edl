@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 1006
-y 192
+y 300
 w 700
 h 900
 font "arial-medium-r-18.0"
@@ -370,7 +370,7 @@ font "arial-medium-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan '\{\"zebra\":\"zebra\",\"aperture\":\"aperture\",\"backlight\":\"backlight\",\"beamstop\":\"beamstop\",\"detector_stage\":\"detector_motion\",\"shutter\":\"shutter\",\"dcm\":\"dcm\",\"mirrors\":\"focus_mirrors\",\"attenuator\":\"attenuator\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan"
 }
 endObjectProperties
 
@@ -832,7 +832,7 @@ botShadowColor index 11
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run initialise_extruder '\{\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run initialise_extruder"
 }
 endObjectProperties
 
@@ -989,8 +989,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 10
-y 611
+x 11
+y 606
 w 680
 h 252
 lineColor index 9
@@ -1870,7 +1870,7 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 573
+x 568
 y 675
 w 72
 h 46
@@ -2179,7 +2179,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser On"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseron\",\"zebra\":\"zebra\",\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseron\"\}'"
 }
 endObjectProperties
 
@@ -2201,7 +2201,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser Off"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseroff\",\"zebra\":\"zebra\",\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseroff\"\}'"
 }
 endObjectProperties
 
@@ -2223,7 +2223,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Enter hutch"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run enter_hutch '\{\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run enter_hutch"
 }
 endObjectProperties
 

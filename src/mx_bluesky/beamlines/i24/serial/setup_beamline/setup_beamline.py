@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from dodal.beamlines import i24
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -17,13 +16,6 @@ from dodal.devices.util.lookup_tables import (
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
-
-
-def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
-    if detector_in_use == "eiger":
-        return i24.eiger_beam_center(connect_immediately=True)
-    else:
-        return i24.pilatus_beam_center(connect_immediately=True)
 
 
 def compute_beam_center_position_from_lut(
