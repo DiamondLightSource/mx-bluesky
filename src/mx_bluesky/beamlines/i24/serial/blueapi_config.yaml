@@ -5,8 +5,9 @@ env:
     - kind: planFunctions
       module: mx_bluesky.beamlines.i24.serial
   events:
-    broadcast_status_events: False
+    broadcast_status_events: false
 api:
   port: 25565
 stomp:
+  enabled: true
   host: i24-control.diamond.ac.uk
