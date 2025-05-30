@@ -402,9 +402,6 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-    set_mock_value(smargon.x.user_readback, 0.0)
-    set_mock_value(smargon.y.user_readback, 0.0)
-    set_mock_value(smargon.z.user_readback, 0.0)
     set_mock_value(smargon.x.high_limit_travel, 2)
     set_mock_value(smargon.x.low_limit_travel, -2)
     set_mock_value(smargon.y.high_limit_travel, 2)

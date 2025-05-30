@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 830
-y 200
+y 237
 w 900
 h 700
 font "arial-medium-r-18.0"
@@ -1585,7 +1585,7 @@ symbol0 {
   1 "ML"
 }
 value0 {
-  0 "none"
+  0 "False"
   1 "True"
 }
 endObjectProperties

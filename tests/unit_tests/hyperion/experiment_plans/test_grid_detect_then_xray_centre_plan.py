@@ -13,6 +13,7 @@ from dodal.devices.backlight import BacklightPosition
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.smargon import CombinedMove
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -267,23 +268,16 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
 def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
 ):
-    msgs = assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-x"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-y"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-z"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
+        and msg.obj.name == "smargon"
+        and msg.args[0]
+        == CombinedMove(
+            x=FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
+            y=FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
+            z=FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
+        ),
     )
 
 
