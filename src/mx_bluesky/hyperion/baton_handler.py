@@ -84,7 +84,7 @@ def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
 
 
-def run_udc_when_requested(context: BlueskyContext):
+def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
     """This will wait for the baton to be handed to hyperion and then run through the
     UDC queue from agamemnon until:
       1. There are no more instructions from agamemnon
@@ -99,7 +99,7 @@ def run_udc_when_requested(context: BlueskyContext):
     yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
     def initialise_then_collect():
-        initialise_udc(context)
+        initialise_udc(context, dev_mode)
         yield from move_to_default_state()
 
         # re-fetch the baton because the device has been reinstantiated
