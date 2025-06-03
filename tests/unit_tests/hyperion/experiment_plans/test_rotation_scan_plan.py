@@ -903,9 +903,10 @@ def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     )
 
 
-def test_multi_rotation_scan_params():
+def test_multi_rotation_scan_params(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = RotationScan(**raw_params)
     omega_starts = [s["omega_start_deg"] for s in raw_params["rotation_scans"]]

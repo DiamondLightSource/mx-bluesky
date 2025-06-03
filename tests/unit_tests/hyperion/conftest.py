@@ -17,7 +17,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from tests.conftest import (
-    default_raw_gridscan_params,
     raw_params_from_file,
 )
 
@@ -26,9 +25,10 @@ BANNED_PATHS = [Path("/dls"), Path("/dls_sw")]
 
 
 @pytest.fixture
-def load_centre_collect_params():
+def load_centre_collect_params(tmp_path):
     json_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        tmp_path,
     )
     return LoadCentreCollect(**json_dict)
 
@@ -55,19 +55,21 @@ def patch_open_to_prevent_dls_reads_in_tests():
 
 
 @pytest.fixture
-def test_rotation_params_nomove():
+def test_rotation_params_nomove(tmp_path):
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters_nomove.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters_nomove.json",
+            tmp_path,
         )
     )
 
 
 @pytest.fixture
-def test_multi_rotation_params():
+def test_multi_rotation_params(tmp_path):
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+            tmp_path,
         )
     )
 
@@ -77,10 +79,10 @@ def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
 
 
 @pytest.fixture
-def test_fgs_params():
+def test_fgs_params(tmp_path):
     return HyperionSpecifiedThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
         )
     )
 
@@ -96,23 +98,11 @@ def feature_flags():
     return HyperionFeatureFlags()
 
 
-def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
-    return dummy_params
-
-
-def dummy_params_2d():
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
-    )
-    raw_params["z_steps"] = 1
-    return HyperionSpecifiedThreeDGridScan(**raw_params)
-
-
 @pytest.fixture
-def test_full_grid_scan_params():
+def test_full_grid_scan_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        tmp_path,
     )
     return GridScanWithEdgeDetect(**params)
 

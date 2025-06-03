@@ -9,6 +9,7 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
 from functools import partial
+from pathlib import Path
 from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
@@ -233,7 +234,23 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
         f.cache_clear()  # type: ignore
 
 
-def raw_params_from_file(filename):
+def replace_all_tmp_paths(d: dict[str, Any], tmp_path: Path):
+    d = d.copy()
+    for k, v in d.items():
+        if isinstance(v, str):
+            d[k] = v.replace("{tmp_data}", str(tmp_path))
+        elif isinstance(v, dict):
+            d[k] = replace_all_tmp_paths(v, tmp_path)
+    return d
+
+
+def raw_params_from_file(filename, tmp_path):
+    with open(filename) as f:
+        loads = replace_all_tmp_paths(json.loads(f.read()), tmp_path)
+        return loads
+
+
+def raw_params_from_file_no_substitution(filename):
     with open(filename) as f:
         return json.loads(f.read())
 
@@ -375,10 +392,13 @@ def i03_beamline_parameters():
 
 
 @pytest.fixture
-def hyperion_fgs_params():
+def hyperion_fgs_params(tmp_path):
     return HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+        **(
+            raw_params_from_file(
+                "tests/test_data/parameter_json_files/good_test_parameters.json",
+                tmp_path,
+            )
         )
     )
 
@@ -1164,19 +1184,26 @@ def simulate_xrc_result(
 
 
 def default_raw_gridscan_params(
+    tmp_path,
     json_file="tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
 ):
-    return raw_params_from_file(json_file)
+    return raw_params_from_file(json_file, tmp_path)
 
 
-def dummy_params():
-    dummy_params = SpecifiedThreeDGridScan(**default_raw_gridscan_params())
+def _dummy_params(tmp_path):
+    dummy_params = SpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+            tmp_path,
+        )
+    )
     return dummy_params
 
 
-def dummy_params_2d():
+def _dummy_params_2d(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+        tmp_path,
     )
     raw_params["z_steps"] = 1
     return SpecifiedThreeDGridScan(**raw_params)
@@ -1264,230 +1291,307 @@ class OavGridSnapshotTestEvents:
     }
 
 
+@pytest.fixture()
+def TestEventData(tmp_path):
+    return _TestEventData(tmp_path)
+
+
+class _TestEventData(OavGridSnapshotTestEvents):
+    def __init__(self, tmp_path):
+        self._tmp_path = tmp_path
+
+    @property
+    def test_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_gridscan3d_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": "test",
+            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_gridscan3d_stop_document_with_crystal_exception(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": f"{CrystalNotFoundException()}",
+        }
+
+    @property
+    def test_gridscan2d_start_document(self):
+        return {
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": "test",
+            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
+            "mx_bluesky_parameters": _dummy_params_2d(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_rotation_start_main_document(self):
+        return {
+            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "subplan_name": PlanNameConstants.ROTATION_MAIN,
+            "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
+        }
+
+    @property
+    def test_gridscan_outer_start_document(self):
+        return {
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_rotation_event_document_during_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 2666604299.928203,
+            "data": {
+                "aperture_scatterguard-aperture-x": 15,
+                "aperture_scatterguard-aperture-y": 16,
+                "aperture_scatterguard-aperture-z": 2,
+                "aperture_scatterguard-scatterguard-x": 18,
+                "aperture_scatterguard-scatterguard-y": 19,
+                "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
+                "aperture_scatterguard-radius": 50,
+                "attenuator-actual_transmission": 0.98,
+                "flux-flux_reading": 9.81,
+                "dcm-energy_in_kev": 11.105,
+            },
+            "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+            "seq_num": 1,
+            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "filled": {},
+        }
+
+    @property
+    def test_rotation_stop_main_document(self) -> RunStop:
+        return {
+            "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "Test succeeded",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
+            "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
+        }
+
+    @property
+    def test_do_fgs_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
+            "subplan_name": PlanNameConstants.DO_FGS,
+            "scan_points": create_dummy_scan_spec(10, 20, 30),
+        }
+
+    @property
+    def test_descriptor_document_oav_rotation_snapshot(self) -> EventDescriptor:
+        return {
+            "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_pre_data_collection(self) -> EventDescriptor:
+        return {
+            "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.HARDWARE_READ_PRE,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_during_data_collection(self) -> EventDescriptor:
+        return {
+            "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.HARDWARE_READ_DURING,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_zocalo_hardware(self) -> EventDescriptor:
+        return {
+            "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.ZOCALO_HW_READ,
+        }  # type: ignore
+
+    @property
+    def test_event_document_oav_rotation_snapshot(self) -> Event:
+        return {
+            "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
+            "time": 1666604299.828203,
+            "timestamps": {},
+            "seq_num": 1,
+            "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
+            "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
+        }
+
+    @property
+    def test_event_document_pre_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 1666604299.828203,
+            "data": {
+                "s4_slit_gaps-xgap": 0.1234,
+                "s4_slit_gaps-ygap": 0.2345,
+                "synchrotron-synchrotron_mode": SynchrotronMode.USER,
+                "undulator-current_gap": 1.234,
+                "smargon-x": 0.158435435,
+                "smargon-y": 0.023547354,
+                "smargon-z": 0.00345684712,
+                "dcm-energy_in_kev": 11.105,
+            },
+            "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+            "seq_num": 1,
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
+            "filled": {},
+        }
+
+    @property
+    def test_event_document_during_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 2666604299.928203,
+            "data": {
+                "aperture_scatterguard-aperture-x": 15,
+                "aperture_scatterguard-aperture-y": 16,
+                "aperture_scatterguard-aperture-z": 2,
+                "aperture_scatterguard-scatterguard-x": 18,
+                "aperture_scatterguard-scatterguard-y": 19,
+                "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
+                "aperture_scatterguard-radius": 50,
+                "attenuator-actual_transmission": 1,
+                "flux-flux_reading": 10,
+                "dcm-energy_in_kev": 11.105,
+                "eiger_bit_depth": "16",
+            },
+            "timestamps": {
+                "det1": 1666604299.8220396,
+                "det2": 1666604299.8235943,
+                "eiger_bit_depth": 1666604299.8220396,
+            },
+            "seq_num": 1,
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
+            "filled": {},
+        }
+
+    @property
+    def test_event_document_zocalo_hardware(self) -> Event:
+        return {
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
+            "time": 1709654583.9770422,
+            "data": {"eiger_odin_file_writer_id": "test_path"},
+            "timestamps": {"eiger_odin_file_writer_id": 1666604299.8220396},
+            "seq_num": 1,
+            "filled": {},
+            "descriptor": "f082901b-7453-4150-8ae5-c5f98bb34406",
+        }
+
+    @property
+    def test_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_do_fgs_gridscan_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_failed_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": "could not connect to devices",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_failed_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": "could not connect to devices",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+
 class TestData(OavGridSnapshotTestEvents):
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
-    GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
-    BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_gridscan3d_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": "test",
-        "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_gridscan3d_stop_document_with_crystal_exception: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": f"{CrystalNotFoundException()}",
-    }
-    test_gridscan2d_start_document = {
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": "test",
-        "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-        "mx_bluesky_parameters": dummy_params_2d().model_dump_json(),
-    }
-    test_rotation_start_main_document = {
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "subplan_name": PlanNameConstants.ROTATION_MAIN,
-        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-    }
-    test_gridscan_outer_start_document = {
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_rotation_event_document_during_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 2666604299.928203,
-        "data": {
-            "aperture_scatterguard-aperture-x": 15,
-            "aperture_scatterguard-aperture-y": 16,
-            "aperture_scatterguard-aperture-z": 2,
-            "aperture_scatterguard-scatterguard-x": 18,
-            "aperture_scatterguard-scatterguard-y": 19,
-            "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-            "aperture_scatterguard-radius": 50,
-            "attenuator-actual_transmission": 0.98,
-            "flux-flux_reading": 9.81,
-            "dcm-energy_in_kev": 11.105,
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "filled": {},
-    }
-    test_rotation_stop_main_document: RunStop = {
-        "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "Test succeeded",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-        "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
-    }
-    test_do_fgs_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-        "subplan_name": PlanNameConstants.DO_FGS,
-        "scan_points": create_dummy_scan_spec(10, 20, 30),
-    }
-    test_descriptor_document_oav_rotation_snapshot: EventDescriptor = {
-        "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
-    }  # type: ignore
-    test_descriptor_document_pre_data_collection: EventDescriptor = {
-        "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.HARDWARE_READ_PRE,
-    }  # type: ignore
-    test_descriptor_document_during_data_collection: EventDescriptor = {
-        "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.HARDWARE_READ_DURING,
-    }  # type: ignore
-    test_descriptor_document_zocalo_hardware: EventDescriptor = {
-        "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.ZOCALO_HW_READ,
-    }  # type: ignore
-    test_event_document_oav_rotation_snapshot: Event = {
-        "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
-        "time": 1666604299.828203,
-        "timestamps": {},
-        "seq_num": 1,
-        "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
-        "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
-    }
-    test_event_document_pre_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 1666604299.828203,
-        "data": {
-            "s4_slit_gaps-xgap": 0.1234,
-            "s4_slit_gaps-ygap": 0.2345,
-            "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-            "undulator-current_gap": 1.234,
-            "smargon-x": 0.158435435,
-            "smargon-y": 0.023547354,
-            "smargon-z": 0.00345684712,
-            "dcm-energy_in_kev": 11.105,
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
-        "filled": {},
-    }
-    test_event_document_during_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 2666604299.928203,
-        "data": {
-            "aperture_scatterguard-aperture-x": 15,
-            "aperture_scatterguard-aperture-y": 16,
-            "aperture_scatterguard-aperture-z": 2,
-            "aperture_scatterguard-scatterguard-x": 18,
-            "aperture_scatterguard-scatterguard-y": 19,
-            "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-            "aperture_scatterguard-radius": 50,
-            "attenuator-actual_transmission": 1,
-            "flux-flux_reading": 10,
-            "dcm-energy_in_kev": 11.105,
-            "eiger_bit_depth": "16",
-        },
-        "timestamps": {
-            "det1": 1666604299.8220396,
-            "det2": 1666604299.8235943,
-            "eiger_bit_depth": 1666604299.8220396,
-        },
-        "seq_num": 1,
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
-        "filled": {},
-    }
-    test_event_document_zocalo_hardware: Event = {
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
-        "time": 1709654583.9770422,
-        "data": {"eiger_odin_file_writer_id": "test_path"},
-        "timestamps": {"eiger_odin_file_writer_id": 1666604299.8220396},
-        "seq_num": 1,
-        "filled": {},
-        "descriptor": "f082901b-7453-4150-8ae5-c5f98bb34406",
-    }
-    test_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_do_fgs_gridscan_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_failed_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": "could not connect to devices",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_failed_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": "could not connect to devices",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
 
     test_result_large = [
         {
@@ -1612,10 +1716,11 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 
 @pytest.fixture
-def dummy_rotation_params():
+def dummy_rotation_params(tmp_path):
     dummy_params = RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+            tmp_path,
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID
@@ -1623,12 +1728,16 @@ def dummy_rotation_params():
 
 
 @pytest.fixture
-def test_rotation_params():
-    return RotationScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
+def test_rotation_params(tmp_path):
+    scan = RotationScan(
+        **(
+            raw_params_from_file(
+                "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+                tmp_path,
+            )
         )
     )
+    return scan
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

@@ -32,9 +32,10 @@ from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_
 
 
 @pytest.fixture
-def test_pin_centre_then_xray_centre_params():
+def test_pin_centre_then_xray_centre_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
+        tmp_path,
     )
     return PinTipCentreThenXrayCentre(**params)
 

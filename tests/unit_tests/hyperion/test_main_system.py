@@ -31,7 +31,7 @@ from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGIST
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
-from ...conftest import raw_params_from_file
+from ...conftest import raw_params_from_file_no_substitution
 from ..conftest import mock_beamline_module_filepaths
 
 FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
@@ -41,7 +41,7 @@ STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
-    raw_params_from_file(
+    raw_params_from_file_no_substitution(
         "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
     )
 )

@@ -34,12 +34,13 @@ TEST_FILENAME = "rotation_scan_test_nexus"
 
 
 @pytest.fixture
-def test_params(tmpdir):
+def test_params(tmp_path):
     param_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     param_dict["storage_directory"] = "tests/test_data"
-    param_dict["file_name"] = f"{tmpdir}/{TEST_FILENAME}"
+    param_dict["file_name"] = f"{str(tmp_path)}/{TEST_FILENAME}"
     param_dict["scan_width_deg"] = 360.0
     param_dict["demand_energy_ev"] = 12700
     params = SingleRotationScan(**param_dict)
