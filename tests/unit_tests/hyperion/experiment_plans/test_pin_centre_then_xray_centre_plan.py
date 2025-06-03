@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.i03 import BeamstopPositions
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
@@ -312,7 +312,6 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
 def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    smargon: Smargon,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
@@ -323,11 +322,8 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     )
     mock_pin_tip_centre_plan.return_value = iter([Msg("pin_tip_centre_plan")])
 
-    mock_composite = grid_detect_devices
-    mock_composite.smargon = smargon
-
-    test_pin_centre_then_xray_centre_params.phi_start_deg = 30
-    test_pin_centre_then_xray_centre_params.chi_start_deg = 50
+    test_pin_centre_then_xray_centre_params.phi_start_deg = (expected_phi := 30)
+    test_pin_centre_then_xray_centre_params.chi_start_deg = (expected_chi := 50)
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_flyscan_plan(
@@ -340,15 +336,8 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-phi"
-        and msg.args == (test_pin_centre_then_xray_centre_params.phi_start_deg,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-chi"
-        and msg.args == (test_pin_centre_then_xray_centre_params.chi_start_deg,)
+        and msg.obj.name == "smargon"
+        and msg.args[0] == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
 

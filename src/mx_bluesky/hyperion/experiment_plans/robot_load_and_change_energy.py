@@ -19,7 +19,7 @@ from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.devices.thawer import Thawer
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -104,16 +104,7 @@ def prepare_for_robot_load(
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
 
-    # fmt: off
-    yield from bps.mv(
-        smargon.x, 0,
-        smargon.y, 0,
-        smargon.z, 0,
-        smargon.omega, 0,
-        smargon.chi, 0,
-        smargon.phi, 0
-    )
-    # fmt: on
+    yield from bps.mv(smargon, CombinedMove(x=0, y=0, z=0, chi=0, phi=0, omega=0))
 
     yield from bps.wait("prepare_robot_load")
 
