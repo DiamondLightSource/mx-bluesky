@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -35,7 +35,7 @@ def test_params(filename_stub, dir):
         with open(filename) as f:
             return json.loads(f.read())
 
-    params = MultiRotationScan(
+    params = RotationScan(
         **get_params(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
@@ -53,7 +53,7 @@ def test_params(filename_stub, dir):
 
 
 def fake_rotation_scan(
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
@@ -129,7 +129,7 @@ def fake_create_rotation_devices():
 
 
 def sim_rotation_scan_to_create_nexus(
-    test_params: MultiRotationScan,
+    test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     filename_stub,
     RE,

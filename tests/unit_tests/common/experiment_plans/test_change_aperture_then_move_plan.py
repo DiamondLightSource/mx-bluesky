@@ -2,7 +2,7 @@ import numpy
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
@@ -49,20 +49,8 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj is smargon.x
-        and msg.args[0] == 0.1,
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is smargon.y
-        and msg.args[0] == 0.2,
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is smargon.z
-        and msg.args[0] == 0.3,
+        and msg.obj is smargon
+        and msg.args[0] == CombinedMove(x=0.1, y=0.2, z=0.3),
     )
     if set_stub_offsets:
         assert_message_and_return_remaining(

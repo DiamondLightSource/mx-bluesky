@@ -22,14 +22,14 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ......conftest import assert_images_pixelwise_equal, raw_params_from_file
 
 
 @pytest.fixture
 def params_take_snapshots():
-    return RotationScan(
+    return SingleRotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -347,7 +347,7 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
     tmp_path: Path,
     RE: RunEngine,
     oav_with_snapshots: OAV,
-    params_take_snapshots: RotationScan,
+    params_take_snapshots: SingleRotationScan,
 ):
     oav = oav_with_snapshots
     downstream_cb = Mock()

@@ -99,7 +99,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -402,9 +402,6 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-    set_mock_value(smargon.x.user_readback, 0.0)
-    set_mock_value(smargon.y.user_readback, 0.0)
-    set_mock_value(smargon.z.user_readback, 0.0)
     set_mock_value(smargon.x.high_limit_travel, 2)
     set_mock_value(smargon.x.low_limit_travel, -2)
     set_mock_value(smargon.y.high_limit_travel, 2)
@@ -1615,7 +1612,7 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = MultiRotationScan(
+    dummy_params = RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
@@ -1626,7 +1623,7 @@ def dummy_rotation_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return MultiRotationScan(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
