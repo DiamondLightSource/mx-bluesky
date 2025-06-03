@@ -250,11 +250,6 @@ def raw_params_from_file(filename, tmp_path):
         return loads
 
 
-def raw_params_from_file_no_substitution(filename):
-    with open(filename) as f:
-        return json.loads(f.read())
-
-
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)

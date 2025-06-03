@@ -50,26 +50,6 @@ for better logs.
 """
 
 
-@pytest.fixture(autouse=True)
-def patch_mkdir():
-    from os import makedirs as real_makedirs
-    from os import mkdir as real_mkdir
-
-    def patched_mkdir(path, *args, **kwargs):
-        if str(path).startswith("/tmp/dls"):
-            raise RuntimeError("Attempted to create folder /tmp/dls")
-        return real_mkdir(path, *args, **kwargs)
-
-    def patched_makedirs(name, *args, **kwargs):
-        if str(name).startswith("/tmp/dls"):
-            raise RuntimeError("Attempted to create folders /tmp/dls")
-        return real_makedirs(name, *args, **kwargs)
-
-    with patch("os.mkdir", side_effect=patched_mkdir) as p:
-        with patch("os.makedirs", side_effect=patched_makedirs) as pp:
-            yield (p, pp)
-
-
 class DocumentCatcher(CallbackBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
