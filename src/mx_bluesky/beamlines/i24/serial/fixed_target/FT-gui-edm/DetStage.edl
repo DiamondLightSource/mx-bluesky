@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 1205
-y 579
+y 616
 w 450
 h 180
 font "arial-medium-r-18.0"
@@ -113,7 +113,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Move Stage"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run setup_detector_stage '\{\"expt_type\":\"Serial Fixed\",\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run setup_detector_stage '\{\"expt_type\":\"Serial Fixed\"\}'"
 }
 endObjectProperties
 
