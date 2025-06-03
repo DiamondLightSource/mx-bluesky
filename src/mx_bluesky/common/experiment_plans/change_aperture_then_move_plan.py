@@ -4,6 +4,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
@@ -43,6 +44,7 @@ def change_aperture_then_move_to_xtal(
 def set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard,
     bbox_size_mm: list[float] | numpy.ndarray,
+    group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
 ):
     """Sets aperture size based on bbox_size.
 
@@ -71,4 +73,6 @@ def set_aperture_for_bbox_mm(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size_mm}."
     )
 
-    yield from bps.abs_set(aperture_device.selected_aperture, new_selected_aperture)
+    yield from bps.abs_set(
+        aperture_device.selected_aperture, new_selected_aperture, group=group
+    )
