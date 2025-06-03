@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-zocalo-config"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/name: zocalo-config
+    app.kubernetes.io/instance: "{{ .Release.Name }}-zocalo-config"
+    app.kubernetes.io/version: "{{ .Chart.Version }}"
+    app.kubernetes.io/part-of: hyperion 
+data:
+  configuration.yaml: |-
+    version: 1
+
+    graylog:
+      plugin: graylog
+      {{- .Values.zocalo.graylog | toYaml | nindent 6 }}
+
+  {{- if .Values.zocalo.secrets }}
+  {{- range .Values.zocalo.secrets }}
+    {{ .name }}: "/zocalo/secrets/{{ .fileName }}"
+  {{- end -}} {{/* range */}}
+  {{- end -}} {{/* if */}}
+
+
+    default-transport:
+      plugin: transport
+      default: {{ .Values.zocalo.defaultTransport }}
+
+    environments:
+
+      bluesky:
+        logging: graylog
+        plugins:
+          - default-transport
+        {{- if .Values.zocalo.secrets }}
+        {{- range .Values.zocalo.secrets }}
+          - {{ .name }}
+        {{- end -}} {{/* range */}}
+        {{- end -}} {{/* if */}}

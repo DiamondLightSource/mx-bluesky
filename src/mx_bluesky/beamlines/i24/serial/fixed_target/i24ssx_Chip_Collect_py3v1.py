@@ -183,10 +183,12 @@ def load_motion_program_data(
         # Pump setting chosen
         prefix = 14
         SSX_LOGGER.info(f"Setting program prefix to {prefix}")
-        yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if checker_pattern:
             SSX_LOGGER.info("Checker pattern setting enabled.")
             yield from bps.abs_set(pmac.pmac_string, "P1439=1", wait=True)
+        else:
+            SSX_LOGGER.info("Checker pattern setting disabled.")
+            yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if pump_repeat == PumpProbeSetting.Medium1:
             # Medium1 has time delays (Fast shutter opening time in ms)
             yield from bps.abs_set(pmac.pmac_string, "P1441=50", wait=True)
