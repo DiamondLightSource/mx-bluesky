@@ -24,6 +24,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -215,6 +216,7 @@ def main_extruder_plan(
     parameters: ExtruderParameters,
     dcid: DCID,
     start_time: datetime,
+    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     beam_center_pixels = sup.compute_beam_center_position_from_lut(
         BEAM_CENTER_LUT_FILES[parameters.detector_name],
@@ -360,7 +362,9 @@ def main_extruder_plan(
     if parameters.detector_name == "eiger":
         filetemplate = f"{parameters.filename}.nxs"
     else:
-        filetemplate = yield from get_pilatus_filename_template_from_device()
+        filetemplate = yield from get_pilatus_filename_template_from_device(
+            pilatus_metadata
+        )
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
@@ -503,6 +507,7 @@ def run_extruder_plan(
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
     beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
@@ -536,6 +541,7 @@ def run_extruder_plan(
             parameters=parameters,
             dcid=dcid,
             start_time=start_time,
+            pilatus_metadata=pilatus_metadata,
         ),
         except_plan=lambda e: (
             yield from collection_aborted_plan(zebra, parameters.detector_name, dcid)

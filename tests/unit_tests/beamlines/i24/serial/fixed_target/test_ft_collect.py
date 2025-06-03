@@ -176,6 +176,7 @@ def test_start_i24_with_eiger(
     dcm,
     mirrors,
     eiger_beam_center,
+    pilatus_metadata,
     dummy_params_without_pp,
 ):
     expected_start = datetime.now()
@@ -204,6 +205,7 @@ def test_start_i24_with_eiger(
             mirrors,
             eiger_beam_center,
             fake_dcid,
+            pilatus_metadata,
         )
     )
     assert fake_sup.eiger.call_count == 1
@@ -402,6 +404,7 @@ async def test_main_fixed_target_plan(
     dcm,
     mirrors,
     eiger_beam_center,
+    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_get_chip_prog.return_value = MagicMock()
@@ -428,6 +431,7 @@ async def test_main_fixed_target_plan(
                     eiger_beam_center,
                     dummy_params_without_pp,
                     fake_dcid,
+                    pilatus_metadata,
                 )
             )
 
@@ -486,6 +490,7 @@ def test_setup_tasks_in_run_fixed_target_plan(
     eiger_beam_center,
     pilatus_beam_center,
     RE,
+    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_attenuator = MagicMock()
@@ -512,6 +517,7 @@ def test_setup_tasks_in_run_fixed_target_plan(
                 mock_attenuator,
                 eiger_beam_center,
                 pilatus_beam_center,
+                pilatus_metadata,
             )
         )
         fake_mkdir.assert_called_once()
