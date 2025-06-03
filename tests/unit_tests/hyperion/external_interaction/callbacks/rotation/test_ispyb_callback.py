@@ -24,7 +24,7 @@ EXPECTED_DATA_COLLECTION = {
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0.1,
-    "axisend": 180,
+    "axisend": -180,
     "comments": "test",
     "data_collection_number": 1,
     "detector_distance": 100.0,

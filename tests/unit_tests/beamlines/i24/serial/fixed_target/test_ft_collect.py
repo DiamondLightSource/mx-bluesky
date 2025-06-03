@@ -114,7 +114,7 @@ def test_get_prog_number(chip_type, map_type, pump_repeat, expected_prog):
             0,
             3,
             True,
-            ["P1439=0", "P1439=1", "P1441=0", "P1400=1"],
+            ["P1439=1", "P1441=0", "P1400=1"],
         ),  # Map irrelevant, pp to Repeat2, checker enabled
         (
             1,

@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Generator
 from typing import cast
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -13,6 +13,7 @@ from dodal.devices.backlight import BacklightPosition
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.smargon import CombinedMove
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -88,11 +89,21 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
         )
     )
 
-    # Check backlight was moved OUT
-    get_mock_put(composite.backlight.position).assert_called_once_with(
-        BacklightPosition.OUT, wait=ANY
+    # Check backlight was moved IN for grid detect then OUT for gridscan
+    backlight_mock = get_mock_put(composite.backlight.position)
+    backlight_mock.assert_has_calls(
+        [call(BacklightPosition.IN, wait=True), call(BacklightPosition.OUT, wait=True)],
+        any_order=False,
     )
+    assert backlight_mock.call_count == 2
 
+    # Check aperture was moved out of beam for grid detect
+    assert (
+        call(ApertureValue.OUT_OF_BEAM, wait=True)
+        in get_mock_put(
+            composite.aperture_scatterguard.selected_aperture
+        ).call_args_list
+    )
     # Check aperture was changed to SMALL
     assert (
         await composite.aperture_scatterguard.selected_aperture.get_value()
@@ -101,6 +112,60 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
 
     # Check we called out to underlying fast grid scan plan
     mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.setup_beamline_for_OAV",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.XRayCentreEventHandler",
+    autospec=True,
+)
+def test_detect_grid_and_do_gridscan_sets_up_beamline_for_OAV(
+    mock_event_handler: MagicMock,
+    mock_setup_beamline_for_oav: MagicMock,
+    mock_grid_detect: MagicMock,
+    mock_flyscan: MagicMock,
+    mock_change_aperture_and_move: MagicMock,
+    mock_create_params: MagicMock,
+    mock_grid_detect_callback: MagicMock,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files: dict,
+):
+    mock_event_handler.return_value.xray_centre_results = ["dummy"]
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_run_engine.simulate_plan(
+        grid_detect_then_xray_centre(
+            grid_detect_devices_with_oav_config_params,
+            test_full_grid_scan_params,
+            oav_config=test_config_files["oav_config_json"],
+        ),
+    )
+
+    mock_setup_beamline_for_oav.assert_called_once()
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
@@ -267,23 +332,16 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
 def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
 ):
-    msgs = assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-x"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-y"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-z"
-        and msg.args[0] == FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
+        and msg.obj.name == "smargon"
+        and msg.args[0]
+        == CombinedMove(
+            x=FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
+            y=FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
+            z=FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
+        ),
     )
 
 

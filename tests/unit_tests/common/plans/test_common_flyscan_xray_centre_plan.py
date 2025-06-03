@@ -13,6 +13,7 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
 from numpy import isclose
@@ -76,11 +77,6 @@ class CompleteException(Exception):
     pass
 
 
-@pytest.fixture
-def mock_ispyb():
-    return MagicMock()
-
-
 def mock_plan():
     yield from bps.null()
 
@@ -129,7 +125,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        mock_ispyb: MagicMock,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
@@ -170,25 +165,10 @@ class TestFlyscanXrayCentrePlan:
             np.array([1, 2, 3])
         )
         RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
-        bps_abs_set.assert_has_calls(
-            [
-                call(
-                    fake_fgs_composite.smargon.x,
-                    motor_position[0],
-                    group="move_x_y_z",
-                ),
-                call(
-                    fake_fgs_composite.smargon.y,
-                    motor_position[1],
-                    group="move_x_y_z",
-                ),
-                call(
-                    fake_fgs_composite.smargon.z,
-                    motor_position[2],
-                    group="move_x_y_z",
-                ),
-            ],
-            any_order=True,
+        bps_abs_set.assert_called_with(
+            fake_fgs_composite.smargon,
+            CombinedMove(x=motor_position[0], y=motor_position[1], z=motor_position[2]),
+            group="move_x_y_z",
         )
 
     @patch(
@@ -206,7 +186,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, (_, ispyb_cb) = RE_with_subs
+        RE, _ = RE_with_subs
 
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
