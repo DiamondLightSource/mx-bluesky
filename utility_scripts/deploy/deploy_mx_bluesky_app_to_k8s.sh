@@ -36,11 +36,17 @@ for option in "$@"; do
             CMD=`basename $0`
             echo "$CMD [options] <release> <app_name>"
             cat <<EOM
-Deploys a mx_bluesky app to kubernetes
+Deploys a mx_bluesky app (either hyperion or redis-to-murko) to kubernetes.
 
 Important!
 If you do not specify --checkout-to-prod YOU MUST run this from the mx_bluesky directory that will be bind-mounted to
 the container, NOT the directory that you built the container image from.
+
+Arguments:
+  release                 Name of the helmchart release
+  app_name                Use either "hyperion" or "redis-to-murko"
+
+Options:
 
   --help                  This help
   --appVersion=version    Version of the image to fetch from the repository otherwise it is deduced
