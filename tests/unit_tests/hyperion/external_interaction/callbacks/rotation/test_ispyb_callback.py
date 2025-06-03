@@ -196,7 +196,7 @@ def test_oav_rotation_snapshot_triggered_event(
         mx.upsert_data_collection.reset_mock()
         event_doc = dict(TestEventData.test_event_document_oav_rotation_snapshot)
         event_doc["data"]["oav-snapshot-last_saved_path"] = snapshot["filename"]  # type: ignore
-        callback.activity_gated_event(event_doc)
+        callback.activity_gated_event(event_doc)  # type: ignore
         mx.upsert_data_collection_group.reset_mock()
         assert_upsert_call_with(
             mx.upsert_data_collection.mock_calls[0],
