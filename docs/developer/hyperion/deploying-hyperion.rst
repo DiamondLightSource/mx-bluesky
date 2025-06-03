@@ -68,7 +68,17 @@ For further information, see https://github.com/containers/podman/issues/2542
 Deploying to kubernetes
 -----------------------
 
-Once the docker image is built, the image can be deployed to kubernetes using the ``deploy_hyperion_to_k8s.sh`` script
+Once the docker image is built, the image can be deployed to kubernetes using the ``deploy_mx_bluesky_app_to_k8s.sh``
+script.
+
+Secrets
+~~~~~~~
+
+The deployment requires the following secrets to be created with the corresponding zocalo rabbitmq credentials if they
+are not already present:
+
+* ``rmq-creds``
+* ``rmq-api-reader``
 
 Production deployment
 ~~~~~~~~~~~~~~~~~~~~~
@@ -77,12 +87,13 @@ Then create and deploy the helm release
 
 ::
 
-    ./utility_scripts/deploy/deploy_hyperion_to_k8s.sh --beamline=<beamline> --checkout-to-prod hyperion
+    ./utility_scripts/deploy/deploy_mx_bluesky_app_to_k8s.sh --appVersion=x.y.z --beamline=<beamline> --checkout-to-prod hyperion hyperion
 
 This will run the ``deploy_mx_bluesky.py`` script to deploy the latest hyperion to ``/dls_sw``.
 You will be prompted to log into the beamline cluster, then it will create a helm release "hyperion".
 The source folders will be mounted as bind mounts to allow the pod to pick up changes in production.
 For production these are expected to be in the normal place defined in ``values.yaml``.
+If the non-k8s deployment of hyperion has already been performed, then omit ``--checkout-to-prod``.
 
 Development deployment
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -93,7 +104,7 @@ above, you install a dev deployment to the cluster you are currently logged into
 
 ::
 
-    ./utility_scripts/deploy/deploy_hyperion_to_k8s.sh --dev --beamline=<beamline> --repository=<your image repo> hyperion-test
+    ./utility_scripts/deploy/deploy_mx_bluesky_app_to_k8s.sh --dev --beamline=<beamline> --repository=<your image repo> hyperion-test hyperion
 
 
 The dev deployment bind-mounts the current ``hyperion`` workspace and ``../dodal`` into the container so that you can
