@@ -230,6 +230,90 @@ def test_start_i24_with_eiger(
     mock_shutter.assert_has_calls(shutter_call_list)
 
 
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
+)
+def test_start_i24_with_pilatus_and_pp(
+    fake_datetime,
+    fake_sleep,
+    fake_sup,
+    fake_cagetstring,
+    fake_caget,
+    fake_caput,
+    fake_dcid,
+    zebra: Zebra,
+    shutter: HutchShutter,
+    RE,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    dcm,
+    mirrors,
+    pilatus_beam_center,
+    pilatus_metadata,
+    dummy_params_with_pp,
+):
+    dummy_params_with_pp.detector_name = "pilatus"
+    expected_start = datetime.now()
+    fake_datetime.now.return_value = expected_start
+    dummy_params_with_pp.chip_map = [1, 2]
+    assert dummy_params_with_pp.total_num_images == 800
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
+    expected_beam_settings = BeamSettings(
+        wavelength_in_a=0.6,
+        beam_size_in_um=(7.0, 7.0),
+        beam_center_in_mm=(1298 * 0.172, 1307 * 0.172),
+    )
+
+    RE(
+        start_i24(
+            zebra,
+            aperture,
+            backlight,
+            beamstop,
+            detector_stage,
+            shutter,
+            dummy_params_with_pp,
+            dcm,
+            mirrors,
+            pilatus_beam_center,
+            fake_dcid,
+            pilatus_metadata,
+        )
+    )
+    assert fake_sup.pilatus.call_count == 1
+    assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
+    assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
+    # fake_cagetstring.assert_called_once()
+    fake_dcid.generate_dcid.assert_called_with(
+        beam_settings=expected_beam_settings,
+        image_dir=dummy_params_with_pp.collection_directory.as_posix(),
+        file_template="test00010_#####.cbf",
+        num_images=dummy_params_with_pp.total_num_images,
+        shots_per_position=dummy_params_with_pp.num_exposures,
+        start_time=expected_start,
+        pump_probe=True,
+    )
+
+    shutter_call_list = [
+        call("Reset", wait=True),
+        call("Open", wait=True),
+    ]
+    mock_shutter = get_mock_put(shutter.control)
+    mock_shutter.assert_has_calls(shutter_call_list)
+
+
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.write_userlog"
 )
