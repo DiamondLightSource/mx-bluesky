@@ -408,6 +408,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     set_mock_value(smargon.y.low_limit_travel, -2)
     set_mock_value(smargon.z.high_limit_travel, 2)
     set_mock_value(smargon.z.low_limit_travel, -2)
+    set_mock_value(smargon.omega.max_velocity, 1)
 
     with (
         patch_async_motor(smargon.omega),
