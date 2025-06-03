@@ -27,6 +27,9 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd.status import Status
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    OAV_SNAPSHOT_GROUP,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -37,9 +40,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
-    OAV_SNAPSHOT_GROUP,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
