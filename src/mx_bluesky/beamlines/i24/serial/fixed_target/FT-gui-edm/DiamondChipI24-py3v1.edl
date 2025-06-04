@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 844
-y 238
+x 843
+y 206
 w 1030
 h 950
 font "arial-medium-r-18.0"
@@ -280,7 +280,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"load_position\",\"pmac\":\"pmac\",\"beamstop\":\"beamstop\",\"backlight\":\"backlight\",\"det_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"load_position\"\}'"
 }
 endObjectProperties
 
@@ -301,7 +301,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"collect_position\",\"pmac\":\"pmac\",\"beamstop\":\"beamstop\",\"backlight\":\"backlight\",\"det_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"collect_position\"\}'"
 }
 endObjectProperties
 
@@ -323,7 +323,7 @@ font "helvetica-bold-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_fixed_target_plan '\{\"zebra\":\"zebra\",\"pmac\":\"pmac\",\"aperture\":\"aperture\",\"backlight\":\"backlight\",\"beamstop\":\"beamstop\",\"detector_stage\":\"detector_motion\",\"shutter\":\"shutter\",\"dcm\":\"dcm\",\"mirrors\":\"focus_mirrors\",\"attenuator\":\"attenuator\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run run_fixed_target_plan"
 }
 endObjectProperties
 
@@ -615,7 +615,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run cs_maker '\{\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run cs_maker"
 }
 endObjectProperties
 
@@ -1157,7 +1157,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run initialise_stages '\{\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run initialise_stages"
 }
 endObjectProperties
 
@@ -1538,7 +1538,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run block_check '\{\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run block_check"
 }
 endObjectProperties
 
@@ -2912,7 +2912,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"2\",\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"2\"\}'"
 }
 endObjectProperties
 
@@ -2934,7 +2934,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f2\",\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f2\"\}'"
 }
 endObjectProperties
 
@@ -2978,7 +2978,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"1\",\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"1\"\}'"
 }
 endObjectProperties
 
@@ -3000,7 +3000,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f1\",\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f1\"\}'"
 }
 endObjectProperties
 
@@ -3731,7 +3731,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"zero\",\"pmac\":\"pmac\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"zero\"\}'"
 }
 endObjectProperties
 
@@ -3773,7 +3773,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"microdrop_position\",\"pmac\":\"pmac\",\"beamstop\":\"beamstop\",\"backlight\":\"backlight\",\"det_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"microdrop_position\"\}'"
 }
 endObjectProperties
 
