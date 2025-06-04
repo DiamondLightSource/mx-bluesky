@@ -292,7 +292,7 @@ def agamemnon_response(request) -> Generator[str, None, None]:
 @pytest.mark.parametrize(
     "agamemnon_response",
     [
-        "tests/test_data/agamemnon/example_collect.json",
+        "tests/test_data/agamemnon/example_native.json",
         "tests/test_data/agamemnon/example_collect_multipin.json",
     ],
     indirect=True,
@@ -312,25 +312,25 @@ def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_g
 
 @pytest.mark.parametrize(
     "agamemnon_response",
-    ["tests/test_data/agamemnon/example_collect.json"],
+    ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
 def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
     hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
     for hyperion_params in hyperion_params_list:
-        assert hyperion_params.visit == "cm00000-0"
-        assert isclose(hyperion_params.detector_distance_mm, 180.8)  # type: ignore
-        assert hyperion_params.sample_id == 12345
-        assert hyperion_params.sample_puck == 40
-        assert hyperion_params.sample_pin == 3
+        assert hyperion_params.visit == "mx34598-77"
+        assert isclose(hyperion_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
+        assert hyperion_params.sample_id == 6501159
+        assert hyperion_params.sample_puck == 5
+        assert hyperion_params.sample_pin == 4
         assert str(hyperion_params.parameter_model_version) == "5.3.0"
         assert hyperion_params.select_centres.n == 1
 
 
 @pytest.mark.parametrize(
     "agamemnon_response",
-    ["tests/test_data/agamemnon/example_collect.json"],
+    ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
 def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
@@ -344,11 +344,11 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     for robot_load_params in [
         params.robot_load_then_centre for params in hyperion_params_list
     ]:
-        assert robot_load_params.visit == "cm00000-0"
-        assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
-        assert robot_load_params.sample_id == 12345
-        assert robot_load_params.sample_puck == 40
-        assert robot_load_params.sample_pin == 3
+        assert robot_load_params.visit == "mx34598-77"
+        assert isclose(robot_load_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
+        assert robot_load_params.sample_id == 6501159
+        assert robot_load_params.sample_puck == 5
+        assert robot_load_params.sample_pin == 4
         assert robot_load_params.demand_energy_ev == 12700.045934258673
         assert robot_load_params.omega_start_deg == 0.0
         assert robot_load_params.transmission_frac == 1.0
@@ -358,11 +358,11 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
         assert str(robot_load_params.parameter_model_version) == "5.3.0"
         assert (
             robot_load_params.storage_directory
-            == "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring"
+            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring"
         )
-        assert robot_load_params.file_name == "test_xtal"
+        assert robot_load_params.file_name == "CBLBA-x00242"
         assert robot_load_params.snapshot_directory == PosixPath(
-            "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
+            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring/snapshots"
         )
 
 
@@ -370,7 +370,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @pytest.mark.parametrize(
     "agamemnon_response",
-    ["tests/test_data/agamemnon/example_collect.json"],
+    ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
@@ -381,28 +381,28 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     assert len(hyperion_params_list) == 2
     for hyperion_params in hyperion_params_list:
         rotation_params = hyperion_params.multi_rotation_scan
-        assert rotation_params.visit == "cm00000-0"
-        assert isclose(rotation_params.detector_distance_mm, 180.8)  # type: ignore
+        assert rotation_params.visit == "mx34598-77"
+        assert isclose(rotation_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
         assert rotation_params.detector_params.omega_start == 0.0
-        assert rotation_params.detector_params.exposure_time_s == 0.002
+        assert rotation_params.detector_params.exposure_time_s == 0.003
         assert rotation_params.detector_params.num_images_per_trigger == 3600
         assert rotation_params.num_images == 3600
-        assert rotation_params.transmission_frac == 0.5
+        assert rotation_params.transmission_frac == 0.1426315789473684
         assert rotation_params.comment == "Complete_P1_sweep1 "
         assert rotation_params.ispyb_experiment_type == "OSC"
 
-        assert rotation_params.sample_puck == 40
-        assert rotation_params.sample_pin == 3
+        assert rotation_params.sample_puck == 5
+        assert rotation_params.sample_pin == 4
 
         assert rotation_params.demand_energy_ev == 12700.045934258673
         assert str(rotation_params.parameter_model_version) == "5.3.0"
         assert (
             rotation_params.storage_directory
-            == "/dls/tmp/data/year/cm00000-0/auto/test"
+            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242"
         )
-        assert rotation_params.file_name == "test_xtal"
+        assert rotation_params.file_name == "CBLBA-x00242"
         assert rotation_params.snapshot_directory == PosixPath(
-            "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/snapshots"
         )
 
     individual_scans = list(
@@ -455,7 +455,7 @@ def test_populate_parameters_creates_multiple_load_centre_collect_for_native_col
 
 @pytest.mark.parametrize(
     "agamemnon_response",
-    ["tests/test_data/agamemnon/example_collect.json"],
+    ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
 def test_get_withenergy_parameters_from_agamemnon(agamemnon_response):

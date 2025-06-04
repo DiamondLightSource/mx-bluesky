@@ -42,7 +42,6 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
             parameter_list: Sequence[LoadCentreCollect] = (
                 create_parameters_from_agamemnon()
             )
-            # not complete until https://github.com/DiamondLightSource/mx-bluesky/issues/773
             if parameter_list:
                 for parameters in parameter_list:
                     yield from load_centre_collect_full(composite, parameters)
