@@ -75,6 +75,7 @@ def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     Beamline devices are unloaded and reloaded, bluesky context gets new set of devices.
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
+    # TODO determine with blueapi team what is the supported way for clearing and re-registering devices
     context.devices.clear()
     clear_beamline_device_caches()
     setup_devices(context, dev_mode)

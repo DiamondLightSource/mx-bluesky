@@ -34,14 +34,13 @@ from mx_bluesky.hyperion.utils.context import setup_context
 def bluesky_context(i03_beamline_parameters):
     with (
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
-        patch("dodal.beamlines.i03.skip_baton", return_value=False),
     ):
         context = BlueskyContext()
         context.with_dodal_module(
             get_beamline_based_on_environment_variable(),
             mock=True,
             fake_with_ophyd_sim=True,
-            connect_immediately=True,
+            include_skipped=True,
         )
 
         yield context
@@ -57,6 +56,7 @@ async def baton(bluesky_context: BlueskyContext) -> Baton:
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.move_to_default_state", new=MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.bps.sleep")
+@pytest.mark.timeout(10)
 def test_loop_until_hyperion_requested(
     mock_sleep: MagicMock, bluesky_context: BlueskyContext, baton: Baton, RE: RunEngine
 ):
