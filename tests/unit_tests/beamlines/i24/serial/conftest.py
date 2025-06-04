@@ -223,5 +223,5 @@ def pilatus_metadata(RE) -> PilatusMetadata:
     set_mock_value(pilatus_metadata.filename, "test")
     set_mock_value(pilatus_metadata.template, "%s%s%05d.cbf")
     set_mock_value(pilatus_metadata.filenumber, 10)
-    # should rsult in test00010_#####.cbf
+    # Reading pilatus_metadata.filename_template should give "test00010_#####.cbf"`
     return pilatus_metadata
