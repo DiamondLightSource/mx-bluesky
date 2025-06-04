@@ -577,7 +577,7 @@ def beamstop_i03(
     RE: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.devices.mx_phase1.beamstop.get_beamline_parameters",
+        "dodal.beamlines.i03.get_beamline_parameters",
         return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
@@ -731,11 +731,11 @@ async def aperture_scatterguard(RE: RunEngine):
     }
     with (
         patch(
-            "dodal.devices.aperturescatterguard.load_positions_from_beamline_parameters",
+            "dodal.beamlines.i03.load_positions_from_beamline_parameters",
             return_value=positions,
         ),
         patch(
-            "dodal.devices.aperturescatterguard.AperturePosition.tolerances_from_gda_params",
+            "dodal.beamlines.i03.AperturePosition.tolerances_from_gda_params",
             return_value=AperturePosition(
                 aperture_x=0.1,
                 aperture_y=0.1,

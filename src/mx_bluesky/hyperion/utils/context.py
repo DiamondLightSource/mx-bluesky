@@ -26,4 +26,5 @@ def setup_devices(context: BlueskyContext, dev_mode: bool):
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         mock=dev_mode,
+        include_skipped=dev_mode,
     )
