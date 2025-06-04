@@ -233,9 +233,6 @@ def test_start_i24_with_eiger(
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
-)
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
@@ -247,7 +244,6 @@ def test_start_i24_with_pilatus_and_pp(
     fake_datetime,
     fake_sleep,
     fake_sup,
-    fake_cagetstring,
     fake_caget,
     fake_caput,
     fake_dcid,
@@ -295,7 +291,6 @@ def test_start_i24_with_pilatus_and_pp(
     assert fake_sup.pilatus.call_count == 1
     assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
     assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
-    # fake_cagetstring.assert_called_once()
     fake_dcid.generate_dcid.assert_called_with(
         beam_settings=expected_beam_settings,
         image_dir=dummy_params_with_pp.collection_directory.as_posix(),
