@@ -17,7 +17,9 @@ def setup_context(dev_mode: bool = False) -> BlueskyContext:
 
 
 def clear_beamline_device_caches():
-    for f in collect_factories(get_beamline_based_on_environment_variable()).values():
+    for f in collect_factories(
+        get_beamline_based_on_environment_variable(), include_skipped=True
+    ).values():
         if hasattr(f, "cache_clear"):
             f.cache_clear()  # type: ignore
 

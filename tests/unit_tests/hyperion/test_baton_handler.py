@@ -43,13 +43,28 @@ def bluesky_context(i03_beamline_parameters):
             include_skipped=True,
         )
 
-        yield context
+        from mx_bluesky.hyperion.utils.context import setup_devices
+
+        def patched_setup_devices(context: BlueskyContext, dev_mode: bool):
+            setup_devices(context, dev_mode)
+            baton_with_requested_user(context, HYPERION_USER)
+
+        # Set the initial baton state
+        baton_with_requested_user(context, HYPERION_USER)
+
+        # Patch setup_devices to patch the baton again when it is re-created
+        with patch(
+            "mx_bluesky.hyperion.baton_handler.setup_devices",
+            side_effect=patched_setup_devices,
+        ):
+            yield context
 
 
-@pytest.fixture()
-async def baton(bluesky_context: BlueskyContext) -> Baton:
+def baton_with_requested_user(
+    bluesky_context: BlueskyContext, user: str = HYPERION_USER
+) -> Baton:
     baton = find_device_in_context(bluesky_context, "baton", Baton)
-    set_mock_value(baton.requested_user, HYPERION_USER)
+    set_mock_value(baton.requested_user, user)
     return baton
 
 
@@ -58,9 +73,9 @@ async def baton(bluesky_context: BlueskyContext) -> Baton:
 @patch("mx_bluesky.hyperion.baton_handler.bps.sleep")
 @pytest.mark.timeout(10)
 def test_loop_until_hyperion_requested(
-    mock_sleep: MagicMock, bluesky_context: BlueskyContext, baton: Baton, RE: RunEngine
+    mock_sleep: MagicMock, bluesky_context: BlueskyContext, RE: RunEngine
 ):
-    set_mock_value(baton.requested_user, NO_USER)
+    baton = baton_with_requested_user(bluesky_context, NO_USER)
     number_of_sleep_calls = 5
 
     def set_hyperion_requested(*args):
@@ -76,9 +91,12 @@ def test_loop_until_hyperion_requested(
 
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
 def test_when_hyperion_requested_then_hyperion_set_to_current_user(
-    bluesky_context: BlueskyContext, baton: Baton, RE: RunEngine
+    bluesky_context: BlueskyContext, RE: RunEngine
 ):
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
+
     RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
     assert get_mock_put(baton.current_user).mock_calls[0] == call(
         HYPERION_USER, wait=True
     )
@@ -111,14 +129,16 @@ async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_rel
     agamemnon: MagicMock,
     collection: MagicMock,
     bluesky_context: BlueskyContext,
-    baton: Baton,
     RE: RunEngine,
     load_centre_collect_params: LoadCentreCollect,
 ):
     collection.side_effect = ValueError()
     agamemnon.return_value = [load_centre_collect_params]
+
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     assert collection.call_count == 1
     await _assert_baton_released(baton)
 
@@ -129,7 +149,6 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     agamemnon: MagicMock,
     collection: MagicMock,
     bluesky_context: BlueskyContext,
-    baton: Baton,
     RE: RunEngine,
     load_centre_collect_params: LoadCentreCollect,
 ):
@@ -137,6 +156,8 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     agamemnon.return_value = [load_centre_collect_params]
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     assert collection.call_count == 3
     await _assert_baton_released(baton)
 
@@ -145,22 +166,25 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
 async def test_when_exception_raised_in_default_state_then_baton_released(
     default_state: MagicMock,
     bluesky_context: BlueskyContext,
-    baton: Baton,
     RE: RunEngine,
 ):
     default_state.side_effect = [ValueError()]
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     await _assert_baton_released(baton)
 
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_stops_and_baton_released(
-    agamemnon: MagicMock, bluesky_context: BlueskyContext, baton: Baton, RE: RunEngine
+    agamemnon: MagicMock, bluesky_context: BlueskyContext, RE: RunEngine
 ):
     agamemnon.side_effect = ValueError()
     with pytest.raises(ValueError):
         RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     await _assert_baton_released(baton)
 
 
@@ -170,11 +194,12 @@ async def test_when_no_agamemnon_instructions_left_then_loop_stops_and_baton_rel
     collection: MagicMock,
     agamemnon: MagicMock,
     bluesky_context: BlueskyContext,
-    baton: Baton,
     RE: RunEngine,
 ):
     agamemnon.return_value = None
     RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     collection.assert_not_called()
     await _assert_baton_released(baton)
 
@@ -185,7 +210,6 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
     collection: MagicMock,
     agamemnon: MagicMock,
     bluesky_context: BlueskyContext,
-    baton: Baton,
     RE: RunEngine,
     load_centre_collect_params: LoadCentreCollect,
 ):
@@ -193,12 +217,15 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
     agamemnon.return_value = [load_centre_collect_params]
 
     def fake_collection_with_baton_request_part_way_through(*args):
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
         yield from bps.null()
         yield from bps.mv(baton.requested_user, "OTHER_USER")
         plan_continuing()
 
     collection.side_effect = fake_collection_with_baton_request_part_way_through
+
     RE(run_udc_when_requested(bluesky_context, dev_mode=True))
+    baton = find_device_in_context(bluesky_context, "baton", Baton)
     collection.assert_called_once()
     plan_continuing.assert_called_once()
     await _assert_baton_released(baton)

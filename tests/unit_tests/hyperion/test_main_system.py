@@ -483,7 +483,9 @@ def test_when_context_created_then_contains_expected_number_of_plans(
             "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
         ) as mock_with_dodal_module:
             context = setup_context(dev_mode=dev_mode)
-            mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
+            mock_with_dodal_module.assert_called_once_with(
+                ANY, mock=dev_mode, include_skipped=dev_mode
+            )
         plan_names = context.plans.keys()
 
         assert "rotation_scan" in plan_names
