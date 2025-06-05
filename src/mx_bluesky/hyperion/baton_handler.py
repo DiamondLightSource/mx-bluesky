@@ -111,6 +111,7 @@ def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
     def release_baton():
         # If hyperion has given up the baton itself we need to also release requested
         # user so that hyperion doesn't think we're requested again
+        baton = _get_baton(context)
         requested_user = yield from bps.rd(baton.requested_user)
         if requested_user == HYPERION_USER:
             yield from bps.abs_set(baton.requested_user, NO_USER)
