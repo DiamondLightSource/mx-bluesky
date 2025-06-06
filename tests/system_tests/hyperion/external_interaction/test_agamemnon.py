@@ -56,24 +56,26 @@ EXPECTED_ROTATION_PARAMS = {
     ],
 }
 
-EXPECTED_PARAMETERS = LoadCentreCollect.model_validate(
-    {
-        "visit": "cm00000-0",
-        "detector_distance_mm": 180.8,
-        "sample_id": 12345,
-        "sample_puck": 1,
-        "sample_pin": 1,
-        "parameter_model_version": SemanticVersion.validate_from_str(
-            str(PARAMETER_VERSION)
-        ),
-        "select_centres": {
-            "name": "TopNByMaxCount",
-            "n": 1,
-        },
-        "robot_load_then_centre": EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS,
-        "multi_rotation_scan": EXPECTED_ROTATION_PARAMS,
-    }
-)
+EXPECTED_PARAMETERS = [
+    LoadCentreCollect.model_validate(
+        {
+            "visit": "cm00000-0",
+            "detector_distance_mm": 180.8,
+            "sample_id": 12345,
+            "sample_puck": 1,
+            "sample_pin": 1,
+            "parameter_model_version": SemanticVersion.validate_from_str(
+                str(PARAMETER_VERSION)
+            ),
+            "select_centres": {
+                "name": "TopNByMaxCount",
+                "n": 1,
+            },
+            "robot_load_then_centre": EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS,
+            "multi_rotation_scan": EXPECTED_ROTATION_PARAMS,
+        }
+    )
+]
 
 
 def test_given_test_agamemnon_instruction_then_returns_none_loop_type():

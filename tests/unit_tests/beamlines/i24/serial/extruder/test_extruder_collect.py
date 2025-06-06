@@ -196,6 +196,7 @@ def test_run_extruder_quickshot_with_eiger(
     eiger_beam_center,
     dummy_params,
     dummy_beam_settings,
+    pilatus_metadata,
 ):
     fake_start_time = MagicMock()
     mock_read_beam_info.side_effect = [fake_generator(dummy_beam_settings)]
@@ -223,6 +224,7 @@ def test_run_extruder_quickshot_with_eiger(
                 dummy_params,
                 fake_dcid,
                 fake_start_time,
+                pilatus_metadata,
             )
         )
     fake_nexgen.assert_called_once_with(
@@ -273,6 +275,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     mirrors,
     pilatus_beam_center,
     dummy_params_pp,
+    pilatus_metadata,
 ):
     fake_start_time = MagicMock()
     set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
@@ -297,6 +300,7 @@ def test_run_extruder_pump_probe_with_pilatus(
                 dummy_params_pp,
                 fake_dcid,
                 fake_start_time,
+                pilatus_metadata,
             )
         )
     mock_pilatus_temp.assert_called_once()
@@ -405,6 +409,7 @@ def test_setup_tasks_in_run_extruder_plan(
     pilatus_beam_center,
     RE,
     dummy_params,
+    pilatus_metadata,
 ):
     fake_read.side_effect = [fake_generator(dummy_params)]
     with patch(
@@ -423,6 +428,7 @@ def test_setup_tasks_in_run_extruder_plan(
                 attenuator,
                 eiger_beam_center,
                 pilatus_beam_center,
+                pilatus_metadata,
             )
         )
         fake_mkdir.assert_called_once()
