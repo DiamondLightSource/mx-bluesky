@@ -1,4 +1,5 @@
 from blueapi.core import BlueskyContext
+from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.utils import collect_factories, get_beamline_based_on_environment_variable
 
 import mx_bluesky.hyperion.experiment_plans as hyperion_plans
@@ -16,10 +17,11 @@ def setup_context(dev_mode: bool = False) -> BlueskyContext:
     return context
 
 
-def clear_beamline_device_caches():
-    for f in collect_factories(
-        get_beamline_based_on_environment_variable(), include_skipped=True
-    ).values():
+def clear_all_device_caches(context: BlueskyContext):
+    context.unregister_all_devices()
+    clear_devices()
+
+    for f in collect_factories(get_beamline_based_on_environment_variable()).values():
         if hasattr(f, "cache_clear"):
             f.cache_clear()  # type: ignore
 
@@ -28,5 +30,4 @@ def setup_devices(context: BlueskyContext, dev_mode: bool):
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         mock=dev_mode,
-        include_skipped=dev_mode,
     )

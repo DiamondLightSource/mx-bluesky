@@ -18,7 +18,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import (
-    clear_beamline_device_caches,
+    clear_all_device_caches,
     setup_devices,
 )
 
@@ -75,9 +75,7 @@ def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     Beamline devices are unloaded and reloaded, bluesky context gets new set of devices.
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
-    # TODO determine with blueapi team what is the supported way for clearing and re-registering devices
-    context.devices.clear()
-    clear_beamline_device_caches()
+    clear_all_device_caches(context)
     setup_devices(context, dev_mode)
 
 

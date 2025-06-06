@@ -1,5 +1,5 @@
 import os
-import sys
+from dataclasses import fields
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -10,7 +10,6 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.baton import Baton
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.testing import get_mock_put, set_mock_value
-from pydantic import dataclasses
 
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
@@ -32,15 +31,12 @@ from mx_bluesky.hyperion.utils.context import setup_context
 
 @pytest.fixture()
 def bluesky_context(i03_beamline_parameters):
-    with (
-        patch.dict(os.environ, {"BEAMLINE": "i03"}),
-    ):
+    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         context = BlueskyContext()
         context.with_dodal_module(
             get_beamline_based_on_environment_variable(),
             mock=True,
             fake_with_ophyd_sim=True,
-            include_skipped=True,
         )
 
         from mx_bluesky.hyperion.utils.context import setup_devices
@@ -248,12 +244,9 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
 
 
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
-# @patch("mx_bluesky.hyperion.utils.context.get_beamline_based_on_environment_variable")
 def test_initialise_udc_reloads_all_devices(
     RE: RunEngine,
-    # mock_get_beamline: MagicMock
 ):
-    # mock_get_beamline.side_effect = lambda: importlib.import_module("unit_tests.hyperion.fake_beamline")
     context = setup_context(True)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
@@ -265,6 +258,9 @@ def test_initialise_udc_reloads_all_devices(
         context, LoadCentreCollectComposite
     )
 
-    assert devices_before_reset.oav is not devices_after_reset.oav
-    for f in dataclasses.fields():
-        assert sys.getrefcount(f) == 2
+    for f in fields(devices_after_reset):
+        device_after_reset = getattr(devices_after_reset, f.name)
+        device_before_reset = getattr(devices_before_reset, f.name)
+        assert device_before_reset is not device_after_reset, (
+            f"{id(device_before_reset)} == {id(device_after_reset)}"
+        )
