@@ -59,3 +59,15 @@ def go_to_furthest_maximum(
     yield from bps.mv(
         goniometer.omega, -LIMIT_OF_TRAVEL if current_value > 0 else LIMIT_OF_TRAVEL
     )
+
+
+def go_to_zero(
+    goniometer: Goniometer = inject("goniometer"),
+) -> MsgGenerator:
+    """Rotate the goniometer and set stages to zero in preparation for robot load/unload"""
+    yield from bps.mv(goniometer.omega, 0)
+    yield from bps.mv(goniometer.x, 0)
+    yield from bps.mv(goniometer.y, 0)
+    yield from bps.mv(goniometer.z, 0)
+    yield from bps.mv(goniometer.sampy, 0)
+    yield from bps.mv(goniometer.sampz, 0)
