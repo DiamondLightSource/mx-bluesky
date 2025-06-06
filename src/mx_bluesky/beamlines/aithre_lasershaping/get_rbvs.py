@@ -65,7 +65,7 @@ async def monitor_gonio():
     async with to_monitor.stream() as streamer:
         async for channel, value in streamer:
             rbv_values[channel] = value
-            print(f"Updated {channel} to {value}")
+            yield channel, value
 
 
 async def monitor_robot():
@@ -85,7 +85,7 @@ async def monitor_robot():
     async with to_monitor.stream() as streamer:
         async for channel, value in streamer:
             rbv_values[channel] = value
-            print(f"Updated {channel} to {value}")
+            yield channel, value
 
 
 if __name__ == "__main__":
