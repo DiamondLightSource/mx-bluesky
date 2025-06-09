@@ -22,10 +22,10 @@ from mx_bluesky.hyperion.baton_handler import (
     initialise_udc,
     run_udc_when_requested,
 )
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
