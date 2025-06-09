@@ -17,7 +17,7 @@ Release
 6. You should now manually go through each line on the release notes and read it from the perspective of a beamline scientist. It should be clear from each what the change means to the beamline and should have links to easily find further info.
 7. Publish the release
 
-NOTE FOR USING THE MX-BLUESKY-BLUEAPI IMAGE: If using this image with BlueAPI's helmchart for deployment, the version of dodal which is installed will be the version which is pinned in the BlueAPI, rather than what's in mx-bluesky's pyproject.toml. Before releasing, you should pin BlueAPI to a version of dodal which is compatible with itself AND mx-bluesky. The deployment will fail if BlueAPI has no version which works with the desired dodal version
+NOTE FOR USING THE MX-BLUESKY-BLUEAPI IMAGE: If using this image with BlueAPI's helmchart for deployment, the version of dodal which is installed will be the version which is pinned in the BlueAPI, rather than what's in mx-bluesky's pyproject.toml. Before releasing, you should pin BlueAPI to a version which uses a dodal version which is compatible with itself AND mx-bluesky. The deployment will fail if BlueAPI has no version which works with the desired dodal version
 
 ------------------------
 Deciding release numbers
