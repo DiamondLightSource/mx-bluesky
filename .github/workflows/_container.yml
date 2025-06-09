@@ -30,7 +30,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: Dockerfile.release
+          file: dockerfile.hyperion
           load: true
 
       - name: Build and export Dockerfile.blueapi to local cache
@@ -62,7 +62,7 @@ jobs:
         # Docker cache and publish it
         with:
           context: .
-          file: Dockerfile.release
+          file: dockerfile.hyperion
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
