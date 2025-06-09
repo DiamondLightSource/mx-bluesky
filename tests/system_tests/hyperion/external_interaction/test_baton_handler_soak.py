@@ -79,6 +79,7 @@ def reinitialise_beamline(dev_mode: bool, i: int):
             f"{id(device_before_reset)} == {id(device_after_reset)}"
         )
     check_instances_are_garbage_collected(i)
+    context.run_engine.loop.call_soon_threadsafe(context.run_engine.loop.stop)
 
 
 def check_instances_are_garbage_collected(i: int):
