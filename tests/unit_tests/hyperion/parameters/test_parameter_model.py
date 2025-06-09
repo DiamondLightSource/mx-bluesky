@@ -28,9 +28,10 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def load_centre_collect_params_with_panda():
+def load_centre_collect_params_with_panda(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        tmp_path,
     )
     params["robot_load_then_centre"]["features"]["use_panda_for_gridscan"] = True
     return LoadCentreCollect(**params)
@@ -144,9 +145,10 @@ def test_default_snapshot_path(minimal_3d_gridscan_params):
     )
 
 
-def test_osc_is_used():
+def test_osc_is_used(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     for osc in [0.001, 0.05, 0.1, 0.2, 0.75, 1, 1.43]:
         raw_params["rotation_increment_deg"] = osc
@@ -155,9 +157,10 @@ def test_osc_is_used():
         assert params.num_images == int(params.scan_width_deg / osc)
 
 
-def test_selected_aperture_uses_default():
+def test_selected_aperture_uses_default(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     raw_params["selected_aperture"] = None
     params = SingleRotationScan(**raw_params)

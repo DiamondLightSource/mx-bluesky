@@ -188,12 +188,12 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
-        )
+def dummy_params(tmp_path):
+    params_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+        tmp_path,
     )
+    dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
     dummy_params.visit = SimConstants.ST_VISIT
     dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
     return dummy_params

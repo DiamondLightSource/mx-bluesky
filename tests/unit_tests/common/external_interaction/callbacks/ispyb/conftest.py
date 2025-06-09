@@ -20,8 +20,10 @@ from ......conftest import (
 
 
 @pytest.fixture
-def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
+def dummy_params(tmp_path):
+    dummy_params = HyperionSpecifiedThreeDGridScan(
+        **default_raw_gridscan_params(tmp_path)
+    )
     dummy_params.sample_id = TEST_SAMPLE_ID
     dummy_params.run_number = 0
     return dummy_params

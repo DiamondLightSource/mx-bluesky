@@ -24,10 +24,11 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def oav_snapshot_params():
+def oav_snapshot_params(tmp_path):
     return WithSnapshot(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_oav_snapshot_params.json"
+            "tests/test_data/parameter_json_files/test_oav_snapshot_params.json",
+            tmp_path,
         )
     )
 

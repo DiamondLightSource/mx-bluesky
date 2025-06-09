@@ -28,10 +28,11 @@ from .....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def params():
+def params(tmp_path):
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+            tmp_path,
         )
     )
 

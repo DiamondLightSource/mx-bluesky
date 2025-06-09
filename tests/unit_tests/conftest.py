@@ -173,10 +173,10 @@ def RE_with_subs(
 
 
 @pytest.fixture
-def test_fgs_params():
+def test_fgs_params(tmp_path):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
         )
     )
 
