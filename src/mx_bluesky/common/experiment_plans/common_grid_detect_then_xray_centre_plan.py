@@ -81,12 +81,6 @@ def grid_detect_then_xray_centre(
 
     @subs_decorator(flyscan_event_handler)
     def plan_to_perform():
-        yield from setup_beamline_for_OAV(
-            composite.smargon,
-            composite.backlight,
-            composite.aperture_scatterguard,
-            wait=True,
-        )
         yield from ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
                 composite,
@@ -129,6 +123,13 @@ def detect_grid_and_do_gridscan(
 
     grid_params_callback = GridDetectionCallback()
 
+    yield from setup_beamline_for_OAV(
+        composite.smargon,
+        composite.backlight,
+        composite.aperture_scatterguard,
+        wait=True,
+    )
+
     @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
@@ -150,13 +151,6 @@ def detect_grid_and_do_gridscan(
             parameters.grid_width_um,
             parameters.box_size_um,
         )
-
-    yield from setup_beamline_for_OAV(
-        composite.smargon,
-        composite.backlight,
-        composite.aperture_scatterguard,
-        wait=True,
-    )
 
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in

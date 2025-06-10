@@ -240,6 +240,9 @@ def run_gridscan(
         parameters.scan_indices,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
+
+    # GDA's gridscans requires Z steps to be at 0, so make sure we leave this device
+    # in a GDA-happy state.
     yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 

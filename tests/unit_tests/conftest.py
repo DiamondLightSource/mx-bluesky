@@ -354,9 +354,10 @@ def beamline_specific(
 
 
 @pytest.fixture
-def test_full_grid_scan_params():
+def test_full_grid_scan_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        tmp_path,
     )
     return GridCommon(**params)
 
