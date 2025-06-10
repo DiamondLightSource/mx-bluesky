@@ -34,3 +34,19 @@ def set_beamline_safe_on_robot(
         else ForceBit.NO.value
     )
     yield from bps.abs_set(robot.set_beamline_safe, set_value, wait=True)
+
+def go_to_zero(
+    goniometer: Goniometer = inject("goniometer"), group="move_to_zero", wait=True
+) -> MsgGenerator:
+    """
+    Rotate the goniometer and set stages to zero in preparation for robot load/unload.
+    Pass wait=False to avoid waiting for the move to complete.
+    """
+    yield from bps.abs_set(goniometer.omega, 0, group=group)
+    yield from bps.abs_set(goniometer.x, 0, group=group)
+    yield from bps.abs_set(goniometer.y, 0, group=group)
+    yield from bps.abs_set(goniometer.z, 0, group=group)
+    yield from bps.abs_set(goniometer.sampy, 0, group=group)
+    yield from bps.abs_set(goniometer.sampz, 0, group=group)
+    if wait:
+        yield from bps.wait(group=group)
