@@ -29,6 +29,7 @@ def setup_beamline_for_OAV(
     backlight: Backlight,
     aperture_scatterguard: ApertureScatterguard,
     group=CONST.WAIT.READY_FOR_OAV,
+    wait=False,
 ):
     max_vel = yield from bps.rd(smargon.omega.max_velocity)
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
@@ -36,6 +37,8 @@ def setup_beamline_for_OAV(
     yield from bps.abs_set(
         aperture_scatterguard.selected_aperture, ApertureValue.OUT_OF_BEAM, group=group
     )
+    if wait:
+        yield from bps.wait(group)
 
 
 def oav_snapshot_plan(

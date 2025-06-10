@@ -19,7 +19,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -32,8 +32,6 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
-    move_phi_chi_omega,
-    move_x_y_z,
     setup_sample_environment,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
@@ -62,8 +60,8 @@ from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
     RotationScan,
+    SingleRotationScan,
 )
 
 
@@ -118,7 +116,7 @@ class RotationMotionProfile:
 
 
 def calculate_motion_profile(
-    params: RotationScan,
+    params: SingleRotationScan,
     motor_time_to_speed_s: float,
     max_velocity_deg_s: float,
 ) -> RotationMotionProfile:
@@ -212,7 +210,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     motion_values: RotationMotionProfile,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
@@ -319,7 +317,7 @@ def _cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 def _move_and_rotation(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     oav_params: OAVParameters,
 ):
     motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
@@ -330,19 +328,18 @@ def _move_and_rotation(
         return num / 1000 if num else num
 
     LOGGER.info("moving to position (if specified)")
-    yield from move_x_y_z(
+    yield from bps.abs_set(
         composite.smargon,
-        _div_by_1000_if_not_none(params.x_start_um),
-        _div_by_1000_if_not_none(params.y_start_um),
-        _div_by_1000_if_not_none(params.z_start_um),
+        CombinedMove(
+            x=_div_by_1000_if_not_none(params.x_start_um),
+            y=_div_by_1000_if_not_none(params.y_start_um),
+            z=_div_by_1000_if_not_none(params.z_start_um),
+            phi=params.phi_start_deg,
+            chi=params.chi_start_deg,
+        ),
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
-    yield from move_phi_chi_omega(
-        composite.smargon,
-        params.phi_start_deg,
-        params.chi_start_deg,
-        group=CONST.WAIT.MOVE_GONIO_TO_START,
-    )
+
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
         yield from setup_beamline_for_OAV(
@@ -359,9 +356,9 @@ def _move_and_rotation(
     yield from rotation_scan_plan(composite, params, motion_values)
 
 
-def multi_rotation_scan(
+def rotation_scan(
     composite: RotationScanComposite,
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
@@ -373,15 +370,15 @@ def multi_rotation_scan(
             ),
         }
     )
-    def _wrapped_multi_rotation_scan():
-        yield from multi_rotation_scan_internal(composite, parameters, oav_params)
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
 
-    yield from _wrapped_multi_rotation_scan()
+    yield from _wrapped_rotation_scan()
 
 
-def multi_rotation_scan_internal(
+def rotation_scan_internal(
     composite: RotationScanComposite,
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     parameters.features.update_self_from_server()
@@ -419,7 +416,7 @@ def multi_rotation_scan_internal(
                 }
             )
             def rotation_scan_core(
-                params: RotationScan,
+                params: SingleRotationScan,
             ):
                 yield from _move_and_rotation(composite, params, oav_params)
 

@@ -1,6 +1,6 @@
 import numpy as np
 from bluesky import plan_stubs as bps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove, Smargon
 
 from mx_bluesky.common.utils.exceptions import SampleException
 
@@ -16,10 +16,5 @@ def move_smargon_warn_on_out_of_range(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
     yield from bps.mv(
-        smargon.x,
-        position[0],
-        smargon.y,
-        position[1],
-        smargon.z,
-        position[2],
+        smargon, CombinedMove(x=position[0], y=position[1], z=position[2])
     )

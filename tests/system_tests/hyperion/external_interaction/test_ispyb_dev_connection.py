@@ -39,7 +39,7 @@ from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan impo
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-    multi_rotation_scan,
+    rotation_scan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -49,9 +49,9 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from ....conftest import SimConstants
+from ....conftest import SimConstants, replace_all_tmp_paths
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
@@ -138,13 +138,13 @@ def storage_directory(tmp_path) -> str:
 
 
 @pytest.fixture
-def grid_detect_then_xray_centre_parameters(storage_directory):
+def grid_detect_then_xray_centre_parameters(tmp_path):
     json_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
+        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json",
+        tmp_path,
     )
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     json_dict["visit"] = SimConstants.ST_VISIT
-    json_dict["storage_directory"] = storage_directory
     return GridScanWithEdgeDetect(**json_dict)
 
 
@@ -506,19 +506,20 @@ def test_ispyb_deposition_in_gridscan(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
-    params_for_rotation_scan: MultiRotationScan,
+    params_for_rotation_scan: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
     feature_flags_update_with_omega_flip,
+    tmp_path,
 ):
     ispyb_cb = RotationISPyBCallback()
     RE.subscribe(ispyb_cb)
 
     RE(
-        multi_rotation_scan(
+        rotation_scan(
             composite_for_rotation_scan,
             params_for_rotation_scan,
             oav_parameters_for_rotation,
@@ -531,16 +532,20 @@ def test_ispyb_deposition_in_rotation_plan(
         fetch_comment(dcid) == "test Sample position (µm): (1, 2, 3) Aperture: Small. "
     )
 
-    expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_0"
-        ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_90"
-        ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_180"
-        ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_270"
-        ".png",
-    }
+    expected_values = replace_all_tmp_paths(
+        EXPECTED_DATACOLLECTION_FOR_ROTATION
+        | {
+            "xtalSnapshotFullPath1": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_0"
+            ".png",
+            "xtalSnapshotFullPath2": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_90"
+            ".png",
+            "xtalSnapshotFullPath3": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_180"
+            ".png",
+            "xtalSnapshotFullPath4": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_270"
+            ".png",
+        },
+        tmp_path,
+    )
 
     compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)
 

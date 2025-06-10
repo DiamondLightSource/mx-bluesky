@@ -12,6 +12,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 impo
     laser_check,
     main_extruder_plan,
     read_parameters,
+    run_extruder_plan,
     tidy_up_at_collection_end_plan,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
@@ -195,6 +196,7 @@ def test_run_extruder_quickshot_with_eiger(
     eiger_beam_center,
     dummy_params,
     dummy_beam_settings,
+    pilatus_metadata,
 ):
     fake_start_time = MagicMock()
     mock_read_beam_info.side_effect = [fake_generator(dummy_beam_settings)]
@@ -222,6 +224,7 @@ def test_run_extruder_quickshot_with_eiger(
                 dummy_params,
                 fake_dcid,
                 fake_start_time,
+                pilatus_metadata,
             )
         )
     fake_nexgen.assert_called_once_with(
@@ -272,6 +275,7 @@ def test_run_extruder_pump_probe_with_pilatus(
     mirrors,
     pilatus_beam_center,
     dummy_params_pp,
+    pilatus_metadata,
 ):
     fake_start_time = MagicMock()
     set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
@@ -296,6 +300,7 @@ def test_run_extruder_pump_probe_with_pilatus(
                 dummy_params_pp,
                 fake_dcid,
                 fake_start_time,
+                pilatus_metadata,
             )
         )
     mock_pilatus_temp.assert_called_once()
@@ -380,3 +385,50 @@ def test_collection_complete_plan_with_eiger(
     fake_caput.assert_has_calls(call_list)
 
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=False)
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_parameters"
+)
+def test_setup_tasks_in_run_extruder_plan(
+    fake_read,
+    fake_mkdir,
+    zebra,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    attenuator,
+    eiger_beam_center,
+    pilatus_beam_center,
+    RE,
+    dummy_params,
+    pilatus_metadata,
+):
+    fake_read.side_effect = [fake_generator(dummy_params)]
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bpp.contingency_wrapper"
+    ):
+        RE(
+            run_extruder_plan(
+                zebra,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                attenuator,
+                eiger_beam_center,
+                pilatus_beam_center,
+                pilatus_metadata,
+            )
+        )
+        fake_mkdir.assert_called_once()
