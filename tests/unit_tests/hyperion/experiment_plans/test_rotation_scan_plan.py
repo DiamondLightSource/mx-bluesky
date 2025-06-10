@@ -469,20 +469,44 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.OUT
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.OUT
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+
+
+def test_rotation_scan_waits_on_aperture_being_prepared_before_moving_in(
+    rotation_scan_simulated_messages,
+):
+    msgs = assert_message_and_return_remaining(
+        rotation_scan_simulated_messages,
+        lambda msg: msg.command == "prepare"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == ApertureValue.SMALL
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
 
