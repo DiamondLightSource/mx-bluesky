@@ -28,9 +28,10 @@ from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_
 
 
 @pytest.fixture
-def robot_load_then_centre_params():
+def robot_load_then_centre_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json",
+        tmp_path,
     )
     return RobotLoadThenCentre(**params)
 

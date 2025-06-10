@@ -29,9 +29,10 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def robot_load_and_energy_change_params():
+def robot_load_and_energy_change_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_params.json",
+        tmp_path,
     )
     return RobotLoadAndEnergyChange(**params)
 

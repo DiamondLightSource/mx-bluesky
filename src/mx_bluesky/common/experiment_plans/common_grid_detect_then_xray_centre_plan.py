@@ -151,6 +151,13 @@ def detect_grid_and_do_gridscan(
             parameters.box_size_um,
         )
 
+    yield from setup_beamline_for_OAV(
+        composite.smargon,
+        composite.backlight,
+        composite.aperture_scatterguard,
+        wait=True,
+    )
+
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in
         yield from bps.prepare(

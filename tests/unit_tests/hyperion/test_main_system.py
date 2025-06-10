@@ -40,11 +40,6 @@ STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
-TEST_PARAMS = json.dumps(
-    raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
-    )
-)
 
 SECS_PER_RUNENGINE_LOOP = 0.1
 RUNENGINE_TAKES_TIME_TIMEOUT = 15
@@ -59,6 +54,16 @@ In order to avoid threads which get left alive forever after test completion
 
 
 autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
+
+
+@pytest.fixture()
+def test_params(tmp_path):
+    return json.dumps(
+        raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
+            tmp_path,
+        )
+    )
 
 
 class MockRunEngine:
@@ -196,14 +201,14 @@ def check_status_in_response(response_object, expected_result: Status):
 
 
 @pytest.mark.timeout(5)
-def test_start_gives_success(test_env: ClientAndRunEngine):
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_start_gives_success(test_env: ClientAndRunEngine, test_params):
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
 @pytest.mark.timeout(4)
-def test_getting_status_return_idle(test_env: ClientAndRunEngine):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_getting_status_return_idle(test_env: ClientAndRunEngine, test_params):
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.IDLE)
@@ -211,15 +216,15 @@ def test_getting_status_return_idle(test_env: ClientAndRunEngine):
 
 @pytest.mark.timeout(5)
 def test_getting_status_after_start_sent_returns_busy(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
 
 
-def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
-    response = test_env.client.put("/bad_plan/start", data=TEST_PARAMS).json
+def test_putting_bad_plan_fails(test_env: ClientAndRunEngine, test_params):
+    response = test_env.client.put("/bad_plan/start", data=test_params).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
     assert (
@@ -229,9 +234,9 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
-def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+def test_plan_with_no_params_fails(test_env: ClientAndRunEngine, test_params):
     response = test_env.client.put(
-        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+        "/test_experiment_no_internal_param_type/start", data=test_params
     ).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
@@ -241,18 +246,18 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
 
 
 @pytest.mark.timeout(7)
-def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_sending_start_twice_fails(test_env: ClientAndRunEngine, test_params):
+    test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.FAILED)
 
 
 @pytest.mark.timeout(5)
 def test_given_started_when_stopped_then_success_and_idle_status(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
     test_env.mock_run_engine.aborting_takes_time = True
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     response = test_env.client.put(STOP_ENDPOINT)
     check_status_in_response(response, Status.ABORTING)
     response = test_env.client.get(STATUS_ENDPOINT)
@@ -266,12 +271,12 @@ def test_given_started_when_stopped_then_success_and_idle_status(
 
 @pytest.mark.timeout(10)
 def test_given_started_when_stopped_and_started_again_then_runs(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     test_env.mock_run_engine.RE_takes_time = True
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
@@ -280,10 +285,10 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 
 @pytest.mark.timeout(5)
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
     test_env.mock_run_engine.aborting_takes_time = True
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     test_env.mock_run_engine.error = Exception("D'Oh")
     response_json = wait_for_run_engine_status(
@@ -448,9 +453,9 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     reason="See https://github.com/DiamondLightSource/hyperion/issues/777"
 )
 def test_warn_exception_during_plan_causes_warning_in_log(
-    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine
+    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.mock_run_engine.error = WarningException("D'Oh")
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value

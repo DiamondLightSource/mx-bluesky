@@ -23,7 +23,7 @@ dependencies = [
     "ispyb",
     "jupyterlab",
     "matplotlib",
-    "nexgen",
+    "nexgen >= 0.11.0",
     "numpy",
     "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
@@ -134,10 +134,8 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180 and freephil https://github.com/DiamondLightSource/nexgen/issues/349
+    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
     "ignore:.*pkg_resources.*:DeprecationWarning",
-    # Ignore deprecation warning from freephil https://github.com/DiamondLightSource/nexgen/issues/349
-    "ignore:.*pkg_resources.*:UserWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     # Ignore warning about deprecations in python-workflows encountered during system tests

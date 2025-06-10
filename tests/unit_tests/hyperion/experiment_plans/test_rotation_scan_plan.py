@@ -903,9 +903,10 @@ def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     )
 
 
-def test_multi_rotation_scan_params():
+def test_multi_rotation_scan_params(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = RotationScan(**raw_params)
     omega_starts = [s["omega_start_deg"] for s in raw_params["rotation_scans"]]
@@ -1320,6 +1321,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         assert (
             first_upsert_data["axisend"] - first_upsert_data["axisstart"]
             == rotation_params.scan_width_deg
+            * rotation_params.rotation_direction.multiplier
         )
         assert first_upsert_data["nimages"] == rotation_params.num_images
         second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])

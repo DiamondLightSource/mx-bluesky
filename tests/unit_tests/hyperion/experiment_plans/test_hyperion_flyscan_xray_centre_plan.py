@@ -233,6 +233,7 @@ class TestFlyscanXrayCentrePlan:
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        tmp_path: Path,
     ):
         sim_run_engine.add_handler("unstage", lambda _: done_status)
         sim_run_engine.add_read_handler_for(
@@ -248,9 +249,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
 
-        mock_set_panda_directory.assert_called_with(
-            Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
-        )
+        mock_set_panda_directory.assert_called_with(tmp_path / "xraycentring/123456")
         mock_load_panda.assert_called_once_with(
             DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_DIR,
             DeviceSettingsConstants.PANDA_FLYSCAN_SETTINGS_FILENAME,
