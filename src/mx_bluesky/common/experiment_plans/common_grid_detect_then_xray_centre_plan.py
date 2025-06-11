@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
 from typing import Protocol, TypeVar
 
@@ -206,8 +205,3 @@ def create_parameters_for_flyscan_xray_centre(
     flyscan_xray_centre_parameters = xrc_params_type(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
-
-
-@dataclasses.dataclass
-class BeamlineSpecificGridDetectThenFGSFeatures:
-    xrc_params_type: type[SpecifiedThreeDGridScan]
