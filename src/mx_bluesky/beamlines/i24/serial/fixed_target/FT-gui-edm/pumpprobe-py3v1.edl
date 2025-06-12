@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 830
-y 200
+y 237
 w 900
 h 700
 font "arial-medium-r-18.0"
@@ -1521,7 +1521,7 @@ x 275
 y 111
 w 175
 h 139
-file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short1-laser.png"
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/s1l.png"
 endObjectProperties
 
 # (PNG Image)
@@ -1534,7 +1534,7 @@ x 486
 y 111
 w 172
 h 139
-file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short2-laser.png"
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/s2l.png"
 endObjectProperties
 
 # (Static Text)
@@ -1585,7 +1585,7 @@ symbol0 {
   1 "ML"
 }
 value0 {
-  0 "none"
+  0 "False"
   1 "True"
 }
 endObjectProperties
@@ -1600,7 +1600,7 @@ x 695
 y 111
 w 175
 h 139
-file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/short1-laser.png"
+file "SCRIPTS_LOCATION/fixed_target/FT-gui-edm/s1l.png"
 endObjectProperties
 
 # (Static Text)

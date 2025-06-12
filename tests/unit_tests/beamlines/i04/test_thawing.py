@@ -3,11 +3,10 @@ from functools import partial
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
-from _pytest.python_api import ApproxBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.beamlines import i04
-from dodal.devices.oav.oav_detector import OAV, OAVConfig
+from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -24,7 +23,10 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i04.thawing_plan import thaw, thaw_and_stream_to_redis
+from mx_bluesky.beamlines.i04.thawing_plan import (
+    thaw,
+    thaw_and_stream_to_redis,
+)
 
 DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
@@ -48,9 +50,9 @@ def patch_motor(motor: Motor, initial_position: float = 0):
 
 @pytest.fixture
 async def oav(RE: RunEngine) -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
+    oav_config = OAVConfig(ZOOM_LEVELS_XML)
     async with init_devices(mock=True, connect=True):
-        oav = OAV("", config=oav_config, name="fake_oav")
+        oav = OAVBeamCentrePV("", config=oav_config, name="fake_oav")
     zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
     oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
         return_value=zoom_levels_list
@@ -148,7 +150,7 @@ def test_given_different_rotations_and_times_then_velocity_correct(
     thawer: Thawer,
     time: float,
     rotation: float,
-    expected_speed: ApproxBase | float,
+    expected_speed: float,
     RE: RunEngine,
 ):
     RE(thaw(time, rotation, thawer=thawer, smargon=smargon))
@@ -351,9 +353,9 @@ def test_given_thaw_succeeds_then_thaw_and_stream_sets_zoom_to_1_and_back(
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
-@patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
+@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
 def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
-    mock_thaw,
+    mock__thaw,
     patch_murko_callback,
     smargon: Smargon,
     thawer: Thawer,
@@ -362,7 +364,7 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
     robot: BartRobot,
     RE: RunEngine,
 ):
-    mock_thaw.side_effect = Exception()
+    mock__thaw.side_effect = Exception()
     _run_thaw_and_stream_and_assert_zoom_changes(
         smargon, thawer, oav_forwarder, oav, robot, RE, Exception
     )

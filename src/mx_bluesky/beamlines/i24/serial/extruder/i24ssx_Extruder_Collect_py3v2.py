@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from pprint import pformat
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -25,6 +24,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -38,7 +38,10 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    DetectorName,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -71,21 +74,21 @@ def initialise_extruder(
 ) -> MsgGenerator:
     SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
-    visit = caget(pv.ioc12_gp1)
+    visit = caget(pv.ioc13_gp1)
     SSX_LOGGER.info(f"Visit defined {visit}")
 
     # Define detector in use
     det_type = yield from get_detector_type(detector_stage)
 
-    caput(pv.ioc12_gp2, "test")
-    caput(pv.ioc12_gp3, "testrun")
-    caput(pv.ioc12_gp4, "100")
-    caput(pv.ioc12_gp5, "0.01")
-    caput(pv.ioc12_gp6, 0)
-    caput(pv.ioc12_gp8, 0)  # status PV do not reuse gp8 for something else
-    caput(pv.ioc12_gp9, 0)
-    caput(pv.ioc12_gp10, 0)
-    caput(pv.ioc12_gp15, det_type.name)
+    caput(pv.ioc13_gp2, "test")
+    caput(pv.ioc13_gp3, "testrun")
+    caput(pv.ioc13_gp4, "100")
+    caput(pv.ioc13_gp5, "0.01")
+    caput(pv.ioc13_gp6, 0)
+    caput(pv.ioc13_gp8, 0)  # status PV do not reuse gp8 for something else
+    caput(pv.ioc13_gp9, 0)
+    caput(pv.ioc13_gp10, 0)
+    caput(pv.ioc13_gp15, det_type.name)
     caput(pv.pilat_cbftemplate, 0)
     SSX_LOGGER.info("Initialisation complete.")
     yield from bps.null()
@@ -160,7 +163,7 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     det_type = yield from get_detector_type(detector_stage)
     SSX_LOGGER.warning(f"DETECTOR TYPE: {det_type}")
-    filename = caget(pv.ioc12_gp3)
+    filename = caget(pv.ioc13_gp3)
     # If file name ends in a digit this causes processing/pilatus pain.
     # Append an underscore
     if det_type.name == "pilatus":
@@ -175,19 +178,19 @@ def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuat
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
-    pump_status = bool(int(caget(pv.ioc12_gp6)))
-    pump_exp = float(caget(pv.ioc12_gp9)) if pump_status else 0.0
-    pump_delay = float(caget(pv.ioc12_gp10)) if pump_status else 0.0
+    pump_status = bool(int(caget(pv.ioc13_gp6)))
+    pump_exp = float(caget(pv.ioc13_gp9)) if pump_status else 0.0
+    pump_delay = float(caget(pv.ioc13_gp10)) if pump_status else 0.0
 
     params_dict = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": caget(pv.ioc12_gp2),
+        "directory": caget(pv.ioc13_gp2),
         "filename": filename,
-        "exposure_time_s": float(caget(pv.ioc12_gp5)),
-        "detector_distance_mm": float(caget(pv.ioc12_gp7)),
+        "exposure_time_s": float(caget(pv.ioc13_gp5)),
+        "detector_distance_mm": float(caget(pv.ioc13_gp7)),
         "detector_name": str(det_type),
         "transmission": transmission,
-        "num_images": int(caget(pv.ioc12_gp4)),
+        "num_images": int(caget(pv.ioc13_gp4)),
         "pump_status": pump_status,
         "laser_dwell_s": pump_exp,
         "laser_delay_s": pump_delay,
@@ -213,6 +216,7 @@ def main_extruder_plan(
     parameters: ExtruderParameters,
     dcid: DCID,
     start_time: datetime,
+    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     beam_center_pixels = sup.compute_beam_center_position_from_lut(
         BEAM_CENTER_LUT_FILES[parameters.detector_name],
@@ -257,7 +261,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.info(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.info(f"Pump delay time {parameters.laser_delay_s}")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "fastchip",
                 [
                     filepath,
@@ -278,7 +282,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.pilatus(
+            yield from sup.pilatus(
                 "quickshot",
                 [
                     filepath,
@@ -310,7 +314,7 @@ def main_extruder_plan(
             SSX_LOGGER.info("Pump probe extruder data collection")
             SSX_LOGGER.debug(f"Pump exposure time {parameters.laser_dwell_s}")
             SSX_LOGGER.debug(f"Pump delay time {parameters.laser_delay_s}")
-            sup.eiger(
+            yield from sup.eiger(
                 "triggered",
                 [
                     filepath,
@@ -318,6 +322,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_extruder_with_pump_probe_plan(
                 zebra,
@@ -331,7 +336,7 @@ def main_extruder_plan(
             )
         else:
             SSX_LOGGER.info("Static experiment: no photoexcitation")
-            sup.eiger(
+            yield from sup.eiger(
                 "quickshot",
                 [
                     filepath,
@@ -339,6 +344,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_quickshot_plan(
                 zebra, parameters.exposure_time_s, parameters.num_images, wait=True
@@ -356,7 +362,9 @@ def main_extruder_plan(
     if parameters.detector_name == "eiger":
         filetemplate = f"{parameters.filename}.nxs"
     else:
-        filetemplate = yield from get_pilatus_filename_template_from_device()
+        filetemplate = yield from get_pilatus_filename_template_from_device(
+            pilatus_metadata
+        )
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
@@ -393,13 +401,15 @@ def main_extruder_plan(
     timeout_time = time.time() + parameters.num_images * parameters.exposure_time_s + 10
 
     yield from arm_zebra(zebra)
-    sleep(GATE_START)  # Sleep for the same length of gate_start, hard coded to 1
+    yield from bps.sleep(
+        GATE_START
+    )  # bps.sleep for the same length of gate_start, hard coded to 1
     i = 0
     text_list = ["|", "/", "-", "\\"]
     while True:
         line_of_text = "\r\t\t\t Waiting   " + 30 * (f"{text_list[i % 4]}")
         flush_print(line_of_text)
-        sleep(0.5)
+        yield from bps.sleep(0.5)
         i += 1
         zebra_arm_status = yield from bps.rd(zebra.pc.arm.armed)
         if zebra_arm_status == 0:  # not zebra.pc.is_armed():
@@ -429,7 +439,7 @@ def collection_aborted_plan(
         caput(pv.pilat_acquire, 0)
     elif detector_name == "eiger":
         caput(pv.eiger_acquire, 0)
-    sleep(0.5)
+    yield from bps.sleep(0.5)
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=True)
 
@@ -440,6 +450,7 @@ def tidy_up_at_collection_end_plan(
     shutter: HutchShutter,
     parameters: ExtruderParameters,
     dcid: DCID,
+    dcm: DCM,
 ) -> MsgGenerator:
     """A plan to tidy up at the end of a collection, successful or aborted.
 
@@ -452,9 +463,9 @@ def tidy_up_at_collection_end_plan(
 
     # Clean Up
     if parameters.detector_name == "pilatus":
-        sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None)
     elif parameters.detector_name == "eiger":
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")
@@ -475,7 +486,7 @@ def collection_complete_plan(
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
 
-    sleep(0.5)
+    yield from bps.sleep(0.5)
 
     end_time = datetime.now()
     dcid.collection_complete(end_time, aborted=False)
@@ -494,6 +505,9 @@ def run_extruder_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
@@ -504,7 +518,11 @@ def run_extruder_plan(
     # Create collection directory
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
-    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
 
     # DCID - not generated yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
@@ -523,6 +541,7 @@ def run_extruder_plan(
             parameters=parameters,
             dcid=dcid,
             start_time=start_time,
+            pilatus_metadata=pilatus_metadata,
         ),
         except_plan=lambda e: (
             yield from collection_aborted_plan(zebra, parameters.detector_name, dcid)
@@ -533,7 +552,9 @@ def run_extruder_plan(
             )
         ),
         final_plan=lambda: (
-            yield from tidy_up_at_collection_end_plan(zebra, shutter, parameters, dcid)
+            yield from tidy_up_at_collection_end_plan(
+                zebra, shutter, parameters, dcid, dcm
+            )
         ),
         auto_raise=False,
     )

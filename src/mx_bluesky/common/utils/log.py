@@ -66,14 +66,15 @@ def do_default_logging_setup(
     """Configures dodal logger so that separate debug and info log files are created,
     info logs are sent to Graylog, info logs are streamed to sys.sterr, and logs from ophyd
     and bluesky and ophyd-async are optionally included."""
-
+    logging_path, debug_logging_path = _get_logging_dirs(dev_mode)
     handlers = set_up_all_logging_handlers(
         dodal_logger,
-        _get_logging_dir(),
+        logging_path,
         file_name,
         dev_mode,
         ERROR_LOG_BUFFER_LINES,
         graylog_port,
+        debug_logging_path,
     )
 
     if integrate_all_logs:
@@ -102,8 +103,8 @@ def flush_debug_handler() -> str:
     return handler.target.baseFilename
 
 
-def _get_logging_dir() -> Path:
-    """Get the path to write the mx_bluesky log files to.
+def _get_logging_dirs(dev_mode: bool) -> tuple[Path, Path]:
+    """Get the paths to write the mx_bluesky log files to.
 
     Log location can be specified in the LOG_DIR environment variable, otherwise MX bluesky logs are written to 'dls_sw/ixx/logs/bluesky'.
     This directory will be created if it is not found
@@ -111,18 +112,21 @@ def _get_logging_dir() -> Path:
     Logs are written to ./tmp/logs/bluesky if BEAMLINE environment variable is not found
 
     Returns:
-        logging_path (Path): Path to the log file for the file handler to write to.
+        tuple[Path, Path]: Paths to the standard log file and to the debug log file, for the file handlers to write to
     """
 
-    logging_str = environ.get("LOG_DIR")
-    if logging_str:
-        logging_path = Path(logging_str)
+    beamline = environ.get("BEAMLINE")
+
+    if beamline and not dev_mode:
+        default_logging_str = f"/dls_sw/{beamline}/logs/bluesky/"
+        default_debug_logging_str = f"/dls/tmp/{beamline}/logs/bluesky/"
     else:
-        beamline = environ.get("BEAMLINE")
-        logging_path = (
-            Path(f"/dls_sw/{beamline}/logs/bluesky/")
-            if beamline
-            else Path("/tmp/logs/bluesky")
-        )
+        default_logging_str = "/tmp/logs/bluesky"
+        default_debug_logging_str = default_logging_str
+
+    logging_path = Path(environ.get("LOG_DIR", default_logging_str))
+    debug_logging_path = Path(environ.get("DEBUG_LOG_DIR", default_debug_logging_str))
+
     Path.mkdir(logging_path, exist_ok=True, parents=True)
-    return logging_path
+    Path.mkdir(debug_logging_path, exist_ok=True, parents=True)
+    return logging_path, debug_logging_path

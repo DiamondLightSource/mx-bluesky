@@ -42,7 +42,8 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
         omega_start_deg: The initial angle of the rotation in degrees (default 0)
         scan_width_deg: The sweep of the rotation in degrees, this must be positive (default 360)
         rotation_direction: Indicates the direction of rotation, if RotationDirection.POSITIVE
-            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE)
+            the final angle is obtained by adding scan_width_deg, otherwise by subtraction (default NEGATIVE).
+            See "Hyperion Coordinate Systems" in the documentation.
         nexus_vds_start_img: The frame number of the first frame captured during the rotation
     """
 
@@ -104,7 +105,7 @@ class RotationExperiment(DiffractionExperimentWithSample, WithHyperionUDCFeature
             return aperture_position
 
 
-class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
+class SingleRotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
     @property
     def detector_params(self):
         return self._detector_params(self.omega_start_deg)
@@ -129,12 +130,12 @@ class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
         return int(self.scan_width_deg / self.rotation_increment_deg)
 
 
-class MultiRotationScan(RotationExperiment, SplitScan):
+class RotationScan(RotationExperiment, SplitScan):
     rotation_scans: Annotated[list[RotationScanPerSweep], Len(min_length=1)]
 
-    def _single_rotation_scan(self, scan: RotationScanPerSweep) -> RotationScan:
+    def _single_rotation_scan(self, scan: RotationScanPerSweep) -> SingleRotationScan:
         # self has everything from RotationExperiment
-        allowed_keys = RotationScan.model_fields.keys()  # type: ignore # mypy doesn't recognise this as a property...
+        allowed_keys = SingleRotationScan.model_fields.keys()  # type: ignore # mypy doesn't recognise this as a property...
         params_dump = self.model_dump()
         # provided `scan` has everything from RotationScanPerSweep
         scan_dump = scan.model_dump()
@@ -142,13 +143,13 @@ class MultiRotationScan(RotationExperiment, SplitScan):
             k: v for k, v in (params_dump | scan_dump).items() if k in allowed_keys
         }
         # together they have everything for RotationScan
-        rotation_scan = RotationScan(**rotation_scan_kv_pairs)
+        rotation_scan = SingleRotationScan(**rotation_scan_kv_pairs)
         return rotation_scan
 
     @model_validator(mode="after")
     @classmethod
     def correct_start_vds(cls, values: Any) -> Any:
-        assert isinstance(values, MultiRotationScan)
+        assert isinstance(values, RotationScan)
         start_img = 0.0
         for scan in values.rotation_scans:
             scan.nexus_vds_start_img = int(start_img)
@@ -167,7 +168,7 @@ class MultiRotationScan(RotationExperiment, SplitScan):
         return self
 
     @property
-    def single_rotation_scans(self) -> Iterator[RotationScan]:
+    def single_rotation_scans(self) -> Iterator[SingleRotationScan]:
         for scan in self.rotation_scans:
             yield self._single_rotation_scan(scan)
 
@@ -192,7 +193,3 @@ class MultiRotationScan(RotationExperiment, SplitScan):
             self._num_images_per_scan()[0],
             len(self._num_images_per_scan()),
         )
-
-    @property
-    def ispyb_params(self):  # pyright: ignore
-        raise ValueError("Please get ispyb params from one of the individual scans")

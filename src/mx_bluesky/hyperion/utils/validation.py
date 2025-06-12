@@ -3,15 +3,14 @@ import json
 import os
 import shutil
 from pathlib import Path
-from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVConfig
+from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -38,16 +37,17 @@ def test_params(filename_stub, dir):
 
     params = RotationScan(
         **get_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json"
         )
     )
+    for scan_params in params.rotation_scans:
+        scan_params.x_start_um = 0
+        scan_params.y_start_um = 0
+        scan_params.z_start_um = 0
+        scan_params.scan_width_deg = 360
     params.file_name = filename_stub
-    params.scan_width_deg = 360
     params.demand_energy_ev = 12700
     params.storage_directory = str(dir)
-    params.x_start_um = 0
-    params.y_start_um = 0
-    params.z_start_um = 0
     params.exposure_time_s = 0.004
     return params
 
@@ -57,12 +57,14 @@ def fake_rotation_scan(
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
+    single_scan_parameters = next(parameters.single_rotation_scans)
+
     @bpp.subs_decorator(subscription)
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
+            "mx_bluesky_parameters": single_scan_parameters.model_dump_json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
@@ -98,9 +100,7 @@ def fake_create_rotation_devices():
     oav = i03.oav(
         connect_immediately=True,
         mock=True,
-        params=OAVConfig(
-            zoom_params_file=ZOOM_LEVELS_XML, display_config_file=DISPLAY_CONFIGURATION
-        ),
+        params=OAVConfigBeamCentre(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION),
     )
     xbpm_feedback = i03.xbpm_feedback(connect_immediately=True, mock=True)
 
@@ -139,15 +139,11 @@ def sim_rotation_scan_to_create_nexus(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     nexus_path = Path(test_params.storage_directory) / nexus_filename
     assert os.path.isfile(nexus_path)

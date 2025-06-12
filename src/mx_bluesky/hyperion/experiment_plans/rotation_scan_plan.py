@@ -10,16 +10,16 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03 import Beamstop
+from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -30,39 +30,38 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.device_setup_plans.manipulate_sample import (
+    cleanup_sample_environment,
+    setup_sample_environment,
+)
+from mx_bluesky.common.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    OavSnapshotComposite,
+    oav_snapshot_plan,
+    setup_beamline_for_OAV,
+)
+from mx_bluesky.common.experiment_plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.manipulate_sample import (
-    cleanup_sample_environment,
-    move_phi_chi_omega,
-    move_x_y_z,
-    setup_sample_environment,
-)
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
 )
-from mx_bluesky.hyperion.device_setup_plans.utils import (
-    start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
-    OavSnapshotComposite,
-    oav_snapshot_plan,
-    setup_beamline_for_OAV,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
-    MultiRotationScan,
     RotationScan,
+    SingleRotationScan,
 )
 
 
@@ -117,7 +116,7 @@ class RotationMotionProfile:
 
 
 def calculate_motion_profile(
-    params: RotationScan,
+    params: SingleRotationScan,
     motor_time_to_speed_s: float,
     max_velocity_deg_s: float,
 ) -> RotationMotionProfile:
@@ -211,7 +210,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     motion_values: RotationMotionProfile,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
@@ -318,7 +317,7 @@ def _cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 def _move_and_rotation(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: SingleRotationScan,
     oav_params: OAVParameters,
 ):
     motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
@@ -329,19 +328,18 @@ def _move_and_rotation(
         return num / 1000 if num else num
 
     LOGGER.info("moving to position (if specified)")
-    yield from move_x_y_z(
+    yield from bps.abs_set(
         composite.smargon,
-        _div_by_1000_if_not_none(params.x_start_um),
-        _div_by_1000_if_not_none(params.y_start_um),
-        _div_by_1000_if_not_none(params.z_start_um),
+        CombinedMove(
+            x=_div_by_1000_if_not_none(params.x_start_um),
+            y=_div_by_1000_if_not_none(params.y_start_um),
+            z=_div_by_1000_if_not_none(params.z_start_um),
+            phi=params.phi_start_deg,
+            chi=params.chi_start_deg,
+        ),
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
-    yield from move_phi_chi_omega(
-        composite.smargon,
-        params.phi_start_deg,
-        params.chi_start_deg,
-        group=CONST.WAIT.MOVE_GONIO_TO_START,
-    )
+
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
         yield from setup_beamline_for_OAV(
@@ -355,11 +353,7 @@ def _move_and_rotation(
                 group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
-    yield from rotation_scan_plan(
-        composite,
-        params,
-        motion_values,
-    )
+    yield from rotation_scan_plan(composite, params, motion_values)
 
 
 def rotation_scan(
@@ -367,54 +361,24 @@ def rotation_scan(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
-    parameters.features.update_self_from_server()
-
-    if not oav_params:
-        oav_params = OAVParameters(context="xrayCentring")
-
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite,
-        parameters.transmission_frac,
-    )
-    @verify_undulator_gap_before_run_decorator(composite)
-    @bpp.set_run_key_decorator("rotation_scan")
-    @bpp.run_decorator(  # attach experiment metadata to the start document
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
         md={
-            "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "mx_bluesky_parameters": parameters.model_dump_json(),
-            "activate_callbacks": [
-                "RotationISPyBCallback",
-                "RotationNexusFileCallback",
-            ],
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
         }
     )
-    def rotation_scan_plan_with_stage_and_cleanup(
-        params: RotationScan,
-    ):
-        eiger: EigerDetector = composite.eiger
-        eiger.set_detector_parameters(params.detector_params)
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
 
-        @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
-        def rotation_with_cleanup_and_stage(params: RotationScan):
-            yield from _move_and_rotation(composite, params, oav_params)
-
-        LOGGER.info("setting up and staging eiger...")
-        yield from start_preparing_data_collection_then_do_plan(
-            composite.beamstop,
-            eiger,
-            composite.detector_motion,
-            params.detector_distance_mm,
-            rotation_with_cleanup_and_stage(params),
-            group=CONST.WAIT.ROTATION_READY_FOR_DC,
-        )
-        yield from bps.unstage(eiger)
-
-    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
+    yield from _wrapped_rotation_scan()
 
 
-def multi_rotation_scan(
+def rotation_scan_internal(
     composite: RotationScanComposite,
-    parameters: MultiRotationScan,
+    parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     parameters.features.update_self_from_server()
@@ -423,6 +387,10 @@ def multi_rotation_scan(
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite,
+        parameters.transmission_frac,
+    )
     @bpp.set_run_key_decorator("multi_rotation_scan")
     @bpp.run_decorator(
         md={
@@ -439,10 +407,6 @@ def multi_rotation_scan(
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
-            @transmission_and_xbpm_feedback_for_collection_decorator(
-                composite,
-                parameters.transmission_frac,
-            )
             @verify_undulator_gap_before_run_decorator(composite)
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -452,11 +416,13 @@ def multi_rotation_scan(
                 }
             )
             def rotation_scan_core(
-                params: RotationScan,
+                params: SingleRotationScan,
             ):
                 yield from _move_and_rotation(composite, params, oav_params)
 
             yield from rotation_scan_core(single_scan)
+
+        yield from bps.unstage(eiger)
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(
@@ -467,4 +433,3 @@ def multi_rotation_scan(
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
-    yield from bps.unstage(eiger)

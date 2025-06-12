@@ -10,13 +10,14 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03.beamstop import Beamstop
+from dodal.devices.i03 import Beamstop
+from dodal.devices.i03.dcm import DCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -26,7 +27,6 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
-from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -35,13 +35,12 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
-    start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_flyscan_plan,
@@ -56,6 +55,9 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
@@ -65,7 +67,7 @@ class RobotLoadThenCentreComposite:
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
 
-    # GridDetectThenXRayCentreComposite fields
+    # HyperionGridDetectThenXRayCentreComposite fields
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     detector_motion: DetectorMotion
@@ -110,8 +112,9 @@ def _flyscan_plan_from_robot_load_params(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_flyscan_plan(
-        cast(GridDetectThenXRayCentreComposite, composite),
+        cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
+        oav_config_file,
     )
 
 
@@ -131,6 +134,7 @@ def _robot_load_then_flyscan_plan(
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
     parameters: RobotLoadThenCentre,
+    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary."""
@@ -154,10 +158,7 @@ def robot_load_then_xray_centre(
 
     if doing_sample_load:
         LOGGER.info("Pin not loaded, loading and centring")
-        plan = _robot_load_then_flyscan_plan(
-            composite,
-            parameters,
-        )
+        plan = _robot_load_then_flyscan_plan(composite, parameters, oav_config_file)
     else:
         # Robot load normally sets the energy so we should do this explicitly if no load is
         # being done
@@ -168,7 +169,9 @@ def robot_load_then_xray_centre(
         )
 
         if doing_chi_change:
-            plan = _flyscan_plan_from_robot_load_params(composite, parameters)
+            plan = _flyscan_plan_from_robot_load_params(
+                composite, parameters, oav_config_file
+            )
             LOGGER.info("Pin already loaded but chi changed so centring")
         else:
             LOGGER.info("Pin already loaded and chi not changed so doing nothing")

@@ -6,10 +6,8 @@ This version changed to python3 March2020 by RLO
 import json
 import re
 import sys
-import time
 from pathlib import Path
 from pprint import pformat
-from time import sleep
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -100,7 +98,7 @@ def initialise_stages(
 
     caput(pv.pilat_cbftemplate, 0)
 
-    sleep(0.1)
+    yield from bps.sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
         if i == 100:
@@ -113,6 +111,12 @@ def initialise_stages(
 
     SSX_LOGGER.info("Initialisation of the stages complete")
     yield from bps.wait(group=group)
+
+
+def _is_checker_pattern() -> bool:
+    """Read the checker pattern value and return True if selected."""
+    checks = int(caget(pv.me14e_gp111))
+    return bool(checks)
 
 
 @log_on_entry
@@ -174,7 +178,7 @@ def read_parameters(
         "chip": chip_params.model_dump(),
         "map_type": map_type,
         "pump_repeat": pump_repeat,
-        "checker_pattern": bool(caget(pv.me14e_gp111)),
+        "checker_pattern": _is_checker_pattern(),
         "chip_map": chip_map,
         "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
         "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
@@ -259,7 +263,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         SSX_LOGGER.debug(f"Set {pvar_str} for block {block}")
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         # Wait for PMAC to be done processing PVAR string
-        sleep(0.02)
+        yield from bps.sleep(0.02)
     SSX_LOGGER.debug("Upload parameters done.")
 
 
@@ -832,16 +836,16 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     SSX_LOGGER.info(f"{sqfact1:1.4f} \n {sqfact2:1.4f} \n {sqfact3:1.4f}")
     SSX_LOGGER.debug("Long wait, please be patient")
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(2.5)
+    yield from bps.sleep(2.5)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(2.5)
+    yield from bps.sleep(2.5)
     yield from bps.trigger(pmac.home, wait=True)
-    sleep(2.5)
+    yield from bps.sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
-        sleep(2.5)
+        yield from bps.sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)
@@ -932,12 +936,12 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
             for entry in block_start_list:
                 if int(caget(pv.me14e_gp9)) != 0:
                     SSX_LOGGER.warning("Block Check Aborted")
-                    sleep(1.0)
+                    yield from bps.sleep(1.0)
                     break
                 block, x, y = entry
                 SSX_LOGGER.debug(f"Block: {block} -> (x={x} y={y})")
                 yield from bps.abs_set(pmac.pmac_string, f"!x{x}y{y}", wait=True)
-                time.sleep(0.4)
+                yield from bps.sleep(0.4)
         else:
             SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")
             break

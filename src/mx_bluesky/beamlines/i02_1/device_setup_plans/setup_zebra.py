@@ -16,7 +16,7 @@ def setup_zebra_for_xrc_flyscan(zebra: Zebra, group="setup_zebra_for_xrc", wait=
 
 # State of zebra expected by GDA
 def tidy_up_zebra_after_gridscan(
-    zebra: Zebra, group="tidyup_vmxm_zebra_after_gridscan", wait=False
+    zebra: Zebra, group="tidy_up_vmxm_zebra_after_gridscan", wait=False
 ):
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER],

@@ -27,7 +27,7 @@ e.g.
 
 .. code-block:: bash
 
-    pytest -m "not (s03 or dlstbx)" --durations=10
+    pytest -m "not dlstbx" --durations=10
 
 in order to find the top 10 slowest tests
 

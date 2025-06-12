@@ -4,8 +4,8 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
-from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
 from dodal.common import inject
+from dodal.devices.i04.constants import RedisConstants
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
@@ -42,7 +42,13 @@ def thaw_and_stream_to_redis(
     beam_centre_i = yield from bps.rd(oav.beam_centre_i)
     beam_centre_j = yield from bps.rd(oav.beam_centre_j)
 
-    @subs_decorator(MurkoCallback(REDIS_HOST, REDIS_PASSWORD, MURKO_REDIS_DB))
+    @subs_decorator(
+        MurkoCallback(
+            RedisConstants.REDIS_HOST,
+            RedisConstants.REDIS_PASSWORD,
+            RedisConstants.MURKO_REDIS_DB,
+        )
+    )
     @run_decorator(
         md={
             "microns_per_x_pixel": microns_per_pixel_x,
@@ -64,7 +70,7 @@ def thaw_and_stream_to_redis(
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
         yield from bps.monitor(smargon.omega.user_readback, name="smargon")
         yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-        yield from thaw(
+        yield from _thaw(
             time_to_thaw, rotation, thawer, smargon, switch_forwarder_to_ROI
         )
         yield from bps.complete(oav_to_redis_forwarder)
@@ -79,6 +85,15 @@ def thaw_and_stream_to_redis(
 
 
 def thaw(
+    time_to_thaw: float,
+    rotation: float = 360,
+    thawer: Thawer = inject("thawer"),
+    smargon: Smargon = inject("smargon"),
+) -> MsgGenerator:
+    yield from _thaw(time_to_thaw, rotation, thawer, smargon)
+
+
+def _thaw(
     time_to_thaw: float,
     rotation: float = 360,
     thawer: Thawer = inject("thawer"),

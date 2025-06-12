@@ -19,9 +19,6 @@ from pydantic.dataclasses import dataclass
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.exceptions import WarningException
@@ -41,9 +38,8 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
-
-VERBOSE_EVENT_LOGGING: bool | None = None
 
 
 @dataclass
@@ -82,7 +78,6 @@ class BlueskyRunner:
         self,
         RE: RunEngine,
         context: BlueskyContext,
-        skip_startup_connection=False,
     ) -> None:
         self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -97,15 +92,6 @@ class BlueskyRunner:
         LOGGER.info("Connecting to external callback ZMQ proxy...")
         self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
         RE.subscribe(self.publisher)
-
-        if VERBOSE_EVENT_LOGGING:
-            RE.subscribe(VerbosePlanExecutionLoggingCallback())
-
-        self.skip_startup_connection = skip_startup_connection
-        if not self.skip_startup_connection:
-            LOGGER.info("Initialising dodal devices...")
-            for plan_name in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan_name]["setup"](context)
 
     def start(
         self,
@@ -205,7 +191,8 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
         parameters = update_params_from_agamemnon(parameters)
-        compare_params(parameters)
+        if isinstance(parameters, LoadCentreCollect):
+            compare_params(parameters)
         if parameters.model_extra:
             raise ValueError(f"Extra fields not allowed {parameters.model_extra}")
     except Exception as e:
@@ -278,15 +265,12 @@ class FlushLogs(Resource):
 def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
-    skip_startup_connection: bool = False,
+    dev_mode: bool = False,
 ) -> tuple[Flask, BlueskyRunner]:
-    context = setup_context(
-        wait_for_connection=not skip_startup_connection,
-    )
+    context = setup_context(dev_mode=dev_mode)
     runner = BlueskyRunner(
         RE,
         context=context,
-        skip_startup_connection=skip_startup_connection,
     )
     app = Flask(__name__)
     if test_config:
@@ -316,9 +300,7 @@ def create_targets():
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    app, runner = create_app(
-        skip_startup_connection=args.skip_startup_connection,
-    )
+    app, runner = create_app(dev_mode=args.dev_mode)
     return app, runner, hyperion_port, args.dev_mode
 
 

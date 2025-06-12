@@ -1,6 +1,5 @@
 from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import cv2 as cv
 import pytest
 from dodal.devices.i24.pmac import PMAC
@@ -15,12 +14,9 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     update_ui,
 )
 
+from ..conftest import fake_generator
+
 ZOOMCALIBRATOR = 6
-
-
-def fake_generator(value):
-    yield from bps.null()
-    return value
 
 
 @pytest.mark.parametrize(
@@ -28,18 +24,18 @@ def fake_generator(value):
     [
         (
             (15, 10),
-            "#1J:-" + str(15 * ZOOMCALIBRATOR),
-            "#2J:" + str(10 * ZOOMCALIBRATOR),
+            "#1J:-" + str(10 * 15 * ZOOMCALIBRATOR),
+            "#2J:" + str(10 * 10 * ZOOMCALIBRATOR),
         ),
         (
             (475, 309),
-            "#1J:-" + str(475 * ZOOMCALIBRATOR),
-            "#2J:" + str(309 * ZOOMCALIBRATOR),
+            "#1J:-" + str(10 * 475 * ZOOMCALIBRATOR),
+            "#2J:" + str(10 * 309 * ZOOMCALIBRATOR),
         ),
         (
             (638, 392),
-            "#1J:-" + str(638 * ZOOMCALIBRATOR),
-            "#2J:" + str(392 * ZOOMCALIBRATOR),
+            "#1J:-" + str(10 * 638 * ZOOMCALIBRATOR),
+            "#2J:" + str(10 * 392 * ZOOMCALIBRATOR),
         ),
     ],
 )
@@ -92,7 +88,7 @@ def test_get_beam_centre(fake_read: MagicMock, RE):
 
 
 @pytest.mark.parametrize(
-    "zoom_percentage, expected_calibrator", [(1, 1.517), (20, 1.012), (50, 0.455)]
+    "zoom_percentage, expected_calibrator", [(1, 1.256), (20, 0.805), (50, 0.375)]
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.rd")
 def test_calculate_zoom_calibrator(

@@ -9,7 +9,7 @@
     "sample_puck": 40,
     "sample_pin": 3,
     "robot_load_then_centre": {
-        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/xraycentring",
+        "storage_directory": "{tmp_data}/123458/xraycentring",
         "file_name": "robot_load_centring_file",
         "comment": "Robot load and centre",
         "exposure_time_s": 0.004,
@@ -19,7 +19,7 @@
     },
     "multi_rotation_scan": {
         "comment": "Rotation",
-        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/",
+        "storage_directory": "{tmp_data}/123458/",
         "file_name": "file_name",
         "exposure_time_s": 0.004,
         "selected_aperture": "SMALL_APERTURE",

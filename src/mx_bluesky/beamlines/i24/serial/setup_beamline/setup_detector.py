@@ -13,7 +13,7 @@ from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
-from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget
+from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
     Detector,
     Eiger,
@@ -22,7 +22,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
 
 EXPT_TYPE_DETECTOR_PVS = {
     SSXType.FIXED: pv.me14e_gp101,
-    SSXType.EXTRUDER: pv.ioc12_gp15,
+    SSXType.EXTRUDER: pv.ioc13_gp15,
 }
 
 
@@ -93,4 +93,5 @@ def setup_detector_stage(
         Eiger.det_y_target if requested_detector == "eiger" else Pilatus.det_y_target
     )
     yield from _move_detector_stage(detector_stage, det_y_target)
+    caput(det_type_pv, requested_detector)
     SSX_LOGGER.info("Detector setup done.")

@@ -142,7 +142,7 @@ DATATYPE_EXCEPTION_TABLE = {
     ),
     "/entry/instrument/name": (dtype("S20"), dtype("S1024")),
     "/entry/end_time_estimated": (
-        dtype("S10"),
+        dtype("S20"),
         "gda item end_time_estimated not present",
     ),
     "/entry/start_time": (dtype("S10"), dtype("S20")),
@@ -187,6 +187,7 @@ def mockitem(name, item):
     return m
 
 
+@pytest.mark.timeout(2)
 def test_determine_datatype_differences(
     files_and_groups: FilesAndgroups,
 ):
@@ -235,6 +236,7 @@ def test_determine_datatype_differences(
     print(diffs)
 
 
+@pytest.mark.timeout(2)
 def test_hyperion_vs_gda_datatypes(
     files_and_groups: FilesAndgroups,
 ):
@@ -245,7 +247,6 @@ def test_hyperion_vs_gda_datatypes(
         if item in hyperion_groups:
             hyperion_group = hyperion_nexus[item]
             gda_group = gda_nexus[item]
-            print(hyperion_group, gda_group)
             assert isinstance(hyperion_group, Group) and isinstance(gda_group, Group)
             for dset_or_attr in hyperion_group:
                 hyperion_item = mockitem("hyperion", dset_or_attr)

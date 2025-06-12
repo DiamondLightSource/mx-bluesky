@@ -4,7 +4,7 @@ Fixed target data collection
 
 from datetime import datetime
 from pathlib import Path
-from time import sleep
+from traceback import format_exception
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -19,6 +19,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
 
@@ -38,7 +39,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    DetectorName,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -51,52 +55,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     setup_zebra_for_fastchip_plan,
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
-
-# Move this in common place as part of
-# https://github.com/DiamondLightSource/mx-bluesky/pull/603
-PMAC_MOVE_TIME = 0.008  # Move time between positions on chip ~ 7-8 ms
-
-
-def calculate_collection_timeout(parameters: FixedTargetParameters) -> float:
-    """Give an estimation of the time the plan should wait for the data collection \
-        to be finished.
-
-    For non-pump probe collections and collection with short delays, it should be \
-    enough to use the collection time plus a genereous 30s buffer.
-    For EAVA (Excite and visit again) collections instead, the laser dwell and laser \
-    delay times should be included in the calculation. For long dalays between pump \
-    and probe, the shutter opening time will also need to be taken into account.
-    For more details on the dynamics see
-    https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets.
-
-    Args:
-        parameters (FixedTargerParameters): The collection parameters.
-
-    Returns:
-        The estimated collection time, in s.
-    """
-    buffer = PMAC_MOVE_TIME * parameters.total_num_images + 600
-    pump_setting = parameters.pump_repeat
-    collection_time = parameters.total_num_images * parameters.exposure_time_s
-    if pump_setting in [
-        PumpProbeSetting.NoPP,
-        PumpProbeSetting.Short1,
-        PumpProbeSetting.Short2,
-    ]:
-        timeout = collection_time + buffer
-    else:
-        # EAVA: Excite and visit again
-        num_windows = parameters.total_num_images / parameters.num_exposures
-        timeout = (
-            collection_time
-            + parameters.laser_dwell_s * num_windows  # type: ignore
-            + parameters.laser_delay_s
-            + buffer
-        )
-        if pump_setting == PumpProbeSetting.Medium1:
-            # Long delay between pump and probe, with fast shutter opening and closing.
-            timeout = timeout + SHUTTER_OPEN_TIME * parameters.total_num_images
-    return timeout
 
 
 def write_userlog(
@@ -226,10 +184,12 @@ def load_motion_program_data(
         # Pump setting chosen
         prefix = 14
         SSX_LOGGER.info(f"Setting program prefix to {prefix}")
-        yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if checker_pattern:
             SSX_LOGGER.info("Checker pattern setting enabled.")
             yield from bps.abs_set(pmac.pmac_string, "P1439=1", wait=True)
+        else:
+            SSX_LOGGER.info("Checker pattern setting disabled.")
+            yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if pump_repeat == PumpProbeSetting.Medium1:
             # Medium1 has time delays (Fast shutter opening time in ms)
             yield from bps.abs_set(pmac.pmac_string, "P1441=50", wait=True)
@@ -316,6 +276,7 @@ def start_i24(
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
     dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
     the hutch shutter.
@@ -362,7 +323,7 @@ def start_i24(
             f"Fastchip Pilatus setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.pilatus(
+        yield from sup.pilatus(
             "fastchip",
             [
                 filepath,
@@ -374,7 +335,9 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
-        filetemplate = yield from get_pilatus_filename_template_from_device()
+        filetemplate = yield from get_pilatus_filename_template_from_device(
+            pilatus_metadata
+        )
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
@@ -407,7 +370,7 @@ def start_i24(
         caput(pv.pilat_acquire, "1")  # Arm pilatus
         yield from arm_zebra(zebra)
         caput(pv.pilat_filename, filename)
-        sleep(1.5)
+        yield from bps.sleep(1.5)
 
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.info("Using Eiger detector")
@@ -423,7 +386,7 @@ def start_i24(
             f"Triggered Eiger setup: exposure time {parameters.exposure_time_s}"
         )
 
-        sup.eiger(
+        yield from sup.eiger(
             "triggered",
             [
                 filepath,
@@ -431,6 +394,7 @@ def start_i24(
                 parameters.total_num_images,
                 parameters.exposure_time_s,
             ],
+            dcm,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -468,7 +432,7 @@ def start_i24(
             )
         yield from arm_zebra(zebra)
 
-        sleep(1.5)
+        yield from bps.sleep(1.5)
 
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
@@ -501,12 +465,12 @@ def finish_i24(
         SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.pilatus("return-to-normal", None)
-        sleep(0.2)
+        yield from sup.pilatus("return-to-normal", None)
+        yield from bps.sleep(0.2)
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        sup.eiger("return-to-normal", None)
+        yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name=} unrecognised")
@@ -521,12 +485,12 @@ def finish_i24(
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
-def run_aborted_plan(pmac: PMAC, dcid: DCID):
+def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
     """Plan to send pmac_strings to tell the PMAC when a collection has been aborted, \
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning("Data Collection Aborted")
+    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
@@ -547,6 +511,7 @@ def main_fixed_target_plan(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -591,11 +556,12 @@ def main_fixed_target_plan(
         mirrors,
         beam_center_device,
         dcid,
+        pilatus_metadata,
     )
 
     SSX_LOGGER.info("Moving to Start")
     yield from bps.trigger(pmac.to_xyz_zero)
-    sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # Now ready for data collection. Open fast shutter (zebra gate)
     SSX_LOGGER.info("Opening fast shutter.")
@@ -622,12 +588,6 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         parameters.chip.chip_type, parameters.map_type, parameters.pump_repeat
     )
     yield from bps.abs_set(pmac.program_number, prog_num, group="setup_pmac")
-    # Calculate approx collection time
-    total_collection_time = calculate_collection_timeout(parameters)
-    SSX_LOGGER.info(f"Estimated collection time: {total_collection_time}s.")
-    yield from bps.abs_set(
-        pmac.collection_time, total_collection_time, group="setup_pmac"
-    )
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
@@ -666,7 +626,7 @@ def tidy_up_after_collection_plan(
     """
     SSX_LOGGER.info("Closing fast shutter")
     yield from close_fast_shutter(zebra)
-    sleep(2.0)
+    yield from bps.sleep(2.0)
 
     # This probably should go in main then
     if parameters.detector_name == "pilatus":
@@ -676,7 +636,7 @@ def tidy_up_after_collection_plan(
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
-    sleep(0.5)
+    yield from bps.sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 
@@ -700,6 +660,9 @@ def run_fixed_target_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -712,7 +675,11 @@ def run_fixed_target_plan(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
@@ -731,8 +698,9 @@ def run_fixed_target_plan(
             beam_center_device,
             parameters,
             dcid,
+            pilatus_metadata,
         ),
-        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid)),
+        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
                 zebra, pmac, shutter, dcm, parameters, dcid

@@ -1,17 +1,18 @@
 from functools import partial
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -28,9 +29,10 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def robot_load_and_energy_change_params():
+def robot_load_and_energy_change_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_params.json",
+        tmp_path,
     )
     return RobotLoadAndEnergyChange(**params)
 
@@ -126,6 +128,7 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     assert len(list(read_disabled_messages)) == total_disabled_reads
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
@@ -148,7 +151,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard: ApertureScatterguard, smargon: Smargon, done_status
 ):
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
-    aperture_scatterguard.set = MagicMock(return_value=done_status)
+    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
 
     set_mock_value(smargon.x.user_setpoint, 10)
     set_mock_value(smargon.z.user_setpoint, 5)
@@ -162,7 +165,9 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert await smargon.omega.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(ApertureValue.OUT_OF_BEAM)  # type: ignore
+    get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
+        ApertureValue.OUT_OF_BEAM, wait=ANY
+    )
 
 
 @patch(
@@ -351,4 +356,50 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
         lambda msg: msg.command == "set"
         and msg.obj.name == "thawer-thaw_for_time_s"
         and msg.args[0] == thaw_time,
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.take_robot_snapshots",
+    MagicMock(return_value=iter([Msg("take_robot_snapshots")])),
+)
+def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
+    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
+    robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
+    sim_run_engine: RunEngineSimulator,
+):
+    sim_run_engine.add_handler(
+        "read",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+    )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_and_change_energy_plan(
+            robot_load_and_energy_change_composite,
+            robot_load_and_energy_change_params_no_energy,
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.IN,
+    )
+
+    backlight_move_group = msgs[0].kwargs.get("group")
+
+    msgs = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == backlight_move_group,
+    )
+
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "take_robot_snapshots"
     )

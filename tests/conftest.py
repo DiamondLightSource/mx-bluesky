@@ -9,12 +9,11 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
 from functools import partial
-from inspect import get_annotations
+from pathlib import Path
 from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
-import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
@@ -34,15 +33,19 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
-from dodal.devices.i03.beamstop import Beamstop
-from dodal.devices.oav.oav_detector import OAVConfig
+from dodal.devices.flux import Flux
+from dodal.devices.i03 import Beamstop, BeamstopPositions
+from dodal.devices.i03.dcm import DCM
+from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor
@@ -50,10 +53,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.devices.zocalo import XrcResult, ZocaloResults
-from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_READING_PLAN_NAME,
-)
+from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -69,6 +69,8 @@ from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from PIL import Image
+from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -80,7 +82,6 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     PlanNameConstants,
-    TriggerConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
@@ -89,10 +90,19 @@ from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
+    _get_logging_dirs,
     do_default_logging_setup,
 )
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
 
@@ -183,6 +193,24 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 ]
 
 
+@dataclass(frozen=True)
+class SimConstants:
+    BEAMLINE = "BL03S"
+    # The following are values present in the system test ispyb database
+    ST_VISIT = "cm14451-2"
+    ST_SAMPLE_ID = 398810
+    ST_CONTAINER_ID = 34864
+
+
+@pytest.fixture(autouse=True, scope="session")
+def ispyb_config_path():
+    ispyb_config_path = os.environ.get(
+        "ISPYB_CONFIG_PATH", "tests/test_data/test_config.cfg"
+    )
+    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
+        yield ispyb_config_path
+
+
 @pytest.fixture(scope="session")
 def active_device_factories() -> set[AnyDeviceFactory]:
     """Obtain the set of device factories that should have their caches cleared
@@ -206,15 +234,20 @@ def clear_device_factory_caches_after_every_test(active_device_factories):
         f.cache_clear()  # type: ignore
 
 
-def raw_params_from_file(filename):
+def replace_all_tmp_paths(d: dict[str, Any], tmp_path: Path):
+    d = d.copy()
+    for k, v in d.items():
+        if isinstance(v, str):
+            d[k] = v.replace("{tmp_data}", str(tmp_path))
+        elif isinstance(v, dict):
+            d[k] = replace_all_tmp_paths(v, tmp_path)
+    return d
+
+
+def raw_params_from_file(filename, tmp_path):
     with open(filename) as f:
-        return json.loads(f.read())
-
-
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
-):
-    return raw_params_from_file(json_file)
+        loads = replace_all_tmp_paths(json.loads(f.read()), tmp_path)
+        return loads
 
 
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
@@ -250,11 +283,12 @@ def pytest_runtest_setup(item):
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
+        logging_path, _ = _get_logging_dirs(True)
         if ISPYB_ZOCALO_CALLBACK_LOGGER.handlers == []:
             print("Initialising ISPyB logger for tests")
             set_up_all_logging_handlers(
                 ISPYB_ZOCALO_CALLBACK_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
@@ -263,7 +297,7 @@ def pytest_runtest_setup(item):
             print("Initialising nexus logger for tests")
             set_up_all_logging_handlers(
                 NEXUS_LOGGER,
-                _get_logging_dir(),
+                logging_path,
                 "hyperion_ispyb_callback.log",
                 True,
                 10000,
@@ -342,13 +376,35 @@ def beamline_parameters():
     )
 
 
+@pytest.fixture(autouse=True)
+def i03_beamline_parameters():
+    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"i03": "tests/test_data/test_beamline_parameters.txt"},
+    ) as params:
+        yield params
+
+
+@pytest.fixture
+def hyperion_fgs_params(tmp_path):
+    return HyperionSpecifiedThreeDGridScan(
+        **(
+            raw_params_from_file(
+                "tests/test_data/parameter_json_files/good_test_parameters.json",
+                tmp_path,
+            )
+        )
+    )
+
+
 @pytest.fixture
 def done_status():
     return NullStatus()
 
 
 @pytest.fixture
-def eiger(done_status):
+def eiger(done_status, RE: RunEngine):
     eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
@@ -361,15 +417,13 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-    set_mock_value(smargon.x.user_readback, 0.0)
-    set_mock_value(smargon.y.user_readback, 0.0)
-    set_mock_value(smargon.z.user_readback, 0.0)
     set_mock_value(smargon.x.high_limit_travel, 2)
     set_mock_value(smargon.x.low_limit_travel, -2)
     set_mock_value(smargon.y.high_limit_travel, 2)
     set_mock_value(smargon.y.low_limit_travel, -2)
     set_mock_value(smargon.z.high_limit_travel, 2)
     set_mock_value(smargon.z.low_limit_travel, -2)
+    set_mock_value(smargon.omega.max_velocity, 1)
 
     with (
         patch_async_motor(smargon.omega),
@@ -384,7 +438,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
-def zebra(RE):
+def zebra(RE: RunEngine):
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
@@ -396,41 +450,41 @@ def zebra(RE):
 
 
 @pytest.fixture
-def zebra_shutter(RE):
+def zebra_shutter(RE: RunEngine):
     return i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def backlight():
+def backlight(RE: RunEngine):
     backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
-def fast_grid_scan():
+def fast_grid_scan(RE: RunEngine):
     return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def detector_motion(RE):
+def detector_motion(RE: RunEngine):
     det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_async_motor(det.z):
         yield det
 
 
 @pytest.fixture
-def undulator():
+def undulator(RE: RunEngine):
     return i03.undulator(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def s4_slit_gaps():
+def s4_slit_gaps(RE: RunEngine):
     return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def synchrotron(RE):
+def synchrotron(RE: RunEngine):
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -438,8 +492,8 @@ def synchrotron(RE):
 
 
 @pytest.fixture
-def oav(test_config_files, RE):
-    parameters = OAVConfig(
+def oav(test_config_files, RE: RunEngine):
+    parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
@@ -460,25 +514,22 @@ def oav(test_config_files, RE):
 
 
 @pytest.fixture
-def flux():
+def flux(RE: RunEngine):
     return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def pin_tip():
+def pin_tip(RE: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def ophyd_pin_tip_detection():
-    RunEngine()  # A RE is needed to start the bluesky loop
-    pin_tip_detection = i03.pin_tip_detection(connect_immediately=True, mock=True)
-    return pin_tip_detection
+def ophyd_pin_tip_detection(RE: RunEngine):
+    return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def robot(done_status):
-    RunEngine()  # A RE is needed to start the bluesky loop
+def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
@@ -486,7 +537,7 @@ def robot(done_status):
 
 
 @pytest.fixture
-def attenuator(RE):
+def attenuator(RE: RunEngine):
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
@@ -500,33 +551,67 @@ def attenuator(RE):
 
 
 @pytest.fixture
-def xbpm_feedback(done_status):
+def beamstop_i03(
+    beamline_parameters: GDABeamlineParameters,
+    sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.get_beamline_parameters",
+        return_value=beamline_parameters,
+    ):
+        beamstop = i03.beamstop(connect_immediately=True, mock=True)
+        patch_motor(beamstop.x_mm)
+        patch_motor(beamstop.y_mm)
+        patch_motor(beamstop.z_mm)
+
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
+        )
+
+        yield beamstop
+        beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def xbpm_feedback(done_status, RE: RunEngine):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
     beamline_utils.clear_devices()
 
 
-def set_up_dcm(dcm, sim_run_engine: RunEngineSimulator):
+def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
-    set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
-    set_mock_value(dcm.crystal_metadata_d_spacing, 3.13475)
-    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing, 3.13475)
-    patch_motor(dcm.roll_in_mrad)
-    patch_motor(dcm.pitch_in_mrad)
+    set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
+    patch_motor(dcm.xtal_1.roll_in_mrad)
+    patch_motor(dcm.xtal_1.pitch_in_mrad)
     patch_motor(dcm.offset_in_mm)
     return dcm
 
 
 @pytest.fixture
-def dcm(RE, sim_run_engine):
+def dcm(RE: RunEngine, sim_run_engine):
     dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
 @pytest.fixture
-def vfm(RE):
+def vfm(RE: RunEngine):
     vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -537,7 +622,7 @@ def vfm(RE):
 
 
 @pytest.fixture
-def lower_gonio(RE):
+def lower_gonio(RE: RunEngine):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
     with (
         patch_motor(lower_gonio.x),
@@ -548,7 +633,7 @@ def lower_gonio(RE):
 
 
 @pytest.fixture
-def mirror_voltages():
+def mirror_voltages(RE: RunEngine):
     voltages = i03.mirror_voltages(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
@@ -560,34 +645,36 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(RE, sim_run_engine, dcm):
-    undulator_dcm = i03.undulator_dcm(connect_immediately=True, mock=True)
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
-    undulator_dcm.roll_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Roll_converter.txt"
-    undulator_dcm.pitch_energy_table_path = "tests/test_data/test_daq_configuration/lookup/BeamLineEnergy_DCM_Pitch_converter.txt"
+def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
+    undulator_dcm = i03.undulator_dcm(
+        connect_immediately=True,
+        mock=True,
+        daq_configuration_path="tests/test_data/test_daq_configuration",
+    )
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
     yield undulator_dcm
     beamline_utils.clear_devices()
 
 
 @pytest.fixture
-def webcam(RE) -> Generator[Webcam, Any, Any]:
+def webcam(RE: RunEngine) -> Generator[Webcam, Any, Any]:
     webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
-def thawer(RE) -> Generator[Thawer, Any, Any]:
+def thawer(RE: RunEngine) -> Generator[Thawer, Any, Any]:
     yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def sample_shutter(RE) -> Generator[ZebraShutter, Any, Any]:
+def sample_shutter(RE: RunEngine) -> Generator[ZebraShutter, Any, Any]:
     yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
+async def aperture_scatterguard(RE: RunEngine):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -646,7 +733,7 @@ def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ApertureValue.SMALL))
+        await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
@@ -688,8 +775,56 @@ def fake_create_devices(
     return devices
 
 
+@pytest.fixture()
+def fake_create_rotation_devices(
+    beamstop_i03: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: Undulator,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(return_value=NullStatus())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop_i03,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        smargon=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+    )
+
+
 @pytest.fixture
-def zocalo(done_status):
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
+
+
+@pytest.fixture
+def zocalo(done_status, RE: RunEngine):
     zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
@@ -764,8 +899,82 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 
 @pytest.fixture
-def panda_fast_grid_scan(RE):
+def panda_fast_grid_scan(RE: RunEngine):
     return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+async def hyperion_flyscan_xrc_composite(
+    smargon: Smargon,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    RE: RunEngine,
+    done_status,
+    attenuator,
+    xbpm_feedback,
+    synchrotron,
+    aperture_scatterguard,
+    zocalo,
+    dcm,
+    panda,
+    backlight,
+    s4_slit_gaps,
+) -> HyperionFlyScanXRayCentreComposite:
+    fake_composite = HyperionFlyScanXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        dcm=dcm,
+        # We don't use the eiger fixture here because .unstage() is used in some tests
+        eiger=i03.eiger(connect_immediately=True, mock=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        flux=i03.flux(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
+        smargon=smargon,
+        undulator=i03.undulator(connect_immediately=True, mock=True),
+        synchrotron=synchrotron,
+        xbpm_feedback=xbpm_feedback,
+        zebra=i03.zebra(connect_immediately=True, mock=True),
+        zocalo=zocalo,
+        panda=panda,
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(
+            connect_immediately=True, mock=True
+        ),
+        robot=i03.robot(connect_immediately=True, mock=True),
+        sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
+    )
+
+    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    # unstage should be mocked on a per-test basis because several rely on unstage
+    fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
+    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
+
+    test_result = {
+        "centre_of_mass": [6, 6, 6],
+        "max_voxel": [5, 5, 5],
+        "max_count": 123456,
+        "n_voxels": 321,
+        "total_count": 999999,
+        "bounding_box": [[3, 3, 3], [9, 9, 9]],
+    }
+
+    @AsyncStatus.wrap
+    async def mock_complete(result):
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
+    fake_composite.zocalo.timeout_s = 3
+    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
+    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
+
+    set_mock_value(fake_composite.robot.barcode, "BARCODE")
+
+    return fake_composite
 
 
 def fake_read(obj, initial_positions, _):
@@ -965,30 +1174,31 @@ def simulate_xrc_result(
         )
 
 
-def generate_xrc_result_event(device_name: str, test_results: Sequence[dict]) -> dict:
-    keys = get_annotations(XrcResult).keys()
-    results_by_key = {k: [r[k] for r in test_results] for k in keys}
-    return {f"{device_name}-{k}": numpy.array(v) for k, v in results_by_key.items()}
-
-
 # The remaining code in this conftest is utility for external interaction tests. See https://github.com/DiamondLightSource/mx-bluesky/issues/699 for
 # a better organisation of this
 
 
 def default_raw_gridscan_params(
+    tmp_path,
     json_file="tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
 ):
-    return raw_params_from_file(json_file)
+    return raw_params_from_file(json_file, tmp_path)
 
 
-def dummy_params():
-    dummy_params = SpecifiedThreeDGridScan(**default_raw_gridscan_params())
+def _dummy_params(tmp_path):
+    dummy_params = SpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+            tmp_path,
+        )
+    )
     return dummy_params
 
 
-def dummy_params_2d():
+def _dummy_params_2d(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+        tmp_path,
     )
     raw_params["z_steps"] = 1
     return SpecifiedThreeDGridScan(**raw_params)
@@ -1076,241 +1286,348 @@ class OavGridSnapshotTestEvents:
     }
 
 
+@pytest.fixture()
+def TestEventData(tmp_path):
+    return _TestEventData(tmp_path)
+
+
+class _TestEventData(OavGridSnapshotTestEvents):
+    def __init__(self, tmp_path):
+        self._tmp_path = tmp_path
+
+    @property
+    def test_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_gridscan3d_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": "test",
+            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_gridscan3d_stop_document_with_crystal_exception(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": f"{CrystalNotFoundException()}",
+        }
+
+    @property
+    def test_gridscan2d_start_document(self):
+        return {
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": "test",
+            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
+            "mx_bluesky_parameters": _dummy_params_2d(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_rotation_start_main_document(self):
+        return {
+            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "subplan_name": PlanNameConstants.ROTATION_MAIN,
+            "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
+        }
+
+    @property
+    def test_gridscan_outer_start_document(self):
+        return {
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
+            "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
+            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_rotation_event_document_during_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 2666604299.928203,
+            "data": {
+                "aperture_scatterguard-aperture-x": 15,
+                "aperture_scatterguard-aperture-y": 16,
+                "aperture_scatterguard-aperture-z": 2,
+                "aperture_scatterguard-scatterguard-x": 18,
+                "aperture_scatterguard-scatterguard-y": 19,
+                "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
+                "aperture_scatterguard-radius": 50,
+                "attenuator-actual_transmission": 0.98,
+                "flux-flux_reading": 9.81,
+                "dcm-energy_in_kev": 11.105,
+            },
+            "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+            "seq_num": 1,
+            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "filled": {},
+        }
+
+    @property
+    def test_rotation_stop_main_document(self) -> RunStop:
+        return {
+            "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "Test succeeded",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
+            "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
+        }
+
+    @property
+    def test_do_fgs_start_document(self) -> RunStart:
+        return {  # type: ignore
+            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604299.6149616,
+            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+            "scan_id": 1,
+            "plan_type": "generator",
+            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
+            "subplan_name": PlanNameConstants.DO_FGS,
+            "scan_points": create_dummy_scan_spec(10, 20, 30),
+        }
+
+    @property
+    def test_descriptor_document_oav_rotation_snapshot(self) -> EventDescriptor:
+        return {
+            "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_pre_data_collection(self) -> EventDescriptor:
+        return {
+            "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.HARDWARE_READ_PRE,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_during_data_collection(self) -> EventDescriptor:
+        return {
+            "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.HARDWARE_READ_DURING,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_zocalo_hardware(self) -> EventDescriptor:
+        return {
+            "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "name": DocDescriptorNames.ZOCALO_HW_READ,
+        }  # type: ignore
+
+    @property
+    def test_event_document_oav_rotation_snapshot(self) -> Event:
+        return {
+            "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
+            "time": 1666604299.828203,
+            "timestamps": {},
+            "seq_num": 1,
+            "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
+            "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
+        }
+
+    @property
+    def test_event_document_pre_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 1666604299.828203,
+            "data": {
+                "s4_slit_gaps-xgap": 0.1234,
+                "s4_slit_gaps-ygap": 0.2345,
+                "synchrotron-synchrotron_mode": SynchrotronMode.USER,
+                "undulator-current_gap": 1.234,
+                "smargon-x": 0.158435435,
+                "smargon-y": 0.023547354,
+                "smargon-z": 0.00345684712,
+                "dcm-energy_in_kev": 11.105,
+            },
+            "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+            "seq_num": 1,
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
+            "filled": {},
+        }
+
+    @property
+    def test_event_document_during_data_collection(self) -> Event:
+        return {
+            "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+            "time": 2666604299.928203,
+            "data": {
+                "aperture_scatterguard-aperture-x": 15,
+                "aperture_scatterguard-aperture-y": 16,
+                "aperture_scatterguard-aperture-z": 2,
+                "aperture_scatterguard-scatterguard-x": 18,
+                "aperture_scatterguard-scatterguard-y": 19,
+                "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
+                "aperture_scatterguard-radius": 50,
+                "attenuator-actual_transmission": 1,
+                "flux-flux_reading": 10,
+                "dcm-energy_in_kev": 11.105,
+                "eiger_bit_depth": "16",
+            },
+            "timestamps": {
+                "det1": 1666604299.8220396,
+                "det2": 1666604299.8235943,
+                "eiger_bit_depth": 1666604299.8220396,
+            },
+            "seq_num": 1,
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
+            "filled": {},
+        }
+
+    @property
+    def test_event_document_zocalo_hardware(self) -> Event:
+        return {
+            "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
+            "time": 1709654583.9770422,
+            "data": {"eiger_odin_file_writer_id": "test_path"},
+            "timestamps": {"eiger_odin_file_writer_id": 1666604299.8220396},
+            "seq_num": 1,
+            "filled": {},
+            "descriptor": "f082901b-7453-4150-8ae5-c5f98bb34406",
+        }
+
+    @property
+    def test_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_do_fgs_gridscan_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_failed_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": "could not connect to devices",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+    @property
+    def test_run_gridscan_failed_stop_document(self) -> RunStop:
+        return {
+            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "fail",
+            "reason": "could not connect to devices",
+            "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        }
+
+
 class TestData(OavGridSnapshotTestEvents):
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
-    GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
-    BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_gridscan3d_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": "test",
-        "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_gridscan3d_stop_document_with_crystal_exception: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": f"{CrystalNotFoundException()}",
-    }
-    test_gridscan2d_start_document = {
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": "test",
-        "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-        "mx_bluesky_parameters": dummy_params_2d().model_dump_json(),
-    }
-    test_rotation_start_main_document = {
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "subplan_name": PlanNameConstants.ROTATION_MAIN,
-        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-    }
-    test_gridscan_outer_start_document = {
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-        "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-        TriggerConstants.ZOCALO: PlanNameConstants.DO_FGS,
-        "mx_bluesky_parameters": dummy_params().model_dump_json(),
-    }
-    test_rotation_event_document_during_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 2666604299.928203,
-        "data": {
-            "aperture_scatterguard-aperture-x": 15,
-            "aperture_scatterguard-aperture-y": 16,
-            "aperture_scatterguard-aperture-z": 2,
-            "aperture_scatterguard-scatterguard-x": 18,
-            "aperture_scatterguard-scatterguard-y": 19,
-            "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-            "aperture_scatterguard-radius": 50,
-            "attenuator-actual_transmission": 0.98,
-            "flux-flux_reading": 9.81,
-            "dcm-energy_in_kev": 11.105,
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "filled": {},
-    }
-    test_rotation_stop_main_document: RunStop = {
-        "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "Test succeeded",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-        "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
-    }
-    test_do_fgs_start_document: RunStart = {  # type: ignore
-        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604299.6149616,
-        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-        "scan_id": 1,
-        "plan_type": "generator",
-        "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-        "subplan_name": PlanNameConstants.DO_FGS,
-        "scan_points": create_dummy_scan_spec(10, 20, 30),
-    }
-    test_descriptor_document_oav_rotation_snapshot: EventDescriptor = {
-        "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
-    }  # type: ignore
-    test_descriptor_document_pre_data_collection: EventDescriptor = {
-        "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.HARDWARE_READ_PRE,
-    }  # type: ignore
-    test_descriptor_document_during_data_collection: EventDescriptor = {
-        "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.HARDWARE_READ_DURING,
-    }  # type: ignore
-    test_descriptor_document_zocalo_hardware: EventDescriptor = {
-        "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": DocDescriptorNames.ZOCALO_HW_READ,
-    }  # type: ignore
-    test_event_document_oav_rotation_snapshot: Event = {
-        "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
-        "time": 1666604299.828203,
-        "timestamps": {},
-        "seq_num": 1,
-        "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
-        "data": {"oav-snapshot-last_saved_path": "snapshot_0"},
-    }
-    test_event_document_pre_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 1666604299.828203,
-        "data": {
-            "s4_slit_gaps-xgap": 0.1234,
-            "s4_slit_gaps-ygap": 0.2345,
-            "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-            "undulator-current_gap": 1.234,
-            "smargon-x": 0.158435435,
-            "smargon-y": 0.023547354,
-            "smargon-z": 0.00345684712,
-            "dcm-energy_in_kev": 11.105,
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
-        "filled": {},
-    }
-    test_event_document_during_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 2666604299.928203,
-        "data": {
-            "aperture_scatterguard-aperture-x": 15,
-            "aperture_scatterguard-aperture-y": 16,
-            "aperture_scatterguard-aperture-z": 2,
-            "aperture_scatterguard-scatterguard-x": 18,
-            "aperture_scatterguard-scatterguard-y": 19,
-            "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-            "aperture_scatterguard-radius": 50,
-            "attenuator-actual_transmission": 1,
-            "flux-flux_reading": 10,
-            "dcm-energy_in_kev": 11.105,
-            "eiger_bit_depth": "16",
-        },
-        "timestamps": {
-            "det1": 1666604299.8220396,
-            "det2": 1666604299.8235943,
-            "eiger_bit_depth": 1666604299.8220396,
-        },
-        "seq_num": 1,
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
-        "filled": {},
-    }
-    test_event_document_zocalo_hardware: Event = {
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
-        "time": 1709654583.9770422,
-        "data": {"eiger_odin_file_writer_id": "test_path"},
-        "timestamps": {"eiger_odin_file_writer_id": 1666604299.8220396},
-        "seq_num": 1,
-        "filled": {},
-        "descriptor": "f082901b-7453-4150-8ae5-c5f98bb34406",
-    }
-    test_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_do_fgs_gridscan_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "success",
-        "reason": "",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_failed_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": "could not connect to devices",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_run_gridscan_failed_stop_document: RunStop = {
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "time": 1666604300.0310638,
-        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-        "exit_status": "fail",
-        "reason": "could not connect to devices",
-        "num_events": {"fake_ispyb_params": 1, "primary": 1},
-    }
-    test_descriptor_document_zocalo_reading: EventDescriptor = {
-        "uid": "unique_id_zocalo_reading",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ZOCALO_READING_PLAN_NAME,
-    }  # type:ignore
-    test_zocalo_reading_event: Event = {
-        "descriptor": "unique_id_zocalo_reading",
-        "data": generate_xrc_result_event("zocalo", []),
-    }  # type:ignore
+
+    test_result_large = [
+        {
+            "centre_of_mass": [1, 2, 3],
+            "max_voxel": [1, 2, 3],
+            "max_count": 105062,
+            "n_voxels": 35,
+            "total_count": 2387574,
+            "bounding_box": [[2, 2, 2], [8, 8, 7]],
+        }
+    ]
+    test_result_medium = [
+        {
+            "centre_of_mass": [1, 2, 3],
+            "max_voxel": [2, 4, 5],
+            "max_count": 50000,
+            "n_voxels": 35,
+            "total_count": 100000,
+            "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        }
+    ]
+    test_result_small = [
+        {
+            "centre_of_mass": [1, 2, 3],
+            "max_voxel": [1, 2, 3],
+            "max_count": 1000,
+            "n_voxels": 35,
+            "total_count": 1000,
+            "bounding_box": [[2, 2, 2], [3, 3, 3]],
+        }
+    ]
+    test_result_below_threshold = [
+        {
+            "centre_of_mass": [2, 3, 4],
+            "max_voxel": [2, 3, 4],
+            "max_count": 2,
+            "n_voxels": 1,
+            "total_count": 2,
+            "bounding_box": [[1, 2, 3], [2, 3, 4]],
+        }
+    ]
 
     test_result_large = [
         {
@@ -1435,10 +1752,11 @@ def mock_ispyb_conn_multiscan(base_ispyb_conn):
 
 
 @pytest.fixture
-def dummy_rotation_params():
+def dummy_rotation_params(tmp_path):
     dummy_params = RotationScan(
-        **default_raw_params(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+            tmp_path,
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID
@@ -1446,12 +1764,16 @@ def dummy_rotation_params():
 
 
 @pytest.fixture
-def test_rotation_params():
-    return RotationScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+def test_rotation_params(tmp_path):
+    scan = RotationScan(
+        **(
+            raw_params_from_file(
+                "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+                tmp_path,
+            )
         )
     )
+    return scan
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -1472,3 +1794,16 @@ def xbpm_and_transmission_wrapper_composite(
     return XBPMAndTransmissionWrapperComposite(
         undulator, xbpm_feedback, attenuator, dcm
     )
+
+
+def assert_images_pixelwise_equal(actual, expected):
+    with Image.open(expected) as expected_image:
+        expected_bytes = expected_image.tobytes()
+        with Image.open(actual) as actual_image:
+            actual_bytes = actual_image.tobytes()
+            # assert tries to be clever and takes forever if this is inlined and
+            # the comparison fails
+            bytes_expected_bytes = actual_bytes == expected_bytes
+            assert bytes_expected_bytes, (
+                f"Actual and expected images differ, {actual} != {expected}"
+            )

@@ -22,10 +22,6 @@ spec:
           hostPath:
             path: "/dls_sw/{{ .Values.application.beamline }}"
             type: Directory
-        - name: dls-sw-apps
-          hostPath:
-            path: "/dls_sw/apps"
-            type: Directory
         - name: dls-sw-dasc
           hostPath:
             path: "/dls_sw/dasc"
@@ -51,10 +47,27 @@ spec:
           hostPath:
             type: Directory
             path: "{{ .Values.application.logDir }}"
+        - name: debuglogs
+          hostPath:
+            type: Directory
+            path: "{{ .Values.application.debugLogDir }}"
         - name: data
           hostPath:
             type: Directory
             path: "{{ .Values.application.dataDir }}"
+        - name: zocalo-config
+          configMap:
+            name: "{{ .Release.Name }}-zocalo-config"
+        - name: zocalo-secrets
+          projected:
+            defaultMode: 0444
+            sources:
+            {{- if .Values.zocalo.secrets }}
+            {{- range .Values.zocalo.secrets }}
+            - secret:
+                name: {{ .secretName }}
+            {{- end -}} {{/* range */}}
+            {{- end -}} {{/* if */}}
       containers:
       - name: hyperion
         image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}
@@ -108,6 +121,8 @@ spec:
         env:
           - name: LOG_DIR
             value: /var/log/bluesky
+          - name: DEBUG_LOG_DIR
+            value: /var/log/bluesky-debug
           - name: BEAMLINE
             value: "{{ .Values.application.beamline }}"
           {{- if not .Values.application.dev }}
@@ -116,7 +131,7 @@ spec:
           - name: ZOCALO_GO_HOSTNAME
             value: "{{ .Values.application.beamline }}-control"
           - name: ZOCALO_CONFIG
-            value: "/dls_sw/apps/zocalo/live/configuration.yaml"
+            value: "/zocalo/config/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
             value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.application.beamline }}.cfg"
           {{- end }}
@@ -127,10 +142,6 @@ spec:
         volumeMounts:
           - mountPath: "/dls_sw/{{ .Values.application.beamline }}"
             name: dls-sw-bl
-            readOnly: true
-            mountPropagation: HostToContainer
-          - mountPath: "/dls_sw/apps"
-            name: dls-sw-apps
             readOnly: true
             mountPropagation: HostToContainer
           - mountPath: "/dls_sw/dasc"
@@ -147,6 +158,12 @@ spec:
             name: dodal
           - mountPath: "/var/log/bluesky"
             name: logs
+          - mountPath: "/var/log/bluesky-debug"
+            name: debuglogs
           - mountPath: "/dls/{{ .Values.application.beamline }}/data"
             name: data
+          - mountPath: "/zocalo/config"
+            name: zocalo-config
+          - mountPath: "/zocalo/secrets"
+            name: zocalo-secrets
       hostNetwork: true

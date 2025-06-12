@@ -1,19 +1,26 @@
 import dataclasses
 import json
 import re
+import traceback
+from collections.abc import Sequence
+from os import path
 from typing import Any, TypeVar
 
 import requests
 from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
+from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
-    WithSample,
+    PARAMETER_VERSION,
     WithVisit,
 )
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.constants import (
+    GridscanParamConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -22,10 +29,6 @@ MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
-
-
-class AgamemnonLoadCentreCollect(WithVisit, WithSample):
-    """Experiment parameters to compare against GDA populated LoadCentreCollect."""
 
 
 @dataclasses.dataclass
@@ -110,43 +113,109 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     )
 
 
-def get_withsample_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
-    assert parameters.get("sample"), "instruction does not have a sample"
-    return {
-        "sample_id": parameters["sample"]["id"],
-        "sample_puck": parameters["sample"]["container"],
-        "sample_pin": parameters["sample"]["position"],
-    }
+def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+    try:
+        first_collection: dict = parameters["collection"][0]
+        wavelength = first_collection.get("wavelength")
+        assert isinstance(wavelength, float)
+        demand_energy_ev = convert_angstrom_to_eV(wavelength)
+        return {"demand_energy_ev": demand_energy_ev}
+    except (KeyError, IndexError, AttributeError, TypeError):
+        return {"demand_energy_ev": None}
 
 
-def populate_parameters_from_agamemnon(agamemnon_params):
+def get_param_version() -> SemanticVersion:
+    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
+
+
+def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreCollect]:
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
-    with_sample_params = get_withsample_parameters_from_agamemnon(agamemnon_params)
-    return AgamemnonLoadCentreCollect(
-        visit=visit, detector_distance_mm=detector_distance, **with_sample_params
+    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
+    collections = agamemnon_params["collection"]
+    visit_directory, file_name = path.split(agamemnon_params["prefix"])
+
+    return [
+        LoadCentreCollect.model_validate(
+            {
+                "parameter_model_version": get_param_version(),
+                "visit": visit,
+                "detector_distance_mm": detector_distance,
+                "sample_id": agamemnon_params["sample"]["id"],
+                "sample_puck": agamemnon_params["sample"]["container"],
+                "sample_pin": agamemnon_params["sample"]["position"],
+                "select_centres": {
+                    "name": "TopNByMaxCount",
+                    "n": pin_type.expected_number_of_crystals,
+                },
+                "robot_load_then_centre": {
+                    "storage_directory": str(visit_directory) + "/xraycentring",
+                    "file_name": file_name,
+                    "tip_offset_um": pin_type.full_width / 2,
+                    "grid_width_um": pin_type.full_width,
+                    "omega_start_deg": 0.0,
+                    "chi_start_deg": collection["chi"],
+                    "transmission_frac": 1.0,
+                    "features": {"use_gpu_results": True},
+                    **with_energy_params,
+                },
+                "multi_rotation_scan": {
+                    "comment": collection["comment"],
+                    "storage_directory": str(visit_directory),
+                    "exposure_time_s": collection["exposure_time"],
+                    "file_name": file_name,
+                    "transmission_frac": collection["transmission"],
+                    "rotation_increment_deg": collection["omega_increment"],
+                    "ispyb_experiment_type": collection["experiment_type"],
+                    "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
+                    "rotation_scans": [
+                        {
+                            "scan_width_deg": (
+                                collection["number_of_images"]
+                                * collection["omega_increment"]
+                            ),
+                            "omega_start_deg": collection["omega_start"],
+                            "phi_start_deg": collection["phi_start"],
+                            "chi_start_deg": collection["chi"],
+                            "rotation_direction": "Positive",
+                        }
+                    ],
+                    **with_energy_params,
+                },
+            }
+        )
+        for collection in collections
+    ]
+
+
+def create_parameters_from_agamemnon() -> Sequence[LoadCentreCollect]:
+    beamline_name = get_beamline_name("i03")
+    agamemnon_params = get_next_instruction(beamline_name)
+    return (
+        populate_parameters_from_agamemnon(agamemnon_params) if agamemnon_params else []
     )
 
 
-def compare_params(load_centre_collect_params):
+def compare_params(load_centre_collect_params: LoadCentreCollect):
     try:
-        beamline_name = get_beamline_name("i03")
-        agamemnon_params = get_next_instruction(beamline_name)
-
-        # Populate parameters from Agamemnon
-        parameters = populate_parameters_from_agamemnon(agamemnon_params)
-
+        lcc_requests = create_parameters_from_agamemnon()
         # Log differences against GDA populated parameters
-        differences = DeepDiff(
-            parameters, load_centre_collect_params, math_epsilon=1e-5
-        )
-        if differences:
-            LOGGER.info(
-                f"Different parameters found when directly reading from Hyperion: {differences}"
+        if not lcc_requests:
+            LOGGER.info("Agamemnon returned no instructions")
+        else:
+            differences = DeepDiff(
+                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
             )
-    except (ValueError, KeyError) as e:
-        LOGGER.warning(f"Failed to compare parameters: {e}")
-    except Exception as e:
-        LOGGER.warning(f"Unexpected error occurred. Failed to compare parameters: {e}")
+            if differences:
+                LOGGER.info(
+                    f"Different parameters found when directly reading from Hyperion: {differences}"
+                )
+    except (ValueError, KeyError):
+        LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
+    except Exception:
+        LOGGER.warning(
+            f"Unexpected error occurred. Failed to compare parameters: {traceback.format_exc()}"
+        )
 
 
 def update_params_from_agamemnon(parameters: T) -> T:
