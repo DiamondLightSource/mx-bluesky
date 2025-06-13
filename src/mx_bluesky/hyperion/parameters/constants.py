@@ -19,7 +19,6 @@ TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
 @dataclass(frozen=True)
 class I03Constants:
-    BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
     BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     DETECTOR = EIGER2_X_16M_SIZE
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"

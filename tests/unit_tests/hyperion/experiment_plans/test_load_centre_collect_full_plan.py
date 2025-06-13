@@ -126,15 +126,18 @@ def composite(
 
 
 @pytest.fixture
-def load_centre_collect_params_multi():
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+def load_centre_collect_params_multi(tmp_path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     return LoadCentreCollect(**params)
 
 
 @pytest.fixture
-def load_centre_collect_with_top_n_params():
+def load_centre_collect_with_top_n_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json",
+        tmp_path,
     )
     return LoadCentreCollect(**params)
 
@@ -144,14 +147,18 @@ def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
 
 
 def test_params_good_multi_rotation_load_centre_collect_params(
-    load_centre_collect_params_multi,
+    load_centre_collect_params_multi, tmp_path
 ):
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     LoadCentreCollect(**params)
 
 
-def test_params_with_varying_frames_per_rotation_is_rejected():
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+def test_params_with_varying_frames_per_rotation_is_rejected(tmp_path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     params["multi_rotation_scan"]["rotation_scans"][0]["scan_width_deg"] = 180
     params["multi_rotation_scan"]["rotation_scans"][1]["scan_width_deg"] = 90
     with pytest.raises(
@@ -169,8 +176,10 @@ def test_params_with_varying_frames_per_rotation_is_rejected():
         ["z_start_um", 3.0],
     ],
 )
-def test_params_with_start_xyz_is_rejected(param: str, value: float):
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+def test_params_with_start_xyz_is_rejected(param: str, value: float, tmp_path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     params["multi_rotation_scan"]["rotation_scans"][1][param] = value
     with pytest.raises(
         ValidationError,
@@ -179,8 +188,10 @@ def test_params_with_start_xyz_is_rejected(param: str, value: float):
         LoadCentreCollect(**params)
 
 
-def test_params_with_different_energy_for_rotation_gridscan_rejected():
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+def test_params_with_different_energy_for_rotation_gridscan_rejected(tmp_path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     params["multi_rotation_scan"]["demand_energy_ev"] = 11000
     params["robot_load_then_centre"]["demand_energy_ev"] = 11100
     with pytest.raises(
@@ -207,8 +218,12 @@ def test_params_with_different_energy_for_rotation_gridscan_rejected():
         ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
-def test_params_with_unexpected_info_in_robot_load_rejected(key: str, value: Any):
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+def test_params_with_unexpected_info_in_robot_load_rejected(
+    key: str, value: Any, tmp_path
+):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     params["robot_load_then_centre"][key] = value
     with pytest.raises(
         ValidationError, match="Unexpected keys in robot_load_then_centre"
@@ -234,9 +249,11 @@ def test_params_with_unexpected_info_in_robot_load_rejected(key: str, value: Any
     ],
 )
 def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
-    key: str, value: Any
+    key: str, value: Any, tmp_path
 ):
-    params = raw_params_from_file(GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION)
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
     params["multi_rotation_scan"][key] = value
     with pytest.raises(ValidationError, match="Unexpected keys in multi_rotation_scan"):
         LoadCentreCollect(**params)
@@ -473,9 +490,10 @@ def test_can_deserialize_top_n_by_max_count_params(
     assert load_centre_collect_with_top_n_params.select_centres.n == 5
 
 
-def test_bad_selection_method_is_rejected():
+def test_bad_selection_method_is_rejected(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json"
+        "tests/test_data/parameter_json_files/load_centre_collect_params_top_n_by_max_count.json",
+        tmp_path,
     )
     params["select_centres"]["name"] = "inject_bad_code_here"
     with pytest.raises(
@@ -764,24 +782,25 @@ def _compare_rotation_scans(
 
 @patch("mx_bluesky.common.parameters.components.os.makedirs")
 def test_load_centre_collect_creates_storage_directory_if_not_present(
-    mock_makedirs,
+    mock_makedirs, tmp_path
 ):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        tmp_path,
     )
     LoadCentreCollect(**params)
 
     mock_makedirs.assert_has_calls(
         [
             call(
-                "/tmp/dls/i03/data/2024/cm31105-4/auto/123458/xraycentring",
+                str(tmp_path / "123458/xraycentring"),
                 exist_ok=True,
             )
         ],
         any_order=True,
     )
     mock_makedirs.assert_has_calls(
-        [call("/tmp/dls/i03/data/2024/cm31105-4/auto/123458/", exist_ok=True)],
+        [call(f"{str(tmp_path)}/123458/", exist_ok=True)],
         any_order=True,
     )
 

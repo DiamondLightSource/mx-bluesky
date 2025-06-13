@@ -27,6 +27,9 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd.status import Status
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    OAV_SNAPSHOT_GROUP,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -37,9 +40,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
-    OAV_SNAPSHOT_GROUP,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -903,9 +903,10 @@ def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     )
 
 
-def test_multi_rotation_scan_params():
+def test_multi_rotation_scan_params(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = RotationScan(**raw_params)
     omega_starts = [s["omega_start_deg"] for s in raw_params["rotation_scans"]]

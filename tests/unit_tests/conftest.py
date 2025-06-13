@@ -2,20 +2,36 @@ import asyncio
 import time
 from collections.abc import Callable
 from functools import partial
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.common.beamlines import beamline_parameters
-from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.flux import Flux
+from dodal.devices.i03 import Beamstop
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model.documents import Event
 from ophyd_async.core import AsyncStatus
+from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+    FlyScanEssentialDevices,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -37,10 +53,18 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    FlyScanEssentialDevices,
+from mx_bluesky.common.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
 )
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import raw_params_from_file
 
 
@@ -173,10 +197,10 @@ def RE_with_subs(
 
 
 @pytest.fixture
-def test_fgs_params():
+def test_fgs_params(tmp_path):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
         )
     )
 
@@ -317,3 +341,77 @@ def dummy_rotation_data_collection_group_info():
         experiment_type="SAD",
         sample_id=364758,
     )
+
+
+@pytest.fixture
+def beamline_specific(
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    )
+
+
+@pytest.fixture
+def test_full_grid_scan_params(tmp_path):
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        tmp_path,
+    )
+    return GridCommon(**params)
+
+
+@pytest.fixture
+async def grid_detect_xrc_devices(
+    aperture_scatterguard: ApertureScatterguard,
+    backlight: Backlight,
+    beamstop_i03: Beamstop,
+    detector_motion: DetectorMotion,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    oav: OAV,
+    ophyd_pin_tip_detection: PinTipDetection,
+    zocalo: ZocaloResults,
+    synchrotron: Synchrotron,
+    fast_grid_scan: ZebraFastGridScan,
+    s4_slit_gaps: S4SlitGaps,
+    flux: Flux,
+    zebra,
+    zebra_shutter,
+    xbpm_feedback,
+    attenuator,
+    undulator,
+    undulator_dcm,
+    dcm,
+):
+    yield GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop_i03,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        zebra_fast_grid_scan=fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=ophyd_pin_tip_detection,
+        smargon=smargon,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        zocalo=zocalo,
+        dcm=dcm,
+        robot=MagicMock(spec=BartRobot),
+        sample_shutter=zebra_shutter,
+    )
+
+
+@pytest.fixture
+async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
+    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
+    composite.panda = MagicMock(spec=HDFPanda)
+    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    return composite

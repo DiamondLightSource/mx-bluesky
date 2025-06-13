@@ -6,13 +6,13 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    create_parameters_for_flyscan_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    create_parameters_for_flyscan_xray_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
 )
@@ -28,9 +28,10 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def load_centre_collect_params_with_panda():
+def load_centre_collect_params_with_panda(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json"
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        tmp_path,
     )
     params["robot_load_then_centre"]["features"]["use_panda_for_gridscan"] = True
     return LoadCentreCollect(**params)
@@ -144,9 +145,10 @@ def test_default_snapshot_path(minimal_3d_gridscan_params):
     )
 
 
-def test_osc_is_used():
+def test_osc_is_used(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     for osc in [0.001, 0.05, 0.1, 0.2, 0.75, 1, 1.43]:
         raw_params["rotation_increment_deg"] = osc
@@ -155,9 +157,10 @@ def test_osc_is_used():
         assert params.num_images == int(params.scan_width_deg / osc)
 
 
-def test_selected_aperture_uses_default():
+def test_selected_aperture_uses_default(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     raw_params["selected_aperture"] = None
     params = SingleRotationScan(**raw_params)
@@ -250,8 +253,11 @@ def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
     )
     assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
     flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
-        grid_detect_then_xrc_params, get_empty_grid_parameters()
+        grid_detect_then_xrc_params,
+        get_empty_grid_parameters(),
+        HyperionSpecifiedThreeDGridScan,
     )
+    assert type(flyscan_xrc_params) is HyperionSpecifiedThreeDGridScan
     assert flyscan_xrc_params.detector_params.enable_dev_shm
     assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
     assert flyscan_xrc_params.features.use_panda_for_gridscan

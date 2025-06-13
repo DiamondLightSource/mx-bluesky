@@ -7,11 +7,11 @@ from bluesky.utils import Msg
 from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -28,9 +28,10 @@ from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_
 
 
 @pytest.fixture
-def robot_load_then_centre_params():
+def robot_load_then_centre_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_and_centre_params.json",
+        tmp_path,
     )
     return RobotLoadThenCentre(**params)
 
@@ -80,7 +81,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     for name, value in vars(composite_passed).items():
         assert value == getattr(robot_load_composite, name)
 
-    for name in GridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
+    for name in HyperionGridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
         assert getattr(composite_passed, name), f"{name} not in composite"
 
     assert isinstance(params_passed, PinTipCentreThenXrayCentre)
