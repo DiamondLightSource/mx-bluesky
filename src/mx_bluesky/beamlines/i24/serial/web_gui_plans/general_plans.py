@@ -27,9 +27,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
     _run_plan_in_wrapper,
-    # main_fixed_target_plan,
-    # run_aborted_plan,
-    # tidy_up_after_collection_plan,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     upload_chip_map_to_geobrick,
@@ -235,47 +232,3 @@ def gui_run_chip_collection(
         dcid,
         pilatus_metadata,
     )
-
-
-# def _run_the_plan(
-#     zebra,
-#     pmac,
-#     aperture,
-#     backlight,
-#     beamstop,
-#     detector_stage,
-#     shutter,
-#     dcm,
-#     mirrors,
-#     beam_center_device,
-#     parameters,
-#     dcid,
-#     pilatus_metadata,
-# ):
-
-#     yield from bpp.contingency_wrapper(
-#         main_fixed_target_plan(
-#             zebra,
-#             pmac,
-#             aperture,
-#             backlight,
-#             beamstop,
-#             detector_stage,
-#             shutter,
-#             dcm,
-#             mirrors,
-#             beam_center_device,
-#             parameters,
-#             dcid,
-#             pilatus_metadata,
-#         ),
-#         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
-#         final_plan=lambda: (
-#             yield from tidy_up_after_collection_plan(
-#                 zebra, pmac, shutter, dcm, parameters, dcid
-#             )
-#         ),
-#         auto_raise=False,
-#     )
-
-#     yield from bps.null()
