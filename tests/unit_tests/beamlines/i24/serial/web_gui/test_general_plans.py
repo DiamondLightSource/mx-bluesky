@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
     gui_move_detector,
-    gui_set_parameters,
+    gui_run_chip_collection,
     gui_sleep,
     gui_stage_move_on_click,
 )
@@ -49,14 +49,14 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
-def test_gui_set_parameters_raises_error_for_empty_map(mock_det_type, RE):
+def test_gui_run_chip_collection_raises_error_for_empty_map(mock_det_type, RE):
     mock_det_type.side_effect = [fake_generator(Eiger())]
     with patch(
         "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.detector_motion"
     ):
         with pytest.raises(EmptyMapError):
             RE(
-                gui_set_parameters(
+                gui_run_chip_collection(
                     "/path/",
                     "chip",
                     0.01,

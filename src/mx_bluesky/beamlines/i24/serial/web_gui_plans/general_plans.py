@@ -113,7 +113,7 @@ def gui_move_detector(
 
 
 @bpp.run_decorator()
-def gui_set_parameters(
+def gui_run_chip_collection(
     sub_dir: str,
     chip_name: str,
     exp_time: float,
