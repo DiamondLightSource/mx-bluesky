@@ -164,6 +164,9 @@ def test_setup_tasks_in_gui_run_chip_collection(
         pilatus_metadata,
     ]
 
+    expected_params = dummy_params_without_pp
+    expected_params.pre_pump_exposure_s = 0.0
+
     with patch(
         "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_plan_in_wrapper",
         MagicMock(return_value=iter([])),
@@ -193,4 +196,18 @@ def test_setup_tasks_in_gui_run_chip_collection(
 
             patch_upload.assert_called_once_with(pmac, [1])
             mock_dcid.assert_called_once()
-            patch_wrapped_plan.assert_called_once()
+            patch_wrapped_plan.assert_called_once_with(
+                zebra,
+                pmac,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                eiger_beam_center,
+                expected_params,
+                mock_dcid(),
+                pilatus_metadata,
+            )
