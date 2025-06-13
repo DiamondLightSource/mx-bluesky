@@ -15,6 +15,7 @@ from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.zebra.zebra import Zebra
@@ -139,6 +140,7 @@ def gui_set_parameters(
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
     beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -244,6 +246,7 @@ def gui_set_parameters(
             beam_center_device,
             parameters,
             dcid,
+            pilatus_metadata,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
