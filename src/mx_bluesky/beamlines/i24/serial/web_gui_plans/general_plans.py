@@ -6,7 +6,6 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
-from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -137,7 +136,6 @@ def gui_run_chip_collection(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    attenuator: ReadOnlyAttenuator = inject("attenuator"),
     beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
     pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
@@ -204,14 +202,6 @@ def gui_run_chip_collection(
     # TODO run the run_fixed_target plan once params are set (GUI not ready yet)
 
     parameters = FixedTargetParameters(**params)
-
-    def abort_plan(pmac: PMAC):
-        SSX_LOGGER.warning("SOMETHING WENT WRONG, I AM ABORTING!")
-        yield from bps.trigger(pmac.abort_program, wait=True)
-
-    def final_plan():
-        SSX_LOGGER.warning("Cleaning up...")
-        yield from bps.sleep(1)
 
     # Create collection directory
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)

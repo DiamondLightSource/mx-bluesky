@@ -49,30 +49,57 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
-def test_gui_run_chip_collection_raises_error_for_empty_map(mock_det_type, RE):
+def test_gui_run_chip_collection_raises_error_for_empty_map(
+    mock_det_type,
+    RE,
+    pmac,
+    zebra,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    pilatus_beam_center,
+    eiger_beam_center,
+    pilatus_metadata,
+):
     mock_det_type.side_effect = [fake_generator(Eiger())]
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.detector_motion"
-    ):
-        with pytest.raises(EmptyMapError):
-            RE(
-                gui_run_chip_collection(
-                    "/path/",
-                    "chip",
-                    0.01,
-                    1300,
-                    0.3,
-                    1,
-                    "Oxford",
-                    "Lite",
-                    [],
-                    False,
-                    "Short1",
-                    0.01,
-                    0.005,
-                    0.0,
-                )
+    device_list = [
+        pmac,
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        pilatus_beam_center,
+        eiger_beam_center,
+        pilatus_metadata,
+    ]
+    with pytest.raises(EmptyMapError):
+        RE(
+            gui_run_chip_collection(
+                "/path/",
+                "chip",
+                0.01,
+                1300,
+                0.3,
+                1,
+                "Oxford",
+                "Lite",
+                [],
+                False,
+                "Short1",
+                0.01,
+                0.005,
+                0.0,
+                *device_list,
             )
+        )
 
 
 @patch(
