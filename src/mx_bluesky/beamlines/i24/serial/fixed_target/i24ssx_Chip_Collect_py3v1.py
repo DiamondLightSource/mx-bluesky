@@ -684,6 +684,38 @@ def run_fixed_target_plan(
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
 
+    yield from _run_plan_in_wrapper(
+        zebra,
+        pmac,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        pilatus_metadata,
+    )
+
+
+def _run_plan_in_wrapper(
+    zebra: Zebra,
+    pmac: PMAC,
+    aperture: Aperture,
+    backlight: DualBacklight,
+    beamstop: Beamstop,
+    detector_stage: DetectorMotion,
+    shutter: HutchShutter,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
+    parameters: FixedTargetParameters,
+    dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
+) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
             zebra,

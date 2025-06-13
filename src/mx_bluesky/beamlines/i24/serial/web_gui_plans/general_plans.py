@@ -26,9 +26,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-    main_fixed_target_plan,
-    run_aborted_plan,
-    tidy_up_after_collection_plan,
+    _run_plan_in_wrapper,
+    # main_fixed_target_plan,
+    # run_aborted_plan,
+    # tidy_up_after_collection_plan,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     upload_chip_map_to_geobrick,
@@ -199,7 +200,6 @@ def gui_run_chip_collection(
         "checker_pattern": checker_pattern,
         "pre_pump_exposure_s": pre_pump,
     }
-    # TODO run the run_fixed_target plan once params are set (GUI not ready yet)
 
     parameters = FixedTargetParameters(**params)
 
@@ -209,42 +209,73 @@ def gui_run_chip_collection(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    # beam_center_device = get_beam_center_device(parameters.detector_name.value)
-    SSX_LOGGER.warning("GETTING A BC HERE")
     beam_center_device = (
         beam_center_eiger
         if parameters.detector_name is DetectorName.EIGER
         else beam_center_pilatus
     )
-    SSX_LOGGER.info("BEAM CENTER DEVICE READY")
+    SSX_LOGGER.info("Beam center device ready")
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
-    SSX_LOGGER.info("HERE'S A DCID")
+    SSX_LOGGER.info("DCID created")
 
-    yield from bpp.contingency_wrapper(
-        main_fixed_target_plan(
-            zebra,
-            pmac,
-            aperture,
-            backlight,
-            beamstop,
-            detector_stage,
-            shutter,
-            dcm,
-            mirrors,
-            beam_center_device,
-            parameters,
-            dcid,
-            pilatus_metadata,
-        ),
-        except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
-        final_plan=lambda: (
-            yield from tidy_up_after_collection_plan(
-                zebra, pmac, shutter, dcm, parameters, dcid
-            )
-        ),
-        auto_raise=False,
+    yield from _run_plan_in_wrapper(
+        zebra,
+        pmac,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        pilatus_metadata,
     )
-    SSX_LOGGER.info("ALL DONE!")
-    yield from bps.sleep(1)
+
+
+# def _run_the_plan(
+#     zebra,
+#     pmac,
+#     aperture,
+#     backlight,
+#     beamstop,
+#     detector_stage,
+#     shutter,
+#     dcm,
+#     mirrors,
+#     beam_center_device,
+#     parameters,
+#     dcid,
+#     pilatus_metadata,
+# ):
+
+#     yield from bpp.contingency_wrapper(
+#         main_fixed_target_plan(
+#             zebra,
+#             pmac,
+#             aperture,
+#             backlight,
+#             beamstop,
+#             detector_stage,
+#             shutter,
+#             dcm,
+#             mirrors,
+#             beam_center_device,
+#             parameters,
+#             dcid,
+#             pilatus_metadata,
+#         ),
+#         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
+#         final_plan=lambda: (
+#             yield from tidy_up_after_collection_plan(
+#                 zebra, pmac, shutter, dcm, parameters, dcid
+#             )
+#         ),
+#         auto_raise=False,
+#     )
+
+#     yield from bps.null()

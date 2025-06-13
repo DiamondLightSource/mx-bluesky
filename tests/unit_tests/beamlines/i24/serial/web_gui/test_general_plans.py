@@ -1,4 +1,5 @@
-from unittest.mock import ANY, patch
+from pathlib import Path
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from dodal.devices.i24.dual_backlight import BacklightPositions
@@ -120,3 +121,76 @@ async def test_gui_move_backlight(mock_logger, position, backlight, RE):
         == BacklightPositions(position)
     )
     mock_logger.debug.assert_called_with(f"Backlight moved to {position}")
+
+
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._read_visit_directory_from_file"
+)
+def test_setup_tasks_in_gui_run_chip_collection(
+    mock_read_visit,
+    mock_det_type,
+    mock_dcid,
+    RE,
+    pmac,
+    zebra,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    pilatus_beam_center,
+    eiger_beam_center,
+    pilatus_metadata,
+    dummy_params_without_pp,
+):
+    mock_read_visit.return_value = Path("/tmp/dls/i24/fixed/foo")
+    mock_det_type.side_effect = [fake_generator(Eiger())]
+    device_list = [
+        pmac,
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        pilatus_beam_center,
+        eiger_beam_center,
+        pilatus_metadata,
+    ]
+
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._run_plan_in_wrapper",
+        MagicMock(return_value=iter([])),
+    ) as patch_wrapped_plan:
+        with patch(
+            "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
+        ) as patch_upload:
+            RE(
+                gui_run_chip_collection(
+                    "bar",
+                    "chip",
+                    0.01,
+                    100,
+                    1.0,
+                    1,
+                    "Oxford",
+                    "Lite",
+                    [1],
+                    False,
+                    "NoPP",
+                    0.0,
+                    0.0,
+                    0.0,
+                    *device_list,
+                )
+            )
+
+            patch_upload.assert_called_once_with(pmac, [1])
+            mock_dcid.assert_called_once()
+            patch_wrapped_plan.assert_called_once()
