@@ -11,18 +11,10 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_move_backlight,
     gui_move_detector,
     gui_run_chip_collection,
-    gui_sleep,
     gui_stage_move_on_click,
 )
 
 from ..conftest import fake_generator
-
-
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.sleep")
-def test_gui_sleep(fake_sleep, RE):
-    RE(gui_sleep(3))
-
-    assert fake_sleep.call_count == 3
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
