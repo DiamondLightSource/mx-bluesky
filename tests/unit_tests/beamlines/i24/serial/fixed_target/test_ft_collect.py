@@ -576,7 +576,7 @@ def test_setup_tasks_in_run_fixed_target_plan(
     fake_read.side_effect = [fake_generator(dummy_params_without_pp)]
     with (
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1._run_plan_in_wrapper"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.run_plan_in_wrapper"
         ) as patch_wrapped_plan,
         patch(
             "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.upload_chip_map_to_geobrick"

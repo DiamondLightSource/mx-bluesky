@@ -684,7 +684,7 @@ def run_fixed_target_plan(
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
 
-    yield from _run_plan_in_wrapper(
+    yield from run_plan_in_wrapper(
         zebra,
         pmac,
         aperture,
@@ -701,7 +701,7 @@ def run_fixed_target_plan(
     )
 
 
-def _run_plan_in_wrapper(
+def run_plan_in_wrapper(
     zebra: Zebra,
     pmac: PMAC,
     aperture: Aperture,

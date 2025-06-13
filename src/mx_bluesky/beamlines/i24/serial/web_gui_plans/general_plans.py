@@ -26,7 +26,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-    _run_plan_in_wrapper,
+    run_plan_in_wrapper,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     upload_chip_map_to_geobrick,
@@ -221,7 +221,7 @@ def gui_run_chip_collection(
     dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
     SSX_LOGGER.info("DCID created")
 
-    yield from _run_plan_in_wrapper(
+    yield from run_plan_in_wrapper(
         zebra,
         pmac,
         aperture,

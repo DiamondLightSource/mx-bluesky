@@ -165,7 +165,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
     ]
 
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._run_plan_in_wrapper",
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_plan_in_wrapper",
         MagicMock(return_value=iter([])),
     ) as patch_wrapped_plan:
         with patch(
