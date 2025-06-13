@@ -5,24 +5,12 @@ import numpy as np
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.backlight import Backlight
-from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
-from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
-from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
 from event_model import Event
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
-from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -33,9 +21,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -101,55 +86,6 @@ BASIC_POST_SETUP_DOC = {
     "flux-flux_reading": 10,
     "dcm-energy_in_kev": 11.105,
 }
-
-
-@pytest.fixture
-async def grid_detect_devices(
-    aperture_scatterguard: ApertureScatterguard,
-    backlight: Backlight,
-    beamstop_i03: Beamstop,
-    detector_motion: DetectorMotion,
-    eiger: EigerDetector,
-    smargon: Smargon,
-    oav: OAV,
-    ophyd_pin_tip_detection: PinTipDetection,
-    zocalo: ZocaloResults,
-    synchrotron: Synchrotron,
-    fast_grid_scan: ZebraFastGridScan,
-    s4_slit_gaps: S4SlitGaps,
-    flux: Flux,
-    zebra,
-    zebra_shutter,
-    xbpm_feedback,
-    attenuator,
-    undulator,
-    undulator_dcm,
-    dcm,
-):
-    yield GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=attenuator,
-        backlight=backlight,
-        beamstop=beamstop_i03,
-        detector_motion=detector_motion,
-        eiger=eiger,
-        zebra_fast_grid_scan=fast_grid_scan,
-        flux=flux,
-        oav=oav,
-        pin_tip_detection=ophyd_pin_tip_detection,
-        smargon=smargon,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        undulator=undulator,
-        xbpm_feedback=xbpm_feedback,
-        zebra=zebra,
-        zocalo=zocalo,
-        panda=MagicMock(spec=HDFPanda),
-        panda_fast_grid_scan=MagicMock(spec=PandAFastGridScan),
-        dcm=dcm,
-        robot=MagicMock(spec=BartRobot),
-        sample_shutter=zebra_shutter,
-    )
 
 
 @pytest.fixture
@@ -386,7 +322,7 @@ def sim_fire_event_on_open_run(sim_run_engine: RunEngineSimulator, run_name: str
 @pytest.fixture
 def grid_detection_callback_with_detected_grid():
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
         autospec=True,
     ) as callback:
         callback.return_value.get_grid_parameters.return_value = {
