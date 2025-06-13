@@ -16,7 +16,7 @@ from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
@@ -63,14 +63,18 @@ def gui_move_backlight(
 
 
 @bpp.run_decorator()
-def gui_set_zoom_level(position: str, oav: OAV = inject("oav")) -> MsgGenerator:
+def gui_set_zoom_level(
+    position: str, oav: OAVBeamCentreFile = inject("oav")
+) -> MsgGenerator:
     yield from bps.abs_set(oav.zoom_controller, position, wait=True)
     SSX_LOGGER.debug(f"Setting zoom level to {position}")
 
 
 @bpp.run_decorator()
 def gui_stage_move_on_click(
-    position_px: tuple[int, int], oav: OAV = inject("oav"), pmac: PMAC = inject("pmac")
+    position_px: tuple[int, int],
+    oav: OAVBeamCentreFile = inject("oav"),
+    pmac: PMAC = inject("pmac"),
 ) -> MsgGenerator:
     yield from _move_on_mouse_click_plan(oav, pmac, position_px)
 
