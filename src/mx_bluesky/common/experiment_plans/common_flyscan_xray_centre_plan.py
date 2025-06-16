@@ -241,7 +241,7 @@ def run_gridscan(
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
+        yield from bps.abs_set(fgs_composite.sample_stage.omega, 0)
 
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()

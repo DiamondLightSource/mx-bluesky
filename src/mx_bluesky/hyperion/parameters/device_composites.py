@@ -15,6 +15,7 @@ from dodal.devices.fast_grid_scan import (
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -52,6 +53,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
     backlight: Backlight
     xbpm_feedback: XBPMFeedback
     zebra_fast_grid_scan: ZebraFastGridScan
+    smargon: Smargon
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

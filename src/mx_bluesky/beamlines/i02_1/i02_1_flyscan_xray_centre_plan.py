@@ -10,7 +10,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params_plan,
 )
-from dodal.devices.smargon import Smargon
+from dodal.devices.i02_1.sample_motors import SampleMotors
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zocalo.zocalo_results import (
@@ -37,13 +37,10 @@ from mx_bluesky.common.utils.log import LOGGER, do_default_logging_setup
 class FlyScanXRayCentreComposite(FlyScanEssentialDevices):
     """All devices which are directly or indirectly required by this plan"""
 
+    # todo add fast grid scan device to essentials
     zebra_fast_grid_scan: TwoDFastGridScan
     zebra: Zebra
-
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
+    sample_stages: SampleMotors
 
 
 def construct_i02_1_specific_features(
@@ -52,7 +49,7 @@ def construct_i02_1_specific_features(
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
         fgs_composite.synchrotron.synchrotron_mode,
-        fgs_composite.smargon,
+        fgs_composite.sample_stages,
     ]
     signals_to_read_during_collection = [
         fgs_composite.eiger.bit_depth,
@@ -74,7 +71,6 @@ def construct_i02_1_specific_features(
 
 def _zebra_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: SpecifiedThreeDGridScan,
 ):
     yield from setup_zebra_for_xrc_flyscan(fgs_composite.zebra)
 
@@ -96,7 +92,7 @@ def i02_1_flyscan_xray_centre(
     synchrotron: Synchrotron = inject("synchrotron"),
     zebra: Zebra = inject("zebra"),
     zocalo: ZocaloResults = inject("zocalo"),
-    smargon: Smargon = inject("smargon"),
+    sample_motors: SampleMotors = inject("sample_motors"),
 ) -> MsgGenerator:
     """BlueAPI entry point for XRC grid scans"""
 
@@ -108,7 +104,13 @@ def i02_1_flyscan_xray_centre(
     # Composites have to be made this way until https://github.com/DiamondLightSource/dodal/issues/874
     # is done and we can properly use composite devices in BlueAPI
     composite = FlyScanXRayCentreComposite(
-        eiger, synchrotron, zocalo, smargon, zebra_fast_grid_scan, zebra
+        eiger,
+        synchrotron,
+        zocalo,
+        sample_motors.omega,
+        zebra_fast_grid_scan,
+        zebra,
+        sample_motors,
     )
 
     beamline_specific = construct_i02_1_specific_features(composite, parameters)

@@ -1,3 +1,5 @@
+from typing import Protocol
+
 import pydantic
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
@@ -23,6 +25,12 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.epics.motor import Motor
+
+
+# FGS plan only uses the gonio to set omega to 0, no need to constrain to a more complex device
+class SampleStageWithMotor(Protocol):
+    omega: Motor
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -30,7 +38,7 @@ class FlyScanEssentialDevices:
     eiger: EigerDetector
     synchrotron: Synchrotron
     zocalo: ZocaloResults
-    smargon: Smargon
+    sample_stage: SampleStageWithMotor
     # TODO add fgs device
 
 
@@ -64,3 +72,4 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     zebra: Zebra
     robot: BartRobot
     sample_shutter: ZebraShutter
+    smargon: Smargon
