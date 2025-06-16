@@ -24,7 +24,7 @@ dependencies = [
     "jupyterlab",
     "matplotlib",
     "nexgen >= 0.11.0",
-    "numpy",
+    "numpy == 2.2.6",
     "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
