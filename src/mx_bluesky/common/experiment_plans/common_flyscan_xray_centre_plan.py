@@ -7,35 +7,32 @@ from functools import partial
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-import pydantic
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
 )
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     XrcResult,
     get_full_processing_results,
 )
 
+from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
+    ZOCALO_STAGE_GROUP,
+    kickoff_and_complete_gridscan,
+)
+from mx_bluesky.common.experiment_plans.read_hardware import (
+    read_hardware_plan,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
+from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.inner_plans.do_fgs import (
-    ZOCALO_STAGE_GROUP,
-    kickoff_and_complete_gridscan,
-)
-from mx_bluesky.common.plans.read_hardware import (
-    read_hardware_plan,
-)
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     SampleException,
@@ -43,14 +40,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices:
-    eiger: EigerDetector
-    synchrotron: Synchrotron
-    zocalo: ZocaloResults
-    smargon: Smargon
 
 
 @dataclasses.dataclass
@@ -251,6 +240,9 @@ def run_gridscan(
         parameters.scan_indices,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
+
+    # GDA's gridscans requires Z steps to be at 0, so make sure we leave this device
+    # in a GDA-happy state.
     yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 

@@ -19,7 +19,6 @@ TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
 @dataclass(frozen=True)
 class I03Constants:
-    BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
     BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     DETECTOR = EIGER2_X_16M_SIZE
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
@@ -28,6 +27,7 @@ class I03Constants:
     USE_PANDA_FOR_GRIDSCAN = False
     SET_STUB_OFFSETS = False
     OMEGA_FLIP = True
+    ALTERNATE_ROTATION_DIRECTION = True
 
     # Turns on GPU processing for zocalo and uses the results that come back
     USE_GPU_RESULTS = False

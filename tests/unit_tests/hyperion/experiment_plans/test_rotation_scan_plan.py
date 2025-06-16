@@ -27,6 +27,9 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd.status import Status
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    OAV_SNAPSHOT_GROUP,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -37,9 +40,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
-    OAV_SNAPSHOT_GROUP,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -469,20 +469,44 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.OUT
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.OUT
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+
+
+def test_rotation_scan_waits_on_aperture_being_prepared_before_moving_in(
+    rotation_scan_simulated_messages,
+):
+    msgs = assert_message_and_return_remaining(
+        rotation_scan_simulated_messages,
+        lambda msg: msg.command == "prepare"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == ApertureValue.SMALL
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
 
@@ -903,9 +927,10 @@ def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     )
 
 
-def test_multi_rotation_scan_params():
+def test_multi_rotation_scan_params(tmp_path):
     raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = RotationScan(**raw_params)
     omega_starts = [s["omega_start_deg"] for s in raw_params["rotation_scans"]]
@@ -1320,6 +1345,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         assert (
             first_upsert_data["axisend"] - first_upsert_data["axisstart"]
             == rotation_params.scan_width_deg
+            * rotation_params.rotation_direction.multiplier
         )
         assert first_upsert_data["nimages"] == rotation_params.num_images
         second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])

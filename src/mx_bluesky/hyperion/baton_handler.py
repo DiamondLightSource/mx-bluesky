@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
@@ -37,9 +39,12 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
     while requested_user == HYPERION_USER:
 
         def inner_loop():
-            parameters: LoadCentreCollect | None = create_parameters_from_agamemnon()  # type: ignore # not complete until https://github.com/DiamondLightSource/mx-bluesky/issues/773
-            if parameters:
-                yield from load_centre_collect_full(composite, parameters)
+            parameter_list: Sequence[LoadCentreCollect] = (
+                create_parameters_from_agamemnon()
+            )
+            if parameter_list:
+                for parameters in parameter_list:
+                    yield from load_centre_collect_full(composite, parameters)
             else:
                 yield from bps.mv(baton.requested_user, NO_USER)
 

@@ -1,4 +1,5 @@
 import json
+from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
@@ -274,149 +275,190 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
     assert mock_log in mock_logger.mock_calls[0][1][0]
 
 
+@pytest.fixture
+def agamemnon_response(request) -> Generator[str, None, None]:
+    with (
+        patch("mx_bluesky.common.parameters.components.os", new=MagicMock()),
+        patch(
+            "mx_bluesky.hyperion.external_interaction.agamemnon.requests"
+        ) as mock_requests,
+        open(request.param) as json_file,
+    ):
+        example_json = json_file.read()
+        mock_requests.get.return_value.content = example_json
+        yield example_json
+
+
 @pytest.mark.parametrize(
-    "agamemnon_params",
-    ["example_collect.json", "example_collect_multipin.json"],
+    "agamemnon_response",
+    [
+        "tests/test_data/agamemnon/example_native.json",
+        "tests/test_data/agamemnon/example_collect_multipin.json",
+    ],
+    indirect=True,
 )
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @patch("dodal.utils.os", new=MagicMock())
 def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
-    mock_requests: MagicMock,
     mock_logger: MagicMock,
-    agamemnon_params: str,
+    agamemnon_response: str,
     load_centre_collect_params: LoadCentreCollect,
 ):
-    with open(f"tests/test_data/agamemnon/{agamemnon_params}") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     compare_params(load_centre_collect_params)
     mock_logger.warning.assert_not_called()
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_populate_parameters_from_agamemnon_contains_expected_data(
-    mock_requests: MagicMock,
-):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
+def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    assert hyperion_params.visit == "cm00000-0"
-    assert isclose(hyperion_params.detector_distance_mm, 180.8)  # type: ignore
-    assert hyperion_params.sample_id == 12345
-    assert hyperion_params.sample_puck == 40
-    assert hyperion_params.sample_pin == 3
-    assert str(hyperion_params.parameter_model_version) == "5.3.0"
-    assert hyperion_params.select_centres.n == 1
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    for hyperion_params in hyperion_params_list:
+        assert hyperion_params.visit == "mx34598-77"
+        assert isclose(hyperion_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
+        assert hyperion_params.sample_id == 6501159
+        assert hyperion_params.sample_puck == 5
+        assert hyperion_params.sample_pin == 4
+        assert str(hyperion_params.parameter_model_version) == "5.3.0"
+        assert hyperion_params.select_centres.n == 1
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
 def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    robot_load_params = hyperion_params.robot_load_then_centre
-    assert robot_load_params.visit == "cm00000-0"
-    assert isclose(robot_load_params.detector_distance_mm, 180.8)  # type: ignore
-    assert robot_load_params.sample_id == 12345
-    assert robot_load_params.sample_puck == 40
-    assert robot_load_params.sample_pin == 3
-    assert robot_load_params.demand_energy_ev == 12700.045934258673
-    assert robot_load_params.omega_start_deg == 0.0
-    assert robot_load_params.chi_start_deg == 0.0
-    assert robot_load_params.transmission_frac == 1.0
-    assert robot_load_params.tip_offset_um == 300.0
-    assert robot_load_params.grid_width_um == 600.0
-    assert robot_load_params.features.use_gpu_results
-    assert str(robot_load_params.parameter_model_version) == "5.3.0"
-    assert (
-        robot_load_params.storage_directory
-        == "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring"
-    )
-    assert robot_load_params.file_name == "test_xtal"
-    assert robot_load_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring/snapshots"
-    )
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params_list) == 2
+    assert hyperion_params_list[0].robot_load_then_centre.chi_start_deg == 0.0
+    assert hyperion_params_list[1].robot_load_then_centre.chi_start_deg == 30.0
+    for robot_load_params in [
+        params.robot_load_then_centre for params in hyperion_params_list
+    ]:
+        assert robot_load_params.visit == "mx34598-77"
+        assert isclose(robot_load_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
+        assert robot_load_params.sample_id == 6501159
+        assert robot_load_params.sample_puck == 5
+        assert robot_load_params.sample_pin == 4
+        assert robot_load_params.demand_energy_ev == 12700.045934258673
+        assert robot_load_params.omega_start_deg == 0.0
+        assert robot_load_params.transmission_frac == 1.0
+        assert robot_load_params.tip_offset_um == 300.0
+        assert robot_load_params.grid_width_um == 600.0
+        assert robot_load_params.features.use_gpu_results
+        assert str(robot_load_params.parameter_model_version) == "5.3.0"
+        assert (
+            robot_load_params.storage_directory
+            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring"
+        )
+        assert robot_load_params.file_name == "CBLBA-x00242"
+        assert robot_load_params.snapshot_directory == PosixPath(
+            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring/snapshots"
+        )
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
     agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    rotation_params = hyperion_params.multi_rotation_scan
-    assert rotation_params.visit == "cm00000-0"
-    assert isclose(rotation_params.detector_distance_mm, 180.8)  # type: ignore
-    assert rotation_params.detector_params.omega_start == 0.0
-    assert rotation_params.detector_params.exposure_time_s == 0.002
-    assert rotation_params.detector_params.num_images_per_trigger == 3600
-    assert rotation_params.num_images == 3600
-    assert rotation_params.transmission_frac == 0.5
-    assert rotation_params.comment == "Complete_P1_sweep1 "
-    assert rotation_params.ispyb_experiment_type == "Characterization"
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params_list) == 2
+    for hyperion_params in hyperion_params_list:
+        rotation_params = hyperion_params.multi_rotation_scan
+        assert rotation_params.visit == "mx34598-77"
+        assert isclose(rotation_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
+        assert rotation_params.detector_params.omega_start == 0.0
+        assert rotation_params.detector_params.exposure_time_s == 0.003
+        assert rotation_params.detector_params.num_images_per_trigger == 3600
+        assert rotation_params.num_images == 3600
+        assert rotation_params.transmission_frac == 0.1426315789473684
+        assert rotation_params.comment == "Complete_P1_sweep1 "
+        assert rotation_params.ispyb_experiment_type == "OSC"
 
-    assert rotation_params.sample_puck == 40
-    assert rotation_params.sample_pin == 3
+        assert rotation_params.sample_puck == 5
+        assert rotation_params.sample_pin == 4
 
-    individual_scans = list(rotation_params.single_rotation_scans)
-    assert len(individual_scans) == 1
+        assert rotation_params.demand_energy_ev == 12700.045934258673
+        assert str(rotation_params.parameter_model_version) == "5.3.0"
+        assert (
+            rotation_params.storage_directory
+            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242"
+        )
+        assert rotation_params.file_name == "CBLBA-x00242"
+        assert rotation_params.snapshot_directory == PosixPath(
+            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/snapshots"
+        )
+
+    individual_scans = list(
+        hyperion_params_list[0].multi_rotation_scan.single_rotation_scans
+    ) + list(hyperion_params_list[1].multi_rotation_scan.single_rotation_scans)
+    assert len(individual_scans) == 2
     assert individual_scans[0].scan_points["omega"][1] == 0.1
     assert individual_scans[0].phi_start_deg == 0.0
     assert individual_scans[0].chi_start_deg == 0.0
     assert individual_scans[0].rotation_direction == RotationDirection.POSITIVE
+    assert individual_scans[1].scan_points["omega"][1] == 0.1
+    assert individual_scans[1].phi_start_deg == 0.0
+    assert individual_scans[1].chi_start_deg == 30.0
+    assert individual_scans[1].rotation_direction == RotationDirection.POSITIVE
 
-    assert rotation_params.demand_energy_ev == 12700.045934258673
-    assert str(rotation_params.parameter_model_version) == "5.3.0"
-    assert rotation_params.storage_directory == "/dls/tmp/data/year/cm00000-0/auto/test"
-    assert rotation_params.file_name == "test_xtal"
-    assert rotation_params.snapshot_directory == PosixPath(
-        "/dls/tmp/data/year/cm00000-0/auto/test/snapshots"
+
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect_multipin.json"],
+    indirect=True,
+)
+def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    for hyperion_params in hyperion_params_list:
+        assert hyperion_params.select_centres.n == 6
+
+
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
+def test_populate_parameters_creates_multiple_load_centre_collect_for_native_collection(
+    agamemnon_response,
+):
+    agamemnon_params = get_next_instruction("i03")
+    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    assert len(hyperion_params_list) == 2
+    assert (
+        sum(
+            [
+                len(hyperion_params.multi_rotation_scan.rotation_scans)
+                for hyperion_params in hyperion_params_list
+            ]
+        )
+        == 2
     )
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_populate_multipin_parameters_from_agamemnon(
-    mock_requests: MagicMock,
-):
-    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params = populate_parameters_from_agamemnon(agamemnon_params)
-    assert hyperion_params.select_centres.n == 6
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
-def test_get_withenergy_parameters_from_agamemnon(mock_requests: MagicMock):
-    with open("tests/test_data/agamemnon/example_collect.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
-
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
+def test_get_withenergy_parameters_from_agamemnon(agamemnon_response):
     agamemnon_params = get_next_instruction("i03")
     demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] == 12700.045934258673
@@ -429,21 +471,21 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_create_parameters_from_agamemnon_returns_none_if_queue_is_empty(
+def test_create_parameters_from_agamemnon_returns_empty_list_if_queue_is_empty(
     mock_requests,
 ):
     mock_requests.get.return_value.content = json.dumps({"collect": {}})
     params = create_parameters_from_agamemnon()
-    assert params is None
+    assert params == []
 
 
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.common.parameters.components.os", new=MagicMock())
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect_multipin.json"],
+    indirect=True,
+)
 def test_create_parameters_from_agamemnon_does_not_return_none_if_queue_is_not_empty(
-    mock_requests: MagicMock,
+    agamemnon_response,
 ):
-    with open("tests/test_data/agamemnon/example_collect_multipin.json") as json_file:
-        example_json = json_file.read()
-        mock_requests.get.return_value.content = example_json
     params = create_parameters_from_agamemnon()
     assert params is not None

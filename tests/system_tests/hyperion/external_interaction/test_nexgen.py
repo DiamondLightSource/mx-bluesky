@@ -1,13 +1,15 @@
 import os
 import re
 import subprocess
+from datetime import datetime
 from os import environ
+from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -25,9 +27,10 @@ DOCKER = environ.get("DOCKER", "docker")
 
 
 @pytest.fixture
-def test_params(tmpdir):
+def test_params(tmp_path):
     param_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = SingleRotationScan(**param_dict)
     params.demand_energy_ev = 12700
@@ -54,6 +57,12 @@ def test_params(tmpdir):
             "ins_8_5_expected_output.txt",
         ),
     ],
+)
+@patch(
+    "mx_bluesky.common.external_interaction.nexus.nexus_utils.time.time",
+    new=MagicMock(
+        return_value=datetime.fromisoformat("2024-05-03T17:59:43Z").timestamp()
+    ),
 )
 @pytest.mark.system_test
 def test_rotation_nexgen(
@@ -118,8 +127,6 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
                 i += 1
                 expected_line = f.readline().rstrip("\n")
                 actual_line = next(it_actual_lines)
-                if DATE_PATTERN.match(actual_line):
-                    continue
                 assert actual_line == expected_line, (
                     f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
                 )

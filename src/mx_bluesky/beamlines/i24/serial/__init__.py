@@ -2,7 +2,8 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
     gui_move_detector,
-    gui_set_parameters,
+    gui_run_chip_collection,
+    gui_set_zoom_level,
     gui_sleep,
     gui_stage_move_on_click,
 )
@@ -57,6 +58,7 @@ __all__ = [
     "gui_gonio_move_on_click",
     "gui_sleep",
     "gui_move_detector",
-    "gui_set_parameters",
+    "gui_run_chip_collection",
     "gui_move_backlight",
+    "gui_set_zoom_level",
 ]
