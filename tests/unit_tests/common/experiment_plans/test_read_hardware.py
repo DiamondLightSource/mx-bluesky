@@ -21,12 +21,12 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.read_hardware import (
     read_hardware_for_zocalo,
     read_hardware_plan,
 )
+from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 
 @pytest.fixture

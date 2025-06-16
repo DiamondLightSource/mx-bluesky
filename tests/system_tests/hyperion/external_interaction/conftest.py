@@ -44,14 +44,12 @@ from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
@@ -277,7 +275,7 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
 ):
-    composite = GridDetectThenXRayCentreComposite(
+    composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
