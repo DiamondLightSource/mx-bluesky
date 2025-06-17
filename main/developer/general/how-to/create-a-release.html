@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Create a New Release &#8212; mx-bluesky 1.0.1.dev277+g0ffb8fba7 documentation</title>
+    <title>Create a New Release &#8212; mx-bluesky 1.0.1.dev278+g09e227e27 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=a542f463"></script>
+    <script src="../../../_static/documentation_options.js?v=cc637f50"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -509,7 +509,8 @@
 <h2>Release<a class="headerlink" href="#release" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
 <li><p>Create a new branch from main named pre followed by the release version e.g. pre_v0.1.0. The release versions should look like <code class="docutils literal notranslate"><span class="pre">v{major}.{minor}.{patch}</span></code>.</p></li>
-<li><p>On this branch pin the up-to-date version of dodal and the latest release of nexgen if necessary.</p></li>
+<li><p>On this branch pin the up-to-date version of dodal and the latest release of nexgen if necessary, then push to GitHub.</p></li>
+<li><p>Make sure the CI is passing for this new pre-release branch.</p></li>
 <li><p>Go <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/releases/new">here</a>.</p></li>
 <li><p>Select Choose a new tag and type the version of the release, then select the branch created in step 1 as the target.</p></li>
 <li><p>Click on Generate release notes. This will create a starting set of release notes based on PR titles since the last release.</p></li>
