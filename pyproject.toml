@@ -36,6 +36,7 @@ dependencies = [
     "scanspec",
     "scipy",
     "semver",
+    "deepdiff",
     "matplotlib",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint

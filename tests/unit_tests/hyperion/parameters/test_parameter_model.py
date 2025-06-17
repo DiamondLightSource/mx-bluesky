@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -176,6 +177,37 @@ def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
     # Config server shouldn't update values which were explicitly provided
     test_params.features.update_self_from_server()
     assert test_params.features.use_panda_for_gridscan
+
+
+@pytest.mark.parametrize(
+    "feature_set, expected_dev_shm",
+    [
+        (
+            {
+                "use_gpu_results": True,
+            },
+            True,
+        ),
+        (
+            {
+                "use_gpu_results": False,
+            },
+            False,
+        ),
+    ],
+)
+@patch("mx_bluesky.common.parameters.components.os")
+def test_gpu_enabled_if_use_gpu_results_or_compare_gpu_enabled(
+    _, feature_set, expected_dev_shm, minimal_3d_gridscan_params
+):
+    minimal_3d_gridscan_params["detector_distance_mm"] = 100
+
+    grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+    assert not grid_scan.detector_params.enable_dev_shm
+
+    minimal_3d_gridscan_params["features"] = feature_set
+    grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+    assert grid_scan.detector_params.enable_dev_shm == expected_dev_shm
 
 
 def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
