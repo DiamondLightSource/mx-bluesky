@@ -1,12 +1,14 @@
 import uuid
-from datetime import UTC, datetime, timedelta
-from urllib.parse import quote
 
 import requests
 from dodal.log import LOGGER
 from requests.auth import HTTPBasicAuth
 
 from mx_bluesky.common.external_interaction.alerting import AlertService, Metadata
+from mx_bluesky.common.external_interaction.alerting._service import (
+    generator_url,
+    ispyb_url,
+)
 
 
 class AlertManagerAlertService(AlertService):
@@ -49,11 +51,11 @@ class AlertManagerAlertService(AlertService):
                     "alert_id": id,
                 }
                 | metadata,
-                "generatorURL": self._generator_url(),
+                "generatorURL": generator_url(self._graylog_stream),
             }
         ]
         if sample_id := metadata.get(Metadata.SAMPLE_ID):
-            payload[0]["annotations"]["ispyb_url"] = self._ispybUrl(sample_id)
+            payload[0]["annotations"]["ispyb_url"] = ispyb_url(sample_id)
 
         LOGGER.info(f"Raised alert id {id}")
         with self._session() as session:
@@ -72,15 +74,3 @@ class AlertManagerAlertService(AlertService):
             session.auth = HTTPBasicAuth(self._username, self._password)
         session.headers["Accept"] = "application/json"
         return session
-
-    def _ispybUrl(self, sample_id: str):
-        return f"https://ispyb.diamond.ac.uk/samples/sid/{quote(sample_id)}"
-
-    def _generator_url(self):
-        to_time = datetime.now(UTC)
-        from_time = to_time - timedelta(minutes=15)
-        return (
-            f"https://graylog.diamond.ac.uk/streams/{quote(self._graylog_stream)}/search?q=&rangetype=absolute&"
-            f"from={quote(from_time.isoformat(timespec='milliseconds'))}&to="
-            f"{quote(to_time.isoformat(timespec='milliseconds'))}"
-        )

@@ -18,6 +18,9 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
@@ -26,10 +29,12 @@ from mx_bluesky.hyperion.__main__ import (
     BlueskyRunner,
     Status,
     create_app,
+    initialise_globals,
     setup_context,
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from mx_bluesky.hyperion.parameters.cli import parse_cli_args
+from mx_bluesky.hyperion.parameters.cli import HyperionArgs, parse_cli_args
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
@@ -522,3 +527,30 @@ def test_create_app_passes_through_dev_mode(
     create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
+
+
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+@patch("mx_bluesky.hyperion.__main__.alerting.set_alerting_service")
+def test_initialise_configures_logging(
+    mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
+):
+    args = HyperionArgs(dev_mode=True)
+
+    initialise_globals(args)
+
+    mock_logging_setup.assert_called_once_with(
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True
+    )
+
+
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+@patch("mx_bluesky.hyperion.__main__.alerting.set_alerting_service")
+def test_initialise_configures_alerting(
+    mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
+):
+    args = HyperionArgs(dev_mode=True)
+
+    initialise_globals(args)
+
+    mock_alerting_setup.assert_called_once()
+    assert isinstance(mock_alerting_setup.mock_calls[0].args[0], LoggingAlertService)
