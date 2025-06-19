@@ -74,6 +74,7 @@ def test_multi_rotation_params(tmp_path):
     )
 
 
+@pytest.fixture
 def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
     return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 

@@ -39,7 +39,6 @@ class I03Constants:
 
 @dataclass(frozen=True)
 class HyperionConstants:
-    DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
