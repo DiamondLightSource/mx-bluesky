@@ -12,10 +12,6 @@ from mx_bluesky.common.external_interaction.alerting.log_based_service import (
 )
 
 
-def test_default_alerting_service_exists():
-    assert isinstance(get_alerting_service(), LoggingAlertService)
-
-
 @pytest.mark.parametrize("level", [WARNING, INFO])
 @patch("mx_bluesky.common.external_interaction.alerting.log_based_service.LOGGER")
 def test_logging_alerting_service_raises_a_log_message(mock_logger: MagicMock, level):

@@ -4,10 +4,6 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
 
-from mx_bluesky.common.external_interaction.alerting import set_alerting_service
-from mx_bluesky.common.external_interaction.alerting.alert_manager import (
-    AlertManagerAlertService,
-)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -16,7 +12,6 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 HYPERION_USER = "Hyperion"
@@ -73,10 +68,6 @@ def run_udc_when_requested(baton: Baton, composite: LoadCentreCollectComposite):
 
     In the case of 1. or 2. hyperion will immediately release the baton. In the case of
     3. the baton will be released after the next collection has finished."""
-
-    flags = HyperionFeatureFlags()
-    flags.update_self_from_server()
-    set_alerting_service(AlertManagerAlertService(flags.alert_manager_url))
 
     yield from wait_for_hyperion_requested(baton)
     yield from bps.abs_set(baton.current_user, HYPERION_USER)

@@ -8,10 +8,6 @@ from dodal.devices.baton import Baton
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.external_interaction.alerting import get_alerting_service
-from mx_bluesky.common.external_interaction.alerting.alert_manager import (
-    AlertManagerAlertService,
-)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
@@ -57,14 +53,6 @@ def test_when_hyperion_requested_then_hyperion_set_to_current_user(
     assert get_mock_put(baton.current_user).mock_calls[0] == call(
         HYPERION_USER, wait=True
     )
-
-
-@patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
-def test_when_hyperion_requested_then_alert_service_initialised(
-    baton: Baton, RE: RunEngine
-):
-    RE(run_udc_when_requested(baton, MagicMock()))
-    assert isinstance(get_alerting_service(), AlertManagerAlertService)
 
 
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop")
