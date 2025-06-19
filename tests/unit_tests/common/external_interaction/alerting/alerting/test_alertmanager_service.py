@@ -27,7 +27,7 @@ def metadata():
 @pytest.fixture(autouse=True)
 def patch_now():
     with patch(
-        "mx_bluesky.common.external_interaction.alerting.alert_manager.datetime",
+        "mx_bluesky.common.external_interaction.alerting._service.datetime",
         spec=datetime,
     ) as mock_datetime:
         mock_datetime.now.return_value = datetime.fromisoformat(

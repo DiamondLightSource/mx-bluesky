@@ -1,5 +1,3 @@
-import pytest
-
 from mx_bluesky.common.external_interaction.alerting.alert_manager import (
     AlertManagerAlertService,
 )
@@ -10,7 +8,6 @@ TEST_VISIT = "cm12345-1"
 TEST_CONTAINER = 8
 
 
-@pytest.mark.requires(external="alertmanager")
 def test_alertmanager_alerts():
     alert_service = AlertManagerAlertService(ENDPOINT)
     alert_service.get_alerts()

@@ -1,9 +1,7 @@
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol
-
-from mx_bluesky.common.external_interaction.alerting.log_based_service import (
-    LoggingAlertService,
-)
+from urllib.parse import quote
 
 
 class Metadata(StrEnum):
@@ -35,7 +33,7 @@ class AlertService(Protocol):
         pass
 
 
-_alert_service: AlertService = LoggingAlertService()
+_alert_service: AlertService
 
 
 def get_alerting_service() -> AlertService:
@@ -47,3 +45,17 @@ def set_alerting_service(service: AlertService):
     """Set the alert service for this instance, call when the beamline is initialised."""
     global _alert_service
     _alert_service = service
+
+
+def ispyb_url(sample_id: str):
+    return f"https://ispyb.diamond.ac.uk/samples/sid/{quote(sample_id)}"
+
+
+def generator_url(_graylog_stream):
+    to_time = datetime.now(UTC)
+    from_time = to_time - timedelta(minutes=15)
+    return (
+        f"https://graylog.diamond.ac.uk/streams/{quote(_graylog_stream)}/search?q=&rangetype=absolute&"
+        f"from={quote(from_time.isoformat(timespec='milliseconds'))}&to="
+        f"{quote(to_time.isoformat(timespec='milliseconds'))}"
+    )
