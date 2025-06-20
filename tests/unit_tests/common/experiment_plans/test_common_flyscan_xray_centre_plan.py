@@ -620,6 +620,7 @@ class TestFlyscanXrayCentrePlan:
             ),
             max_count=105062,
             total_count=2387574,
+            sample_id=12345,
         )
         assert actual and len(actual) == 1
         assert all(isclose(actual[0].centre_of_mass_mm, expected.centre_of_mass_mm))

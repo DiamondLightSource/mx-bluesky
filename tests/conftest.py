@@ -114,6 +114,7 @@ TEST_RESULT_LARGE = [
         "n_voxels": 35,
         "total_count": 2387574,
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_MEDIUM = [
@@ -124,6 +125,7 @@ TEST_RESULT_MEDIUM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_SMALL = [
@@ -134,6 +136,7 @@ TEST_RESULT_SMALL = [
         "n_voxels": 35,
         "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_BELOW_THRESHOLD = [
@@ -144,6 +147,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "n_voxels": 1,
         "total_count": 2,
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 
@@ -156,6 +160,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -167,6 +172,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -178,6 +184,7 @@ TEST_RESULT_OUT_OF_BOUNDS_COM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -189,6 +196,7 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+        "sample_id": ZocaloResults.NO_SAMPLE_ID,
     }
 ]
 
