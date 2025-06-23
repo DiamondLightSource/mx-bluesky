@@ -3,7 +3,7 @@ Murko Architecture
 
 The architecture of how Murko is integrated is still in flux but as of 07/08 the following has been tried on the beamline.
 
-.. image:: ../images/murko.drawio.png
+.. image:: ../images/Murko.drawio.png
 
 The mx-bluesky code is deployed into the `beamline kubernetes cluster <https://k8s-i04.diamond.ac.uk/>`_ behind a `blueAPI <https://github.com/DiamondLightSource/blueapi>`_ REST interface. Alongside this an instance of murko is also deployed to the k8s cluster.
 
