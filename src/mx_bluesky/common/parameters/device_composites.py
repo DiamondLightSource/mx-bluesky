@@ -31,6 +31,7 @@ class FlyScanEssentialDevices:
     synchrotron: Synchrotron
     zocalo: ZocaloResults
     smargon: Smargon
+    # TODO add fgs device
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
