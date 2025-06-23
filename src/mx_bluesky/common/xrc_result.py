@@ -47,7 +47,7 @@ class XRayCentreResult:
     bounding_box_mm: tuple[np.ndarray, np.ndarray]
     max_count: int
     total_count: int
-    sample_id: int
+    sample_id: int | None
 
     def __eq__(self, o):
         return (
@@ -71,14 +71,14 @@ def top_n_by_max_count(
 def top_n_by_max_count_for_each_sample(
     unfiltered: Sequence[XRayCentreResult], n: int
 ) -> Sequence[XRayCentreResult]:
-    sample_counts: dict[int, list[XRayCentreResult]] = defaultdict(
+    xrc_results_by_sample_id: dict[int, list[XRayCentreResult]] = defaultdict(
         list[XRayCentreResult]
     )
     for result in unfiltered:
-        sample_counts[result.sample_id].append(result)
+        xrc_results_by_sample_id[result.sample_id].append(result)
     return [
         result
-        for results in sample_counts.values()
+        for results in xrc_results_by_sample_id.values()
         for result in sorted(results, key=lambda x: x.max_count, reverse=True)[:n]
     ]
 
