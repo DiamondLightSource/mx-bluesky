@@ -1,0 +1,30 @@
+volumes:
+- name: dls
+  hostPath:
+    path: /dls/i04
+    type: Directory
+
+volumeMounts:
+- name: dls
+  mountPath: /dls/i04
+  mountPropagation: HostToContainer
+
+zocalo:
+  defaultTransport: "PikaTransport"
+  graylog:
+    host: graylog-log-target.diamond.ac.uk
+    port: 12208
+    protocol: UDP
+  secrets:
+    - name: rabbitmq
+      secretName: rmq-creds
+      fileName: rabbitmq-credentials.yml
+    - name: rabbitmq-api-reader
+      secretName: rmq-api-reader
+      fileName: rabbitmq-api-reader.yml
+
+ispyb:
+  secrets:
+  - name: ispyb-creds
+    secretName: ispyb-creds
+    fileName: ispyb-credentials.yml
