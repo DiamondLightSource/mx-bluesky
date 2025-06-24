@@ -70,6 +70,9 @@ class LoadCentreCollect(
             f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
         )
 
+        for rotation in values["multi_rotation_scan"]["rotation_scans"]:
+            rotation["sample_id"] = values["sample_id"]
+
         new_robot_load_then_centre_params = construct_from_values(
             values, values["robot_load_then_centre"], RobotLoadThenCentre
         )

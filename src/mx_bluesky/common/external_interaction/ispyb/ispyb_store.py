@@ -41,7 +41,6 @@ class IspybIds(BaseModel):
 class StoreInIspyb:
     def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
-        self._data_collection_group_id: int | None
 
     def begin_deposition(
         self,

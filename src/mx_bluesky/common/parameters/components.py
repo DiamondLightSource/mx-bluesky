@@ -238,9 +238,14 @@ class TopNByMaxCountSelection(MultiXtalSelection):
     n: int
 
 
+class TopNByMaxCountForEachSampleSelection(MultiXtalSelection):
+    name: Literal["TopNByMaxCountForEachSample"] = "TopNByMaxCountForEachSample"  #  pyright: ignore [reportIncompatibleVariableOverride]
+    n: int
+
+
 class WithCentreSelection(BaseModel):
-    select_centres: TopNByMaxCountSelection = Field(
-        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    select_centres: TopNByMaxCountSelection | TopNByMaxCountForEachSampleSelection = (
+        Field(discriminator="name", default=TopNByMaxCountSelection(n=1))
     )
 
     @property
