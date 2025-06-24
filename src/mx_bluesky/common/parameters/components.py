@@ -244,8 +244,8 @@ class TopNByMaxCountForEachSampleSelection(MultiXtalSelection):
 
 
 class WithCentreSelection(BaseModel):
-    select_centres: TopNByMaxCountSelection = Field(
-        discriminator="name", default=TopNByMaxCountSelection(n=1)
+    select_centres: TopNByMaxCountSelection | TopNByMaxCountForEachSampleSelection = (
+        Field(discriminator="name", default=TopNByMaxCountSelection(n=1))
     )
 
     @property

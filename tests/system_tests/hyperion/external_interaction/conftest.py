@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable, Generator, Sequence
+from copy import deepcopy
 from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -224,7 +225,8 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
     old_zocalo_trigger = zocalo.trigger
-    zocalo.my_zocalo_result = TEST_RESULT_MEDIUM
+    zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
+    zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID
 
     @AsyncStatus.wrap
     async def mock_zocalo_complete():

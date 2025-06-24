@@ -11,6 +11,7 @@ from event_model import RunStart
 
 from mx_bluesky.common.parameters.components import (
     MultiXtalSelection,
+    TopNByMaxCountForEachSampleSelection,
     TopNByMaxCountSelection,
 )
 
@@ -86,6 +87,9 @@ def top_n_by_max_count_for_each_sample(
 def resolve_selection_fn(
     params: MultiXtalSelection,
 ) -> Callable[[Sequence[XRayCentreResult]], Sequence[XRayCentreResult]]:
-    if isinstance(params, TopNByMaxCountSelection):
-        return partial(top_n_by_max_count, n=params.n)
+    match params:
+        case TopNByMaxCountSelection():
+            return partial(top_n_by_max_count, n=params.n)
+        case TopNByMaxCountForEachSampleSelection():
+            return partial(top_n_by_max_count_for_each_sample, n=params.n)
     raise ValueError(f"Invalid selection function {params.name}")
