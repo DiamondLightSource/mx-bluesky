@@ -175,6 +175,7 @@ class DiffractionExperiment(
     @model_validator(mode="before")
     @classmethod
     def validate_directories(cls, values):
+        assert "{tmp_data}" not in values["storage_directory"]
         os.makedirs(values["storage_directory"], exist_ok=True)
 
         values["snapshot_directory"] = values.get(
