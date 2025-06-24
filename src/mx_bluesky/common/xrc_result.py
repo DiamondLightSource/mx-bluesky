@@ -72,7 +72,7 @@ def top_n_by_max_count(
 def top_n_by_max_count_for_each_sample(
     unfiltered: Sequence[XRayCentreResult], n: int
 ) -> Sequence[XRayCentreResult]:
-    xrc_results_by_sample_id: dict[int, list[XRayCentreResult]] = defaultdict(
+    xrc_results_by_sample_id: dict[int | None, list[XRayCentreResult]] = defaultdict(
         list[XRayCentreResult]
     )
     for result in unfiltered:

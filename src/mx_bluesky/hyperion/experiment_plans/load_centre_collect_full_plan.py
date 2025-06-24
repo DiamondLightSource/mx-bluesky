@@ -84,11 +84,21 @@ def load_centre_collect_full(
                 parameters.selection_params
             )
             hits = selection_func(flyscan_event_handler.xray_centre_results)
-            locations_to_collect_um = [hit.centre_of_mass_mm * 1000 for hit in hits]
-            samples_to_collect = [hit.sample_id for hit in hits]
+            hits_to_collect = []
+            for hit in hits:
+                if hit.sample_id is None:
+                    LOGGER.warning(
+                        f"Diffracting centre {hit} not collected because no sample id was assigned."
+                    )
+                else:
+                    hits_to_collect.append(hit)
 
+            locations_to_collect_um = [
+                hit.centre_of_mass_mm * 1000 for hit in hits_to_collect
+            ]
+            samples_to_collect = [hit.sample_id for hit in hits_to_collect]
             LOGGER.info(
-                f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
+                f"Selected hits {hits_to_collect} using {selection_func}, args={parameters.selection_params}"
             )
         else:
             # If the xray centring hasn't found a result but has not thrown an error it

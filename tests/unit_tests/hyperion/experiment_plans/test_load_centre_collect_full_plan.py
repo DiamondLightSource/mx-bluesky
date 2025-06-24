@@ -43,6 +43,7 @@ from mx_bluesky.hyperion.parameters.rotation import (
 from ....conftest import pin_tip_edge_data, raw_params_from_file
 from .conftest import (
     FLYSCAN_RESULT_HIGH,
+    FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID,
     FLYSCAN_RESULT_LOW,
     FLYSCAN_RESULT_MED,
     sim_fire_event_on_open_run,
@@ -827,6 +828,57 @@ def test_load_centre_collect_full_plan_assigns_sample_ids_to_rotations_according
     ]
 
     assert [rs.sample_id for rs in parameters.rotation_scans] == [2, 2, 1, 1]
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    new=MagicMock(
+        side_effect=lambda *args, **kwargs: iter(
+            [
+                Msg(
+                    "open_run",
+                    xray_centre_results=[
+                        dataclasses.asdict(r)
+                        for r in [
+                            FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID,
+                            FLYSCAN_RESULT_MED,
+                        ]
+                    ],
+                    run=CONST.PLAN.FLYSCAN_RESULTS,
+                ),
+                Msg("close_run"),
+            ]
+        )
+    ),
+)
+def test_load_centre_collect_full_plan_omits_collection_if_no_sample_id_is_assigned(
+    mock_multi_rotation_scan: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_with_top_n_for_each_sample: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite,
+            load_centre_collect_with_top_n_for_each_sample,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    parameters: RotationScan = mock_multi_rotation_scan.mock_calls[0].args[1]
+    assert len(parameters.rotation_scans) == 2
+    assert [
+        (rs.x_start_um, rs.y_start_um, rs.z_start_um)
+        for rs in parameters.rotation_scans
+    ] == [
+        (400.0, 500.0, 600.0),
+        (400.0, 500.0, 600.0),
+    ]
+
+    assert [rs.sample_id for rs in parameters.rotation_scans] == [1, 1]
 
 
 def _compare_rotation_scans(
