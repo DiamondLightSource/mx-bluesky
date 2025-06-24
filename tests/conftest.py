@@ -208,6 +208,7 @@ class SimConstants:
     # The following are values present in the system test ispyb database
     ST_VISIT = "cm14451-2"
     ST_SAMPLE_ID = 398810
+    ST_MSP_SAMPLE_IDS = [398816, 398819]
     ST_CONTAINER_ID = 34864
 
 
