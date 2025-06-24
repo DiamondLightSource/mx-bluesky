@@ -54,6 +54,13 @@ FLYSCAN_RESULT_LOW = XRayCentreResult(
     total_count=140,
     sample_id=1,
 )
+FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID = XRayCentreResult(
+    centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
+    bounding_box_mm=(np.array([0.09, 0.19, 0.29]), np.array([0.11, 0.21, 0.31])),
+    max_count=30,
+    total_count=100,
+    sample_id=None,
+)
 
 
 def make_event_doc(data, descriptor="abc123") -> Event:

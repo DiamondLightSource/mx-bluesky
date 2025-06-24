@@ -226,7 +226,7 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
-    zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID
+    zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
 
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
