@@ -1,0 +1,23 @@
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Helm
+        uses: Azure/setup-helm@v4.3.0
+        id: install
+
+      - name: Helm login to GHCR
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password-stdin
+
+      - name: Package and push chart
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        run: |
+          helm dependencies update helm/daq-config-server
+          helm package helm/daq-config-server --version ${{ steps.meta.outputs.version }} --app-version ${{ steps.meta.outputs.version }} -d /tmp/
+          helm push /tmp/daq-config-server-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/diamondlightsource/charts
