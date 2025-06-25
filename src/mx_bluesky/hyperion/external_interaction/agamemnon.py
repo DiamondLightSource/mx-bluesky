@@ -232,6 +232,7 @@ def update_params_from_agamemnon(parameters: T) -> T:
                 # Before we do https://github.com/DiamondLightSource/mx-bluesky/issues/226
                 # this will give no snapshots but that's preferable
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
+                parameters.multi_rotation_scan.use_grid_snapshots = True
     except (ValueError, ValidationError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:
