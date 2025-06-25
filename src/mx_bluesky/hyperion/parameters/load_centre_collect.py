@@ -50,6 +50,12 @@ class LoadCentreCollect(
             f"Unexpected fields found in LoadCentreCollect {disallowed_keys}"
         )
 
+        assert "features" not in values["robot_load_then_centre"], (
+            "Features flags must be specified at top-level in LoadCentreCollect"
+        )
+        assert "features" not in values["multi_rotation_scan"], (
+            "Features flags must be specified at top-level in LoadCentreCollect"
+        )
         keys_from_outer_load_centre_collect = (
             MxBlueskyParameters.model_fields.keys()
             | WithSample.model_fields.keys()
@@ -69,7 +75,6 @@ class LoadCentreCollect(
         assert not (duplicated_multi_rotation_scan_keys), (
             f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
         )
-
         new_robot_load_then_centre_params = construct_from_values(
             values, values["robot_load_then_centre"], RobotLoadThenCentre
         )
@@ -79,6 +84,12 @@ class LoadCentreCollect(
         values["multi_rotation_scan"] = new_multi_rotation_scan_params
         values["robot_load_then_centre"] = new_robot_load_then_centre_params
         return values
+
+    @model_validator(mode="after")
+    def _ensure_features_are_internally_consistent(self) -> Self:
+        self.robot_load_then_centre.features = self.features
+        self.multi_rotation_scan.features = self.features
+        return self
 
     @model_validator(mode="after")
     def _check_rotation_start_xyz_is_not_specified(self) -> Self:
