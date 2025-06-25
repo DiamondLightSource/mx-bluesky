@@ -28,12 +28,15 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def load_centre_collect_params_with_panda(tmp_path):
+def load_centre_collect_params_with_panda(tmp_path, request):
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
         tmp_path,
     )
-    params["robot_load_then_centre"]["features"]["use_panda_for_gridscan"] = True
+    params["features"]["use_panda_for_gridscan"] = True
+    if params_dict := getattr(request, "param", {}):
+        for k, v in params_dict.items():
+            params.setdefault("features", {})[k] = v
     return LoadCentreCollect(**params)
 
 
@@ -171,17 +174,17 @@ def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.features.use_panda_for_gridscan is False
     assert test_params.features.compare_cpu_and_gpu_zocalo is False
-    assert test_params.features.use_gpu_results is False
+    assert test_params.features.use_gpu_results is True
     minimal_3d_gridscan_params["features"] = {
         "use_panda_for_gridscan": True,
-        "compare_cpu_and_gpu_zocalo": True,
+        "compare_cpu_and_gpu_zocalo": False,
     }
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert test_params.features.compare_cpu_and_gpu_zocalo
+    assert not test_params.features.compare_cpu_and_gpu_zocalo
     assert test_params.features.use_panda_for_gridscan
     # Config server shouldn't update values which were explicitly provided
     test_params.features.update_self_from_server()
-    assert test_params.features.compare_cpu_and_gpu_zocalo
+    assert not test_params.features.compare_cpu_and_gpu_zocalo
     assert test_params.features.use_panda_for_gridscan
 
 
@@ -218,7 +221,7 @@ def test_gpu_enabled_if_use_gpu_results_or_compare_gpu_enabled(
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
 
     grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert not grid_scan.detector_params.enable_dev_shm
+    assert grid_scan.detector_params.enable_dev_shm
 
     minimal_3d_gridscan_params["features"] = feature_set
     grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
@@ -237,28 +240,69 @@ def test_if_use_gpu_results_and_compare_gpu_enabled_then_validation_error(
         HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
 
 
+@pytest.mark.parametrize(
+    "load_centre_collect_params_with_panda",
+    [
+        {"compare_cpu_and_gpu_zocalo": True, "use_gpu_results": False},
+        {"compare_cpu_and_gpu_zocalo": False, "use_gpu_results": True},
+        {"compare_cpu_and_gpu_zocalo": False, "use_gpu_results": False},
+    ],
+    indirect=True,
+)
 def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
     load_centre_collect_params_with_panda: LoadCentreCollect,
 ):
+    compare_cpu_and_gpu = (
+        load_centre_collect_params_with_panda.features.compare_cpu_and_gpu_zocalo
+    )
+    use_gpu = load_centre_collect_params_with_panda.features.use_gpu_results
+    expected_dev_shm = compare_cpu_and_gpu or use_gpu
+    load_centre_collect_params_with_panda.features.compare_cpu_and_gpu_zocalo = (
+        compare_cpu_and_gpu
+    )
+    load_centre_collect_params_with_panda.features.use_gpu_results = use_gpu
+
     robot_load_then_centre_params = (
         load_centre_collect_params_with_panda.robot_load_then_centre
     )
-    assert robot_load_then_centre_params.detector_params.enable_dev_shm
+    assert robot_load_then_centre_params.features.use_gpu_results == use_gpu
+    assert (
+        robot_load_then_centre_params.features.compare_cpu_and_gpu_zocalo
+        == compare_cpu_and_gpu
+    )
+    assert (
+        robot_load_then_centre_params.detector_params.enable_dev_shm == expected_dev_shm
+    )
+
     pin_tip_then_xrc_params = (
         robot_load_then_centre_params.pin_centre_then_xray_centre_params
     )
-    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
+    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm == expected_dev_shm
+    assert pin_tip_then_xrc_params.features.use_gpu_results == use_gpu
+    assert (
+        pin_tip_then_xrc_params.features.compare_cpu_and_gpu_zocalo
+        == compare_cpu_and_gpu
+    )
+
     grid_detect_then_xrc_params = create_parameters_for_grid_detection(
         pin_tip_then_xrc_params
     )
-    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
+    assert (
+        grid_detect_then_xrc_params.detector_params.enable_dev_shm == expected_dev_shm
+    )
+    assert grid_detect_then_xrc_params.features.use_gpu_results == use_gpu
+    assert (
+        grid_detect_then_xrc_params.features.compare_cpu_and_gpu_zocalo
+        == compare_cpu_and_gpu
+    )
     flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
         grid_detect_then_xrc_params,
         get_empty_grid_parameters(),
         HyperionSpecifiedThreeDGridScan,
     )
     assert type(flyscan_xrc_params) is HyperionSpecifiedThreeDGridScan
-    assert flyscan_xrc_params.detector_params.enable_dev_shm
+    assert flyscan_xrc_params.detector_params.enable_dev_shm == expected_dev_shm
     assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
     assert flyscan_xrc_params.features.use_panda_for_gridscan
-    assert flyscan_xrc_params.features.compare_cpu_and_gpu_zocalo
+    assert flyscan_xrc_params.features.use_gpu_results == use_gpu
+    assert flyscan_xrc_params.features.compare_cpu_and_gpu_zocalo == compare_cpu_and_gpu

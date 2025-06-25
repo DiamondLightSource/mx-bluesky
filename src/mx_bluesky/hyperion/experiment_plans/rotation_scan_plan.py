@@ -342,10 +342,15 @@ def _move_and_rotation(
 
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
-        yield from setup_beamline_for_OAV(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
-        )
-        yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
+
+        if not params.use_grid_snapshots:
+            yield from setup_beamline_for_OAV(
+                composite.smargon,
+                composite.backlight,
+                composite.aperture_scatterguard,
+                wait=True,
+            )
+
         if params.selected_aperture:
             yield from bps.prepare(
                 composite.aperture_scatterguard,

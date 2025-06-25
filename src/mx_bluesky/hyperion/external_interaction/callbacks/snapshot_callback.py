@@ -1,4 +1,5 @@
 import dataclasses
+import os
 import re
 from collections.abc import Iterator
 from datetime import datetime
@@ -172,6 +173,8 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 f"Generating snapshot at {current_sample_pos_mm} from base snapshot {snapshot_info}"
             )
             output_snapshot_directory = data["oav-snapshot-directory"]
+            if not os.path.exists(output_snapshot_directory):
+                os.mkdir(output_snapshot_directory)
             base_file_stem = Path(snapshot_info.snapshot_path).stem
             output_snapshot_filename = _snapshot_filename(base_file_stem)
             output_snapshot_path = (
