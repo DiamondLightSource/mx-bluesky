@@ -8,6 +8,7 @@
     "sample_id": 12345,
     "sample_puck": 40,
     "sample_pin": 3,
+    "features": {"use_panda_for_gridscan": false},
     "robot_load_then_centre": {
         "storage_directory": "{tmp_data}/123458/xraycentring",
         "file_name": "robot_load_centring_file",
@@ -16,7 +17,6 @@
         "use_roi_mode": false,
         "demand_energy_ev": 11100,
         "run_number": 0,
-        "features": {"use_panda_for_gridscan": false, "compare_cpu_and_gpu_zocalo": true},
         "panda_runup_distance_mm": 0.17,
         "box_size_um": 20
     },
