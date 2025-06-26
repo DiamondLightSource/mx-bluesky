@@ -16,7 +16,7 @@ from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
@@ -47,7 +47,7 @@ class RobotLoadAndEnergyChangeComposite:
     # RobotLoad fields
     robot: BartRobot
     webcam: Webcam
-    lower_gonio: XYZPositioner
+    lower_gonio: XYZStage
     thawer: Thawer
     oav: OAV
     smargon: Smargon
