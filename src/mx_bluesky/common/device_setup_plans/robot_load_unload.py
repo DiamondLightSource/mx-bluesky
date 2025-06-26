@@ -43,10 +43,17 @@ def _raise_exception_if_moved_out_of_cryojet(exception):
 
 
 def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZPositioner):
-    # The lower gonio must be in the correct position for the robot load and we
-    # want to put it back afterwards. Note we don't wait the robot is interlocked
-    # to the lower gonio and the  move is quicker than the robot takes to get to the
-    # load position.
+    """Moves the lower gonio to home then performs the provided plan and moves it back.
+
+    The lower gonio must be in the correct position for the robot load and we
+    want to put it back afterwards. Note we don't need to wait for the move as the robot
+    is interlocked to the lower gonio and the move is quicker than the robot takes to
+    get to the load position.
+
+    Args:
+        plan (MsgGenerator): The plan to run while the lower gonio is at home.
+        lower_gonio (XYZPositioner): The lower gonio to home.
+    """
     yield from bpp.contingency_wrapper(
         home_and_reset_wrapper(
             plan,
@@ -93,6 +100,9 @@ def robot_unload(
     lower_gonio: XYZPositioner,
     visit: str,
 ):
+    """Unloads the currently mounted pin into the location that it was loaded from. The
+    loaded location is stored on the robot and so need not be provided.
+    """
     yield from prepare_for_robot_load(aperture_scatterguard, smargon)
     sample_id = yield from bps.rd(robot.sample_id)
 
