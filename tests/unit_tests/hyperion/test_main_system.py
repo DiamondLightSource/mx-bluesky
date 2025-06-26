@@ -78,8 +78,6 @@ class MockRunEngine:
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
         while self.RE_takes_time:
-            sleep(SECS_PER_RUNENGINE_LOOP)
-            time += SECS_PER_RUNENGINE_LOOP
             if self.error:
                 raise self.error
             if time > RUNENGINE_TAKES_TIME_TIMEOUT:
@@ -88,14 +86,16 @@ class MockRunEngine:
                     "without an error. Most likely you should initialise with "
                     "RE_takes_time=false, or set RE.error from another thread."
                 )
+            sleep(SECS_PER_RUNENGINE_LOOP)
+            time += SECS_PER_RUNENGINE_LOOP
         if self.error:
             raise self.error
 
     def abort(self):
         while self.aborting_takes_time:
-            sleep(SECS_PER_RUNENGINE_LOOP)
             if self.error:
                 raise self.error
+            sleep(SECS_PER_RUNENGINE_LOOP)
         self.RE_takes_time = False
 
     def subscribe(self, *args):
