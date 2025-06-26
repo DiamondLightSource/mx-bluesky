@@ -460,7 +460,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert response_json["exception_type"] == "WarningException"
     log_record = [r for r in caplog.records if r.funcName == "wait_on_queue"][0]
     assert log_record.levelname == "WARNING" and _MULTILINE_MESSAGE in getattr(
-        log_record.exc_text, ""
+        log_record, "exc_text", ""
     )
 
 
