@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon, StubPosition
 from ophyd_async.testing import get_mock_put, set_mock_value
@@ -46,7 +46,7 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
     sim_run_engine: RunEngineSimulator,
 ):
     msgs = sim_run_engine.simulate_plan(
@@ -82,7 +82,7 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
     sim_run_engine: RunEngineSimulator,
 ):
     # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
@@ -129,7 +129,7 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
 ):
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
@@ -149,7 +149,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
 ):
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
@@ -188,7 +188,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
 ):
     class TestException(Exception): ...
 

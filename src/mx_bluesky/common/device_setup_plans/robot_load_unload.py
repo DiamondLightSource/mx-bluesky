@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
@@ -42,7 +42,7 @@ def _raise_exception_if_moved_out_of_cryojet(exception):
         )
 
 
-def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZPositioner):
+def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZStage):
     """Moves the lower gonio to home then performs the provided plan and moves it back.
 
     The lower gonio must be in the correct position for the robot load and we
@@ -52,7 +52,7 @@ def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZPositi
 
     Args:
         plan (MsgGenerator): The plan to run while the lower gonio is at home.
-        lower_gonio (XYZPositioner): The lower gonio to home.
+        lower_gonio (XYZStage): The lower gonio to home.
     """
     yield from bpp.contingency_wrapper(
         home_and_reset_wrapper(
@@ -88,7 +88,7 @@ def robot_unload(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
     visit: str,
 ):
     """Unloads the currently mounted pin into the location that it was loaded from. The

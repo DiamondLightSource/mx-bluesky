@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from ophyd_async.testing import set_mock_value
@@ -24,7 +24,7 @@ def test_execute_unload_sample_full(
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    lower_gonio: XYZPositioner,
+    lower_gonio: XYZStage,
 ):
     callback = RobotLoadISPyBCallback()
     old_start_robot_action = callback.expeye.start_robot_action
