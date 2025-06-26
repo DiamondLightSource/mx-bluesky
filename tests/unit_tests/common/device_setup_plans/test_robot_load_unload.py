@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
@@ -7,7 +8,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
@@ -17,6 +18,21 @@ from mx_bluesky.common.device_setup_plans.robot_load_unload import (
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
+
+
+# Remove when in bluesky proper, see https://github.com/bluesky/bluesky/issues/1924
+def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], bool]]):
+    remaining_predicates = set(predicates)
+
+    for message in messages:
+        matched = {p for p in remaining_predicates if p(message)}
+        remaining_predicates -= matched
+
+        if not remaining_predicates:
+            break
+
+    assert not remaining_predicates, f"Unmatched predicates: {remaining_predicates}"
+    return messages
 
 
 async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
@@ -60,13 +76,12 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
         and msg.args[0] == ApertureValue.OUT_OF_BEAM,
     )
 
-    for axis in ["x", "y", "z", "omega", "chi", "phi"]:
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"smargon-{axis}"
-            and msg.args[0] == 0,
-        )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon"
+        and msg.args[0] == CombinedMove(x=0, y=0, z=0, omega=0, chi=0, phi=0),
+    )
 
     assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == robot.unload.name
@@ -99,13 +114,15 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "")
     )
 
-    for axis in ["x", "y", "z"]:
-        msgs = assert_message_and_return_remaining(
-            msgs,
+    msgs = assert_messages_any_order(
+        msgs,
+        [
             lambda msg: msg.command == "set"
             and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args[0] == 0,
-        )
+            and msg.args[0] == 0
+            for axis in ["x", "y", "z"]
+        ],
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == robot.unload.name
@@ -115,13 +132,15 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         msgs, lambda msg: msg.command == "wait_for_smargon"
     )
 
-    for axis in ["x", "y", "z"]:
-        msgs = assert_message_and_return_remaining(
-            msgs,
+    msgs = assert_messages_any_order(
+        msgs,
+        [
             lambda msg: msg.command == "set"
             and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args[0] == 0.1,
-        )
+            and msg.args[0] == 0.1
+            for axis in ["x", "y", "z"]
+        ],
+    )
 
 
 def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
