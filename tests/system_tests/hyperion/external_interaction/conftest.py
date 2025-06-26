@@ -44,17 +44,15 @@ from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
@@ -188,12 +186,12 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
-        )
+def dummy_params(tmp_path):
+    params_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+        tmp_path,
     )
+    dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
     dummy_params.visit = SimConstants.ST_VISIT
     dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
     return dummy_params
@@ -277,7 +275,7 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
 ):
-    composite = GridDetectThenXRayCentreComposite(
+    composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
@@ -385,8 +383,8 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
 
 @pytest.fixture
 def params_for_rotation_scan(
-    test_rotation_params: MultiRotationScan,
-) -> MultiRotationScan:
+    test_rotation_params: RotationScan,
+) -> RotationScan:
     test_rotation_params.rotation_increment_deg = 0.27
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71

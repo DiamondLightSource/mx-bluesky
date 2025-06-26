@@ -13,6 +13,7 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
 from numpy import isclose
@@ -20,6 +21,18 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+    FlyScanEssentialDevices,
+    _fetch_xrc_results_from_zocalo,
+    common_flyscan_xray_centre,
+    kickoff_and_complete_gridscan,
+    run_gridscan,
+    wait_for_gridscan_valid,
+)
+from mx_bluesky.common.experiment_plans.read_hardware import (
+    read_hardware_plan,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -38,18 +51,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
-    _fetch_xrc_results_from_zocalo,
-    common_flyscan_xray_centre,
-    kickoff_and_complete_gridscan,
-    run_gridscan,
-    wait_for_gridscan_valid,
-)
-from mx_bluesky.common.plans.read_hardware import (
-    read_hardware_plan,
-)
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
@@ -74,11 +75,6 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 class CompleteException(Exception):
     # To avoid having to run through the entire plan during tests
     pass
-
-
-@pytest.fixture
-def mock_ispyb():
-    return MagicMock()
 
 
 def mock_plan():
@@ -129,7 +125,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        mock_ispyb: MagicMock,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
@@ -170,29 +165,14 @@ class TestFlyscanXrayCentrePlan:
             np.array([1, 2, 3])
         )
         RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
-        bps_abs_set.assert_has_calls(
-            [
-                call(
-                    fake_fgs_composite.smargon.x,
-                    motor_position[0],
-                    group="move_x_y_z",
-                ),
-                call(
-                    fake_fgs_composite.smargon.y,
-                    motor_position[1],
-                    group="move_x_y_z",
-                ),
-                call(
-                    fake_fgs_composite.smargon.z,
-                    motor_position[2],
-                    group="move_x_y_z",
-                ),
-            ],
-            any_order=True,
+        bps_abs_set.assert_called_with(
+            fake_fgs_composite.smargon,
+            CombinedMove(x=motor_position[0], y=motor_position[1], z=motor_position[2]),
+            group="move_x_y_z",
         )
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     @patch(
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
@@ -206,7 +186,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, (_, ispyb_cb) = RE_with_subs
+        RE, _ = RE_with_subs
 
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
@@ -221,7 +201,7 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific.tidy_plan.assert_called_once()  # type: ignore
 
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
     )
     def test_waits_for_motion_program(
         self,
@@ -260,7 +240,7 @@ class TestFlyscanXrayCentrePlan:
         assert res.exit_status == "success"
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.sleep",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.sleep",
         autospec=True,
     )
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
@@ -278,7 +258,7 @@ class TestFlyscanXrayCentrePlan:
         patch_sleep.assert_not_called()
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.sleep",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.sleep",
         autospec=True,
     )
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
@@ -297,23 +277,23 @@ class TestFlyscanXrayCentrePlan:
         patch_sleep.assert_called()
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.abs_set",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.abs_set",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.mv",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.mv",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.wait_for_gridscan_valid",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.wait_for_gridscan_valid",
         autospec=True,
     )
     @patch(
@@ -322,7 +302,7 @@ class TestFlyscanXrayCentrePlan:
         spec_set=True,
     )
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
@@ -375,19 +355,19 @@ class TestFlyscanXrayCentrePlan:
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.wait",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_fgs_arms_eiger_without_grid_detect(
@@ -408,19 +388,19 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.wait",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_when_grid_scan_fails_with_exception_then_detector_disarmed_and_correct_exception_returned(
@@ -460,11 +440,11 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector.assert_called()
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.kickoff",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.bps.complete",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
     @patch(
@@ -472,7 +452,7 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_kickoff_and_complete_gridscan_triggers_zocalo(
@@ -534,7 +514,7 @@ class TestFlyscanXrayCentrePlan:
         assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]  # type: ignore
 
     @patch(
-        "mx_bluesky.common.plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
+        "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         new=MagicMock(side_effect=lambda *_, **__: iter([Msg("check_topup")])),
     )
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
@@ -577,7 +557,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_succeeds_and_results_fetched_ispyb_comment_appended_to(
@@ -607,7 +587,7 @@ class TestFlyscanXrayCentrePlan:
         assert "Aperture:" in append_aperture_call
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     async def test_results_adjusted_and_event_raised(
@@ -647,7 +627,7 @@ class TestFlyscanXrayCentrePlan:
         assert all(isclose(actual[0].bounding_box_mm[1], expected.bounding_box_mm[1]))
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
         MagicMock(),
     )
     def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
@@ -673,7 +653,7 @@ class TestFlyscanXrayCentrePlan:
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
 
     @patch(
-        "mx_bluesky.common.plans.common_flyscan_xray_centre_plan.run_gridscan",
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         autospec=True,
     )
     def test_when_gridscan_finds_no_xtal_exception_is_raised(

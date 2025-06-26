@@ -23,7 +23,8 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
+from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -37,7 +38,10 @@ from mx_bluesky.beamlines.i24.serial.log import (
     log_on_entry,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    DetectorName,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -66,7 +70,7 @@ def flush_print(text):
 
 @log_on_entry
 def initialise_extruder(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
@@ -94,7 +98,7 @@ def initialise_extruder(
 def laser_check(
     mode: str,
     zebra: Zebra = inject("zebra"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     """Plan to open the shutter and check the laser beam from the viewer by pressing \
         'Laser On' and 'Laser Off' buttons on the edm.
@@ -134,7 +138,7 @@ def laser_check(
 
 @log_on_entry
 def enter_hutch(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
     yield from bps.mv(detector_stage.z, SAFE_DET_Z)
@@ -142,12 +146,12 @@ def enter_hutch(
 
 
 @log_on_entry
-def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
+def read_parameters(detector_stage: YZStage, attenuator: ReadOnlyAttenuator):
     """ Read the parameters from user input and create the parameter model for an \
         extruder collection.
 
     Args:
-        detector_stage (DetectorMotion): The detector stage device.
+        detector_stage (YZStage): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
 
@@ -204,7 +208,7 @@ def main_extruder_plan(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
@@ -212,6 +216,7 @@ def main_extruder_plan(
     parameters: ExtruderParameters,
     dcid: DCID,
     start_time: datetime,
+    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     beam_center_pixels = sup.compute_beam_center_position_from_lut(
         BEAM_CENTER_LUT_FILES[parameters.detector_name],
@@ -357,7 +362,9 @@ def main_extruder_plan(
     if parameters.detector_name == "eiger":
         filetemplate = f"{parameters.filename}.nxs"
     else:
-        filetemplate = yield from get_pilatus_filename_template_from_device()
+        filetemplate = yield from get_pilatus_filename_template_from_device(
+            pilatus_metadata
+        )
     dcid.generate_dcid(
         beam_settings=beam_settings,
         image_dir=parameters.collection_directory.as_posix(),
@@ -493,11 +500,14 @@ def run_extruder_plan(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
@@ -508,7 +518,11 @@ def run_extruder_plan(
     # Create collection directory
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)
 
-    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
 
     # DCID - not generated yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
@@ -527,6 +541,7 @@ def run_extruder_plan(
             parameters=parameters,
             dcid=dcid,
             start_time=start_time,
+            pilatus_metadata=pilatus_metadata,
         ),
         except_plan=lambda e: (
             yield from collection_aborted_plan(zebra, parameters.detector_name, dcid)

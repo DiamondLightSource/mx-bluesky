@@ -11,10 +11,10 @@ from ......conftest import (
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
-    TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
     remap_upsert_columns,
+    replace_all_tmp_paths,
 )
 
 EXPECTED_DATA_COLLECTION = {
@@ -24,12 +24,12 @@ EXPECTED_DATA_COLLECTION = {
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0.1,
-    "axisend": 180,
+    "axisend": -180,
     "comments": "test",
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
-    "imgdir": "/tmp/dls/i03/data/2024/cm31105-4/auto/123456/",
+    "imgdir": "{tmp_data}/123456/",
     "imgprefix": "file_name",
     "imgsuffix": "h5",
     "n_passes": 1,
@@ -50,7 +50,9 @@ EXPECTED_DATA_COLLECTION = {
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_document):
+def test_activity_gated_start(
+    mock_ispyb_conn, test_rotation_start_outer_document, tmp_path
+):
     callback = RotationISPyBCallback()
 
     callback.activity_gated_start(test_rotation_start_outer_document)
@@ -67,7 +69,7 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
     assert_upsert_call_with(
         mx.upsert_data_collection.mock_calls[0],
         mx.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
+        replace_all_tmp_paths(EXPECTED_DATA_COLLECTION, tmp_path),
     )
 
 
@@ -75,11 +77,13 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
+def test_hardware_read_events(
+    mock_ispyb_conn, test_rotation_start_outer_document, TestEventData
+):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
-        TestData.test_rotation_start_main_document  # pyright: ignore
+        TestEventData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
@@ -87,9 +91,9 @@ def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_documen
     mx.upsert_data_collection.reset_mock()
 
     callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_pre_data_collection
+        TestEventData.test_descriptor_document_pre_data_collection
     )
-    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+    callback.activity_gated_event(TestEventData.test_event_document_pre_data_collection)
     mx.upsert_data_collection_group.assert_not_called()
     assert_upsert_call_with(
         mx.upsert_data_collection.mock_calls[0],
@@ -108,7 +112,7 @@ def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_documen
     mx.update_data_collection_append_comments.assert_called_with(
         TEST_DATA_COLLECTION_IDS[0], "Sample position (µm): (158, 24, 3)", " "
     )
-    expected_data = TestData.test_event_document_pre_data_collection["data"]
+    expected_data = TestEventData.test_event_document_pre_data_collection["data"]
     assert_upsert_call_with(
         mx.update_dc_position.mock_calls[0],
         mx.get_dc_position_params(),
@@ -125,24 +129,26 @@ def test_hardware_read_events(mock_ispyb_conn, test_rotation_start_outer_documen
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_flux_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
+def test_flux_read_events(
+    mock_ispyb_conn, test_rotation_start_outer_document, TestEventData
+):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
-        TestData.test_rotation_start_main_document  # pyright: ignore
+        TestEventData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
     callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_pre_data_collection
+        TestEventData.test_descriptor_document_pre_data_collection
     )
-    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+    callback.activity_gated_event(TestEventData.test_event_document_pre_data_collection)
     mx.upsert_data_collection_group.reset_mock()
     mx.upsert_data_collection.reset_mock()
     callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_during_data_collection
+        TestEventData.test_descriptor_document_during_data_collection
     )
     callback.activity_gated_event(
-        TestData.test_rotation_event_document_during_data_collection
+        TestEventData.test_rotation_event_document_during_data_collection
     )
 
     mx.upsert_data_collection_group.assert_not_called()
@@ -169,16 +175,16 @@ def test_flux_read_events(mock_ispyb_conn, test_rotation_start_outer_document):
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_oav_rotation_snapshot_triggered_event(
-    mock_ispyb_conn, test_rotation_start_outer_document
+    mock_ispyb_conn, test_rotation_start_outer_document, TestEventData
 ):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
-        TestData.test_rotation_start_main_document  # pyright: ignore
+        TestEventData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
     callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_oav_rotation_snapshot
+        TestEventData.test_descriptor_document_oav_rotation_snapshot
     )
 
     for snapshot in [
@@ -188,11 +194,9 @@ def test_oav_rotation_snapshot_triggered_event(
         {"filename": "snapshot_270", "colname": "xtal_snapshot4"},
     ]:
         mx.upsert_data_collection.reset_mock()
-        event_doc = dict(TestData.test_event_document_oav_rotation_snapshot)
+        event_doc = dict(TestEventData.test_event_document_oav_rotation_snapshot)
         event_doc["data"]["oav-snapshot-last_saved_path"] = snapshot["filename"]  # type: ignore
-        callback.activity_gated_event(
-            TestData.test_event_document_oav_rotation_snapshot
-        )
+        callback.activity_gated_event(event_doc)  # type: ignore
         mx.upsert_data_collection_group.reset_mock()
         assert_upsert_call_with(
             mx.upsert_data_collection.mock_calls[0],
@@ -211,11 +215,13 @@ def test_oav_rotation_snapshot_triggered_event(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document):
+def test_activity_gated_stop(
+    mock_ispyb_conn, test_rotation_start_outer_document, TestEventData
+):
     callback = RotationISPyBCallback()
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
-        TestData.test_rotation_start_main_document  # pyright: ignore
+        TestEventData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
@@ -226,7 +232,7 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.get_current_time_string",
         new=MagicMock(return_value=EXPECTED_END_TIME),
     ):
-        callback.activity_gated_stop(TestData.test_rotation_stop_main_document)
+        callback.activity_gated_stop(TestEventData.test_rotation_stop_main_document)
 
     assert mx.update_data_collection_append_comments.call_args_list[0] == (
         (
@@ -249,7 +255,7 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
 
 
 def test_comment_correct_after_hardware_read(
-    mock_ispyb_conn, test_rotation_start_outer_document
+    mock_ispyb_conn, test_rotation_start_outer_document, TestEventData
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["mx_bluesky_parameters"] = (
@@ -259,7 +265,7 @@ def test_comment_correct_after_hardware_read(
     )
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
-        TestData.test_rotation_start_main_document  # pyright: ignore
+        TestEventData.test_rotation_start_main_document  # pyright: ignore
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
     dc_upsert_dict = remap_upsert_columns(
@@ -272,9 +278,9 @@ def test_comment_correct_after_hardware_read(
     mx.upsert_data_collection.reset_mock()
 
     callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_pre_data_collection
+        TestEventData.test_descriptor_document_pre_data_collection
     )
-    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+    callback.activity_gated_event(TestEventData.test_event_document_pre_data_collection)
     assert_upsert_call_with(
         mx.upsert_data_collection.mock_calls[0],
         mx.get_data_collection_params(),

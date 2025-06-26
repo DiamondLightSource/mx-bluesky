@@ -19,3 +19,17 @@ dodal:
   projectDir: SET_ON_INSTALL
 service:
   type: NodePort
+
+zocalo:
+  defaultTransport: "PikaTransport"
+  graylog:
+    host: graylog-log-target.diamond.ac.uk
+    port: 12208
+    protocol: UDP
+  secrets:
+    - name: rabbitmq
+      secretName: rmq-creds
+      fileName: rabbitmq-credentials.yml
+    - name: rabbitmq-api-reader
+      secretName: rmq-api-reader
+      fileName: rabbitmq-api-reader.yml

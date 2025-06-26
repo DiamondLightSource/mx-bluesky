@@ -5,12 +5,13 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 import pytest
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+    _is_checker_pattern,
     cs_maker,
     cs_reset,
     fiducial,
@@ -47,6 +48,18 @@ MTR3 0 -1"""
 cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir":-1, "Sz_dir":0}'
 
 
+@pytest.mark.parametrize(
+    "input_value, checker_pattern",
+    [("0", False), ("1", True)],
+)
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+def test_is_checker_pattern(fake_caget, input_value, checker_pattern):
+    fake_caget.return_value = input_value
+
+    is_checker = _is_checker_pattern()
+    assert is_checker == checker_pattern
+
+
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_detector_type"
 )
@@ -61,7 +74,11 @@ cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
 )
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._is_checker_pattern"
+)
 def test_read_parameters(
+    fake_check,
     fake_rd,
     fake_log,
     mock_read_visit,
@@ -71,15 +88,18 @@ def test_read_parameters(
     detector_stage,
     RE,
 ):
+    fake_check.return_value = False
     mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
     fake_rd.side_effect = [fake_generator(0.3)]
+    mock_read_visit.return_value = Path("/path/to/fake/visit")
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.FixedTargetParameters",
     ):
         RE(read_parameters(detector_stage, mock_attenuator))
 
-    assert fake_caget.call_count == 12
+    assert fake_caget.call_count == 11
+    fake_check.assert_called_once()
     assert fake_log.info.call_count == 3
 
 
@@ -171,7 +191,7 @@ async def test_moveto_preset(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
@@ -200,7 +220,7 @@ async def test_moveto_preset_with_pmac_move(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))

@@ -6,7 +6,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZPositioner
 from dodal.devices.robot import BartRobot
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -79,16 +79,7 @@ def prepare_for_robot_load(
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
 
-    # fmt: off
-    yield from bps.mv(
-        smargon.x, 0,
-        smargon.y, 0,
-        smargon.z, 0,
-        smargon.omega, 0,
-        smargon.chi, 0,
-        smargon.phi, 0
-    )
-    # fmt: on
+    yield from bps.mv(smargon, CombinedMove(x=0, y=0, z=0, chi=0, phi=0, omega=0))
 
     yield from bps.wait("prepare_robot_load")
 

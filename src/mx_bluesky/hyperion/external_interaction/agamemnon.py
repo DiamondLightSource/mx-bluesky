@@ -2,6 +2,7 @@ import dataclasses
 import json
 import re
 import traceback
+from collections.abc import Sequence
 from os import path
 from typing import Any, TypeVar
 
@@ -127,83 +128,88 @@ def get_param_version() -> SemanticVersion:
     return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
 
 
-def populate_parameters_from_agamemnon(agamemnon_params):
+def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreCollect]:
     visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
     with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
-    first_collection = agamemnon_params["collection"][0]
+    collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
-    return LoadCentreCollect.model_validate(
-        {
-            "parameter_model_version": get_param_version(),
-            "visit": visit,
-            "detector_distance_mm": detector_distance,
-            "sample_id": agamemnon_params["sample"]["id"],
-            "sample_puck": agamemnon_params["sample"]["container"],
-            "sample_pin": agamemnon_params["sample"]["position"],
-            "select_centres": {
-                "name": "TopNByMaxCount",
-                "n": pin_type.expected_number_of_crystals,
-            },
-            "robot_load_then_centre": {
-                "storage_directory": str(visit_directory) + "/xraycentring",
-                "file_name": file_name,
-                "tip_offset_um": pin_type.full_width / 2,
-                "grid_width_um": pin_type.full_width,
-                "omega_start_deg": 0.0,
-                "chi_start_deg": first_collection["chi"],
-                "transmission_frac": 1.0,
-                "features": {"use_gpu_results": True},
-                **with_energy_params,
-            },
-            "multi_rotation_scan": {
-                "comment": first_collection["comment"],
-                "storage_directory": str(visit_directory),
-                "exposure_time_s": first_collection["exposure_time"],
-                "file_name": file_name,
-                "transmission_frac": first_collection["transmission"],
-                "rotation_increment_deg": first_collection["omega_increment"],
-                "ispyb_experiment_type": first_collection["experiment_type"],
-                "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
-                "rotation_scans": [
-                    {
-                        "scan_width_deg": (
-                            first_collection["number_of_images"]
-                            * first_collection["omega_increment"]
-                        ),
-                        "omega_start_deg": first_collection["omega_start"],
-                        "phi_start_deg": first_collection["phi_start"],
-                        "chi_start_deg": first_collection["chi"],
-                        "rotation_direction": "Positive",
-                    }
-                ],
-                **with_energy_params,
-            },
-        }
-    )
+
+    return [
+        LoadCentreCollect.model_validate(
+            {
+                "parameter_model_version": get_param_version(),
+                "visit": visit,
+                "detector_distance_mm": detector_distance,
+                "sample_id": agamemnon_params["sample"]["id"],
+                "sample_puck": agamemnon_params["sample"]["container"],
+                "sample_pin": agamemnon_params["sample"]["position"],
+                "select_centres": {
+                    "name": "TopNByMaxCount",
+                    "n": pin_type.expected_number_of_crystals,
+                },
+                "robot_load_then_centre": {
+                    "storage_directory": str(visit_directory) + "/xraycentring",
+                    "file_name": file_name,
+                    "tip_offset_um": pin_type.full_width / 2,
+                    "grid_width_um": pin_type.full_width,
+                    "omega_start_deg": 0.0,
+                    "chi_start_deg": collection["chi"],
+                    "transmission_frac": 1.0,
+                    "features": {"use_gpu_results": True},
+                    **with_energy_params,
+                },
+                "multi_rotation_scan": {
+                    "comment": collection["comment"],
+                    "storage_directory": str(visit_directory),
+                    "exposure_time_s": collection["exposure_time"],
+                    "file_name": file_name,
+                    "transmission_frac": collection["transmission"],
+                    "rotation_increment_deg": collection["omega_increment"],
+                    "ispyb_experiment_type": collection["experiment_type"],
+                    "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],
+                    "rotation_scans": [
+                        {
+                            "scan_width_deg": (
+                                collection["number_of_images"]
+                                * collection["omega_increment"]
+                            ),
+                            "omega_start_deg": collection["omega_start"],
+                            "phi_start_deg": collection["phi_start"],
+                            "chi_start_deg": collection["chi"],
+                            "rotation_direction": "Positive",
+                        }
+                    ],
+                    **with_energy_params,
+                },
+            }
+        )
+        for collection in collections
+    ]
 
 
-def create_parameters_from_agamemnon() -> LoadCentreCollect | None:
+def create_parameters_from_agamemnon() -> Sequence[LoadCentreCollect]:
     beamline_name = get_beamline_name("i03")
     agamemnon_params = get_next_instruction(beamline_name)
     return (
-        populate_parameters_from_agamemnon(agamemnon_params)
-        if agamemnon_params
-        else None
+        populate_parameters_from_agamemnon(agamemnon_params) if agamemnon_params else []
     )
 
 
-def compare_params(load_centre_collect_params):
+def compare_params(load_centre_collect_params: LoadCentreCollect):
     try:
-        parameters = create_parameters_from_agamemnon()
+        lcc_requests = create_parameters_from_agamemnon()
         # Log differences against GDA populated parameters
-        differences = DeepDiff(
-            parameters, load_centre_collect_params, math_epsilon=1e-5
-        )
-        if differences:
-            LOGGER.info(
-                f"Different parameters found when directly reading from Hyperion: {differences}"
+        if not lcc_requests:
+            LOGGER.info("Agamemnon returned no instructions")
+        else:
+            differences = DeepDiff(
+                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
             )
+            if differences:
+                LOGGER.info(
+                    f"Different parameters found when directly reading from Hyperion: {differences}"
+                )
     except (ValueError, KeyError):
         LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
     except Exception:

@@ -26,9 +26,10 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def robot_load_and_energy_change_params():
+def robot_load_and_energy_change_params(tmp_path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_params.json",
+        tmp_path,
     )
     return RobotLoadAndEnergyChange(**params)
 
@@ -223,7 +224,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+    initial_values = {"z": 0.13, "x": 0.11, "y": 0.12}
 
     def get_read(axis, msg):
         return {"readback": initial_values[axis]}
@@ -266,7 +267,7 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+    initial_values = {"z": 0.13, "x": 0.11, "y": 0.12}
 
     def get_read(axis, msg):
         return {"readback": initial_values[axis]}

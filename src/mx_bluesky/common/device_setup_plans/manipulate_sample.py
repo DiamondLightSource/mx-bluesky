@@ -7,9 +7,10 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import CombinedMove, Smargon
 
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
@@ -21,6 +22,8 @@ def setup_sample_environment(
     group="setup_senv",
 ):
     """Move the aperture into required position, move out the backlight."""
+    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
+
     aperture_value = (
         None
         if not aperture_position_gda_name
@@ -29,7 +32,6 @@ def setup_sample_environment(
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_value, group=group
     )
-    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
 
 
 def move_aperture_if_required(
@@ -46,6 +48,7 @@ def move_aperture_if_required(
 
     else:
         LOGGER.info(f"Setting aperture position to {aperture_value}")
+        yield from bps.wait(CONST.WAIT.PREPARE_APERTURE)
         yield from bps.abs_set(
             aperture_scatterguard.selected_aperture,
             aperture_value,
@@ -78,12 +81,7 @@ def move_x_y_z(
     axes are optional."""
 
     LOGGER.info(f"Moving smargon to x, y, z: {(x_mm, y_mm, z_mm)}")
-    if x_mm is not None:
-        yield from bps.abs_set(smargon.x, x_mm, group=group)
-    if y_mm is not None:
-        yield from bps.abs_set(smargon.y, y_mm, group=group)
-    if z_mm is not None:
-        yield from bps.abs_set(smargon.z, z_mm, group=group)
+    yield from bps.abs_set(smargon, CombinedMove(x=x_mm, y=y_mm, z=z_mm), group=group)
     if wait:
         yield from bps.wait(group)
 
@@ -100,11 +98,8 @@ def move_phi_chi_omega(
     axes are optional."""
 
     LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
-    if phi is not None:
-        yield from bps.abs_set(smargon.phi, phi, group=group)
-    if chi is not None:
-        yield from bps.abs_set(smargon.chi, chi, group=group)
-    if omega is not None:
-        yield from bps.abs_set(smargon.omega, omega, group=group)
+    yield from bps.abs_set(
+        smargon, CombinedMove(phi=phi, chi=chi, omega=omega), group=group
+    )
     if wait:
         yield from bps.wait(group)

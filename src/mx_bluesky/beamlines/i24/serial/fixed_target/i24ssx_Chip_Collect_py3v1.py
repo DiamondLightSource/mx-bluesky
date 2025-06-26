@@ -18,8 +18,9 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -38,7 +39,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 impo
 )
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
-from mx_bluesky.beamlines.i24.serial.parameters.constants import BEAM_CENTER_LUT_FILES
+from mx_bluesky.beamlines.i24.serial.parameters.constants import (
+    BEAM_CENTER_LUT_FILES,
+    DetectorName,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -180,10 +184,12 @@ def load_motion_program_data(
         # Pump setting chosen
         prefix = 14
         SSX_LOGGER.info(f"Setting program prefix to {prefix}")
-        yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if checker_pattern:
             SSX_LOGGER.info("Checker pattern setting enabled.")
             yield from bps.abs_set(pmac.pmac_string, "P1439=1", wait=True)
+        else:
+            SSX_LOGGER.info("Checker pattern setting disabled.")
+            yield from bps.abs_set(pmac.pmac_string, "P1439=0", wait=True)
         if pump_repeat == PumpProbeSetting.Medium1:
             # Medium1 has time delays (Fast shutter opening time in ms)
             yield from bps.abs_set(pmac.pmac_string, "P1441=50", wait=True)
@@ -263,13 +269,14 @@ def start_i24(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
     dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
     the hutch shutter.
@@ -328,7 +335,9 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
-        filetemplate = yield from get_pilatus_filename_template_from_device()
+        filetemplate = yield from get_pilatus_filename_template_from_device(
+            pilatus_metadata
+        )
         dcid.generate_dcid(
             beam_settings=beam_settings,
             image_dir=filepath,
@@ -495,13 +504,14 @@ def main_fixed_target_plan(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -546,6 +556,7 @@ def main_fixed_target_plan(
         mirrors,
         beam_center_device,
         dcid,
+        pilatus_metadata,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -644,11 +655,14 @@ def run_fixed_target_plan(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -661,11 +675,47 @@ def run_fixed_target_plan(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = sup.get_beam_center_device(parameters.detector_name)
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
 
+    yield from run_plan_in_wrapper(
+        zebra,
+        pmac,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        pilatus_metadata,
+    )
+
+
+def run_plan_in_wrapper(
+    zebra: Zebra,
+    pmac: PMAC,
+    aperture: Aperture,
+    backlight: DualBacklight,
+    beamstop: Beamstop,
+    detector_stage: YZStage,
+    shutter: HutchShutter,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
+    parameters: FixedTargetParameters,
+    dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
+) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
             zebra,
@@ -680,6 +730,7 @@ def run_fixed_target_plan(
             beam_center_device,
             parameters,
             dcid,
+            pilatus_metadata,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
