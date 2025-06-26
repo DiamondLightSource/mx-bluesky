@@ -55,6 +55,7 @@ In order to avoid threads which get left alive forever after test completion
 
 
 autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
+_MULTILINE_MESSAGE = "This is a\nmultiline log\nmessage."
 
 
 @pytest.fixture()
@@ -447,19 +448,40 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     assert response.get("exception_type") == "ValueError"
 
 
-@pytest.mark.skip(
-    reason="See https://github.com/DiamondLightSource/hyperion/issues/777"
-)
+@pytest.mark.timeout(2)
 def test_warn_exception_during_plan_causes_warning_in_log(
     caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
     test_env.client.put(START_ENDPOINT, data=test_params)
-    test_env.mock_run_engine.error = WarningException("D'Oh")
+    test_env.mock_run_engine.error = WarningException(_MULTILINE_MESSAGE)
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == 'WarningException("D\'Oh")'
+    assert response_json["message"] == repr(test_env.mock_run_engine.error)
     assert response_json["exception_type"] == "WarningException"
-    assert caplog.records[-1].levelname == "WARNING"
+    log_record = [r for r in caplog.records if r.funcName == "wait_on_queue"][0]
+    assert (
+        log_record.levelname == "WARNING" and _MULTILINE_MESSAGE in log_record.exc_text
+    )
+
+
+def _raise_exception(*args, **kwargs):
+    raise WarningException(_MULTILINE_MESSAGE)
+
+
+@patch.dict(
+    "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
+    {"pin_tip_centre_then_xray_centre": {"param_type": _raise_exception}},
+)
+def test_exception_during_parameter_decodde_generates_nicely_formatted_log_message(
+    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
+):
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    assert response.json["status"] == Status.FAILED.value
+    logrecord = [
+        r for r in caplog.records if r.funcName == "put" and r.filename == "__main__.py"
+    ][0]
+    assert logrecord.levelname == "ERROR"
+    assert _MULTILINE_MESSAGE in logrecord.message
 
 
 @pytest.mark.parametrize("dev_mode", [True, False])
