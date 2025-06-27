@@ -490,7 +490,9 @@ def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
+    SSX_LOGGER.warning(
+        f"Data Collection Aborted: {''.join(format_exception(exception))}"
+    )
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
