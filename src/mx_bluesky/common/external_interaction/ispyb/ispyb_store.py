@@ -10,6 +10,7 @@ import numpy as np
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
+from mysql.connector import DataError
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -146,12 +147,20 @@ class StoreInIspyb:
     def append_to_comment(
         self, data_collection_id: int, comment: str, delimiter: str = " "
     ) -> None:
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            assert conn is not None, "Failed to connect to ISPyB!"
-            mx_acquisition: MXAcquisition = conn.mx_acquisition
-            mx_acquisition.update_data_collection_append_comments(
-                data_collection_id, comment, delimiter
-            )
+        try:
+            with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+                assert conn is not None, "Failed to connect to ISPyB!"
+                mx_acquisition: MXAcquisition = conn.mx_acquisition
+                mx_acquisition.update_data_collection_append_comments(
+                    data_collection_id, comment, delimiter
+                )
+        except DataError as e:
+            if e.errno == 1406:
+                ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
+                    f"Unable to log comment, comment exceeded column length: {comment}"
+                )
+            else:
+                raise
 
     def update_data_collection_group_table(
         self,
