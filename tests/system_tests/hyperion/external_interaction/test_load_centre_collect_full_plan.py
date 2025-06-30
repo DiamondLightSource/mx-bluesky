@@ -356,6 +356,55 @@ def test_execute_load_centre_collect_full(
     assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
 
 
+@pytest.mark.parametrize(
+    "zocalo_result",
+    [
+        [],
+    ],
+)
+@pytest.mark.system_test
+def test_execute_load_centre_collect_full_no_diffraction(
+    zocalo_result,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
+    tmp_path,
+):
+    load_centre_collect_params.features.use_gpu_results = True
+    load_centre_collect_params.robot_load_then_centre.features.use_gpu_results = True
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    robot_load_cb = RobotLoadISPyBCallback()
+    # robot_load_cb.expeye = MagicMock()
+    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_robot_action = MagicMock()
+    robot_load_cb.expeye.update_robot_action = MagicMock()
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+    with pytest.raises(CrystalNotFoundException):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+
 @pytest.mark.system_test
 def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
