@@ -1,19 +1,5 @@
-import gc
 import os
-from collections.abc import Callable
 from dataclasses import fields
-from itertools import dropwhile
-from types import (
-    AsyncGeneratorType,
-    CellType,
-    CoroutineType,
-    FunctionType,
-    GeneratorType,
-    LambdaType,
-    MethodType,
-    ModuleType,
-)
-from typing import Any
 from unittest.mock import patch
 from weakref import WeakValueDictionary
 
@@ -35,7 +21,6 @@ weak_ids_to_devices = WeakValueDictionary()
 MAX_DEVICE_COUNT = 10
 
 STOP_ON_LEAK_DETECTION = False
-MAX_LAYERS = 10
 
 
 @pytest.fixture
@@ -68,10 +53,22 @@ def test_udc_reloads_all_devices_soak_test_dev_mode(RE: RunEngine, i: int):
 def test_udc_reloads_all_devices_soak_test_real(
     RE: RunEngine, i: int, patch_ensure_connected
 ):
+    """
+    Deliberately not part of main system tests because this is SLOW and requires
+    a beamline to connect to.
+    """
     reinitialise_beamline(False, i)
 
 
 def reinitialise_beamline(dev_mode: bool, i: int):
+    """Reinitialise the beamline, which should cause all beamline devices
+    to be reinstantiated, and then check for memory leaks (potentially caused
+    if something holds a reference to the device).
+    Since GC is in general implementation dependent and non-deterministic,
+    it is not guaranteed that devices will be collected after only one iteration.
+    Therefore this test is run a number of times in a loop and we check that the
+    outstanding instances do not exceed some threshold value."""
+
     context = setup_context(dev_mode)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
@@ -113,85 +110,6 @@ def check_instances_are_garbage_collected(i: int):
     )
     for name, count in device_counts.items():
         max_count = min(MAX_DEVICE_COUNT, i * 2)
-        try:
-            assert count <= max_count, (
-                f"Device count {name} exceeded max expected references {count}"
-            )
-        except:
-            if STOP_ON_LEAK_DETECTION:
-                it = dropwhile(device_is_not(name), weak_ids_to_devices.valuerefs())
-                first_instance = next(it)
-                find_gc_roots_of_object(first_instance)
-                exit()
-            raise
-
-
-def device_is_not(name: str) -> Callable[[Any], bool]:
-    def weakref_device_is_not(wr) -> bool:
-        o = wr()
-        return o is None or o.name != name
-
-    return weakref_device_is_not
-
-
-def dump(o) -> str:
-    t = type(o)
-    if t in (
-        MethodType,
-        FunctionType,
-        LambdaType,
-        GeneratorType,
-        CellType,
-        CoroutineType,
-        AsyncGeneratorType,
-        ModuleType,
-    ):
-        description = str(o)
-    else:
-        description = str(t)
-    return f"{description}:{id(o)}"
-
-
-def find_gc_roots_of_object(wr):
-    explored_items = set()
-    roots = explore_parents_of(wr, explored_items)
-    print(f"The roots of {dump(wr())} are")
-    print("\n".join([dump(r) for r in roots]))
-
-
-def id_and_type_of_ref(r) -> tuple[int | None, type | None, list[Any]]:
-    return (id(r), type(r), gc.get_referrers(r)) if r is not None else (None, None, [])
-
-
-def explore_parents_of(wr, explored_items: set[int]) -> list[Any]:
-    r = wr()
-    assert r is not None
-    referrers = [r]
-    roots = []
-    depth = 0
-    while referrers:
-        next_layer = []
-        while referrers:
-            r = referrers.pop()
-            if type(r) not in (str, list, tuple, dict):
-                print(f"Exploring {dump(r)}")
-            objid, objtype, parents = id_and_type_of_ref(r)
-            if objid:
-                if objid in explored_items:
-                    pass
-                    # print(f"Ignoring cycle from explored object {dump(r)}")
-                else:
-                    explored_items.add(objid)
-                    if not parents:
-                        root = r
-                        print(f"Found a root {dump(root)}")
-                        roots.append(root)
-                    else:
-                        next_layer += parents
-        print(f"Explored layer {depth}")
-        referrers += next_layer
-        if depth == MAX_LAYERS:
-            print("Reached max depth")
-            break
-        depth += 1
-    return roots
+        assert count <= max_count, (
+            f"Device count {name} exceeded max expected references {count}"
+        )
