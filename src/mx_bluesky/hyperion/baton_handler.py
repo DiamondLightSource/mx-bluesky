@@ -72,7 +72,8 @@ def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     Perform all initialisation that happens at the start of UDC just after the
     baton is acquired, but before we execute any plans or move hardware.
 
-    Beamline devices are unloaded and reloaded, bluesky context gets new set of devices.
+    Beamline devices are unloaded and reloaded in order to pick up any new configuration,
+    bluesky context gets new set of devices.
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
     clear_all_device_caches(context)
