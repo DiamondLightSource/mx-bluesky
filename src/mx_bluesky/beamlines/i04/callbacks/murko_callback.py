@@ -17,6 +17,16 @@ class OmegaReading(TypedDict):
 def extrapolate_omega(
     latest_omega: OmegaReading, previous_omega: OmegaReading, image_timestamp: float
 ) -> float:
+    """Extrapolate an image omega from previous omegas.
+
+    There are a number of assumptions in this calculation:
+    * The speed of the smargon is fixed
+    * The timestamps from the two different devices are synchronised and match the data
+      exactly
+
+    These are accepted to be reasonable based on larger errors likely coming from murko
+    itself and that the results ultimately will be averaged out.
+    """
     omega_per_sec = (latest_omega["value"] - previous_omega["value"]) / (
         latest_omega["timestamp"] - previous_omega["timestamp"]
     )
