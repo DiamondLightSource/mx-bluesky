@@ -20,9 +20,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionUDCFeatures):
     @property
     def detector_params(self):
         params = super().detector_params
-        params.enable_dev_shm = (
-            self.features.compare_cpu_and_gpu_zocalo or self.features.use_gpu_results
-        )
+        params.enable_dev_shm = self.features.use_gpu_results
         return params
 
 
@@ -35,9 +33,7 @@ class HyperionSpecifiedThreeDGridScan(WithHyperionUDCFeatures, SpecifiedThreeDGr
     @property
     def detector_params(self):
         params = super().detector_params
-        params.enable_dev_shm = (
-            self.features.compare_cpu_and_gpu_zocalo or self.features.use_gpu_results
-        )
+        params.enable_dev_shm = self.features.use_gpu_results
         return params
 
     # Relative to common grid scan, stub offsets are defined by config server
