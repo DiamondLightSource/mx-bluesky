@@ -22,7 +22,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     ZOCALO_STAGE_GROUP,
     kickoff_and_complete_gridscan,
 )
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
 from mx_bluesky.common.parameters.constants import (

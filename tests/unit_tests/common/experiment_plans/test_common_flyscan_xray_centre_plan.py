@@ -30,7 +30,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     run_gridscan,
     wait_for_gridscan_valid,
 )
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
