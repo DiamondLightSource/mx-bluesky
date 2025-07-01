@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Literal
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -235,6 +237,33 @@ def test_ispyb_deposition_comment_correct_on_failure(
     assert (
         fetch_comment(ispyb_ids.data_collection_ids[0])  # type: ignore
         == "MX-Bluesky: Xray centring 1 - DataCollection Unsuccessful reason: could not connect to devices"
+    )
+
+
+@patch("mx_bluesky.common.external_interaction.ispyb.ispyb_utils.datetime")
+@pytest.mark.system_test
+def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
+    mock_datetime: MagicMock,
+    dummy_params,
+    dummy_ispyb: StoreInIspyb,
+    fetch_datacollection_attribute: Callable[..., Any],
+    dummy_data_collection_group_info,
+    dummy_scan_data_info_for_begin_xy,
+):
+    timestamp = datetime.fromisoformat("2024-08-11T15:59:23")
+    mock_datetime.datetime = MagicMock(**{"now.return_value": timestamp})
+    ispyb_ids = dummy_ispyb.begin_deposition(
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin_xy]
+    )
+    dummy_ispyb.end_deposition(
+        ispyb_ids, "fail", f"Failed with very big object repr {dummy_params}"
+    )
+
+    expected_values = {"endTime": timestamp, "runStatus": "DataCollection Unsuccessful"}
+    compare_actual_and_expected(
+        ispyb_ids.data_collection_ids[0],
+        expected_values,
+        fetch_datacollection_attribute,
     )
 
 

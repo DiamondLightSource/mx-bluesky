@@ -10,7 +10,6 @@ import numpy as np
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
-from mysql.connector import DataError
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -154,13 +153,11 @@ class StoreInIspyb:
                 mx_acquisition.update_data_collection_append_comments(
                     data_collection_id, comment, delimiter
                 )
-        except DataError as e:
-            if e.errno == 1406:
-                ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
-                    f"Unable to log comment, comment exceeded column length: {comment}"
-                )
-            else:
-                raise
+        except ispyb.ReadWriteError as e:
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
+                f"Unable to log comment, comment probably exceeded column length: {comment}",
+                exc_info=e,
+            )
 
     def update_data_collection_group_table(
         self,
@@ -196,7 +193,6 @@ class StoreInIspyb:
             params["parentid"] = data_collection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-
             mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_position_table(
