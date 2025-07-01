@@ -23,8 +23,8 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pilatus_metadata import PilatusMetadata
+from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -70,7 +70,7 @@ def flush_print(text):
 
 @log_on_entry
 def initialise_extruder(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     SSX_LOGGER.info("Initialise Parameters for extruder data collection on I24.")
 
@@ -98,7 +98,7 @@ def initialise_extruder(
 def laser_check(
     mode: str,
     zebra: Zebra = inject("zebra"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     """Plan to open the shutter and check the laser beam from the viewer by pressing \
         'Laser On' and 'Laser Off' buttons on the edm.
@@ -138,7 +138,7 @@ def laser_check(
 
 @log_on_entry
 def enter_hutch(
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     """Move the detector stage before entering hutch."""
     yield from bps.mv(detector_stage.z, SAFE_DET_Z)
@@ -146,12 +146,12 @@ def enter_hutch(
 
 
 @log_on_entry
-def read_parameters(detector_stage: DetectorMotion, attenuator: ReadOnlyAttenuator):
+def read_parameters(detector_stage: YZStage, attenuator: ReadOnlyAttenuator):
     """ Read the parameters from user input and create the parameter model for an \
         extruder collection.
 
     Args:
-        detector_stage (DetectorMotion): The detector stage device.
+        detector_stage (YZStage): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
 
@@ -208,7 +208,7 @@ def main_extruder_plan(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
@@ -500,7 +500,7 @@ def run_extruder_plan(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),

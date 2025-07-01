@@ -30,7 +30,7 @@ class I03Constants:
     ALTERNATE_ROTATION_DIRECTION = True
 
     # Turns on GPU processing for zocalo and uses the results that come back
-    USE_GPU_RESULTS = False
+    USE_GPU_RESULTS = True
 
 
 @dataclass(frozen=True)

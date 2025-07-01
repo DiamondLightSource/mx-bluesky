@@ -16,8 +16,8 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
+from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -121,14 +121,14 @@ def _is_checker_pattern() -> bool:
 
 @log_on_entry
 def read_parameters(
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     """ Read the parameters from user input and create the parameter model for a fixed \
         target collection.
 
     Args:
-        detector_stage (DetectorMotion): The detector stage device.
+        detector_stage (YZStage): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
 
@@ -566,7 +566,7 @@ def moveto_preset(
     pmac: PMAC = inject("pmac"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: DualBacklight = inject("backlight"),
-    det_stage: DetectorMotion = inject("detector_motion"),
+    det_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     # Non Chip Specific Move
     if place == "zero":

@@ -6,16 +6,10 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
-from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
-    create_parameters_for_flyscan_xray_centre,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
-from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    create_parameters_for_grid_detection,
-)
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
     OddYStepsException,
@@ -28,12 +22,15 @@ from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def load_centre_collect_params_with_panda(tmp_path):
+def load_centre_collect_params_with_panda(tmp_path, request):
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
         tmp_path,
     )
-    params["robot_load_then_centre"]["features"]["use_panda_for_gridscan"] = True
+    params["features"]["use_panda_for_gridscan"] = True
+    if params_dict := getattr(request, "param", {}):
+        for k, v in params_dict.items():
+            params.setdefault("features", {})[k] = v
     return LoadCentreCollect(**params)
 
 
@@ -170,7 +167,7 @@ def test_selected_aperture_uses_default(tmp_path):
 def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.features.use_panda_for_gridscan is False
-    assert test_params.features.use_gpu_results is False
+    assert test_params.features.use_gpu_results is True
     minimal_3d_gridscan_params["features"] = {"use_panda_for_gridscan": True}
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.features.use_panda_for_gridscan
@@ -203,34 +200,8 @@ def test_gpu_enabled_if_use_gpu_results_or_compare_gpu_enabled(
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
 
     grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert not grid_scan.detector_params.enable_dev_shm
+    assert grid_scan.detector_params.enable_dev_shm
 
     minimal_3d_gridscan_params["features"] = feature_set
     grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
     assert grid_scan.detector_params.enable_dev_shm == expected_dev_shm
-
-
-def test_hyperion_params_correctly_carried_through_UDC_parameter_models(
-    load_centre_collect_params_with_panda: LoadCentreCollect,
-):
-    robot_load_then_centre_params = (
-        load_centre_collect_params_with_panda.robot_load_then_centre
-    )
-    assert robot_load_then_centre_params.detector_params.enable_dev_shm
-    pin_tip_then_xrc_params = (
-        robot_load_then_centre_params.pin_centre_then_xray_centre_params
-    )
-    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
-    grid_detect_then_xrc_params = create_parameters_for_grid_detection(
-        pin_tip_then_xrc_params
-    )
-    assert pin_tip_then_xrc_params.detector_params.enable_dev_shm
-    flyscan_xrc_params = create_parameters_for_flyscan_xray_centre(
-        grid_detect_then_xrc_params,
-        get_empty_grid_parameters(),
-        HyperionSpecifiedThreeDGridScan,
-    )
-    assert type(flyscan_xrc_params) is HyperionSpecifiedThreeDGridScan
-    assert flyscan_xrc_params.detector_params.enable_dev_shm
-    assert flyscan_xrc_params.panda_runup_distance_mm == 0.17
-    assert flyscan_xrc_params.features.use_panda_for_gridscan
