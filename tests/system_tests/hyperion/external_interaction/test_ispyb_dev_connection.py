@@ -251,7 +251,7 @@ def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
     dummy_scan_data_info_for_begin_xy,
 ):
     timestamp = datetime.fromisoformat("2024-08-11T15:59:23")
-    mock_datetime.datetime = MagicMock(**{"now.return_value": timestamp})
+    mock_datetime.datetime = MagicMock(**{"now.return_value": timestamp})  # type: ignore
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_data_collection_group_info, [dummy_scan_data_info_for_begin_xy]
     )
