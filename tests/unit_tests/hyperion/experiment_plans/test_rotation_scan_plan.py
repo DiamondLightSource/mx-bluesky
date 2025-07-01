@@ -567,14 +567,44 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     )
 
 
-def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_not_specified(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    test_rotation_params.snapshot_omegas_deg = None
+    _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
+        fake_create_rotation_devices,
+        sim_run_engine,
+        test_rotation_params,
+        oav_parameters_for_rotation,
+    )
+
+
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_grid_snapshots_specified(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    test_rotation_params.use_grid_snapshots = True
+    test_rotation_params.snapshot_omegas_deg = None
+    _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
+        fake_create_rotation_devices,
+        sim_run_engine,
+        test_rotation_params,
+        oav_parameters_for_rotation,
+    )
+
+
+def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
     test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
-    test_rotation_params.snapshot_omegas_deg = None
 
     msgs = sim_run_engine.simulate_plan(
         rotation_scan(

@@ -148,6 +148,7 @@ def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreC
                     "name": "TopNByMaxCount",
                     "n": pin_type.expected_number_of_crystals,
                 },
+                "features": {"use_gpu_results": True},
                 "robot_load_then_centre": {
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,
@@ -156,7 +157,6 @@ def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreC
                     "omega_start_deg": 0.0,
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
-                    "features": {"use_gpu_results": True},
                     **with_energy_params,
                 },
                 "multi_rotation_scan": {
@@ -228,10 +228,10 @@ def update_params_from_agamemnon(parameters: T) -> T:
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
             if pin_type != SinglePin():
-                # Snapshots between each collection take a lot of time.
-                # Before we do https://github.com/DiamondLightSource/mx-bluesky/issues/226
-                # this will give no snapshots but that's preferable
+                # Rotation snapshots will be generated from the gridscan snapshots,
+                # no need to specify snapshot omega.
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
+                parameters.multi_rotation_scan.use_grid_snapshots = True
     except (ValueError, ValidationError) as e:
         LOGGER.warning(f"Failed to update parameters: {e}")
     except Exception as e:

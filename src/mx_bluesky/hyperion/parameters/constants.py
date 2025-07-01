@@ -34,7 +34,7 @@ class I03Constants:
     COMPARE_CPU_AND_GPU_ZOCALO = False
 
     # Turns on GPU processing for zocalo and uses the results that come back
-    USE_GPU_RESULTS = False
+    USE_GPU_RESULTS = True
 
 
 @dataclass(frozen=True)
