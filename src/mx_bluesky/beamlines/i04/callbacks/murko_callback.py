@@ -14,7 +14,7 @@ class OmegaReading(TypedDict):
     timestamp: float
 
 
-def interpolate_omega(
+def extrapolate_omega(
     latest_omega: OmegaReading, previous_omega: OmegaReading, image_timestamp: float
 ) -> float:
     omega_per_sec = (latest_omega["value"] - previous_omega["value"]) / (
@@ -33,7 +33,7 @@ class MurkoCallback(CallbackBase):
 
     The metadata and image data arrive independently, it is expected that the image data
     is arriving at a faster rate than gonio metadata and so the value of omega for when
-    the image arrives is interpolated based on previous omega readings.
+    the image arrives is extrapolated based on previous omega readings.
     """
 
     DATA_EXPIRY_DAYS = 7
@@ -63,7 +63,7 @@ class MurkoCallback(CallbackBase):
     def event(self, doc: Event) -> Event:
         if latest_omega := doc["data"].get("smargon-omega"):
             if len(self.previous_omegas) <= 2 and self.last_uuid:
-                # For the first few images there's not enough data to interpolate so we
+                # For the first few images there's not enough data to extrapolate so we
                 # match them one to one
                 self.call_murko(self.last_uuid, latest_omega)
             self.previous_omegas.append(
@@ -74,12 +74,12 @@ class MurkoCallback(CallbackBase):
             )
         elif (uuid := doc["data"].get("oav_to_redis_forwarder-uuid")) is not None:
             if len(self.previous_omegas) >= 2:
-                omega = interpolate_omega(
+                omega = extrapolate_omega(
                     self.previous_omegas[-1],
                     self.previous_omegas[-2],
                     doc["timestamps"]["oav_to_redis_forwarder-uuid"],
                 )
-                LOGGER.info(f"Using interpolated omega of {omega}")
+                LOGGER.info(f"Using extrapolated omega of {omega}")
                 self.call_murko(uuid, omega)
             self.last_uuid = uuid
         return doc

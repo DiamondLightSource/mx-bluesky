@@ -6,7 +6,7 @@ from event_model import Event
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
     MurkoCallback,
-    interpolate_omega,
+    extrapolate_omega,
 )
 
 test_oav_uuid = "UUID"
@@ -91,7 +91,7 @@ def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_
     )
 
 
-def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_interpolated_omega(
+def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega(
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_oav_event)
@@ -107,7 +107,7 @@ def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_interpo
     murko_with_mock_call.call_murko.assert_called_once_with(test_oav_uuid, 20)  # type: ignore
 
 
-def test_given_three_sets_of_smargon_data_then_next_image_calls_murko_with_interpolated_omega_from_last_two(
+def test_given_three_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega_from_last_two(
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_oav_event)
@@ -203,5 +203,5 @@ def test_when_murko_called_with_event_data_then_meta_data_put_in_redis(
         ),
     ],
 )
-def test_interpolate_omega(latest_omega, previous_omega, now, expected):
-    assert interpolate_omega(latest_omega, previous_omega, now) == expected
+def test_extrapolate_omega(latest_omega, previous_omega, now, expected):
+    assert extrapolate_omega(latest_omega, previous_omega, now) == expected
