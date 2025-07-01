@@ -103,9 +103,9 @@ def _generic_tidy(
     # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
     LOGGER.info("Turning off Eiger dev/shm streaming")
     # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-    yield from bps.abs_set(
+    yield from bps.abs_set(  # type: ignore
         xrc_composite.eiger.odin.fan.dev_shm_enable, 0, group=group, wait=wait
-    )  # type: ignore
+    )
 
 
 def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
