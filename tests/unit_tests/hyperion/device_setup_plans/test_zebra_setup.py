@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 from dodal.devices.zebra.zebra import (
     I03Axes,
@@ -9,10 +11,12 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 )
 
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
-    configure_zebra_and_shutter_for_auto_shutter,
-    setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
     setup_zebra_for_rotation,
+)
+from mx_bluesky.phase1.device_setup_plans.setup_zebra import (
+    configure_zebra_and_shutter_for_auto_shutter,
+    setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 
@@ -51,7 +55,13 @@ async def test_zebra_set_up_for_panda_gridscan(
 
 
 async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    RE(setup_zebra_for_gridscan(zebra, zebra_shutter, wait=True))
+    @dataclasses.dataclass
+    class Composite:
+        zebra: Zebra
+        sample_shutter: ZebraShutter
+
+    composite = Composite(zebra, zebra_shutter)
+    RE(setup_zebra_for_gridscan(composite, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN3_TTL

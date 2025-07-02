@@ -50,10 +50,10 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    _generic_tidy,
-    _zebra_triggering_setup,
+from mx_bluesky.phase1.device_setup_plans.cleanup_plans import (
+    gridscan_generic_tidy,
 )
+from mx_bluesky.phase1.device_setup_plans.setup_zebra import setup_zebra_for_gridscan
 
 
 def create_devices(
@@ -165,8 +165,7 @@ def construct_i04_specific_features(
         xrc_composite.eiger.bit_depth,
     ]
 
-    setup_trigger_plan = _zebra_triggering_setup
-    tidy_plan = partial(_generic_tidy, group="flyscan_zebra_tidy", wait=True)
+    tidy_plan = partial(gridscan_generic_tidy, group="flyscan_zebra_tidy", wait=True)
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,
@@ -174,7 +173,7 @@ def construct_i04_specific_features(
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_FGS_features(
-        setup_trigger_plan,
+        setup_zebra_for_gridscan,
         tidy_plan,
         set_flyscan_params_plan,
         fgs_motors,

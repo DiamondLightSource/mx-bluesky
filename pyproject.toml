@@ -243,10 +243,17 @@ forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from each other"
 type = "independence"
-modules = "mx_bluesky.beamlines.*"
+modules = "mx_bluesky.beamlines"
 
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from hyperion"
 type = "forbidden"
-source_modules = "mx_bluesky.beamlines.*"
-forbidden_modules = "mx_bluesky.hyperion"
+source_modules = "mx_bluesky.beamlines.**"
+forbidden_modules = "mx_bluesky.hyperion.**"
+
+[[tool.importlinter.contracts]]
+name = "Only Hyperion and i04 can import from phase1"
+type = "forbidden"
+source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
+forbidden_modules = ["mx_bluesky.phase1.**"]
+ignore_imports = ["mx_bluesky.beamlines.i04.** -> mx_bluesky.phase1.**", "mx_bluesky.hyperion.** -> mx_bluesky.phase1.**"]
