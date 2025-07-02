@@ -9,15 +9,15 @@ from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
-    PinType,
-    SinglePin,
+    _get_next_instruction,
+    _get_pin_type_from_agamemnon_parameters,
+    _get_withenergy_parameters_from_agamemnon,
+    _get_withvisit_parameters_from_agamemnon,
+    _PinType,
+    _populate_parameters_from_agamemnon,
+    _SinglePin,
     compare_params,
     create_parameters_from_agamemnon,
-    get_next_instruction,
-    get_pin_type_from_agamemnon_parameters,
-    get_withenergy_parameters_from_agamemnon,
-    get_withvisit_parameters_from_agamemnon,
-    populate_parameters_from_agamemnon,
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -34,7 +34,7 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 def test_given_various_pin_formats_then_pin_width_as_expected(
     num_wells, well_width, buffer, expected_width
 ):
-    pin = PinType(num_wells, well_width, buffer)
+    pin = _PinType(num_wells, well_width, buffer)
     assert pin.full_width == expected_width
 
 
@@ -53,23 +53,24 @@ def set_up_agamemnon_params(
 
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
-        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params()) == SinglePin()
+        _get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params())
+        == _SinglePin()
     )
 
 
 @pytest.mark.parametrize(
     "loop_name, expected_loop",
     [
-        ("multipin_6x50+9", PinType(6, 50, 9)),
-        ("multipin_6x25.8+8.6", PinType(6, 25.8, 8.6)),
-        ("multipin_9x31+90", PinType(9, 31, 90)),
+        ("multipin_6x50+9", _PinType(6, 50, 9)),
+        ("multipin_6x25.8+8.6", _PinType(6, 25.8, 8.6)),
+        ("multipin_9x31+90", _PinType(9, 31, 90)),
     ],
 )
 def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
-    loop_name: str, expected_loop: PinType
+    loop_name: str, expected_loop: _PinType
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
+        _get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
         == expected_loop
     )
 
@@ -87,8 +88,8 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
     loop_name: str,
 ):
     assert (
-        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
-        == SinglePin()
+        _get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
+        == _SinglePin()
     )
     mock_logger.warning.assert_called_once()
 
@@ -114,7 +115,7 @@ def test_given_unrecognised_multipin_in_parameters_then_warning_logged_single_pi
     loop_name: str,
 ):
     with pytest.raises(ValueError) as e:
-        get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
+        _get_pin_type_from_agamemnon_parameters(set_up_agamemnon_params(loop_name))
     assert "Expected multipin format" in str(e.value)
 
 
@@ -129,7 +130,7 @@ def test_when_get_next_instruction_called_then_expected_agamemnon_url_queried(
     mock_requests: MagicMock,
 ):
     configure_mock_agamemnon(mock_requests, None)
-    get_next_instruction("i03")
+    _get_next_instruction("i03")
     mock_requests.get.assert_called_once_with(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
         headers={"Accept": "application/json"},
@@ -142,7 +143,7 @@ def test_given_agamemnon_returns_an_unexpected_response_then_exception_is_thrown
 ):
     mock_requests.get.return_value.content = json.dumps({"not_collect": ""})
     with pytest.raises(KeyError) as e:
-        get_next_instruction("i03")
+        _get_next_instruction("i03")
     assert "not_collect" in str(e.value)
 
 
@@ -151,8 +152,8 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
     mock_requests: MagicMock,
 ):
     configure_mock_agamemnon(mock_requests, "multipin_6x50+98.1")
-    params = get_next_instruction("i03")
-    assert get_pin_type_from_agamemnon_parameters(params) == PinType(6, 50, 98.1)
+    params = _get_next_instruction("i03")
+    assert _get_pin_type_from_agamemnon_parameters(params) == _PinType(6, 50, 98.1)
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
@@ -217,7 +218,7 @@ def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
     ],
 )
 def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visit: str):
-    visit, _ = get_withvisit_parameters_from_agamemnon(
+    visit, _ = _get_withvisit_parameters_from_agamemnon(
         set_up_agamemnon_params(None, prefix, None)
     )
     assert visit == expected_visit
@@ -233,7 +234,7 @@ def test_given_valid_prefix_then_correct_visit_is_set(prefix: str, expected_visi
 )
 def test_given_invalid_prefix_then_exception_raised(prefix: str):
     with pytest.raises(ValueError) as e:
-        get_withvisit_parameters_from_agamemnon(
+        _get_withvisit_parameters_from_agamemnon(
             set_up_agamemnon_params(None, prefix, None)
         )
 
@@ -242,7 +243,7 @@ def test_given_invalid_prefix_then_exception_raised(prefix: str):
 
 def test_no_prefix_raises_exception():
     with pytest.raises(KeyError) as e:
-        get_withvisit_parameters_from_agamemnon({"not_collect": ""})
+        _get_withvisit_parameters_from_agamemnon({"not_collect": ""})
 
     assert "Unexpected json from agamemnon" in str(e.value)
 
@@ -316,8 +317,8 @@ def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_g
     indirect=True,
 )
 def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    hyperion_params_list = _populate_parameters_from_agamemnon(agamemnon_params)
     for hyperion_params in hyperion_params_list:
         assert hyperion_params.visit == "mx34598-77"
         assert isclose(hyperion_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
@@ -336,8 +337,8 @@ def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_res
 def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
     agamemnon_response,
 ):
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    hyperion_params_list = _populate_parameters_from_agamemnon(agamemnon_params)
     assert len(hyperion_params_list) == 2
     assert hyperion_params_list[0].robot_load_then_centre.chi_start_deg == 0.0
     assert hyperion_params_list[1].robot_load_then_centre.chi_start_deg == 30.0
@@ -376,8 +377,8 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
 def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     agamemnon_response,
 ):
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    hyperion_params_list = _populate_parameters_from_agamemnon(agamemnon_params)
     assert len(hyperion_params_list) == 2
     for hyperion_params in hyperion_params_list:
         rotation_params = hyperion_params.multi_rotation_scan
@@ -422,8 +423,8 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     indirect=True,
 )
 def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    hyperion_params_list = _populate_parameters_from_agamemnon(agamemnon_params)
     for hyperion_params in hyperion_params_list:
         assert hyperion_params.select_centres.n == 6
 
@@ -436,8 +437,8 @@ def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
 def test_populate_parameters_creates_multiple_load_centre_collect_for_native_collection(
     agamemnon_response,
 ):
-    agamemnon_params = get_next_instruction("i03")
-    hyperion_params_list = populate_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    hyperion_params_list = _populate_parameters_from_agamemnon(agamemnon_params)
     assert len(hyperion_params_list) == 2
     assert (
         sum(
@@ -456,14 +457,14 @@ def test_populate_parameters_creates_multiple_load_centre_collect_for_native_col
     indirect=True,
 )
 def test_get_withenergy_parameters_from_agamemnon(agamemnon_response):
-    agamemnon_params = get_next_instruction("i03")
-    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    agamemnon_params = _get_next_instruction("i03")
+    demand_energy_ev = _get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] == 12700.045934258673
 
 
 def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
     agamemnon_params = {}
-    demand_energy_ev = get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    demand_energy_ev = _get_withenergy_parameters_from_agamemnon(agamemnon_params)
     assert demand_energy_ev["demand_energy_ev"] is None
 
 
