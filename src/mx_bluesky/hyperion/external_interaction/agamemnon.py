@@ -3,6 +3,7 @@ import json
 import re
 import traceback
 from collections.abc import Sequence
+from enum import StrEnum
 from os import path
 from typing import Any, TypeVar
 
@@ -14,6 +15,7 @@ from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
+    MxBlueskyParameters,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -21,6 +23,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -29,6 +32,11 @@ MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
+
+
+class _InstructionType(StrEnum):
+    WAIT = "wait"
+    COLLECT = "collect"
 
 
 @dataclasses.dataclass
@@ -63,18 +71,29 @@ class _SinglePin(_PinType):
         return self.single_well_width_um
 
 
-def create_parameters_from_agamemnon() -> Sequence[LoadCentreCollect]:
+def create_parameters_from_agamemnon() -> Sequence[MxBlueskyParameters]:
     """Fetch the next instruction from agamemnon and convert it into one or more
-    LoadCentreCollect instructions.
+    mx-bluesky instructions.
     Returns:
-        The generated sequence of LoadCentreCollect instructions"""
+        The generated sequence of mx-bluesky parameters, or empty list if
+        no instructions."""
     beamline_name = get_beamline_name("i03")
-    agamemnon_params = _get_next_instruction(beamline_name)
-    return (
-        _populate_parameters_from_agamemnon(agamemnon_params)
-        if agamemnon_params
-        else []
-    )
+    agamemnon_instruction = _get_next_instruction(beamline_name)
+    if agamemnon_instruction:
+        match _instruction_and_data(agamemnon_instruction):
+            case (_InstructionType.COLLECT, data):
+                return _populate_parameters_from_agamemnon(data)
+            case (_InstructionType.WAIT, data):
+                return [
+                    Wait.model_validate(
+                        {
+                            "duration_s": data,
+                            "parameter_model_version": PARAMETER_VERSION,
+                        }
+                    )
+                ]
+
+    return []
 
 
 def compare_params(load_centre_collect_params: LoadCentreCollect):
@@ -115,7 +134,11 @@ def update_params_from_agamemnon(parameters: T) -> T:
     try:
         beamline_name = get_beamline_name("i03")
         agamemnon_params = _get_next_instruction(beamline_name)
-        pin_type = _get_pin_type_from_agamemnon_parameters(agamemnon_params)
+        instruction, collect_params = _instruction_and_data(agamemnon_params)
+        assert instruction == _InstructionType.COLLECT, (
+            "Unable to augment GDA parameters from agamemnon, agamemnon reports 'wait'"
+        )
+        pin_type = _get_pin_type_from_agamemnon_collect_parameters(collect_params)
         if isinstance(parameters, LoadCentreCollect):
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
@@ -133,18 +156,25 @@ def update_params_from_agamemnon(parameters: T) -> T:
     return parameters
 
 
+def _instruction_and_data(agamemnon_instruction: dict) -> tuple[str, Any]:
+    instruction, data = next(iter(agamemnon_instruction.items()))
+    if instruction not in _InstructionType.__members__.values():
+        raise KeyError(
+            f"Unexpected instruction from agamemnon: {agamemnon_instruction}"
+        )
+    return instruction, data
+
+
 def _get_parameters_from_url(url: str) -> dict:
     response = requests.get(url, headers={"Accept": "application/json"})
     response.raise_for_status()
-    response_json = json.loads(response.content)
-    try:
-        return response_json["collect"]
-    except KeyError as e:
-        raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
+    return json.loads(response.content)
 
 
-def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> _PinType:
-    loop_type_name: str | None = parameters["sample"]["loopType"]
+def _get_pin_type_from_agamemnon_collect_parameters(
+    collect_parameters: dict,
+) -> _PinType:
+    loop_type_name: str | None = collect_parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
         if regex_search:
@@ -201,11 +231,15 @@ def _get_param_version() -> SemanticVersion:
 def _populate_parameters_from_agamemnon(
     agamemnon_params,
 ) -> Sequence[LoadCentreCollect]:
+    if not agamemnon_params:
+        # Empty dict means no instructions
+        return []
+
     visit, detector_distance = _get_withvisit_parameters_from_agamemnon(
         agamemnon_params
     )
     with_energy_params = _get_withenergy_parameters_from_agamemnon(agamemnon_params)
-    pin_type = _get_pin_type_from_agamemnon_parameters(agamemnon_params)
+    pin_type = _get_pin_type_from_agamemnon_collect_parameters(agamemnon_params)
     collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
 
