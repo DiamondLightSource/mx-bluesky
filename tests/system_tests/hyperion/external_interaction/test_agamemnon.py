@@ -31,7 +31,6 @@ EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "grid_width_um": 600,
     "omega_start_deg": 0,
     "chi_start_deg": 0,
-    "features": {"use_gpu_results": True},
     "transmission_frac": 1.0,
 }
 
@@ -59,6 +58,7 @@ EXPECTED_ROTATION_PARAMS = {
 EXPECTED_PARAMETERS = [
     LoadCentreCollect.model_validate(
         {
+            "features": {"use_gpu_results": True},
             "visit": "cm00000-0",
             "detector_distance_mm": 180.8,
             "sample_id": 12345,

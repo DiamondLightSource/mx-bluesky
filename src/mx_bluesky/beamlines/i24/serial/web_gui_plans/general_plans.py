@@ -13,9 +13,9 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
 
@@ -97,7 +97,7 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
 @bpp.run_decorator()
 def gui_move_detector(
     det: Literal["eiger", "pilatus"],
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
@@ -127,7 +127,7 @@ def gui_run_chip_collection(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),

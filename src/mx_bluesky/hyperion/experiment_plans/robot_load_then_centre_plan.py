@@ -18,7 +18,7 @@ from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVolta
 from dodal.devices.i03 import Beamstop
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -96,7 +96,7 @@ class RobotLoadThenCentreComposite:
     # RobotLoad fields
     robot: BartRobot
     webcam: Webcam
-    lower_gonio: XYZPositioner
+    lower_gonio: XYZStage
     beamstop: Beamstop
 
 

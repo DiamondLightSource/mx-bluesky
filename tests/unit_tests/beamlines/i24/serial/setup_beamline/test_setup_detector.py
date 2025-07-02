@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.motors import YZStage
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.parameters.constants import SSXType
@@ -16,13 +16,13 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 )
 
 
-def test_get_detector_type(RE, detector_stage: DetectorMotion):
+def test_get_detector_type(RE, detector_stage: YZStage):
     set_mock_value(detector_stage.y.user_readback, -59)
     det_type = RE(get_detector_type(detector_stage)).plan_result
     assert det_type.name == "eiger"
 
 
-def test_get_detector_type_finds_pilatus(RE, detector_stage: DetectorMotion):
+def test_get_detector_type_finds_pilatus(RE, detector_stage: YZStage):
     set_mock_value(detector_stage.y.user_readback, 647)
     det_type = RE(get_detector_type(detector_stage)).plan_result
     assert det_type.name == "pilatus"
@@ -59,7 +59,7 @@ async def test_setup_detector_stage(
     requested_detector_value,
     serial_type,
     detector_target,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE: RunEngine,
 ):
     fake_caget.return_value = requested_detector_value

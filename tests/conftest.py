@@ -42,7 +42,7 @@ from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
@@ -532,7 +532,14 @@ def ophyd_pin_tip_detection(RE: RunEngine):
 def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
-    robot.set = MagicMock(return_value=done_status)
+
+    @AsyncStatus.wrap
+    async def fake_load(val: SampleLocation):
+        set_mock_value(robot.current_pin, val.pin)
+        set_mock_value(robot.current_puck, val.puck)
+        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+
+    robot.set = MagicMock(side_effect=fake_load)
     return robot
 
 
@@ -622,8 +629,19 @@ def vfm(RE: RunEngine):
 
 
 @pytest.fixture
-def lower_gonio(RE: RunEngine):
+def lower_gonio(
+    RE: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
+
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_gonio(_):
+        return {"readback": 0}
+
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
