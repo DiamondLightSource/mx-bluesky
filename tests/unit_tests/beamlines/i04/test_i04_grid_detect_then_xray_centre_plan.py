@@ -1,5 +1,3 @@
-from collections.abc import Generator
-from typing import cast
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
@@ -28,21 +26,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
-    HyperionSpecifiedThreeDGridScan,
 )
-
-
-def test_full_i04_grid_scan(
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    test_config_files: dict[str, str],
-):
-    devices = MagicMock()
-    plan = i04_grid_detect_then_xray_centre(
-        devices,
-        cast(GridScanWithEdgeDetect, hyperion_fgs_params),
-        test_config_files["oav_config_json"],
-    )
-    assert isinstance(plan, Generator)
 
 
 @patch(
@@ -64,8 +48,6 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
             grid_detect_xrc_devices.detector_motion,
         )
     )
-    for msg in msgs:
-        print(msg)
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "setup_beamline_for_oav"
     )

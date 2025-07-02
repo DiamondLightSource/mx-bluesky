@@ -1,6 +1,4 @@
 import dataclasses
-from collections.abc import Generator
-from typing import cast
 from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -60,22 +58,6 @@ def construct_beamline_specific(
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> ConstructBeamlineSpecificFeatures:
     return lambda xrc_composite, xrc_parameters: beamline_specific
-
-
-def test_full_grid_scan(
-    test_full_grid_scan_params: HyperionSpecifiedThreeDGridScan,
-    test_config_files: dict[str, str],
-    construct_beamline_specific,
-):
-    devices = MagicMock()
-    plan = grid_detect_then_xray_centre(
-        devices,
-        cast(GridScanWithEdgeDetect, test_full_grid_scan_params),
-        SpecifiedThreeDGridScan,
-        construct_beamline_specific,
-        test_config_files["oav_config_json"],
-    )
-    assert isinstance(plan, Generator)
 
 
 @pytest.mark.timeout(2)
