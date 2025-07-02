@@ -32,7 +32,7 @@ MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(
 
 
 @dataclasses.dataclass
-class PinType:
+class _PinType:
     expected_number_of_crystals: int
     single_well_width_um: float
     tip_to_first_well_um: float = 0
@@ -54,13 +54,83 @@ class PinType:
         )
 
 
-class SinglePin(PinType):
+class _SinglePin(_PinType):
     def __init__(self):
         super().__init__(1, GridscanParamConstants.WIDTH_UM)
 
     @property
     def full_width(self) -> float:
         return self.single_well_width_um
+
+
+def create_parameters_from_agamemnon() -> Sequence[LoadCentreCollect]:
+    """Fetch the next instruction from agamemnon and convert it into one or more
+    LoadCentreCollect instructions.
+    Returns:
+        The generated sequence of LoadCentreCollect instructions"""
+    beamline_name = get_beamline_name("i03")
+    agamemnon_params = _get_next_instruction(beamline_name)
+    return (
+        _populate_parameters_from_agamemnon(agamemnon_params)
+        if agamemnon_params
+        else []
+    )
+
+
+def compare_params(load_centre_collect_params: LoadCentreCollect):
+    """Compare the supplied parameters (as supplied from GDA) with those directly
+    created from agamemnon. Any differences are logged.
+    Args:
+        load_centre_collect_params: The parameters from GDA to compare."""
+    try:
+        lcc_requests = create_parameters_from_agamemnon()
+        # Log differences against GDA populated parameters
+        if not lcc_requests:
+            LOGGER.info("Agamemnon returned no instructions")
+        else:
+            differences = DeepDiff(
+                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
+            )
+            if differences:
+                LOGGER.info(
+                    f"Different parameters found when directly reading from Hyperion: {differences}"
+                )
+    except (ValueError, KeyError):
+        LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
+    except Exception:
+        LOGGER.warning(
+            f"Unexpected error occurred. Failed to compare parameters: {traceback.format_exc()}"
+        )
+
+
+def update_params_from_agamemnon(parameters: T) -> T:
+    """Update the supplied parameters with additional information from agamemnon.
+    This is currently necessary for multipin processing and called when Hyperion is invoked
+    from GDA.
+
+    Args:
+        parameters: The LoadCentreCollectParameters that will be updated with additional info,
+        such as multipin dimensions, number of crystals.
+    """
+    try:
+        beamline_name = get_beamline_name("i03")
+        agamemnon_params = _get_next_instruction(beamline_name)
+        pin_type = _get_pin_type_from_agamemnon_parameters(agamemnon_params)
+        if isinstance(parameters, LoadCentreCollect):
+            parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
+            parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
+            parameters.select_centres.n = pin_type.expected_number_of_crystals
+            if pin_type != _SinglePin():
+                # Rotation snapshots will be generated from the gridscan snapshots,
+                # no need to specify snapshot omega.
+                parameters.multi_rotation_scan.snapshot_omegas_deg = []
+                parameters.multi_rotation_scan.use_grid_snapshots = True
+    except (ValueError, ValidationError) as e:
+        LOGGER.warning(f"Failed to update parameters: {e}")
+    except Exception as e:
+        LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
+
+    return parameters
 
 
 def _get_parameters_from_url(url: str) -> dict:
@@ -73,13 +143,13 @@ def _get_parameters_from_url(url: str) -> dict:
         raise KeyError(f"Unexpected json from agamemnon: {response_json}") from e
 
 
-def get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
+def _get_pin_type_from_agamemnon_parameters(parameters: dict) -> _PinType:
     loop_type_name: str | None = parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
         if regex_search:
             wells, well_size, tip_to_first_well = regex_search.groups()
-            return PinType(int(wells), float(well_size), float(tip_to_first_well))
+            return _PinType(int(wells), float(well_size), float(tip_to_first_well))
         else:
             loop_type_message = (
                 f"Agamemnon loop type of {loop_type_name} not recognised"
@@ -87,14 +157,14 @@ def get_pin_type_from_agamemnon_parameters(parameters: dict) -> PinType:
             if loop_type_name.startswith(MULTIPIN_PREFIX):
                 raise ValueError(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
             LOGGER.warning(f"{loop_type_message}, assuming single pin")
-    return SinglePin()
+    return _SinglePin()
 
 
-def get_next_instruction(beamline: str) -> dict:
+def _get_next_instruction(beamline: str) -> dict:
     return _get_parameters_from_url(AGAMEMNON_URL + f"getnextcollect/{beamline}")
 
 
-def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
+def _get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     try:
         prefix = parameters["prefix"]
         collection = parameters["collection"]
@@ -113,7 +183,7 @@ def get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
     )
 
 
-def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
+def _get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
     try:
         first_collection: dict = parameters["collection"][0]
         wavelength = first_collection.get("wavelength")
@@ -124,21 +194,25 @@ def get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]
         return {"demand_energy_ev": None}
 
 
-def get_param_version() -> SemanticVersion:
+def _get_param_version() -> SemanticVersion:
     return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
 
 
-def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreCollect]:
-    visit, detector_distance = get_withvisit_parameters_from_agamemnon(agamemnon_params)
-    with_energy_params = get_withenergy_parameters_from_agamemnon(agamemnon_params)
-    pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
+def _populate_parameters_from_agamemnon(
+    agamemnon_params,
+) -> Sequence[LoadCentreCollect]:
+    visit, detector_distance = _get_withvisit_parameters_from_agamemnon(
+        agamemnon_params
+    )
+    with_energy_params = _get_withenergy_parameters_from_agamemnon(agamemnon_params)
+    pin_type = _get_pin_type_from_agamemnon_parameters(agamemnon_params)
     collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
 
     return [
         LoadCentreCollect.model_validate(
             {
-                "parameter_model_version": get_param_version(),
+                "parameter_model_version": _get_param_version(),
                 "visit": visit,
                 "detector_distance_mm": detector_distance,
                 "sample_id": agamemnon_params["sample"]["id"],
@@ -186,55 +260,3 @@ def populate_parameters_from_agamemnon(agamemnon_params) -> Sequence[LoadCentreC
         )
         for collection in collections
     ]
-
-
-def create_parameters_from_agamemnon() -> Sequence[LoadCentreCollect]:
-    beamline_name = get_beamline_name("i03")
-    agamemnon_params = get_next_instruction(beamline_name)
-    return (
-        populate_parameters_from_agamemnon(agamemnon_params) if agamemnon_params else []
-    )
-
-
-def compare_params(load_centre_collect_params: LoadCentreCollect):
-    try:
-        lcc_requests = create_parameters_from_agamemnon()
-        # Log differences against GDA populated parameters
-        if not lcc_requests:
-            LOGGER.info("Agamemnon returned no instructions")
-        else:
-            differences = DeepDiff(
-                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
-            )
-            if differences:
-                LOGGER.info(
-                    f"Different parameters found when directly reading from Hyperion: {differences}"
-                )
-    except (ValueError, KeyError):
-        LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
-    except Exception:
-        LOGGER.warning(
-            f"Unexpected error occurred. Failed to compare parameters: {traceback.format_exc()}"
-        )
-
-
-def update_params_from_agamemnon(parameters: T) -> T:
-    try:
-        beamline_name = get_beamline_name("i03")
-        agamemnon_params = get_next_instruction(beamline_name)
-        pin_type = get_pin_type_from_agamemnon_parameters(agamemnon_params)
-        if isinstance(parameters, LoadCentreCollect):
-            parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
-            parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
-            parameters.select_centres.n = pin_type.expected_number_of_crystals
-            if pin_type != SinglePin():
-                # Rotation snapshots will be generated from the gridscan snapshots,
-                # no need to specify snapshot omega.
-                parameters.multi_rotation_scan.snapshot_omegas_deg = []
-                parameters.multi_rotation_scan.use_grid_snapshots = True
-    except (ValueError, ValidationError) as e:
-        LOGGER.warning(f"Failed to update parameters: {e}")
-    except Exception as e:
-        LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
-
-    return parameters

@@ -10,10 +10,10 @@ from mx_bluesky.common.parameters.components import (
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     AGAMEMNON_URL,
-    SinglePin,
     _get_parameters_from_url,
-    get_pin_type_from_agamemnon_parameters,
-    populate_parameters_from_agamemnon,
+    _get_pin_type_from_agamemnon_parameters,
+    _populate_parameters_from_agamemnon,
+    _SinglePin,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -74,13 +74,13 @@ EXPECTED_PARAMETERS = {
 
 def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
-    loop_type = get_pin_type_from_agamemnon_parameters(params)
-    assert loop_type == SinglePin()
+    loop_type = _get_pin_type_from_agamemnon_parameters(params)
+    assert loop_type == _SinglePin()
 
 
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated():
     params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
-    load_centre_collect = populate_parameters_from_agamemnon(params)
+    load_centre_collect = _populate_parameters_from_agamemnon(params)
     expected_parameter_model = [LoadCentreCollect.model_validate(EXPECTED_PARAMETERS)]
     difference = DeepDiff(
         load_centre_collect,
