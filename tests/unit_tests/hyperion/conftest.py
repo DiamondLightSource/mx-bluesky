@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import pytest
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -72,11 +71,6 @@ def test_multi_rotation_params(tmp_path):
             tmp_path,
         )
     )
-
-
-@pytest.fixture
-def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 
 
 @pytest.fixture

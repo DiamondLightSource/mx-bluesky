@@ -55,6 +55,13 @@ def _fake_flyscan(*args):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
+@pytest.fixture()
+def construct_beamline_specific(
+    beamline_specific: BeamlineSpecificFGSFeatures,
+) -> ConstructBeamlineSpecificFeatures:
+    return lambda xrc_composite, xrc_parameters: beamline_specific
+
+
 def test_full_grid_scan(
     test_full_grid_scan_params: HyperionSpecifiedThreeDGridScan,
     test_config_files: dict[str, str],
@@ -69,13 +76,6 @@ def test_full_grid_scan(
         test_config_files["oav_config_json"],
     )
     assert isinstance(plan, Generator)
-
-
-@pytest.fixture()
-def construct_beamline_specific(
-    beamline_specific: BeamlineSpecificFGSFeatures,
-) -> ConstructBeamlineSpecificFeatures:
-    return lambda xrc_composite, xrc_parameters: beamline_specific
 
 
 @pytest.mark.timeout(2)

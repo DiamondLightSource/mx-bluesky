@@ -81,23 +81,6 @@ def mock_plan():
     yield from bps.null()
 
 
-@pytest.fixture
-def beamline_specific(
-    fake_fgs_composite: FlyScanEssentialDevices,
-    test_fgs_params: SpecifiedThreeDGridScan,
-    zebra_fast_grid_scan: ZebraFastGridScan,
-) -> BeamlineSpecificFGSFeatures:
-    return BeamlineSpecificFGSFeatures(
-        setup_trigger_plan=MagicMock(),
-        tidy_plan=MagicMock(),
-        set_flyscan_params_plan=MagicMock(),
-        fgs_motors=zebra_fast_grid_scan,
-        read_pre_flyscan_plan=MagicMock(),
-        read_during_collection_plan=MagicMock(),
-        get_xrc_results_from_zocalo=False,
-    )
-
-
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,

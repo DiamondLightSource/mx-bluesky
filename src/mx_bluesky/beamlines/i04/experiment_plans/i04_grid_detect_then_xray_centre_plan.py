@@ -17,9 +17,6 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
-from mx_bluesky.beamlines.i04.parameters.device_composites import (
-    I04FlyScanXRayCentreComposite,
-)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_FGS_features,
@@ -72,7 +69,7 @@ def i04_grid_detect_then_xray_centre(
     udc: bool = False,
 ) -> MsgGenerator:
     """
-    An plan which combines the collection of snapshots from the OAV and the determination
+    A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
     yield from setup_beamline_for_OAV(
@@ -143,7 +140,7 @@ def create_gridscan_callbacks() -> tuple[
 
 
 def construct_i04_specific_features(
-    xrc_composite: I04FlyScanXRayCentreComposite,
+    xrc_composite: GridDetectThenXRayCentreComposite,
     xrc_parameters: SpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
     """
