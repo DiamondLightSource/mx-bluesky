@@ -72,38 +72,44 @@ def i04_grid_detect_then_xray_centre(
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
-    yield from setup_beamline_for_OAV(
-        composite.smargon,
-        composite.backlight,
-        composite.aperture_scatterguard,
-        wait=True,
-    )
 
-    callbacks = create_gridscan_callbacks()
+    def tidy_beamline_if_not_udc():
+        if not udc:
+            yield from get_ready_for_oav_and_close_shutter(
+                composite.smargon,
+                composite.backlight,
+                composite.aperture_scatterguard,
+                composite.detector_motion,
+            )
 
-    @bpp.subs_decorator(callbacks)
-    @verify_undulator_gap_before_run_decorator(composite)
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
-    )
-    def grid_detect_then_xray_centre_with_callbacks():
-        yield from grid_detect_then_xray_centre(
-            composite=composite,
-            parameters=parameters,
-            xrc_params_type=SpecifiedThreeDGridScan,
-            construct_beamline_specific=construct_i04_specific_features,
-            oav_config=oav_config,
-        )
-
-    yield from grid_detect_then_xray_centre_with_callbacks()
-
-    if not udc:
-        yield from get_ready_for_oav_and_close_shutter(
+    @bpp.finalize_decorator(tidy_beamline_if_not_udc)
+    def setup_beamline_then_grid_detect_then_xrc():
+        yield from setup_beamline_for_OAV(
             composite.smargon,
             composite.backlight,
             composite.aperture_scatterguard,
-            composite.detector_motion,
+            wait=True,
         )
+
+        callbacks = create_gridscan_callbacks()
+
+        @bpp.subs_decorator(callbacks)
+        @verify_undulator_gap_before_run_decorator(composite)
+        @transmission_and_xbpm_feedback_for_collection_decorator(
+            composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
+        )
+        def grid_detect_then_xray_centre_with_callbacks():
+            yield from grid_detect_then_xray_centre(
+                composite=composite,
+                parameters=parameters,
+                xrc_params_type=SpecifiedThreeDGridScan,
+                construct_beamline_specific=construct_i04_specific_features,
+                oav_config=oav_config,
+            )
+
+        yield from grid_detect_then_xray_centre_with_callbacks()
+
+    yield from setup_beamline_then_grid_detect_then_xrc()
 
 
 def get_ready_for_oav_and_close_shutter(
