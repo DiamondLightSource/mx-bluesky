@@ -69,8 +69,16 @@ def i04_grid_detect_then_xray_centre(
     udc: bool = False,
 ) -> MsgGenerator:
     """
-    A plan which combines the collection of snapshots from the OAV and the determination
-    of the grid dimensions to use for the following grid scan.
+    A composite plan which:
+    - Uses the OAV to draw a virtual grid over the sample and to take snapshots of the sample
+    - Scans through the grid to identify the crystal centre
+    - Changes the aperture to match the beam size to the crystal size
+    - Moves the sample to the crystal centre of mass
+
+
+    i04's implementation of this plan is very similar to Hyperion. However, since i04
+    isn't running in a continious Bluesky UDC loop, we take additional steps in beamline
+    tidy-up.
     """
 
     def tidy_beamline_if_not_udc():
@@ -83,14 +91,10 @@ def i04_grid_detect_then_xray_centre(
             )
 
     @bpp.finalize_decorator(tidy_beamline_if_not_udc)
-    def setup_beamline_then_grid_detect_then_xrc():
-        yield from setup_beamline_for_OAV(
-            composite.smargon,
-            composite.backlight,
-            composite.aperture_scatterguard,
-            wait=True,
-        )
-
+    def _inner_grid_detect_then_xrc():
+        # These callbacks let us talk to ISPyB and Nexgen. They aren't included in the common plan because
+        # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
+        # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
         callbacks = create_gridscan_callbacks()
 
         @bpp.subs_decorator(callbacks)
@@ -109,7 +113,7 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
-    yield from setup_beamline_then_grid_detect_then_xrc()
+    yield from _inner_grid_detect_then_xrc()
 
 
 def get_ready_for_oav_and_close_shutter(

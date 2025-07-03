@@ -4,8 +4,6 @@ import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
@@ -29,7 +27,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 
 
-class TestException(Exception): ...
+class CustomException(Exception): ...
 
 
 @patch(
@@ -66,46 +64,6 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "wait"
-    )
-
-
-@patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
-    autospec=True,
-)
-def test_i04_grid_detect_then_xrc_sets_up_beamline_for_oav_before_grid_detect(
-    mock_grid_detection_plan: MagicMock,
-    sim_run_engine: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
-    test_full_grid_scan_params: GridCommon,
-    test_config_files,
-):
-    mock_grid_detection_plan.return_value = iter([Msg("grid_detection_plan")])
-
-    msgs = sim_run_engine.simulate_plan(
-        i04_grid_detect_then_xray_centre(
-            grid_detect_xrc_devices,
-            test_full_grid_scan_params,
-            oav_config=test_config_files["oav_config_json"],
-        ),
-    )
-    # backlight should move in
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.IN,
-    )
-    # aperture should move out
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.OUT_OF_BEAM,
-    )
-
-    msgs = assert_message_and_return_remaining(
-        msgs, predicate=lambda msg: msg.command == "grid_detection_plan"
     )
 
 
@@ -198,9 +156,9 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     pin_tip_detection_with_found_pin: PinTipDetection,
     RE: RunEngine,
 ):
-    mock_common_flyscan_xray_centre.side_effect = TestException
+    mock_common_flyscan_xray_centre.side_effect = CustomException
 
-    with pytest.raises(TestException):  # noqa: B017
+    with pytest.raises(CustomException):  # noqa: B017
         RE(
             i04_grid_detect_then_xray_centre(
                 grid_detect_xrc_devices,
@@ -348,24 +306,19 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_OAV",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
     mock_create_gridscan_callbacks: MagicMock,
-    mock_setup_beamline_for_oav: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
     RE: RunEngine,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     test_full_grid_scan_params: GridCommon,
     test_config_files,
 ):
-    mock_setup_beamline_for_oav.side_effect = TestException
-    with pytest.raises(TestException):
+    mock_create_gridscan_callbacks.side_effect = CustomException
+    with pytest.raises(CustomException):
         RE(
             i04_grid_detect_then_xray_centre(
                 grid_detect_xrc_devices,
