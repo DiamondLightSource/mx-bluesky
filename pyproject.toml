@@ -95,8 +95,6 @@ run_extruder = "mx_bluesky.beamlines.i24.serial.run_serial:run_extruder"
 run_fixed_target = "mx_bluesky.beamlines.i24.serial.run_serial:run_fixed_target"
 hyperion = "mx_bluesky.hyperion.__main__:main"
 hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
-hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
-hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
 redis_to_murko = "mx_bluesky.beamlines.i04.redis_to_murko_forwarder:main"
 
 [project.urls]
