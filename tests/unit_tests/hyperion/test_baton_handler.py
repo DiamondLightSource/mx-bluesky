@@ -13,7 +13,10 @@ from dodal.devices.baton import Baton
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    MxBlueskyParameters,
+)
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
@@ -308,3 +311,24 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "sleep" and msg.args[0] == 12.34
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [
+                MxBlueskyParameters.model_validate(
+                    {"parameter_model_version": PARAMETER_VERSION}
+                )
+            ],
+            [],
+        ]
+    ),
+)
+def test_main_loop_rejects_unrecognised_instruction_when_received(
+    bluesky_context: BlueskyContext,
+    sim_run_engine: RunEngineSimulator
+):
+    with pytest.raises(AssertionError, match="Unsupported instruction decoded"):
+        sim_run_engine.simulate_plan(run_udc_when_requested(bluesky_context, MagicMock()))
