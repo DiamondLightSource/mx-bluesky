@@ -30,6 +30,7 @@ from mx_bluesky.hyperion.__main__ import (
     Status,
     create_app,
     initialise_globals,
+    main,
     setup_context,
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
@@ -556,21 +557,80 @@ def test_initialise_configures_alerting(
     assert isinstance(mock_alerting_setup.mock_calls[0].args[0], LoggingAlertService)
 
 
-def test_hyperion_in_udc_mode_starts_logging():
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch(
+    "mx_bluesky.hyperion.__main__.create_app", return_value=(MagicMock(), MagicMock())
+)
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+@patch("mx_bluesky.hyperion.__main__.device_composite_from_context", autospec=True)
+def test_hyperion_in_udc_mode_starts_logging_and_creates_and_runs_app(
+    mock_device_composite_from_context: MagicMock,
+    mock_do_default_logging_setup: MagicMock,
+    mock_create_app: MagicMock,
+):
+    main()
+    mock_do_default_logging_setup.assert_called_once_with(
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
+    )
+    mock_create_app.assert_called_once_with(dev_mode=False)
+    app, runner = mock_create_app.return_value
+    app.run.assert_called_once()
+    runner.wait_on_queue.assert_called_once()
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch(
+    "mx_bluesky.hyperion.__main__.create_app",
+    MagicMock(return_value=(MagicMock(), MagicMock())),
+)
+@patch("mx_bluesky.hyperion.__main__.run_udc_when_requested")
+@patch("mx_bluesky.hyperion.__main__.device_composite_from_context", autospec=True)
+def test_hyperion_in_udc_mode_starts_udc_loop(
+    mock_device_composite_from_context: MagicMock,
+    mock_run_udc: MagicMock,
+):
+    expected_composite = mock_device_composite_from_context.return_value
+    expected_baton = expected_composite.baton
+    main()
+
+    mock_run_udc.assert_called_once_with(expected_baton, expected_composite)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "gda"])
+@patch(
+    "mx_bluesky.hyperion.__main__.create_app",
+    MagicMock(return_value=(MagicMock(), MagicMock())),
+)
+@patch("mx_bluesky.hyperion.__main__.run_udc_when_requested")
+@patch("mx_bluesky.hyperion.__main__.device_composite_from_context", autospec=True)
+def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
+    mock_device_composite_from_context: MagicMock,
+    mock_run_udc: MagicMock,
+):
+    main()
+
+    mock_run_udc.assert_not_called()
+
+
+def test_sending_a_shutdown_via_api_terminates_udc():
     pass
 
 
-def test_hyperion_in_udc_mode_creates_context():
-    pass
-
-
-def test_hyperion_in_udc_mode_doesnt_start_flask():
-    pass
-
-
-def test_hyperion_in_udc_mode_starts_udc_loop():
+def test_terminating_udc_terminates_bluesky_runner():
     pass
 
 
 def test_hyperion_in_udc_mode_creates_beamline_devices():
+    pass
+
+
+def test_hyperion_in_udc_mode_does_not_expose_run_endpoint():
+    pass
+
+
+def test_hyperion_in_udc_mode_exposes_status_endpoint():
+    pass
+
+
+def test_hyperion_in_udc_mode_starts_bluesky_runner():
     pass
