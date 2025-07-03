@@ -554,3 +554,23 @@ def test_initialise_configures_alerting(
 
     mock_alerting_setup.assert_called_once()
     assert isinstance(mock_alerting_setup.mock_calls[0].args[0], LoggingAlertService)
+
+
+def test_hyperion_in_udc_mode_starts_logging():
+    pass
+
+
+def test_hyperion_in_udc_mode_creates_context():
+    pass
+
+
+def test_hyperion_in_udc_mode_doesnt_start_flask():
+    pass
+
+
+def test_hyperion_in_udc_mode_starts_udc_loop():
+    pass
+
+
+def test_hyperion_in_udc_mode_creates_beamline_devices():
+    pass
