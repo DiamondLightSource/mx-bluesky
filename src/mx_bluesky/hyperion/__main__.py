@@ -21,6 +21,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import (
     LOGGER,
@@ -28,15 +29,19 @@ from mx_bluesky.common.utils.log import (
     flush_debug_handler,
 )
 from mx_bluesky.common.utils.tracing import TRACER
+from mx_bluesky.hyperion.baton_handler import run_udc_when_requested
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
+)
+from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
+    LoadCentreCollectComposite,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     update_params_from_agamemnon,
 )
-from mx_bluesky.hyperion.parameters.cli import parse_cli_args
+from mx_bluesky.hyperion.parameters.cli import HyperionMode, parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
@@ -293,9 +298,8 @@ def create_app(
     return app, runner
 
 
-def create_targets():
+def _create_targets(args):
     hyperion_port = 5005
-    args = parse_cli_args()
     do_default_logging_setup(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
@@ -305,7 +309,8 @@ def create_targets():
 
 
 def main():
-    app, runner, port, dev_mode = create_targets()
+    args = parse_cli_args()
+    app, runner, port, dev_mode = _create_targets(args)
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
@@ -315,7 +320,17 @@ def main():
     )
     flask_thread.start()
     LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
-    runner.wait_on_queue()
+
+    if args.mode == HyperionMode.UDC:
+        load_centre_collect_composite = device_composite_from_context(
+            runner.context, LoadCentreCollectComposite
+        )
+        run_udc_when_requested(
+            load_centre_collect_composite.baton, load_centre_collect_composite
+        )
+    else:
+        runner.wait_on_queue()
+
     flask_thread.join()
 
 
