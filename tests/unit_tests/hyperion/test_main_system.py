@@ -522,3 +522,23 @@ def test_create_app_passes_through_dev_mode(
     create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
+
+
+def test_hyperion_in_udc_mode_starts_logging():
+    pass
+
+
+def test_hyperion_in_udc_mode_creates_context():
+    pass
+
+
+def test_hyperion_in_udc_mode_doesnt_start_flask():
+    pass
+
+
+def test_hyperion_in_udc_mode_starts_udc_loop():
+    pass
+
+
+def test_hyperion_in_udc_mode_creates_beamline_devices():
+    pass
