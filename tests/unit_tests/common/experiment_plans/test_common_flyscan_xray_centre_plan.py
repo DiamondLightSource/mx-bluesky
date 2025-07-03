@@ -30,7 +30,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     run_gridscan,
     wait_for_gridscan_valid,
 )
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
@@ -79,23 +79,6 @@ class CompleteException(Exception):
 
 def mock_plan():
     yield from bps.null()
-
-
-@pytest.fixture
-def beamline_specific(
-    fake_fgs_composite: FlyScanEssentialDevices,
-    test_fgs_params: SpecifiedThreeDGridScan,
-    zebra_fast_grid_scan: ZebraFastGridScan,
-) -> BeamlineSpecificFGSFeatures:
-    return BeamlineSpecificFGSFeatures(
-        setup_trigger_plan=MagicMock(),
-        tidy_plan=MagicMock(),
-        set_flyscan_params_plan=MagicMock(),
-        fgs_motors=zebra_fast_grid_scan,
-        read_pre_flyscan_plan=MagicMock(),
-        read_during_collection_plan=MagicMock(),
-        get_xrc_results_from_zocalo=False,
-    )
 
 
 @patch(

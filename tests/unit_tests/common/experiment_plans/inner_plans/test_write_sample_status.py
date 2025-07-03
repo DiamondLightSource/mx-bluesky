@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.experiment_plans.write_sample_status import (
+from mx_bluesky.common.experiment_plans.inner_plans.write_sample_status import (
     SampleStatusExceptionType,
     deposit_loaded_sample,
     deposit_sample_error,

@@ -57,14 +57,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import raw_params_from_file
 
 
@@ -345,11 +340,16 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScan,
 ) -> BeamlineSpecificFGSFeatures:
-    return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    return BeamlineSpecificFGSFeatures(
+        setup_trigger_plan=MagicMock(),
+        tidy_plan=MagicMock(),
+        set_flyscan_params_plan=MagicMock(),
+        fgs_motors=zebra_fast_grid_scan,
+        read_pre_flyscan_plan=MagicMock(),
+        read_during_collection_plan=MagicMock(),
+        get_xrc_results_from_zocalo=False,
     )
 
 

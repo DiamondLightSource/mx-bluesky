@@ -11,7 +11,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from h5py import Dataset, ExternalLink, Group
 
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter

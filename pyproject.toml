@@ -47,7 +47,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@9f9809f1f152a0df4a95906df8f6478a53c4c3db",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -243,10 +243,20 @@ forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from each other"
 type = "independence"
-modules = "mx_bluesky.beamlines.*"
+modules = "mx_bluesky.beamlines"
 
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from hyperion"
 type = "forbidden"
-source_modules = "mx_bluesky.beamlines.*"
-forbidden_modules = "mx_bluesky.hyperion"
+source_modules = "mx_bluesky.beamlines.**"
+forbidden_modules = "mx_bluesky.hyperion.**"
+
+[[tool.importlinter.contracts]]
+name = "Only Hyperion and i04 can import from phase1"
+type = "forbidden"
+source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
+forbidden_modules = ["mx_bluesky.phase1.**"]
+ignore_imports = [
+    "mx_bluesky.beamlines.i04.** -> mx_bluesky.phase1.**",
+    "mx_bluesky.hyperion.** -> mx_bluesky.phase1.**",
+]

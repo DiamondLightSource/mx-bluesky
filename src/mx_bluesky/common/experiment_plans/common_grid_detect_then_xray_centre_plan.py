@@ -111,6 +111,7 @@ def grid_detect_then_xray_centre(
     )
 
 
+# This function should be private but is currently called by Hyperion, see https://github.com/DiamondLightSource/mx-bluesky/issues/1148
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,

@@ -11,6 +11,7 @@ from mx_bluesky.definitions import ROOT_DIR
 
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
+ZEBRA_STATUS_TIMEOUT = 30
 
 
 @dataclass(frozen=True)
