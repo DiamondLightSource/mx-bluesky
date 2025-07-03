@@ -166,7 +166,7 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_given_agamemnon_fails_when_update_parameters_called_then_parameters_unchanged(
+def test_update_params_from_agamemnon_leaves_parameters_unchanged_when_agamemnon_fails(
     mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
 ):
     mock_requests.get.side_effect = Exception("Bad")
@@ -177,7 +177,7 @@ def test_given_agamemnon_fails_when_update_parameters_called_then_parameters_unc
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_parameters_changed_to_single_pin(
+def test_update_params_from_agamemnon_changes_params_to_single_pin_when_agamemnon_gives_single_pin(
     mock_requests: MagicMock,
     mock_compare_params: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
@@ -195,7 +195,7 @@ def test_given_agamemnon_gives_single_pin_when_update_parameters_called_then_par
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_parameters_changed_to_multi_pin(
+def test_update_params_from_agamemnon_applies_multipin_attribs_given_agamemnon_returns_multipin(
     mock_requests: MagicMock,
     mock_compare_params: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
@@ -209,13 +209,31 @@ def test_given_agamemnon_gives_multi_pin_when_update_parameters_called_then_para
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_given_set_of_parameters_then_correct_agamemnon_url_is_deduced(
+def test_update_params_from_agamemnon_deduces_correct_url_given_set_of_parameters(
     mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
 ):
     update_params_from_agamemnon(load_centre_collect_params)
     mock_requests.get.assert_called_once_with(
         "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
         headers={"Accept": "application/json"},
+    )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_update_params_from_agamemnon_logs_warning_when_exception_occurs(
+    mock_requests: MagicMock,
+    mock_logger: MagicMock,
+    load_centre_collect_params: LoadCentreCollect,
+):
+    configure_mock_agamemnon(mock_requests, "multipin_unknown")
+
+    update_params_from_agamemnon(load_centre_collect_params)
+
+    mock_logger.warning.assert_called_once()
+    assert (
+        "Failed to update parameters: Agamemnon loop type of multipin_unknown "
+        "not recognised" in mock_logger.warning.mock_calls[0].args[0]
     )
 
 
@@ -269,7 +287,7 @@ def test_no_prefix_raises_exception():
 @patch(
     "mx_bluesky.hyperion.external_interaction.agamemnon._populate_parameters_from_agamemnon"
 )
-def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
+def test_compare_params_logs_exception_if_fails_to_populate_parameters_from_hyperion(
     mock_populate_params,
     mock_logger,
     mock_requests,
@@ -283,6 +301,20 @@ def test_if_failed_to_populate_parameters_from_hyperion_exception_is_logged(
         load_centre_collect_params,
     )
     assert mock_log in mock_logger.mock_calls[0][1][0]
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.agamemnon.create_parameters_from_agamemnon",
+    MagicMock(return_value=[]),
+)
+def test_compare_params_logs_message_if_agamemnon_returns_no_instructions(
+    mock_logger: MagicMock, load_centre_collect_params: LoadCentreCollect
+):
+    compare_params(
+        load_centre_collect_params,
+    )
+    mock_logger.info.assert_called_once_with("Agamemnon returned no instructions")
 
 
 @pytest.fixture
@@ -311,7 +343,7 @@ def agamemnon_response(request) -> Generator[str, None, None]:
 @patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @patch("dodal.utils.os", new=MagicMock())
-def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_gda_params(
+def test_compare_params_causes_no_warning_when_compared_to_gda_params(
     mock_logger: MagicMock,
     agamemnon_response: str,
     load_centre_collect_params: LoadCentreCollect,
@@ -325,7 +357,7 @@ def test_populate_parameters_from_agamemnon_causes_no_warning_when_compared_to_g
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
+def test_create_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     hyperion_params_list = create_parameters_from_agamemnon()
     for hyperion_params in hyperion_params_list:
         assert isinstance(hyperion_params, LoadCentreCollect)
@@ -343,7 +375,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_data(agamemnon_res
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
+def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
     agamemnon_response,
 ):
     hyperion_params_list = create_parameters_from_agamemnon()
@@ -386,7 +418,7 @@ def test_populate_parameters_from_agamemnon_contains_expected_robot_load_then_ce
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
+def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
     agamemnon_response,
 ):
     hyperion_params_list = create_parameters_from_agamemnon()
@@ -436,7 +468,9 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
     ["tests/test_data/agamemnon/example_collect_multipin.json"],
     indirect=True,
 )
-def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
+def test_create_parameters_from_agamemnon_populates_multipin_parameters_from_agamemnon(
+    agamemnon_response,
+):
     hyperion_params_list = create_parameters_from_agamemnon()
     for hyperion_params in hyperion_params_list:
         assert hyperion_params.select_centres.n == 6  # type: ignore
@@ -447,7 +481,7 @@ def test_populate_multipin_parameters_from_agamemnon(agamemnon_response):
     ["tests/test_data/agamemnon/example_native.json"],
     indirect=True,
 )
-def test_populate_parameters_creates_multiple_load_centre_collect_for_native_collection(
+def test_create_parameters_from_agamemnon_creates_multiple_load_centre_collect_for_native_collection(
     agamemnon_response,
 ):
     hyperion_params_list = create_parameters_from_agamemnon()
@@ -481,10 +515,19 @@ def test_get_withenergy_parameters_from_agamemnon_when_no_wavelength():
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_create_parameters_from_agamemnon_returns_empty_list_if_queue_is_empty(
+def test_create_parameters_from_agamemnon_returns_empty_list_if_collect_instruction_is_empty(
     mock_requests,
 ):
     mock_requests.get.return_value.content = json.dumps({"collect": {}})
+    params = create_parameters_from_agamemnon()
+    assert params == []
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_create_parameters_from_agamemnon_returns_empty_list_if_no_instruction(
+    mock_requests,
+):
+    mock_requests.get.return_value.content = json.dumps({})
     params = create_parameters_from_agamemnon()
     assert params == []
 
