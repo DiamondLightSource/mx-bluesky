@@ -38,4 +38,10 @@ def gridscan_generic_tidy(
 
     # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
     LOGGER.info("Turning off Eiger dev/shm streaming")
-    yield from bps.abs_set(xrc_composite.eiger.odin.fan.dev_shm_enable, 0)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+    # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+    yield from bps.abs_set(
+        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
+        0,
+        group=group,
+        wait=wait,
+    )
