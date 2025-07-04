@@ -5,7 +5,7 @@ from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline
 
@@ -25,7 +25,7 @@ async def test_setup_beamline_for_collection_plan(
     assert await backlight.backlight_position.pos_level.get_value() == "Out"
 
 
-async def test_move_detector_stage_to_position_plan(detector_stage: DetectorMotion, RE):
+async def test_move_detector_stage_to_position_plan(detector_stage: YZStage, RE):
     det_dist = 100
     RE(setup_beamline.move_detector_stage_to_position_plan(detector_stage, det_dist))
 

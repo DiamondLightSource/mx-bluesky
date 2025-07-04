@@ -1,26 +1,23 @@
 from functools import partial
 from pathlib import Path
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
-    prepare_for_robot_load,
     robot_load_and_change_energy_plan,
     take_robot_snapshots,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
@@ -147,31 +144,8 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
         )
 
 
-async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
-    aperture_scatterguard: ApertureScatterguard, smargon: Smargon, done_status
-):
-    smargon.stub_offsets.set = MagicMock(return_value=done_status)
-    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
-
-    set_mock_value(smargon.x.user_setpoint, 10)
-    set_mock_value(smargon.z.user_setpoint, 5)
-    set_mock_value(smargon.omega.user_setpoint, 90)
-
-    RE = RunEngine()
-    RE(prepare_for_robot_load(aperture_scatterguard, smargon))
-
-    assert await smargon.x.user_setpoint.get_value() == 0
-    assert await smargon.z.user_setpoint.get_value() == 0
-    assert await smargon.omega.user_setpoint.get_value() == 0
-
-    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
-        ApertureValue.OUT_OF_BEAM, wait=ANY
-    )
-
-
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction"
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
@@ -182,23 +156,21 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
 ):
+    robot = robot_load_and_energy_change_composite.robot
+    webcam = robot_load_and_energy_change_composite.webcam
     set_mock_value(
         robot_load_and_energy_change_composite.oav.snapshot.last_saved_path,
         "test_oav_snapshot",
-    )  # type: ignore
-    set_mock_value(
-        robot_load_and_energy_change_composite.webcam.last_saved_path,
-        "test_webcam_snapshot",
     )
-    robot_load_and_energy_change_composite.webcam.trigger = MagicMock(
-        return_value=NullStatus()
-    )
+    set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
+    webcam.trigger = MagicMock(return_value=NullStatus())
+    set_mock_value(robot.barcode, "BARCODE")
 
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
-    exp_eye.return_value.start_load.return_value = action_id
+    exp_eye.return_value.start_robot_action.return_value = action_id
 
     RE(
         robot_load_and_change_energy_plan(
@@ -206,11 +178,22 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
         )
     )
 
-    exp_eye.return_value.start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
-    exp_eye.return_value.update_barcode_and_snapshots.assert_called_once_with(
-        action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
+    exp_eye.return_value.start_robot_action.assert_called_once_with(
+        "LOAD", "cm31105", 4, 12345
     )
-    exp_eye.return_value.end_load.assert_called_once_with(action_id, "success", "OK")
+    exp_eye.return_value.update_robot_action.assert_called_once_with(
+        action_id,
+        {
+            "sampleBarcode": "BARCODE",
+            "xtalSnapshotBefore": "test_webcam_snapshot",
+            "xtalSnapshotAfter": "test_oav_snapshot",
+            "containerLocation": 3,
+            "dewarLocation": 40,
+        },
+    )
+    exp_eye.return_value.end_robot_action.assert_called_once_with(
+        action_id, "success", "OK"
+    )
 
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")
@@ -241,7 +224,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+    initial_values = {"z": 0.13, "x": 0.11, "y": 0.12}
 
     def get_read(axis, msg):
         return {"readback": initial_values[axis]}
@@ -284,7 +267,7 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+    initial_values = {"z": 0.13, "x": 0.11, "y": 0.12}
 
     def get_read(axis, msg):
         return {"readback": initial_values[axis]}

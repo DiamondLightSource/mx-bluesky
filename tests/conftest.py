@@ -42,7 +42,7 @@ from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
@@ -54,6 +54,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -114,6 +115,7 @@ TEST_RESULT_LARGE = [
         "n_voxels": 35,
         "total_count": 2387574,
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_MEDIUM = [
@@ -124,6 +126,7 @@ TEST_RESULT_MEDIUM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_SMALL = [
@@ -134,6 +137,7 @@ TEST_RESULT_SMALL = [
         "n_voxels": 35,
         "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_BELOW_THRESHOLD = [
@@ -144,6 +148,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "n_voxels": 1,
         "total_count": 2,
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 
@@ -156,6 +161,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -167,6 +173,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -178,6 +185,7 @@ TEST_RESULT_OUT_OF_BOUNDS_COM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -189,6 +197,7 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 
@@ -199,6 +208,7 @@ class SimConstants:
     # The following are values present in the system test ispyb database
     ST_VISIT = "cm14451-2"
     ST_SAMPLE_ID = 398810
+    ST_MSP_SAMPLE_IDS = [398816, 398819]
     ST_CONTAINER_ID = 34864
 
 
@@ -532,7 +542,14 @@ def ophyd_pin_tip_detection(RE: RunEngine):
 def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
-    robot.set = MagicMock(return_value=done_status)
+
+    @AsyncStatus.wrap
+    async def fake_load(val: SampleLocation):
+        set_mock_value(robot.current_pin, val.pin)
+        set_mock_value(robot.current_puck, val.puck)
+        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+
+    robot.set = MagicMock(side_effect=fake_load)
     return robot
 
 
@@ -622,8 +639,19 @@ def vfm(RE: RunEngine):
 
 
 @pytest.fixture
-def lower_gonio(RE: RunEngine):
+def lower_gonio(
+    RE: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
+
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_gonio(_):
+        return {"readback": 0}
+
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
@@ -1718,7 +1746,6 @@ def dummy_rotation_params(tmp_path):
             tmp_path,
         )
     )
-    dummy_params.sample_id = TEST_SAMPLE_ID
     return dummy_params
 
 

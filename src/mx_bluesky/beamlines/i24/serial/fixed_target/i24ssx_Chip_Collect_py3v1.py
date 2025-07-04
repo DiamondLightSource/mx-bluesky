@@ -18,9 +18,9 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -269,7 +269,7 @@ def start_i24(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
     dcm: DCM,
@@ -504,7 +504,7 @@ def main_fixed_target_plan(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
@@ -655,7 +655,7 @@ def run_fixed_target_plan(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
@@ -707,7 +707,7 @@ def run_plan_in_wrapper(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,

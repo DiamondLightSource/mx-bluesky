@@ -319,6 +319,7 @@ async def fake_fgs_composite(
         "n_voxels": 321,
         "total_count": 999999,
         "bounding_box": [[3, 3, 3], [9, 9, 9]],
+        "sample_id": 12345,
     }
 
     @AsyncStatus.wrap

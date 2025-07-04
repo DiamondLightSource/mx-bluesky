@@ -16,9 +16,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     populate_parameters_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import (
-    RotationScanPerSweep,
-)
 
 EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "storage_directory": "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring",
@@ -31,7 +28,6 @@ EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "grid_width_um": 600,
     "omega_start_deg": 0,
     "chi_start_deg": 0,
-    "features": {"use_gpu_results": True},
     "transmission_frac": 1.0,
 }
 
@@ -46,19 +42,21 @@ EXPECTED_ROTATION_PARAMS = {
     "transmission_frac": 0.5,
     "ispyb_experiment_type": IspybExperimentType.CHARACTERIZATION,
     "rotation_scans": [
-        RotationScanPerSweep(
-            omega_start_deg=0.0,
-            phi_start_deg=0.0,
-            scan_width_deg=360,
-            rotation_direction=RotationDirection.POSITIVE,
-            chi_start_deg=0.0,
-        )
+        {
+            "omega_start_deg": 0.0,
+            "phi_start_deg": 0.0,
+            "scan_width_deg": 360,
+            "rotation_direction": RotationDirection.POSITIVE,
+            "chi_start_deg": 0.0,
+            "sample_id": 12345,
+        }
     ],
 }
 
 EXPECTED_PARAMETERS = [
     LoadCentreCollect.model_validate(
         {
+            "features": {"use_gpu_results": True},
             "visit": "cm00000-0",
             "detector_distance_mm": 180.8,
             "sample_id": 12345,
