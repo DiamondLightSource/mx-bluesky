@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 from blueapi.core import BlueskyContext
+from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
@@ -23,6 +24,7 @@ from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
     setup_devices,
 )
+from mx_bluesky.hyperion.runner import BlueskyRunner, UDCRunner
 
 HYPERION_USER = "Hyperion"
 NO_USER = "None"
@@ -75,6 +77,10 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
 def move_to_default_state():
     # To be filled in in https://github.com/DiamondLightSource/mx-bluesky/issues/396
     yield from bps.null()
+
+
+def create_runner(run_engine: RunEngine, context: BlueskyContext) -> BlueskyRunner:
+    return UDCRunner(run_engine, context)
 
 
 def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
