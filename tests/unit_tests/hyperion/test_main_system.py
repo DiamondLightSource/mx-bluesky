@@ -23,16 +23,20 @@ from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
     Actions,
-    BlueskyRunner,
     Status,
     create_app,
     main,
     setup_context,
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from mx_bluesky.hyperion.parameters.cli import parse_cli_args
+from mx_bluesky.hyperion.parameters.cli import (
+    HyperionArgs,
+    HyperionMode,
+    parse_cli_args,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.hyperion.runner import BlueskyRunner, GDARunner
 
 from ...conftest import raw_params_from_file
 from ..conftest import mock_beamline_module_filepaths
@@ -159,7 +163,8 @@ def test_env(request: pytest.FixtureRequest):
             MagicMock(return_value=mock_context),
         ),
     ):
-        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
+        args = HyperionArgs(dev_mode=False, mode=HyperionMode.GDA)
+        app, runner = create_app(args, {"TESTING": True}, mock_run_engine)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -430,7 +435,7 @@ def test_when_blueskyrunner_initiated_then_setup_called_upon_start(
         },
         clear=True,
     ):
-        runner = BlueskyRunner(MagicMock(), MagicMock())
+        runner = GDARunner(MagicMock(), MagicMock())
         mock_setup.assert_not_called()
         runner.start(lambda: None, hyperion_fgs_params, "multi_rotation_scan")
         mock_setup.assert_called_once()
@@ -500,7 +505,8 @@ def test_create_app_passes_through_dev_mode(
 ):
     mock_run_engine = MagicMock()
 
-    create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
+    args = HyperionArgs(dev_mode=dev_mode, mode=HyperionMode.GDA)
+    create_app(args, {"TESTING": True}, mock_run_engine)
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
 
@@ -520,7 +526,8 @@ def test_hyperion_in_udc_mode_starts_logging_and_creates_and_runs_app(
     mock_do_default_logging_setup.assert_called_once_with(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
     )
-    mock_create_app.assert_called_once_with(dev_mode=False)
+    args = HyperionArgs(dev_mode=False, mode=HyperionMode.GDA)
+    mock_create_app.assert_called_once_with(args)
     app, runner = mock_create_app.return_value
     app.run.assert_called_once()
     runner.wait_on_queue.assert_called_once()
