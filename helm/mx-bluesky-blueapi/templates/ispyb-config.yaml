@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-ispyb-config"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/name: ispyb-config
+    app.kubernetes.io/instance: "{{ .Release.Name }}-ispyb-config"
+    app.kubernetes.io/version: "{{ .Chart.Version }}"
+    app.kubernetes.io/part-of: mx-bluesky-blueapi 
+data:
+  configuration.yaml: |-
+    version: 1
+  {{- if .Values.ispyb.secrets }}
+  {{- range .Values.ispyb.secrets }}
+    {{ .name }}: "/ispyb/secrets/{{ .fileName }}"
+  {{- end -}} {{/* range */}}
+  {{- end -}} {{/* if */}}
