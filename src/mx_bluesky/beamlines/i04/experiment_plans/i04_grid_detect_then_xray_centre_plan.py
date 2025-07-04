@@ -50,10 +50,10 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.phase1.device_setup_plans.cleanup_plans import (
-    gridscan_generic_tidy,
+from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
 )
-from mx_bluesky.phase1.device_setup_plans.setup_zebra import setup_zebra_for_gridscan
 
 
 def create_devices(
@@ -175,7 +175,13 @@ def construct_i04_specific_features(
         xrc_composite.eiger.bit_depth,
     ]
 
-    tidy_plan = partial(gridscan_generic_tidy, group="flyscan_zebra_tidy", wait=True)
+    tidy_plan = partial(
+        tidy_up_zebra_after_gridscan,
+        xrc_composite.zebra,
+        xrc_composite.sample_shutter,
+        group="flyscan_zebra_tidy",
+        wait=True,
+    )
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,

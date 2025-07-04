@@ -26,8 +26,10 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.phase1.device_setup_plans.cleanup_plans import gridscan_generic_tidy
-from mx_bluesky.phase1.device_setup_plans.setup_zebra import setup_zebra_for_gridscan
+from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 
 
 class SmargonSpeedException(Exception):
@@ -64,7 +66,7 @@ def construct_hyperion_specific_features(
 
     if xrc_parameters.features.use_panda_for_gridscan:
         setup_trigger_plan = _panda_triggering_setup
-        tidy_plan = _panda_tidy
+        tidy_plan = partial(_panda_tidy, xrc_composite)
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.panda_fast_grid_scan,
@@ -75,7 +77,11 @@ def construct_hyperion_specific_features(
     else:
         setup_trigger_plan = setup_zebra_for_gridscan
         tidy_plan = partial(
-            gridscan_generic_tidy, group="flyscan_zebra_tidy", wait=True
+            tidy_up_zebra_after_gridscan,
+            xrc_composite.zebra,
+            xrc_composite.sample_shutter,
+            group="flyscan_zebra_tidy",
+            wait=True,
         )
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
@@ -98,7 +104,9 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)
-    yield from gridscan_generic_tidy(xrc_composite, group, False)
+    yield from tidy_up_zebra_after_gridscan(
+        xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
+    )
     yield from bps.wait(group, timeout=10)
     yield from bps.unstage(xrc_composite.panda)
 

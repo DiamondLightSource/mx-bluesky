@@ -13,7 +13,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 
 from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.phase1.device_setup_plans.setup_zebra import (
+from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     configure_zebra_and_shutter_for_auto_shutter,
 )
 

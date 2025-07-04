@@ -11,6 +11,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 )
 
 from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
+from mx_bluesky.common.utils.log import LOGGER
 
 
 @runtime_checkable
@@ -95,6 +96,8 @@ def tidy_up_zebra_after_gridscan(
     group="tidy_up_zebra_after_gridscan",
     wait=True,
 ) -> MsgGenerator:
+    LOGGER.info("Tidying up Zebra")
+
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
         zebra.mapping.sources.PC_PULSE,

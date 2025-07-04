@@ -55,6 +55,25 @@ class BeamlineSpecificFGSFeatures:
     get_xrc_results_from_zocalo: bool
 
 
+def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
+    """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
+
+    LOGGER.info("Tidying up Zocalo")
+    group = "generic_tidy"
+    # make sure we don't consume any other results
+    yield from bps.unstage(xrc_composite.zocalo, group=group)
+
+    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
+    LOGGER.info("Turning off Eiger dev/shm streaming")
+    # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+    yield from bps.abs_set(
+        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
+        0,
+        group=group,
+    )
+    yield from bps.wait(group)
+
+
 def construct_beamline_specific_FGS_features(
     setup_trigger_plan: Callable[..., MsgGenerator],
     tidy_plan: Callable[..., MsgGenerator],
@@ -71,7 +90,7 @@ def construct_beamline_specific_FGS_features(
         Ran directly before kicking off the gridscan.
 
         tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of
-        whether or not it finished successfully.
+        whether or not it finished successfully. Zocalo and Eiger are cleaned up separately
 
         set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
 
@@ -135,6 +154,10 @@ def common_flyscan_xray_centre(
     There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
     """
 
+    def _overall_tidy():
+        yield from beamline_specific.tidy_plan()
+        yield from generic_tidy(composite)
+
     def _decorated_flyscan():
         @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
         @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -146,7 +169,7 @@ def common_flyscan_xray_centre(
                 ],
             }
         )
-        @bpp.finalize_decorator(lambda: beamline_specific.tidy_plan(composite))
+        @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
             fgs_composite: FlyScanEssentialDevices,
             params: SpecifiedThreeDGridScan,
