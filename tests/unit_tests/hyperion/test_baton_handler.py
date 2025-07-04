@@ -1,27 +1,48 @@
+import asyncio
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.baton import Baton
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    MxBlueskyParameters,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
     run_udc_when_requested,
 )
+from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 @pytest.fixture()
-async def baton() -> Baton:
+async def baton(sim_run_engine: RunEngineSimulator) -> Baton:
     async with init_devices(mock=True):
         baton = Baton("")
     set_mock_value(baton.requested_user, HYPERION_USER)
+
+    def get_requested_user(msg):
+        user = asyncio.run(baton.requested_user.get_value())
+        return {"readback": user}
+
+    def set_requested_user(msg):
+        set_mock_value(baton.requested_user, msg.args[0])
+
+    sim_run_engine.add_handler("locate", get_requested_user, "baton-requested_user")
+    sim_run_engine.add_handler(
+        "set",
+        set_requested_user,  # type: ignore
+        "baton-requested_user",
+    )
     return baton
 
 
@@ -176,3 +197,45 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
     agamemnon.side_effect = [MagicMock(), MagicMock(), None]
     RE(run_udc_when_requested(baton, MagicMock()))
     default_state.assert_called_once()
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [
+                Wait.model_validate(
+                    {"duration_s": 12.34, "parameter_model_version": PARAMETER_VERSION}
+                )
+            ],
+            [],
+        ]
+    ),
+)
+def test_baton_handler_loop_waits_if_wait_instruction_received(
+    baton: Baton, sim_run_engine: RunEngineSimulator
+):
+    msgs = sim_run_engine.simulate_plan(run_udc_when_requested(baton, MagicMock()))
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "sleep" and msg.args[0] == 12.34
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [
+                MxBlueskyParameters.model_validate(
+                    {"parameter_model_version": PARAMETER_VERSION}
+                )
+            ],
+            [],
+        ]
+    ),
+)
+def test_main_loop_rejects_unrecognised_instruction_when_received(
+    baton: Baton, sim_run_engine: RunEngineSimulator
+):
+    with pytest.raises(AssertionError, match="Unsupported instruction decoded"):
+        sim_run_engine.simulate_plan(run_udc_when_requested(baton, MagicMock()))
