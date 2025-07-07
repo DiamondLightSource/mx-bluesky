@@ -877,8 +877,11 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
         load_centre_collect_msp_params.visit
     )
-    robot_load_cb.expeye.start_load.assert_called_once_with(  # type: ignore
-        expected_proposal, expected_visit, expected_sample_id, 2, 6
+    robot_load_cb.expeye.start_robot_action.assert_called_once_with(  # type: ignore
+        "LOAD",
+        expected_proposal,
+        expected_visit,
+        expected_sample_id,
     )
 
 
