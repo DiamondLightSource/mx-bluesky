@@ -628,12 +628,14 @@ def test_sending_a_shutdown_via_api_terminates_udc():
     pass
 
 
-# XXX clarify whether this behaviour is desirable / intended
+# TODO clarify whether this behaviour is desirable / intended
+# https://github.com/DiamondLightSource/mx-bluesky/issues/1151
 def test_exception_in_udc_terminates_bluesky_runner_but_does_not_terminate_flask():
     pass
 
 
 # XXX clarify what should the stop method do as an endpoint / do we need it?
+# https://github.com/DiamondLightSource/mx-bluesky/issues/1151
 def test_stop_via_rest_terminates_bluesky_runner_but_does_not_terminate_flask():
     pass
 
