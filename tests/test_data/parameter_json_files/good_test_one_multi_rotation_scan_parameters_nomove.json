@@ -10,7 +10,6 @@
     "file_name": "file_name",
     "rotation_increment_deg": 0.1,
     "run_number": 0,
-    "sample_id": 123456,
     "shutter_opening_time_s": 0.6,
     "visit": "cm31105-4",
     "transmission_frac": 0.1,
@@ -20,7 +19,8 @@
             "rotation_axis": "omega",
             "rotation_direction": "Negative",
             "scan_width_deg": 180.0,
-            "omega_start_deg": 0.0
+            "omega_start_deg": 0.0,
+            "sample_id": 123456
         }
     ]
 }

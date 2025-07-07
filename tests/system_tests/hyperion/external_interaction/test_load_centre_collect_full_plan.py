@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterable
 from contextlib import nullcontext
+from functools import partial
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -33,6 +34,7 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
@@ -41,6 +43,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
     load_centre_collect_full,
 )
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import _move_and_rotation
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
@@ -60,6 +63,7 @@ from ....conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_OUT_OF_BOUNDS_BB,
     TEST_RESULT_OUT_OF_BOUNDS_COM,
+    TEST_RESULT_SMALL,
     SimConstants,
     assert_images_pixelwise_equal,
     raw_params_from_file,
@@ -79,6 +83,7 @@ SNAPSHOT_GENERATION_ZOCALO_RESULT = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        "sample_id": SimConstants.ST_SAMPLE_ID,
     }
 ]
 
@@ -92,6 +97,18 @@ def load_centre_collect_params(tmp_path):
     json_dict["visit"] = SimConstants.ST_VISIT
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     return LoadCentreCollect(**json_dict)
+
+
+@pytest.fixture
+def load_centre_collect_msp_params(load_centre_collect_params):
+    load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
+        n=5
+    )
+    load_centre_collect_params.sample_id = SimConstants.ST_MSP_SAMPLE_IDS[0]
+    load_centre_collect_params.robot_load_then_centre.sample_id = (
+        load_centre_collect_params.sample_id
+    )
+    return load_centre_collect_params
 
 
 @pytest.fixture
@@ -140,6 +157,15 @@ def load_centre_collect_composite(
     set_mock_value(composite.dcm.bragg_in_degrees.user_readback, 5)
 
     yield composite
+
+
+@pytest.fixture
+def robot_load_cb() -> RobotLoadISPyBCallback:
+    robot_load_cb = RobotLoadISPyBCallback()
+    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
+    robot_load_cb.expeye.end_robot_action = MagicMock()
+    robot_load_cb.expeye.update_robot_action = MagicMock()
+    return robot_load_cb
 
 
 GRID_DC_1_EXPECTED_VALUES = {
@@ -254,17 +280,13 @@ def test_execute_load_centre_collect_full(
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
     fetch_blsample: Callable[[int], BLSample],
     tmp_path,
+    robot_load_cb: RobotLoadISPyBCallback,
 ):
     ispyb_gridscan_cb = GridscanISPyBCallback(
         param_type=GridCommonWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
-    robot_load_cb = RobotLoadISPyBCallback()
-    # robot_load_cb.expeye = MagicMock()
-    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
-    robot_load_cb.expeye.end_robot_action = MagicMock()
-    robot_load_cb.expeye.update_robot_action = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
@@ -283,7 +305,7 @@ def test_execute_load_centre_collect_full(
         load_centre_collect_params.visit
     )
     expected_sample_id = load_centre_collect_params.sample_id
-    robot_load_cb.expeye.start_robot_action.assert_called_once_with(
+    robot_load_cb.expeye.start_robot_action.assert_called_once_with(  # type: ignore
         "LOAD", expected_proposal, expected_visit, expected_sample_id
     )
     # TODO re-enable this https://github.com/DiamondLightSource/mx-bluesky/issues/690
@@ -293,7 +315,7 @@ def test_execute_load_centre_collect_full(
     #     "{tmp_data}/123457/xraycentring/snapshots/160705_webcam_after_load.png",
     #     "/tmp/snapshot1.png",
     # )
-    robot_load_cb.expeye.end_robot_action.assert_called_once_with(1234, "success", "OK")
+    robot_load_cb.expeye.end_robot_action.assert_called_once_with(1234, "success", "OK")  # type: ignore
 
     # Compare gridscan collection
     compare_actual_and_expected(
@@ -571,17 +593,16 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
+    robot_load_cb: RobotLoadISPyBCallback,
     RE: RunEngine,
 ):
-    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    load_centre_collect_composite.zocalo.my_zocalo_result = _with_sample_ids(
+        zocalo_result, [SimConstants.ST_SAMPLE_ID]
+    )
     ispyb_gridscan_cb = GridscanISPyBCallback(
         param_type=GridCommonWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
-    robot_load_cb = RobotLoadISPyBCallback()
-    robot_load_cb.expeye.start_robot_action = MagicMock(return_value=1234)
-    robot_load_cb.expeye.end_robot_action = MagicMock()
-    robot_load_cb.expeye.update_robot_action = MagicMock()
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
@@ -660,6 +681,273 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
         assert_images_pixelwise_equal(
             filename, "tests/test_data/test_images/generate_snapshot_output.png"
         )
+
+
+def _with_sample_ids(zocalo_results: list[dict], sample_ids: Iterable[int]):
+    copied_results = [zr.copy() for zr in zocalo_results]
+    for result, sample_id in zip(copied_results, sample_ids, strict=False):
+        result["sample_id"] = sample_id
+    return copied_results
+
+
+@pytest.mark.system_test
+@pytest.mark.parametrize(
+    "zocalo_result",
+    [
+        _with_sample_ids(
+            TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX + TEST_RESULT_MEDIUM + TEST_RESULT_SMALL,
+            [
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[1],
+            ],
+        )
+    ],
+)
+def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb_gridscan(
+    zocalo_result,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_msp_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    robot_load_cb: RobotLoadISPyBCallback,
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_attribute: Callable[..., Any],
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_msp_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    expected_sample_id = load_centre_collect_msp_params.sample_id
+
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_group_id,
+        {"blSampleId": expected_sample_id},
+        fetch_datacollectiongroup_attribute,
+    )
+
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
+        {"BLSAMPLEID": expected_sample_id},
+        fetch_datacollection_attribute,
+    )
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
+        {"BLSAMPLEID": expected_sample_id},
+        fetch_datacollection_attribute,
+    )
+
+
+@pytest.mark.system_test
+@pytest.mark.parametrize(
+    "zocalo_result",
+    [
+        _with_sample_ids(
+            TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX + TEST_RESULT_MEDIUM + TEST_RESULT_SMALL,
+            [
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[1],
+            ],
+        )
+    ],
+)
+def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb_rotation(
+    zocalo_result,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_msp_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    robot_load_cb: RobotLoadISPyBCallback,
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+
+    original_upsert_dcg = ispyb_rotation_cb.ispyb._upsert_data_collection_group
+    captured_upsert_dcg_ids = []
+
+    def intercept_upserts(conn, params):
+        dcg_id = original_upsert_dcg(conn, params)
+        nonlocal captured_upsert_dcg_ids
+        if dcg_id not in captured_upsert_dcg_ids:
+            captured_upsert_dcg_ids.append(dcg_id)
+        return dcg_id
+
+    with patch.object(
+        ispyb_rotation_cb.ispyb,
+        "_upsert_data_collection_group",
+        side_effect=intercept_upserts,
+    ):
+        RE(
+            load_centre_collect_full(
+                load_centre_collect_composite,
+                load_centre_collect_msp_params,
+                oav_parameters_for_rotation,
+            )
+        )
+
+    assert len(captured_upsert_dcg_ids) == 2
+    for dcg_id, expected_sample_id in zip(
+        captured_upsert_dcg_ids, SimConstants.ST_MSP_SAMPLE_IDS, strict=True
+    ):
+        compare_actual_and_expected(
+            dcg_id,
+            {"blSampleId": expected_sample_id},
+            fetch_datacollectiongroup_attribute,
+        )
+        dc_ids = fetch_datacollection_ids_for_group_id(dcg_id)
+        compare_actual_and_expected(
+            dc_ids[0],
+            {"BLSAMPLEID": expected_sample_id},
+            fetch_datacollection_attribute,
+        )
+        compare_actual_and_expected(
+            dc_ids[1],
+            {"BLSAMPLEID": expected_sample_id},
+            fetch_datacollection_attribute,
+        )
+
+
+@pytest.mark.parametrize(
+    "zocalo_result",
+    [
+        _with_sample_ids(
+            TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX + TEST_RESULT_MEDIUM + TEST_RESULT_SMALL,
+            [
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[1],
+            ],
+        )
+    ],
+)
+@pytest.mark.system_test
+def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_load(
+    zocalo_result,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_msp_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    robot_load_cb: RobotLoadISPyBCallback,
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_msp_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    expected_sample_id = load_centre_collect_msp_params.sample_id
+    expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
+        load_centre_collect_msp_params.visit
+    )
+    robot_load_cb.expeye.start_load.assert_called_once_with(  # type: ignore
+        expected_proposal, expected_visit, expected_sample_id, 2, 6
+    )
+
+
+@pytest.mark.parametrize(
+    "zocalo_result",
+    [
+        _with_sample_ids(
+            TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX + TEST_RESULT_MEDIUM + TEST_RESULT_SMALL,
+            [
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[0],
+                SimConstants.ST_MSP_SAMPLE_IDS[1],
+            ],
+        )
+    ],
+)
+@pytest.mark.system_test
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan._move_and_rotation",
+    new=MagicMock(side_effect=AssertionError("Simulated error in rotation")),
+)
+def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sample_when_error_in_rotation_on_child_sample(
+    zocalo_result,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_msp_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    robot_load_cb: RobotLoadISPyBCallback,
+    fetch_blsample: Callable[..., Any],
+):
+    load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    sample_handling_cb = SampleHandlingCallback()
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+    RE.subscribe(sample_handling_cb)
+
+    unpatched_move_and_rotation = _move_and_rotation
+    num_calls = 0
+
+    def throw_on_third_call_wrapper(plan, *args, **kwargs):
+        nonlocal num_calls
+        num_calls += 1
+        if num_calls == 3:
+            raise AssertionError("Simulated error in rotation")
+        yield from plan(*args, **kwargs)
+
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan._move_and_rotation",
+        partial(throw_on_third_call_wrapper, unpatched_move_and_rotation),
+    ):
+        with pytest.raises(AssertionError, match="Simulated error in rotation"):
+            RE(
+                load_centre_collect_full(
+                    load_centre_collect_composite,
+                    load_centre_collect_msp_params,
+                    oav_parameters_for_rotation,
+                )
+            )
+
+    assert (
+        fetch_blsample(SimConstants.ST_MSP_SAMPLE_IDS[0]).blSampleStatus
+        == "ERROR - beamline"
+    )
 
 
 @pytest.fixture

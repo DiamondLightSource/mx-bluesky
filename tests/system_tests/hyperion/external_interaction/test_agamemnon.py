@@ -16,9 +16,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     populate_parameters_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import (
-    RotationScanPerSweep,
-)
 
 EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "storage_directory": "/dls/tmp/data/year/cm00000-0/auto/test/xraycentring",
@@ -45,13 +42,14 @@ EXPECTED_ROTATION_PARAMS = {
     "transmission_frac": 0.5,
     "ispyb_experiment_type": IspybExperimentType.CHARACTERIZATION,
     "rotation_scans": [
-        RotationScanPerSweep(
-            omega_start_deg=0.0,
-            phi_start_deg=0.0,
-            scan_width_deg=360,
-            rotation_direction=RotationDirection.POSITIVE,
-            chi_start_deg=0.0,
-        )
+        {
+            "omega_start_deg": 0.0,
+            "phi_start_deg": 0.0,
+            "scan_width_deg": 360,
+            "rotation_direction": RotationDirection.POSITIVE,
+            "chi_start_deg": 0.0,
+            "sample_id": 12345,
+        }
     ],
 }
 

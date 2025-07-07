@@ -9,13 +9,14 @@ from ......conftest import (
     EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
     remap_upsert_columns,
     replace_all_tmp_paths,
 )
+
+TEST_SAMPLE_ID = 123456
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
