@@ -1,5 +1,5 @@
 import os
-from enum import Enum
+from enum import Enum, StrEnum
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
@@ -11,6 +11,12 @@ from mx_bluesky.definitions import ROOT_DIR
 
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
+
+GDA_DOMAIN_PROPERTIES_PATH = (
+    "/dls_sw/i03/software/daq_configuration/domain/domain.properties"  # change back to test
+    if TEST_MODE
+    else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
+)
 
 
 @dataclass(frozen=True)
@@ -33,7 +39,7 @@ class OavConstants:
         "tests/test_data/test_OAVCentring.json"
         if TEST_MODE
         else (
-            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"  # todo these won't always be named hyperion
         )
     )
 
@@ -149,3 +155,10 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
+
+
+@dataclass
+class FeatureFlags: ...
+
+
+class FeatureFlagSources(StrEnum): ...
