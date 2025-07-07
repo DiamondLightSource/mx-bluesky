@@ -6,7 +6,6 @@ from sys import argv
 from traceback import format_exception
 
 from blueapi.core import BlueskyContext
-from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
 
@@ -19,19 +18,15 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
     flush_debug_handler,
 )
-from mx_bluesky.hyperion.baton_handler import create_runner, run_udc_when_requested
+from mx_bluesky.hyperion.baton_handler import create_runner
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
-)
-from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
-    LoadCentreCollectComposite,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
@@ -143,27 +138,25 @@ class FlushLogs(Resource):
         return asdict(status_and_message)
 
 
-def create_app(
-    args: HyperionArgs, test_config=None, RE: RunEngine = RunEngine({})
-) -> tuple[Flask, BlueskyRunner]:
+def create_app(args: HyperionArgs, test_config=None) -> tuple[Flask, BlueskyRunner]:
     context = setup_context(dev_mode=args.dev_mode)
     runner: BlueskyRunner
     if args.mode == HyperionMode.GDA:
-        runner = GDARunner(
-            RE,
-            context=context,
-        )
+        runner = GDARunner(context=context)
     else:
-        runner = create_runner(RE, context=context)
+        runner = create_runner(context=context)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
     api = Api(app)
-    api.add_resource(
-        RunExperiment,
-        "/<string:plan_name>/<string:action>",
-        resource_class_args=[runner, context],
-    )
+
+    if args.mode == HyperionMode.GDA:
+        api.add_resource(
+            RunExperiment,
+            "/<string:plan_name>/<string:action>",
+            resource_class_args=[runner, context],
+        )
+
     api.add_resource(
         FlushLogs,
         "/flush_debug_log",
@@ -208,15 +201,7 @@ def main():
     flask_thread.start()
     LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
 
-    if args.mode == HyperionMode.UDC:
-        load_centre_collect_composite = device_composite_from_context(
-            runner.context, LoadCentreCollectComposite
-        )
-        run_udc_when_requested(
-            load_centre_collect_composite.baton, load_centre_collect_composite
-        )
-    else:
-        runner.wait_on_queue()
+    runner.wait_on_queue()
 
     flask_thread.join()
 
