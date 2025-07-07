@@ -1,7 +1,3 @@
-
-#Override this value on ixx-services values.yaml
-beamline: dev
-
 zocalo:
   defaultTransport: "PikaTransport"
   graylog:
@@ -86,22 +82,25 @@ blueapi:
     - secret:
       name: ispyb-creds
   - name: debuglogs
-  - name: data
-    hostPath:
-      type: Directory
-      path: "/dls/{{ .Values.beamline }}/data"
 
-  # Put this one in argo
+
+    # Put all these vals in argo
+  # - name: data
+  #   hostPath:
+  #     type: Directory
+  #     path: "/dls/{{ .Values.beamline }}/data"
+
+
   # - name: dls-sw-bl
   #   hostPath:
   #     path: "/dls_sw/{{ .Values.beamline }}"
   #     type: Directory
 
-  volumeMounts:
-  - mountPath: "/dls_sw/{{ .Values.beamline }}"
-    name: dls-sw-bl
-    readOnly: true
-    mountPropagation: HostToContainer
+  # volumeMounts:
+  # - mountPath: "/dls_sw/{{ .Values.beamline }}"
+  #   name: dls-sw-bl
+  #   readOnly: true
+  #   mountPropagation: HostToContainer
 
 
   # TODO figure out what to do about logs - if they aren't mounted, these paths should just be created in the container but 
