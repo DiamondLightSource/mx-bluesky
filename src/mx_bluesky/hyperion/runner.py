@@ -6,7 +6,6 @@ from queue import Queue
 from typing import Any
 
 from blueapi.core import BlueskyContext
-from bluesky import RunEngine
 from bluesky.callbacks.zmq import Publisher
 from bluesky.utils import MsgGenerator
 
@@ -27,6 +26,10 @@ class Command:
     action: Actions
     devices: Any | None = None
     experiment: Callable[[Any, Any], MsgGenerator] | None = None
+
+    def __str__(self):
+        return f"Command({self.action}, {self.parameters}"
+
     parameters: MxBlueskyParameters | None = None
 
 
@@ -56,12 +59,11 @@ def make_error_status_and_message(exception: Exception):
 class BlueskyRunner:
     def __init__(
         self,
-        RE: RunEngine,
         context: BlueskyContext,
     ) -> None:
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
         self.context: BlueskyContext = context
-        self.RE = RE
+        self.RE = context.run_engine
 
         self._last_run_aborted: bool = False
         self._command_queue: Queue[Command] = Queue()
@@ -69,23 +71,43 @@ class BlueskyRunner:
         LOGGER.info("Connecting to external callback ZMQ proxy...")
         self._publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
 
-        RE.subscribe(self._logging_uid_tag_callback)
-        RE.subscribe(self._publisher)
+        self.RE.subscribe(self._logging_uid_tag_callback)
+        self.RE.subscribe(self._publisher)
 
-    @abstractmethod
     def start(
         self,
         experiment: Callable,
         parameters: MxBlueskyParameters,
-        plan_name: str,
+        plan_name: str = None,
     ) -> StatusAndMessage:
         """Start a new bluesky plan
         Args:
             experiment: A bluesky plan
             parameters: The parameters to be submitted
             plan_name: Name of the plan that will be used to resolve the composite factory
-                to supply devices for the plan"""
-        pass
+                to supply devices for the plan, if any are needed"""
+        LOGGER.info(f"Started with parameters: {parameters.model_dump_json(indent=2)}")
+
+        devices: Any = (
+            PLAN_REGISTRY[plan_name]["setup"](self.context) if plan_name else None
+        )
+
+        if (
+            self.current_status.status == Status.BUSY.value
+            or self.current_status.status == Status.ABORTING.value
+        ):
+            return StatusAndMessage(Status.FAILED, "Bluesky already running")
+        else:
+            self.current_status = StatusAndMessage(Status.BUSY)
+            self._command_queue.put(
+                Command(
+                    action=Actions.START,
+                    devices=devices,
+                    experiment=experiment,
+                    parameters=parameters,
+                )
+            )
+            return StatusAndMessage(Status.SUCCESS)
 
     def stop(self) -> StatusAndMessage:
         """Stop the currently executing plan."""
@@ -108,6 +130,7 @@ class BlueskyRunner:
 
     @abstractmethod
     def wait_on_queue(self):
+        """Entry point to the processing loop"""
         pass
 
     def _stopping_thread(self):
@@ -117,40 +140,17 @@ class BlueskyRunner:
         except Exception as e:
             self.current_status = make_error_status_and_message(e)
 
+    def fetch_next_command(self) -> Command:
+        """Fetch the next command from the queue, blocks if one is not available."""
+        return self._command_queue.get()
+
 
 class GDARunner(BlueskyRunner):
     """Runner that executes plans submitted by Flask requests from GDA."""
 
-    def start(
-        self,
-        experiment: Callable,
-        parameters: MxBlueskyParameters,
-        plan_name: str,
-    ) -> StatusAndMessage:
-        LOGGER.info(f"Started with parameters: {parameters.model_dump_json(indent=2)}")
-
-        devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
-
-        if (
-            self.current_status.status == Status.BUSY.value
-            or self.current_status.status == Status.ABORTING.value
-        ):
-            return StatusAndMessage(Status.FAILED, "Bluesky already running")
-        else:
-            self.current_status = StatusAndMessage(Status.BUSY)
-            self._command_queue.put(
-                Command(
-                    action=Actions.START,
-                    devices=devices,
-                    experiment=experiment,
-                    parameters=parameters,
-                )
-            )
-            return StatusAndMessage(Status.SUCCESS)
-
     def wait_on_queue(self):
         while True:
-            command = self._command_queue.get()
+            command = self.fetch_next_command()
             if command.action == Actions.SHUTDOWN:
                 return
             elif command.action == Actions.START:
@@ -174,15 +174,3 @@ class GDARunner(BlueskyRunner):
                         self._last_run_aborted = False
                     else:
                         self.current_status = make_error_status_and_message(exception)
-
-
-class UDCRunner(BlueskyRunner):
-    """Runner that executes plans initiated by instructions pulled from Agamemnon"""
-
-    def start(
-        self, experiment: Callable, parameters: MxBlueskyParameters, plan_name: str
-    ) -> StatusAndMessage:
-        pass
-
-    def wait_on_queue(self):
-        pass
