@@ -78,7 +78,7 @@ class BlueskyRunner:
         self,
         experiment: Callable,
         parameters: MxBlueskyParameters,
-        plan_name: str = None,
+        plan_name: str | None = None,
     ) -> StatusAndMessage:
         """Start a new bluesky plan
         Args:

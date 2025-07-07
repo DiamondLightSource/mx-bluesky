@@ -59,6 +59,7 @@ class UDCRunner(BlueskyRunner):
             case Actions.START:
                 self.current_status = StatusAndMessage(Status.BUSY)
                 try:
+                    assert command.experiment, "Experiment not specified in command"
                     yield from command.experiment(command.parameters, command.devices)
                     self.current_status = StatusAndMessage(Status.IDLE)
                 except WarningException as e:

@@ -1,6 +1,7 @@
 import asyncio
 import os
 from dataclasses import fields
+from collections.abc import Generator
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -89,7 +90,7 @@ def baton_with_requested_user(
 
 
 @pytest.fixture()
-def udc_runner(baton: Baton) -> UDCRunner:
+def udc_runner(baton: Baton) -> Generator[UDCRunner, None, None]:
     mock_context = MagicMock()
     with patch(
         "mx_bluesky.hyperion.baton_handler.find_device_in_context", return_value=baton

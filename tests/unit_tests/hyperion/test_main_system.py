@@ -42,7 +42,7 @@ from mx_bluesky.hyperion.parameters.cli import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.runner import BlueskyRunner, GDARunner
+from mx_bluesky.hyperion.runner import GDARunner
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
 
@@ -422,8 +422,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     ):
         print(PLAN_REGISTRY)
 
-        BlueskyRunner(
-            RE=MagicMock(),
+        GDARunner(
             context=context,
         )
 
