@@ -6,13 +6,30 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
+from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
+    ZebraFastGridScan,
     set_fast_grid_scan_params,
 )
+from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.beamstop import Beamstop
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
@@ -63,8 +80,27 @@ def create_devices(
 
 
 def i04_grid_detect_then_xray_centre(
-    composite: GridDetectThenXRayCentreComposite,
     parameters: GridCommon,
+    aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+    backlight: Backlight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    dcm: BaseDCM = inject("dcm"),
+    zebra_fast_grid_scan: ZebraFastGridScan = inject("zebra_fast_grid_scan"),
+    flux: Flux = inject("flux"),
+    oav: OAV = inject("oav"),
+    pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
+    s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps"),
+    undulator: Undulator = inject("undulator"),
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
+    zebra: Zebra = inject("zebra"),
+    robot: BartRobot = inject("robot"),
+    sample_shutter: ZebraShutter = inject("sample_shutter"),
+    eiger: EigerDetector = inject("eiger"),
+    synchrotron: Synchrotron = inject("synchrotron"),
+    zocalo: ZocaloResults = inject("zocalo"),
+    smargon: Smargon = inject("smargon"),
+    detector_motion: DetectorMotion = inject("detector_motion"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
     udc: bool = False,
 ) -> MsgGenerator:
@@ -80,6 +116,29 @@ def i04_grid_detect_then_xray_centre(
     isn't running in a continious Bluesky UDC loop, we take additional steps in beamline
     tidy-up.
     """
+
+    composite = GridDetectThenXRayCentreComposite(
+        eiger,
+        synchrotron,
+        zocalo,
+        smargon,
+        aperture_scatterguard,
+        attenuator,
+        backlight,
+        beamstop,
+        dcm,
+        detector_motion,
+        zebra_fast_grid_scan,
+        flux,
+        oav,
+        pin_tip_detection,
+        s4_slit_gaps,
+        undulator,
+        xbpm_feedback,
+        zebra,
+        robot,
+        sample_shutter,
+    )
 
     def tidy_beamline_if_not_udc():
         if not udc:
