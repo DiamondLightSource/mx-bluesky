@@ -6,6 +6,7 @@ import os
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from sys import argv
 from time import sleep
 from typing import Any
@@ -326,29 +327,26 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     ],
 )
 def test_start_with_json_file_gives_success(
-    test_env: ClientAndRunEngine, endpoint: str, test_file: str
+    test_env: ClientAndRunEngine, endpoint: str, test_file: str, tmp_path: Path
 ):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(test_file) as test_params_file:
-        test_params = test_params_file.read()
-    response = test_env.client.put(endpoint, data=test_params)
+    test_params = raw_params_from_file(test_file, tmp_path)
+    response = test_env.client.put(endpoint, json=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
 @pytest.mark.timeout(3)
-def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngine):
+def test_start_with_json_file_with_extras_gives_error(
+    test_env: ClientAndRunEngine, tmp_path: Path
+):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
-    ) as test_params_file:
-        test_params = test_params_file.read()
-
-    params = json.loads(test_params)
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
+    )
     params["extra_param"] = "test"
-    test_params = json.dumps(params)
-    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(START_ENDPOINT, json=params)
     check_status_in_response(response, Status.FAILED)
 
 
