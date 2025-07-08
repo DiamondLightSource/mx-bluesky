@@ -9,7 +9,7 @@ application:
   beamline: i03
   dev: false
   logDir: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
-  debugLogDir: "/dls/tmp/i03/logs/bluesky"
+  debugLogDir: "/dls/tmp/i03/logs/bluesky-k8s"
   dataDir: "/dls/i03/data"
   # These should be overridden at install time
   projectDir: SET_ON_INSTALL

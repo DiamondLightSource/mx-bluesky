@@ -32,6 +32,10 @@ for option in "$@"; do
             DRY_RUN=true
             shift
             ;;
+        --bind-dir=*)
+            BIND_DIR="${option#*=}"
+            shift
+            ;;
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options] <release> <app_name>"
@@ -58,6 +62,7 @@ Options:
   --dry-run               Do everything but don't do the final deploy to k8s 
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
   --repository=REPOSITORY Override the repository to fetch the image from
+  --bind-dir=DIR          Override the directory to bind to, default calculated from app version
 EOM
             exit 0
             ;;
@@ -115,6 +120,10 @@ else
   MX_BLUESKY_BASE=$($DEPLOY_MX_BLUESKY --print-release-dir $BEAMLINE)
 
   if [[ -n $CHECKOUT ]]; then
+    if [[ -n $BIND_DIR ]]; then
+      echo "Cannot specify --bind-dir and --checkout-to-prod"
+      exit 1
+    fi
     echo "Running deploy_mx_bluesky.py to deploy to production folder..."
     $DEPLOY_MX_BLUESKY --kubernetes $BEAMLINE
     if [[ $? != 0 ]]; then
@@ -192,6 +201,9 @@ application.externalHostname=test-$APP_NAME.diamond.ac.uk "
   DEPLOYMENT_DIR=$PROJECTDIR
 else
   DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
+fi
+if [[ -n $BIND_DIR ]]; then
+  DEPLOYMENT_DIR=$BIND_DIR
 fi
 
 HELM_OPTIONS+="--set application.appVersion=v$APP_VERSION,\
