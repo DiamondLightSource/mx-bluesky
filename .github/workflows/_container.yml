@@ -50,10 +50,10 @@ jobs:
             ghcr.io/${{ github.repository }}
           labels: |
             org.opencontainers.image.title=mx-bluesky
-            org.opencontainers.image.description="Hyperion service for MX Unattended Data Collection"
+            org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
           annotations: |
             org.opencontainers.image.title=mx-bluesky
-            org.opencontainers.image.description="Hyperion service for MX Unattended Data Collection"
+            org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
           tags: |
             type=ref,event=tag
             type=raw,value=latest
@@ -66,10 +66,10 @@ jobs:
             ghcr.io/${{ github.repository }}-blueapi
           labels: |
             org.opencontainers.image.title=mx-bluesky-blueapi
-            org.opencontainers.image.description="BlueAPI plans, stubs and utilities for MX beamlines"
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
           annotations: |
             org.opencontainers.image.title=mx-bluesky-blueapi
-            org.opencontainers.image.description="BlueAPI plans, stubs and utilities for MX beamlines"
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
           tags: |
             type=ref,event=tag
             type=raw,value=latest
