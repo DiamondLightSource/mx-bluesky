@@ -48,6 +48,12 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.description="Hyperion service for MX Unattended Data Collection"
+          annotations: |
+            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.description="Hyperion service for MX Unattended Data Collection"
           tags: |
             type=ref,event=tag
             type=raw,value=latest
@@ -58,6 +64,12 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository }}-blueapi
+          labels: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description="BlueAPI plans, stubs and utilities for MX beamlines"
+          annotations: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description="BlueAPI plans, stubs and utilities for MX beamlines"
           tags: |
             type=ref,event=tag
             type=raw,value=latest
@@ -75,6 +87,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-hyperion.outputs.tags }}
           labels: ${{ steps.meta-hyperion.outputs.labels }}
+          # Set the annotations to make the description appear in the GH repo page
+          annotations: ${{ steps.meta-hyperion.outputs.annotations }}
 
       - name: Push cached BlueAPI image to container registry
         if: github.ref_type == 'tag'
@@ -87,3 +101,5 @@ jobs:
           push: true
           tags: ${{ steps.meta-blueapi.outputs.tags }}
           labels: ${{ steps.meta-blueapi.outputs.labels }}
+          # Set the annotations to make the description appear in the GH repo page
+          annotations: ${{ steps.meta-blueapi.outputs.annotations }}
