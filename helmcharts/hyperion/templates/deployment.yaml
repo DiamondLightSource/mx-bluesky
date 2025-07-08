@@ -68,6 +68,10 @@ spec:
                 name: {{ .secretName }}
             {{- end -}} {{/* range */}}
             {{- end -}} {{/* if */}}
+        - name: ispyb-secrets
+          secret:
+            type: secret
+            secretName: ispyb-hyperion-cfg
       containers:
       - name: hyperion
         image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}
@@ -133,7 +137,7 @@ spec:
           - name: ZOCALO_CONFIG
             value: "/zocalo/config/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
-            value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.application.beamline }}.cfg"
+            value: "/ispyb/secrets/ispyb.cfg"
           {{- end }}
         readinessProbe:
           exec:
@@ -166,4 +170,6 @@ spec:
             name: zocalo-config
           - mountPath: "/zocalo/secrets"
             name: zocalo-secrets
+          - mountPath: "/ispyb/secrets"
+            name: ispyb-secrets
       hostNetwork: true
