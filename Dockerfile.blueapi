@@ -1,4 +1,3 @@
-# See https://github.com/DiamondLightSource/mx-bluesky/issues/1004
 FROM ghcr.io/diamondlightsource/blueapi:1.0.0-rc.2
 
 ARG DEBIAN_FRONTEND=noninteractive
