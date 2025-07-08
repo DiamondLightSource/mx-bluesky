@@ -42,18 +42,27 @@ jobs:
           file: Dockerfile.blueapi
           load: true
 
-      - name: Create tags for publishing image
-        id: meta
+      - name: Create tags for publishing Hyperion image
+        id: meta-hyperion
         uses: docker/metadata-action@v5
         with:
           images: |
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Create tags for publishing BlueAPI image
+        id: meta-blueapi
+        uses: docker/metadata-action@v5
+        with:
+          images: |
             ghcr.io/${{ github.repository }}-blueapi
           tags: |
             type=ref,event=tag
             type=raw,value=latest
 
-      - name: Push cached image to container registry
+      - name: Push cached Hyperion image to container registry
         if: github.ref_type == 'tag'
         uses: docker/build-push-action@v6
         env:
@@ -64,10 +73,10 @@ jobs:
           context: .
           file: Dockerfile.hyperion
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-hyperion.outputs.tags }}
+          labels: ${{ steps.meta-hyperion.outputs.labels }}
 
-      - name: Push Dockerfile.blueapi image to container registry
+      - name: Push cached BlueAPI image to container registry
         if: github.ref_type == 'tag'
         uses: docker/build-push-action@v6
         env:
@@ -76,5 +85,5 @@ jobs:
           context: .
           file: Dockerfile.blueapi
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-blueapi.outputs.tags }}
+          labels: ${{ steps.meta-blueapi.outputs.labels }}
