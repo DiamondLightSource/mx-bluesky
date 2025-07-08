@@ -95,7 +95,7 @@ fi
 
 HELM_OPTIONS=""
 PROJECTDIR=$(readlink -e $(dirname $0)/../..)
-TOP_HELMCHART_DIR=${PROJECTDIR}/helmcharts
+TOP_HELMCHART_DIR=${PROJECTDIR}/helm
 HELMCHART_DIR=${TOP_HELMCHART_DIR}/${APP_NAME}
 
 if [[ -n $DEV ]]; then
