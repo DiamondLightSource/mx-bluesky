@@ -81,8 +81,6 @@ blueapi:
     sources:
     - secret:
       name: ispyb-creds
-  - name: debuglogs
-
 
     # Put all these vals in argo
   # - name: data
@@ -96,7 +94,7 @@ blueapi:
   #     path: "/dls_sw/{{ .Values.beamline }}"
   #     type: Directory
 
-  # volumeMounts:
+  volumeMounts:
   # - mountPath: "/dls_sw/{{ .Values.beamline }}"
   #   name: dls-sw-bl
   #   readOnly: true
