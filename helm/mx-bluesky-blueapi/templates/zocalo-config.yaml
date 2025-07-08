@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "{{ .Release.Name }}-zocalo-config"
+  name: "zocalo-config"
   namespace: "{{ .Release.Namespace }}"
   labels:
     app.kubernetes.io/name: zocalo-config
