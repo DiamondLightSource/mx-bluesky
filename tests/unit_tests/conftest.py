@@ -367,7 +367,7 @@ def test_full_grid_scan_params(tmp_path):
 async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -383,14 +383,13 @@ async def grid_detect_xrc_devices(
     xbpm_feedback,
     attenuator,
     undulator,
-    undulator_dcm,
     dcm,
 ):
     yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,

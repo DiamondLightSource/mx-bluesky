@@ -1,10 +1,33 @@
+from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
+from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.backlight import Backlight
+from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import (
+    ZebraFastGridScan,
+)
+from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.beamstop import Beamstop
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zocalo import ZocaloResults
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
@@ -15,19 +38,60 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
     i04_grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.common.parameters.gridscan import GridCommon
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-)
 
 
 class CustomException(Exception): ...
+
+
+@pytest.fixture
+def i04_grid_detect_then_xrc_default_params(
+    aperture_scatterguard: ApertureScatterguard,
+    attenuator: BinaryFilterAttenuator,
+    backlight: Backlight,
+    beamstop_phase1: Beamstop,
+    dcm: BaseDCM,
+    zebra_fast_grid_scan: ZebraFastGridScan,
+    flux: Flux,
+    oav: OAV,
+    pin_tip_detection_with_found_pin: PinTipDetection,
+    s4_slit_gaps: S4SlitGaps,
+    undulator: Undulator,
+    xbpm_feedback: XBPMFeedback,
+    zebra: Zebra,
+    robot: BartRobot,
+    sample_shutter: ZebraShutter,
+    eiger: EigerDetector,
+    synchrotron: Synchrotron,
+    zocalo: ZocaloResults,
+    smargon: Smargon,
+    detector_motion: DetectorMotion,
+    test_full_grid_scan_params: GridCommon,
+):
+    return partial(
+        i04_grid_detect_then_xray_centre,
+        parameters=test_full_grid_scan_params,
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop_phase1,
+        dcm=dcm,
+        zebra_fast_grid_scan=zebra_fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=pin_tip_detection_with_found_pin,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        robot=robot,
+        sample_shutter=sample_shutter,
+        eiger=eiger,
+        synchrotron=synchrotron,
+        zocalo=zocalo,
+        smargon=smargon,
+        detector_motion=detector_motion,
+    )
 
 
 @patch(
@@ -93,16 +157,11 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     mock_grid_detect_then_xray_centre: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
     RE: RunEngine,
-    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
-    test_full_grid_scan_params: GridCommon,
-    test_config_files,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     udc: bool,
 ):
     RE(
-        i04_grid_detect_then_xray_centre(
-            grid_detect_xrc_devices,
-            test_full_grid_scan_params,
-            test_config_files["oav_config_json"],
+        i04_grid_detect_then_xrc_default_params(
             udc=udc,
         )
     )
@@ -150,22 +209,13 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     mock_unpause_and_set_transmission: MagicMock,
     mock_check_and_pause: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
-    grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_full_grid_scan_params: GridScanWithEdgeDetect,
-    test_config_files,
-    pin_tip_detection_with_found_pin: PinTipDetection,
     RE: RunEngine,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     mock_common_flyscan_xray_centre.side_effect = CustomException
 
     with pytest.raises(CustomException):  # noqa: B017
-        RE(
-            i04_grid_detect_then_xray_centre(
-                grid_detect_xrc_devices,
-                test_full_grid_scan_params,
-                test_config_files["oav_config_json"],
-            )
-        )
+        RE(i04_grid_detect_then_xrc_default_params())
 
     # Called once on exception and once on close_run
     mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
@@ -199,10 +249,9 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     mock_check_topup: MagicMock,
     mock_wait: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    test_full_grid_scan_params: GridScanWithEdgeDetect,
-    grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_config_files,
+    zocalo: ZocaloResults,
     hyperion_fgs_params,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     flyscan_event_handler = MagicMock()
     flyscan_event_handler.xray_centre_results = "dummy"
@@ -210,16 +259,12 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     mock_create_parameters.return_value = hyperion_fgs_params
     simulate_xrc_result(
         sim_run_engine,
-        grid_detect_xrc_devices.zocalo,
+        zocalo,
         TEST_RESULT_LARGE,
     )
 
     msgs = sim_run_engine.simulate_plan(
-        i04_grid_detect_then_xray_centre(
-            grid_detect_xrc_devices,
-            test_full_grid_scan_params,
-            test_config_files["oav_config_json"],
-        ),
+        i04_grid_detect_then_xrc_default_params(),
     )
 
     # Assert order: pause -> open run -> close run -> unpause (set attenuator)
@@ -282,21 +327,13 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     mock_grid_detection_plan: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
     RE: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetect,
-    grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_config_files,
     hyperion_fgs_params,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     mock_create_parameters.return_value = hyperion_fgs_params
     mock_run_gridscan.side_effect = CompleteException
     with pytest.raises(CompleteException):
-        RE(
-            i04_grid_detect_then_xray_centre(
-                grid_detect_xrc_devices,
-                test_full_grid_scan_params,
-                test_config_files["oav_config_json"],
-            )
-        )
+        RE(i04_grid_detect_then_xrc_default_params())
 
     mock_verify_gap.assert_called_once()
 
@@ -313,17 +350,12 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
     mock_create_gridscan_callbacks: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
     RE: RunEngine,
-    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
-    test_full_grid_scan_params: GridCommon,
-    test_config_files,
+    i04_grid_detect_then_xrc_default_params,
 ):
     mock_create_gridscan_callbacks.side_effect = CustomException
     with pytest.raises(CustomException):
         RE(
-            i04_grid_detect_then_xray_centre(
-                grid_detect_xrc_devices,
-                test_full_grid_scan_params,
-                test_config_files["oav_config_json"],
+            i04_grid_detect_then_xrc_default_params(
                 udc=False,
             )
         )

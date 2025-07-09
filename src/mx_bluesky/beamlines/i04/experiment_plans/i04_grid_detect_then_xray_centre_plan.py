@@ -79,6 +79,7 @@ def create_devices(
     return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
 
 
+# See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
     parameters: GridCommon,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
