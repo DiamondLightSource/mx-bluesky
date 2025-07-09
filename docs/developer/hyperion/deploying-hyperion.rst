@@ -88,8 +88,7 @@ For creating the secrets, use ``kubectl create secret``:
 
 ::
 
-    kubectl create secret -n i03-beamline generic ispyb-hyperion-cfg --from-file=ispyb.cfg=<path-to-ispyb-hyperion-ixx
-.cfg>
+    kubectl create secret -n i03-beamline generic ispyb-hyperion-cfg --from-file=ispyb.cfg=<path-to-ispyb-hyperion-ixx.cfg>
 
 Production deployment
 ~~~~~~~~~~~~~~~~~~~~~
