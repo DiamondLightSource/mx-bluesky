@@ -21,7 +21,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
     read_hardware_plan,
 )

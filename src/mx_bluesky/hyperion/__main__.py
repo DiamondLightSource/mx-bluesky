@@ -218,7 +218,7 @@ class RunExperiment(Resource):
                 status_and_message = self.runner.start(plan, params, plan_name)
             except Exception as e:
                 status_and_message = make_error_status_and_message(e)
-                LOGGER.error(format_exception(e))
+                LOGGER.error("".join(format_exception(e)))
 
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()

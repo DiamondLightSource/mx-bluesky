@@ -11,7 +11,7 @@ from bluesky import preprocessors as bpp
 from h5py import Dataset, Datatype, File, Group
 from numpy import dtype
 
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (

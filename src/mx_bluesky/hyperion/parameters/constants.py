@@ -35,7 +35,6 @@ class I03Constants:
 
 @dataclass(frozen=True)
 class HyperionConstants:
-    DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
@@ -49,7 +48,7 @@ class HyperionConstants:
         if TEST_MODE
         else "https://daq-config.diamond.ac.uk/api"
     )
-    GRAYLOG_PORT = 12232
+    GRAYLOG_PORT = 12232  # Hyperion stream
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()

@@ -9,7 +9,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.experiment_plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
