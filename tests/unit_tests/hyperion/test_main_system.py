@@ -32,8 +32,7 @@ from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGIST
 from mx_bluesky.hyperion.parameters.cli import parse_cli_args
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
-from ...conftest import raw_params_from_file
-from ..conftest import mock_beamline_module_filepaths
+from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
 
 FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
