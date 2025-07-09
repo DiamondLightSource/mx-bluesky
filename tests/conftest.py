@@ -54,6 +54,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -114,6 +115,7 @@ TEST_RESULT_LARGE = [
         "n_voxels": 35,
         "total_count": 2387574,
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_MEDIUM = [
@@ -124,6 +126,7 @@ TEST_RESULT_MEDIUM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_SMALL = [
@@ -134,6 +137,7 @@ TEST_RESULT_SMALL = [
         "n_voxels": 35,
         "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_BELOW_THRESHOLD = [
@@ -144,6 +148,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "n_voxels": 1,
         "total_count": 2,
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 
@@ -156,6 +161,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -167,6 +173,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -178,6 +185,7 @@ TEST_RESULT_OUT_OF_BOUNDS_COM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -189,6 +197,7 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 
@@ -199,6 +208,7 @@ class SimConstants:
     # The following are values present in the system test ispyb database
     ST_VISIT = "cm14451-2"
     ST_SAMPLE_ID = 398810
+    ST_MSP_SAMPLE_IDS = [398816, 398819]
     ST_CONTAINER_ID = 34864
 
 
@@ -1736,7 +1746,6 @@ def dummy_rotation_params(tmp_path):
             tmp_path,
         )
     )
-    dummy_params.sample_id = TEST_SAMPLE_ID
     return dummy_params
 
 

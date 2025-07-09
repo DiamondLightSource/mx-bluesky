@@ -9,6 +9,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
+from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
@@ -180,6 +181,7 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(
             zocalo.bounding_box, [np.array([[3, 3, 3], [9, 9, 9]])]
         )
+        sim_run_engine.add_read_handler_for(zocalo.sample_id, [_NO_SAMPLE_ID])
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
                 hyperion_flyscan_xrc_composite,

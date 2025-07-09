@@ -311,6 +311,7 @@ def _xrc_result_in_boxes_to_result_in_mm(
         ),
         max_count=xrc_result["max_count"],
         total_count=xrc_result["total_count"],
+        sample_id=xrc_result["sample_id"],
     )
 
 
