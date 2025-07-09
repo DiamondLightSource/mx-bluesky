@@ -4,6 +4,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
 
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -12,6 +13,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
+from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 HYPERION_USER = "Hyperion"
@@ -39,12 +41,20 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
     while requested_user == HYPERION_USER:
 
         def inner_loop():
-            parameter_list: Sequence[LoadCentreCollect] = (
+            parameter_list: Sequence[MxBlueskyParameters] = (
                 create_parameters_from_agamemnon()
             )
             if parameter_list:
                 for parameters in parameter_list:
-                    yield from load_centre_collect_full(composite, parameters)
+                    match parameters:
+                        case LoadCentreCollect():
+                            yield from load_centre_collect_full(composite, parameters)
+                        case Wait():
+                            yield from bps.sleep(parameters.duration_s)
+                        case _:
+                            raise AssertionError(
+                                f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                            )
             else:
                 yield from bps.mv(baton.requested_user, NO_USER)
 
