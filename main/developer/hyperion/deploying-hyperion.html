@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Building a deployable Docker image &#8212; mx-bluesky 1.0.1.dev290+g50986175a documentation</title>
+    <title>Building a deployable Docker image &#8212; mx-bluesky 1.0.1.dev291+g162ae1f55 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=f700011b"></script>
+    <script src="../../_static/documentation_options.js?v=4da342b0"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -565,6 +565,12 @@ are not already present:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">rmq-creds</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">rmq-api-reader</span></code></p></li>
 </ul>
+<p>In addition, an ispyb credentials secret must be created with the following name:
+* <code class="docutils literal notranslate"><span class="pre">ispyb-hyperion-cfg</span></code></p>
+<p>For creating the secrets, use <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">create</span> <span class="pre">secret</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kubectl</span> <span class="n">create</span> <span class="n">secret</span> <span class="o">-</span><span class="n">n</span> <span class="n">i03</span><span class="o">-</span><span class="n">beamline</span> <span class="n">generic</span> <span class="n">ispyb</span><span class="o">-</span><span class="n">hyperion</span><span class="o">-</span><span class="n">cfg</span> <span class="o">--</span><span class="n">from</span><span class="o">-</span><span class="n">file</span><span class="o">=</span><span class="n">ispyb</span><span class="o">.</span><span class="n">cfg</span><span class="o">=&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">ispyb</span><span class="o">-</span><span class="n">hyperion</span><span class="o">-</span><span class="n">ixx</span><span class="o">.</span><span class="n">cfg</span><span class="o">&gt;</span>
+</pre></div>
+</div>
 </section>
 <section id="production-deployment">
 <h3>Production deployment<a class="headerlink" href="#production-deployment" title="Link to this heading">#</a></h3>
