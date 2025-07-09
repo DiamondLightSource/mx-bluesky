@@ -18,6 +18,6 @@ jobs:
       - name: Package and push chart
         if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
-          helm dependencies update helm/daq-config-server
-          helm package helm/daq-config-server --version ${{ steps.meta.outputs.version }} --app-version ${{ steps.meta.outputs.version }} -d /tmp/
-          helm push /tmp/daq-config-server-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/diamondlightsource/charts
+          helm dependencies update helm/mx-bluesky-blueapi
+          helm package helm/mx-bluesky-blueapi --version ${{ steps.meta.outputs.version }} --app-version ${{ steps.meta.outputs.version }} -d /tmp/
+          helm push /tmp/mx-bluesky-blueapi-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/diamondlightsource/charts
