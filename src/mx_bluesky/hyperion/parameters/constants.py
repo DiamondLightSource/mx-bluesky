@@ -8,6 +8,8 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     ExperimentParamConstants,
+    FeatureFlags,
+    FeatureFlagSources,
     HardwareConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
@@ -24,13 +26,24 @@ class I03Constants:
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
-    USE_PANDA_FOR_GRIDSCAN = False
-    SET_STUB_OFFSETS = False
+    USE_GPU_RESULTS = True
     OMEGA_FLIP = True
     ALTERNATE_ROTATION_DIRECTION = True
 
-    # Turns on GPU processing for zocalo and uses the results that come back
+
+# These currently exist in GDA domain.properties
+class HyperionFeatureFlagSources(FeatureFlagSources):
+    USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
+    USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
+    SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
+
+
+# Use these defaults if we can't read from the config server
+@dataclass
+class HyperionFeatureFlags(FeatureFlags):
     USE_GPU_RESULTS = True
+    USE_PANDA_FOR_GRIDSCAN = False
+    SET_STUB_OFFSETS = False
 
 
 @dataclass(frozen=True)

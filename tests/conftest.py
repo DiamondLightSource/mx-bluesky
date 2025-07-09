@@ -1793,3 +1793,25 @@ def assert_images_pixelwise_equal(actual, expected):
             assert bytes_expected_bytes, (
                 f"Actual and expected images differ, {actual} != {expected}"
             )
+
+
+def _fake_config_server_read(filepath: str | Path, desired_return_type=str):
+    filepath = Path(filepath)
+    # Minimal logic required for unit tests
+    with filepath.open("r") as f:
+        contents = f.read()
+        if desired_return_type is str:
+            return contents
+        elif desired_return_type is dict:
+            return json.loads(contents)
+
+
+@pytest.fixture(autouse=True)
+def test_friendly_config_server():
+    # Don't actually talk to central service during unit tests
+
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents",
+        side_effect=_fake_config_server_read,
+    ):
+        yield
