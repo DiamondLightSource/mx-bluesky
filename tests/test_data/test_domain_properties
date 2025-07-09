@@ -1,0 +1,519 @@
+include=${sys:gda.install.git.loc}/gda-mx.git/configurations/mx-config/properties/logging.properties
+include=${sys:gda.install.git.loc}/gda-core.git/core-config/properties/ispybcreds.properties
+
+gda.agamemnon.url = http://agamemnon.diamond.ac.uk/getnextcollect/
+
+gda.mx.useHolderSampleInPrefix=true
+gda.JCameramanDisplayPanel.BeamSizeIsEditable=False
+gda.JCameramanDisplayPanel.SlitSizeIsEditable=false
+gda.JCameramanDisplayPanel.showBeamSizeFromFile=False
+gda.accesscontrol.useReducedGUI = false
+gda.beamline.manual=http://intranet.diamond.ac.uk/MXManual.html
+gda.beamline.name.upper=I03
+gda.beamline.name=i03
+gda.beamlinebusy.state=beamlineBusyState
+gda.beamlinehealth.folder = ${gda.beamline.var}
+gda.browserCmd=/dls_sw/apps/mx-scripts/DLS_Launchers/runFirefox.sh %s
+gda.data.numtracker.extension=${gda.beamline.name}
+gda.data.scan.datawriter.datadir = ${gda.data}/$year$/$visit$
+gda.data.scan.datawriter.dataFormat=SrsDataFile
+#gda.data.scan.datawriter.dataFormat=NexusDataWriter
+gda.data.scan.datawriter.srsExperiment=commissionning
+gda.data.scan.datawriter.srsProject=${gda.factory.factoryName}
+gda.data.scan.datawriter.srsStation=ws002
+gda.data.scan.runNum = ${gda.var}/run/
+gda.datacollection.script=dataCollectionScript
+gda.defVisit=mx33658-69
+
+gda.cbf.template.template.file=${gda.cbftt.dir}/dls-i03.cbftt
+gda.cbf.template=${gda.var}/cbf-header
+
+gda.epics.beamline.name = BL03I
+gda.epics.request.timeout = 10
+gda.epics.types.xml   = ${gda.config}/xml/gda-types.xml
+gda.exafs.buttonFontSize=12
+gda.exafs.edgeList="K L1 L2 L3"
+gda.exafs.maxEnergy=24000.
+gda.exafs.minEnergy=7000.
+gda.exafs.twoD=1.0
+gda.exptTableModel.maxOmegaSpeed=1000
+gda.exptTableModel.maxEnergy=24000
+gda.exptTableModel.maxFirstImageNumber=1
+gda.exptTableModel.maxImageTime=1
+gda.exptTableModel.maxPasses=10
+gda.exptTableModel.maxResolution=30
+gda.exptTableModel.maxSDDist=800.
+gda.exptTableModel.maxSampleStep=90.
+gda.exptTableModel.maxWavelength=1.77
+gda.exptTableModel.minEnergy=7000
+gda.exptTableModel.minFirstImageNumber=1
+gda.exptTableModel.minImageTime=${gda.detector.1.minExposureTime}
+gda.exptTableModel.minNumImages=1
+gda.exptTableModel.minPasses=1
+gda.exptTableModel.minResolution=.64
+gda.exptTableModel.minSDDist=150.0
+gda.exptTableModel.maxTransmission=100.0
+gda.exptTableModel.imageTimeFormatString=%.4f
+
+gda.exptTableModel.minSampleOmegaStart=-900
+gda.exptTableModel.maxSampleOmegaStart=2000
+
+# thick, 3 well plates
+#gda.exptTableModel.plate.minSampleOmegaStart=0.0
+#gda.exptTableModel.plate.maxSampleOmegaStart=20.0
+# thin, 2 well plates
+gda.exptTableModel.plate.minSampleOmegaStart=-9.0
+gda.exptTableModel.plate.maxSampleOmegaStart=38.5
+# prion work
+#gda.exptTableModel.plate.minSampleOmegaStart=-5.0
+#gda.exptTableModel.plate.maxSampleOmegaStart=25.0
+
+gda.exptTableModel.minSampleStep=.001
+gda.exptTableModel.minWavelength=.49
+gda.exptTableModel.showAperturePosition=false
+gda.exptTableModel.showBeamstopPosition=True
+gda.exptTableModel.minChiStart=-0.5
+gda.exptTableModel.maxChiStart=45
+maxSampleHolder=37
+gda.factory.allowExceptionInConfigure=False
+gda.factory.doStringInterpolation=True
+gda.frame.DividerLocation=0.85
+gda.gui.displayingScreen=left
+gda.gui.fractionalSize=0.89
+gda.gui.nosOfScreens=2
+
+# configure the RCP Application Window
+gda.gui.titlebar.prefix =Beamline ${gda.beamline.name.upper} - Tel. +44 1235 778707 (Out of hours: ${gda.facility.EHC.phone})
+gda.gui.usePerspectiveBar=false
+gda.gui.useToolBar=false
+gda.gui.save.restore=false
+gda.gui.window.force.intro=true
+gda.gui.window.start.height=1100
+gda.gui.window.start.width=1900
+gda.gui.window.start.maximise=false
+
+gda.gui.useNewActions=false
+gda.gui.useSearchActions=false
+gda.gui.useRunActions=false
+gda.gui.usePerspectiveCustomActions=false
+gda.gui.useNewWindowActions=false
+gda.gui.useImportActions=false
+gda.gui.useExportActions=false
+gda.gui.useCloseMenu=true
+gda.gui.closeMenuFeedbackFile=/dls_sw/dasc/mxgda/user_restart_reasons.txt
+
+gda.gui.x=0
+gda.gui.beans.xml=${gda.config}/clients/rcp/${gda.mode}/client.xml
+gda.gui.y=0
+gda.hutchutils.script.state=hutchutilsScriptState
+gda.image.xml=${gda.config}/xml/image.xml
+gda.images.displayConfigFile=${gda.var}/display.configuration
+gda.images.horizontaldirection=left
+gda.images.menuStyle=false
+gda.images.robotConfigFile=${gda.config}/properties/robot.configuration
+gda.images.rtpAddress=224.120.120.120
+gda.images.rtpPort=22224
+gda.images.toolTips=true
+gda.instrument=${gda.beamline.name}
+gda.jython.beamlineParametersFile = ${bl.daq.domainproperties.location}/beamlineParameters
+gda.jython.finderNameMappingFile = ${gda.config}/scripts/finderNameMapping
+gda.jython.namespaceMappingFile = ${gda.config}/scripts/jythonNamespaceMapping
+gda.jython.startupScript=${gda.config}/../i03-config/scripts/localStation.py
+gda.mx.display3ClickWarning=false
+gda.mx.BeamSizePanelEnabled = true
+gda.mx.CameraShowScale=true
+gda.mx.GonioBigNudge=180
+gda.mx.GonioLittleNudge=90
+gda.mx.MiddleClickShowCoordinates=true
+gda.mx.ShowBeamCentreCheckbox=false
+gda.mx.ShowFocalSpotAsEllipseCheckbox=false
+gda.mx.ShowMoveOnClickAsCheckbox=false
+gda.mx.UserOptionsEnabled=true
+gda.mx.doExtendedThaw=false
+gda.mx.extendedThawSecondsPerOrientation=15
+gda.mx.asynchronousThawSeconds=60
+gda.mx.actor.havefastscreenmodeoption=true
+gda.mx.actor.specialpositions=4
+gda.mx.actor.specialposition1=Alignment Pin
+gda.mx.actor.specialposition2=Se
+gda.mx.actor.specialposition3=Foils
+gda.mx.actor.specialposition4=Square Needle
+gda.mx.actor.startwithfastscreenmode=true
+gda.mx.anneal_samplechanger_independent=true
+gda.mx.anneal_times_to_check_cryojet_out=10
+gda.mx.aperture.scannable=aperture
+#the field below is empty (required)
+gda.mx.attenuation.apply.field.name=
+gda.mx.attenuation.need.apply=true
+gda.mx.beamline.default.zoom = 1.0
+gda.mx.beamline.default.aperture = LARGE_APERTURE
+gda.mx.beamline.default.beamstop.position = STANDARD
+gda.mx.beamline.default.cryoselect = CryoJet
+gda.mx.beamline.default.cryojet.temp.threshold = 110
+gda.mx.beamline.default.focus.option = sample
+gda.mx.beamlineEnergyAngstromSMU=BeamLineEnergy_Angstrom
+gda.mx.beamlineEnergyeVSMU=BeamLineEnergy_eV
+gda.mx.beamlineparametersxml=mx_parameters
+gda.mx.beamSizeXScannable=beamSizeX
+gda.mx.beamSizeYScannable=beamSizeY
+gda.mx.beamstopName=bs
+gda.mx.beamstopZName=bsz
+gda.mx.dashBoardEditable=true
+gda.mx.datacollection.useAssociatedCentringMode=true
+gda.mx.exptShutter=expt_shutter
+gda.mx.exptShutterController=exptShutterScriptController
+#not the exact same type of filter array as I02/I03
+gda.mx.filterarray = false
+gda.mx.fluorescenceDetectorName=FluorescenceDetector
+gda.mx.fluorescenceScanController=flurScanController
+gda.mx.fluorescenceScanControllerParameters=hutch_utilities.fluorescence_scan_parameters
+gda.mx.fluorescenceScanUnits=eV
+gda.mx.gonioZMax=100
+gda.mx.gonioZMin=0
+gda.mx.parametersName=PXParameters
+gda.mx.samplechanger.annealscript=sample_control.annealSample
+gda.mx.samplechanger.centrelidscript=sample_control.centrelid
+gda.mx.samplechanger.disposescript=sample_control.disposeSample
+gda.mx.samplechanger.dryscript=sample_control.dry
+gda.mx.samplechanger.enablescript=sample_control.enableSampleChanger
+gda.mx.samplechanger.fastmodetimeout=7200
+gda.mx.samplechanger.gotowaitscript=sample_control.gotowait
+gda.mx.samplechanger.loadscript=sample_control.loadSample
+gda.mx.samplechanger.scriptcontroller=samplechangerController
+gda.mx.samplechanger.storescript=sample_control.storeManuallyMountedSample
+gda.mx.samplechanger.unloadscript=sample_control.unloadSample
+gda.mx.showQuickAlignButton=true
+gda.mx.showSlitSize=true
+gda.mx.showWavelength=true
+gda.mx.slitsizeXScannable=s4_xsize
+gda.mx.slitsizeYScannable=s4_ysize
+gda.mx.verify.idgap=true
+gda.mx.gap.discrepancy.threshold.mm = 2.0e-3
+gda.mx.visualiseBeamController=visualiseBeamController
+gda.px.Fluorescence.defaultDetector=mca
+gda.px.TotalUsedOmega=361.
+
+gda.px.apertures = LARGE_APERTURE MEDIUM_APERTURE SMALL_APERTURE
+gda.px.apertures.plate = LARGE_APERTURE MEDIUM_APERTURE SMALL_APERTURE
+
+gda.px.apertures.LARGE_APERTURE.displayname=100\u03BCm
+gda.px.apertures.LARGE_APERTURE.size=100
+
+gda.px.apertures.MEDIUM_APERTURE.displayname=50\u03BCm
+gda.px.apertures.MEDIUM_APERTURE.size=50
+
+gda.px.apertures.SMALL_APERTURE.displayname=20\u03BCm
+gda.px.apertures.SMALL_APERTURE.size=20
+
+gda.px.camera.bl_log=/tmp/bl.log
+gda.px.camera.maxDetectorDistance=529
+gda.px.camera.minDetectorDistance=59
+gda.px.detector.xformstatusfile = ${gda.beamline.var}/adxvAutoload.txt
+gda.px.detector.safeDistance=200
+gda.px.detectorDistanceProtectionLevel=0
+gda.px.expttable.default.image.time=0.004
+gda.px.expttable.default.sample.step=0.1
+gda.px.expttable.default.wavelength=0.97625
+gda.px.fluorescence=fluorescence
+gda.px.fluorescenceScan.PSViewerCmd=display
+gda.px.fluorescenceScan.chooch.path=/dls_sw/apps/chooch/5.0.9a/bin/choochrunner
+gda.px.fluorescenceScan.chooch.results=${gda.var}/chooch_results.xml
+gda.px.fluorescenceSpectrum.results.plotname=Data Vector
+gda.px.fluorescenceSpectrum.results=${gda.var}/fluorescenceSpectrum_results.dat
+gda.px.frame.sampleImage=${gda.var}/pxgen/defaultImage.jpg
+gda.px.gridscan.allowCollectUsingColumns=true
+gda.px.oav.centring.keyence=false
+gda.px.loop.centring.enabled=false
+gda.px.oav.centring.loop=false
+gda.px.xray.centring.enabled=true
+gda.px.xray.centring.useRoi=true
+gda.px.xray.centring.roi.timeout=600
+gda.px.xray.centring.full.timeout=600
+
+# centring: one of MANUAL LOOP XRAY
+gda.px.default.centring.option=MANUAL
+gda.px.mono.0_979=true
+gda.px.mono.1_2=false
+gda.px.mono.1_488=false
+gda.px.mono.lowerlimit=8697.0
+gda.px.mono.upperlimit=9570.0
+gda.px.monofile=.monoposition
+gda.px.onLine=true
+gda.px.StillExposureTime.initial=0.004
+gda.px.StillExposureTime.min=${gda.detector.1.minStillExposureTime}
+gda.px.sampleChanger.file=${gda.var}/sampleChanger.txt
+gda.px.sampleChangerPresent=true
+gda.mx.samplechanger.showclearpinbutton=false
+gda.px.samplecontrol.allowbeamaxismovement=true
+#TODO see gda.images.camera.Utilities.micronToXYZMove
+gda.px.samplecontrol.omegadirection=ANTICLOCKWISE
+gda.px.twoD=6.271
+gda.samplechanger.state=sampleChangerState
+gda.samplecontrol.script.action=sampleControlScriptAction
+gda.samplecontrol.script.state=sampleControlScriptState
+gda.samplecontrol.state=sampleControlState
+gda.scan.useScanPlotSettings=true
+gda.util.userOptions.configDirTemplate=${gda.config}/xml
+gda.util.userOptions.defaultConfigName=GDAUserOptions
+#jactorSampleChanger.host=${gda.beamline.name}-actor02
+#gda.px.JCameramanController.logsDir=${gda.logs.dir}/rigaku
+
+gda.px.platescreening=false
+gda.mx.insitu=false
+
+#if cornea scan is true, make sure platescreening is true!
+
+gda.px.corneascan=false
+
+# locations of container and geometry files specified from the mode (eg live, dummy) java properties file
+
+# Fluorescence properties
+gda.mx.fluo.basepv=${gda.epics.beamline.name}-EA-FLU-01
+gda.mx.fluo.mca.regions=32
+gda.mx.fluo.transmission.limits.defined=true
+gda.mx.fluo.transmission.limit.lower=0.0002
+gda.mx.fluo.transmission.limit.upper=0.02
+
+#HC1 : true->HC1 is ready and available for use in experiments, false-> any other state
+gda.px.humiditycontroller.available=false
+#HC1: camera setup when calculating drop size
+#Note oavCamInput relates to if input is from CAM or other 
+gda.px.humiditycontroller.oavCamInput=true
+gda.px.humiditycontroller.direction=1
+gda.px.humiditycontroller.brightness=25
+gda.px.humiditycontroller.exposure=0.075
+gda.px.humiditycontroller.acqPeriod=0.05
+gda.px.humiditycontroller.gain=1
+gda.px.humiditycontroller.cannyEdgeUpperThreshold=20.0
+gda.px.humiditycontroller.cannyEdgeLowerThreshold=5.0
+gda.px.humiditycontroller.zoom=5.0
+gda.px.humiditycontroller.medianBlur=51
+
+gda.mx.ispyb.available=true
+
+gda.mx.experimentcontrolpanel.statussize=1000
+gda.mx.prebeamdumpmargin.seconds=600
+gda.px.autoalign.pretimeout=300
+gda.px.autoalign.posttimeout=1200
+
+gda.px.smargon.moveTimeout=1200
+
+gda.gtab.scannable.name=goniometerTable
+gda.mx.undulatorGapScannable=Undulator_Gap
+
+gda.mx.skip.file.existence.check=false
+
+gda.feedback.smtp.host = localhost
+gda.feedback.recipients = BLI03Staff@diamond.ac.uk
+gda.principalbeamlinescientist = Dave.Hall@diamond.ac.uk
+gda.developers = MXGDASUPPORT@diamond.ac.uk
+
+gda.mx.focus.options=sample
+#gda.mx.focus.options=sample defocussed detector minibeam
+gda.mx.focus.sample = Sample Focus|80|20
+gda.mx.focus.detector = Detector Focus|90|35
+gda.mx.focus.defocussed = Defocussed|100|100
+gda.mx.focus.minibeam = High E Minibeam|50|10
+
+gda.mx.focus.minibeam.minenergy=12200
+gda.mx.focus.minibeam.maxenergy=13200
+
+gda.clientsamplemovementservice.gonioonleft=false
+
+gda.rcp.mx.client.ui.composites.CryojetHc1Toggle.enabled = true
+gda.rcp.mx.client.ui.disableRealign.whenFeedbackOn = true
+
+gda.rcp.mx.views.showTreatment = true
+gda.rcp.mx.views.showCalibration = true
+gda.rcp.mx.views.showAlignment = true
+gda.rcp.mx.views.showRealign = true
+gda.rcp.mx.views.showScintillator = true
+gda.rcp.mx.views.showBeamSize = true
+gda.rcp.mx.views.showTransmissionControl = true
+gda.rcp.mx.views.showAttenuator = true
+gda.rcp.mx.views.showBeamPositionFeedback = true
+
+
+gda.mx.motd.file=/dls_sw/${gda.beamline.name}/etc/motd
+
+gda.mx.bart.proposal_positions.file=/dls_sw/${gda.beamline.name}/etc/proposal_positions.json
+gda.mx.bart.reading_barcodes=true
+
+gda.mx.screening.oscillation = 0.5
+gda.mx.screening.delta = 45
+gda.mx.screening.numberOfImages = 3
+gda.mx.screening.exposureTime = 0.01
+gda.mx.screening.transmission = 30
+gda.mx.screening.firstImageNumber = 1
+
+gda.mx.oav.base.pv = BL03I-DI-OAV-01:
+gda.mx.oav.width=1024
+gda.mx.oav.height=768
+gda.mx.oav.reset.monitorIntervalMillis=300000
+gda.mx.oav.reset.waitTimeSeconds=120
+# auto set OAV Acquire options: On, Off
+gda.mx.oav.reset.autoSetAcquireDefault=Off
+
+gda.mx.xbpm_feedback.on=false
+
+gda.mx.showXyz=true
+gda.px.gridscan.boxselection=true
+
+gda.px.gridscan.pmac.available=true
+gda.px.gridscan.pmac.fluo_data=false
+
+gda.px.oav.centring.pinTip=True
+
+# Main Hyperion settings
+
+#####################################################
+
+# Toggle to stop all hyperion features
+gda.mx.hyperion.enabled=true
+
+####################
+
+# Hyperion will do the centring
+gda.mx.hyperion.centering.enabled=true
+
+# Hyperion will do the rotation
+gda.mx.hyperion.rotation.enabled=true
+
+# Hyperion will do the robot load and unload
+# Note that robot_load will also do centring so having this 
+# enabled and gda.mx.hyperion.centering.enabled=false makes no sense
+gda.mx.hyperion.robot_load.enabled=true
+
+# Do the full UDC plan in hyperion - EXPERIMENTAL
+gda.mx.hyperion.load_centre_collect.enabled=true
+
+#####################################################
+
+# More fine-grained hyperion settings
+
+gda.gridscan.hyperion.flaskServerAddress=localhost:5005
+# gda.gridscan.hyperion.flaskServerAddress=i03-hyperion.diamond.ac.uk:443
+gda.gridscan.hyperion.multipin=false
+gda.gridscan.hyperion.grid.detection=true
+
+#use hyperion for rotation all the time
+gda.mx.hyperion.override_udc_only=true
+
+#set stub offsets to center after Hyperion has centered - EXPERIMENTAL
+gda.mx.hyperion.do_stub_offsets=false
+
+#use the panda to run constant velocity grid scans instead of the original zebra fast grid scans - EXPERIMENTAL
+gda.mx.hyperion.use_panda_for_gridscans=false
+
+#distance given to the smargon to accelerate to and decelerate from its desired velocity - for panda grid scans
+gda.mx.hyperion.panda_runnup_distance_mm=0.16
+
+#use the ophyd device for pin tip detection, should be faster
+gda.mx.hyperion.ophyd_pin_tip=true
+
+#run the gpu analysis in parallel
+gda.mx.hyperion.xrc.run_gpu_processing_in_parallel=true
+
+#wait for GPU results and CPU results, compare then take the CPU ones
+gda.mx.hyperion.xrc.compare_cpu_and_gpu=true
+
+#Take the first results that we get from zocalo (most likely GPU ones)
+gda.mx.hyperion.xrc.use_gpu_results=true
+
+#Set box size for hyperion
+gda.mx.hyperion.xrc.box_size=20.0
+
+#Do rotation snapshots in hyperion
+gda.mx.hyperion.rotation.snapshots.enabled=true
+
+#Set energy using hyperion
+gda.mx.hyperion.set_energy.enabled=false
+
+#Use ROI on the detector for xray centring
+gda.mx.hyperion.xrc.use_roi_mode=true
+
+
+#####################################################
+
+gda.mx.linescans.allow_helical=true
+
+gda.exptTableModel.plate.minXStart=-100000
+gda.exptTableModel.plate.maxXStart=5000
+gda.exptTableModel.plate.minYStart=-100000
+gda.exptTableModel.plate.maxYStart=100000
+
+gda.mx.shutter.open.time=0.0382
+
+gda.mx.detectorshutter=true
+
+gda.px.LineScanOscillation.initial=0.1
+gda.px.LineScanExposureTime.initial=0.004
+gda.px.LineScanTransmission.initial=30
+gda.px.LineScanResolution.initial=2.5
+gda.px.LineScanWedges.initial=10
+gda.px.LineScanImagesPerWedge.initial=100
+
+gda.mx.samplechanger.blockedpositions.enabled = true
+
+gda.mx.pitchScanWhenEnergyChanged=false
+
+gda.detector.id.1=78
+gda.detector.serial.1=E-32-0117
+gda.detector.properties.json=${gda.json.dir}/detector_params.json
+
+# sample stage setting
+# use either smargon, stuboffsets or singleaxis
+# all properties files live in same directory
+include = ${bl.daq.domainproperties.location}/stuboffsets.properties
+
+
+# detector setting
+include = ${gda.commonProperties.directory}/eiger.properties
+gda.spring.profiles.active=stuboffsets,eiger
+
+gda.detector.1.minExposureTime=0.003
+gda.detector.1.minStillExposureTime=0.004
+
+gda.mx.imagenumberdigits=5
+
+gda.mx.topup.enabled = true
+gda.mx.topup.threshold_percentage = 20
+gda.mx.topup.instability_time = 27
+
+# The limit is >100 for the Eiger, but the limit in ISPyB is 45 so use this
+gda.mx.eigerMaxPrefixLength = 45
+
+# The limit for Pilatus is due to camserver only being able to take 23
+gda.mx.pilatusMaxPrefixLength = 23
+
+#The values for beamstop I_pin check min and max parameters
+gda.detector.distance.limit.min = 150
+gda.detector.distance.limit.max = 800
+
+gda.mx.hutchUtils.beamstopCheckWaitsForBeam = True
+
+gda.mx.eiger.swmr.enabled.data.collection = false
+gda.mx.eiger.swmr.enabled.grid.scan = false
+gda.mx.eiger.swmr.enabled.line.scan = false
+gda.mx.eigerArmMaxAttempts = 4
+
+
+########-----UDC Settings-----###########
+# Make Unavailable to disable UDC by default
+gda.mx.udc.available.default = Available
+gda.mx.udc.underscore.guard.enable = true
+
+gda.mx.udc.hibernation.enabled=false
+gda.mx.udc.hibernation.polling.seconds=20
+
+#wavelength range
+gda.mx.udc.maxWavelength = 2.06675
+gda.mx.udc.minWavelength = 0.52
+gda.mx.udc.maxTransmission = 0.1
+gda.mx.udc.phasing.maxTransmission = 0.03
+gda.mx.udc.phasing.minImageTime = 0.01
+
+
+#Add all beamline specific keys before this line
+include=${sys:gda.facility.dir}/properties/${sys:gda.mode}/${sys:gda.mode}_facility_java.properties
+#Do not set any keys after this line as the value may not get set as expected.

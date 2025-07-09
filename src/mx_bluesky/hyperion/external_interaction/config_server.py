@@ -10,7 +10,7 @@ from mx_bluesky.hyperion.parameters.constants import (
 @cache
 def get_hyperion_config_server():
     return MXConfigServer(
-        "https://change-me-back-daq-config.diamond.ac.uk",
+        "test",
         feature_sources=HyperionFeatureFlagSources,
         feature_dc=HyperionFeatureFlags,
     )  # TODO make url default in config server repo?

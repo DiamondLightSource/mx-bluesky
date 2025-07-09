@@ -15,20 +15,6 @@ from mx_bluesky.common.parameters.constants import (
 FEATURE_FLAG_CACHE_LENGTH = 60 * 5
 
 
-def parse_file_to_dict(filename):
-    result = {}
-    with open(filename) as file:
-        for line in file:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue  # Skip empty lines and full-line comments
-            line = line.split("#", 1)[0].strip()  # Remove inline comments
-            if "=" in line:
-                key, value = map(str.strip, line.split("=", 1))
-                result[key] = value
-    return result
-
-
 """Make methods to get the specific bits we need in nicely formatted ways. Wrap around a try so we try to read from /dls_sw if the config server fails"""
 
 T = TypeVar("T", bound=FeatureFlags)
@@ -72,9 +58,8 @@ class MXConfigServer(ConfigServer, Generic[T]):
                 line = line.split("#", 1)[0].strip()  # Remove inline comments
                 if "=" in line:
                     key, value = map(str.strip, line.split("=", 1))
-                    if (
-                        key in self.feature_sources._value2member_map_
-                    ):  # Can just use "in" as of python 3.12
+                    # Can just use "in" as of python 3.12
+                    if key in self.feature_sources._value2member_map_:
                         feature_dict[key] = value
             # TODO put all this in try
             self._time_since_feature_get = time()

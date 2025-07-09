@@ -13,7 +13,7 @@ BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 
 GDA_DOMAIN_PROPERTIES_PATH = (
-    "/dls_sw/i03/software/daq_configuration/domain/domain.properties"  # change back to test
+    "tests/test_data/test_domain_properties"
     if TEST_MODE
     else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
 )
