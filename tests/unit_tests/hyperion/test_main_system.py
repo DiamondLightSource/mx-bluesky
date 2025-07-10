@@ -51,6 +51,7 @@ START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
+FLUSH_LOGS_ENDPOINT = "flush_debug_log"
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 
 SECS_PER_RUNENGINE_LOOP = 0.1
@@ -634,7 +635,7 @@ def test_exception_in_udc_terminates_bluesky_runner_but_does_not_terminate_flask
     pass
 
 
-# XXX clarify what should the stop method do as an endpoint / do we need it?
+# TODO clarify what should the stop method do as an endpoint / do we need it?
 # https://github.com/DiamondLightSource/mx-bluesky/issues/1151
 def test_stop_via_rest_terminates_bluesky_runner_but_does_not_terminate_flask():
     pass
@@ -660,3 +661,10 @@ def test_hyperion_in_exposes_run_endpoint_only_if_gda_mode_selected(
             if c.args[0] == RunExperiment
         ]
     ) == (1 if mode == "gda" else 0)
+
+
+@patch("mx_bluesky.hyperion.__main__.flush_debug_handler")
+def test_flush_logs(mock_flush_debug_handler: MagicMock, test_env: ClientAndRunEngine):
+    response = test_env.client.put(FLUSH_LOGS_ENDPOINT)
+    check_status_in_response(response, Status.SUCCESS)
+    mock_flush_debug_handler.assert_called_once()

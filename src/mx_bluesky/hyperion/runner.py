@@ -2,7 +2,7 @@ import threading
 from abc import abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from queue import Queue
+from queue import Empty, Queue
 from typing import Any
 
 from blueapi.core import BlueskyContext
@@ -135,14 +135,23 @@ class BlueskyRunner:
 
     def _stopping_thread(self):
         try:
+            # abort() causes the run engine to throw a RequestAbort exception
+            # inside the plan, which will propagate through the contingency wrappers.
+            # When the plan returns, the run engine will raise RunEngineInterrupted
             self.RE.abort()
             self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
             self.current_status = make_error_status_and_message(e)
 
-    def fetch_next_command(self) -> Command:
-        """Fetch the next command from the queue, blocks if one is not available."""
-        return self._command_queue.get()
+    def fetch_next_command(self, block: bool = True) -> Command | None:
+        """Fetch the next command from the queue
+        Args:
+            block: True to block if no command is in the queue, False to return None instead
+        """
+        try:
+            return self._command_queue.get(block=block)
+        except Empty:
+            return None
 
 
 class GDARunner(BlueskyRunner):
