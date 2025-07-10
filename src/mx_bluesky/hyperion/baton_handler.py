@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from functools import partial
 from typing import Any
 
-from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
@@ -81,10 +80,6 @@ class UDCRunner(BlueskyRunner):
                         )
                     self.current_status = make_error_status_and_message(e)
                     raise
-
-
-def create_runner(context: BlueskyContext) -> BlueskyRunner:
-    return UDCRunner(context)
 
 
 def run_udc_when_requested(context: BlueskyContext,
