@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import run_coroutine_threadsafe, sleep
 from collections.abc import Generator
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
@@ -7,6 +8,7 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.beamlines import i03
 from dodal.devices.baton import Baton
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put, set_mock_value
@@ -15,6 +17,7 @@ from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
     MxBlueskyParameters,
 )
+from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
@@ -27,9 +30,9 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 @pytest.fixture()
-async def baton(sim_run_engine: RunEngineSimulator) -> Baton:
+async def baton(RE: RunEngine, sim_run_engine: RunEngineSimulator) -> Baton:
     async with init_devices(mock=True):
-        baton = Baton("")
+        baton = i03.baton(connect_immediately=True, mock=True)
     set_mock_value(baton.requested_user, HYPERION_USER)
 
     def get_requested_user(msg):
@@ -49,8 +52,9 @@ async def baton(sim_run_engine: RunEngineSimulator) -> Baton:
 
 
 @pytest.fixture()
-def udc_runner(baton: Baton) -> Generator[UDCRunner, None, None]:
+def udc_runner(baton: Baton, RE: RunEngine) -> Generator[UDCRunner, None, None]:
     mock_context = MagicMock()
+    mock_context.run_engine = RE
     with patch(
         "mx_bluesky.hyperion.baton_handler.find_device_in_context", return_value=baton
     ):
@@ -71,8 +75,8 @@ def mock_load_centre_collect():
         yield mock_plan
 
 
-@patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler._main_hyperion_loop", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler._move_to_default_state", new=MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.bps.sleep")
 def test_loop_until_hyperion_requested(
     mock_sleep: MagicMock, udc_runner: UDCRunner, baton: Baton, RE: RunEngine
@@ -91,7 +95,7 @@ def test_loop_until_hyperion_requested(
     assert mock_sleep.call_count == number_of_sleep_calls
 
 
-@patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler._main_hyperion_loop", new=MagicMock())
 def test_when_hyperion_requested_then_hyperion_set_to_current_user(
     baton: Baton, RE: RunEngine, udc_runner: UDCRunner
 ):
@@ -101,8 +105,8 @@ def test_when_hyperion_requested_then_hyperion_set_to_current_user(
     )
 
 
-@patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop")
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler._main_hyperion_loop")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_default_state")
 def test_when_hyperion_requested_then_default_state_and_collection_run(
     default_state: MagicMock,
     main_loop: MagicMock,
@@ -161,7 +165,7 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     await _assert_baton_released(baton)
 
 
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_default_state")
 async def test_when_exception_raised_in_default_state_then_baton_released(
     default_state: MagicMock, baton: Baton, RE: RunEngine, udc_runner: UDCRunner
 ):
@@ -220,7 +224,7 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
 
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_default_state")
 async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_once(
     default_state: MagicMock,
     agamemnon: MagicMock,
@@ -274,3 +278,27 @@ def test_main_loop_rejects_unrecognised_instruction_when_received(
 ):
     with pytest.raises(AssertionError, match="Unsupported instruction decoded"):
         sim_run_engine.simulate_plan(run_udc_when_requested(baton, MagicMock()))
+
+
+@patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+async def test_shutdown_releases_the_baton(
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: UDCRunner,
+    RE: RunEngine,
+    baton: Baton,
+):
+    mock_create_parameters_from_agamemnon.return_value = [
+        Wait(duration_s=10, parameter_model_version=PARAMETER_VERSION)
+    ]
+
+    async def wait_and_then_shutdown():
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        udc_runner.shutdown()
+
+    shutdown_task = run_coroutine_threadsafe(wait_and_then_shutdown(), RE.loop)
+
+    udc_runner.wait_on_queue()
+
+    await _assert_baton_released(baton)
+    assert shutdown_task.done()
