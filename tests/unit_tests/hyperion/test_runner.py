@@ -25,7 +25,7 @@ def mock_composite():
 
 
 @pytest.fixture
-def runner(context, mock_composite) -> GDARunner:
+def runner(context, mock_composite):
     with patch.dict(
         "mx_bluesky.hyperion.experiment_plans.experiment_registry.PLAN_REGISTRY",
         {
