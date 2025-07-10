@@ -383,7 +383,7 @@ async def test_shutdown_releases_the_baton(
     baton: Baton,
 ):
     mock_create_parameters_from_agamemnon.return_value = [
-        Wait(duration_s=10, parameter_model_version=PARAMETER_VERSION)
+        Wait(duration_s=10, parameter_model_version=PARAMETER_VERSION)  # type: ignore
     ]
 
     async def wait_and_then_shutdown():

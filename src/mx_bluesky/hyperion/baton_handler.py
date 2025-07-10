@@ -182,7 +182,7 @@ def _hyperion_loop_exception_handler(runner: UDCRunner, exception: Exception):
     if runner.RE.state == "aborting":
         baton = find_device_in_context(runner.context, "baton", Baton)
         yield from _safely_release_baton(baton)
-        if command := runner.fetch_next_command(block=False):
+        if command := runner.try_fetch_next_command():
             if command.action == Actions.SHUTDOWN:
                 LOGGER.info("Shut down command received, shutting down Hyperion")
                 return

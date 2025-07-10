@@ -143,13 +143,14 @@ class BlueskyRunner:
         except Exception as e:
             self.current_status = make_error_status_and_message(e)
 
-    def fetch_next_command(self, block: bool = True) -> Command | None:
-        """Fetch the next command from the queue
-        Args:
-            block: True to block if no command is in the queue, False to return None instead
-        """
+    def fetch_next_command(self) -> Command:
+        """Fetch the next command from the queue, blocks if queue is empty."""
+        return self._command_queue.get()
+
+    def try_fetch_next_command(self) -> Command | None:
+        """Fetch the next command from the queue or return None if no command available."""
         try:
-            return self._command_queue.get(block=block)
+            return self._command_queue.get(block=False)
         except Empty:
             return None
 
