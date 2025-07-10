@@ -610,7 +610,7 @@ def test_hyperion_in_udc_mode_starts_udc_loop(
 @patch("sys.argv", new=["hyperion", "--mode", "gda"])
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.GDARunner")
-@patch("mx_bluesky.hyperion.__main__.create_runner")
+@patch("mx_bluesky.hyperion.__main__.UDCRunner")
 def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
     mock_udc_runner: MagicMock,
     mock_gda_runner: MagicMock,

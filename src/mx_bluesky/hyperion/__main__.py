@@ -23,7 +23,7 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
     flush_debug_handler,
 )
-from mx_bluesky.hyperion.baton_handler import create_runner
+from mx_bluesky.hyperion.baton_handler import UDCRunner
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
@@ -144,7 +144,7 @@ def create_app(args: HyperionArgs, test_config=None) -> tuple[Flask, BlueskyRunn
     if args.mode == HyperionMode.GDA:
         runner = GDARunner(context=context)
     else:
-        runner = create_runner(context=context)
+        runner = UDCRunner(context)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
