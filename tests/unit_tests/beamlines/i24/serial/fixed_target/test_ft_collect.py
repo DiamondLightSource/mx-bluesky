@@ -66,7 +66,7 @@ def test_set_datasize_for_one_block_and_two_exposures(
     dummy_params_without_pp.chip_map = [20]
     assert dummy_params_without_pp.total_num_images == 800
     set_datasize(dummy_params_without_pp)
-    fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP10", 800)
+    fake_caput.assert_called_once_with("BL24I-MO-IOC-01:GP10", 800)
     assert fake_log.info.call_count == 1
     assert fake_log.debug.call_count == 4
 
