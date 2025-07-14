@@ -20,6 +20,7 @@ def simple_flyscan_hit():
         ),
         max_count=20,
         total_count=57,
+        sample_id=12345,
     )
 
 

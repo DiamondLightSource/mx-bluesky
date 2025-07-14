@@ -130,7 +130,6 @@ def simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
         grid_snapshot_dir = snapshot_directory / "grid_snapshots"
         rotation_snapshot_dir = snapshot_directory / "rotation_snapshots"
         os.mkdir(grid_snapshot_dir)
-        os.mkdir(rotation_snapshot_dir)
         yield from bps.mv(
             smargon.x,
             grid_smargon_mm[0],

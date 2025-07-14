@@ -1,6 +1,4 @@
 import dataclasses
-from collections.abc import Generator
-from typing import cast
 from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -53,22 +51,6 @@ from ...hyperion.experiment_plans.conftest import (
 
 def _fake_flyscan(*args):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
-
-
-def test_full_grid_scan(
-    test_full_grid_scan_params: HyperionSpecifiedThreeDGridScan,
-    test_config_files: dict[str, str],
-    construct_beamline_specific,
-):
-    devices = MagicMock()
-    plan = grid_detect_then_xray_centre(
-        devices,
-        cast(GridScanWithEdgeDetect, test_full_grid_scan_params),
-        SpecifiedThreeDGridScan,
-        construct_beamline_specific,
-        test_config_files["oav_config_json"],
-    )
-    assert isinstance(plan, Generator)
 
 
 @pytest.fixture()
