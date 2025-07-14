@@ -68,48 +68,13 @@ spec:
                 name: {{ .secretName }}
             {{- end -}} {{/* range */}}
             {{- end -}} {{/* if */}}
+        - name: ispyb-secrets
+          secret:
+            type: secret
+            secretName: ispyb-hyperion-cfg
       containers:
       - name: hyperion
-        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}
-        securityContext:
-          capabilities:
-            # Required for hostNetwork 
-            drop:
-              - AUDIT_WRITE
-              - CHOWN
-              - DAC_OVERRIDE
-              - FOWNER
-              - FSETID
-              - KILL
-              - MKNOD
-              - NET_BIND_SERVICE
-              - NET_RAW
-              - SETFCAP
-              - SETGID
-              - SETPCAP
-              - SETUID
-              - SYS_CHROOT
-              - AUDIT_CONTROL
-              - BLOCK_SUSPEND
-              - DAC_READ_SEARCH
-              - IPC_LOCK
-              - IPC_OWNER
-              - LEASE
-              - LINUX_IMMUTABLE
-              - MAC_ADMIN
-              - MAC_OVERRIDE
-              - SYS_ADMIN
-              - SYS_BOOT
-              - SYS_MODULE
-              - SYS_NICE
-              - SYS_PACCT
-              - SYS_MODULE
-              - SYS_PTRACE
-              - SYS_RESOURCE
-              - SYS_TIME
-              - SYS_TTY_CONFIG
-              - SYSLOG
-              - WAKE_ALARM            
+        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}    
         resources:
           limits:
             cpu: "1"
@@ -133,7 +98,7 @@ spec:
           - name: ZOCALO_CONFIG
             value: "/zocalo/config/configuration.yaml"
           - name: ISPYB_CONFIG_PATH
-            value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.application.beamline }}.cfg"
+            value: "/ispyb/secrets/ispyb.cfg"
           {{- end }}
         readinessProbe:
           exec:
@@ -166,4 +131,6 @@ spec:
             name: zocalo-config
           - mountPath: "/zocalo/secrets"
             name: zocalo-secrets
+          - mountPath: "/ispyb/secrets"
+            name: ispyb-secrets
       hostNetwork: true

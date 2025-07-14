@@ -588,7 +588,7 @@ def attenuator(RE: RunEngine):
 
 
 @pytest.fixture
-def beamstop_i03(
+def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
     RE: RunEngine,
@@ -798,7 +798,7 @@ def test_config_files():
 
 @pytest.fixture()
 def fake_create_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -812,7 +812,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
-        "beamstop": beamstop_i03,
+        "beamstop": beamstop_phase1,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -825,7 +825,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -848,7 +848,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

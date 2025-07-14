@@ -56,14 +56,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import raw_params_from_file
 
 
@@ -323,11 +318,16 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScan,
 ) -> BeamlineSpecificFGSFeatures:
-    return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    return BeamlineSpecificFGSFeatures(
+        setup_trigger_plan=MagicMock(),
+        tidy_plan=MagicMock(),
+        set_flyscan_params_plan=MagicMock(),
+        fgs_motors=zebra_fast_grid_scan,
+        read_pre_flyscan_plan=MagicMock(),
+        read_during_collection_plan=MagicMock(),
+        get_xrc_results_from_zocalo=False,
     )
 
 
@@ -344,7 +344,7 @@ def test_full_grid_scan_params(tmp_path):
 async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -360,14 +360,13 @@ async def grid_detect_xrc_devices(
     xbpm_feedback,
     attenuator,
     undulator,
-    undulator_dcm,
     dcm,
 ):
     yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,

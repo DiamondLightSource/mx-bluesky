@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 
@@ -19,14 +20,16 @@ from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     setup_panda_for_flyscan,
 )
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
-    setup_zebra_for_gridscan,
     setup_zebra_for_panda_flyscan,
-    tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 
 
 class SmargonSpeedException(Exception):
@@ -59,9 +62,11 @@ def construct_hyperion_specific_features(
         xrc_composite.eiger.bit_depth,
     ]
 
+    setup_trigger_plan: Callable[..., MsgGenerator]
+
     if xrc_parameters.features.use_panda_for_gridscan:
         setup_trigger_plan = _panda_triggering_setup
-        tidy_plan = _panda_tidy
+        tidy_plan = partial(_panda_tidy, xrc_composite)
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.panda_fast_grid_scan,
@@ -70,8 +75,14 @@ def construct_hyperion_specific_features(
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
     else:
-        setup_trigger_plan = _zebra_triggering_setup
-        tidy_plan = partial(_generic_tidy, group="flyscan_zebra_tidy", wait=True)
+        setup_trigger_plan = setup_zebra_for_gridscan
+        tidy_plan = partial(
+            tidy_up_zebra_after_gridscan,
+            xrc_composite.zebra,
+            xrc_composite.sample_shutter,
+            group="flyscan_zebra_tidy",
+            wait=True,
+        )
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.zebra_fast_grid_scan,
@@ -89,44 +100,15 @@ def construct_hyperion_specific_features(
     )
 
 
-def _generic_tidy(
-    xrc_composite: HyperionFlyScanXRayCentreComposite, group, wait=True
-) -> MsgGenerator:
-    LOGGER.info("Tidying up Zebra")
-    yield from tidy_up_zebra_after_gridscan(
-        xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=wait
-    )
-    LOGGER.info("Tidying up Zocalo")
-    # make sure we don't consume any other results
-    yield from bps.unstage(xrc_composite.zocalo, group=group, wait=wait)
-
-    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
-    LOGGER.info("Turning off Eiger dev/shm streaming")
-    # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-    yield from bps.abs_set(
-        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
-        0,
-        group=group,
-        wait=wait,
-    )
-
-
 def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)
-    yield from _generic_tidy(xrc_composite, group, False)
+    yield from tidy_up_zebra_after_gridscan(
+        xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
+    )
     yield from bps.wait(group, timeout=10)
     yield from bps.unstage(xrc_composite.panda)
-
-
-def _zebra_triggering_setup(
-    xrc_composite: HyperionFlyScanXRayCentreComposite,
-    parameters: HyperionSpecifiedThreeDGridScan,
-) -> MsgGenerator:
-    yield from setup_zebra_for_gridscan(
-        xrc_composite.zebra, xrc_composite.sample_shutter, wait=True
-    )
 
 
 def _panda_triggering_setup(
