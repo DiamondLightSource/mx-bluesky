@@ -18,7 +18,7 @@ from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVolta
 from dodal.devices.i03 import Beamstop
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -35,13 +35,12 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
-    start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_flyscan_plan,
@@ -56,6 +55,9 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
@@ -65,7 +67,7 @@ class RobotLoadThenCentreComposite:
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
 
-    # GridDetectThenXRayCentreComposite fields
+    # HyperionGridDetectThenXRayCentreComposite fields
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     detector_motion: DetectorMotion
@@ -94,7 +96,7 @@ class RobotLoadThenCentreComposite:
     # RobotLoad fields
     robot: BartRobot
     webcam: Webcam
-    lower_gonio: XYZPositioner
+    lower_gonio: XYZStage
     beamstop: Beamstop
 
 
@@ -110,7 +112,7 @@ def _flyscan_plan_from_robot_load_params(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_flyscan_plan(
-        cast(GridDetectThenXRayCentreComposite, composite),
+        cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
         oav_config_file,
     )

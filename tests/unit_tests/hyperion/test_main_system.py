@@ -6,6 +6,7 @@ import os
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from sys import argv
 from time import sleep
 from typing import Any
@@ -40,11 +41,6 @@ STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
-TEST_PARAMS = json.dumps(
-    raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
-    )
-)
 
 SECS_PER_RUNENGINE_LOOP = 0.1
 RUNENGINE_TAKES_TIME_TIMEOUT = 15
@@ -59,6 +55,17 @@ In order to avoid threads which get left alive forever after test completion
 
 
 autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
+_MULTILINE_MESSAGE = "This is a\nmultiline log\nmessage."
+
+
+@pytest.fixture()
+def test_params(tmp_path):
+    return json.dumps(
+        raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json",
+            tmp_path,
+        )
+    )
 
 
 class MockRunEngine:
@@ -71,8 +78,6 @@ class MockRunEngine:
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
         while self.RE_takes_time:
-            sleep(SECS_PER_RUNENGINE_LOOP)
-            time += SECS_PER_RUNENGINE_LOOP
             if self.error:
                 raise self.error
             if time > RUNENGINE_TAKES_TIME_TIMEOUT:
@@ -81,14 +86,16 @@ class MockRunEngine:
                     "without an error. Most likely you should initialise with "
                     "RE_takes_time=false, or set RE.error from another thread."
                 )
+            sleep(SECS_PER_RUNENGINE_LOOP)
+            time += SECS_PER_RUNENGINE_LOOP
         if self.error:
             raise self.error
 
     def abort(self):
         while self.aborting_takes_time:
-            sleep(SECS_PER_RUNENGINE_LOOP)
             if self.error:
                 raise self.error
+            sleep(SECS_PER_RUNENGINE_LOOP)
         self.RE_takes_time = False
 
     def subscribe(self, *args):
@@ -196,14 +203,14 @@ def check_status_in_response(response_object, expected_result: Status):
 
 
 @pytest.mark.timeout(5)
-def test_start_gives_success(test_env: ClientAndRunEngine):
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_start_gives_success(test_env: ClientAndRunEngine, test_params):
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
 @pytest.mark.timeout(4)
-def test_getting_status_return_idle(test_env: ClientAndRunEngine):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_getting_status_return_idle(test_env: ClientAndRunEngine, test_params):
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.IDLE)
@@ -211,15 +218,15 @@ def test_getting_status_return_idle(test_env: ClientAndRunEngine):
 
 @pytest.mark.timeout(5)
 def test_getting_status_after_start_sent_returns_busy(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
 
 
-def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
-    response = test_env.client.put("/bad_plan/start", data=TEST_PARAMS).json
+def test_putting_bad_plan_fails(test_env: ClientAndRunEngine, test_params):
+    response = test_env.client.put("/bad_plan/start", data=test_params).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
     assert (
@@ -229,9 +236,9 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.abort()
 
 
-def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+def test_plan_with_no_params_fails(test_env: ClientAndRunEngine, test_params):
     response = test_env.client.put(
-        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+        "/test_experiment_no_internal_param_type/start", data=test_params
     ).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
@@ -241,18 +248,18 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
 
 
 @pytest.mark.timeout(7)
-def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+def test_sending_start_twice_fails(test_env: ClientAndRunEngine, test_params):
+    test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.FAILED)
 
 
 @pytest.mark.timeout(5)
 def test_given_started_when_stopped_then_success_and_idle_status(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
     test_env.mock_run_engine.aborting_takes_time = True
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     response = test_env.client.put(STOP_ENDPOINT)
     check_status_in_response(response, Status.ABORTING)
     response = test_env.client.get(STATUS_ENDPOINT)
@@ -266,12 +273,12 @@ def test_given_started_when_stopped_then_success_and_idle_status(
 
 @pytest.mark.timeout(10)
 def test_given_started_when_stopped_and_started_again_then_runs(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     test_env.mock_run_engine.RE_takes_time = True
-    response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
@@ -280,10 +287,10 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 
 @pytest.mark.timeout(5)
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
-    test_env: ClientAndRunEngine,
+    test_env: ClientAndRunEngine, test_params
 ):
     test_env.mock_run_engine.aborting_takes_time = True
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
     test_env.mock_run_engine.error = Exception("D'Oh")
     response_json = wait_for_run_engine_status(
@@ -299,7 +306,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     "endpoint, test_file",
     [
         [
-            "/grid_detect_then_xray_centre/start",
+            "/hyperion_grid_detect_then_xray_centre/start",
             "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         ],
         [
@@ -321,29 +328,26 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     ],
 )
 def test_start_with_json_file_gives_success(
-    test_env: ClientAndRunEngine, endpoint: str, test_file: str
+    test_env: ClientAndRunEngine, endpoint: str, test_file: str, tmp_path: Path
 ):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(test_file) as test_params_file:
-        test_params = test_params_file.read()
-    response = test_env.client.put(endpoint, data=test_params)
+    test_params = raw_params_from_file(test_file, tmp_path)
+    response = test_env.client.put(endpoint, json=test_params)
     check_status_in_response(response, Status.SUCCESS)
 
 
 @pytest.mark.timeout(3)
-def test_start_with_json_file_with_extras_gives_error(test_env: ClientAndRunEngine):
+def test_start_with_json_file_with_extras_gives_error(
+    test_env: ClientAndRunEngine, tmp_path: Path
+):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open(
-        "tests/test_data/parameter_json_files/good_test_parameters.json"
-    ) as test_params_file:
-        test_params = test_params_file.read()
-
-    params = json.loads(test_params)
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
+    )
     params["extra_param"] = "test"
-    test_params = json.dumps(params)
-    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    response = test_env.client.put(START_ENDPOINT, json=params)
     check_status_in_response(response, Status.FAILED)
 
 
@@ -444,19 +448,40 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     assert response.get("exception_type") == "ValueError"
 
 
-@pytest.mark.skip(
-    reason="See https://github.com/DiamondLightSource/hyperion/issues/777"
-)
+@pytest.mark.timeout(2)
 def test_warn_exception_during_plan_causes_warning_in_log(
-    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine
+    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    test_env.mock_run_engine.error = WarningException("D'Oh")
+    test_env.client.put(START_ENDPOINT, data=test_params)
+    test_env.mock_run_engine.error = WarningException(_MULTILINE_MESSAGE)
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == 'WarningException("D\'Oh")'
+    assert response_json["message"] == repr(test_env.mock_run_engine.error)
     assert response_json["exception_type"] == "WarningException"
-    assert caplog.records[-1].levelname == "WARNING"
+    log_record = [r for r in caplog.records if r.funcName == "wait_on_queue"][0]
+    assert log_record.levelname == "WARNING" and _MULTILINE_MESSAGE in getattr(
+        log_record, "exc_text", ""
+    )
+
+
+def _raise_exception(*args, **kwargs):
+    raise WarningException(_MULTILINE_MESSAGE)
+
+
+@patch.dict(
+    "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
+    {"pin_tip_centre_then_xray_centre": {"param_type": _raise_exception}},
+)
+def test_exception_during_parameter_decodde_generates_nicely_formatted_log_message(
+    caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
+):
+    response = test_env.client.put(START_ENDPOINT, data=test_params)
+    assert response.json["status"] == Status.FAILED.value  # type: ignore
+    logrecord = [
+        r for r in caplog.records if r.funcName == "put" and r.filename == "__main__.py"
+    ][0]
+    assert logrecord.levelname == "ERROR"
+    assert _MULTILINE_MESSAGE in logrecord.message
 
 
 @pytest.mark.parametrize("dev_mode", [True, False])
@@ -482,8 +507,10 @@ def test_when_context_created_then_contains_expected_number_of_plans(
             mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
         plan_names = context.plans.keys()
 
+        # assert "rotation_scan" in plan_names
+        # May want to add back in if we change name of multi_rotation_scan to rotation_scan
+        assert "hyperion_grid_detect_then_xray_centre" in plan_names
         assert "rotation_scan" in plan_names
-        assert "grid_detect_then_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names
 
 

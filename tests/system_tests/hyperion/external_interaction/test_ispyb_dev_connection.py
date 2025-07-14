@@ -33,8 +33,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -44,6 +46,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     GridScanWithEdgeDetect,
@@ -51,7 +56,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from ....conftest import SimConstants
+from ....conftest import SimConstants, replace_all_tmp_paths
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
@@ -138,13 +143,13 @@ def storage_directory(tmp_path) -> str:
 
 
 @pytest.fixture
-def grid_detect_then_xray_centre_parameters(storage_directory):
+def grid_detect_then_xray_centre_parameters(tmp_path):
     json_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
+        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json",
+        tmp_path,
     )
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     json_dict["visit"] = SimConstants.ST_VISIT
-    json_dict["storage_directory"] = storage_directory
     return GridScanWithEdgeDetect(**json_dict)
 
 
@@ -363,7 +368,7 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
-    grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
@@ -382,6 +387,8 @@ def test_ispyb_deposition_in_gridscan(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
+            HyperionSpecifiedThreeDGridScan,
+            construct_hyperion_specific_features,
         )
     )
 
@@ -513,6 +520,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
     feature_flags_update_with_omega_flip,
+    tmp_path,
 ):
     ispyb_cb = RotationISPyBCallback()
     RE.subscribe(ispyb_cb)
@@ -531,16 +539,20 @@ def test_ispyb_deposition_in_rotation_plan(
         fetch_comment(dcid) == "test Sample position (µm): (1, 2, 3) Aperture: Small. "
     )
 
-    expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
-        "xtalSnapshotFullPath1": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_0"
-        ".png",
-        "xtalSnapshotFullPath2": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_90"
-        ".png",
-        "xtalSnapshotFullPath3": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_180"
-        ".png",
-        "xtalSnapshotFullPath4": "regex:/tmp/dls/i03/data/2024/cm31105-4/auto/123456/snapshots/\\d{8}_oav_snapshot_270"
-        ".png",
-    }
+    expected_values = replace_all_tmp_paths(
+        EXPECTED_DATACOLLECTION_FOR_ROTATION
+        | {
+            "xtalSnapshotFullPath1": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_0"
+            ".png",
+            "xtalSnapshotFullPath2": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_90"
+            ".png",
+            "xtalSnapshotFullPath3": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_180"
+            ".png",
+            "xtalSnapshotFullPath4": "regex:{tmp_data}/123456/snapshots/\\d{8}_oav_snapshot_270"
+            ".png",
+        },
+        tmp_path,
+    )
 
     compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)
 

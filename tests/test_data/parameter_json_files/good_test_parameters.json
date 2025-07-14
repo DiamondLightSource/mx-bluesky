@@ -24,5 +24,5 @@
     "y2_start_um": 0.0,
     "z_start_um": 0.0,
     "z2_start_um": 0.0,
-    "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/"
+    "storage_directory": "{tmp_data}/xraycentring/123456/"
 }

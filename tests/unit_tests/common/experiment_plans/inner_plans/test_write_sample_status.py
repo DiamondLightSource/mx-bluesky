@@ -3,12 +3,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
-from mx_bluesky.common.plans.write_sample_status import (
+from mx_bluesky.common.experiment_plans.inner_plans.write_sample_status import (
     SampleStatusExceptionType,
     deposit_loaded_sample,
     deposit_sample_error,
 )
+from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.utils.exceptions import SampleException
 
 TEST_SAMPLE_ID = 123456

@@ -391,9 +391,6 @@ def test_populate_parameters_from_agamemnon_contains_expected_rotation_data(
         assert rotation_params.comment == "Complete_P1_sweep1 "
         assert rotation_params.ispyb_experiment_type == "OSC"
 
-        assert rotation_params.sample_puck == 5
-        assert rotation_params.sample_pin == 4
-
         assert rotation_params.demand_energy_ev == 12700.045934258673
         assert str(rotation_params.parameter_model_version) == "5.3.0"
         assert (

@@ -2,7 +2,7 @@
     "parameter_model_version": "5.0.0",
     "comment": "test",
     "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
-    "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/auto/123456/",
+    "storage_directory": "{tmp_data}/123456/",
     "detector_distance_mm": 100.0,
     "demand_energy_ev": 100,
     "exposure_time_s": 0.1,
@@ -11,7 +11,6 @@
     "visit": "cm31105-4",
     "transmission_frac": 0.1,
     "run_number": 0,
-    "sample_id": 123456,
     "rotation_increment_deg": 0.1,
     "shutter_opening_time_s": 0.6,
     "selected_aperture": "SMALL_APERTURE",
@@ -25,7 +24,8 @@
             "chi_start_deg": 23.85,
             "x_start_um": 1.0,
             "y_start_um": 2.0,
-            "z_start_um": 3.0
+            "z_start_um": 3.0,
+            "sample_id": 123456
         }
     ],
     "snapshot_omegas_deg": [

@@ -11,12 +11,13 @@ from mx_bluesky.definitions import ROOT_DIR
 
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
+ZEBRA_STATUS_TIMEOUT = 30
 
 
 @dataclass(frozen=True)
 class DocDescriptorNames:
-    # Robot load event descriptor
-    ROBOT_LOAD = "robot_load"
+    # Robot load/unload event descriptor
+    ROBOT_UPDATE = "robot_update"
     # For callbacks to use
     OAV_ROTATION_SNAPSHOT_TRIGGERED = "rotation_snapshot_triggered"
     OAV_GRID_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
@@ -41,8 +42,9 @@ class OavConstants:
 @dataclass(frozen=True)
 class PlanNameConstants:
     LOAD_CENTRE_COLLECT = "load_centre_collect"
-    # Robot load subplan
+    # Robot subplans
     ROBOT_LOAD = "robot_load"
+    ROBOT_UNLOAD = "robot_unload"
     # Gridscan
     GRID_DETECT_AND_DO_GRIDSCAN = "grid_detect_and_do_gridscan"
     GRID_DETECT_INNER = "grid_detect"

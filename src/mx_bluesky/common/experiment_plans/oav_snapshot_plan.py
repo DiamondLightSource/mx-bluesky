@@ -11,7 +11,10 @@ from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.device_setup_plans.setup_oav import setup_general_oav_params
 from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.hyperion.parameters.constants import CONST, DocDescriptorNames
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    PlanGroupCheckpointConstants,
+)
 
 OAV_SNAPSHOT_SETUP_SHOT = "oav_snapshot_setup_shot"
 OAV_SNAPSHOT_GROUP = "oav_snapshot_group"
@@ -28,7 +31,7 @@ def setup_beamline_for_OAV(
     smargon: Smargon,
     backlight: Backlight,
     aperture_scatterguard: ApertureScatterguard,
-    group=CONST.WAIT.READY_FOR_OAV,
+    group=PlanGroupCheckpointConstants.READY_FOR_OAV,
     wait=False,
 ):
     max_vel = yield from bps.rd(smargon.omega.max_velocity)

@@ -24,7 +24,7 @@ dependencies = [
     "jupyterlab",
     "matplotlib",
     "nexgen >= 0.11.0",
-    "numpy",
+    "numpy == 2.2.6",                 # See https://github.com/DiamondLightSource/mx-bluesky/issues/1119
     "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
@@ -36,17 +36,18 @@ dependencies = [
     "scanspec",
     "scipy",
     "semver",
+    "deepdiff",
     "matplotlib",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
-    "blueapi >= 0.5.0",
+    "blueapi >= 0.11.1",
     "daq-config-server == 0.1.1",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@3d36879f02343a920156bc608006242ffb8f89f1",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@53a7ab512c0ac824471381283ca742951f088c11",
 ]
 
 
@@ -247,5 +248,15 @@ modules = "mx_bluesky.beamlines.*"
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from hyperion"
 type = "forbidden"
-source_modules = "mx_bluesky.beamlines.*"
-forbidden_modules = "mx_bluesky.hyperion"
+source_modules = "mx_bluesky.beamlines.**"
+forbidden_modules = "mx_bluesky.hyperion.**"
+
+[[tool.importlinter.contracts]]
+name = "Only Hyperion and i04 can import from phase1_zebra"
+type = "forbidden"
+source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
+forbidden_modules = ["mx_bluesky.phase1_zebra.**"]
+ignore_imports = [
+    "mx_bluesky.beamlines.i04.** -> mx_bluesky.phase1_zebra.**",
+    "mx_bluesky.hyperion.** -> mx_bluesky.phase1_zebra.**",
+]

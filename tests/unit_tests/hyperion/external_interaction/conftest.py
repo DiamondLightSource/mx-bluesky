@@ -13,9 +13,10 @@ from ....conftest import (
 
 
 @pytest.fixture
-def test_rotation_params():
+def test_rotation_params(tmp_path):
     param_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     param_dict["storage_directory"] = "tests/test_data"
     param_dict["file_name"] = "TEST_FILENAME"
@@ -30,9 +31,9 @@ def test_rotation_params():
 
 
 @pytest.fixture(params=[1050])
-def test_fgs_params(request):
+def test_fgs_params(request, tmp_path):
     assert request.param % 25 == 0, "Please use a multiple of 25 images"
-    params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params())
+    params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params(tmp_path))
     params.demand_energy_ev = convert_angstrom_to_eV(1.0)
     params.use_roi_mode = True
     first_scan_img = (request.param // 10) * 6

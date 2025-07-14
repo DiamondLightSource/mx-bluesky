@@ -34,12 +34,20 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     setup_sample_environment,
 )
-from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
     standard_read_hardware_during_collection,
     standard_read_hardware_pre_collection,
 )
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
+    OavSnapshotComposite,
+    oav_snapshot_plan,
+    setup_beamline_for_OAV,
+)
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
@@ -49,14 +57,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
-)
-from mx_bluesky.hyperion.device_setup_plans.utils import (
-    start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
-    OavSnapshotComposite,
-    oav_snapshot_plan,
-    setup_beamline_for_OAV,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import (
@@ -342,15 +342,20 @@ def _move_and_rotation(
 
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
-        yield from setup_beamline_for_OAV(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
-        )
-        yield from bps.wait(group=CONST.WAIT.READY_FOR_OAV)
+
+        if not params.use_grid_snapshots:
+            yield from setup_beamline_for_OAV(
+                composite.smargon,
+                composite.backlight,
+                composite.aperture_scatterguard,
+                wait=True,
+            )
+
         if params.selected_aperture:
             yield from bps.prepare(
                 composite.aperture_scatterguard,
                 params.selected_aperture,
-                group=CONST.WAIT.ROTATION_READY_FOR_DC,
+                group=CONST.WAIT.PREPARE_APERTURE,
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(composite, params, motion_values)

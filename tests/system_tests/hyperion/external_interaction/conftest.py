@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable, Generator, Sequence
+from copy import deepcopy
 from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -44,14 +45,12 @@ from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
@@ -188,12 +187,12 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def dummy_params():
-    dummy_params = HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
-        )
+def dummy_params(tmp_path):
+    params_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+        tmp_path,
     )
+    dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
     dummy_params.visit = SimConstants.ST_VISIT
     dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
     return dummy_params
@@ -226,7 +225,8 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
     old_zocalo_trigger = zocalo.trigger
-    zocalo.my_zocalo_result = TEST_RESULT_MEDIUM
+    zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
+    zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
 
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
@@ -256,7 +256,7 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
-    beamstop_i03,
+    beamstop_phase1,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -277,11 +277,11 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
 ):
-    composite = GridDetectThenXRayCentreComposite(
+    composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -391,13 +391,13 @@ def params_for_rotation_scan(
     test_rotation_params.exposure_time_s = 0.023
     test_rotation_params.detector_params.expected_energy_ev = 0.71
     test_rotation_params.visit = SimConstants.ST_VISIT
-    test_rotation_params.sample_id = SimConstants.ST_SAMPLE_ID
+    test_rotation_params.rotation_scans[0].sample_id = SimConstants.ST_SAMPLE_ID
     return test_rotation_params
 
 
 @pytest.fixture
 def composite_for_rotation_scan(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -423,7 +423,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

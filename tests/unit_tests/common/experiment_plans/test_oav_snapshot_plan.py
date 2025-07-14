@@ -12,22 +12,23 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
-from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan import (
+from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 
 from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def oav_snapshot_params():
+def oav_snapshot_params(tmp_path):
     return WithSnapshot(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_oav_snapshot_params.json"
+            "tests/test_data/parameter_json_files/test_oav_snapshot_params.json",
+            tmp_path,
         )
     )
 
@@ -53,7 +54,7 @@ def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
 @pytest.fixture(autouse=True)
 def fixed_datetime() -> Generator[str, None, None]:
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
+        "mx_bluesky.common.experiment_plans.oav_snapshot_plan.datetime", spec=datetime
     ) as mock_datetime:
         mock_datetime.now.return_value = datetime.fromisoformat(
             "2024-06-07T10:06:23.12"
