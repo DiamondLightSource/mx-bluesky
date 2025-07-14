@@ -20,8 +20,6 @@ weak_ids_to_devices = WeakValueDictionary()
 
 MAX_DEVICE_COUNT = 10
 
-STOP_ON_LEAK_DETECTION = False
-
 
 @pytest.fixture
 def patch_ensure_connected():
