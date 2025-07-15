@@ -29,14 +29,6 @@ def mock_expeye_cls():
         yield mock_expeye
 
 
-@pytest.fixture(autouse=True)
-def mock_alert_service():
-    with patch(
-        "mx_bluesky.common.external_interaction.alerting._service._alert_service"
-    ) as service:
-        yield service
-
-
 @run_decorator(
     md={
         "metadata": {
