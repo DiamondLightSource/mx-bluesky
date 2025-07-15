@@ -392,3 +392,12 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     composite.panda = MagicMock(spec=HDFPanda)
     composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
     return composite
+
+
+@pytest.fixture(autouse=True)
+def mock_alert_service():
+    with patch(
+        "mx_bluesky.common.external_interaction.alerting._service._alert_service",
+        create=True,
+    ) as service:
+        yield service
