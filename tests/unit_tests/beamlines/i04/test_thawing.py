@@ -85,6 +85,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
         oav_forwarder = OAVToRedisForwarder(
             "prefix", "host", "password", name="oav_to_redis_forwarder"
         )
+    set_mock_value(oav_forwarder.uuid, "test")
 
     # Replace when https://github.com/bluesky/ophyd-async/issues/521 is released
     @AsyncStatus.wrap
