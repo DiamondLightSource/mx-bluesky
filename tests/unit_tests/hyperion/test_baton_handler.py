@@ -37,8 +37,7 @@ from mx_bluesky.hyperion.utils.context import setup_context
 
 
 @pytest.fixture()
-def bluesky_context(i03_beamline_parameters,
-                    sim_run_engine: RunEngineSimulator):
+def bluesky_context(i03_beamline_parameters, sim_run_engine: RunEngineSimulator):
     with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         # Baton for real run engine
         context = BlueskyContext()
@@ -304,10 +303,11 @@ def test_initialise_udc_reloads_all_devices(
     ),
 )
 def test_baton_handler_loop_waits_if_wait_instruction_received(
-    bluesky_context: BlueskyContext,
-    sim_run_engine: RunEngineSimulator
+    bluesky_context: BlueskyContext, sim_run_engine: RunEngineSimulator
 ):
-    msgs = sim_run_engine.simulate_plan(run_udc_when_requested(bluesky_context, MagicMock()))
+    msgs = sim_run_engine.simulate_plan(
+        run_udc_when_requested(bluesky_context, MagicMock())
+    )
     assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "sleep" and msg.args[0] == 12.34
     )
@@ -327,8 +327,9 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     ),
 )
 def test_main_loop_rejects_unrecognised_instruction_when_received(
-    bluesky_context: BlueskyContext,
-    sim_run_engine: RunEngineSimulator
+    bluesky_context: BlueskyContext, sim_run_engine: RunEngineSimulator
 ):
     with pytest.raises(AssertionError, match="Unsupported instruction decoded"):
-        sim_run_engine.simulate_plan(run_udc_when_requested(bluesky_context, MagicMock()))
+        sim_run_engine.simulate_plan(
+            run_udc_when_requested(bluesky_context, MagicMock())
+        )
