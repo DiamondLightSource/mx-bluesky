@@ -385,7 +385,7 @@ def patch_async_motor(
 @pytest.fixture(params=[False, True])
 def feature_flags_update_with_omega_flip(request):
     def update_with_overrides(self):
-        self.overriden_features["omega_flip"] = request.param
+        self.overridden_features["omega_flip"] = request.param
         self.omega_flip = request.param
 
     with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
