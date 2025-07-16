@@ -88,7 +88,7 @@ def create_parameters_from_agamemnon() -> Sequence[MxBlueskyParameters]:
                     Wait.model_validate(
                         {
                             "duration_s": data,
-                            "parameter_model_version": PARAMETER_VERSION,
+                            "parameter_model_version": _get_param_version(),
                         }
                     )
                 ]
