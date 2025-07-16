@@ -28,6 +28,7 @@ class LoggingAlertService:
 
     def raise_alert(self, summary: str, content: str, metadata: dict[str, str]):
         message = f"***ALERT*** summary={summary} content={content}"
+        self._append_additional_metadata(metadata)
         LOGGER.log(
             self._level,
             message,

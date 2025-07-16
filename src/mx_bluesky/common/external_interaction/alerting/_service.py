@@ -1,4 +1,3 @@
-from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol
 from urllib.parse import quote
@@ -49,13 +48,3 @@ def set_alerting_service(service: AlertService):
 
 def ispyb_url(sample_id: str):
     return f"https://ispyb.diamond.ac.uk/samples/sid/{quote(sample_id)}"
-
-
-def generator_url(_graylog_stream):
-    to_time = datetime.now(UTC)
-    from_time = to_time - timedelta(minutes=15)
-    return (
-        f"https://graylog.diamond.ac.uk/streams/{quote(_graylog_stream)}/search?q=&rangetype=absolute&"
-        f"from={quote(from_time.isoformat(timespec='milliseconds'))}&to="
-        f"{quote(to_time.isoformat(timespec='milliseconds'))}"
-    )
