@@ -11,9 +11,3 @@ zocalo:
     - name: rabbitmq-api-reader
       secretName: rmq-api-reader
       fileName: rabbitmq-api-reader.yml
-
-ispyb:
-  secrets:
-  - name: ispyb-creds
-    secretName: ispyb-creds
-    fileName: ispyb-credentials.yml
