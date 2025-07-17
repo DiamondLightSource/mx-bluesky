@@ -592,18 +592,18 @@ def test_hyperion_in_udc_mode_starts_logging_and_creates_and_runs_app(
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
-@patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.setup_context")
 @patch("mx_bluesky.hyperion.baton_handler.run_udc_when_requested")
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
 def test_hyperion_in_udc_mode_starts_udc_loop(
     mock_find_device_in_context: MagicMock,
     mock_run_udc: MagicMock,
+    mock_setup_context: MagicMock,
     mock_flask_thread: MagicMock,
 ):
-    expected_baton = mock_find_device_in_context.return_value
     main()
 
-    mock_run_udc.assert_called_once_with(expected_baton, ANY)
+    mock_run_udc.assert_called_once_with(mock_setup_context.return_value, ANY)
     assert isinstance(mock_run_udc.mock_calls[0].args[1], UDCRunner)
 
 
@@ -645,6 +645,7 @@ def test_stop_via_rest_terminates_bluesky_runner_but_does_not_terminate_flask():
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", MagicMock())
 @patch("mx_bluesky.hyperion.runner.GDARunner.wait_on_queue", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.UDCRunner.wait_on_queue", MagicMock())
 @pytest.mark.parametrize("mode", ["gda", "udc"])
 def test_hyperion_in_exposes_run_endpoint_only_if_gda_mode_selected(
     mock_api: MagicMock,
