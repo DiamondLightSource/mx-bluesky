@@ -104,7 +104,7 @@ def initialise_stages(
         if i == 100:
             # Do not clear visit PV
             continue
-        pvar = "ME14E-MO-IOC-01:GP" + str(i)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
@@ -457,14 +457,14 @@ def load_stock_map(map_choice: str = "clear") -> MsgGenerator:
 
     SSX_LOGGER.info("Clearing GP 10-74")  # Actually 11-44
     for i in range(1, 65):
-        pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
     SSX_LOGGER.info("Map cleared")
     SSX_LOGGER.info(f"Loading Map Choice {map_choice}")
     for i in map_dict[map_choice]:
-        pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 1)
     SSX_LOGGER.debug("Load stock map done.")
     yield from bps.null()
@@ -529,7 +529,7 @@ def load_lite_map() -> MsgGenerator:
         block_name = entry[0]
         yesno = entry[1]
         block_num = block_dict[block_name]
-        pvar = "ME14E-MO-IOC-01:GP" + str(int(block_num) + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(int(block_num) + 10)
         SSX_LOGGER.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
     SSX_LOGGER.debug("Load lite map done")
     yield from bps.null()
