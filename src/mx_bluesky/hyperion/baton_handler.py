@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from functools import partial
 from typing import Any
 
+from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
@@ -15,8 +16,6 @@ from mx_bluesky.common.utils.context import (
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
-    LoadCentreCollectComposite,
-    create_devices,
     load_centre_collect_full,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
@@ -24,14 +23,14 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.utils.context import (
-    clear_all_device_caches,
-    setup_devices,
-)
 from mx_bluesky.hyperion.runner import (
     BlueskyRunner,
     StatusAndMessage,
     make_error_status_and_message,
+)
+from mx_bluesky.hyperion.utils.context import (
+    clear_all_device_caches,
+    setup_devices,
 )
 
 HYPERION_USER = "Hyperion"
@@ -43,11 +42,7 @@ class UDCRunner(BlueskyRunner):
 
     def wait_on_queue(self):
         try:
-            self.RE(
-                run_udc_when_requested(
-                    find_device_in_context(self.context, "baton", Baton), self
-                )
-            )
+            run_udc_when_requested(self.context, self)
         except RunEngineInterrupted:
             # In the event that BlueskyRunner.stop() or shutdown() was called then
             # RunEngine.abort() will have been called and we will get RunEngineInterrupted
@@ -82,9 +77,7 @@ class UDCRunner(BlueskyRunner):
                     raise
 
 
-def run_udc_when_requested(context: BlueskyContext,
-                           runner: UDCRunner,
-                           dev_mode: bool = False):
+def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
     """This will wait for the baton to be handed to hyperion and then run through the
     UDC queue from agamemnon until:
       1. There are no more instructions from agamemnon
@@ -95,11 +88,15 @@ def run_udc_when_requested(context: BlueskyContext,
     3. the baton will be released after the next collection has finished."""
 
     baton = _get_baton(context)
-    yield from _wait_for_hyperion_requested(baton)
-    yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
-    def initialise_then_collect() -> MsgGenerator:
-        _initialise_udc(context, dev_mode)
+    def acquire_baton() -> MsgGenerator:
+        yield from _wait_for_hyperion_requested(baton)
+        yield from bps.abs_set(baton.current_user, HYPERION_USER)
+
+    context.run_engine(acquire_baton())
+    _initialise_udc(context)
+
+    def collect() -> MsgGenerator:
         yield from _move_to_default_state()
 
         # re-fetch the baton because the device has been reinstantiated
@@ -113,12 +110,13 @@ def run_udc_when_requested(context: BlueskyContext,
         yield from _safely_release_baton(baton)
         yield from bps.abs_set(baton.current_user, NO_USER)
 
-    yield from bpp.contingency_wrapper(
-        initialise_then_collect(), final_plan=release_baton
-    )
+    def collect_then_release() -> MsgGenerator:
+        yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
+
+    context.run_engine(collect_then_release())
 
 
-def _initialise_udc(context: BlueskyContext, dev_mode: bool = False):
+def _initialise_udc(context: BlueskyContext):
     """
     Perform all initialisation that happens at the start of UDC just after the
     baton is acquired, but before we execute any plans or move hardware.
@@ -128,7 +126,7 @@ def _initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
     clear_all_device_caches(context)
-    setup_devices(context, dev_mode)
+    setup_devices(context, False)
 
 
 def _wait_for_hyperion_requested(baton: Baton):
@@ -150,7 +148,7 @@ def _main_hyperion_loop(baton: Baton, runner: UDCRunner) -> MsgGenerator:
 
 
 def _fetch_and_process_agamemnon_instruction(
-        baton: Baton, runner: UDCRunner
+    baton: Baton, runner: UDCRunner
 ) -> MsgGenerator:
     parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
     if parameter_list:
