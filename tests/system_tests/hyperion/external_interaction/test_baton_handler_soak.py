@@ -5,6 +5,7 @@ from unittest.mock import patch
 from weakref import WeakValueDictionary
 
 import pytest
+from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from ophyd_async.core import Device
 from ophyd_async.plan_stubs import ensure_connected
@@ -23,6 +24,21 @@ MAX_DEVICE_COUNT = 4
 
 
 @pytest.fixture
+def patch_setup_devices(request):
+    dev_mode = request.param
+    from mx_bluesky.hyperion.utils.context import setup_devices
+
+    def patched_setup_devices(context: BlueskyContext, _: bool):
+        setup_devices(context, dev_mode)
+
+    with patch(
+        "mx_bluesky.hyperion.baton_handler.setup_devices",
+        side_effect=patched_setup_devices,
+    ) as patched_func:
+        yield patched_func
+
+
+@pytest.fixture
 def patch_ensure_connected():
     unpatched = ensure_connected
 
@@ -38,19 +54,29 @@ def patch_ensure_connected():
         yield p
 
 
-@pytest.mark.parametrize("i", list(range(1, 101)))
+@pytest.mark.parametrize(
+    "i, patch_setup_devices",
+    [[i, True] for i in range(1, 101)],
+    indirect=["patch_setup_devices"],
+)
 @pytest.mark.system_test
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
-def test_udc_reloads_all_devices_soak_test_dev_mode(RE: RunEngine, i: int):
+def test_udc_reloads_all_devices_soak_test_dev_mode(
+    RE: RunEngine, i: int, patch_setup_devices
+):
     reinitialise_beamline(True, i)
 
 
-@pytest.mark.parametrize("i", list(range(1, 101)))
+@pytest.mark.parametrize(
+    "i, patch_setup_devices",
+    [[i, False] for i in range(1, 101)],
+    indirect=["patch_setup_devices"],
+)
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 @patch("ophyd_async.plan_stubs._ensure_connected.DEFAULT_TIMEOUT", 1)
 @pytest.mark.timeout(10)
 def test_udc_reloads_all_devices_soak_test_real(
-    RE: RunEngine, i: int, patch_ensure_connected
+    RE: RunEngine, i: int, patch_setup_devices, patch_ensure_connected
 ):
     """
     Deliberately not part of main system tests because this is SLOW and requires
