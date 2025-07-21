@@ -38,6 +38,7 @@ dependencies = [
     "semver",
     "deepdiff",
     "matplotlib",
+    "daq-config-server",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
