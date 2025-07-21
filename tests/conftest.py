@@ -756,6 +756,14 @@ async def aperture_scatterguard(RE: RunEngine):
             scatterguard_y=19,
             radius=0,
         ),
+        ApertureValue.PARKED: AperturePosition(
+            aperture_x=20,
+            aperture_y=25,
+            aperture_z=0,
+            scatterguard_x=36,
+            scatterguard_y=56,
+            radius=0,
+        ),
     }
     with (
         patch(

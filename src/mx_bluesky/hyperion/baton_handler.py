@@ -5,7 +5,14 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
 
-from mx_bluesky.common.utils.context import find_device_in_context
+from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
+    UDCDefaultDevices,
+    move_to_udc_default_state,
+)
+from mx_bluesky.common.utils.context import (
+    device_composite_from_context,
+    find_device_in_context,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
@@ -62,11 +69,6 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
         requested_user = yield from bps.rd(baton.requested_user)
 
 
-def move_to_default_state():
-    # To be filled in in https://github.com/DiamondLightSource/mx-bluesky/issues/396
-    yield from bps.null()
-
-
 def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     """
     Perform all initialisation that happens at the start of UDC just after the
@@ -100,7 +102,10 @@ def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
 
     def initialise_then_collect():
         initialise_udc(context, dev_mode)
-        yield from move_to_default_state()
+        default_state_devices = device_composite_from_context(
+            context, UDCDefaultDevices
+        )
+        yield from move_to_udc_default_state(default_state_devices)
 
         # re-fetch the baton because the device has been reinstantiated
         new_baton = _get_baton(context)

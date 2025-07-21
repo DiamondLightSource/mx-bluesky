@@ -65,7 +65,7 @@ def baton_with_requested_user(
 
 
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state", new=MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.bps.sleep")
 @pytest.mark.timeout(10)
 def test_loop_until_hyperion_requested(
@@ -86,8 +86,9 @@ def test_loop_until_hyperion_requested(
 
 
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 def test_when_hyperion_requested_then_hyperion_set_to_current_user(
-    bluesky_context: BlueskyContext, RE: RunEngine
+    default_state: MagicMock, bluesky_context: BlueskyContext, RE: RunEngine
 ):
     baton = find_device_in_context(bluesky_context, "baton", Baton)
 
@@ -99,7 +100,7 @@ def test_when_hyperion_requested_then_hyperion_set_to_current_user(
 
 
 @patch("mx_bluesky.hyperion.baton_handler.main_hyperion_loop")
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 def test_when_hyperion_requested_then_default_state_and_collection_run(
     default_state: MagicMock,
     main_loop: MagicMock,
@@ -111,7 +112,10 @@ def test_when_hyperion_requested_then_default_state_and_collection_run(
     parent_mock.attach_mock(main_loop, "main_loop")
 
     RE(run_udc_when_requested(bluesky_context, dev_mode=True))
-    assert parent_mock.method_calls == [call.default_state(), call.main_loop(ANY, ANY)]
+    assert parent_mock.method_calls == [
+        call.default_state(ANY),
+        call.main_loop(ANY, ANY),
+    ]
 
 
 async def _assert_baton_released(baton: Baton):
@@ -121,7 +125,9 @@ async def _assert_baton_released(baton: Baton):
 
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_released(
+    default_state: MagicMock,
     agamemnon: MagicMock,
     collection: MagicMock,
     bluesky_context: BlueskyContext,
@@ -141,7 +147,9 @@ async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_rel
 
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_warning_exception_raised_in_collection_then_loop_continues(
+    default_state: MagicMock,
     agamemnon: MagicMock,
     collection: MagicMock,
     bluesky_context: BlueskyContext,
@@ -158,7 +166,7 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     await _assert_baton_released(baton)
 
 
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_exception_raised_in_default_state_then_baton_released(
     default_state: MagicMock,
     bluesky_context: BlueskyContext,
@@ -173,8 +181,12 @@ async def test_when_exception_raised_in_default_state_then_baton_released(
 
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_stops_and_baton_released(
-    agamemnon: MagicMock, bluesky_context: BlueskyContext, RE: RunEngine
+    default_state: MagicMock,
+    agamemnon: MagicMock,
+    bluesky_context: BlueskyContext,
+    RE: RunEngine,
 ):
     agamemnon.side_effect = ValueError()
     with pytest.raises(ValueError):
@@ -186,7 +198,9 @@ async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_no_agamemnon_instructions_left_then_loop_stops_and_baton_released(
+    default_state: MagicMock,
     collection: MagicMock,
     agamemnon: MagicMock,
     bluesky_context: BlueskyContext,
@@ -202,7 +216,9 @@ async def test_when_no_agamemnon_instructions_left_then_loop_stops_and_baton_rel
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_other_user_requested_collection_finished_then_baton_released(
+    default_state: MagicMock,
     collection: MagicMock,
     agamemnon: MagicMock,
     bluesky_context: BlueskyContext,
@@ -230,7 +246,7 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
 @patch("mx_bluesky.hyperion.baton_handler.load_centre_collect_full")
-@patch("mx_bluesky.hyperion.baton_handler.move_to_default_state")
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
 async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_once(
     default_state: MagicMock,
     collection: MagicMock,
