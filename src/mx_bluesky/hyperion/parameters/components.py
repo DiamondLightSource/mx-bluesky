@@ -1,8 +1,11 @@
-from pydantic import Field
+from mx_bluesky.common.external_interaction.config_server import MXConfigServer
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_server,
+)
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureFlags
 
-from mx_bluesky.common.parameters.components import WithPandaGridScan
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 
-
-class WithHyperionUDCFeatures(WithPandaGridScan):
-    features: HyperionFeatureFlags = Field(default=HyperionFeatureFlags())
+class WithHyperionConfigServer:
+    @property
+    def config_server(self) -> MXConfigServer[HyperionFeatureFlags]:
+        return get_hyperion_config_server()

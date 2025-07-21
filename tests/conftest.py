@@ -79,7 +79,6 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -97,6 +96,9 @@ from mx_bluesky.common.utils.log import (
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
+)
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_server,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -380,17 +382,6 @@ def patch_async_motor(
     set_mock_value(motor.motor_done_move, 1)
     set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
-
-
-@pytest.fixture(params=[False, True])
-def feature_flags_update_with_omega_flip(request):
-    def update_with_overrides(self):
-        self.overriden_features["omega_flip"] = request.param
-        self.omega_flip = request.param
-
-    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
-        update.side_effect = update_with_overrides
-        yield update
 
 
 @pytest.fixture
@@ -1814,6 +1805,7 @@ def assert_images_pixelwise_equal(actual, expected):
                 f"Actual and expected images differ, {actual} != {expected}"
             )
 
+
 def _fake_config_server_read(filepath: str | Path, desired_return_type=str):
     filepath = Path(filepath)
     # Minimal logic required for unit tests
@@ -1827,13 +1819,16 @@ def _fake_config_server_read(filepath: str | Path, desired_return_type=str):
 
 @pytest.fixture(autouse=True)
 def test_friendly_config_server():
-    # Don't actually talk to central service during unit tests
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    get_hyperion_config_server.cache_clear()
 
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents",
         side_effect=_fake_config_server_read,
     ):
         yield
+
 
 def mock_beamline_module_filepaths(bl_name, bl_module):
     if mock_attributes := mock_attributes_table.get(bl_name):

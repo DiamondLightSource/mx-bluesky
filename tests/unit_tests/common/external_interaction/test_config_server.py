@@ -43,10 +43,19 @@ def test_get_oav_config_on_bad_request(mock_log_warn: MagicMock):
     mock_log_warn.assert_called_once()
 
 
+@patch(
+    "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+    new="tests/test_data/test_domain_properties_with_no_gpu",
+)
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_get_feature_flags_good_request(mock_log_warn: MagicMock):
+    expected_features_dict = {
+        "USE_GPU_RESULTS": False,
+        "USE_PANDA_FOR_GRIDSCAN": True,
+        "SET_STUB_OFFSETS": False,
+    }
     server = get_hyperion_config_server()
-    assert server.get_feature_flags() == HyperionFeatureFlags()
+    assert server.get_feature_flags() == HyperionFeatureFlags(**expected_features_dict)
     mock_log_warn.assert_not_called()
 
 

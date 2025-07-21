@@ -54,7 +54,6 @@ EXPECTED_ROTATION_PARAMS = {
 }
 
 EXPECTED_PARAMETERS = {
-    "features": {"use_gpu_results": True},
     "visit": "cm00000-0",
     "detector_distance_mm": 180.8,
     "sample_id": 12345,

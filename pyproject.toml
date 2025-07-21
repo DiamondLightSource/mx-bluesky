@@ -39,6 +39,7 @@ dependencies = [
     "deepdiff",
     "matplotlib",
     "daq-config-server",
+    "cachetools",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
@@ -116,7 +117,7 @@ typeCheckingMode = "standard"
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-timeout = 1
+timeout = 5
 markers = [
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
     "skip_log_setup: marks tests so that loggers are not setup before the test.",

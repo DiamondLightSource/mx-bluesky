@@ -78,6 +78,9 @@ class MXConfigServer(ConfigServer, Generic[T]):
         """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults"""
 
         try:
+            enum_dict = (
+                self.feature_sources._value2member_map_
+            )  # As of python 3.12, can do checks using "in" for enums instead
             if (
                 not self._cached_features
                 or time() - self._time_since_feature_get > FEATURE_FLAG_CACHE_LENGTH
@@ -94,9 +97,9 @@ class MXConfigServer(ConfigServer, Generic[T]):
                     line = line.split("#", 1)[0].strip()  # Remove inline comments
                     if "=" in line:
                         key, value = map(str.strip, line.split("=", 1))
-                        # Can just use "in" as of python 3.12
-                        if key in self.feature_sources._value2member_map_:
-                            feature_dict[key] = value
+                        # Construct dict needed for feature flag DC
+                        if key in enum_dict:
+                            feature_dict[enum_dict[key].name] = value
                 self._time_since_feature_get = time()
                 self._cached_features = self.feature_dc(**feature_dict)
             return self._cached_features

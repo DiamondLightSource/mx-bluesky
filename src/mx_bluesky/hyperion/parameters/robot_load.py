@@ -10,7 +10,7 @@ from mx_bluesky.common.parameters.components import (
 from mx_bluesky.common.parameters.constants import (
     HardwareConstants,
 )
-from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
+from mx_bluesky.hyperion.parameters.components import WithHyperionConfigServer
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     PinTipCentreThenXrayCentre,
@@ -24,7 +24,7 @@ class RobotLoadAndEnergyChange(
 
 
 class RobotLoadThenCentre(
-    GridCommonWithHyperionDetectorParams, WithHyperionUDCFeatures
+    GridCommonWithHyperionDetectorParams, WithHyperionConfigServer
 ):
     thawing_time: float = Field(default=HardwareConstants.THAWING_TIME)
 

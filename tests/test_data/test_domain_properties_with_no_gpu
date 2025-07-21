@@ -40,7 +40,7 @@ gda.mx.hyperion.override_udc_only=true
 gda.mx.hyperion.do_stub_offsets=false
 
 #use the panda to run constant velocity grid scans instead of the original zebra fast grid scans - EXPERIMENTAL
-gda.mx.hyperion.use_panda_for_gridscans=false
+gda.mx.hyperion.use_panda_for_gridscans=true
 
 #distance given to the smargon to accelerate to and decelerate from its desired velocity - for panda grid scans
 gda.mx.hyperion.panda_runup_distance_mm=0.16
@@ -55,7 +55,7 @@ gda.mx.hyperion.xrc.run_gpu_processing_in_parallel=true
 gda.mx.hyperion.xrc.compare_cpu_and_gpu=true
 
 #Take the first results that we get from zocalo (most likely GPU ones)
-gda.mx.hyperion.xrc.use_gpu_results=true
+gda.mx.hyperion.xrc.use_gpu_results=false
 
 #Set box size for hyperion
 gda.mx.hyperion.xrc.box_size=20.0

@@ -35,7 +35,6 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedException,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -58,16 +57,6 @@ ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCall
 class CompleteException(Exception):
     # To avoid having to run through the entire plan during tests
     pass
-
-
-@pytest.fixture
-def fgs_params_use_panda(
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    feature_flags: HyperionFeatureFlags,
-):
-    feature_flags.use_panda_for_gridscan = True
-    hyperion_fgs_params.features = feature_flags
-    return hyperion_fgs_params
 
 
 def _custom_msg(command_name: str):
@@ -167,8 +156,6 @@ class TestFlyscanXrayCentrePlan:
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        hyperion_fgs_params.features.set_stub_offsets = True
-
         hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
         zocalo = hyperion_flyscan_xrc_composite.zocalo
         sim_run_engine.add_read_handler_for(
