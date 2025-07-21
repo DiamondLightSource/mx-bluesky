@@ -9,7 +9,7 @@ from dodal.devices.focusing_mirror import (
     MirrorVoltages,
 )
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from ophyd_async.testing import get_mock_put
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 from mx_bluesky.hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
@@ -99,6 +99,30 @@ def test_adjust_mirror_stripe(
     mirror_voltages.vertical_voltages[7].set.assert_called_once_with(  # type: ignore
         last_voltage
     )
+
+
+@pytest.mark.parametrize(
+    "energy_kev, expected_stripe",
+    [
+        (6.999, MirrorStripe.BARE),
+        (7.001, MirrorStripe.RHODIUM),
+    ],
+)
+def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
+    RE: RunEngine,
+    mirror_voltages: MirrorVoltages,
+    vfm: FocusingMirrorWithStripes,
+    energy_kev: float,
+    expected_stripe: MirrorStripe,
+):
+    set_mock_value(vfm.stripe, expected_stripe)
+
+    RE(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
+
+    get_mock_put(vfm.stripe).assert_not_called()
+    get_mock_put(vfm.apply_stripe).assert_not_called()
+    get_mock_put(vfm.x_mm.user_setpoint).assert_not_called()
+    get_mock_put(vfm.yaw_mrad.user_setpoint).assert_not_called()
 
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
