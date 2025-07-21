@@ -37,12 +37,26 @@ HYPERION_USER = "Hyperion"
 NO_USER = "None"
 
 
+class PlanException(Exception):
+    """Identifies an exception that was encountered during plan execution."""
+
+    pass
+
+
 class UDCRunner(BlueskyRunner):
     """Runner that executes plans initiated by instructions pulled from Agamemnon"""
 
     def wait_on_queue(self):
         try:
-            run_udc_when_requested(self.context, self)
+            while True:
+                try:
+                    run_udc_when_requested(self.context, self)
+                except PlanException as e:
+                    LOGGER.info(
+                        "Caught exception during plan execution, stopped and waiting for baton.",
+                        exc_info=e,
+                    )
+
         except RunEngineInterrupted:
             # In the event that BlueskyRunner.stop() or shutdown() was called then
             # RunEngine.abort() will have been called and we will get RunEngineInterrupted
@@ -74,7 +88,7 @@ class UDCRunner(BlueskyRunner):
                             f"Command {command} failed with exception", exc_info=e
                         )
                     self.current_status = make_error_status_and_message(e)
-                    raise
+                    raise PlanException("Exception thrown in plan execution") from e
 
 
 def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
@@ -93,9 +107,6 @@ def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
         yield from _wait_for_hyperion_requested(baton)
         yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
-    context.run_engine(acquire_baton())
-    _initialise_udc(context)
-
     def collect() -> MsgGenerator:
         yield from _move_to_default_state()
 
@@ -113,6 +124,8 @@ def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
     def collect_then_release() -> MsgGenerator:
         yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
 
+    context.run_engine(acquire_baton())
+    _initialise_udc(context)
     context.run_engine(collect_then_release())
 
 

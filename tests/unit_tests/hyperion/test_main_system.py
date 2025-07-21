@@ -33,7 +33,6 @@ from mx_bluesky.hyperion.__main__ import (
     main,
     setup_context,
 )
-from mx_bluesky.hyperion.baton_handler import UDCRunner
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
@@ -593,18 +592,18 @@ def test_hyperion_in_udc_mode_starts_logging_and_creates_and_runs_app(
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.setup_context")
-@patch("mx_bluesky.hyperion.baton_handler.run_udc_when_requested")
+@patch("mx_bluesky.hyperion.__main__.UDCRunner")
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
 def test_hyperion_in_udc_mode_starts_udc_loop(
     mock_find_device_in_context: MagicMock,
-    mock_run_udc: MagicMock,
+    mock_udc_runner: MagicMock,
     mock_setup_context: MagicMock,
     mock_flask_thread: MagicMock,
 ):
     main()
 
-    mock_run_udc.assert_called_once_with(mock_setup_context.return_value, ANY)
-    assert isinstance(mock_run_udc.mock_calls[0].args[1], UDCRunner)
+    mock_udc_runner.assert_called_once_with(mock_setup_context.return_value)
+    mock_udc_runner.return_value.wait_on_queue.assert_called_once()
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "gda"])

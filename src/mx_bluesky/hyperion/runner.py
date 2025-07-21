@@ -111,9 +111,7 @@ class BlueskyRunner:
 
     def stop(self) -> StatusAndMessage:
         """Stop the currently executing plan."""
-        if self.current_status.status == Status.IDLE.value:
-            return StatusAndMessage(Status.FAILED, "Bluesky not running")
-        elif self.current_status.status == Status.ABORTING.value:
+        if self.current_status.status == Status.ABORTING.value:
             return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
         else:
             self.current_status = StatusAndMessage(Status.ABORTING)

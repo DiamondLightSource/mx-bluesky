@@ -1,5 +1,8 @@
+import asyncio
 import os
 from asyncio import run_coroutine_threadsafe, sleep
+from collections.abc import Generator
+from concurrent.futures import Executor, ThreadPoolExecutor, wait
 from dataclasses import fields
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
@@ -27,6 +30,7 @@ from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
+    PlanException,
     UDCRunner,
     _initialise_udc,
     run_udc_when_requested,
@@ -37,6 +41,13 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
+
+
+@pytest.fixture(scope="session")
+def executor() -> Generator[Executor, Any, Any]:
+    ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix="test thread")
+    yield ex
+    ex.shutdown()
 
 
 @pytest.fixture()
@@ -218,9 +229,10 @@ async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_rel
     mock_load_centre_collect.side_effect = ValueError()
     agamemnon.return_value = [load_centre_collect_params]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(PlanException) as e:
         run_udc_when_requested(bluesky_context, udc_runner)
 
+    assert isinstance(e.value.__cause__, ValueError)
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     assert mock_load_centre_collect.call_count == 1
     await _assert_baton_released(baton)
@@ -240,9 +252,10 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
         ValueError(),
     ]
     agamemnon.return_value = [load_centre_collect_params]
-    with pytest.raises(ValueError):
+    with pytest.raises(PlanException) as e:
         run_udc_when_requested(bluesky_context, udc_runner)
 
+    assert isinstance(e.value.__cause__, ValueError)
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     assert mock_load_centre_collect.call_count == 3
     await _assert_baton_released(baton)
@@ -428,3 +441,132 @@ async def test_shutdown_releases_the_baton(
     baton = find_device_in_context(udc_runner.context, "baton", Baton)
     await _assert_baton_released(baton)
     assert shutdown_task.done()
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+        [],
+    ],
+)
+@pytest.mark.timeout(1)
+async def test_wait_on_queue_resumes_collection(
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: UDCRunner,
+    executor: Executor,
+):
+    def launch_tests():
+        future = asyncio.run_coroutine_threadsafe(
+            take_baton_away_then_wait_for_release_then_re_request(), udc_runner.RE.loop
+        )
+        wait([future])
+
+    async def take_baton_away_then_wait_for_release_then_re_request():
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        baton = find_device_in_context(udc_runner.context, "baton", Baton)
+        await baton.requested_user.set(NO_USER)
+        while await baton.current_user.get_value() != NO_USER:
+            await sleep(0.1)
+        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
+        await baton.requested_user.set(HYPERION_USER)
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        udc_runner.shutdown()
+
+    test_results = executor.submit(launch_tests)
+    udc_runner.wait_on_queue()
+
+    done, not_done = wait([test_results])
+    assert test_results in done
+
+    assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=AssertionError("Runner started command processing without baton"),
+)
+def test_wait_on_queue_handles_shutdown_while_waiting_for_baton(
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: UDCRunner,
+    executor: Executor,
+):
+    def launch_tests():
+        future = asyncio.run_coroutine_threadsafe(
+            issue_shutdown_without_baton(), udc_runner.RE.loop
+        )
+        wait([future])
+
+    async def issue_shutdown_without_baton():
+        baton = find_device_in_context(udc_runner.context, "baton", Baton)
+        await baton.requested_user.set(NO_USER)
+        await sleep(0.1)
+        assert udc_runner.current_status.status == Status.IDLE.value
+        udc_runner.shutdown()
+
+    test_results = executor.submit(launch_tests)
+    udc_runner.wait_on_queue()
+
+    done, not_done = wait([test_results])
+    assert test_results in done
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+        [],
+    ],
+)
+def test_wait_on_queue_clears_error_status_on_resume(
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: UDCRunner,
+    executor: Executor,
+):
+    def launch_tests():
+        future = asyncio.run_coroutine_threadsafe(
+            error_with_command_then_resume(), udc_runner.RE.loop
+        )
+        wait([future])
+
+    async def error_with_command_then_resume():
+        with patch(
+            "mx_bluesky.hyperion.baton_handler._runner_sleep",
+            side_effect=RuntimeError("Simulated plan exception"),
+        ):
+            while udc_runner.current_status.status != Status.FAILED.value:
+                await sleep(0.1)
+        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
+        baton = find_device_in_context(udc_runner.context, "baton", Baton)
+        while await baton.current_user.get_value() != NO_USER:
+            await sleep(0.1)
+        await baton.requested_user.set(HYPERION_USER)
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        udc_runner.shutdown()
+
+    test_results = executor.submit(launch_tests)
+    udc_runner.wait_on_queue()
+
+    done, not_done = wait([test_results])
+    assert test_results in done
