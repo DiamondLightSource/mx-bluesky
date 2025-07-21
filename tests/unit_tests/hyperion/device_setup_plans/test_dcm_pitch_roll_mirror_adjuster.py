@@ -61,10 +61,10 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
 
 
 @pytest.mark.parametrize(
-    "energy_kev, expected_stripe, expected_lat, expected_yaw, first_voltage, last_voltage",
+    "energy_kev, initial_stripe, expected_stripe, expected_lat, expected_yaw, first_voltage, last_voltage",
     [
-        (6.999, MirrorStripe.BARE, 0.0, 6.2, 140, 15),
-        (7.001, MirrorStripe.RHODIUM, 10.0, 0.0, 124, -46),
+        (6.999, MirrorStripe.RHODIUM, MirrorStripe.BARE, 0.0, 6.2, 140, 15),
+        (7.001, MirrorStripe.BARE, MirrorStripe.RHODIUM, 10.0, 0.0, 124, -46),
     ],
 )
 def test_adjust_mirror_stripe(
@@ -72,12 +72,15 @@ def test_adjust_mirror_stripe(
     mirror_voltages: MirrorVoltages,
     vfm: FocusingMirrorWithStripes,
     energy_kev,
-    expected_stripe,
+    initial_stripe: MirrorStripe,
+    expected_stripe: MirrorStripe,
     expected_lat,
     expected_yaw,
     first_voltage,
     last_voltage,
 ):
+    set_mock_value(vfm.stripe, initial_stripe)
+
     parent = MagicMock()
     parent.attach_mock(get_mock_put(vfm.stripe), "stripe_set")
     parent.attach_mock(get_mock_put(vfm.apply_stripe), "apply_stripe")
