@@ -1,4 +1,5 @@
-from logging import Logger
+import json
+from dataclasses import fields
 from time import time
 from typing import Any, Generic, TypeVar
 
@@ -11,6 +12,7 @@ from mx_bluesky.common.parameters.constants import (
     FeatureFlagSources,
     OavConstants,
 )
+from mx_bluesky.common.utils.log import LOGGER
 
 FEATURE_FLAG_CACHE_LENGTH = 60 * 5
 
@@ -23,106 +25,88 @@ T = TypeVar("T", bound=FeatureFlags)
 class MXConfigServer(ConfigServer, Generic[T]):
     def __init__(
         self,
-        url: str,
         feature_sources: type[FeatureFlagSources],
         feature_dc: type[T],
-        log: Logger | None = None,
+        url: str = "https://daq-config.diamond.ac.uk",
     ):
+        """MX implementation of the config server client. Makes requests to the config server to retrieve config while falling back to
+        the filesystem in the case that the request failed.
+
+        See mx_bluesky/hyperion/external_interaction/config_server.py for example implementation.
+
+        Args:
+        feature_sources: A StrEnum containing available features, where the string is the name of that feature toggle in a beamline's GDA
+        domain.properties.
+
+        feature_dc: A dataclass containing available features along with their default flags. This dataclass must contain the same keys
+        as the feature_sources parameter. These defaults are used when a server request fails.
+        """
+
         self.feature_sources = feature_sources
         self.feature_dc: type[T] = feature_dc
         self._cached_features: T | None = None
+        self._cached_oav_config: dict[str, Any] | None = None
         self._time_since_feature_get: float = 0
-        super().__init__(url, log)
+        self._verify_feature_parameters()
+        super().__init__(url)
 
-    # todo put in a try block?
-    def get_oav_config(self) -> dict[str, Any]:
-        config_path = OavConstants.OAV_CONFIG_JSON
-        return TypeAdapter(dict[str, Any]).validate_python(
-            self.get_file_contents(config_path, dict)
+    def _verify_feature_parameters(self):
+        sources_keys = [feature.name for feature in self.feature_sources]
+        feature_dc_keys = [key.name for key in fields(self.feature_dc)]
+        assert sources_keys == feature_dc_keys, (
+            f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
         )
 
-    def get_feature_flags(self, refresh=False) -> T:
-        if (
-            refresh
-            or not self._cached_features
-            or time() - self._time_since_feature_get > FEATURE_FLAG_CACHE_LENGTH
-        ):
-            feature_dict = {}
-            domain_properties = self.get_file_contents(
-                GDA_DOMAIN_PROPERTIES_PATH
-            ).splitlines()
-            for line in domain_properties:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                line = line.split("#", 1)[0].strip()  # Remove inline comments
-                if "=" in line:
-                    key, value = map(str.strip, line.split("=", 1))
-                    # Can just use "in" as of python 3.12
-                    if key in self.feature_sources._value2member_map_:
-                        feature_dict[key] = value
-            # TODO put all this in try
-            self._time_since_feature_get = time()
-            self._cached_features = self.feature_dc(**feature_dict)
-        return self._cached_features
+    def get_oav_config(self) -> dict[str, Any]:
+        if not self._cached_oav_config:
+            config_path = OavConstants.OAV_CONFIG_JSON
+            try:
+                self._cached_oav_config = TypeAdapter(dict[str, Any]).validate_python(
+                    self.get_file_contents(config_path, dict)
+                )
+            except Exception as e:
+                LOGGER.warning(
+                    f"Failed to get oav config from config server: {e} \nReading the file directory..."
+                )
+                with open(config_path) as f:
+                    self._cached_oav_config = TypeAdapter(
+                        dict[str, Any]
+                    ).validate_python(json.loads(f.read()))
+        return self._cached_oav_config
 
+    def get_feature_flags(self) -> T:
+        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults"""
 
-# my_server = MXConfigServer("https://daq-config.diamond.ac.uk")
-# data = my_server.get_file_contents(
-#     "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
-#     desired_return_type=str,
-#     reset_cached_result=False,
-# )
-# print(data)
+        try:
+            if (
+                not self._cached_features
+                or time() - self._time_since_feature_get > FEATURE_FLAG_CACHE_LENGTH
+            ):
+                # Return self.feature_dc based off the settings defined in the domain.properties file
+                feature_dict = {}
+                domain_properties = self.get_file_contents(
+                    GDA_DOMAIN_PROPERTIES_PATH
+                ).splitlines()
+                for line in domain_properties:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    line = line.split("#", 1)[0].strip()  # Remove inline comments
+                    if "=" in line:
+                        key, value = map(str.strip, line.split("=", 1))
+                        # Can just use "in" as of python 3.12
+                        if key in self.feature_sources._value2member_map_:
+                            feature_dict[key] = value
+                self._time_since_feature_get = time()
+                self._cached_features = self.feature_dc(**feature_dict)
+            return self._cached_features
+        except Exception as e:
+            LOGGER.warning(
+                f"Failed to get feature flags from config server: {e} \nUsing defaults..."
+            )
+            return self.feature_dc()
 
-
-# class FeatureFlags(BaseModel, ABC):
-#     """Abstract class to use ConfigServer to toggle features for an experiment
-
-#     A module wanting to use FeatureFlags should inherit this class, add boolean features
-#     as attributes, and implement a get_config_server method, which returns a cached creation of
-#     ConfigServer. See HyperionFeatureFlags for an example
-
-#     Values supplied upon class instantiation will always take priority over the config server. If connection to the server cannot
-#     be made AND values were not supplied, attributes will use their default values
-#     """
-
-#     # Feature values supplied at construction will override values from the config server
-#     overriden_features: dict = Field(default_factory=dict, exclude=True)
-
-#     @staticmethod
-#     @cache
-#     @abstractmethod
-#     def get_config_server() -> ConfigServer: ...
-
-#     @model_validator(mode="before")
-#     @classmethod
-#     def mark_overridden_features(cls, values):
-#         assert isinstance(values, dict)
-#         values["overriden_features"] = values.copy()
-#         cls._validate_overridden_features(values)
-#         return values
-
-#     @classmethod
-#     def _validate_overridden_features(cls, values: dict):
-#         """Validates overridden features to ensure they are defined in the model fields."""
-#         defined_fields = cls.model_fields.keys()
-#         invalid_features = [key for key in values.keys() if key not in defined_fields]
-
-#         if invalid_features:
-#             message = f"Invalid feature toggle(s) supplied: {invalid_features}. "
-#             raise ValueError(message)
-
-#     def _get_flags(self):
-#         flags = type(self).get_config_server().best_effort_get_all_feature_flags()
-#         return {f: flags[f] for f in flags if f in self.model_fields.keys()}
-
-#     def update_self_from_server(self):
-#         """Used to update the feature flags from the server during a plan. Where there are flags which were explicitly set from externally supplied parameters, these values will be used instead."""
-#         for flag, value in self._get_flags().items():
-#             updated_value = (
-#                 value
-#                 if flag not in self.overriden_features.keys()
-#                 else self.overriden_features[flag]
-#             )
-#             setattr(self, flag, updated_value)
+    def clear_cache(self):
+        "Clear the client's cache. Use when filesystem config may have changed"
+        self._cached_features = None
+        self._cached_oav_config = None

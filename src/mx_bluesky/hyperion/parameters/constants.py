@@ -41,9 +41,9 @@ class HyperionFeatureFlagSources(FeatureFlagSources):
 # Use these defaults if we can't read from the config server
 @dataclass
 class HyperionFeatureFlags(FeatureFlags):
-    USE_GPU_RESULTS = True
-    USE_PANDA_FOR_GRIDSCAN = False
-    SET_STUB_OFFSETS = False
+    USE_GPU_RESULTS: bool = True
+    USE_PANDA_FOR_GRIDSCAN: bool = False
+    SET_STUB_OFFSETS: bool = False
 
 
 @dataclass(frozen=True)
