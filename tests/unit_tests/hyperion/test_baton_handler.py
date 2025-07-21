@@ -2,7 +2,7 @@ import asyncio
 import os
 from asyncio import run_coroutine_threadsafe, sleep
 from collections.abc import Generator
-from concurrent.futures import Executor, ThreadPoolExecutor, wait
+from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from dataclasses import fields
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
@@ -443,6 +443,18 @@ async def test_shutdown_releases_the_baton(
     assert shutdown_task.done()
 
 
+def _launch_test_in_runner_event_loop(async_func, udc_runner, executor) -> Future:
+    """Launch the async func in a separate thread because the RunEngine under
+    test must run in the main thread and block our test code, and return
+    result and any exception to the caller."""
+
+    def _launch_in_new_thread():
+        future = asyncio.run_coroutine_threadsafe(async_func(), udc_runner.RE.loop)
+        return future.result()
+
+    return executor.submit(_launch_in_new_thread)
+
+
 @patch(
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     side_effect=[
@@ -456,21 +468,14 @@ async def test_shutdown_releases_the_baton(
                 {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
             )
         ],
-        [],
     ],
 )
 @pytest.mark.timeout(1)
-async def test_wait_on_queue_resumes_collection(
+async def test_wait_on_queue_resumes_collection_when_baton_taken_away(
     mock_create_parameters_from_agamemnon: MagicMock,
     udc_runner: UDCRunner,
     executor: Executor,
 ):
-    def launch_tests():
-        future = asyncio.run_coroutine_threadsafe(
-            take_baton_away_then_wait_for_release_then_re_request(), udc_runner.RE.loop
-        )
-        wait([future])
-
     async def take_baton_away_then_wait_for_release_then_re_request():
         while udc_runner.current_status.status != Status.BUSY.value:
             await sleep(0.1)
@@ -484,13 +489,56 @@ async def test_wait_on_queue_resumes_collection(
             await sleep(0.1)
         udc_runner.shutdown()
 
-    test_results = executor.submit(launch_tests)
+    future = _launch_test_in_runner_event_loop(
+        take_baton_away_then_wait_for_release_then_re_request, udc_runner, executor
+    )
     udc_runner.wait_on_queue()
 
-    done, not_done = wait([test_results])
-    assert test_results in done
-
+    future.result()  # Ensure successful completion
     assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+        [],
+        [
+            Wait.model_validate(
+                {"duration_s": 0.3, "parameter_model_version": PARAMETER_VERSION}
+            )
+        ],
+    ],
+)
+@pytest.mark.timeout(1)
+async def test_wait_on_queue_resumes_collection_when_normal_completion_and_baton_returned(
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: UDCRunner,
+    executor: Executor,
+):
+    async def take_baton_away_then_wait_for_release_then_re_request():
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        baton = find_device_in_context(udc_runner.context, "baton", Baton)
+        while await baton.current_user.get_value() != NO_USER:
+            await sleep(0.1)
+        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
+        await baton.requested_user.set(HYPERION_USER)
+        while udc_runner.current_status.status != Status.BUSY.value:
+            await sleep(0.1)
+        udc_runner.shutdown()
+
+    future = _launch_test_in_runner_event_loop(
+        take_baton_away_then_wait_for_release_then_re_request, udc_runner, executor
+    )
+    udc_runner.wait_on_queue()
+
+    future.result()  # Ensure successful completion
+    assert len(mock_create_parameters_from_agamemnon.mock_calls) == 3
 
 
 @patch(
@@ -502,12 +550,6 @@ def test_wait_on_queue_handles_shutdown_while_waiting_for_baton(
     udc_runner: UDCRunner,
     executor: Executor,
 ):
-    def launch_tests():
-        future = asyncio.run_coroutine_threadsafe(
-            issue_shutdown_without_baton(), udc_runner.RE.loop
-        )
-        wait([future])
-
     async def issue_shutdown_without_baton():
         baton = find_device_in_context(udc_runner.context, "baton", Baton)
         await baton.requested_user.set(NO_USER)
@@ -515,11 +557,11 @@ def test_wait_on_queue_handles_shutdown_while_waiting_for_baton(
         assert udc_runner.current_status.status == Status.IDLE.value
         udc_runner.shutdown()
 
-    test_results = executor.submit(launch_tests)
+    future = _launch_test_in_runner_event_loop(
+        issue_shutdown_without_baton, udc_runner, executor
+    )
     udc_runner.wait_on_queue()
-
-    done, not_done = wait([test_results])
-    assert test_results in done
+    future.result()  # Ensure successful completion
 
 
 @patch(
@@ -543,12 +585,6 @@ def test_wait_on_queue_clears_error_status_on_resume(
     udc_runner: UDCRunner,
     executor: Executor,
 ):
-    def launch_tests():
-        future = asyncio.run_coroutine_threadsafe(
-            error_with_command_then_resume(), udc_runner.RE.loop
-        )
-        wait([future])
-
     async def error_with_command_then_resume():
         with patch(
             "mx_bluesky.hyperion.baton_handler._runner_sleep",
@@ -565,8 +601,9 @@ def test_wait_on_queue_clears_error_status_on_resume(
             await sleep(0.1)
         udc_runner.shutdown()
 
-    test_results = executor.submit(launch_tests)
+    future = _launch_test_in_runner_event_loop(
+        error_with_command_then_resume, udc_runner, executor
+    )
     udc_runner.wait_on_queue()
 
-    done, not_done = wait([test_results])
-    assert test_results in done
+    future.result()  # Ensure successful completion
