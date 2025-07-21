@@ -43,7 +43,7 @@ dependencies = [
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
-    "blueapi >= 0.11.1",
+    "blueapi >= 0.15.0",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
@@ -249,5 +249,15 @@ modules = "mx_bluesky.beamlines.*"
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from hyperion"
 type = "forbidden"
-source_modules = "mx_bluesky.beamlines.*"
-forbidden_modules = "mx_bluesky.hyperion"
+source_modules = "mx_bluesky.beamlines.**"
+forbidden_modules = "mx_bluesky.hyperion.**"
+
+[[tool.importlinter.contracts]]
+name = "Only Hyperion and i04 can import from phase1_zebra"
+type = "forbidden"
+source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
+forbidden_modules = ["mx_bluesky.phase1_zebra.**"]
+ignore_imports = [
+    "mx_bluesky.beamlines.i04.** -> mx_bluesky.phase1_zebra.**",
+    "mx_bluesky.hyperion.** -> mx_bluesky.phase1_zebra.**",
+]

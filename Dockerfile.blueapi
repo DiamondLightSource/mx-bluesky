@@ -1,5 +1,7 @@
- # See https://github.com/DiamondLightSource/mx-bluesky/issues/1004
-FROM ghcr.io/diamondlightsource/blueapi:0.10.1
+# Before changing this BlueAPI version number, you should check that 
+# the BlueAPI pin in pyproject.toml is compatible, else the version will
+# be overridden
+FROM ghcr.io/diamondlightsource/blueapi:1.0.0-rc.2
 
 ARG DEBIAN_FRONTEND=noninteractive
 

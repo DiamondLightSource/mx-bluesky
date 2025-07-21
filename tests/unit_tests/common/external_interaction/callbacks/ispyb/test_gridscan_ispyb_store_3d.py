@@ -4,6 +4,7 @@ from itertools import dropwhile
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ispyb import ReadWriteError
 from ispyb.sp.mxacquisition import MXAcquisition
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -661,6 +662,34 @@ def test_fail_result_run_results_in_bad_run_status(
     )
     ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "test specifies failure")
+
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    for upsert_call in mock_upsert_data_collection_calls[4:5]:
+        end_deposition_upsert_args = upsert_call[0]
+        upserted_param_value_list = end_deposition_upsert_args[0]
+        assert "DataCollection Unsuccessful" in upserted_param_value_list
+        assert "DataCollection Successful" not in upserted_param_value_list
+
+
+def test_fail_result_long_comment_still_updates_run_status(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb: StoreInIspyb,
+    dummy_collection_group_info,
+    scan_data_infos_for_begin,
+    scan_data_infos_for_update,
+):
+    mock_ispyb_conn = mock_ispyb_conn
+    mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    mock_mx_aquisition.update_data_collection_append_comments.side_effect = (
+        ReadWriteError("Comment too big for column")
+    )
+
+    ispyb_ids = dummy_ispyb.begin_deposition(
+        dummy_collection_group_info, scan_data_infos_for_begin
+    )
+    ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
+    dummy_ispyb.end_deposition(ispyb_ids, "fail", "this comment is too long")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     for upsert_call in mock_upsert_data_collection_calls[4:5]:
