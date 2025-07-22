@@ -14,10 +14,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 
-FEATURE_FLAG_CACHE_LENGTH = 60 * 5
-
-
-"""Make methods to get the specific bits we need in nicely formatted ways. Wrap around a try so we try to read from /dls_sw if the config server fails"""
+FEATURE_FLAG_CACHE_LENGTH_S = 60 * 5
 
 T = TypeVar("T", bound=FeatureFlags)
 
@@ -51,13 +48,18 @@ class MXConfigServer(ConfigServer, Generic[T]):
         super().__init__(url)
 
     def _verify_feature_parameters(self):
-        sources_keys = [feature.name for feature in self.feature_sources]
-        feature_dc_keys = [key.name for key in fields(self.feature_dc)]
+        sources_keys = {feature.name for feature in self.feature_sources}
+        feature_dc_keys = {key.name for key in fields(self.feature_dc)}
         assert sources_keys == feature_dc_keys, (
             f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
         )
 
     def get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
+        """Get the OAV config in the form of a python dictionary
+
+        Args:
+        reset_cached_result (bool): Force refresh the cache for this request
+        """
         if reset_cached_result:
             self._cached_oav_config = None
         if not self._cached_oav_config:
@@ -78,8 +80,20 @@ class MXConfigServer(ConfigServer, Generic[T]):
                     ).validate_python(json.loads(f.read()))
         return self._cached_oav_config
 
+    def _check_missing_fields(self, expected: set, actual: set):
+        missing = expected - actual
+        if missing:
+            LOGGER.warning(
+                f"Missing features from domain.properties: {missing}.\n Using defaults for missing features"
+            )
+
     def get_feature_flags(self, reset_cached_result=False) -> T:
-        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults"""
+        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
+        which is kept for FEATURE_FLAG_CACHE_LENGTH_S
+
+        Args:
+        reset_cached_result (bool): Force refresh the cache for this request
+        """
 
         try:
             if reset_cached_result:
@@ -87,9 +101,10 @@ class MXConfigServer(ConfigServer, Generic[T]):
                 self._time_of_last_feature_get = 0
             if (
                 not self._cached_features
-                or time() - self._time_of_last_feature_get > FEATURE_FLAG_CACHE_LENGTH
+                or time() - self._time_of_last_feature_get > FEATURE_FLAG_CACHE_LENGTH_S
             ):
-                # Return self.feature_dc based off the settings defined in the domain.properties file
+                self._cached_features = None
+                # Construct self.feature_dc by reading the domain.properties file
                 enum_dict = (
                     self.feature_sources._value2member_map_
                 )  # As of python 3.12, can do checks using "in" for enums instead
@@ -108,6 +123,9 @@ class MXConfigServer(ConfigServer, Generic[T]):
                         if key in enum_dict:
                             feature_dict[enum_dict[key].name] = value
                 self._time_of_last_feature_get = time()
+                self._check_missing_fields(
+                    {f.name for f in fields(self.feature_dc)}, set(feature_dict.keys())
+                )
                 self._cached_features = self.feature_dc(**feature_dict)
             return self._cached_features
         except Exception as e:
@@ -117,6 +135,6 @@ class MXConfigServer(ConfigServer, Generic[T]):
             return self.feature_dc()
 
     def refresh_cache(self):
-        "Refresh the client's cache. Use when filesystem config may have changed"
+        """Refresh the client's cache. Use when filesystem config may have changed"""
         self.get_feature_flags(reset_cached_result=True)
         self.get_oav_config(reset_cached_result=True)

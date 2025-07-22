@@ -159,7 +159,7 @@ class Status(Enum):
 
 
 @dataclass
-class FeatureFlags: ...
+class FeatureFlags: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
 class FeatureFlagSources(StrEnum): ...

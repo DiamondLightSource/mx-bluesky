@@ -144,6 +144,7 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    #Remove when we drop python 3.11
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests

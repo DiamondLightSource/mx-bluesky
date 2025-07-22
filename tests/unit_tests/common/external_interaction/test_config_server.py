@@ -3,10 +3,12 @@ from time import time
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.external_interaction.config_server import MXConfigServer
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
+    FeatureFlags,
     FeatureFlagSources,
     OavConstants,
 )
@@ -77,7 +79,7 @@ def test_get_feature_flags_cache():
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.config_server.FEATURE_FLAG_CACHE_LENGTH",
+    "mx_bluesky.common.external_interaction.config_server.FEATURE_FLAG_CACHE_LENGTH_S",
     new=0,
 )
 def test_get_feature_flags_time_cache():
@@ -114,3 +116,38 @@ def test_refresh_cache():
         call(OavConstants.OAV_CONFIG_JSON, dict, reset_cached_result=True),
     ]
     server.get_file_contents.assert_has_calls(call_list, any_order=True)
+
+
+class BadFeatureFlagsSources(FeatureFlagSources):
+    USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
+    USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
+    SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
+    PANDA_RUNUP_DISTANCE_MM = "gda.mx.hyperion.panda_runup_distance_mm"
+    MISSING_FEATURE = "gda.mx.hyperion.missing_feature"
+
+
+@dataclass
+class BadFeatureFlags(FeatureFlags):
+    USE_GPU_RESULTS: bool = True
+    USE_PANDA_FOR_GRIDSCAN: bool = False
+    SET_STUB_OFFSETS: bool = False
+    MISSING_FEATURE: bool = False
+    PANDA_RUNUP_DISTANCE_MM: float = 0.16
+
+
+@patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
+def test_warning_on_missing_features_in_file(mock_log_warn: MagicMock):
+    server = MXConfigServer(BadFeatureFlagsSources, BadFeatureFlags)
+
+    expected_features_dict = {
+        "USE_GPU_RESULTS": True,
+        "USE_PANDA_FOR_GRIDSCAN": False,
+        "SET_STUB_OFFSETS": False,
+        "PANDA_RUNUP_DISTANCE_MM": 0.16,
+        "MISSING_FEATURE": False,
+    }
+    assert server.get_feature_flags() == BadFeatureFlags(**expected_features_dict)
+    assert (
+        "MISSING_FEATURE" in mock_log_warn.call_args_list[0][0][0]
+    )  # call -> tuple -> contents
+    mock_log_warn.assert_called_once()
