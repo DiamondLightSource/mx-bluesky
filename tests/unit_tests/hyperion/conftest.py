@@ -81,17 +81,26 @@ def test_fgs_params(tmp_path):
     )
 
 
+@pytest.fixture(params=[False, True])
+def test_omega_flip(request):
+    with patch(
+        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        new=request.param,
+    ):
+        yield request.param
+
+
 @pytest.fixture
 def fgs_params_use_panda(tmp_path):
     with patch(
-        "mx_bluesky.common.parameters.constants.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new="tests/test_data/test_domain_properties_with_panda",
     ):
         params = raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json",
             tmp_path,
         )
-        return HyperionSpecifiedThreeDGridScan(**params)
+        yield HyperionSpecifiedThreeDGridScan(**params)
 
 
 @pytest.fixture

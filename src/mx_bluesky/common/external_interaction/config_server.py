@@ -46,7 +46,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
         self.feature_dc: type[T] = feature_dc
         self._cached_features: T | None = None
         self._cached_oav_config: dict[str, Any] | None = None
-        self._time_since_feature_get: float = 0
+        self._time_of_last_feature_get: float = 0
         self._verify_feature_parameters()
         super().__init__(url)
 
@@ -57,12 +57,16 @@ class MXConfigServer(ConfigServer, Generic[T]):
             f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
         )
 
-    def get_oav_config(self) -> dict[str, Any]:
+    def get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
+        if reset_cached_result:
+            self._cached_oav_config = None
         if not self._cached_oav_config:
             config_path = OavConstants.OAV_CONFIG_JSON
             try:
                 self._cached_oav_config = TypeAdapter(dict[str, Any]).validate_python(
-                    self.get_file_contents(config_path, dict)
+                    self.get_file_contents(
+                        config_path, dict, reset_cached_result=reset_cached_result
+                    )
                 )
             except Exception as e:
                 LOGGER.warning(
@@ -74,21 +78,24 @@ class MXConfigServer(ConfigServer, Generic[T]):
                     ).validate_python(json.loads(f.read()))
         return self._cached_oav_config
 
-    def get_feature_flags(self) -> T:
+    def get_feature_flags(self, reset_cached_result=False) -> T:
         """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults"""
 
         try:
-            enum_dict = (
-                self.feature_sources._value2member_map_
-            )  # As of python 3.12, can do checks using "in" for enums instead
+            if reset_cached_result:
+                self._cached_features = None
+                self._time_of_last_feature_get = 0
             if (
                 not self._cached_features
-                or time() - self._time_since_feature_get > FEATURE_FLAG_CACHE_LENGTH
+                or time() - self._time_of_last_feature_get > FEATURE_FLAG_CACHE_LENGTH
             ):
                 # Return self.feature_dc based off the settings defined in the domain.properties file
+                enum_dict = (
+                    self.feature_sources._value2member_map_
+                )  # As of python 3.12, can do checks using "in" for enums instead
                 feature_dict = {}
                 domain_properties = self.get_file_contents(
-                    GDA_DOMAIN_PROPERTIES_PATH
+                    GDA_DOMAIN_PROPERTIES_PATH, reset_cached_result=reset_cached_result
                 ).splitlines()
                 for line in domain_properties:
                     line = line.strip()
@@ -100,7 +107,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
                         # Construct dict needed for feature flag DC
                         if key in enum_dict:
                             feature_dict[enum_dict[key].name] = value
-                self._time_since_feature_get = time()
+                self._time_of_last_feature_get = time()
                 self._cached_features = self.feature_dc(**feature_dict)
             return self._cached_features
         except Exception as e:
@@ -109,7 +116,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
             )
             return self.feature_dc()
 
-    def clear_cache(self):
-        "Clear the client's cache. Use when filesystem config may have changed"
-        self._cached_features = None
-        self._cached_oav_config = None
+    def refresh_cache(self):
+        "Refresh the client's cache. Use when filesystem config may have changed"
+        self.get_feature_flags(reset_cached_result=True)
+        self.get_oav_config(reset_cached_result=True)

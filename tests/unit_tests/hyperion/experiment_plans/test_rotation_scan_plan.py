@@ -889,7 +889,10 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
 ):
-    with patch("mx_bluesky.hyperion.parameters.constants.I03Constants", new=omega_flip):
+    with patch(
+        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        new=omega_flip,
+    ):
         for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
             scan.rotation_direction = rotation_direction
             scan.omega_start_deg = 30
@@ -916,34 +919,34 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
                 ),
             )
 
-    assert omega_put.mock_calls[0:5] == [
-        call(0, wait=True),
-        call(90, wait=True),
-        call(180, wait=True),
-        call(270, wait=True),
-        call(expected_start_angle_with_runup, wait=True),
-    ]
-    mock_setup_zebra_for_rotation.assert_called_once_with(
-        fake_create_rotation_devices.zebra,
-        fake_create_rotation_devices.sample_shutter,
-        start_angle=expected_start_angle,
-        scan_width=180,
-        direction=expected_zebra_direction,
-        shutter_opening_deg=ANY,
-        shutter_opening_s=ANY,
-        group="setup_zebra",
-    )
-    rotation_outer_start_event = next(
-        dropwhile(
-            lambda _: _.args[0] != "start"
-            or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
-            mock_callback.mock_calls,
+        assert omega_put.mock_calls[0:5] == [
+            call(0, wait=True),
+            call(90, wait=True),
+            call(180, wait=True),
+            call(270, wait=True),
+            call(expected_start_angle_with_runup, wait=True),
+        ]
+        mock_setup_zebra_for_rotation.assert_called_once_with(
+            fake_create_rotation_devices.zebra,
+            fake_create_rotation_devices.sample_shutter,
+            start_angle=expected_start_angle,
+            scan_width=180,
+            direction=expected_zebra_direction,
+            shutter_opening_deg=ANY,
+            shutter_opening_s=ANY,
+            group="setup_zebra",
         )
-    )
-    event_params = SingleRotationScan.model_validate_json(
-        rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
-    )
-    # event params are not transformed
+        rotation_outer_start_event = next(
+            dropwhile(
+                lambda _: _.args[0] != "start"
+                or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
+                mock_callback.mock_calls,
+            )
+        )
+        event_params = SingleRotationScan.model_validate_json(
+            rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
+        )
+        # event params are not transformed
     assert event_params.rotation_increment_deg == 0.1
     assert event_params.rotation_direction == rotation_direction
     assert event_params.scan_width_deg == 180
@@ -1184,6 +1187,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
+    test_omega_flip: bool,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1293,7 +1297,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 h5py.Dataset,
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
-            assert tuple(omega_vec) == -1.0
+            assert tuple(omega_vec) == (-1.0 if test_omega_flip else 1.0, 0, 0)
 
 
 @patch(

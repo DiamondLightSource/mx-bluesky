@@ -1806,7 +1806,9 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(filepath: str | Path, desired_return_type=str):
+def _fake_config_server_read(
+    filepath: str | Path, desired_return_type=str, reset_cached_result=False
+):
     filepath = Path(filepath)
     # Minimal logic required for unit tests
     with filepath.open("r") as f:

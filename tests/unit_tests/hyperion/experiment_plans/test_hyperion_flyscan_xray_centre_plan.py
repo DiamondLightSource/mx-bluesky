@@ -214,10 +214,6 @@ class TestFlyscanXrayCentrePlan:
             )
 
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.set_panda_directory",
-        side_effect=_custom_msg("set_panda_directory"),
-    )
-    @patch(
         "mx_bluesky.hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
         new=MagicMock(side_effect=_custom_msg("arm_panda")),
     )
@@ -229,14 +225,18 @@ class TestFlyscanXrayCentrePlan:
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
         new=MagicMock(side_effect=_custom_msg("do_gridscan")),
     )
+    @patch(
+        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.set_panda_directory",
+        side_effect=_custom_msg("set_panda_directory"),
+    )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")
     def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
         self,
         mock_load_panda: MagicMock,
         mock_set_panda_directory: MagicMock,
         done_status: Status,
-        fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
+        fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
