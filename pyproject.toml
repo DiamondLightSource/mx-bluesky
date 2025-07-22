@@ -123,6 +123,7 @@ markers = [
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
     "system_test: marks tests as a system test",
+    "requires: marks a test as having an external dependency such as a service or hardware"
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10

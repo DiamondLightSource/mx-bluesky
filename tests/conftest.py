@@ -383,14 +383,14 @@ def patch_async_motor(
     set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
-
+  
 @pytest.fixture
 def beamline_parameters():
     return GDABeamlineParameters.from_file(
         "tests/test_data/test_beamline_parameters.txt"
     )
 
-
+  
 @pytest.fixture(autouse=True)
 def i03_beamline_parameters():
     """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""

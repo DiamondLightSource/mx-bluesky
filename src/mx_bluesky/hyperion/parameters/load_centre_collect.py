@@ -39,6 +39,7 @@ class LoadCentreCollect(
     @model_validator(mode="before")
     @classmethod
     def validate_model(cls, values):
+        values = values.copy()
         allowed_keys = (
             LoadCentreCollect.model_fields.keys()
             | RobotLoadThenCentre.model_fields.keys()
