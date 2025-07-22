@@ -105,7 +105,7 @@ def test_get_feature_flags_bad_request(mock_log_warn: MagicMock):
     mock_log_warn.assert_called_once()
 
 
-def test_clear_cache():
+def test_refresh_cache():
     server = get_hyperion_config_server()
     server.get_file_contents = MagicMock()
     server.refresh_cache()
