@@ -162,4 +162,6 @@ class Status(Enum):
 class FeatureFlags: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
-class FeatureFlagSources(StrEnum): ...
+class FeatureFlagSources(
+    StrEnum
+): ...  # List of features and the name of that property in domain.properties

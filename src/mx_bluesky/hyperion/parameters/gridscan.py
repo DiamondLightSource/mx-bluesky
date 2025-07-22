@@ -24,7 +24,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionConfigServer)
         return params
 
 
-class HyperionSpecifiedThreeDGridScan(  # type: ignore
+class HyperionSpecifiedThreeDGridScan(
     WithHyperionConfigServer, SpecifiedThreeDGridScan
 ):
     """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
