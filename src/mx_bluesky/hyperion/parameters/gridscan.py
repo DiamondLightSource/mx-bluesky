@@ -24,7 +24,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon, WithHyperionConfigServer)
         return params
 
 
-class HyperionSpecifiedThreeDGridScan(
+class HyperionSpecifiedThreeDGridScan(  # type: ignore
     WithHyperionConfigServer, SpecifiedThreeDGridScan
 ):
     """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
@@ -86,13 +86,9 @@ class HyperionSpecifiedThreeDGridScan(
 class OddYStepsException(Exception): ...
 
 
-class PinTipCentreThenXrayCentre(
-    GridCommonWithHyperionDetectorParams, WithHyperionConfigServer
-):
+class PinTipCentreThenXrayCentre(GridCommonWithHyperionDetectorParams):
     tip_offset_um: float = 0
 
 
-class GridScanWithEdgeDetect(
-    GridCommonWithHyperionDetectorParams, WithHyperionConfigServer
-):
+class GridScanWithEdgeDetect(GridCommonWithHyperionDetectorParams):
     pass

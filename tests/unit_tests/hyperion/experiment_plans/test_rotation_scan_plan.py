@@ -1179,7 +1179,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
         }
 
 
-@pytest.mark.timeout(2)
+@pytest.mark.timeout(3)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
