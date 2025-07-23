@@ -9,7 +9,7 @@ Graylog
 ~~~~~~~
 
 Graylog is the recommended way to view logs. It is used for more centralised logging which is also more easily 
-searched and archived. Log messages are sent to the `Hyperion graylog stream https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search`_.
+searched and archived. Log messages are sent to the `Hyperion graylog stream <https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search>`_.
 
 
 Startup Log
