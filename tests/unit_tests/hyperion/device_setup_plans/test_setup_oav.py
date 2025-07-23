@@ -22,7 +22,10 @@ def mock_parameters():
 
 
 def test_when_set_up_oav_then_only_waits_on_oav_to_finish(
-    mock_parameters: OAVParameters, oav: OAV, ophyd_pin_tip_detection: PinTipDetection
+    mock_parameters: OAVParameters,
+    oav: OAV,
+    ophyd_pin_tip_detection: PinTipDetection,
+    RE: RunEngine,
 ):
     """This test will hang if pre_centring_setup_oav waits too generally as my_waiting_device
     never finishes moving"""
@@ -33,5 +36,4 @@ def test_when_set_up_oav_then_only_waits_on_oav_to_finish(
         yield from bps.abs_set(my_waiting_device, 10, wait=False)
         yield from pre_centring_setup_oav(oav, mock_parameters, ophyd_pin_tip_detection)
 
-    RE = RunEngine()
     RE(my_plan())

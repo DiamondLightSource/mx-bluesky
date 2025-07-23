@@ -36,7 +36,10 @@ def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], b
 
 
 async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
-    aperture_scatterguard: ApertureScatterguard, smargon: Smargon, done_status
+    aperture_scatterguard: ApertureScatterguard,
+    smargon: Smargon,
+    done_status,
+    RE: RunEngine,
 ):
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
@@ -45,7 +48,6 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     set_mock_value(smargon.z.user_setpoint, 5)
     set_mock_value(smargon.omega.user_setpoint, 90)
 
-    RE = RunEngine()
     RE(prepare_for_robot_load(aperture_scatterguard, smargon))
 
     assert await smargon.x.user_setpoint.get_value() == 0

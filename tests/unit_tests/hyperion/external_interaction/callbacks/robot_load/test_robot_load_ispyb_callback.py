@@ -49,9 +49,8 @@ update_doc_data = {
     autospec=True,
 )
 def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
-    expeye: MagicMock,
+    expeye: MagicMock, RE: RunEngine
 ):
-    RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
@@ -73,10 +72,7 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
     autospec=True,
 )
-def test_given_failing_plan_then_exception_detail(
-    expeye: MagicMock,
-):
-    RE = RunEngine()
+def test_given_failing_plan_then_exception_detail(expeye: MagicMock, RE: RunEngine):
     RE.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
@@ -134,12 +130,8 @@ def unsuccessful_robot_load_plan():
     autospec=True,
 )
 def test_given_plan_reads_robot_then_data_put_in_ispyb(
-    expeye: MagicMock,
-    robot: BartRobot,
-    oav: OAV,
-    webcam: Webcam,
+    expeye: MagicMock, robot: BartRobot, oav: OAV, webcam: Webcam, RE: RunEngine
 ):
-    RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
