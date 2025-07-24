@@ -13,6 +13,9 @@ from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -21,6 +24,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
@@ -31,6 +37,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionFlyScanXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -222,7 +231,7 @@ def robot_load_composite(
     eiger,
     xbpm_feedback,
     attenuator,
-    beamstop_i03,
+    beamstop_phase1,
     fast_grid_scan,
     undulator,
     undulator_dcm,
@@ -249,7 +258,7 @@ def robot_load_composite(
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -351,3 +360,13 @@ def grid_detection_callback_with_detected_grid():
             "z_step_size_um": 0.1,
         }
         yield callback
+
+
+@pytest.fixture
+def beamline_specific(
+    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    )

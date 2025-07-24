@@ -5,6 +5,7 @@ import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 
+from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
@@ -15,11 +16,26 @@ from mx_bluesky.common.utils.exceptions import (
 )
 
 TEST_SAMPLE_ID = 123456
+TEST_VISIT = "cm12345-1"
+TEST_CONTAINER = 8
+
+
+@pytest.fixture()
+def mock_expeye_cls():
+    with patch(
+        "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
+        ".ExpeyeInteraction"
+    ) as mock_expeye:
+        yield mock_expeye
 
 
 @run_decorator(
     md={
-        "metadata": {"sample_id": TEST_SAMPLE_ID},
+        "metadata": {
+            "sample_id": TEST_SAMPLE_ID,
+            "container": TEST_CONTAINER,
+            "visit": TEST_VISIT,
+        },
         "activate_callbacks": ["SampleHandlingCallback"],
     }
 )
@@ -115,46 +131,31 @@ def test_sample_handling_callback_intercepts_general_exception(
     exception_type: type,
     expected_sample_status: BLSampleStatus,
     message: str,
+    mock_expeye_cls: MagicMock,
 ):
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
 
-    mock_expeye = MagicMock()
-    with (
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
-            ".ExpeyeInteraction",
-            return_value=mock_expeye,
-        ),
-        pytest.raises(exception_type),
-    ):
+    with pytest.raises(exception_type):
         RE(plan_with_general_exception(exception_type, message))
-    mock_expeye.update_sample_status.assert_called_once_with(
+    mock_expeye_cls.return_value.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, expected_sample_status
     )
 
 
-def test_sample_handling_callback_closes_run_normally(RE: RunEngine):
+def test_sample_handling_callback_closes_run_normally(
+    RE: RunEngine, mock_expeye_cls: MagicMock
+):
     callback = SampleHandlingCallback()
     RE.subscribe(callback)
-    mock_expeye = MagicMock()
     with (
         patch.object(callback, "_record_exception") as record_exception,
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
-            ".ExpeyeInteraction",
-            return_value=mock_expeye,
-        ),
     ):
         RE(plan_with_normal_completion())
 
     record_exception.assert_not_called()
 
 
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
-    ".ExpeyeInteraction",
-)
 def test_sample_handling_callback_resets_sample_id(
     mock_expeye_cls: MagicMock, RE: RunEngine
 ):
@@ -176,10 +177,6 @@ def test_sample_handling_callback_resets_sample_id(
     )
 
 
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
-    ".ExpeyeInteraction",
-)
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_thrown_in_inner_plan(
     mock_expeye_cls: MagicMock, RE: RunEngine
 ):
@@ -194,10 +191,6 @@ def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exceptio
     )
 
 
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
-    ".ExpeyeInteraction",
-)
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_rethrown_from_outermost_plan(
     mock_expeye_cls: MagicMock, RE: RunEngine
 ):
@@ -210,3 +203,42 @@ def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exceptio
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
+
+
+@patch.dict("os.environ", {"BEAMLINE": "i03"})
+@pytest.mark.parametrize(
+    "exception_type, expect_alert, message",
+    [
+        [AssertionError, True, "Test failure"],
+        [SampleException, False, "Test failure"],
+        [CrystalNotFoundException, False, "Test failure"],
+        [AssertionError, True, None],
+    ],
+)
+def test_sample_handling_callback_raises_an_alert_when_beamline_error_occurs(
+    exception_type: type,
+    expect_alert: bool,
+    message: str,
+    mock_expeye_cls: MagicMock,
+    mock_alert_service: MagicMock,
+    RE: RunEngine,
+):
+    callback = SampleHandlingCallback()
+    RE.subscribe(callback)
+
+    with pytest.raises(exception_type):
+        RE(plan_with_general_exception(exception_type, message))
+
+    if expect_alert:
+        mock_alert_service.raise_alert.assert_called_once_with(
+            "UDC encountered an error on i03",
+            f"Hyperion encountered the following beamline error: {message}",
+            {
+                Metadata.SAMPLE_ID: str(TEST_SAMPLE_ID),
+                Metadata.VISIT: TEST_VISIT,
+                Metadata.CONTAINER: str(TEST_CONTAINER),
+                Metadata.BEAMLINE: "i03",
+            },
+        )
+    else:
+        mock_alert_service.raise_alert.assert_not_called()
