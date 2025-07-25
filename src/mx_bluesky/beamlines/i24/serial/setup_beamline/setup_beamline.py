@@ -7,7 +7,7 @@ from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.motors import YZStage
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
     parse_lookup_table,
@@ -69,7 +69,7 @@ def setup_beamline_for_collection_plan(
 
 
 def move_detector_stage_to_position_plan(
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     detector_distance: float,
 ):
     SSX_LOGGER.debug("Setup beamline: moving detector stage.")

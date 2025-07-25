@@ -5,8 +5,8 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 import pytest
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
@@ -191,7 +191,7 @@ async def test_moveto_preset(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
@@ -220,7 +220,7 @@ async def test_moveto_preset_with_pmac_move(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))

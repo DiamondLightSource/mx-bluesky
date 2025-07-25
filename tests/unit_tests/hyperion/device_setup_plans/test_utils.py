@@ -7,7 +7,7 @@ from dodal.beamlines import i03
 from ophyd.status import Status
 from ophyd_async.testing import get_mock_put
 
-from mx_bluesky.hyperion.device_setup_plans.utils import (
+from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 
@@ -26,7 +26,7 @@ class MyTestException(Exception):
 
 
 def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_i03, mock_eiger, detector_motion, RE
+    beamstop_phase1, mock_eiger, detector_motion, RE
 ):
     def my_plan():
         yield from bps.null()
@@ -37,7 +37,7 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
     with pytest.raises(MyTestException):
         RE(
             start_preparing_data_collection_then_do_plan(
-                beamstop_i03, eiger, detector_motion, 100, my_plan()
+                beamstop_phase1, eiger, detector_motion, 100, my_plan()
             )
         )
 
@@ -53,7 +53,7 @@ def null_plan():
 
 
 def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_i03, mock_eiger, null_plan, RE
+    beamstop_phase1, mock_eiger, null_plan, RE
 ):
     detector_motion = MagicMock()
     status = Status()
@@ -63,7 +63,7 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
     with pytest.raises(FailedStatus) as e:
         RE(
             start_preparing_data_collection_then_do_plan(
-                beamstop_i03, mock_eiger, detector_motion, 100, null_plan
+                beamstop_phase1, mock_eiger, detector_motion, 100, null_plan
             )
         )
     assert e.value.args[0] is status
@@ -74,7 +74,7 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
 
 
 def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_i03, mock_eiger, detector_motion, null_plan, RE
+    beamstop_phase1, mock_eiger, detector_motion, null_plan, RE
 ):
     status = Status()
     status.set_exception(MyTestException())
@@ -83,7 +83,7 @@ def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_ret
     with pytest.raises(FailedStatus) as e:
         RE(
             start_preparing_data_collection_then_do_plan(
-                beamstop_i03, mock_eiger, detector_motion, 100, null_plan
+                beamstop_phase1, mock_eiger, detector_motion, 100, null_plan
             )
         )
     assert e.value.args[0] is status

@@ -3,18 +3,33 @@ from typing import Literal
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
+from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.i24.aperture import Aperture
+from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.i24.beamstop import Beamstop
+from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.motors import YZStage
+from dodal.devices.oav.oav_detector import OAVBeamCentreFile
+from dodal.devices.zebra.zebra import Zebra
 
+from mx_bluesky.beamlines.i24.serial.dcid import DCID
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
     PumpProbeSetting,
+)
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+    run_plan_in_wrapper,
+)
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+    upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _move_on_mouse_click_plan,
@@ -24,6 +39,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import (
+    DetectorName,
     FixedTargetParameters,
     get_chip_format,
 )
@@ -47,8 +63,18 @@ def gui_move_backlight(
 
 
 @bpp.run_decorator()
+def gui_set_zoom_level(
+    position: str, oav: OAVBeamCentreFile = inject("oav")
+) -> MsgGenerator:
+    yield from bps.abs_set(oav.zoom_controller, position, wait=True)
+    SSX_LOGGER.debug(f"Setting zoom level to {position}")
+
+
+@bpp.run_decorator()
 def gui_stage_move_on_click(
-    position_px: tuple[int, int], oav: OAV = inject("oav"), pmac: PMAC = inject("pmac")
+    position_px: tuple[int, int],
+    oav: OAVBeamCentreFile = inject("oav"),
+    pmac: PMAC = inject("pmac"),
 ) -> MsgGenerator:
     yield from _move_on_mouse_click_plan(oav, pmac, position_px)
 
@@ -78,7 +104,7 @@ def gui_sleep(sec: int) -> MsgGenerator:
 @bpp.run_decorator()
 def gui_move_detector(
     det: Literal["eiger", "pilatus"],
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
@@ -88,7 +114,7 @@ def gui_move_detector(
 
 
 @bpp.run_decorator()
-def gui_set_parameters(
+def gui_run_chip_collection(
     sub_dir: str,
     chip_name: str,
     exp_time: float,
@@ -103,6 +129,18 @@ def gui_set_parameters(
     laser_dwell: float,
     laser_delay: float,
     pre_pump: float,
+    pmac: PMAC = inject("pmac"),
+    zebra: Zebra = inject("zebra"),
+    aperture: Aperture = inject("aperture"),
+    backlight: DualBacklight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    detector_stage: YZStage = inject("detector_motion"),
+    shutter: HutchShutter = inject("shutter"),
+    dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -132,7 +170,6 @@ def gui_set_parameters(
     """
     # NOTE still a work in progress, adding to it as the ui grows
     # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
-    detector_stage = i24.detector_motion()
     det_type = yield from get_detector_type(detector_stage)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
@@ -164,6 +201,38 @@ def gui_set_parameters(
         "checker_pattern": checker_pattern,
         "pre_pump_exposure_s": pre_pump,
     }
-    # TODO run the run_fixed_target plan once params are set (GUI not ready yet)
-    yield from bps.sleep(0.5)
-    return FixedTargetParameters(**params)
+
+    parameters = FixedTargetParameters(**params)
+
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
+
+    if parameters.chip_map:
+        yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
+
+    beam_center_device = (
+        beam_center_eiger
+        if parameters.detector_name is DetectorName.EIGER
+        else beam_center_pilatus
+    )
+    SSX_LOGGER.info("Beam center device ready")
+
+    # DCID instance - do not create yet
+    dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
+    SSX_LOGGER.info("DCID created")
+
+    yield from run_plan_in_wrapper(
+        zebra,
+        pmac,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        pilatus_metadata,
+    )

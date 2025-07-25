@@ -8,6 +8,10 @@ env:
     broadcast_status_events: false
 api:
   port: 25565
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
 stomp:
   enabled: true
   host: i24-control.diamond.ac.uk

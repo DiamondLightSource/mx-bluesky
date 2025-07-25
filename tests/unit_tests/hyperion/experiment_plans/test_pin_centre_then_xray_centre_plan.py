@@ -11,11 +11,11 @@ from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -56,7 +56,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
 ):
@@ -66,7 +66,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     RE = RunEngine()
     RE(
         pin_tip_centre_then_xray_centre(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -103,13 +103,13 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     RE = RunEngine()
     RE(
         pin_centre_then_flyscan_plan(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -120,14 +120,14 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
 )
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
@@ -135,7 +135,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_pin_tip_centre: MagicMock,
     mock_grid_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -162,7 +162,9 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         lambda msg_: {"values": {"value": SynchrotronMode.SHUTDOWN}},
         "synchrotron-synchrotron_mode",
     )
-    simulate_xrc_result(sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE)
+    simulate_xrc_result(
+        sim_run_engine, hyperion_grid_detect_xrc_devices.zocalo, TEST_RESULT_LARGE
+    )
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
         sim_run_engine.add_handler(
@@ -181,21 +183,24 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
-    simulate_xrc_result(sim_run_engine, grid_detect_devices.zocalo, TEST_RESULT_LARGE)
+    simulate_xrc_result(
+        sim_run_engine, hyperion_grid_detect_xrc_devices.zocalo, TEST_RESULT_LARGE
+    )
     messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         ),
     )
 
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.obj is grid_detect_devices.detector_motion.z
+        messages,
+        lambda msg: msg.obj is hyperion_grid_detect_xrc_devices.detector_motion.z,
     )
     assert messages[0].args[0] == 100
     assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
-    assert messages[1].obj is grid_detect_devices.detector_motion.shutter
+    assert messages[1].obj is hyperion_grid_detect_xrc_devices.detector_motion.shutter
     assert messages[1].args[0] == ShutterState.OPEN
     assert messages[1].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     messages = assert_message_and_return_remaining(
@@ -223,7 +228,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
     mock_pin_tip_centre_plan,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
@@ -233,7 +238,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_flyscan_plan(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -264,7 +269,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
 def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
@@ -276,7 +281,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_flyscan_plan(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -292,7 +297,8 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj == grid_detect_devices.aperture_scatterguard.selected_aperture
+        and msg.obj
+        == hyperion_grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
         and msg.args == (ApertureValue.OUT_OF_BEAM,)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
@@ -316,7 +322,7 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
-    grid_detect_devices,
+    hyperion_grid_detect_xrc_devices,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
         [Msg("detect_grid_and_do_gridscan")]
@@ -328,7 +334,7 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_flyscan_plan(
-            grid_detect_devices,
+            hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             test_config_files["oav_config_json"],
         )
@@ -361,7 +367,7 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
     mock_events_handler: MagicMock,
     mock_change_aperture_then_move_to_xtal: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
     flyscan_event_handler = MagicMock()
@@ -372,7 +378,7 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 
     msgs = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
-            grid_detect_devices, test_pin_centre_then_xray_centre_params
+            hyperion_grid_detect_xrc_devices, test_pin_centre_then_xray_centre_params
         )
     )
 

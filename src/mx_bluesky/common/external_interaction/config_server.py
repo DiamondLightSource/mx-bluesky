@@ -17,7 +17,7 @@ class FeatureFlags(BaseModel, ABC):
     """
 
     # Feature values supplied at construction will override values from the config server
-    overriden_features: dict = Field(default_factory=dict, exclude=True)
+    overridden_features: dict = Field(default_factory=dict, exclude=True)
 
     @staticmethod
     @cache
@@ -28,7 +28,8 @@ class FeatureFlags(BaseModel, ABC):
     @classmethod
     def mark_overridden_features(cls, values):
         assert isinstance(values, dict)
-        values["overriden_features"] = values.copy()
+        values = values.copy()
+        values["overridden_features"] = values.copy()
         cls._validate_overridden_features(values)
         return values
 
@@ -51,7 +52,7 @@ class FeatureFlags(BaseModel, ABC):
         for flag, value in self._get_flags().items():
             updated_value = (
                 value
-                if flag not in self.overriden_features.keys()
-                else self.overriden_features[flag]
+                if flag not in self.overridden_features.keys()
+                else self.overridden_features[flag]
             )
             setattr(self, flag, updated_value)

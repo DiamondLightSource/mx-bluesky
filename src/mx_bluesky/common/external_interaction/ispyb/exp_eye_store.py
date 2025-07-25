@@ -1,7 +1,9 @@
 import configparser
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any, Literal
 
+from event_model.documents import Event
 from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
 
@@ -63,6 +65,19 @@ assert all(len(value) <= 20 for value in BLSampleStatus), (
 )
 
 
+def create_update_data_from_event_doc(
+    mapping: dict[str, str], event: Event
+) -> dict[str, Any]:
+    """Given a mapping between bluesky event data and an event itself this function will
+    create a dict that can be used to update exp-eye."""
+    event_data = event["data"]
+    return {
+        target_key: event_data[source_key]
+        for source_key, target_key in mapping.items()
+        if source_key in event_data
+    }
+
+
 class ExpeyeInteraction:
     """Exposes functionality from the Expeye core API"""
 
@@ -74,24 +89,22 @@ class ExpeyeInteraction:
         self._base_url = url
         self._auth = BearerAuth(token)
 
-    def start_load(
+    def start_robot_action(
         self,
+        action_type: Literal["LOAD", "UNLOAD"],
         proposal_reference: str,
         visit_number: int,
         sample_id: int,
-        dewar_location: int,
-        container_location: int,
     ) -> RobotActionID:
-        """Create a robot load entry in ispyb.
+        """Create a robot action entry in ispyb.
 
         Args:
+            action_type ("LOAD" | "UNLOAD"): The robot action being performed
             proposal_reference (str): The proposal of the experiment e.g. cm37235
             visit_number (int): The visit number for the proposal, usually this can be
                                 found added to the end of the proposal e.g. the data for
                                 visit number 2 of proposal cm37235 is in cm37235-2
             sample_id (int): The id of the sample in the database
-            dewar_location (int): Which puck in the dewar the sample is in
-            container_location (int): Which pin in that puck has the sample
 
         Returns:
             RobotActionID: The id of the robot load action that is created
@@ -102,39 +115,28 @@ class ExpeyeInteraction:
 
         data = {
             "startTimestamp": get_current_time_string(),
+            "actionType": action_type,
             "sampleId": sample_id,
-            "actionType": "LOAD",
-            "containerLocation": container_location,
-            "dewarLocation": dewar_location,
         }
         response = _send_and_get_response(self._auth, url, data, post)
         return response["robotActionId"]
 
-    def update_barcode_and_snapshots(
+    def update_robot_action(
         self,
         action_id: RobotActionID,
-        barcode: str,
-        snapshot_before_path: str,
-        snapshot_after_path: str,
+        data: dict[str, Any],
     ):
-        """Update the barcode and snapshots of an existing robot action.
+        """Update an existing robot action to contain additional info.
 
         Args:
             action_id (RobotActionID): The id of the action to update
-            barcode (str): The barcode to give the action
-            snapshot_before_path (str): Path to the snapshot before robot load
-            snapshot_after_path (str): Path to the snapshot after robot load
+            data (dict): The data to update with, where the keys match those expected
+                         by exp-eye.
         """
         url = self._base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
-
-        data = {
-            "sampleBarcode": barcode,
-            "xtalSnapshotBefore": snapshot_before_path,
-            "xtalSnapshotAfter": snapshot_after_path,
-        }
         _send_and_get_response(self._auth, url, data, patch)
 
-    def end_load(self, action_id: RobotActionID, status: str, reason: str):
+    def end_robot_action(self, action_id: RobotActionID, status: str, reason: str):
         """Finish an existing robot action, providing final information about how it went
 
         Args:

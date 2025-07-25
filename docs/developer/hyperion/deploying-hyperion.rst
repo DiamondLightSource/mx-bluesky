@@ -80,6 +80,16 @@ are not already present:
 * ``rmq-creds``
 * ``rmq-api-reader``
 
+In addition, an ispyb credentials secret must be created with the following name:
+* ``ispyb-hyperion-cfg``
+
+
+For creating the secrets, use ``kubectl create secret``:
+
+::
+
+    kubectl create secret -n i03-beamline generic ispyb-hyperion-cfg --from-file=ispyb.cfg=<path-to-ispyb-hyperion-ixx.cfg>
+
 Production deployment
 ~~~~~~~~~~~~~~~~~~~~~
 

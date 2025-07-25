@@ -54,6 +54,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__(emit=emit)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
+        self.ispyb = StoreInIspyb(self.ispyb_config)
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
@@ -82,7 +83,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            self.ispyb = StoreInIspyb(self.ispyb_config)
             ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(

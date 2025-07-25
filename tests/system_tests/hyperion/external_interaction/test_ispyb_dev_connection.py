@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Literal
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -33,8 +35,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    GridDetectThenXRayCentreComposite,
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -43,6 +47,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+)
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
@@ -233,6 +240,33 @@ def test_ispyb_deposition_comment_correct_on_failure(
     )
 
 
+@patch("mx_bluesky.common.external_interaction.ispyb.ispyb_utils.datetime")
+@pytest.mark.system_test
+def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
+    mock_datetime: MagicMock,
+    dummy_params,
+    dummy_ispyb: StoreInIspyb,
+    fetch_datacollection_attribute: Callable[..., Any],
+    dummy_data_collection_group_info,
+    dummy_scan_data_info_for_begin_xy,
+):
+    timestamp = datetime.fromisoformat("2024-08-11T15:59:23")
+    mock_datetime.datetime = MagicMock(**{"now.return_value": timestamp})  # type: ignore
+    ispyb_ids = dummy_ispyb.begin_deposition(
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin_xy]
+    )
+    dummy_ispyb.end_deposition(
+        ispyb_ids, "fail", f"Failed with very big object repr {dummy_params}"
+    )
+
+    expected_values = {"endTime": timestamp, "runStatus": "DataCollection Unsuccessful"}
+    compare_actual_and_expected(
+        ispyb_ids.data_collection_ids[0],
+        expected_values,
+        fetch_datacollection_attribute,
+    )
+
+
 @pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb: StoreInIspyb,
@@ -363,7 +397,7 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
-    grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
@@ -382,6 +416,8 @@ def test_ispyb_deposition_in_gridscan(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
+            HyperionSpecifiedThreeDGridScan,
+            construct_hyperion_specific_features,
         )
     )
 

@@ -10,6 +10,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import CombinedMove, Smargon
 
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
@@ -21,6 +22,8 @@ def setup_sample_environment(
     group="setup_senv",
 ):
     """Move the aperture into required position, move out the backlight."""
+    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
+
     aperture_value = (
         None
         if not aperture_position_gda_name
@@ -29,7 +32,6 @@ def setup_sample_environment(
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_value, group=group
     )
-    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
 
 
 def move_aperture_if_required(
@@ -46,6 +48,7 @@ def move_aperture_if_required(
 
     else:
         LOGGER.info(f"Setting aperture position to {aperture_value}")
+        yield from bps.wait(CONST.WAIT.PREPARE_APERTURE)
         yield from bps.abs_set(
             aperture_scatterguard.selected_aperture,
             aperture_value,

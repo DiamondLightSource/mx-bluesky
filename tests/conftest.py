@@ -21,6 +21,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -42,7 +43,7 @@ from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
@@ -54,6 +55,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -114,6 +116,7 @@ TEST_RESULT_LARGE = [
         "n_voxels": 35,
         "total_count": 2387574,
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_MEDIUM = [
@@ -124,6 +127,7 @@ TEST_RESULT_MEDIUM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_SMALL = [
@@ -134,6 +138,7 @@ TEST_RESULT_SMALL = [
         "n_voxels": 35,
         "total_count": 1000,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 TEST_RESULT_BELOW_THRESHOLD = [
@@ -144,6 +149,7 @@ TEST_RESULT_BELOW_THRESHOLD = [
         "n_voxels": 1,
         "total_count": 2,
         "bounding_box": [[1, 2, 3], [2, 3, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 
@@ -156,6 +162,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -167,6 +174,7 @@ TEST_RESULT_IN_BOUNDS_TOP_LEFT_GRID_CORNER = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -178,6 +186,7 @@ TEST_RESULT_OUT_OF_BOUNDS_COM = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[0, 0, 0], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
 # These are the uncorrected coordinate from zocalo
@@ -189,8 +198,22 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "n_voxels": 35,
         "total_count": 100000,
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
+        "sample_id": _NO_SAMPLE_ID,
     }
 ]
+
+MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+mock_paths = [
+    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
+    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+]
+mock_attributes_table = {
+    "i03": mock_paths,
+    "i10": mock_paths,
+    "i04": mock_paths,
+    "i24": mock_paths,
+}
 
 
 @dataclass(frozen=True)
@@ -199,6 +222,7 @@ class SimConstants:
     # The following are values present in the system test ispyb database
     ST_VISIT = "cm14451-2"
     ST_SAMPLE_ID = 398810
+    ST_MSP_SAMPLE_IDS = [398816, 398819]
     ST_CONTAINER_ID = 34864
 
 
@@ -361,7 +385,7 @@ def patch_async_motor(
 @pytest.fixture(params=[False, True])
 def feature_flags_update_with_omega_flip(request):
     def update_with_overrides(self):
-        self.overriden_features["omega_flip"] = request.param
+        self.overridden_features["omega_flip"] = request.param
         self.omega_flip = request.param
 
     with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
@@ -383,7 +407,13 @@ def i03_beamline_parameters():
         "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
         {"i03": "tests/test_data/test_beamline_parameters.txt"},
     ) as params:
-        yield params
+        with ExitStack() as context_stack:
+            for context_mgr in [
+                patch(f"dodal.beamlines.i03.{name}", value, create=True)
+                for name, value in mock_paths
+            ]:
+                context_stack.enter_context(context_mgr)
+            yield params
 
 
 @pytest.fixture
@@ -532,7 +562,14 @@ def ophyd_pin_tip_detection(RE: RunEngine):
 def robot(done_status, RE: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
-    robot.set = MagicMock(return_value=done_status)
+
+    @AsyncStatus.wrap
+    async def fake_load(val: SampleLocation):
+        set_mock_value(robot.current_pin, val.pin)
+        set_mock_value(robot.current_puck, val.puck)
+        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+
+    robot.set = MagicMock(side_effect=fake_load)
     return robot
 
 
@@ -551,7 +588,7 @@ def attenuator(RE: RunEngine):
 
 
 @pytest.fixture
-def beamstop_i03(
+def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
     RE: RunEngine,
@@ -622,8 +659,19 @@ def vfm(RE: RunEngine):
 
 
 @pytest.fixture
-def lower_gonio(RE: RunEngine):
+def lower_gonio(
+    RE: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
+
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_gonio(_):
+        return {"readback": 0}
+
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
+    sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
     with (
         patch_motor(lower_gonio.x),
         patch_motor(lower_gonio.y),
@@ -750,7 +798,7 @@ def test_config_files():
 
 @pytest.fixture()
 def fake_create_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -764,7 +812,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
-        "beamstop": beamstop_i03,
+        "beamstop": beamstop_phase1,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -777,7 +825,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -800,7 +848,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
@@ -1718,7 +1766,6 @@ def dummy_rotation_params(tmp_path):
             tmp_path,
         )
     )
-    dummy_params.sample_id = TEST_SAMPLE_ID
     return dummy_params
 
 
@@ -1766,3 +1813,18 @@ def assert_images_pixelwise_equal(actual, expected):
             assert bytes_expected_bytes, (
                 f"Actual and expected images differ, {actual} != {expected}"
             )
+
+
+def mock_beamline_module_filepaths(bl_name, bl_module):
+    if mock_attributes := mock_attributes_table.get(bl_name):
+        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
+        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
+
+
+@pytest.fixture(autouse=True)
+def mock_alert_service():
+    with patch(
+        "mx_bluesky.common.external_interaction.alerting._service._alert_service",
+        create=True,
+    ) as service:
+        yield service

@@ -29,17 +29,12 @@ class I03Constants:
     OMEGA_FLIP = True
     ALTERNATE_ROTATION_DIRECTION = True
 
-    # Turns on GPU processing for zocalo and logs a comparison between GPU and CPU-
-    # processed results.
-    COMPARE_CPU_AND_GPU_ZOCALO = False
-
     # Turns on GPU processing for zocalo and uses the results that come back
-    USE_GPU_RESULTS = False
+    USE_GPU_RESULTS = True
 
 
 @dataclass(frozen=True)
 class HyperionConstants:
-    DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
@@ -53,7 +48,7 @@ class HyperionConstants:
         if TEST_MODE
         else "https://daq-config.diamond.ac.uk/api"
     )
-    GRAYLOG_PORT = 12232
+    GRAYLOG_PORT = 12232  # Hyperion stream
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()

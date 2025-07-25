@@ -16,7 +16,14 @@ The documentation consists of a Developer Guide for MX-Bluesky, which also inclu
 
         The Developer Guide contains documentation on how to install, develop and contribute changes to MX-Bluesky; explanations about the purpose of the software and some of the technical concepts; as well as how-to guides and tutorials.
 
+    .. grid-item-card:: :material-regular:`code;4em`
+        :link: user/hyperion/index
+        :link-type: doc
+
+        The User Guide for the Hyperion UDC Service
+
 .. toctree::
     :hidden:
 
     developer/index
+    user/hyperion/index

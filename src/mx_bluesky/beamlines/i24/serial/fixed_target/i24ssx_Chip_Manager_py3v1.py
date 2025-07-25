@@ -16,8 +16,8 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
+from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -121,14 +121,14 @@ def _is_checker_pattern() -> bool:
 
 @log_on_entry
 def read_parameters(
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     """ Read the parameters from user input and create the parameter model for a fixed \
         target collection.
 
     Args:
-        detector_stage (DetectorMotion): The detector stage device.
+        detector_stage (YZStage): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
 
@@ -256,6 +256,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
     """
     SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
     SSX_LOGGER.info(f"Chipid {ChipType.Oxford}, width {OXFORD_CHIP_WIDTH}")
+    SSX_LOGGER.warning(f"MAP TO UPLOAD: {chip_map}")
     for block in range(1, 65):
         value = 1 if block in chip_map else 0
         pvar = PVAR_TEMPLATE % block
@@ -264,7 +265,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         # Wait for PMAC to be done processing PVAR string
         yield from bps.sleep(0.02)
-    SSX_LOGGER.debug("Upload parameters done.")
+    SSX_LOGGER.info("Upload parameters done.")
 
 
 @log_on_entry
@@ -565,7 +566,7 @@ def moveto_preset(
     pmac: PMAC = inject("pmac"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: DualBacklight = inject("backlight"),
-    det_stage: DetectorMotion = inject("detector_motion"),
+    det_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     # Non Chip Specific Move
     if place == "zero":
