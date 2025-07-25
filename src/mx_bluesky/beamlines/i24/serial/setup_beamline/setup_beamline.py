@@ -68,6 +68,14 @@ def setup_beamline_for_collection_plan(
         yield from bps.wait(group=group)
 
 
+def _check_z_stage_limits(detector_stage: DetectorMotion, target: float):
+    # Remove this check when https://github.com/bluesky/ophyd-async/issues/933 is fixed
+    low_limit = yield from bps.rd(detector_stage.z.low_limit_travel)
+    high_limit = yield from bps.rd(detector_stage.z.high_limit_travel)
+    if target < low_limit or target > high_limit:
+        raise ValueError("Requested detector distance is beyond the limits.")
+
+
 def move_detector_stage_to_position_plan(
     detector_stage: YZStage,
     detector_distance: float,
@@ -76,6 +84,7 @@ def move_detector_stage_to_position_plan(
     SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
+    yield from _check_z_stage_limits(detector_stage, detector_distance)
     yield from bps.mv(detector_stage.z, detector_distance)
 
 
@@ -275,7 +284,7 @@ def modechange(action):
     return 1
 
 
-def pilatus(action, args_list):
+def pilatus(action, args_list, dcm: DCM):
     SSX_LOGGER.debug("***** Entering Pilatus")
     SSX_LOGGER.info(f"Setup pilatus - {action}")
     if args_list:
@@ -284,6 +293,10 @@ def pilatus(action, args_list):
 
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
+
+    dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
+    SSX_LOGGER.debug(f"Setting Pilatus wavelength PV to : {dcm_wavelength_a}")
+    caput(pv.pilat_wavelength, dcm_wavelength_a)
 
     # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
     if action == "fastchip":
