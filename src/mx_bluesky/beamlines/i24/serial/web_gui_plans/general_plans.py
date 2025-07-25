@@ -3,7 +3,7 @@ from typing import Literal
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
