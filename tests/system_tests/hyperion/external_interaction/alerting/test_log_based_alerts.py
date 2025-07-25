@@ -1,18 +1,59 @@
 import logging
+from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import RunEngine
+from bluesky import plan_stubs as bps
+from bluesky.preprocessors import run_decorator
 from dodal.log import get_graylog_configuration, set_up_graylog_handler
 
+from mx_bluesky.common.external_interaction.alerting import set_alerting_service
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.hyperion.parameters.constants import HyperionConstants
+
+from .....conftest import SimConstants
+
+
+@pytest.fixture(autouse=True)
+def setup_graylog():
+    logger = logging.getLogger("Dodal")
+    host, _ = get_graylog_configuration(False)
+    set_up_graylog_handler(logger, host, HyperionConstants.GRAYLOG_PORT)
 
 
 @pytest.mark.requires(external="graylog")
 def test_alert_to_graylog():
-    logger = logging.getLogger("Dodal")
-    host, _ = get_graylog_configuration(False)
-    set_up_graylog_handler(logger, host, HyperionConstants.GRAYLOG_PORT)
     alert_service = LoggingAlertService()
     alert_service.raise_alert("Test alert", "This is a test.", {"alert_type": "Test"})
+
+
+@patch(
+    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback.ExpeyeInteraction",
+    MagicMock(),
+)
+@pytest.mark.requires(external="graylog")
+@pytest.mark.timeout(10)
+def test_alert_from_plan_exception(RE: RunEngine):
+    RE.subscribe(SampleHandlingCallback())
+    set_alerting_service(LoggingAlertService())
+
+    @run_decorator(
+        md={
+            "activate_callbacks": ["SampleHandlingCallback"],
+            "metadata": {
+                "sample_id": SimConstants.ST_SAMPLE_ID,
+                "visit": SimConstants.ST_VISIT,
+                "container": SimConstants.ST_CONTAINER_ID,
+            },
+        }
+    )
+    def plan_with_exception():
+        yield from bps.null()
+        raise RuntimeError("Test exception.")
+
+    RE(plan_with_exception())
