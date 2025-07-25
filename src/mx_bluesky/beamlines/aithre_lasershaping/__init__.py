@@ -1,4 +1,5 @@
 from mx_bluesky.beamlines.aithre_lasershaping.beamline_safe import (
+    go_to_zero,
     set_beamline_safe_on_robot,
 )
 from mx_bluesky.beamlines.aithre_lasershaping.check_goniometer_performance import (
@@ -18,4 +19,5 @@ __all__ = [
     "go_to_furthest_maximum",
     "rotate_goniometer_relative",
     "jog_sample",
+    "go_to_zero",
 ]
