@@ -23,6 +23,8 @@ metadata as fields in the log message.
     "alert_content", "The plain text body of the alert message"
     "beamline", "Beamline on which the alert was raised"
     "container", "Container ID that was being processed"
+    "ispyb_url", "Link to the ISPyB page of the affected sample"
+    "graylog_url", "Link to the graylog stream in the minutes up to the event"
     "sample_id", "Sample ID that was being processed"
     "visit", "Visit that was being processed"
 

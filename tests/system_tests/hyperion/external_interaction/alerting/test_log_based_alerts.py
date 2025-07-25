@@ -1,4 +1,5 @@
 import logging
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,7 +38,7 @@ def test_alert_to_graylog():
     MagicMock(),
 )
 @pytest.mark.requires(external="graylog")
-@pytest.mark.timeout(10)
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_alert_from_plan_exception(RE: RunEngine):
     RE.subscribe(SampleHandlingCallback())
     set_alerting_service(LoggingAlertService())
@@ -56,4 +57,5 @@ def test_alert_from_plan_exception(RE: RunEngine):
         yield from bps.null()
         raise RuntimeError("Test exception.")
 
-    RE(plan_with_exception())
+    with pytest.raises(RuntimeError):
+        RE(plan_with_exception())
