@@ -1,6 +1,9 @@
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
+
+from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 
 
 class Metadata(StrEnum):
@@ -48,3 +51,19 @@ def set_alerting_service(service: AlertService):
 
 def ispyb_url(sample_id: str):
     return f"https://ispyb.diamond.ac.uk/samples/sid/{quote(sample_id)}"
+
+
+def graylog_url():
+    now = datetime.now(UTC)
+    from_utc = now - timedelta(minutes=5)
+    from_timestamp = from_utc.isoformat()
+    to_timestamp = now.isoformat()
+    query_string = urlencode(
+        {
+            "streams": HyperionConstants.GRAYLOG_STREAM_ID,
+            "rangetype": "absolute",
+            "from": from_timestamp,
+            "to": to_timestamp,
+        }
+    )
+    return "https://graylog.diamond.ac.uk/search?" + query_string

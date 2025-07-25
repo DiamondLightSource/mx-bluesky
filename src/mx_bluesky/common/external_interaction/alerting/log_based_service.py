@@ -3,7 +3,10 @@ import logging
 from dodal.log import LOGGER
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
-from mx_bluesky.common.external_interaction.alerting._service import ispyb_url
+from mx_bluesky.common.external_interaction.alerting._service import (
+    graylog_url,
+    ispyb_url,
+)
 
 
 class LoggingAlertService:
@@ -23,6 +26,7 @@ class LoggingAlertService:
         self._level = level
 
     def _append_additional_metadata(self, metadata: dict[str, str]):
+        metadata["graylog_url"] = graylog_url()
         if sample_id := metadata.get(Metadata.SAMPLE_ID, None):
             metadata["ispyb_url"] = ispyb_url(sample_id)
 
