@@ -20,7 +20,7 @@ defined by ``rotation_direction`` which can be ``POSITIVE`` or ``NEGATIVE``
 
 The coordinate systems of the underlying hardware may differ from the request. At Diamond traditionally the omega 
 axis is implemented to be in the opposite direction, therefore the commands sent to the hardware are transformed and 
-the ``omega_flip`` feature flag controls this behaviour, which by default is set to ``True`` as this is 
+the ``omega_flip`` flag controls this behaviour, which by default is set to ``True`` as this is 
 generally expected to be required for the beamlines here.
 
 In the Nexus output file, there is provision for describing the choice of axis orientations in the nexus file, and 

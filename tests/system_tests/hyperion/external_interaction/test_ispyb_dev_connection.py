@@ -548,7 +548,6 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
-    feature_flags_update_with_omega_flip,
     tmp_path,
 ):
     ispyb_cb = RotationISPyBCallback()

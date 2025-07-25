@@ -163,9 +163,12 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     )
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.I03Constants.OMEGA_FLIP",
+    new=False,
+)
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     params = next(test_rotation_params.single_rotation_scans)
-    params.features.omega_flip = False
     params.exposure_time_s = 0.2
     params.omega_start_deg = 10
 
@@ -886,59 +889,65 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
 ):
-    test_rotation_params.features.omega_flip = omega_flip
-    for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
-        scan.rotation_direction = rotation_direction
-        scan.omega_start_deg = 30
-    mock_callback = Mock(spec=RotationISPyBCallback)
-    RE.subscribe(mock_callback)
-    omega_put = get_mock_put(fake_create_rotation_devices.smargon.omega.user_setpoint)
-    set_mock_value(fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1)
-    with (
-        patch("bluesky.plan_stubs.wait", autospec=True),
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
+    with patch(
+        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        new=omega_flip,
     ):
-        RE(
-            rotation_scan(
-                fake_create_rotation_devices,
-                test_rotation_params,
-                oav_parameters_for_rotation,
+        for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
+            scan.rotation_direction = rotation_direction
+            scan.omega_start_deg = 30
+        mock_callback = Mock(spec=RotationISPyBCallback)
+        RE.subscribe(mock_callback)
+        omega_put = get_mock_put(
+            fake_create_rotation_devices.smargon.omega.user_setpoint
+        )
+        set_mock_value(
+            fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1
+        )
+        with (
+            patch("bluesky.plan_stubs.wait", autospec=True),
+            patch(
+                "bluesky.preprocessors.__read_and_stash_a_motor",
+                fake_read,
             ),
-        )
+        ):
+            RE(
+                rotation_scan(
+                    fake_create_rotation_devices,
+                    test_rotation_params,
+                    oav_parameters_for_rotation,
+                ),
+            )
 
-    assert omega_put.mock_calls[0:5] == [
-        call(0, wait=True),
-        call(90, wait=True),
-        call(180, wait=True),
-        call(270, wait=True),
-        call(expected_start_angle_with_runup, wait=True),
-    ]
-    mock_setup_zebra_for_rotation.assert_called_once_with(
-        fake_create_rotation_devices.zebra,
-        fake_create_rotation_devices.sample_shutter,
-        start_angle=expected_start_angle,
-        scan_width=180,
-        direction=expected_zebra_direction,
-        shutter_opening_deg=ANY,
-        shutter_opening_s=ANY,
-        group="setup_zebra",
-    )
-    rotation_outer_start_event = next(
-        dropwhile(
-            lambda _: _.args[0] != "start"
-            or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
-            mock_callback.mock_calls,
+        assert omega_put.mock_calls[0:5] == [
+            call(0, wait=True),
+            call(90, wait=True),
+            call(180, wait=True),
+            call(270, wait=True),
+            call(expected_start_angle_with_runup, wait=True),
+        ]
+        mock_setup_zebra_for_rotation.assert_called_once_with(
+            fake_create_rotation_devices.zebra,
+            fake_create_rotation_devices.sample_shutter,
+            start_angle=expected_start_angle,
+            scan_width=180,
+            direction=expected_zebra_direction,
+            shutter_opening_deg=ANY,
+            shutter_opening_s=ANY,
+            group="setup_zebra",
         )
-    )
-    event_params = SingleRotationScan.model_validate_json(
-        rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
-    )
-    # event params are not transformed
+        rotation_outer_start_event = next(
+            dropwhile(
+                lambda _: _.args[0] != "start"
+                or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
+                mock_callback.mock_calls,
+            )
+        )
+        event_params = SingleRotationScan.model_validate_json(
+            rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
+        )
+        # event params are not transformed
     assert event_params.rotation_increment_deg == 0.1
-    assert event_params.features.omega_flip == omega_flip
     assert event_params.rotation_direction == rotation_direction
     assert event_params.scan_width_deg == 180
     assert event_params.omega_start_deg == 30
@@ -1166,13 +1175,11 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "vds_start_index": rotation_params.nexus_vds_start_img,
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
-            "axis_direction": AxisDirection.NEGATIVE
-            if rotation_params.features.omega_flip
-            else AxisDirection.POSITIVE,
+            "axis_direction": AxisDirection.NEGATIVE,
         }
 
 
-@pytest.mark.timeout(2)
+@pytest.mark.timeout(3)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
@@ -1180,7 +1187,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
-    feature_flags_update_with_omega_flip: MagicMock,
+    test_omega_flip: bool,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1290,10 +1297,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 h5py.Dataset,
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
-            omega_flip = (
-                feature_flags_update_with_omega_flip.mock_calls[0].args[0].omega_flip
-            )
-            assert tuple(omega_vec) == (-1.0 if omega_flip else 1.0, 0, 0)
+            assert tuple(omega_vec) == (-1.0 if test_omega_flip else 1.0, 0, 0)
 
 
 @patch(

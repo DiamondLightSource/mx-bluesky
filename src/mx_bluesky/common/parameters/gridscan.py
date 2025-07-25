@@ -102,7 +102,7 @@ class SpecifiedThreeDGridScan(
     """Parameters representing a so-called 3D grid scan, which consists of doing a
     gridscan in X and Y, followed by one in X and Z."""
 
-    grid1_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_1)  # type: ignore
+    grid1_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_1)
     grid2_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_2)
     x_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     y_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)

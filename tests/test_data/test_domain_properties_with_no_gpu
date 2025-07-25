@@ -1,0 +1,73 @@
+
+gda.px.oav.centring.pinTip=True
+
+# Main Hyperion settings
+
+#####################################################
+
+# Toggle to stop all hyperion features
+gda.mx.hyperion.enabled=true
+
+####################
+
+# Hyperion will do the centring
+gda.mx.hyperion.centering.enabled=true
+
+# Hyperion will do the rotation
+gda.mx.hyperion.rotation.enabled=true
+
+# Hyperion will do the robot load and unload
+# Note that robot_load will also do centring so having this 
+# enabled and gda.mx.hyperion.centering.enabled=false makes no sense
+gda.mx.hyperion.robot_load.enabled=true
+
+# Do the full UDC plan in hyperion - EXPERIMENTAL
+gda.mx.hyperion.load_centre_collect.enabled=true
+
+#####################################################
+
+# More fine-grained hyperion settings
+
+gda.gridscan.hyperion.flaskServerAddress=localhost:5005
+# gda.gridscan.hyperion.flaskServerAddress=i03-hyperion.diamond.ac.uk:443
+gda.gridscan.hyperion.multipin=false
+gda.gridscan.hyperion.grid.detection=true
+
+#use hyperion for rotation all the time
+gda.mx.hyperion.override_udc_only=true
+
+#set stub offsets to center after Hyperion has centered - EXPERIMENTAL
+gda.mx.hyperion.do_stub_offsets=false
+
+#use the panda to run constant velocity grid scans instead of the original zebra fast grid scans - EXPERIMENTAL
+gda.mx.hyperion.use_panda_for_gridscans=true
+
+#distance given to the smargon to accelerate to and decelerate from its desired velocity - for panda grid scans
+gda.mx.hyperion.panda_runup_distance_mm=0.16
+
+#use the ophyd device for pin tip detection, should be faster
+gda.mx.hyperion.ophyd_pin_tip=true
+
+#run the gpu analysis in parallel
+gda.mx.hyperion.xrc.run_gpu_processing_in_parallel=true
+
+#wait for GPU results and CPU results, compare then take the CPU ones
+gda.mx.hyperion.xrc.compare_cpu_and_gpu=true
+
+#Take the first results that we get from zocalo (most likely GPU ones)
+gda.mx.hyperion.xrc.use_gpu_results=false
+
+#Set box size for hyperion
+gda.mx.hyperion.xrc.box_size=20.0
+
+#Do rotation snapshots in hyperion
+gda.mx.hyperion.rotation.snapshots.enabled=true
+
+#Set energy using hyperion
+gda.mx.hyperion.set_energy.enabled=false
+
+#Use ROI on the detector for xray centring
+gda.mx.hyperion.xrc.use_roi_mode=true
+
+
+#####################################################

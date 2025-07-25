@@ -15,7 +15,7 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 if TYPE_CHECKING:
@@ -103,6 +103,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 full_num_of_images=self.full_num_of_images,
                 meta_data_run_number=self.meta_data_run_number,
                 axis_direction=AxisDirection.NEGATIVE
-                if parameters.features.omega_flip
+                if I03Constants.OMEGA_FLIP
                 else AxisDirection.POSITIVE,
             )

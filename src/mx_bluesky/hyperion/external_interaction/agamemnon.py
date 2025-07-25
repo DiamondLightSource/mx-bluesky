@@ -256,7 +256,6 @@ def _populate_parameters_from_agamemnon(
                     "name": "TopNByMaxCount",
                     "n": pin_type.expected_number_of_crystals,
                 },
-                "features": {"use_gpu_results": True},
                 "robot_load_then_centre": {
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,

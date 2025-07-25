@@ -64,7 +64,7 @@ def construct_hyperion_specific_features(
 
     setup_trigger_plan: Callable[..., MsgGenerator]
 
-    if xrc_parameters.features.use_panda_for_gridscan:
+    if xrc_parameters.config_server.get_feature_flags().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = _panda_triggering_setup
         tidy_plan = partial(_panda_tidy, xrc_composite)
         set_flyscan_params_plan = partial(
