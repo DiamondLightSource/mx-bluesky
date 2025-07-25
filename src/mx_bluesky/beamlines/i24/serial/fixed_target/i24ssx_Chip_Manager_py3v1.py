@@ -16,7 +16,7 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
+from dodal.devices.i24.pmac import CS_STR, PMAC, EncReset, LaserSettings
 from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -845,7 +845,7 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     yield from bps.sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
-        yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
+        yield from bps.abs_set(pmac.pmac_string, f"{CS_STR}!x0.4y0.4", wait=True)
         yield from bps.sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
     else:
@@ -856,9 +856,9 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
 
 def cs_reset(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     """Used to clear CS when using Custom Chip"""
-    cs1 = "#1->10000X+0Y+0Z"
-    cs2 = "#2->+0X-10000Y+0Z"
-    cs3 = "#3->0X+0Y-10000Z"
+    cs1 = "#5->10000X+0Y+0Z"
+    cs2 = "#6->+0X-10000Y+0Z"
+    cs3 = "#7->0X+0Y-10000Z"
     strg = "\n".join([cs1, cs2, cs3])
     print(strg)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
@@ -881,7 +881,7 @@ def set_pmac_strings_for_cs(pmac: PMAC, cs_str: dict):
 
     Note. On the PMAC the axes allocations are: #1 - X, #2 - Y, #3 - Z.
     """
-    yield from bps.abs_set(pmac.pmac_string, "&2", wait=True)
+    yield from bps.abs_set(pmac.pmac_string, CS_STR, wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs1"], wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs2"], wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs3"], wait=True)
@@ -941,7 +941,9 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
                     break
                 block, x, y = entry
                 SSX_LOGGER.debug(f"Block: {block} -> (x={x} y={y})")
-                yield from bps.abs_set(pmac.pmac_string, f"!x{x}y{y}", wait=True)
+                yield from bps.abs_set(
+                    pmac.pmac_string, f"{CS_STR}!x{x}y{y}", wait=True
+                )
                 yield from bps.sleep(0.4)
         else:
             SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")
