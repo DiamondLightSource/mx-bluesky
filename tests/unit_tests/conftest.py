@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.common.beamlines import beamline_parameters
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -57,14 +56,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import raw_params_from_file
 
 
@@ -82,20 +76,6 @@ async def RE():
     # RunEngine creates its own loop if we did not supply it, we must terminate it
     RE.loop.call_soon_threadsafe(RE.loop.stop)
 
-
-MOCK_DAQ_CONFIG_PATH = "tests/devices/unit_tests/test_daq_configuration"
-mock_paths = [
-    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", "tests/devices/unit_tests/test_display.configuration"),
-    ("LOOK_UPTABLE_DIR", "tests/devices/i10/lookupTables/"),
-]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
 
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
@@ -127,14 +107,6 @@ def assert_event(mock_call, expected):
         actual = actual["data"]
     for k, v in expected.items():
         assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
-
-
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
-            "tests/test_data/i04_beamlineParameters"
-        )
 
 
 def create_gridscan_callbacks() -> tuple[
@@ -346,11 +318,16 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScan,
 ) -> BeamlineSpecificFGSFeatures:
-    return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+    return BeamlineSpecificFGSFeatures(
+        setup_trigger_plan=MagicMock(),
+        tidy_plan=MagicMock(),
+        set_flyscan_params_plan=MagicMock(),
+        fgs_motors=zebra_fast_grid_scan,
+        read_pre_flyscan_plan=MagicMock(),
+        read_during_collection_plan=MagicMock(),
+        get_xrc_results_from_zocalo=False,
     )
 
 
@@ -367,7 +344,7 @@ def test_full_grid_scan_params(tmp_path):
 async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -383,14 +360,13 @@ async def grid_detect_xrc_devices(
     xbpm_feedback,
     attenuator,
     undulator,
-    undulator_dcm,
     dcm,
 ):
     yield GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,

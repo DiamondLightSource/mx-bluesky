@@ -1,0 +1,31 @@
+from logging import INFO, WARNING
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from mx_bluesky.common.external_interaction.alerting import (
+    get_alerting_service,
+    set_alerting_service,
+)
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
+
+
+@pytest.mark.parametrize("level", [WARNING, INFO])
+@patch("mx_bluesky.common.external_interaction.alerting.log_based_service.LOGGER")
+def test_logging_alerting_service_raises_a_log_message(mock_logger: MagicMock, level):
+    set_alerting_service(LoggingAlertService(level))
+    get_alerting_service().raise_alert(
+        "Test summary", "Test message", {"alert_type": "Test"}
+    )
+
+    mock_logger.log.assert_called_once_with(
+        level,
+        "***ALERT*** summary=Test summary content=Test message",
+        extra={
+            "alert_summary": "Test summary",
+            "alert_content": "Test message",
+            "alert_type": "Test",
+        },
+    )

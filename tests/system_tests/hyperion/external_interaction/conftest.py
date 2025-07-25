@@ -256,7 +256,7 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
-    beamstop_i03,
+    beamstop_phase1,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -281,7 +281,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -397,7 +397,7 @@ def params_for_rotation_scan(
 
 @pytest.fixture
 def composite_for_rotation_scan(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -423,7 +423,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
