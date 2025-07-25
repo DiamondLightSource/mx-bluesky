@@ -5,7 +5,10 @@ from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.aithre_lasershaping.laser_robot import LaserRobot
 
-from mx_bluesky.beamlines.aithre_lasershaping import set_beamline_safe_on_robot
+from mx_bluesky.beamlines.aithre_lasershaping import (
+    go_to_zero,
+    set_beamline_safe_on_robot,
+)
 
 
 @pytest.fixture
@@ -63,4 +66,48 @@ async def test_beamline_safe_reads_safe_correctly(
         lambda msg: msg.command == "set"
         and msg.obj.name == "robot-set_beamline_safe"
         and msg.args[0] == "On",
+    )
+
+
+async def test_go_to_zero_gives_expected_result(
+    sim_run_engine: RunEngineSimulator,
+    goniometer: Goniometer,
+):
+    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=False))
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-omega"
+        and msg.args[0] == 0,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-x"
+        and msg.args[0] == 0,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-y"
+        and msg.args[0] == 0,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-z"
+        and msg.args[0] == 0,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-sampy"
+        and msg.args[0] == 0,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "goniometer-sampz"
+        and msg.args[0] == 0,
     )
