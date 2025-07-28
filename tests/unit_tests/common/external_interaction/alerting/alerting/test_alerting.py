@@ -28,7 +28,7 @@ def fixup_time():
     with patch(
         "mx_bluesky.common.external_interaction.alerting._service.datetime",
         MagicMock(
-            **{"now.return_value": datetime.fromisoformat("2025-08-25T15:32:24Z")}
+            **{"now.return_value": datetime.fromisoformat("2025-08-25T15:32:24Z")}  # type: ignore
         ),
     ) as patched_now:
         yield patched_now
