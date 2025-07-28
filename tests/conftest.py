@@ -385,7 +385,7 @@ def patch_async_motor(
 @pytest.fixture(params=[False, True])
 def feature_flags_update_with_omega_flip(request):
     def update_with_overrides(self):
-        self.overriden_features["omega_flip"] = request.param
+        self.overridden_features["omega_flip"] = request.param
         self.omega_flip = request.param
 
     with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
@@ -1819,3 +1819,12 @@ def mock_beamline_module_filepaths(bl_name, bl_module):
     if mock_attributes := mock_attributes_table.get(bl_name):
         [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
         bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
+
+
+@pytest.fixture(autouse=True)
+def mock_alert_service():
+    with patch(
+        "mx_bluesky.common.external_interaction.alerting._service._alert_service",
+        create=True,
+    ) as service:
+        yield service

@@ -1,3 +1,4 @@
+import asyncio
 import os
 from dataclasses import fields
 from typing import Any
@@ -7,10 +8,15 @@ import pytest
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.baton import Baton
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.testing import get_mock_put, set_mock_value
 
+from mx_bluesky.common.parameters.components import (
+    PARAMETER_VERSION,
+    MxBlueskyParameters,
+)
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
@@ -25,13 +31,15 @@ from mx_bluesky.hyperion.baton_handler import (
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
 @pytest.fixture()
-def bluesky_context(i03_beamline_parameters):
+def bluesky_context(i03_beamline_parameters, sim_run_engine: RunEngineSimulator):
     with patch.dict(os.environ, {"BEAMLINE": "i03"}):
+        # Baton for real run engine
         context = BlueskyContext()
         context.with_dodal_module(
             get_beamline_based_on_environment_variable(),
@@ -46,7 +54,22 @@ def bluesky_context(i03_beamline_parameters):
             baton_with_requested_user(context, HYPERION_USER)
 
         # Set the initial baton state
-        baton_with_requested_user(context, HYPERION_USER)
+        baton = baton_with_requested_user(context, HYPERION_USER)
+
+        # Baton for sim run engine
+        def get_requested_user(msg):
+            user = asyncio.run(baton.requested_user.get_value())
+            return {"readback": user}
+
+        def set_requested_user(msg):
+            set_mock_value(baton.requested_user, msg.args[0])
+
+        sim_run_engine.add_handler("locate", get_requested_user, "baton-requested_user")
+        sim_run_engine.add_handler(
+            "set",
+            set_requested_user,  # type: ignore
+            "baton-requested_user",
+        )
 
         # Patch setup_devices to patch the baton again when it is re-created
         with patch(
@@ -263,4 +286,50 @@ def test_initialise_udc_reloads_all_devices(
         device_before_reset = getattr(devices_before_reset, f.name)
         assert device_before_reset is not device_after_reset, (
             f"{id(device_before_reset)} == {id(device_after_reset)}"
+        )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [
+                Wait.model_validate(
+                    {"duration_s": 12.34, "parameter_model_version": PARAMETER_VERSION}
+                )
+            ],
+            [],
+        ]
+    ),
+)
+def test_baton_handler_loop_waits_if_wait_instruction_received(
+    bluesky_context: BlueskyContext, sim_run_engine: RunEngineSimulator
+):
+    msgs = sim_run_engine.simulate_plan(
+        run_udc_when_requested(bluesky_context, MagicMock())
+    )
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "sleep" and msg.args[0] == 12.34
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [
+                MxBlueskyParameters.model_validate(
+                    {"parameter_model_version": PARAMETER_VERSION}
+                )
+            ],
+            [],
+        ]
+    ),
+)
+def test_main_loop_rejects_unrecognised_instruction_when_received(
+    bluesky_context: BlueskyContext, sim_run_engine: RunEngineSimulator
+):
+    with pytest.raises(AssertionError, match="Unsupported instruction decoded"):
+        sim_run_engine.simulate_plan(
+            run_udc_when_requested(bluesky_context, MagicMock())
         )
