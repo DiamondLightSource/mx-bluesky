@@ -288,7 +288,7 @@ x 65
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP1"
+controlPv "BL24I-MO-IOC-01:GP1"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -327,7 +327,7 @@ x 65
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP2"
+controlPv "BL24I-MO-IOC-01:GP2"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -366,7 +366,7 @@ x 65
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP3"
+controlPv "BL24I-MO-IOC-01:GP3"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -405,7 +405,7 @@ x 65
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP4"
+controlPv "BL24I-MO-IOC-01:GP4"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -444,7 +444,7 @@ x 65
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP5"
+controlPv "BL24I-MO-IOC-01:GP5"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -483,7 +483,7 @@ x 65
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP6"
+controlPv "BL24I-MO-IOC-01:GP6"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -522,7 +522,7 @@ x 65
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP7"
+controlPv "BL24I-MO-IOC-01:GP7"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -561,7 +561,7 @@ x 65
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP8"
+controlPv "BL24I-MO-IOC-01:GP8"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -600,7 +600,7 @@ x 65
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP9"
+controlPv "BL24I-MO-IOC-01:GP9"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -639,7 +639,7 @@ x 65
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP10"
+controlPv "BL24I-MO-IOC-01:GP10"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -678,7 +678,7 @@ x 65
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP11"
+controlPv "BL24I-MO-IOC-01:GP11"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -717,7 +717,7 @@ x 65
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP12"
+controlPv "BL24I-MO-IOC-01:GP12"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -756,7 +756,7 @@ x 65
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP13"
+controlPv "BL24I-MO-IOC-01:GP13"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -795,7 +795,7 @@ x 65
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP14"
+controlPv "BL24I-MO-IOC-01:GP14"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -834,7 +834,7 @@ x 65
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP15"
+controlPv "BL24I-MO-IOC-01:GP15"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -873,7 +873,7 @@ x 65
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP16"
+controlPv "BL24I-MO-IOC-01:GP16"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -912,7 +912,7 @@ x 65
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP17"
+controlPv "BL24I-MO-IOC-01:GP17"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -951,7 +951,7 @@ x 65
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP18"
+controlPv "BL24I-MO-IOC-01:GP18"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -990,7 +990,7 @@ x 65
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP19"
+controlPv "BL24I-MO-IOC-01:GP19"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1029,7 +1029,7 @@ x 65
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP20"
+controlPv "BL24I-MO-IOC-01:GP20"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1068,7 +1068,7 @@ x 365
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP21"
+controlPv "BL24I-MO-IOC-01:GP21"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1107,7 +1107,7 @@ x 665
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP41"
+controlPv "BL24I-MO-IOC-01:GP41"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1146,7 +1146,7 @@ x 965
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP61"
+controlPv "BL24I-MO-IOC-01:GP61"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1185,7 +1185,7 @@ x 1265
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP81"
+controlPv "BL24I-MO-IOC-01:GP81"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1224,7 +1224,7 @@ x 365
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP22"
+controlPv "BL24I-MO-IOC-01:GP22"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1263,7 +1263,7 @@ x 365
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP23"
+controlPv "BL24I-MO-IOC-01:GP23"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1302,7 +1302,7 @@ x 365
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP24"
+controlPv "BL24I-MO-IOC-01:GP24"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1341,7 +1341,7 @@ x 365
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP25"
+controlPv "BL24I-MO-IOC-01:GP25"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1380,7 +1380,7 @@ x 365
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP26"
+controlPv "BL24I-MO-IOC-01:GP26"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1419,7 +1419,7 @@ x 365
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP27"
+controlPv "BL24I-MO-IOC-01:GP27"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1458,7 +1458,7 @@ x 365
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP28"
+controlPv "BL24I-MO-IOC-01:GP28"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1497,7 +1497,7 @@ x 365
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP29"
+controlPv "BL24I-MO-IOC-01:GP29"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1536,7 +1536,7 @@ x 365
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP30"
+controlPv "BL24I-MO-IOC-01:GP30"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1575,7 +1575,7 @@ x 365
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP31"
+controlPv "BL24I-MO-IOC-01:GP31"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1614,7 +1614,7 @@ x 365
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP32"
+controlPv "BL24I-MO-IOC-01:GP32"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1653,7 +1653,7 @@ x 365
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP33"
+controlPv "BL24I-MO-IOC-01:GP33"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1692,7 +1692,7 @@ x 365
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP34"
+controlPv "BL24I-MO-IOC-01:GP34"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1731,7 +1731,7 @@ x 365
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP35"
+controlPv "BL24I-MO-IOC-01:GP35"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1770,7 +1770,7 @@ x 365
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP36"
+controlPv "BL24I-MO-IOC-01:GP36"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1809,7 +1809,7 @@ x 365
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP37"
+controlPv "BL24I-MO-IOC-01:GP37"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1848,7 +1848,7 @@ x 365
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP38"
+controlPv "BL24I-MO-IOC-01:GP38"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1887,7 +1887,7 @@ x 365
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP39"
+controlPv "BL24I-MO-IOC-01:GP39"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1926,7 +1926,7 @@ x 365
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP40"
+controlPv "BL24I-MO-IOC-01:GP40"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -1965,7 +1965,7 @@ x 665
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP42"
+controlPv "BL24I-MO-IOC-01:GP42"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2004,7 +2004,7 @@ x 665
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP43"
+controlPv "BL24I-MO-IOC-01:GP43"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2043,7 +2043,7 @@ x 665
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP44"
+controlPv "BL24I-MO-IOC-01:GP44"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2082,7 +2082,7 @@ x 665
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP45"
+controlPv "BL24I-MO-IOC-01:GP45"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2121,7 +2121,7 @@ x 665
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP46"
+controlPv "BL24I-MO-IOC-01:GP46"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2160,7 +2160,7 @@ x 665
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP47"
+controlPv "BL24I-MO-IOC-01:GP47"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2199,7 +2199,7 @@ x 665
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP48"
+controlPv "BL24I-MO-IOC-01:GP48"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2238,7 +2238,7 @@ x 665
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP49"
+controlPv "BL24I-MO-IOC-01:GP49"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2277,7 +2277,7 @@ x 665
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP50"
+controlPv "BL24I-MO-IOC-01:GP50"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2316,7 +2316,7 @@ x 665
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP51"
+controlPv "BL24I-MO-IOC-01:GP51"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2355,7 +2355,7 @@ x 665
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP52"
+controlPv "BL24I-MO-IOC-01:GP52"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2394,7 +2394,7 @@ x 665
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP53"
+controlPv "BL24I-MO-IOC-01:GP53"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2433,7 +2433,7 @@ x 665
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP54"
+controlPv "BL24I-MO-IOC-01:GP54"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2472,7 +2472,7 @@ x 665
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP55"
+controlPv "BL24I-MO-IOC-01:GP55"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2511,7 +2511,7 @@ x 665
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP56"
+controlPv "BL24I-MO-IOC-01:GP56"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2550,7 +2550,7 @@ x 665
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP57"
+controlPv "BL24I-MO-IOC-01:GP57"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2589,7 +2589,7 @@ x 665
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP58"
+controlPv "BL24I-MO-IOC-01:GP58"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2628,7 +2628,7 @@ x 665
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP59"
+controlPv "BL24I-MO-IOC-01:GP59"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2667,7 +2667,7 @@ x 665
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP60"
+controlPv "BL24I-MO-IOC-01:GP60"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2706,7 +2706,7 @@ x 965
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP62"
+controlPv "BL24I-MO-IOC-01:GP62"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2745,7 +2745,7 @@ x 965
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP63"
+controlPv "BL24I-MO-IOC-01:GP63"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2784,7 +2784,7 @@ x 965
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP64"
+controlPv "BL24I-MO-IOC-01:GP64"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2823,7 +2823,7 @@ x 965
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP65"
+controlPv "BL24I-MO-IOC-01:GP65"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2862,7 +2862,7 @@ x 965
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP66"
+controlPv "BL24I-MO-IOC-01:GP66"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2901,7 +2901,7 @@ x 965
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP67"
+controlPv "BL24I-MO-IOC-01:GP67"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2940,7 +2940,7 @@ x 965
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP68"
+controlPv "BL24I-MO-IOC-01:GP68"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -2979,7 +2979,7 @@ x 965
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP69"
+controlPv "BL24I-MO-IOC-01:GP69"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3018,7 +3018,7 @@ x 965
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP70"
+controlPv "BL24I-MO-IOC-01:GP70"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3057,7 +3057,7 @@ x 965
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP71"
+controlPv "BL24I-MO-IOC-01:GP71"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3096,7 +3096,7 @@ x 965
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP72"
+controlPv "BL24I-MO-IOC-01:GP72"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3135,7 +3135,7 @@ x 965
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP73"
+controlPv "BL24I-MO-IOC-01:GP73"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3174,7 +3174,7 @@ x 965
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP74"
+controlPv "BL24I-MO-IOC-01:GP74"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3213,7 +3213,7 @@ x 965
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP75"
+controlPv "BL24I-MO-IOC-01:GP75"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3252,7 +3252,7 @@ x 965
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP76"
+controlPv "BL24I-MO-IOC-01:GP76"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3291,7 +3291,7 @@ x 965
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP77"
+controlPv "BL24I-MO-IOC-01:GP77"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3330,7 +3330,7 @@ x 965
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP78"
+controlPv "BL24I-MO-IOC-01:GP78"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3369,7 +3369,7 @@ x 965
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP79"
+controlPv "BL24I-MO-IOC-01:GP79"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3408,7 +3408,7 @@ x 965
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP80"
+controlPv "BL24I-MO-IOC-01:GP80"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3447,7 +3447,7 @@ x 1265
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP82"
+controlPv "BL24I-MO-IOC-01:GP82"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3486,7 +3486,7 @@ x 1265
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP83"
+controlPv "BL24I-MO-IOC-01:GP83"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3525,7 +3525,7 @@ x 1265
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP84"
+controlPv "BL24I-MO-IOC-01:GP84"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3564,7 +3564,7 @@ x 1265
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP85"
+controlPv "BL24I-MO-IOC-01:GP85"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3603,7 +3603,7 @@ x 1265
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP86"
+controlPv "BL24I-MO-IOC-01:GP86"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3642,7 +3642,7 @@ x 1265
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP87"
+controlPv "BL24I-MO-IOC-01:GP87"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3681,7 +3681,7 @@ x 1265
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP88"
+controlPv "BL24I-MO-IOC-01:GP88"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3720,7 +3720,7 @@ x 1265
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP89"
+controlPv "BL24I-MO-IOC-01:GP89"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3759,7 +3759,7 @@ x 1265
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP90"
+controlPv "BL24I-MO-IOC-01:GP90"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3798,7 +3798,7 @@ x 1265
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP91"
+controlPv "BL24I-MO-IOC-01:GP91"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3837,7 +3837,7 @@ x 1265
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP92"
+controlPv "BL24I-MO-IOC-01:GP92"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3876,7 +3876,7 @@ x 1265
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP93"
+controlPv "BL24I-MO-IOC-01:GP93"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3915,7 +3915,7 @@ x 1265
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP94"
+controlPv "BL24I-MO-IOC-01:GP94"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3954,7 +3954,7 @@ x 1265
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP95"
+controlPv "BL24I-MO-IOC-01:GP95"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -3993,7 +3993,7 @@ x 1265
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP96"
+controlPv "BL24I-MO-IOC-01:GP96"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4032,7 +4032,7 @@ x 1265
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP97"
+controlPv "BL24I-MO-IOC-01:GP97"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4071,7 +4071,7 @@ x 1265
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP98"
+controlPv "BL24I-MO-IOC-01:GP98"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4110,7 +4110,7 @@ x 1265
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP99"
+controlPv "BL24I-MO-IOC-01:GP99"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4149,7 +4149,7 @@ x 1265
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP100"
+controlPv "BL24I-MO-IOC-01:GP100"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4188,7 +4188,7 @@ x 1570
 y 85
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP101"
+controlPv "BL24I-MO-IOC-01:GP101"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4227,7 +4227,7 @@ x 1570
 y 115
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP102"
+controlPv "BL24I-MO-IOC-01:GP102"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4266,7 +4266,7 @@ x 1570
 y 145
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP103"
+controlPv "BL24I-MO-IOC-01:GP103"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4305,7 +4305,7 @@ x 1570
 y 175
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP104"
+controlPv "BL24I-MO-IOC-01:GP104"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4344,7 +4344,7 @@ x 1570
 y 205
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP105"
+controlPv "BL24I-MO-IOC-01:GP105"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4383,7 +4383,7 @@ x 1570
 y 235
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP106"
+controlPv "BL24I-MO-IOC-01:GP106"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4422,7 +4422,7 @@ x 1570
 y 265
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP107"
+controlPv "BL24I-MO-IOC-01:GP107"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4461,7 +4461,7 @@ x 1570
 y 295
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP108"
+controlPv "BL24I-MO-IOC-01:GP108"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4500,7 +4500,7 @@ x 1570
 y 325
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP109"
+controlPv "BL24I-MO-IOC-01:GP109"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4539,7 +4539,7 @@ x 1570
 y 355
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP110"
+controlPv "BL24I-MO-IOC-01:GP110"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4578,7 +4578,7 @@ x 1570
 y 385
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP111"
+controlPv "BL24I-MO-IOC-01:GP111"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4617,7 +4617,7 @@ x 1570
 y 415
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP112"
+controlPv "BL24I-MO-IOC-01:GP112"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4656,7 +4656,7 @@ x 1570
 y 445
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP113"
+controlPv "BL24I-MO-IOC-01:GP113"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4695,7 +4695,7 @@ x 1570
 y 475
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP114"
+controlPv "BL24I-MO-IOC-01:GP114"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4734,7 +4734,7 @@ x 1570
 y 505
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP115"
+controlPv "BL24I-MO-IOC-01:GP115"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4773,7 +4773,7 @@ x 1570
 y 535
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP116"
+controlPv "BL24I-MO-IOC-01:GP116"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4812,7 +4812,7 @@ x 1570
 y 565
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP117"
+controlPv "BL24I-MO-IOC-01:GP117"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4851,7 +4851,7 @@ x 1570
 y 595
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP118"
+controlPv "BL24I-MO-IOC-01:GP118"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4890,7 +4890,7 @@ x 1570
 y 625
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP119"
+controlPv "BL24I-MO-IOC-01:GP119"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -4929,7 +4929,7 @@ x 1570
 y 655
 w 250
 h 25
-controlPv "ME14E-MO-IOC-01:GP120"
+controlPv "BL24I-MO-IOC-01:GP120"
 fgColor index 25
 fgAlarm
 bgColor index 5

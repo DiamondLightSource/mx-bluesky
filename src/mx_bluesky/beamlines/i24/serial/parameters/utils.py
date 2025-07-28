@@ -7,7 +7,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, pv
 
-OXFORD_BLOCKS_PVS = [f"ME14E-MO-IOC-01:GP{i}" for i in range(11, 75)]
+OXFORD_BLOCKS_PVS = [f"BL24I-MO-IOC-01:GP{i}" for i in range(11, 75)]
 
 
 class EmptyMapError(Exception):
