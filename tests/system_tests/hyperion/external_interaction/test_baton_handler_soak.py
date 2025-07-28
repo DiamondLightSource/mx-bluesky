@@ -1,3 +1,4 @@
+import gc
 import os
 from dataclasses import fields
 from unittest.mock import patch
@@ -18,7 +19,7 @@ from mx_bluesky.hyperion.utils.context import setup_context
 weak_ids_to_devices = WeakValueDictionary()
 
 
-MAX_DEVICE_COUNT = 10
+MAX_DEVICE_COUNT = 4
 
 
 @pytest.fixture
@@ -92,6 +93,7 @@ def reinitialise_beamline(dev_mode: bool, i: int):
 
 
 def check_instances_are_garbage_collected(i: int):
+    gc.collect()
     device_counts: dict[str, int] = {}
     for ref in weak_ids_to_devices.valuerefs():
         device = ref()
