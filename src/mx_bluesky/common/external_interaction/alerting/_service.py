@@ -60,7 +60,9 @@ def graylog_url(stream_id: str):
     now = datetime.now(UTC)
     from_utc = now - timedelta(minutes=5)
     from_timestamp = from_utc.isoformat()
-    to_timestamp = now.isoformat()
+    # Add 1 second for graylog timing jitter
+    to_utc = now + timedelta(seconds=1)
+    to_timestamp = to_utc.isoformat()
     query_string = urlencode(
         {
             "streams": stream_id,

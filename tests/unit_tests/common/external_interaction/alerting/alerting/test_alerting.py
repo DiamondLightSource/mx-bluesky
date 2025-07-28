@@ -19,7 +19,7 @@ EXPECTED_GRAYLOG_URL = (
     "https://graylog.diamond.ac.uk/search?streams=66264f5519ccca6d1c9e4e03&"
     "rangetype=absolute&"
     "from=2025-08-25T15%3A27%3A24%2B00%3A00&"
-    "to=2025-08-25T15%3A32%3A24%2B00%3A00"
+    "to=2025-08-25T15%3A32%3A25%2B00%3A00"
 )
 
 
