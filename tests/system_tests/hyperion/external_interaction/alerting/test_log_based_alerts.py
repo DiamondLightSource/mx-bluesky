@@ -15,7 +15,7 @@ from mx_bluesky.common.external_interaction.alerting.log_based_service import (
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionConstants
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 
 from .....conftest import SimConstants
 
@@ -29,7 +29,7 @@ def setup_graylog():
 
 @pytest.mark.requires(external="graylog")
 def test_alert_to_graylog():
-    alert_service = LoggingAlertService()
+    alert_service = LoggingAlertService(CONST.GRAYLOG_STREAM_ID)
     alert_service.raise_alert("Test alert", "This is a test.", {"alert_type": "Test"})
 
 
@@ -41,7 +41,7 @@ def test_alert_to_graylog():
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_alert_from_plan_exception(RE: RunEngine):
     RE.subscribe(SampleHandlingCallback())
-    set_alerting_service(LoggingAlertService())
+    set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
     @run_decorator(
         md={

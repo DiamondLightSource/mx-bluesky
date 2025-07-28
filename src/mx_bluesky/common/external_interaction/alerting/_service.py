@@ -3,14 +3,17 @@ from enum import StrEnum
 from typing import Protocol
 from urllib.parse import quote, urlencode
 
-from mx_bluesky.hyperion.parameters.constants import HyperionConstants
-
 
 class Metadata(StrEnum):
+    ALERT_CONTENT = "alert_content"
+    ALERT_SUMMARY = "alert_summary"
+    BEAMLINE = "beamline"
+    CONTAINER = "container"
+    GRAYLOG_URL = "graylog_url"
+    ISPYB_URL = "ispyb_url"
+    PROPOSAL = "proposal"
     SAMPLE_ID = "sample_id"
     VISIT = "visit"
-    CONTAINER = "container"
-    BEAMLINE = "beamline"
 
 
 class AlertService(Protocol):
@@ -53,14 +56,14 @@ def ispyb_url(sample_id: str):
     return f"https://ispyb.diamond.ac.uk/samples/sid/{quote(sample_id)}"
 
 
-def graylog_url():
+def graylog_url(stream_id: str):
     now = datetime.now(UTC)
     from_utc = now - timedelta(minutes=5)
     from_timestamp = from_utc.isoformat()
     to_timestamp = now.isoformat()
     query_string = urlencode(
         {
-            "streams": HyperionConstants.GRAYLOG_STREAM_ID,
+            "streams": stream_id,
             "rangetype": "absolute",
             "from": from_timestamp,
             "to": to_timestamp,

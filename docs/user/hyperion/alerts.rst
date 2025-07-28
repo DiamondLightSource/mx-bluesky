@@ -1,7 +1,7 @@
 Alerts
 ------
 
-Hyperion can be configured to raise alerts in order to notify staff of issues with data collections or with Hyperion 
+Hyperion can be configured to raise  in order to notify staff of issues with data collections or with Hyperion 
 itself.
 
 The currently supported alerting backend uses graylog alerting to send email alert notifications.
@@ -25,6 +25,7 @@ metadata as fields in the log message.
     "container", "Container ID that was being processed"
     "ispyb_url", "Link to the ISPyB page of the affected sample"
     "graylog_url", "Link to the graylog stream in the minutes up to the event"
+    "proposal", "Proposal that was being processed"
     "sample_id", "Sample ID that was being processed"
     "visit", "Visit that was being processed"
 

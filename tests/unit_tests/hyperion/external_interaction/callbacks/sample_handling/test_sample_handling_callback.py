@@ -237,7 +237,6 @@ def test_sample_handling_callback_raises_an_alert_when_beamline_error_occurs(
                 Metadata.SAMPLE_ID: str(TEST_SAMPLE_ID),
                 Metadata.VISIT: TEST_VISIT,
                 Metadata.CONTAINER: str(TEST_CONTAINER),
-                Metadata.BEAMLINE: "i03",
             },
         )
     else:
