@@ -604,7 +604,6 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         SSX_LOGGER.info("Laser 1 /BNC2 shutter is open")
         # Use M712 = 0 if triggering on falling edge. M712 =1 if on rising edge
         # Be sure to also change laser1off
-        # caput(pv.me14e_pmac_str, ' M712=0 M711=1')
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
 
     elif laser_setting == "laser1off":
