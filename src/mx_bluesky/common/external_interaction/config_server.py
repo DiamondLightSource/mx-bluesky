@@ -1,6 +1,6 @@
 import json
 from dataclasses import fields
-from time import time
+from enum import Enum
 from typing import Any, Generic, TypeVar
 
 from daq_config_server.client import ConfigServer
@@ -54,10 +54,8 @@ class MXConfigServer(ConfigServer, Generic[T]):
             f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
         )
 
-    def get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
-        """Get the OAV config in the form of a python dictionary. Store results in a cache
-        which should be updated at the start of a plan using self.refresh_cache()
-
+    def _get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
+        """
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
         """
@@ -81,6 +79,12 @@ class MXConfigServer(ConfigServer, Generic[T]):
                     ).validate_python(json.loads(f.read()))
         return self._cached_oav_config
 
+    def get_oav_config(self) -> dict[str, Any]:
+        """Get the OAV config in the form of a python dictionary. Store results in a cache
+        which should be updated at the start of a plan using self.refresh_cache()
+        """
+        return self._get_oav_config()
+
     def _check_missing_fields(self, expected: set, actual: set):
         missing = expected - actual
         if missing:
@@ -88,10 +92,8 @@ class MXConfigServer(ConfigServer, Generic[T]):
                 f"Missing features from domain.properties: {missing}.\n Using defaults for missing features"
             )
 
-    def get_feature_flags(self, reset_cached_result=False) -> T:
-        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
-        which should be updated at the start of a plan using self.refresh_cache()
-
+    def _get_feature_flags(self, reset_cached_result=False) -> T:
+        """
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
         """
@@ -99,13 +101,10 @@ class MXConfigServer(ConfigServer, Generic[T]):
         try:
             if reset_cached_result:
                 self._cached_features = None
-                self._time_of_last_feature_get = 0
             if not self._cached_features:
                 self._cached_features = None
                 # Construct self.feature_dc by reading the domain.properties file
-                enum_dict = (
-                    self.feature_sources._value2member_map_
-                )  # As of python 3.12, can do checks using "in" for enums instead
+                all_features = list(self.feature_sources)
                 feature_dict = {}
                 domain_properties = self.get_file_contents(
                     GDA_DOMAIN_PROPERTIES_PATH, reset_cached_result=reset_cached_result
@@ -117,10 +116,10 @@ class MXConfigServer(ConfigServer, Generic[T]):
                     line = line.split("#", 1)[0].strip()  # Remove inline comments
                     if "=" in line:
                         key, value = map(str.strip, line.split("=", 1))
-                        # Construct dict needed for feature flag DC
-                        if key in enum_dict:
-                            feature_dict[enum_dict[key].name] = value
-                self._time_of_last_feature_get = time()
+                        for feature in all_features:
+                            assert isinstance(feature, Enum)
+                            if key == feature.value:
+                                feature_dict[feature.name] = value
                 self._check_missing_fields(
                     {f.name for f in fields(self.feature_dc)}, set(feature_dict.keys())
                 )
@@ -132,7 +131,13 @@ class MXConfigServer(ConfigServer, Generic[T]):
             )
             return self.feature_dc()
 
+    def get_feature_flags(self) -> T:
+        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
+        which should be updated at the start of a plan using self.refresh_cache()
+        """
+        return self._get_feature_flags()
+
     def refresh_cache(self):
         """Refresh the client's cache. Use at the beginning of a plan"""
-        self.get_feature_flags(reset_cached_result=True)
-        self.get_oav_config(reset_cached_result=True)
+        self._get_feature_flags(reset_cached_result=True)
+        self._get_oav_config(reset_cached_result=True)

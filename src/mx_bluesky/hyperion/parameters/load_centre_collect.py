@@ -8,7 +8,6 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
-from mx_bluesky.hyperion.parameters.components import WithHyperionConfigServer
 from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
@@ -28,7 +27,6 @@ class LoadCentreCollect(
     WithVisit,
     WithSample,
     WithCentreSelection,
-    WithHyperionConfigServer,
 ):
     """Experiment parameters to perform the combined robot load,
     pin-tip centre and rotation scan operations."""

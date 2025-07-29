@@ -1,5 +1,4 @@
 import json
-from time import time
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -74,7 +73,6 @@ def test_get_feature_flags_cache():
     }
     expected_features = HyperionFeatureFlags(**expected_features_dict)
     server._cached_features = expected_features
-    server._time_of_last_feature_get = time()
     assert server.get_feature_flags() == expected_features
 
 
