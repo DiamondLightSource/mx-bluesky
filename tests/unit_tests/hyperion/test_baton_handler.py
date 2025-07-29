@@ -485,7 +485,7 @@ async def test_run_forever_resumes_collection_when_baton_taken_away(
     udc_runner: PlanRunner,
     executor: Executor,
 ):
-    async def take_baton_away_then_wait_for_release_then_re_request():
+    async def take_requested_baton_away_then_wait_for_release_then_re_request():
         while udc_runner.current_status != Status.BUSY:
             await sleep(0.1)
         baton = find_device_in_context(udc_runner.context, "baton", Baton)
@@ -499,7 +499,9 @@ async def test_run_forever_resumes_collection_when_baton_taken_away(
         udc_runner.shutdown()
 
     future = _launch_test_in_runner_event_loop(
-        take_baton_away_then_wait_for_release_then_re_request, udc_runner, executor
+        take_requested_baton_away_then_wait_for_release_then_re_request,
+        udc_runner,
+        executor,
     )
     run_forever(udc_runner)
 

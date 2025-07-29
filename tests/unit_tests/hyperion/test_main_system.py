@@ -626,7 +626,7 @@ def test_sending_a_shutdown_via_api_terminates_udc():
 @patch("mx_bluesky.hyperion.runner.GDARunner.wait_on_queue", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
 @pytest.mark.parametrize("mode", ["gda", "udc"])
-def test_hyperion_in_exposes_run_endpoint_only_if_gda_mode_selected(
+def test_hyperion_exposes_run_endpoint_only_if_gda_mode_selected(
     mock_api: MagicMock,
     mock_flask_thread: MagicMock,
     mode: str,
