@@ -1,4 +1,3 @@
-import atexit
 import json
 import threading
 from dataclasses import asdict
@@ -23,7 +22,7 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
     flush_debug_handler,
 )
-from mx_bluesky.hyperion.baton_handler import UDCRunner
+from mx_bluesky.hyperion.baton_handler import run_forever
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
@@ -33,14 +32,13 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.cli import (
-    HyperionArgs,
     HyperionMode,
     parse_cli_args,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import (
-    BlueskyRunner,
     GDARunner,
     StatusAndMessage,
     make_error_status_and_message,
@@ -78,7 +76,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
 
 
 class RunExperiment(Resource):
-    def __init__(self, runner: BlueskyRunner, context: BlueskyContext) -> None:
+    def __init__(self, runner: GDARunner, context: BlueskyContext) -> None:
         super().__init__()
         self.runner = runner
         self.context = context
@@ -103,9 +101,9 @@ class RunExperiment(Resource):
 
 
 class StopOrStatus(Resource):
-    def __init__(self, runner: BlueskyRunner) -> None:
+    def __init__(self, runner: GDARunner) -> None:
         super().__init__()
-        self.runner: BlueskyRunner = runner
+        self.runner: GDARunner = runner
 
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
@@ -138,24 +136,17 @@ class FlushLogs(Resource):
         return asdict(status_and_message)
 
 
-def create_app(args: HyperionArgs, test_config=None) -> tuple[Flask, BlueskyRunner]:
-    context = setup_context(dev_mode=args.dev_mode)
-    runner: BlueskyRunner
-    if args.mode == HyperionMode.GDA:
-        runner = GDARunner(context=context)
-    else:
-        runner = UDCRunner(context)
+def create_app(runner: GDARunner, test_config=None) -> Flask:
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
     api = Api(app)
 
-    if args.mode == HyperionMode.GDA:
-        api.add_resource(
-            RunExperiment,
-            "/<string:plan_name>/<string:action>",
-            resource_class_args=[runner, context],
-        )
+    api.add_resource(
+        RunExperiment,
+        "/<string:plan_name>/<string:action>",
+        resource_class_args=[runner, runner.context],
+    )
 
     api.add_resource(
         FlushLogs,
@@ -166,7 +157,7 @@ def create_app(args: HyperionArgs, test_config=None) -> tuple[Flask, BlueskyRunn
         "/<string:action>",
         resource_class_args=[runner],
     )
-    return app, runner
+    return app
 
 
 def initialise_globals(args: HyperionArgs):
@@ -178,32 +169,30 @@ def initialise_globals(args: HyperionArgs):
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
 
-def create_flask_app(args: HyperionArgs):
-    """Create the flask application that exposes the REST service."""
-    hyperion_port = 5005
-    app, runner = create_app(args)
-    return app, runner, hyperion_port, args.dev_mode
-
-
 def main():
     """Main application entry point."""
     args = parse_cli_args()
     initialise_globals(args)
-    app, runner, port, dev_mode = create_flask_app(args)
-    atexit.register(runner.shutdown)
-    flask_thread = threading.Thread(
-        target=lambda: app.run(
-            host="0.0.0.0", port=port, debug=True, use_reloader=False
-        ),
-        daemon=True,
-    )
+    hyperion_port = 5005
+    context = setup_context(dev_mode=args.dev_mode)
 
-    flask_thread.start()
-    LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
-
-    runner.wait_on_queue()
-
-    flask_thread.join()
+    if args.mode == HyperionMode.GDA:
+        runner = GDARunner(context=context)
+        app = create_app(runner)
+        atexit.register(runner.shutdown)
+        flask_thread = threading.Thread(
+            target=lambda: app.run(
+                host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
+            ),
+            daemon=True,
+        )
+        flask_thread.start()
+        LOGGER.info(
+            f"Hyperion now listening on {hyperion_port} ({'IN DEV' if dev_mode else ''})"
+        )
+        runner.wait_on_queue()
+    else:
+        run_forever(PlanRunner(context))
 
 
 if __name__ == "__main__":

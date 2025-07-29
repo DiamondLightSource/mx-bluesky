@@ -5,11 +5,10 @@ from typing import Any
 from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from bluesky.utils import MsgGenerator, RunEngineInterrupted
+from bluesky.utils import MsgGenerator, RequestAbort, RunEngineInterrupted
 from dodal.devices.baton import Baton
 
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
-from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.context import (
     find_device_in_context,
 )
@@ -23,11 +22,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.runner import (
-    BlueskyRunner,
-    StatusAndMessage,
-    make_error_status_and_message,
-)
+from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
     setup_devices,
@@ -37,68 +32,35 @@ HYPERION_USER = "Hyperion"
 NO_USER = "None"
 
 
-class PlanException(Exception):
-    """Identifies an exception that was encountered during plan execution."""
+def run_forever(runner: PlanRunner):
+    try:
+        while True:
+            try:
+                run_udc_when_requested(runner.context, runner)
+            except PlanException as e:
+                LOGGER.info(
+                    "Caught exception during plan execution, stopped and waiting for baton.",
+                    exc_info=e,
+                )
 
-    pass
-
-
-class UDCRunner(BlueskyRunner):
-    """Runner that executes plans initiated by instructions pulled from Agamemnon"""
-
-    def wait_on_queue(self):
-        try:
-            while True:
-                try:
-                    run_udc_when_requested(self.context, self)
-                except PlanException as e:
-                    LOGGER.info(
-                        "Caught exception during plan execution, stopped and waiting for baton.",
-                        exc_info=e,
-                    )
-
-        except RunEngineInterrupted:
-            # In the event that BlueskyRunner.stop() or shutdown() was called then
-            # RunEngine.abort() will have been called and we will get RunEngineInterrupted
-            LOGGER.info(
-                f"RunEngine was interrupted. Runner state is {self.current_status}, "
-                f"run engine is {self.RE.state}"
-            )
-
-    def execute_next_command(self) -> MsgGenerator:
-        """Run the next command in the queue as a plan"""
-        command = self.fetch_next_command()
-        match command.action:
-            # No need to handle Actions.SHUTDOWN, this is handled by the
-            # outer contingency wrapper
-            case Actions.START:
-                self.current_status = StatusAndMessage(Status.BUSY)
-                try:
-                    assert command.experiment, "Experiment not specified in command"
-                    yield from command.experiment(command.parameters, command.devices)
-                    self.current_status = StatusAndMessage(Status.IDLE)
-                except WarningException as e:
-                    LOGGER.warning(f"Command {command} failed with warning", exc_info=e)
-                    self.current_status = make_error_status_and_message(e)
-                except Exception as e:
-                    if self._last_run_aborted:
-                        LOGGER.info("UDC Runner aborting")
-                    else:
-                        LOGGER.error(
-                            f"Command {command} failed with exception", exc_info=e
-                        )
-                    self.current_status = make_error_status_and_message(e)
-                    raise PlanException("Exception thrown in plan execution") from e
+    except RunEngineInterrupted:
+        # In the event that BlueskyRunner.stop() or shutdown() was called then
+        # RunEngine.abort() will have been called and we will get RunEngineInterrupted
+        LOGGER.info(
+            f"RunEngine was interrupted. Runner state is {runner.current_status}, "
+            f"run engine is {runner.RE.state}"
+        )
 
 
-def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
+def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
     """This will wait for the baton to be handed to hyperion and then run through the
     UDC queue from agamemnon until:
       1. There are no more instructions from agamemnon
       2. There is an error on the beamline
       3. The baton is requested by another party
+      4. A shutdown is requested
 
-    In the case of 1. or 2. hyperion will immediately release the baton. In the case of
+    In the case of 1. 2. or 4. hyperion will immediately release the baton. In the case of
     3. the baton will be released after the next collection has finished."""
 
     baton = _get_baton(context)
@@ -108,11 +70,27 @@ def run_udc_when_requested(context: BlueskyContext, runner: UDCRunner):
         yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
     def collect() -> MsgGenerator:
+        """
+        Move to the default state for collection, then enter a loop fetching instructions
+        from Agamemnon and continue the loop until any of the following occur:
+        * A user requests the baton away from Hyperion
+        * Hyperion releases the baton when Agamemnon has no more instructions
+        * The RunEngine raises a RequestAbort exception, most likely due to a shutdown command
+        * A plan raises an exception not of type WarningException (which is then wrapped as a PlanException)
+        Args:
+            baton: The baton device
+            runner: The runner
+        """
         yield from _move_to_default_state()
 
         # re-fetch the baton because the device has been reinstantiated
-        new_baton = _get_baton(context)
-        yield from _main_hyperion_loop(new_baton, runner)
+        baton = _get_baton(context)
+        while (yield from _is_requesting_baton(baton)):
+            yield from bpp.contingency_wrapper(
+                _fetch_and_process_agamemnon_instruction(baton, runner),
+                except_plan=partial(_hyperion_loop_exception_handler, runner),
+                auto_raise=False,
+            )
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -151,47 +129,33 @@ def _wait_for_hyperion_requested(baton: Baton):
         yield from bps.sleep(SLEEP_PER_CHECK)
 
 
-def _main_hyperion_loop(baton: Baton, runner: UDCRunner) -> MsgGenerator:
-    while (yield from _is_requesting_baton(baton)):
-        yield from bpp.contingency_wrapper(
-            _fetch_and_process_agamemnon_instruction(baton, runner),
-            except_plan=partial(_hyperion_loop_exception_handler, runner),
-            auto_raise=False,
-        )
-
-
 def _fetch_and_process_agamemnon_instruction(
-    baton: Baton, runner: UDCRunner
+    baton: Baton, runner: PlanRunner
 ) -> MsgGenerator:
     parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
     if parameter_list:
         for parameters in parameter_list:
             match parameters:
                 case LoadCentreCollect():
-                    runner.start(
+                    yield from runner.execute_plan(
                         load_centre_collect_full,
                         parameters,
                         "load_centre_collect_full",
                     )
                 case Wait():
-                    runner.start(_runner_sleep, parameters)
+                    yield from runner.execute_plan(_runner_sleep, parameters)
                 case _:
                     raise AssertionError(
                         f"Unsupported instruction decoded from agamemnon {type(parameters)}"
                     )
-            yield from runner.execute_next_command()
     else:
         yield from _safely_release_baton(baton)
 
 
-def _hyperion_loop_exception_handler(runner: UDCRunner, exception: Exception):
-    if runner.RE.state == "aborting":
-        baton = find_device_in_context(runner.context, "baton", Baton)
-        yield from _safely_release_baton(baton)
-        if command := runner.try_fetch_next_command():
-            if command.action == Actions.SHUTDOWN:
-                LOGGER.info("Shut down command received, shutting down Hyperion")
-                return
+def _hyperion_loop_exception_handler(runner: PlanRunner, exception: Exception):
+    if isinstance(exception, RequestAbort):
+        LOGGER.info("RunEngine is aborting - shutting down Hyperion")
+        raise exception
     # For sample errors we want to continue the loop
     if not isinstance(exception, WarningException):
         raise exception
