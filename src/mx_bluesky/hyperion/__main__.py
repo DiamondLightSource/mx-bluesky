@@ -12,10 +12,6 @@ from mx_bluesky.common.external_interaction import alerting
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
-    LogUidTaggingCallback,
-)
-from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.log import (
     LOGGER,
@@ -32,6 +28,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     update_params_from_agamemnon,
 )
 from mx_bluesky.hyperion.parameters.cli import (
+    HyperionArgs,
     HyperionMode,
     parse_cli_args,
 )
@@ -179,7 +176,6 @@ def main():
     if args.mode == HyperionMode.GDA:
         runner = GDARunner(context=context)
         app = create_app(runner)
-        atexit.register(runner.shutdown)
         flask_thread = threading.Thread(
             target=lambda: app.run(
                 host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
@@ -188,7 +184,7 @@ def main():
         )
         flask_thread.start()
         LOGGER.info(
-            f"Hyperion now listening on {hyperion_port} ({'IN DEV' if dev_mode else ''})"
+            f"Hyperion now listening on {hyperion_port} ({'IN DEV' if args.dev_mode else ''})"
         )
         runner.wait_on_queue()
     else:

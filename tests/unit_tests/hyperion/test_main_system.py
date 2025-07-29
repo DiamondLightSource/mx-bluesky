@@ -35,6 +35,8 @@ from mx_bluesky.hyperion.__main__ import (
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import (
+    HyperionArgs,
+    HyperionMode,
     parse_cli_args,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -548,7 +550,7 @@ def test_context_created_with_dev_mode(dev_mode: bool, mock_setup_context: Magic
 def test_initialise_configures_logging(
     mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
 ):
-    args = HyperionArgs(dev_mode=True)
+    args = HyperionArgs(mode=HyperionMode.GDA, dev_mode=True)
 
     initialise_globals(args)
 
@@ -562,7 +564,7 @@ def test_initialise_configures_logging(
 def test_initialise_configures_alerting(
     mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
 ):
-    args = HyperionArgs(dev_mode=True)
+    args = HyperionArgs(mode=HyperionMode.GDA, dev_mode=True)
 
     initialise_globals(args)
 
