@@ -55,7 +55,8 @@ class MXConfigServer(ConfigServer, Generic[T]):
         )
 
     def get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
-        """Get the OAV config in the form of a python dictionary
+        """Get the OAV config in the form of a python dictionary. Store results in a cache
+        which should be updated at the start of a plan using self.refresh_cache()
 
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
@@ -89,7 +90,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
 
     def get_feature_flags(self, reset_cached_result=False) -> T:
         """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
-        which is kept for FEATURE_FLAG_CACHE_LENGTH_S
+        which should be updated at the start of a plan using self.refresh_cache()
 
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
@@ -99,10 +100,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
             if reset_cached_result:
                 self._cached_features = None
                 self._time_of_last_feature_get = 0
-            if (
-                not self._cached_features
-                or time() - self._time_of_last_feature_get > FEATURE_FLAG_CACHE_LENGTH_S
-            ):
+            if not self._cached_features:
                 self._cached_features = None
                 # Construct self.feature_dc by reading the domain.properties file
                 enum_dict = (
@@ -135,6 +133,6 @@ class MXConfigServer(ConfigServer, Generic[T]):
             return self.feature_dc()
 
     def refresh_cache(self):
-        """Refresh the client's cache. Use when filesystem config may have changed"""
+        """Refresh the client's cache. Use at the beginning of a plan"""
         self.get_feature_flags(reset_cached_result=True)
         self.get_oav_config(reset_cached_result=True)

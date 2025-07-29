@@ -1820,7 +1820,7 @@ def _fake_config_server_read(
 
 
 @pytest.fixture(autouse=True)
-def test_friendly_config_server():
+def mock_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
     get_hyperion_config_server.cache_clear()

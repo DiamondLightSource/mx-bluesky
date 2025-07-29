@@ -79,24 +79,6 @@ def test_get_feature_flags_cache():
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.config_server.FEATURE_FLAG_CACHE_LENGTH_S",
-    new=0,
-)
-def test_get_feature_flags_time_cache():
-    # Make cache time 0s and test that cache isn't used
-    server = get_hyperion_config_server()
-    features_dict = {
-        "USE_GPU_RESULTS": False,
-        "USE_PANDA_FOR_GRIDSCAN": True,
-        "SET_STUB_OFFSETS": False,
-    }
-    server._cached_features = HyperionFeatureFlags(**features_dict)
-    expected_features = HyperionFeatureFlags()
-    assert server._cached_features != expected_features
-    assert server.get_feature_flags() == expected_features
-
-
-@patch(
     "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
     new="BAD_PATH",
 )
