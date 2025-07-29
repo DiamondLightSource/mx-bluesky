@@ -10,20 +10,20 @@ from pydantic import TypeAdapter
 from mx_bluesky.common.parameters.constants import (
     _JSON_CONFIG_PATHS,
     GDA_DOMAIN_PROPERTIES_PATH,
-    FeatureFlags,
-    FeatureFlagSources,
+    FeatureSetting,
+    FeatureSettingources,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
 FEATURE_FLAG_CACHE_LENGTH_S = 60 * 5
 
-T = TypeVar("T", bound=FeatureFlags)
+T = TypeVar("T", bound=FeatureSetting)
 
 
 class MXConfigServer(ConfigServer, Generic[T]):
     def __init__(
         self,
-        feature_sources: type[FeatureFlagSources],
+        feature_sources: type[FeatureSettingources],
         feature_dc: type[T],
         url: str = "https://daq-config.diamond.ac.uk",
     ):

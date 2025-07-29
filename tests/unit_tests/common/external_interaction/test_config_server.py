@@ -7,26 +7,26 @@ from pydantic.dataclasses import dataclass
 from mx_bluesky.common.external_interaction.config_server import MXConfigServer
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
-    FeatureFlags,
-    FeatureFlagSources,
+    FeatureSetting,
+    FeatureSettingources,
     OavConstants,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_config_server,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureFlags
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 
 def test_verify_feature_parameters():
-    class BadHyperionFeatureFlagSources(FeatureFlagSources):
+    class BadHyperionFeatureSettingources(FeatureSettingources):
         USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
         USE_ZEBRA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
         SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
 
     with pytest.raises(AssertionError):
         MXConfigServer(
-            feature_sources=BadHyperionFeatureFlagSources,
-            feature_dc=HyperionFeatureFlags,
+            feature_sources=BadHyperionFeatureSettingources,
+            feature_dc=HyperionFeatureSetting,
         )
 
 
@@ -62,7 +62,9 @@ def test_get_feature_flags_good_request(mock_log_warn: MagicMock):
         "SET_STUB_OFFSETS": False,
     }
     server = get_hyperion_config_server()
-    assert server.get_feature_flags() == HyperionFeatureFlags(**expected_features_dict)
+    assert server.get_feature_flags() == HyperionFeatureSetting(
+        **expected_features_dict
+    )
     mock_log_warn.assert_not_called()
 
 
@@ -73,7 +75,7 @@ def test_get_feature_flags_cache():
         "USE_PANDA_FOR_GRIDSCAN": True,
         "SET_STUB_OFFSETS": False,
     }
-    expected_features = HyperionFeatureFlags(**expected_features_dict)
+    expected_features = HyperionFeatureSetting(**expected_features_dict)
     server._cached_features = expected_features
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents"
@@ -106,7 +108,7 @@ def test_get_json_config_cache():
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_get_feature_flags_bad_request(mock_log_warn: MagicMock):
     server = get_hyperion_config_server()
-    assert server.get_feature_flags() == HyperionFeatureFlags()
+    assert server.get_feature_flags() == HyperionFeatureSetting()
     mock_log_warn.assert_called_once()
 
 
@@ -121,7 +123,7 @@ def test_refresh_cache():
     server.get_file_contents.assert_has_calls(call_list, any_order=True)
 
 
-class BadFeatureFlagsSources(FeatureFlagSources):
+class BadFeatureSettingSources(FeatureSettingources):
     USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
     USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
     SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
@@ -130,7 +132,7 @@ class BadFeatureFlagsSources(FeatureFlagSources):
 
 
 @dataclass
-class BadFeatureFlags(FeatureFlags):
+class BadFeatureSetting(FeatureSetting):
     USE_GPU_RESULTS: bool = True
     USE_PANDA_FOR_GRIDSCAN: bool = False
     SET_STUB_OFFSETS: bool = False
@@ -140,7 +142,7 @@ class BadFeatureFlags(FeatureFlags):
 
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_warning_on_missing_features_in_file(mock_log_warn: MagicMock):
-    server = MXConfigServer(BadFeatureFlagsSources, BadFeatureFlags)
+    server = MXConfigServer(BadFeatureSettingSources, BadFeatureSetting)
 
     expected_features_dict = {
         "USE_GPU_RESULTS": True,
@@ -149,7 +151,7 @@ def test_warning_on_missing_features_in_file(mock_log_warn: MagicMock):
         "PANDA_RUNUP_DISTANCE_MM": 0.16,
         "MISSING_FEATURE": False,
     }
-    assert server.get_feature_flags() == BadFeatureFlags(**expected_features_dict)
+    assert server.get_feature_flags() == BadFeatureSetting(**expected_features_dict)
     assert (
         "MISSING_FEATURE" in mock_log_warn.call_args_list[0][0][0]
     )  # call -> tuple -> contents
