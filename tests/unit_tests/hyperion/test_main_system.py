@@ -35,12 +35,11 @@ from mx_bluesky.hyperion.__main__ import (
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import (
-    HyperionArgs,
-    HyperionMode,
     parse_cli_args,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import GDARunner
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
@@ -142,7 +141,7 @@ TEST_EXPTS = {
 def mock_setup_context(request: pytest.FixtureRequest):
     with (
         patch("mx_bluesky.hyperion.__main__.setup_context") as mock_setup_context,
-        patch("mx_bluesky.hyperion.__main__.BlueskyRunner"),
+        patch("mx_bluesky.hyperion.__main__.run_forever"),
     ):
         yield mock_setup_context
 
@@ -158,7 +157,6 @@ def test_env(request: pytest.FixtureRequest):
     mock_context.plan_functions = {  # type: ignore
         k: MagicMock() for k in real_plans_and_test_exps.keys()
     }
-    hyperion_mode = getattr(request, "param", HyperionMode.GDA)
 
     with (
         patch.dict(
@@ -170,8 +168,8 @@ def test_env(request: pytest.FixtureRequest):
             MagicMock(return_value=mock_context),
         ),
     ):
-        args = HyperionArgs(dev_mode=False, mode=hyperion_mode)
-        app, runner = create_app(args, {"TESTING": True})  # type: ignore
+        runner = GDARunner(mock_context)
+        app = create_app(runner, {"TESTING": True})  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -534,11 +532,13 @@ def test_when_context_created_then_contains_expected_number_of_plans(
 
 
 @pytest.mark.parametrize("dev_mode", [False, True])
-def test_create_app_passes_through_dev_mode(
-    dev_mode: bool, mock_setup_context: MagicMock
-):
-    args = HyperionArgs(dev_mode=dev_mode, mode=HyperionMode.GDA)
-    create_app(args, {"TESTING": True})
+def test_context_created_with_dev_mode(dev_mode: bool, mock_setup_context: MagicMock):
+    with (
+        patch("sys.argv", new=["hyperion", "--dev"] if dev_mode else ["hyperion"]),
+        patch("mx_bluesky.hyperion.__main__.create_app"),
+        patch("mx_bluesky.hyperion.__main__.GDARunner.wait_on_queue"),
+    ):
+        main()
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
 
@@ -571,55 +571,47 @@ def test_initialise_configures_alerting(
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
-@patch(
-    "mx_bluesky.hyperion.__main__.create_app", return_value=(MagicMock(), MagicMock())
-)
+@patch("mx_bluesky.hyperion.__main__.create_app")
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
-def test_hyperion_in_udc_mode_starts_logging_and_creates_and_runs_app(
+def test_hyperion_in_udc_mode_starts_logging(
     mock_do_default_logging_setup: MagicMock,
     mock_create_app: MagicMock,
+    mock_setup_context: MagicMock,
 ):
     main()
+
     mock_do_default_logging_setup.assert_called_once_with(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
     )
-    args = HyperionArgs(dev_mode=False, mode=HyperionMode.UDC)
-    mock_create_app.assert_called_once_with(args)
-    app, runner = mock_create_app.return_value
-    app.run.assert_called_once()
-    runner.wait_on_queue.assert_called_once()
+    mock_create_app.assert_not_called()
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.setup_context")
-@patch("mx_bluesky.hyperion.__main__.UDCRunner")
+@patch("mx_bluesky.hyperion.__main__.run_forever")
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
 def test_hyperion_in_udc_mode_starts_udc_loop(
     mock_find_device_in_context: MagicMock,
-    mock_udc_runner: MagicMock,
+    mock_run_forever: MagicMock,
     mock_setup_context: MagicMock,
     mock_flask_thread: MagicMock,
 ):
     main()
 
-    mock_udc_runner.assert_called_once_with(mock_setup_context.return_value)
-    mock_udc_runner.return_value.wait_on_queue.assert_called_once()
+    mock_run_forever.assert_called_once()
+    assert isinstance(mock_run_forever.mock_calls[0].args[0], PlanRunner)
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "gda"])
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
-@patch("mx_bluesky.hyperion.__main__.GDARunner")
-@patch("mx_bluesky.hyperion.__main__.UDCRunner")
+@patch("mx_bluesky.hyperion.__main__.GDARunner.wait_on_queue")
 def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
-    mock_udc_runner: MagicMock,
     mock_gda_runner: MagicMock,
     mock_flask_thread: MagicMock,
 ):
     main()
 
     mock_gda_runner.assert_called_once()
-    mock_gda_runner.return_value.wait_on_queue.assert_called_once()
-    mock_udc_runner.assert_not_called()
 
 
 # TODO not currently a REST endpoint but required for hyperion_restart() in kubernetes
@@ -632,7 +624,7 @@ def test_sending_a_shutdown_via_api_terminates_udc():
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", MagicMock())
 @patch("mx_bluesky.hyperion.runner.GDARunner.wait_on_queue", MagicMock())
-@patch("mx_bluesky.hyperion.baton_handler.UDCRunner.wait_on_queue", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
 @pytest.mark.parametrize("mode", ["gda", "udc"])
 def test_hyperion_in_exposes_run_endpoint_only_if_gda_mode_selected(
     mock_api: MagicMock,

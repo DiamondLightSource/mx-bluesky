@@ -56,23 +56,37 @@ def make_error_status_and_message(exception: Exception):
     )
 
 
-class BlueskyRunner:
+class BaseRunner:
+    @abstractmethod
+    def shutdown(self):
+        """Performs orderly prompt shutdown.
+        Aborts the run engine and terminates the loop waiting for messages."""
+        pass
+
+    def __init__(self, context: BlueskyContext):
+        self.context: BlueskyContext = context
+        self.RE = context.run_engine
+        # These references are necessary to maintain liveness of callbacks because RE
+        # only keeps a weakref
+        self._logging_uid_tag_callback = LogUidTaggingCallback()
+        self._publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
+
+        self.RE.subscribe(self._logging_uid_tag_callback)
+        LOGGER.info("Connecting to external callback ZMQ proxy...")
+        self.RE.subscribe(self._publisher)
+
+
+class GDARunner(BaseRunner):
+    """Runner that executes plans submitted by Flask requests from GDA."""
+
     def __init__(
         self,
         context: BlueskyContext,
     ) -> None:
+        super().__init__(context)
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
-        self.context: BlueskyContext = context
-        self.RE = context.run_engine
-
         self._last_run_aborted: bool = False
         self._command_queue: Queue[Command] = Queue()
-        self._logging_uid_tag_callback = LogUidTaggingCallback()
-        LOGGER.info("Connecting to external callback ZMQ proxy...")
-        self._publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
-
-        self.RE.subscribe(self._logging_uid_tag_callback)
-        self.RE.subscribe(self._publisher)
 
     def start(
         self,
@@ -126,11 +140,6 @@ class BlueskyRunner:
         self.stop()
         self._command_queue.put(Command(action=Actions.SHUTDOWN))
 
-    @abstractmethod
-    def wait_on_queue(self):
-        """Entry point to the processing loop"""
-        pass
-
     def _stopping_thread(self):
         try:
             # abort() causes the run engine to throw a RequestAbort exception
@@ -151,10 +160,6 @@ class BlueskyRunner:
             return self._command_queue.get(block=False)
         except Empty:
             return None
-
-
-class GDARunner(BlueskyRunner):
-    """Runner that executes plans submitted by Flask requests from GDA."""
 
     def wait_on_queue(self):
         while True:
