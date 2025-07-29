@@ -31,20 +31,22 @@ def test_verify_feature_parameters():
 
 
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
-def test_get_oav_config_good_request(mock_log_warn: MagicMock):
+def test_get_json_config_good_request(mock_log_warn: MagicMock):
     with open(OavConstants.OAV_CONFIG_JSON) as f:
         expected_dict = json.loads(f.read())
-    assert expected_dict == get_hyperion_config_server().get_oav_config()
+    assert expected_dict == get_hyperion_config_server().get_json_config(
+        OavConstants.OAV_CONFIG_JSON
+    )
     mock_log_warn.assert_not_called()
 
 
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
-def test_get_oav_config_on_bad_request(mock_log_warn: MagicMock):
+def test_get_json_config_on_bad_request(mock_log_warn: MagicMock):
     with open(OavConstants.OAV_CONFIG_JSON) as f:
         expected_dict = json.loads(f.read())
     server = get_hyperion_config_server()
     server.get_file_contents = MagicMock(side_effect=Exception)
-    assert expected_dict == server.get_oav_config()
+    assert expected_dict == server.get_json_config(OavConstants.OAV_CONFIG_JSON)
     mock_log_warn.assert_called_once()
 
 
@@ -73,7 +75,28 @@ def test_get_feature_flags_cache():
     }
     expected_features = HyperionFeatureFlags(**expected_features_dict)
     server._cached_features = expected_features
-    assert server.get_feature_flags() == expected_features
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents"
+    ) as mock_get_file_contents:
+        assert server.get_feature_flags() == expected_features
+        mock_get_file_contents.assert_not_called()
+        server._get_feature_flags(reset_cached_result=True)
+        mock_get_file_contents.assert_called_once()
+
+
+def test_get_json_config_cache():
+    server = get_hyperion_config_server()
+    with open(OavConstants.OAV_CONFIG_JSON) as f:
+        expected_dict = json.loads(f.read())
+    get_hyperion_config_server().get_json_config(OavConstants.OAV_CONFIG_JSON)
+    assert server._cached_json_config[OavConstants.OAV_CONFIG_JSON] == expected_dict
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents"
+    ) as mock_get_file_contents:
+        server.get_json_config(OavConstants.OAV_CONFIG_JSON)
+        mock_get_file_contents.assert_not_called()
+        server._get_json_config(OavConstants.OAV_CONFIG_JSON, reset_cached_result=True)
+        mock_get_file_contents.assert_called_once()
 
 
 @patch(

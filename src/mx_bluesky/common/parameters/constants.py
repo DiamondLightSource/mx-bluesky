@@ -45,6 +45,10 @@ class OavConstants:
     )
 
 
+# Used by the config server to refresh its cache
+_JSON_CONFIG_PATHS = [OavConstants.OAV_CONFIG_JSON]
+
+
 @dataclass(frozen=True)
 class PlanNameConstants:
     LOAD_CENTRE_COLLECT = "load_centre_collect"

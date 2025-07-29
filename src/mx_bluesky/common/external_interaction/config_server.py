@@ -1,16 +1,17 @@
 import json
 from dataclasses import fields
 from enum import Enum
+from pathlib import Path
 from typing import Any, Generic, TypeVar
 
 from daq_config_server.client import ConfigServer
 from pydantic import TypeAdapter
 
 from mx_bluesky.common.parameters.constants import (
+    _JSON_CONFIG_PATHS,
     GDA_DOMAIN_PROPERTIES_PATH,
     FeatureFlags,
     FeatureFlagSources,
-    OavConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -42,7 +43,7 @@ class MXConfigServer(ConfigServer, Generic[T]):
         self.feature_sources = feature_sources
         self.feature_dc: type[T] = feature_dc
         self._cached_features: T | None = None
-        self._cached_oav_config: dict[str, Any] | None = None
+        self._cached_json_config: dict[str, dict[str, Any]] = {}
         self._time_of_last_feature_get: float = 0
         self._verify_feature_parameters()
         super().__init__(url)
@@ -54,36 +55,44 @@ class MXConfigServer(ConfigServer, Generic[T]):
             f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
         )
 
-    def _get_oav_config(self, reset_cached_result=False) -> dict[str, Any]:
+    def _get_json_config(
+        self, path_to_json: Path | str, reset_cached_result=False
+    ) -> dict[str, Any]:
         """
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
         """
         if reset_cached_result:
-            self._cached_oav_config = None
-        if not self._cached_oav_config:
-            config_path = OavConstants.OAV_CONFIG_JSON
+            self._cached_json_config = {}
+        str_to_json = str(path_to_json)
+        if str(str_to_json) not in self._cached_json_config:
             try:
-                self._cached_oav_config = TypeAdapter(dict[str, Any]).validate_python(
+                self._cached_json_config[str(str_to_json)] = TypeAdapter(
+                    dict[str, Any]
+                ).validate_python(
                     self.get_file_contents(
-                        config_path, dict, reset_cached_result=reset_cached_result
+                        path_to_json, dict, reset_cached_result=reset_cached_result
                     )
                 )
             except Exception as e:
                 LOGGER.warning(
-                    f"Failed to get oav config from config server: {e} \nReading the file directory..."
+                    f"Failed to get json config from config server: {e} \nReading the file directory..."
                 )
-                with open(config_path) as f:
-                    self._cached_oav_config = TypeAdapter(
+                with open(path_to_json) as f:
+                    self._cached_json_config[str_to_json] = TypeAdapter(
                         dict[str, Any]
                     ).validate_python(json.loads(f.read()))
-        return self._cached_oav_config
+        return self._cached_json_config[str_to_json]
 
-    def get_oav_config(self) -> dict[str, Any]:
+    def get_json_config(self, path_to_json: Path | str) -> dict[str, Any]:
         """Get the OAV config in the form of a python dictionary. Store results in a cache
-        which should be updated at the start of a plan using self.refresh_cache()
+        which should be updated at the start of a plan using self.refresh_cache().
+
+        Note that this method replicates the functionality of the config server, but provides
+        a fallback incase of server. It will be removed once the config server has been run reliably
+        for several months.
         """
-        return self._get_oav_config()
+        return self._get_json_config(path_to_json)
 
     def _check_missing_fields(self, expected: set, actual: set):
         missing = expected - actual
@@ -140,4 +149,5 @@ class MXConfigServer(ConfigServer, Generic[T]):
     def refresh_cache(self):
         """Refresh the client's cache. Use at the beginning of a plan"""
         self._get_feature_flags(reset_cached_result=True)
-        self._get_oav_config(reset_cached_result=True)
+        for path in _JSON_CONFIG_PATHS:
+            self._get_json_config(path, reset_cached_result=True)
