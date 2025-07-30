@@ -8,19 +8,21 @@ from daq_config_server.client import ConfigServer
 from pydantic import TypeAdapter
 
 from mx_bluesky.common.parameters.constants import (
-    _JSON_CONFIG_PATHS,
     GDA_DOMAIN_PROPERTIES_PATH,
     FeatureSetting,
     FeatureSettingources,
+    OavConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
 FEATURE_FLAG_CACHE_LENGTH_S = 60 * 5
+# Used by the config server when refreshing its cache
+_JSON_CONFIG_PATHS = [OavConstants.OAV_CONFIG_JSON]
 
 T = TypeVar("T", bound=FeatureSetting)
 
 
-class MXConfigServer(ConfigServer, Generic[T]):
+class MXConfigClient(ConfigServer, Generic[T]):
     def __init__(
         self,
         feature_sources: type[FeatureSettingources],
@@ -48,41 +50,11 @@ class MXConfigServer(ConfigServer, Generic[T]):
         self._verify_feature_parameters()
         super().__init__(url)
 
-    def _verify_feature_parameters(self):
-        sources_keys = {feature.name for feature in self.feature_sources}
-        feature_dc_keys = {key.name for key in fields(self.feature_dc)}
-        assert sources_keys == feature_dc_keys, (
-            f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
-        )
-
-    def _get_json_config(
-        self, path_to_json: Path | str, reset_cached_result=False
-    ) -> dict[str, Any]:
+    def get_feature_flags(self) -> T:
+        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
+        which should be updated at the start of a plan using self.refresh_cache()
         """
-        Args:
-        reset_cached_result (bool): Force refresh the cache for this request
-        """
-        if reset_cached_result:
-            self._cached_json_config = {}
-        str_to_json = str(path_to_json)
-        if str(str_to_json) not in self._cached_json_config:
-            try:
-                self._cached_json_config[str(str_to_json)] = TypeAdapter(
-                    dict[str, Any]
-                ).validate_python(
-                    self.get_file_contents(
-                        path_to_json, dict, reset_cached_result=reset_cached_result
-                    )
-                )
-            except Exception as e:
-                LOGGER.warning(
-                    f"Failed to get json config from config server: {e} \nReading the file directory..."
-                )
-                with open(path_to_json) as f:
-                    self._cached_json_config[str_to_json] = TypeAdapter(
-                        dict[str, Any]
-                    ).validate_python(json.loads(f.read()))
-        return self._cached_json_config[str_to_json]
+        return self._get_feature_flags()
 
     def get_json_config(self, path_to_json: Path | str) -> dict[str, Any]:
         """Get the OAV config in the form of a python dictionary. Store results in a cache
@@ -91,22 +63,30 @@ class MXConfigServer(ConfigServer, Generic[T]):
         Note that this method replicates the functionality of the config server, but provides
         a fallback incase of server. It will be removed once the config server has been run reliably
         for several months.
+
+        Args:
+        path_to_json: Absolute file path to json file
         """
         return self._get_json_config(path_to_json)
 
-    def _check_missing_fields(self, expected: set, actual: set):
-        missing = expected - actual
-        if missing:
-            LOGGER.warning(
-                f"Missing features from domain.properties: {missing}.\n Using defaults for missing features"
-            )
+    def refresh_cache(self):
+        """Refresh the client's cache. Use at the beginning of a plan"""
+        self._get_feature_flags(reset_cached_result=True)
+        for path in _JSON_CONFIG_PATHS:
+            self._get_json_config(path, reset_cached_result=True)
+
+    def _verify_feature_parameters(self):
+        sources_keys = {feature.name for feature in self.feature_sources}
+        feature_dc_keys = {key.name for key in fields(self.feature_dc)}
+        assert sources_keys == feature_dc_keys, (
+            f"MXConfig server feature_sources names do not match feature_dc keys: {sources_keys} != {feature_dc_keys}"
+        )
 
     def _get_feature_flags(self, reset_cached_result=False) -> T:
         """
         Args:
         reset_cached_result (bool): Force refresh the cache for this request
         """
-
         try:
             if reset_cached_result:
                 self._cached_features = None
@@ -140,14 +120,35 @@ class MXConfigServer(ConfigServer, Generic[T]):
             )
             return self.feature_dc()
 
-    def get_feature_flags(self) -> T:
-        """Get feature flags by making a request to the config server. If the request fails, use the hardcoded defaults. Store results in a cache
-        which should be updated at the start of a plan using self.refresh_cache()
-        """
-        return self._get_feature_flags()
+    def _check_missing_fields(self, expected: set, actual: set):
+        missing = expected - actual
+        if missing:
+            LOGGER.warning(
+                f"Missing features from domain.properties: {missing}.\n Using defaults for missing features"
+            )
 
-    def refresh_cache(self):
-        """Refresh the client's cache. Use at the beginning of a plan"""
-        self._get_feature_flags(reset_cached_result=True)
-        for path in _JSON_CONFIG_PATHS:
-            self._get_json_config(path, reset_cached_result=True)
+    def _get_json_config(
+        self, path_to_json: Path | str, reset_cached_result=False
+    ) -> dict[str, Any]:
+        """
+        Args:
+        reset_cached_result (bool): Force refresh the cache for this request
+        """
+        if reset_cached_result:
+            self._cached_json_config = {}
+        str_to_json = str(path_to_json)
+        if str_to_json not in self._cached_json_config:
+            try:
+                self._cached_json_config[str_to_json] = self.get_file_contents(
+                    path_to_json, dict, reset_cached_result=reset_cached_result
+                )
+
+            except Exception as e:
+                LOGGER.warning(
+                    f"Failed to get json config from config server: {e} \nReading the file directory..."
+                )
+                with open(path_to_json) as f:
+                    self._cached_json_config[str_to_json] = TypeAdapter(
+                        dict[str, Any]
+                    ).validate_python(json.loads(f.read()))
+        return self._cached_json_config[str_to_json]

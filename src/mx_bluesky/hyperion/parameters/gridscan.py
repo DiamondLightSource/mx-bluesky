@@ -10,7 +10,7 @@ from mx_bluesky.common.parameters.gridscan import (
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_server,
+    get_hyperion_config_client,
 )
 
 
@@ -23,7 +23,7 @@ class GridCommonWithHyperionDetectorParams(GridCommon):
     def detector_params(self):
         params = super().detector_params
         params.enable_dev_shm = (
-            get_hyperion_config_server().get_feature_flags().USE_GPU_RESULTS
+            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
         )
         return params
 
@@ -38,7 +38,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
     def detector_params(self):
         params = super().detector_params
         params.enable_dev_shm = (
-            get_hyperion_config_server().get_feature_flags().USE_GPU_RESULTS
+            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
         )
         return params
 
@@ -57,7 +57,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
             z1_start_mm=self.z_start_um / 1000,
             y2_start_mm=self.y2_start_um / 1000,
             z2_start_mm=self.z2_start_um / 1000,
-            set_stub_offsets=get_hyperion_config_server()
+            set_stub_offsets=get_hyperion_config_client()
             .get_feature_flags()
             .SET_STUB_OFFSETS,
             dwell_time_ms=self.exposure_time_s * 1000,
@@ -83,10 +83,10 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
             z1_start_mm=self.z_start_um / 1000,
             y2_start_mm=self.y2_start_um / 1000,
             z2_start_mm=self.z2_start_um / 1000,
-            set_stub_offsets=get_hyperion_config_server()
+            set_stub_offsets=get_hyperion_config_client()
             .get_feature_flags()
             .SET_STUB_OFFSETS,
-            run_up_distance_mm=get_hyperion_config_server()
+            run_up_distance_mm=get_hyperion_config_client()
             .get_feature_flags()
             .PANDA_RUNUP_DISTANCE_MM,
             transmission_fraction=self.transmission_frac,

@@ -98,7 +98,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_server,
+    get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -1823,10 +1823,10 @@ def _fake_config_server_read(
 def mock_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
-    get_hyperion_config_server.cache_clear()
+    get_hyperion_config_client.cache_clear()
 
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents",
+        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
         side_effect=_fake_config_server_read,
     ):
         yield

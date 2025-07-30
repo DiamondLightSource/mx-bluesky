@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from pydantic.dataclasses import dataclass
 
-from mx_bluesky.common.external_interaction.config_server import MXConfigServer
+from mx_bluesky.common.external_interaction.config_server import MXConfigClient
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
     FeatureSetting,
@@ -12,7 +12,7 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_server,
+    get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
@@ -24,7 +24,7 @@ def test_verify_feature_parameters():
         SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
 
     with pytest.raises(AssertionError):
-        MXConfigServer(
+        MXConfigClient(
             feature_sources=BadHyperionFeatureSettingources,
             feature_dc=HyperionFeatureSetting,
         )
@@ -34,7 +34,7 @@ def test_verify_feature_parameters():
 def test_get_json_config_good_request(mock_log_warn: MagicMock):
     with open(OavConstants.OAV_CONFIG_JSON) as f:
         expected_dict = json.loads(f.read())
-    assert expected_dict == get_hyperion_config_server().get_json_config(
+    assert expected_dict == get_hyperion_config_client().get_json_config(
         OavConstants.OAV_CONFIG_JSON
     )
     mock_log_warn.assert_not_called()
@@ -44,7 +44,7 @@ def test_get_json_config_good_request(mock_log_warn: MagicMock):
 def test_get_json_config_on_bad_request(mock_log_warn: MagicMock):
     with open(OavConstants.OAV_CONFIG_JSON) as f:
         expected_dict = json.loads(f.read())
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     server.get_file_contents = MagicMock(side_effect=Exception)
     assert expected_dict == server.get_json_config(OavConstants.OAV_CONFIG_JSON)
     mock_log_warn.assert_called_once()
@@ -61,7 +61,7 @@ def test_get_feature_flags_good_request(mock_log_warn: MagicMock):
         "USE_PANDA_FOR_GRIDSCAN": True,
         "SET_STUB_OFFSETS": False,
     }
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     assert server.get_feature_flags() == HyperionFeatureSetting(
         **expected_features_dict
     )
@@ -69,7 +69,7 @@ def test_get_feature_flags_good_request(mock_log_warn: MagicMock):
 
 
 def test_get_feature_flags_cache():
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     expected_features_dict = {
         "USE_GPU_RESULTS": False,
         "USE_PANDA_FOR_GRIDSCAN": True,
@@ -78,7 +78,7 @@ def test_get_feature_flags_cache():
     expected_features = HyperionFeatureSetting(**expected_features_dict)
     server._cached_features = expected_features
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents"
+        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents"
     ) as mock_get_file_contents:
         assert server.get_feature_flags() == expected_features
         mock_get_file_contents.assert_not_called()
@@ -87,13 +87,13 @@ def test_get_feature_flags_cache():
 
 
 def test_get_json_config_cache():
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     with open(OavConstants.OAV_CONFIG_JSON) as f:
         expected_dict = json.loads(f.read())
-    get_hyperion_config_server().get_json_config(OavConstants.OAV_CONFIG_JSON)
+    get_hyperion_config_client().get_json_config(OavConstants.OAV_CONFIG_JSON)
     assert server._cached_json_config[OavConstants.OAV_CONFIG_JSON] == expected_dict
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigServer.get_file_contents"
+        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents"
     ) as mock_get_file_contents:
         server.get_json_config(OavConstants.OAV_CONFIG_JSON)
         mock_get_file_contents.assert_not_called()
@@ -107,13 +107,13 @@ def test_get_json_config_cache():
 )
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_get_feature_flags_bad_request(mock_log_warn: MagicMock):
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     assert server.get_feature_flags() == HyperionFeatureSetting()
     mock_log_warn.assert_called_once()
 
 
 def test_refresh_cache():
-    server = get_hyperion_config_server()
+    server = get_hyperion_config_client()
     server.get_file_contents = MagicMock()
     server.refresh_cache()
     call_list = [
@@ -142,7 +142,7 @@ class BadFeatureSetting(FeatureSetting):
 
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_warning_on_missing_features_in_file(mock_log_warn: MagicMock):
-    server = MXConfigServer(BadFeatureSettingSources, BadFeatureSetting)
+    server = MXConfigClient(BadFeatureSettingSources, BadFeatureSetting)
 
     expected_features_dict = {
         "USE_GPU_RESULTS": True,
