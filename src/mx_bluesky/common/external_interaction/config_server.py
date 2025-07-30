@@ -145,7 +145,7 @@ class MXConfigClient(ConfigServer, Generic[T]):
 
             except Exception as e:
                 LOGGER.warning(
-                    f"Failed to get json config from config server: {e} \nReading the file directory..."
+                    f"Failed to get json config from config server: {e} \nReading the file directly..."
                 )
                 with open(path_to_json) as f:
                     self._cached_json_config[str_to_json] = TypeAdapter(
