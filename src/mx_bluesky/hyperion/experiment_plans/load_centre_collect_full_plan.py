@@ -59,7 +59,11 @@ def load_centre_collect_full(
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
         md={
-            "metadata": {"sample_id": parameters.sample_id},
+            "metadata": {
+                "sample_id": parameters.sample_id,
+                "visit": parameters.visit,
+                "container": parameters.sample_puck,
+            },
             "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
             "with_snapshot": parameters.multi_rotation_scan.model_dump_json(
                 include=WithSnapshot.model_fields.keys()  # type: ignore
