@@ -138,7 +138,6 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         set_requested_user,  # type: ignore
         "baton-requested_user",
     )
-    # sim_run_engine.add_handler("wait_for", lambda msg: [MagicMock(spec=asyncio.Future)])
 
     msgs = []
 

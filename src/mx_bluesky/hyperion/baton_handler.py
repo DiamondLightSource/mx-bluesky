@@ -5,15 +5,15 @@ from typing import Any
 from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from bluesky.utils import MsgGenerator, RequestAbort, RunEngineInterrupted
+from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.devices.baton import Baton
 
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import (
     find_device_in_context,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     load_centre_collect_full,
 )
@@ -86,11 +86,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
         while (yield from _is_requesting_baton(baton)):
-            yield from bpp.contingency_wrapper(
-                _fetch_and_process_agamemnon_instruction(baton, runner),
-                except_plan=partial(_hyperion_loop_exception_handler, runner),
-                auto_raise=False,
-            )
+            yield from _fetch_and_process_agamemnon_instruction(baton, runner)
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -135,33 +131,29 @@ def _fetch_and_process_agamemnon_instruction(
     parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
     if parameter_list:
         for parameters in parameter_list:
+            LOGGER.info(
+                f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+            )
             match parameters:
                 case LoadCentreCollect():
+                    devices: Any = PLAN_REGISTRY["load_centre_collect_full"]["setup"](
+                        runner.context
+                    )
                     yield from runner.execute_plan(
-                        load_centre_collect_full,
-                        parameters,
-                        "load_centre_collect_full",
+                        partial(load_centre_collect_full, devices, parameters)
                     )
                 case Wait():
-                    yield from runner.execute_plan(_runner_sleep, parameters)
+                    yield from runner.execute_plan(partial(_runner_sleep, parameters))
                 case _:
                     raise AssertionError(
                         f"Unsupported instruction decoded from agamemnon {type(parameters)}"
                     )
     else:
+        # Release the baton for orderly exit from the instruction loop
         yield from _safely_release_baton(baton)
 
 
-def _hyperion_loop_exception_handler(runner: PlanRunner, exception: Exception):
-    if isinstance(exception, RequestAbort):
-        LOGGER.info("RunEngine is aborting - shutting down Hyperion")
-        raise exception
-    # For sample errors we want to continue the loop
-    if not isinstance(exception, WarningException):
-        raise exception
-
-
-def _runner_sleep(parameters: Wait, _: Any) -> MsgGenerator:
+def _runner_sleep(parameters: Wait) -> MsgGenerator:
     yield from bps.sleep(parameters.duration_s)
 
 

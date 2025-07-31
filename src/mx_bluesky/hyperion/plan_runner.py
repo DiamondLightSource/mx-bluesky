@@ -1,15 +1,12 @@
 import threading
 from collections.abc import Callable
-from typing import Any
 
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator, RequestAbort
 
-from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.runner import BaseRunner
 
 
@@ -28,37 +25,22 @@ class PlanRunner(BaseRunner):
     ) -> None:
         super().__init__(context)
         self.current_status: Status = Status.IDLE
-        self._last_run_aborted: bool = False
 
     def execute_plan(
         self,
-        experiment: Callable,
-        parameters: MxBlueskyParameters,
-        plan_name: str | None = None,
+        experiment: Callable[[], MsgGenerator],
     ) -> MsgGenerator:
         """Execute the specified experiment plan.
         Args:
             experiment: The experiment to run
-            parameters: The parameters for the experiment
-            plan_name: Name of the plan to find in the registry, if it requires devices to be located.
         Raises:
             PlanException: If the plan raised an exception
             RequestAbort: If the RunEngine aborted during execution"""
-        LOGGER.info(
-            f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
-        )
-
-        devices: Any = (
-            PLAN_REGISTRY[plan_name]["setup"](self.context) if plan_name else None
-        )
-
-        if self.current_status == Status.ABORTING:
-            return
 
         self.current_status = Status.BUSY
 
         try:
-            yield from experiment(parameters, devices)
+            yield from experiment()
             self.current_status = Status.IDLE
         except WarningException as e:
             LOGGER.warning("Plan failed with warning", exc_info=e)
@@ -88,11 +70,9 @@ class PlanRunner(BaseRunner):
                     exc_info=e,
                 )
 
-        print("Received shutdown")
         LOGGER.info("Shutting down: Stopping the run engine gracefully")
         if self.current_status != Status.ABORTING:
             self.current_status = Status.ABORTING
-            self._last_run_aborted = True
             stopping_thread = threading.Thread(target=issue_abort)
             stopping_thread.start()
             return
