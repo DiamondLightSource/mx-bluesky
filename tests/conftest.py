@@ -35,6 +35,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
@@ -461,8 +462,12 @@ def backlight(RE: RunEngine):
 
 
 @pytest.fixture
-def baton_in_commissioning_mode(RE: RunEngine):
-    baton = i03.baton(connect_immediately=True, mock=True)
+def baton(RE: RunEngine):
+    return i03.baton(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
     set_commissioning_signal(baton.commissioning)
     set_mock_value(baton.commissioning, True)
     yield baton
