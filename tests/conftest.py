@@ -27,6 +27,7 @@ from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -457,6 +458,15 @@ def backlight(RE: RunEngine):
     backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
+
+
+@pytest.fixture
+def baton_in_commissioning_mode(RE: RunEngine):
+    baton = i03.baton(connect_immediately=True, mock=True)
+    set_commissioning_signal(baton.commissioning)
+    set_mock_value(baton.commissioning, True)
+    yield baton
+    set_commissioning_signal(None)
 
 
 @pytest.fixture
