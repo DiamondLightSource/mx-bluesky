@@ -72,15 +72,14 @@ def executor() -> Generator[Executor, Any, Any]:
 
 
 @pytest.fixture()
-def base_bluesky_context():
-    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
-        context = BlueskyContext()
-        context.with_dodal_module(
-            get_beamline_based_on_environment_variable(),
-            mock=True,
-            fake_with_ophyd_sim=True,
-        )
-        yield context
+def base_bluesky_context(use_beamline_t01):
+    context = BlueskyContext()
+    context.with_dodal_module(
+        get_beamline_based_on_environment_variable(),
+        mock=True,
+        fake_with_ophyd_sim=True,
+    )
+    yield context
 
 
 @pytest.fixture(autouse=True)
@@ -103,20 +102,19 @@ def patch_setup_devices():
 
 
 @pytest.fixture
-def bluesky_context(RE: RunEngine, i03_beamline_parameters):
+def bluesky_context(RE: RunEngine, use_beamline_t01):
     # Baton for real run engine
 
     # Set the initial baton state
-    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
-        context = BlueskyContext(RE)
-        context.with_dodal_module(
-            get_beamline_based_on_environment_variable(),
-            mock=True,
-            fake_with_ophyd_sim=True,
-        )
+    context = BlueskyContext(RE)
+    context.with_dodal_module(
+        get_beamline_based_on_environment_variable(),
+        mock=True,
+        fake_with_ophyd_sim=True,
+    )
 
-        baton_with_requested_user(context, HYPERION_USER)
-        yield context
+    baton_with_requested_user(context, HYPERION_USER)
+    yield context
 
 
 @pytest.fixture
