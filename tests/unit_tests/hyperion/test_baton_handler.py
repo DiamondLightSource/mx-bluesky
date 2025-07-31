@@ -753,3 +753,8 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
             ),
         ]
     )
+
+
+def test_feedback_wrapper_invoked_around_collection_loop():
+    # TODO
+    pass
