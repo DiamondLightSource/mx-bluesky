@@ -105,8 +105,8 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
+    RE: RunEngine,
 ):
-    RE = RunEngine()
     RE(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
