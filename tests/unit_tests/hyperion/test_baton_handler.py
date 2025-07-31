@@ -634,3 +634,8 @@ def test_run_forever_clears_error_status_on_resume(
     run_forever(udc_runner)
 
     future.result()  # Ensure successful completion
+
+
+def test_feedback_wrapper_invoked_around_collection_loop():
+    # TODO
+    pass

@@ -146,12 +146,39 @@ def test_feedback_wrapper_for_commissioning_mode_wraps_when_mode_enabled(
         yield from bps.null()
         parent.plan_executed()
 
-    RE(feedback_wrapper_for_commissioning_mode(xbpm_feedback, my_plan()))
+    RE(
+        feedback_wrapper_for_commissioning_mode(
+            xbpm_feedback, baton_in_commissioning_mode, my_plan()
+        )
+    )
 
     parent.assert_has_calls(
         [
-            call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC),
+            call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC, wait=True),
             call.plan_executed(),
-            call.threshold_pc(3),
+            call.threshold_pc(3, wait=True),
         ]
     )
+
+
+def test_feedback_wrapper_for_commissioning_mode_does_not_adjust_threshold_if_commissioning_mode_not_enabled(
+    xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
+    baton_in_commissioning_mode: Baton,
+    RE: RunEngine,
+):
+    set_mock_value(baton_in_commissioning_mode.commissioning, False)
+    xbpm_feedback = xbpm_and_transmission_wrapper_composite.xbpm_feedback
+    parent = MagicMock()
+    set_mock_value(xbpm_feedback.threshold_pc, 3)
+
+    def my_plan():
+        yield from bps.null()
+        parent.plan_executed()
+
+    RE(
+        feedback_wrapper_for_commissioning_mode(
+            xbpm_feedback, baton_in_commissioning_mode, my_plan()
+        )
+    )
+    parent.plan_executed.assert_called_once()
+    get_mock_put(xbpm_feedback.threshold_pc).assert_not_called()
