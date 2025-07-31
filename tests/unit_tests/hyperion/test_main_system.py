@@ -149,7 +149,7 @@ def mock_setup_context(request: pytest.FixtureRequest):
 
 
 @pytest.fixture
-def test_env(request: pytest.FixtureRequest):
+def test_env(request: pytest.FixtureRequest, use_beamline_t01):
     mock_run_engine = MockRunEngine(test_name=repr(request))
     mock_context = BlueskyContext(run_engine=mock_run_engine)  # type: ignore
     real_plans_and_test_exps = dict(

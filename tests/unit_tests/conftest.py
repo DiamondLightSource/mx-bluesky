@@ -1,5 +1,6 @@
 import asyncio
 import pprint
+import sys
 import time
 from collections.abc import Callable
 from functools import partial
@@ -192,6 +193,18 @@ def create_gridscan_callbacks() -> tuple[
             ),
         ),
     )
+
+
+@pytest.fixture
+def use_beamline_t01():
+    """Beamline t01 is a beamline for unit tests that just contains a baton, so that
+    loading the beamline context does not require importing lots of modules and instantiating
+    many devices"""
+    with patch.dict("os.environ", {"BEAMLINE": "t01"}):
+        import tests.unit_tests.t01
+
+        with patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}):
+            yield
 
 
 @pytest.fixture
