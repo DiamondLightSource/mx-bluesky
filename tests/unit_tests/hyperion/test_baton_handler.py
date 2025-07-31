@@ -333,3 +333,8 @@ def test_main_loop_rejects_unrecognised_instruction_when_received(
         sim_run_engine.simulate_plan(
             run_udc_when_requested(bluesky_context, MagicMock())
         )
+
+
+def test_feedback_wrapper_invoked_around_collection_loop():
+    # TODO
+    pass
