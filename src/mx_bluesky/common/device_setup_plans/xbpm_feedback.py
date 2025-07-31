@@ -1,8 +1,8 @@
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
-from dodal.common.beamlines.commissioning_mode import is_commissioning_mode_enabled
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.baton import Baton
 from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -51,7 +51,7 @@ def check_and_pause_feedback(
 
 
 def feedback_wrapper_for_commissioning_mode(
-    xbpm_feedback: XBPMFeedback, plan: MsgGenerator
+    xbpm_feedback: XBPMFeedback, baton: Baton, plan: MsgGenerator
 ) -> MsgGenerator:
     """If commissioning mode is enabled, increase the feedback threshold such that
      feedback is effectively ignored, then restore it after the plan is complete.
@@ -59,7 +59,8 @@ def feedback_wrapper_for_commissioning_mode(
         xbpm_feedback: The feedback device
         plan: The plan to wrap
     """
-    if not is_commissioning_mode_enabled():
+    commissioning_mode = yield from bps.rd(baton.commissioning)
+    if not commissioning_mode:
         yield from plan
     else:
         old_threshold_pc = yield from bps.rd(xbpm_feedback.threshold_pc)
