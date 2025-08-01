@@ -4,7 +4,11 @@ from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.baton import Baton
+from dodal.devices.xbpm_feedback import XBPMFeedback
 
+from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
+    feedback_wrapper_for_commissioning_mode,
+)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import find_device_in_context
 from mx_bluesky.common.utils.exceptions import WarningException
@@ -115,7 +119,10 @@ def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
         # re-fetch the baton because the device has been reinstantiated
         new_baton = _get_baton(context)
         composite = create_devices(context)
-        yield from main_hyperion_loop(new_baton, composite)
+        xbpm_feedback = find_device_in_context(context, "xbpm_feedback", XBPMFeedback)
+        yield from feedback_wrapper_for_commissioning_mode(
+            xbpm_feedback, baton, main_hyperion_loop(new_baton, composite)
+        )
 
     def release_baton():
         # If hyperion has given up the baton itself we need to also release requested
