@@ -44,7 +44,7 @@ def patch_raise_alert_to_disable_ehc_notifications():
     with patch(
         "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
         ".get_alerting_service",
-        return_value=MagicMock(**{"raise_alert.side_effect": patched_raise_alert}),
+        return_value=MagicMock(**{"raise_alert.side_effect": patched_raise_alert}),  # type: ignore
     ):
         yield
 
