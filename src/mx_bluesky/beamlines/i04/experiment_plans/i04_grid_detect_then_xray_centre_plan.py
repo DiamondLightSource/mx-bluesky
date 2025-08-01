@@ -67,6 +67,7 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -184,9 +185,11 @@ def get_ready_for_oav_and_close_shutter(
 ):
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
+    LOGGER.info("Non-udc tidy: Seting up beamline for OAV")
     yield from setup_beamline_for_OAV(
         smargon, backlight, aperture_scatterguard, group=group
     )
+    LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(
         detector_motion.shutter,
         0,

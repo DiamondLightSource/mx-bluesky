@@ -28,15 +28,18 @@ class DocDescriptorNames:
     FLYSCAN_RESULTS = "flyscan_results_obtained"
 
 
+def _get_oav_config_json_path():
+    if TEST_MODE:
+        return "tests/test_data/test_OAVCentring.json"
+    elif BEAMLINE == "i03":
+        return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+    else:
+        return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring.json"
+
+
 @dataclass(frozen=True)
 class OavConstants:
-    OAV_CONFIG_JSON = (
-        "tests/test_data/test_OAVCentring.json"
-        if TEST_MODE
-        else (
-            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
-        )
-    )
+    OAV_CONFIG_JSON = _get_oav_config_json_path()
 
 
 @dataclass(frozen=True)
