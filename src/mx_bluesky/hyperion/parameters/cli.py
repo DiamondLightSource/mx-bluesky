@@ -1,12 +1,19 @@
 import argparse
+from enum import StrEnum
 
 from pydantic.dataclasses import dataclass
 
 from mx_bluesky._version import version
 
 
+class HyperionMode(StrEnum):
+    GDA = "gda"
+    UDC = "udc"
+
+
 @dataclass
 class HyperionArgs:
+    mode: HyperionMode
     dev_mode: bool = False
 
 
@@ -39,7 +46,12 @@ def parse_cli_args() -> HyperionArgs:
         action="version",
         version=version,
     )
-    args = parser.parse_args()
-    return HyperionArgs(
-        dev_mode=args.dev or False,
+    parser.add_argument(
+        "--mode",
+        help="Launch in the specified mode (default is 'gda')",
+        default=HyperionMode.GDA,
+        type=HyperionMode,
+        choices=HyperionMode.__members__.values(),
     )
+    args = parser.parse_args()
+    return HyperionArgs(dev_mode=args.dev or False, mode=args.mode)

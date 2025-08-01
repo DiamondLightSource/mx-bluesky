@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky.run_engine import RunEngine
 from ophyd_async.sim import SimMotor
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
@@ -34,8 +33,7 @@ def mocked_test_callback():
 
 
 @pytest.fixture
-def RE_with_mock_callback(mocked_test_callback):
-    RE = RunEngine()
+def RE_with_mock_callback(mocked_test_callback, RE):
     RE.subscribe(mocked_test_callback)
     yield RE, mocked_test_callback
 
