@@ -653,6 +653,10 @@ def _rotation_at(
 
 
 @patch(
+    "mx_bluesky.hyperion.parameters.constants.I03Constants.ALTERNATE_ROTATION_DIRECTION",
+    new=True,
+)
+@patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
@@ -672,10 +676,6 @@ def _rotation_at(
             ]
         )
     ),
-)
-@patch(
-    "mx_bluesky.common.external_interaction.config_server.FeatureFlags.update_self_from_server",
-    autospec=True,
 )
 @pytest.mark.parametrize(
     "rotation_scans, expected_scans",
@@ -736,7 +736,6 @@ def _rotation_at(
     ],
 )
 def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres(
-    mock_update_self_from_server: MagicMock,
     mock_multi_rotation_scan: MagicMock,
     sim_run_engine: RunEngineSimulator,
     load_centre_collect_with_top_n_params: LoadCentreCollect,
@@ -745,9 +744,6 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
     rotation_scans: tuple[dict],
     expected_scans: tuple[dict],
 ):
-    mock_update_self_from_server.side_effect = lambda self: setattr(
-        self, "alternate_rotation_direction", True
-    )
     load_centre_collect_with_top_n_params.multi_rotation_scan.rotation_scans = [
         RotationScanPerSweep.model_construct(**rs) for rs in rotation_scans
     ]

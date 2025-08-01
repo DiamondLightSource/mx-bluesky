@@ -38,12 +38,13 @@ dependencies = [
     "semver",
     "deepdiff",
     "matplotlib",
+    "cachetools",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
+    "daq-config-server>=v1.0.0-rc.2",
     "blueapi >= 0.15.0",
-    "daq-config-server == 0.1.1",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
@@ -122,6 +123,7 @@ markers = [
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
     "system_test: marks tests as a system test",
+    "requires: marks a test as having an external dependency such as a service or hardware",
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
@@ -142,6 +144,8 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    #Remove when we drop python 3.11
+    "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"

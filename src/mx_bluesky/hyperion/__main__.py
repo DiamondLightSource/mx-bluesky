@@ -16,6 +16,10 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
+from mx_bluesky.common.external_interaction import alerting
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
@@ -36,7 +40,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     update_params_from_agamemnon,
 )
-from mx_bluesky.hyperion.parameters.cli import parse_cli_args
+from mx_bluesky.hyperion.parameters.cli import HyperionArgs, parse_cli_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import setup_context
@@ -293,19 +297,27 @@ def create_app(
     return app, runner
 
 
-def create_targets():
-    hyperion_port = 5005
-    args = parse_cli_args()
+def initialise_globals(args: HyperionArgs):
+    """Do all early main low-level application initialisation."""
     do_default_logging_setup(
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
+    alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
+
+
+def create_flask_app(args: HyperionArgs):
+    """Create the flask application that exposes the REST service."""
+    hyperion_port = 5005
     app, runner = create_app(dev_mode=args.dev_mode)
     return app, runner, hyperion_port, args.dev_mode
 
 
 def main():
-    app, runner, port, dev_mode = create_targets()
+    """Main application entry point."""
+    args = parse_cli_args()
+    initialise_globals(args)
+    app, runner, port, dev_mode = create_flask_app(args)
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
@@ -313,6 +325,7 @@ def main():
         ),
         daemon=True,
     )
+
     flask_thread.start()
     LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
     runner.wait_on_queue()

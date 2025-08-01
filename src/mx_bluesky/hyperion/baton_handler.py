@@ -9,6 +9,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
     UDCDefaultDevices,
     move_to_udc_default_state,
 )
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
@@ -23,6 +24,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
+from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
@@ -54,12 +56,20 @@ def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
     while requested_user == HYPERION_USER:
 
         def inner_loop():
-            parameter_list: Sequence[LoadCentreCollect] = (
+            parameter_list: Sequence[MxBlueskyParameters] = (
                 create_parameters_from_agamemnon()
             )
             if parameter_list:
                 for parameters in parameter_list:
-                    yield from load_centre_collect_full(composite, parameters)
+                    match parameters:
+                        case LoadCentreCollect():
+                            yield from load_centre_collect_full(composite, parameters)
+                        case Wait():
+                            yield from bps.sleep(parameters.duration_s)
+                        case _:
+                            raise AssertionError(
+                                f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                            )
             else:
                 yield from bps.mv(baton.requested_user, NO_USER)
 
