@@ -37,7 +37,9 @@ def patch_raise_alert_to_disable_ehc_notifications():
     email filters from forwarding to the EHC"""
 
     def patched_raise_alert(summary: str, content: str, metadata: dict[Metadata, str]):
-        return get_alerting_service().raise_alert("TEST " + summary, content, metadata)
+        return get_alerting_service().raise_alert(
+            "TEST Unicorn Defence Commission Excursion", content, metadata
+        )
 
     with patch(
         "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
