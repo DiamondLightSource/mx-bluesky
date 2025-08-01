@@ -69,45 +69,22 @@ async def test_beamline_safe_reads_safe_correctly(
     )
 
 
+@pytest.mark.parametrize("wait", [True, False])
 async def test_go_to_zero_gives_expected_result(
-    sim_run_engine: RunEngineSimulator,
-    goniometer: Goniometer,
+    sim_run_engine: RunEngineSimulator, goniometer: Goniometer, wait: bool
 ):
-    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=False))
+    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=wait))
 
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-omega"
-        and msg.args[0] == 0,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-x"
-        and msg.args[0] == 0,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-y"
-        and msg.args[0] == 0,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-z"
-        and msg.args[0] == 0,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-sampy"
-        and msg.args[0] == 0,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-sampz"
-        and msg.args[0] == 0,
-    )
+    for name in ["omega", "x", "y", "z", "sampy", "sampz"]:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"goniometer-{name}"
+            and msg.args[0] == 0
+            and msg.kwargs["group"] == "move_to_zero",
+        )
+    if wait:
+        assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait" and msg.kwargs["group"] == "move_to_zero",
+        )
