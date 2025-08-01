@@ -5,15 +5,23 @@ from urllib.parse import quote, urlencode
 
 
 class Metadata(StrEnum):
+    """Metadata fields that can be specified by the caller when raising an alert."""
+
+    CONTAINER = "container"
+    SAMPLE_ID = "sample_id"
+    VISIT = "visit"
+
+
+class ExtraMetadata(StrEnum):
+    """Additional metadata fields that are automatically appended by
+    the AlertService implementations."""
+
     ALERT_CONTENT = "alert_content"
     ALERT_SUMMARY = "alert_summary"
     BEAMLINE = "beamline"
-    CONTAINER = "container"
     GRAYLOG_URL = "graylog_url"
     ISPYB_URL = "ispyb_url"
     PROPOSAL = "proposal"
-    SAMPLE_ID = "sample_id"
-    VISIT = "visit"
 
 
 class AlertService(Protocol):
@@ -23,7 +31,7 @@ class AlertService(Protocol):
     as email, SMS, instant messaging, etc etc.
     """
 
-    def raise_alert(self, summary: str, content: str, metadata: dict[str, str]):
+    def raise_alert(self, summary: str, content: str, metadata: dict[Metadata, str]):
         """
         Raise an alert that will be forwarded to beamline support staff, which might
         for example be used as the basis for an incident in an incident reporting system.

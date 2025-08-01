@@ -1,10 +1,12 @@
 import logging
+from typing import cast
 
 from dodal.log import LOGGER
 from dodal.utils import get_beamline_name
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.external_interaction.alerting._service import (
+    ExtraMetadata,
     graylog_url,
     ispyb_url,
 )
@@ -30,21 +32,26 @@ class LoggingAlertService:
         self._level = level
         self._graylog_stream_id = graylog_stream_id
 
-    def _append_additional_metadata(self, metadata: dict[str, str]):
-        metadata[Metadata.GRAYLOG_URL] = graylog_url(self._graylog_stream_id)
-        metadata[Metadata.BEAMLINE] = get_beamline_name("")
+    def _append_extra_metadata(self, metadata: dict[Metadata, str]) -> dict[str, str]:
+        with_extras = cast(dict, metadata.copy())
+        with_extras[ExtraMetadata.GRAYLOG_URL] = graylog_url(self._graylog_stream_id)
+        with_extras[ExtraMetadata.BEAMLINE] = get_beamline_name("")
         if sample_id := metadata.get(Metadata.SAMPLE_ID, None):
-            metadata[Metadata.ISPYB_URL] = ispyb_url(sample_id)
+            with_extras[ExtraMetadata.ISPYB_URL] = ispyb_url(sample_id)
         if visit := metadata.get(Metadata.VISIT, None):
             proposal, _ = get_proposal_and_session_from_visit_string(visit)
-            metadata[Metadata.PROPOSAL] = proposal
+            with_extras[ExtraMetadata.PROPOSAL] = proposal
+        return with_extras
 
-    def raise_alert(self, summary: str, content: str, metadata: dict[str, str]):
+    def raise_alert(self, summary: str, content: str, metadata: dict[Metadata, str]):
         message = f"***ALERT*** summary={summary} content={content}"
-        self._append_additional_metadata(metadata)
+        with_extras = self._append_extra_metadata(metadata)
         LOGGER.log(
             self._level,
             message,
-            extra={Metadata.ALERT_SUMMARY: summary, Metadata.ALERT_CONTENT: content}
-            | metadata,
+            extra={
+                ExtraMetadata.ALERT_SUMMARY: summary,
+                ExtraMetadata.ALERT_CONTENT: content,
+            }
+            | with_extras,
         )

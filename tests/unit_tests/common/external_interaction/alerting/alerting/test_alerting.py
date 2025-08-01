@@ -10,6 +10,7 @@ from mx_bluesky.common.external_interaction.alerting import (
     get_alerting_service,
     set_alerting_service,
 )
+from mx_bluesky.common.external_interaction.alerting._service import ExtraMetadata
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
@@ -50,10 +51,10 @@ def test_logging_alerting_service_raises_a_log_message(mock_logger: MagicMock, l
         level,
         "***ALERT*** summary=Test summary content=Test message",
         extra={
-            Metadata.ALERT_SUMMARY: "Test summary",
-            Metadata.ALERT_CONTENT: "Test message",
-            Metadata.BEAMLINE: "i03",
-            Metadata.GRAYLOG_URL: EXPECTED_GRAYLOG_URL,
+            ExtraMetadata.ALERT_SUMMARY: "Test summary",
+            ExtraMetadata.ALERT_CONTENT: "Test message",
+            ExtraMetadata.BEAMLINE: "i03",
+            ExtraMetadata.GRAYLOG_URL: EXPECTED_GRAYLOG_URL,
         },
     )
 
@@ -66,20 +67,20 @@ def test_logging_alerting_service_raises_a_log_message_with_additional_metadata_
     get_alerting_service().raise_alert(
         "Test summary",
         "Test message",
-        {"sample_id": "123456", "visit": "cm14451-2"},
+        {Metadata.SAMPLE_ID: "123456", Metadata.VISIT: "cm14451-2"},
     )
 
     mock_logger.log.assert_called_once_with(
         WARNING,
         "***ALERT*** summary=Test summary content=Test message",
         extra={
-            Metadata.ALERT_SUMMARY: "Test summary",
-            Metadata.ALERT_CONTENT: "Test message",
-            Metadata.BEAMLINE: "i03",
-            Metadata.GRAYLOG_URL: EXPECTED_GRAYLOG_URL,
-            Metadata.ISPYB_URL: "https://ispyb.diamond.ac.uk/samples/sid/123456",
+            ExtraMetadata.ALERT_SUMMARY: "Test summary",
+            ExtraMetadata.ALERT_CONTENT: "Test message",
+            ExtraMetadata.BEAMLINE: "i03",
+            ExtraMetadata.GRAYLOG_URL: EXPECTED_GRAYLOG_URL,
+            ExtraMetadata.ISPYB_URL: "https://ispyb.diamond.ac.uk/samples/sid/123456",
             Metadata.SAMPLE_ID: "123456",
-            Metadata.PROPOSAL: "cm14451",
+            ExtraMetadata.PROPOSAL: "cm14451",
             Metadata.VISIT: "cm14451-2",
         },
     )

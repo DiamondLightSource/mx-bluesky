@@ -8,7 +8,11 @@ from bluesky import plan_stubs as bps
 from bluesky.preprocessors import run_decorator
 from dodal.log import get_graylog_configuration, set_up_graylog_handler
 
-from mx_bluesky.common.external_interaction.alerting import set_alerting_service
+from mx_bluesky.common.external_interaction.alerting import (
+    Metadata,
+    get_alerting_service,
+    set_alerting_service,
+)
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
@@ -27,10 +31,28 @@ def setup_graylog():
     set_up_graylog_handler(logger, host, HyperionConstants.GRAYLOG_PORT)
 
 
+@pytest.fixture
+def patch_raise_alert_to_disable_ehc_notifications():
+    """Patch raise_alert so that TEST is prepended to the alert summary to avoid downstream
+    email filters from forwarding to the EHC"""
+
+    def patched_raise_alert(summary: str, content: str, metadata: dict[Metadata, str]):
+        return get_alerting_service().raise_alert("TEST " + summary, content, metadata)
+
+    with patch(
+        "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
+        ".get_alerting_service",
+        return_value=MagicMock(**{"raise_alert.side_effect": patched_raise_alert}),
+    ):
+        yield
+
+
 @pytest.mark.requires(external="graylog")
 def test_alert_to_graylog():
     alert_service = LoggingAlertService(CONST.GRAYLOG_STREAM_ID)
-    alert_service.raise_alert("Test alert", "This is a test.", {"alert_type": "Test"})
+    alert_service.raise_alert(
+        "Test alert", "This is a test.", {Metadata.SAMPLE_ID: "12345"}
+    )
 
 
 @patch(
@@ -39,7 +61,9 @@ def test_alert_to_graylog():
 )
 @pytest.mark.requires(external="graylog")
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
-def test_alert_from_plan_exception(RE: RunEngine):
+def test_alert_from_plan_exception(
+    RE: RunEngine, patch_raise_alert_to_disable_ehc_notifications
+):
     RE.subscribe(SampleHandlingCallback())
     set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
