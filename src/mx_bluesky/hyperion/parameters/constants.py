@@ -64,6 +64,7 @@ class HyperionConstants:
         else "https://daq-config.diamond.ac.uk/api"
     )
     GRAYLOG_PORT = 12232  # Hyperion stream
+    GRAYLOG_STREAM_ID = "66264f5519ccca6d1c9e4e03"
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()
