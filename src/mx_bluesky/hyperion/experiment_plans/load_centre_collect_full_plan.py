@@ -24,6 +24,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan_internal,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.rotation import RotationScanPerSweep
@@ -51,6 +54,8 @@ def load_centre_collect_full(
     * If X-ray centring finds a diffracting centre then move to that centre and
     * do a collection with the specified parameters.
     """
+
+    get_hyperion_config_client().refresh_cache()
 
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
