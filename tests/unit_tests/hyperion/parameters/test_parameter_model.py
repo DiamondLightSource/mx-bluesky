@@ -23,18 +23,22 @@ from ....conftest import raw_params_from_file
 
 @pytest.fixture
 def load_centre_collect_params_with_panda(tmp_path, request):
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
-        tmp_path,
-    )
-    params["features"]["use_panda_for_gridscan"] = True
-    if params_dict := getattr(request, "param", {}):
-        for k, v in params_dict.items():
-            params.setdefault("features", {})[k] = v
-    return LoadCentreCollect(**params)
+    with patch(
+        "mx_bluesky.common.parameters.constants.GDA_DOMAIN_PROPERTIES_PATH",
+        new="tests/test_data/test_domain_properties_with_panda",
+    ):
+        params = raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+            tmp_path,
+        )
+        params["features"]["use_panda_for_gridscan"] = True
+        if params_dict := getattr(request, "param", {}):
+            for k, v in params_dict.items():
+                params.setdefault("features", {})[k] = v
+        return LoadCentreCollect(**params)
 
 
-@pytest.fixture
+@pytest.fixture()
 def minimal_3d_gridscan_params():
     return {
         "sample_id": 123,
@@ -164,44 +168,26 @@ def test_selected_aperture_uses_default(tmp_path):
     assert params.selected_aperture == ApertureValue.LARGE
 
 
-def test_feature_flags_overriden_if_supplied(minimal_3d_gridscan_params):
-    test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert test_params.features.use_panda_for_gridscan is False
-    assert test_params.features.use_gpu_results is True
-    minimal_3d_gridscan_params["features"] = {"use_panda_for_gridscan": True}
-    test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert test_params.features.use_panda_for_gridscan
-    # Config server shouldn't update values which were explicitly provided
-    test_params.features.update_self_from_server()
-    assert test_params.features.use_panda_for_gridscan
-
-
 @pytest.mark.parametrize(
-    "feature_set, expected_dev_shm",
+    "enable_gpu",
     [
-        (
-            {
-                "use_gpu_results": True,
-            },
-            True,
-        ),
-        (
-            {
-                "use_gpu_results": False,
-            },
-            False,
-        ),
+        True,
+        False,
     ],
 )
 @patch("mx_bluesky.common.parameters.components.os")
-def test_gpu_enabled_if_use_gpu_results_or_compare_gpu_enabled(
-    _, feature_set, expected_dev_shm, minimal_3d_gridscan_params
+def test_dev_shm_enabled_if_use_gpu_results_enabled(
+    _, enable_gpu, minimal_3d_gridscan_params
 ):
     minimal_3d_gridscan_params["detector_distance_mm"] = 100
-
-    grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert grid_scan.detector_params.enable_dev_shm
-
-    minimal_3d_gridscan_params["features"] = feature_set
-    grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert grid_scan.detector_params.enable_dev_shm == expected_dev_shm
+    properties_path = (
+        "tests/test_data/test_domain_properties_with_no_gpu"
+        if not enable_gpu
+        else "tests/test_data/test_domain_properties"
+    )
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new=properties_path,
+    ):
+        grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+        assert grid_scan.detector_params.enable_dev_shm == enable_gpu
