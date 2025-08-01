@@ -35,6 +35,7 @@ def set_beamline_safe_on_robot(
     )
     yield from bps.abs_set(robot.set_beamline_safe, set_value, wait=True)
 
+
 def go_to_zero(
     goniometer: Goniometer = inject("goniometer"), group="move_to_zero", wait=True
 ) -> MsgGenerator:
