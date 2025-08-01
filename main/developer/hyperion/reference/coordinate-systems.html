@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion Coordinate Systems &#8212; mx-bluesky 1.0.1.dev304+g4ccdbe4b4 documentation</title>
+    <title>Hyperion Coordinate Systems &#8212; mx-bluesky 1.0.1.dev305+ge416955d0 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=bb60102e"></script>
+    <script src="../../../_static/documentation_options.js?v=f7897174"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -531,7 +531,7 @@ the underlying hardware.</p>
 defined by <code class="docutils literal notranslate"><span class="pre">rotation_direction</span></code> which can be <code class="docutils literal notranslate"><span class="pre">POSITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">NEGATIVE</span></code></p>
 <p>The coordinate systems of the underlying hardware may differ from the request. At Diamond traditionally the omega
 axis is implemented to be in the opposite direction, therefore the commands sent to the hardware are transformed and
-the <code class="docutils literal notranslate"><span class="pre">omega_flip</span></code> feature flag controls this behaviour, which by default is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> as this is
+the <code class="docutils literal notranslate"><span class="pre">omega_flip</span></code> flag controls this behaviour, which by default is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> as this is
 generally expected to be required for the beamlines here.</p>
 <p>In the Nexus output file, there is provision for describing the choice of axis orientations in the nexus file, and
 the <code class="docutils literal notranslate"><span class="pre">omega_flip</span></code> parameter affects the omega axis description in <code class="docutils literal notranslate"><span class="pre">/entry/sample/transformations/omega</span></code>.
