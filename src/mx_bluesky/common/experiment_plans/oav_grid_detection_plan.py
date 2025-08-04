@@ -54,7 +54,7 @@ def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
     """We need to match the 0 and -90 that the fast grid scan performs but the order in
     which we do the grid detection does not matter so we do the closest angle first."""
     current_omega = yield from bps.rd(smargon.omega)
-    if abs(current_omega + 90) < abs(current_omega):
+    if current_omega < -45:
         return [-90, 0]
     else:
         return [0, -90]
