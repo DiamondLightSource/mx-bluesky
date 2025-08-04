@@ -303,7 +303,7 @@ def initialise_globals(args: HyperionArgs):
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    alerting.set_alerting_service(LoggingAlertService())
+    alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
 
 def create_flask_app(args: HyperionArgs):

@@ -160,7 +160,7 @@ class HyperionCallbackRunner:
     def __init__(self, dev_mode) -> None:
         setup_logging(dev_mode)
         log_info("Hyperion callback process started.")
-        set_alerting_service(LoggingAlertService())
+        set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
         self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()

@@ -77,7 +77,6 @@ class SampleHandlingCallback(PlanReactiveCallback):
                     Metadata.SAMPLE_ID: str(self._sample_id),
                     Metadata.VISIT: self._visit or "",
                     Metadata.CONTAINER: str(self._container),
-                    Metadata.BEAMLINE: beamline,
                 },
             )
 

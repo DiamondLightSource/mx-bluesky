@@ -58,7 +58,7 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -133,7 +133,7 @@ def calculate_motion_profile(
     direction = params.rotation_direction
     start_scan_deg = params.omega_start_deg
 
-    if params.features.omega_flip:
+    if I03Constants.OMEGA_FLIP:
         # If omega_flip is True then the motor omega axis is inverted with respect to the
         # hyperion coordinate system.
         start_scan_deg = -start_scan_deg
@@ -386,7 +386,6 @@ def rotation_scan_internal(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
-    parameters.features.update_self_from_server()
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
     eiger: EigerDetector = composite.eiger
