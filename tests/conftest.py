@@ -1037,6 +1037,7 @@ def extract_metafile(input_filename, output_filename):
 
 @pytest.fixture
 def sim_run_engine():
+    logging.getLogger("asyncio").setLevel(logging.DEBUG)
     return RunEngineSimulator()
 
 
