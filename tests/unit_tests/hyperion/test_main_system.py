@@ -491,7 +491,7 @@ def _raise_exception(*args, **kwargs):
     "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
     {"pin_tip_centre_then_xray_centre": {"param_type": _raise_exception}},
 )
-def test_exception_during_parameter_decodde_generates_nicely_formatted_log_message(
+def test_exception_during_parameter_decode_generates_nicely_formatted_log_message(
     caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
     response = test_env.client.put(START_ENDPOINT, data=test_params)

@@ -1,3 +1,11 @@
+"""
+A minimal test beamline that contains only a baton, for use in tests which need a beamline
+but not all the devices, so that test execution isn't slowed down by loading lots of
+python modules/creating objects.
+See Also:
+    use_beamline_t01()
+"""
+
 from dodal.common.beamlines.beamline_utils import device_factory
 from dodal.devices.baton import Baton
 from dodal.utils import BeamlinePrefix, get_beamline_name

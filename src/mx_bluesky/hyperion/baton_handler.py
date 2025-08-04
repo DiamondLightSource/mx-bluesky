@@ -13,8 +13,8 @@ from mx_bluesky.common.utils.context import (
     find_device_in_context,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
+    create_devices,
     load_centre_collect_full,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
@@ -136,9 +136,7 @@ def _fetch_and_process_agamemnon_instruction(
             )
             match parameters:
                 case LoadCentreCollect():
-                    devices: Any = PLAN_REGISTRY["load_centre_collect_full"]["setup"](
-                        runner.context
-                    )
+                    devices: Any = create_devices(runner.context)
                     yield from runner.execute_plan(
                         partial(load_centre_collect_full, devices, parameters)
                     )

@@ -131,22 +131,16 @@ async def fail_test_on_unclosed_tasks(request: FixtureRequest):
     by the end of the test.
     """
 
-    try:
-        fail_count = request.session.testsfailed
-        loop = asyncio.get_running_loop()
+    fail_count = request.session.testsfailed
+    loop = asyncio.get_running_loop()
 
-        loop.set_debug(True)
+    loop.set_debug(True)
 
-        request.addfinalizer(
-            lambda: _error_and_kill_pending_tasks(
-                loop, request.node.name, request.session.testsfailed == fail_count
-            )
+    request.addfinalizer(
+        lambda: _error_and_kill_pending_tasks(
+            loop, request.node.name, request.session.testsfailed == fail_count
         )
-    # Once https://github.com/bluesky/ophyd-async/issues/683
-    # is finished we can remove this try, except.
-    except RuntimeError as error:
-        if str(error) != "no running event loop":
-            raise error
+    )
 
 
 BASIC_PRE_SETUP_DOC = {

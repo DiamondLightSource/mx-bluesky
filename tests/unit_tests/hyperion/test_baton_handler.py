@@ -179,10 +179,7 @@ def udc_runner(bluesky_context: BlueskyContext, RE: RunEngine) -> PlanRunner:
 @pytest.fixture
 def mock_load_centre_collect():
     with (
-        patch.dict(
-            "mx_bluesky.hyperion.runner.PLAN_REGISTRY",
-            load_centre_collect_full={"setup": MagicMock()},
-        ),
+        patch("mx_bluesky.hyperion.baton_handler.create_devices"),
         patch(
             "mx_bluesky.hyperion.baton_handler.load_centre_collect_full"
         ) as mock_plan,
