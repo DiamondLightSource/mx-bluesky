@@ -234,6 +234,7 @@ async def test_rotation_plan_zebra_settings(
     assert await zebra.pc.pulse_start.get_value() == params.shutter_opening_time_s
 
 
+@pytest.mark.timeout(2)
 async def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan: RotationScanComposite,
     test_rotation_params: RotationScan,
@@ -266,6 +267,7 @@ async def test_full_rotation_plan_smargon_settings(
     ]
 
 
+@pytest.mark.timeout(2)
 async def test_rotation_plan_moves_aperture_correctly(
     run_full_rotation_plan: RotationScanComposite,
 ) -> None:
