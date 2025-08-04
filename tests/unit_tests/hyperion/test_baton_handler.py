@@ -4,6 +4,7 @@ from asyncio import run_coroutine_threadsafe, sleep
 from collections.abc import Generator
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from dataclasses import fields
+from threading import Event
 from typing import Any
 from unittest.mock import MagicMock, call, patch
 
@@ -573,14 +574,15 @@ async def test_run_forever_resumes_collection_when_normal_completion_and_baton_r
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     side_effect=AssertionError("Runner started command processing without baton"),
 )
-def test_run_forever_handles_shutdown_while_waiting_for_baton(
+async def test_run_forever_handles_shutdown_while_waiting_for_baton(
     mock_create_parameters_from_agamemnon: MagicMock,
     udc_runner: PlanRunner,
     executor: Executor,
 ):
+    baton = find_device_in_context(udc_runner.context, "baton", Baton)
+    await baton.requested_user.set(NO_USER)
+
     async def issue_shutdown_without_baton():
-        baton = find_device_in_context(udc_runner.context, "baton", Baton)
-        await baton.requested_user.set(NO_USER)
         await sleep(0.1)
         assert udc_runner.current_status == Status.IDLE
         udc_runner.shutdown()
@@ -606,11 +608,14 @@ def test_run_forever_clears_error_status_on_resume(
     udc_runner: PlanRunner,
     executor: Executor,
 ):
+    function_is_patched = Event()
+
     async def error_with_command_then_resume():
         with patch(
             "mx_bluesky.hyperion.baton_handler._runner_sleep",
             side_effect=RuntimeError("Simulated plan exception"),
         ):
+            function_is_patched.set()
             while udc_runner.current_status != Status.FAILED:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
@@ -625,6 +630,7 @@ def test_run_forever_clears_error_status_on_resume(
     future = _launch_test_in_runner_event_loop(
         error_with_command_then_resume, udc_runner, executor
     )
+    function_is_patched.wait()
     run_forever(udc_runner)
 
     future.result()  # Ensure successful completion
