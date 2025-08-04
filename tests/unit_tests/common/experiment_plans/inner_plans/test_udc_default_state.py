@@ -24,9 +24,8 @@ async def test_given_cryostream_temp_is_too_high_then_exception_raised(
     sim_run_engine.add_read_handler_for(
         devices.cryostream.temperature_k, devices.cryostream.MAX_TEMP_K + 10
     )
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError, match="temperature is too high"):
         sim_run_engine.simulate_plan(move_to_udc_default_state(devices))
-    assert "temperature is too high" in str(e.value)
 
 
 async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
@@ -39,9 +38,8 @@ async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
     sim_run_engine.add_read_handler_for(
         devices.cryostream.back_pressure_bar, devices.cryostream.MAX_PRESSURE_BAR + 10
     )
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError, match = "pressure is too high"):
         sim_run_engine.simulate_plan(move_to_udc_default_state(devices))
-    assert "pressure is too high" in str(e.value)
 
 
 async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
