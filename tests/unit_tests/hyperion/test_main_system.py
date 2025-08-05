@@ -634,12 +634,6 @@ def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
     mock_gda_runner.assert_called_once()
 
 
-# TODO not currently a REST endpoint but required for hyperion_restart() in kubernetes
-# https://github.com/DiamondLightSource/mx-bluesky/issues/188
-def test_sending_a_shutdown_via_api_terminates_udc():
-    pass
-
-
 @patch("mx_bluesky.hyperion.__main__.Api")
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", MagicMock())
