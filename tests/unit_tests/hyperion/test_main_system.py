@@ -140,9 +140,9 @@ TEST_EXPTS = {
 
 
 @pytest.fixture(autouse=True)
-def mock_udc_app():
-    with patch("mx_bluesky.hyperion.__main__.create_app_for_udc") as mock_udc_app:
-        yield mock_udc_app
+def mock_create_udc_server():
+    with patch("mx_bluesky.hyperion.__main__.create_server_for_udc") as mock_udc_server:
+        yield mock_udc_server
 
 
 @pytest.fixture
@@ -598,12 +598,12 @@ def test_hyperion_in_udc_mode_starts_logging(
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
 def test_hyperion_in_udc_mode_starts_udc_api(
-    mock_udc_app: MagicMock,
+    mock_create_udc_server: MagicMock,
     mock_setup_context: MagicMock,
 ):
     main()
-    mock_udc_app.assert_called_once()
-    assert isinstance(mock_udc_app.mock_calls[0].args[0], PlanRunner)
+    mock_create_udc_server.assert_called_once()
+    assert isinstance(mock_create_udc_server.mock_calls[0].args[0], PlanRunner)
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
