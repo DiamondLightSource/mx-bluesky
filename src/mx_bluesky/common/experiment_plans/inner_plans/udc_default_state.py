@@ -36,37 +36,30 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
 
     yield from bps.abs_set(
-        devices.fluorescence_det_motion.pos, FlouInOut.OUT, group="udc_default_state"
+        devices.fluorescence_det_motion.pos, FlouInOut.OUT, group="udc_default"
     )
 
-    # fmt: off
+    yield from bps.abs_set(devices.collimation_table.inboard_y, 0, group="udc_default")
+    yield from bps.abs_set(devices.collimation_table.outboard_y, 0, group="udc_default")
+    yield from bps.abs_set(devices.collimation_table.upstream_y, 0, group="udc_default")
+    yield from bps.abs_set(devices.collimation_table.upstream_x, 0, group="udc_default")
     yield from bps.abs_set(
-        devices.collimation_table.inboard_y, 0,
-        devices.collimation_table.outboard_y, 0,
-        devices.collimation_table.upstream_y, 0,
-        devices.collimation_table.upstream_x, 0,
-        devices.collimation_table.downstream_x, 0,
-        group="udc_default_state",
+        devices.collimation_table.downstream_x, 0, group="udc_default"
     )
-    # fmt: on
 
     yield from bps.abs_set(
         devices.beamstop.selected_pos,
         BeamstopPositions.DATA_COLLECTION,
-        group="udc_default_state",
+        group="udc_default",
     )
 
     yield from bps.abs_set(
         devices.aperture_scatterguard.selected_aperture,
         ApertureValue.SMALL,
-        group="udc_default_state",
+        group="udc_default",
     )
 
-    yield from bps.abs_set(
-        devices.cryostream.course, CryoInOut.IN, group="udc_default_state"
-    )
-    yield from bps.abs_set(
-        devices.cryostream.fine, CryoInOut.IN, group="udc_default_state"
-    )
+    yield from bps.abs_set(devices.cryostream.course, CryoInOut.IN, group="udc_default")
+    yield from bps.abs_set(devices.cryostream.fine, CryoInOut.IN, group="udc_default")
 
-    yield from bps.wait("udc_default_state")
+    yield from bps.wait("udc_default")
