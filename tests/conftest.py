@@ -623,7 +623,7 @@ def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
-    patch_all_motors(dcm.xtal_1)
+    patch_all_motors(dcm)
     return dcm
 
 
@@ -682,7 +682,8 @@ def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
-    yield undulator_dcm
+    with patch_all_motors(undulator_dcm.undulator_ref()):
+        yield undulator_dcm
     beamline_utils.clear_devices()
 
 
