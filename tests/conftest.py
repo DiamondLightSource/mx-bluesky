@@ -619,11 +619,11 @@ def xbpm_feedback(done_status, RE: RunEngine):
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
+    patch_all_motors(dcm)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
-    patch_all_motors(dcm)
     return dcm
 
 
@@ -675,7 +675,7 @@ def mirror_voltages(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
+def undulator_dcm(RE: RunEngine, sim_run_engine):
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
         mock=True,
