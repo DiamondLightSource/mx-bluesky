@@ -4,7 +4,6 @@ from functools import partial
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -66,18 +65,11 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
-
-
-def create_devices(
-    context: BlueskyContext,
-) -> GridDetectThenXRayCentreComposite:
-    return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
 
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
