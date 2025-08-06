@@ -8,7 +8,9 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 
 
-def create_server_for_udc(runner: PlanRunner) -> Thread:
+# Ignore this function for code coverage as there is no way to shut down
+# a server once it is started.
+def create_server_for_udc(runner: PlanRunner) -> Thread:  # pragma: no cover
     """Create a minimal API for Hyperion UDC mode"""
     app = create_app_for_udc(runner)
 
