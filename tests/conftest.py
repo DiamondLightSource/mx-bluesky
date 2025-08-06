@@ -496,7 +496,9 @@ def detector_motion(RE: RunEngine):
 
 @pytest.fixture
 def undulator(RE: RunEngine):
-    return i03.undulator(connect_immediately=True, mock=True)
+    undulator = i03.undulator(connect_immediately=True, mock=True)
+    with patch_all_motors(undulator):
+        yield undulator
 
 
 @pytest.fixture
@@ -675,15 +677,15 @@ def mirror_voltages(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(RE: RunEngine, sim_run_engine):
+def undulator_dcm(RE: RunEngine, sim_run_engine, undulator, dcm):
+    # This depends on the undulator and dcm as they must be connected as mocks first
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
-    with patch_all_motors(undulator_dcm.undulator_ref()):
-        yield undulator_dcm
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
+    yield undulator_dcm
     beamline_utils.clear_devices()
 
 
