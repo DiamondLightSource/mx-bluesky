@@ -38,7 +38,7 @@ For building and deploying a Docker image please see :doc:`../../hyperion/deploy
 
 .. note::
 
-    On i03 the installation will succeed with error messages due to RedHat7 versions of a dependency being unavailable.
+    On i03 the installation will succeed with error messages due to RedHat7 versions of dependencies being unavailable.
     This results in the installation being incomplete, thus requiring the following post-installation steps:
 
     First, on a RedHat8 workstation, run
@@ -47,6 +47,7 @@ For building and deploying a Docker image please see :doc:`../../hyperion/deploy
 
         . ./.venv/bin/activate
         pip install confluent-kafka
+        pip install contourpy
 
     Then, on the control machine, run
 
