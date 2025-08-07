@@ -71,9 +71,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
+    RE: RunEngine,
 ):
-    RE = RunEngine()
-
     RE(robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params))
     composite_passed = mock_centring_plan.call_args[0][0]
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]

@@ -38,12 +38,13 @@ dependencies = [
     "semver",
     "deepdiff",
     "matplotlib",
+    "cachetools",
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
+    "daq-config-server>=v1.0.0-rc.2",
     "blueapi >= 0.15.0",
-    "daq-config-server == 0.1.1",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
@@ -94,8 +95,6 @@ run_extruder = "mx_bluesky.beamlines.i24.serial.run_serial:run_extruder"
 run_fixed_target = "mx_bluesky.beamlines.i24.serial.run_serial:run_fixed_target"
 hyperion = "mx_bluesky.hyperion.__main__:main"
 hyperion-callbacks = "mx_bluesky.hyperion.external_interaction.callbacks.__main__:main"
-hyperion-generate-test-nexus = "mx_bluesky.hyperion.utils.validation:generate_test_nexus"
-hyperion-populate-test-and-meta-files = "mx_bluesky.hyperion.utils.validation:copy_test_meta_data_files"
 redis_to_murko = "mx_bluesky.beamlines.i04.redis_to_murko_forwarder:main"
 
 [project.urls]
@@ -122,7 +121,7 @@ markers = [
     "skip_log_setup: marks tests so that loggers are not setup before the test.",
     "skip_in_pycharm: marks test as not working in pycharm testrunner",
     "system_test: marks tests as a system test",
-    "requires: marks a test as having an external dependency such as a service or hardware"
+    "requires: marks a test as having an external dependency such as a service or hardware",
 ]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst" --durations=10
@@ -143,6 +142,8 @@ filterwarnings = [
     # Ignore warning about deprecations in python-workflows encountered during system tests
     # https://github.com/DiamondLightSource/python-workflows/issues/188
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
+    #Remove when we drop python 3.11
+    "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
