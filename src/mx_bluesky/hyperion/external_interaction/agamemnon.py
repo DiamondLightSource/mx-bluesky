@@ -191,10 +191,10 @@ def _get_pin_type_from_agamemnon_collect_parameters(
 
 
 def _get_next_instruction(beamline: str) -> dict:
-    return _get_parameters_from_url(_get_agamemnon_url() + f"getnextcollect/{beamline}")
+    return _get_parameters_from_url(get_agamemnon_url() + f"getnextcollect/{beamline}")
 
 
-def _get_agamemnon_url() -> str:
+def get_agamemnon_url() -> str:
     return os.environ.get("AGAMEMNON_URL", "http://agamemnon.diamond.ac.uk/")
 
 
