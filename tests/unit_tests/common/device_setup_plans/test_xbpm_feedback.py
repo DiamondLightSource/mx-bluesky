@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, call
 
 import bluesky.preprocessors as bpp
 import pytest
+from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
 from dodal.devices.baton import Baton

@@ -1,8 +1,6 @@
-import asyncio
 import os
 from asyncio import run_coroutine_threadsafe, sleep
-from collections.abc import Generator
-from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from concurrent.futures import Executor
 from dataclasses import fields
 from threading import Event
 from typing import Any
@@ -43,6 +41,7 @@ from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import setup_context
+from unit_tests.hyperion.conftest import launch_test_in_runner_event_loop
 
 # For tests to complete reliably, these should all be successively much
 # larger than each other
@@ -51,8 +50,6 @@ from mx_bluesky.hyperion.utils.context import setup_context
 SLEEP_FAST_SPIN_WAIT_S = 0.02
 # Time to wait for the test to progress to the next step
 AGAMEMNON_WAIT_FOR_TEST_STEP_S = 0.2
-# Time to wait for the whole test script thread to complete
-TEST_SCRIPT_TIMEOUT_S = 2
 # Time for pytest to timeout if the script thread is deadlocked (shouldn't need this)
 # PYTEST_TEST_TIMEOUT_S > TEST_SCRIPT_TIMEOUT in order that an exception on the script
 # is bubbled up via the future and not lost.
@@ -64,13 +61,6 @@ AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
         "parameter_model_version": PARAMETER_VERSION,
     }
 )
-
-
-@pytest.fixture(scope="session")
-def executor() -> Generator[Executor, Any, Any]:
-    ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix="test thread")
-    yield ex
-    ex.shutdown(wait=True)
 
 
 @pytest.fixture()
@@ -492,18 +482,6 @@ async def test_shutdown_releases_the_baton(
     assert shutdown_task.done()
 
 
-def _launch_test_in_runner_event_loop(async_func, udc_runner, executor) -> Future:
-    """Launch the async func in a separate thread because the RunEngine under
-    test must run in the main thread and block our test code, and return
-    result and any exception to the caller."""
-
-    def _launch_in_new_thread():
-        future = asyncio.run_coroutine_threadsafe(async_func(), udc_runner.RE.loop)
-        return future.result(TEST_SCRIPT_TIMEOUT_S)
-
-    return executor.submit(_launch_in_new_thread)
-
-
 @patch(
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     side_effect=[
@@ -536,7 +514,7 @@ async def test_run_forever_resumes_collection_when_baton_taken_away(
             await sleep(SLEEP_FAST_SPIN_WAIT_S)
         udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         take_requested_baton_away_then_wait_for_release_then_re_request,
         udc_runner,
         executor,
@@ -575,7 +553,7 @@ async def test_run_forever_resumes_collection_when_normal_completion_and_baton_r
             await sleep(SLEEP_FAST_SPIN_WAIT_S)
         udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         wait_for_baton_release_then_re_request, udc_runner, executor
     )
     run_forever(udc_runner)
@@ -602,7 +580,7 @@ async def test_run_forever_handles_shutdown_while_waiting_for_baton(
         assert udc_runner.current_status == Status.IDLE
         udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         issue_shutdown_without_baton, udc_runner, executor
     )
     run_forever(udc_runner)
@@ -643,7 +621,7 @@ def test_run_forever_clears_error_status_on_resume(
             await sleep(SLEEP_FAST_SPIN_WAIT_S)
         udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         error_with_command_then_resume, udc_runner, executor
     )
     function_is_patched.wait()
