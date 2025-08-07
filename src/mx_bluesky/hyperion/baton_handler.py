@@ -8,8 +8,13 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.devices.baton import Baton
 
+from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
+    UDCDefaultDevices,
+    move_to_udc_default_state,
+)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import (
+    device_composite_from_context,
     find_device_in_context,
 )
 from mx_bluesky.common.utils.log import LOGGER
@@ -81,7 +86,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             baton: The baton device
             runner: The runner
         """
-        yield from _move_to_default_state()
+        yield from _move_to_udc_default_state(context)
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
@@ -160,9 +165,9 @@ def _is_requesting_baton(baton: Baton) -> MsgGenerator:
     return requested_user == HYPERION_USER
 
 
-def _move_to_default_state() -> MsgGenerator:
-    # To be filled in in https://github.com/DiamondLightSource/mx-bluesky/issues/396
-    yield from bps.null()
+def _move_to_udc_default_state(context: BlueskyContext):
+    udc_default_devices = device_composite_from_context(context, UDCDefaultDevices)
+    yield from move_to_udc_default_state(udc_default_devices)
 
 
 def _get_baton(context: BlueskyContext) -> Baton:
