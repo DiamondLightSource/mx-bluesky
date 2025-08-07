@@ -56,6 +56,7 @@ class HyperionConstants:
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
+    HYPERION_PORT = 5005
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
     CONFIG_SERVER_URL = (

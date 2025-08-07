@@ -139,6 +139,12 @@ TEST_EXPTS = {
 }
 
 
+@pytest.fixture(autouse=True)
+def mock_create_udc_server():
+    with patch("mx_bluesky.hyperion.__main__.create_server_for_udc") as mock_udc_server:
+        yield mock_udc_server
+
+
 @pytest.fixture
 def mock_setup_context(request: pytest.FixtureRequest):
     with (
@@ -589,6 +595,18 @@ def test_hyperion_in_udc_mode_starts_logging(
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+def test_hyperion_in_udc_mode_starts_udc_api(
+    mock_create_udc_server: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+    mock_create_udc_server.assert_called_once()
+    assert isinstance(mock_create_udc_server.mock_calls[0].args[0], PlanRunner)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.setup_context")
 @patch("mx_bluesky.hyperion.__main__.run_forever")
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
@@ -614,12 +632,6 @@ def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
     main()
 
     mock_gda_runner.assert_called_once()
-
-
-# TODO not currently a REST endpoint but required for hyperion_restart() in kubernetes
-# https://github.com/DiamondLightSource/mx-bluesky/issues/188
-def test_sending_a_shutdown_via_api_terminates_udc():
-    pass
 
 
 @patch("mx_bluesky.hyperion.__main__.Api")
