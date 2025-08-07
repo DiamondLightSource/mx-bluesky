@@ -22,7 +22,6 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
-    optimum_grid_detect_angles,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -35,6 +34,20 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.utils.exceptions import WarningException
 
 from ...conftest import assert_event
+
+X_Y_EDGE_DATA = SampleLocation(
+    8,
+    5,
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 4, 4, 3, 3, 2, 2, 3, 3, 4, 4]),
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
+)
+
+X_Z_EDGE_DATA = SampleLocation(
+    8,
+    20,
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 20, 17, 14, 14, 13, 13, 12, 12, 13, 13, 14, 14]),
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 20, 25, 29, 36, 37, 37, 38, 38, 37, 27, 26, 26]),
+)
 
 
 @pytest.fixture
@@ -58,12 +71,7 @@ def fake_devices(
 
     pin_tip_detection = i03.pin_tip_detection(connect_immediately=True, mock=True)
     pin_tip_detection._get_tip_and_edge_data = AsyncMock(
-        return_value=SampleLocation(
-            8,
-            5,
-            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 4, 4, 3, 3, 2, 2, 3, 3, 4, 4]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
-        )
+        side_effect=[X_Y_EDGE_DATA, X_Z_EDGE_DATA]
     )
 
     with (
@@ -193,7 +201,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     assert gridscan_params["y_start_um"] == pytest.approx(
         -550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1
     )
-    assert gridscan_params["z_start_um"] == pytest.approx(-550, abs=1)
+    assert gridscan_params["z_start_um"] == pytest.approx(-534, abs=1)
 
 
 @patch(
@@ -269,9 +277,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
             cb.activity_gated_event.mock_calls[1],  # pyright:ignore
             {
                 "oav-grid_snapshot-top_left_x": 8,
-                "oav-grid_snapshot-top_left_y": 2,
+                "oav-grid_snapshot-top_left_y": pytest.approx(12, abs=1),
                 "oav-grid_snapshot-num_boxes_x": 9,
-                "oav-grid_snapshot-num_boxes_y": 1,
+                "oav-grid_snapshot-num_boxes_y": 3,
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
@@ -311,14 +319,14 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
     assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
     assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-539.84)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-539.84)
+    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
+    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
     assert my_grid_params["x_step_size_um"] == box_size_um
     assert my_grid_params["y_step_size_um"] == box_size_um
     assert my_grid_params["z_step_size_um"] == box_size_um
     assert my_grid_params["x_steps"] == pytest.approx(9)
     assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(1)
+    assert my_grid_params["z_steps"] == pytest.approx(3)
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
@@ -462,18 +470,3 @@ def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_i
     min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
     assert min_y == expected_min
     assert max_y == expected_max
-
-
-@pytest.mark.parametrize(
-    "current_angle, expected_detect_angles",
-    [(-91, [-90, 0]), (3, [0, -90]), (-87, [-90, 0])],
-)
-def test_optimum_grid_detect_angles_returns_closest_angle_first(
-    smargon: Smargon,
-    RE: RunEngine,
-    current_angle: float,
-    expected_detect_angles: list[float],
-):
-    set_mock_value(smargon.omega.user_readback, current_angle)
-
-    assert RE(optimum_grid_detect_angles(smargon)).plan_result == expected_detect_angles  # type:ignore
