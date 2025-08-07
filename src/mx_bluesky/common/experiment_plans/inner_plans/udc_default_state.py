@@ -1,5 +1,6 @@
+from typing import Protocol, runtime_checkable
+
 import bluesky.plan_stubs as bps
-import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import CryoStream
@@ -13,8 +14,8 @@ from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
 
 
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class UDCDefaultDevices:
+@runtime_checkable
+class UDCDefaultDevices(Protocol):
     cryostream: CryoStream
     fluorescence_det_motion: FluorescenceDetector
     beamstop: Beamstop
