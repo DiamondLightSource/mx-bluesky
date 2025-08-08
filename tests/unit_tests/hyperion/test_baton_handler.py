@@ -47,7 +47,8 @@ from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import setup_context
-from unit_tests.hyperion.conftest import launch_test_in_runner_event_loop
+
+from .conftest import launch_test_in_runner_event_loop
 
 # For tests to complete reliably, these should all be successively much
 # larger than each other
