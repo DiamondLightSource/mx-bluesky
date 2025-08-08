@@ -11,7 +11,8 @@ from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.runner import Command, GDARunner
-from unit_tests.hyperion.conftest import launch_test_in_runner_event_loop
+
+from .conftest import launch_test_in_runner_event_loop
 
 
 @pytest.fixture
