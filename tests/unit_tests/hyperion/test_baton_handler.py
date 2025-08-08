@@ -626,21 +626,23 @@ def test_run_forever_clears_error_status_on_resume(
     function_is_patched = Event()
 
     async def error_with_command_then_resume():
-        with patch(
-            "mx_bluesky.hyperion.baton_handler._runner_sleep",
-            side_effect=RuntimeError("Simulated plan exception"),
-        ):
-            function_is_patched.set()
-            while udc_runner.current_status != Status.FAILED:
+        try:
+            with patch(
+                "mx_bluesky.hyperion.baton_handler._runner_sleep",
+                side_effect=RuntimeError("Simulated plan exception"),
+            ):
+                function_is_patched.set()
+                while udc_runner.current_status != Status.FAILED:
+                    await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
+            baton = find_device_in_context(udc_runner.context, "baton", Baton)
+            while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
-        baton = find_device_in_context(udc_runner.context, "baton", Baton)
-        while await baton.current_user.get_value() != NO_USER:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        await baton.requested_user.set(HYPERION_USER)
-        while udc_runner.current_status != Status.BUSY:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        udc_runner.shutdown()
+            await baton.requested_user.set(HYPERION_USER)
+            while udc_runner.current_status != Status.BUSY:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+        finally:
+            udc_runner.shutdown()
 
     future = launch_test_in_runner_event_loop(
         error_with_command_then_resume, udc_runner, executor
@@ -678,20 +680,20 @@ def test_feedback_wrapper_invoked_around_collection_loop_when_commissioning_mode
             await sleep(SLEEP_FAST_SPIN_WAIT_S)
 
         udc_runner.shutdown()
-        parent.assert_has_calls(
-            [
-                call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC, wait=True),
-                call.create_parameters_from_agamemnon(),
-                call.create_parameters_from_agamemnon(),
-                call.threshold_pc(3, wait=True),
-            ]
-        )
 
     future = launch_test_in_runner_event_loop(
         wait_to_finish_then_shutdown, udc_runner, executor
     )
     run_forever(udc_runner)
     future.result()  # Ensure successful completion
+    parent.assert_has_calls(
+        [
+            call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC, wait=True),
+            call.create_parameters_from_agamemnon(),
+            call.create_parameters_from_agamemnon(),
+            call.threshold_pc(3, wait=True),
+        ]
+    )
 
 
 @patch(
