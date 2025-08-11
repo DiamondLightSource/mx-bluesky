@@ -14,11 +14,6 @@ Left to do is:
 
 - Set up the beamline to be in a standard state for collection
 
-The software supports two modes of operation:
-- UDC mode (experimental) where Hyperion automatically fetches instructions from Agamemnon
-- GDA mode (where GDA fetches and decodes the Agamemnon 
-instructions). GDA mode will be removed in a future release.
-
 # Development Installation
 
 This project supports only the most recent Python version for which our dependencies are available - currently Python 3.11.
@@ -95,3 +90,7 @@ To make the app write the `DEBUG` level logs stored in the `CircularMemoryHandle
 curl -X PUT http://127.0.0.1:5005/flush_debug_log
 
 ```
+
+# REST API (UDC Mode)
+
+In UDC Mode, the only endpoint available is the `/status` endpoint.
