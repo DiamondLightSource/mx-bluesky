@@ -19,12 +19,10 @@ class PlanException(Exception):
 class PlanRunner(BaseRunner):
     """Runner that executes experiments from inside a running Bluesky plan"""
 
-    def __init__(
-        self,
-        context: BlueskyContext,
-    ) -> None:
+    def __init__(self, context: BlueskyContext, dev_mode: bool) -> None:
         super().__init__(context)
         self.current_status: Status = Status.IDLE
+        self.is_dev_mode = dev_mode
 
     def execute_plan(
         self,

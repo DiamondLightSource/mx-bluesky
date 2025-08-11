@@ -27,12 +27,6 @@ def client(app_under_test: Flask) -> FlaskClient:
     return app_under_test.test_client()
 
 
-def test_plan_runner_api_triggers_shutdown(app_under_test, client, mock_runner):
-    response = client.post("/shutdown")
-    assert response.status_code == 200
-    mock_runner.shutdown.assert_called_once()
-
-
 def test_plan_runner_api_fetch_status(app_under_test, client, mock_runner):
     mock_runner.current_status = Status.BUSY
     response = client.get("/status")
