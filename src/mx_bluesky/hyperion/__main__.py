@@ -1,4 +1,5 @@
 import json
+import signal
 import threading
 from dataclasses import asdict
 from sys import argv
@@ -189,9 +190,18 @@ def main():
         )
         runner.wait_on_queue()
     else:
-        plan_runner = PlanRunner(context)
+        plan_runner = PlanRunner(context, args.dev_mode)
         create_server_for_udc(plan_runner)
+        _register_sigterm_handler(plan_runner)
         run_forever(plan_runner)
+
+
+def _register_sigterm_handler(runner: PlanRunner):
+    def shutdown_on_sigterm(sig_num, frame):
+        runner.shutdown()
+
+    LOGGER.info("Received SIGTERM, shutting down...")
+    signal.signal(signal.SIGTERM, shutdown_on_sigterm)
 
 
 if __name__ == "__main__":

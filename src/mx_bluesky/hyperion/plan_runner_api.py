@@ -27,11 +27,6 @@ def create_server_for_udc(runner: PlanRunner) -> Thread:  # pragma: no cover
 def create_app_for_udc(runner):
     app = Flask(__name__)
     api = Api(app)
-    api.add_resource(
-        ShutdownResource,
-        "/shutdown",
-        resource_class_args=[runner],
-    )
     api.add_resource(StatusResource, "/status", resource_class_args=[runner])
     return app
 
