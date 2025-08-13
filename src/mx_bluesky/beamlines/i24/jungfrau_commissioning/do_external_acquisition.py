@@ -17,7 +17,6 @@ from ophyd_async.fastcs.jungfrau import (
 from mx_bluesky.common.utils.log import LOGGER
 
 
-# TODO: make the pathprovider adjustable with a absolute path to file param
 def do_external_acquisition(
     exp_time_s: float,
     period_between_frames_s: float,
@@ -28,7 +27,7 @@ def do_external_acquisition(
     wait: bool = False,
 ):
     """
-    Kickoff external triggering on the jungfrau, and optionally wait for completion.
+    Kickoff external triggering on the Jungfrau, and optionally wait for completion.
 
     Must be used within an open Bluesky run.
 
