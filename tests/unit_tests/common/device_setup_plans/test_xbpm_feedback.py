@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky import plan_stubs as bps
-from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
 from dodal.devices.xbpm_feedback import Pause
 from dodal.plans.preprocessors.verify_undulator_gap import (
@@ -45,7 +44,6 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
         yield from bps.null()
 
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
-    RE = RunEngine()
     RE(my_collection_plan())
 
     # Stop pyright from complaining
@@ -79,7 +77,6 @@ async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_e
 
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
 
-    RE = RunEngine()
     RE(my_collection_plan())
 
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
@@ -101,7 +98,6 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
     status.set_exception(Exception())
     composite.xbpm_feedback.trigger = MagicMock(side_effect=lambda: status)
 
-    RE = RunEngine()
     with pytest.raises(FailedStatus):
         RE(my_collection_plan())
 
@@ -124,7 +120,6 @@ async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorato
         yield from bps.null()
         raise MyException()
 
-    RE = RunEngine()
     with pytest.raises(MyException):
         RE(my_collection_plan())
 

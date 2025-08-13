@@ -22,6 +22,9 @@ from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_panda_flyscan,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -64,7 +67,7 @@ def construct_hyperion_specific_features(
 
     setup_trigger_plan: Callable[..., MsgGenerator]
 
-    if xrc_parameters.features.use_panda_for_gridscan:
+    if get_hyperion_config_client().get_feature_flags().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = _panda_triggering_setup
         tidy_plan = partial(_panda_tidy, xrc_composite)
         set_flyscan_params_plan = partial(

@@ -18,19 +18,31 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
     Actions,
-    BlueskyRunner,
+    RunExperiment,
     Status,
     create_app,
+    initialise_globals,
+    main,
     setup_context,
 )
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from mx_bluesky.hyperion.parameters.cli import parse_cli_args
+from mx_bluesky.hyperion.parameters.cli import (
+    HyperionArgs,
+    HyperionMode,
+    parse_cli_args,
+)
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.hyperion.plan_runner import PlanRunner
+from mx_bluesky.hyperion.runner import GDARunner
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
 
@@ -39,6 +51,7 @@ START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
+FLUSH_LOGS_ENDPOINT = "flush_debug_log"
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 
 SECS_PER_RUNENGINE_LOOP = 0.1
@@ -130,15 +143,15 @@ TEST_EXPTS = {
 def mock_setup_context(request: pytest.FixtureRequest):
     with (
         patch("mx_bluesky.hyperion.__main__.setup_context") as mock_setup_context,
-        patch("mx_bluesky.hyperion.__main__.BlueskyRunner"),
+        patch("mx_bluesky.hyperion.__main__.run_forever"),
     ):
         yield mock_setup_context
 
 
 @pytest.fixture
-def test_env(request: pytest.FixtureRequest):
+def test_env(request: pytest.FixtureRequest, use_beamline_t01):
     mock_run_engine = MockRunEngine(test_name=repr(request))
-    mock_context = BlueskyContext()
+    mock_context = BlueskyContext(run_engine=mock_run_engine)  # type: ignore
     real_plans_and_test_exps = dict(
         {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},  # type: ignore
         **TEST_EXPTS,  # type: ignore
@@ -157,7 +170,8 @@ def test_env(request: pytest.FixtureRequest):
             MagicMock(return_value=mock_context),
         ),
     ):
-        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
+        runner = GDARunner(mock_context)
+        app = create_app(runner, {"TESTING": True})  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -173,6 +187,13 @@ def test_env(request: pytest.FixtureRequest):
     runner.shutdown()
     runner_thread.join(timeout=3)
     del mock_run_engine
+
+
+@pytest.fixture
+def mock_flask_thread():
+    # Prevent blocking when we attempt to join()
+    with patch("mx_bluesky.hyperion.__main__.threading") as mock_threading:
+        yield mock_threading
 
 
 def wait_for_run_engine_status(
@@ -401,8 +422,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     ):
         print(PLAN_REGISTRY)
 
-        BlueskyRunner(
-            RE=MagicMock(),
+        GDARunner(
             context=context,
         )
 
@@ -428,7 +448,7 @@ def test_when_blueskyrunner_initiated_then_setup_called_upon_start(
         },
         clear=True,
     ):
-        runner = BlueskyRunner(MagicMock(), MagicMock())
+        runner = GDARunner(MagicMock())
         mock_setup.assert_not_called()
         runner.start(lambda: None, hyperion_fgs_params, "multi_rotation_scan")
         mock_setup.assert_called_once()
@@ -471,7 +491,7 @@ def _raise_exception(*args, **kwargs):
     "mx_bluesky.hyperion.__main__.PLAN_REGISTRY",
     {"pin_tip_centre_then_xray_centre": {"param_type": _raise_exception}},
 )
-def test_exception_during_parameter_decodde_generates_nicely_formatted_log_message(
+def test_exception_during_parameter_decode_generates_nicely_formatted_log_message(
     caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
     response = test_env.client.put(START_ENDPOINT, data=test_params)
@@ -514,11 +534,119 @@ def test_when_context_created_then_contains_expected_number_of_plans(
 
 
 @pytest.mark.parametrize("dev_mode", [False, True])
-def test_create_app_passes_through_dev_mode(
-    dev_mode: bool, mock_setup_context: MagicMock
-):
-    mock_run_engine = MagicMock()
-
-    create_app({"TESTING": True}, mock_run_engine, dev_mode=dev_mode)
+def test_context_created_with_dev_mode(dev_mode: bool, mock_setup_context: MagicMock):
+    with (
+        patch("sys.argv", new=["hyperion", "--dev"] if dev_mode else ["hyperion"]),
+        patch("mx_bluesky.hyperion.__main__.create_app"),
+        patch("mx_bluesky.hyperion.__main__.GDARunner.wait_on_queue"),
+    ):
+        main()
 
     mock_setup_context.assert_called_once_with(dev_mode=dev_mode)
+
+
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+@patch("mx_bluesky.hyperion.__main__.alerting.set_alerting_service")
+def test_initialise_configures_logging(
+    mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
+):
+    args = HyperionArgs(mode=HyperionMode.GDA, dev_mode=True)
+
+    initialise_globals(args)
+
+    mock_logging_setup.assert_called_once_with(
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True
+    )
+
+
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+@patch("mx_bluesky.hyperion.__main__.alerting.set_alerting_service")
+def test_initialise_configures_alerting(
+    mock_alerting_setup: MagicMock, mock_logging_setup: MagicMock
+):
+    args = HyperionArgs(mode=HyperionMode.GDA, dev_mode=True)
+
+    initialise_globals(args)
+
+    mock_alerting_setup.assert_called_once()
+    assert isinstance(mock_alerting_setup.mock_calls[0].args[0], LoggingAlertService)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch("mx_bluesky.hyperion.__main__.create_app")
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup")
+def test_hyperion_in_udc_mode_starts_logging(
+    mock_do_default_logging_setup: MagicMock,
+    mock_create_app: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+
+    mock_do_default_logging_setup.assert_called_once_with(
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
+    )
+    mock_create_app.assert_not_called()
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch("mx_bluesky.hyperion.__main__.setup_context")
+@patch("mx_bluesky.hyperion.__main__.run_forever")
+@patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
+def test_hyperion_in_udc_mode_starts_udc_loop(
+    mock_find_device_in_context: MagicMock,
+    mock_run_forever: MagicMock,
+    mock_setup_context: MagicMock,
+    mock_flask_thread: MagicMock,
+):
+    main()
+
+    mock_run_forever.assert_called_once()
+    assert isinstance(mock_run_forever.mock_calls[0].args[0], PlanRunner)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "gda"])
+@patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.GDARunner.wait_on_queue")
+def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
+    mock_gda_runner: MagicMock,
+    mock_flask_thread: MagicMock,
+):
+    main()
+
+    mock_gda_runner.assert_called_once()
+
+
+# TODO not currently a REST endpoint but required for hyperion_restart() in kubernetes
+# https://github.com/DiamondLightSource/mx-bluesky/issues/188
+def test_sending_a_shutdown_via_api_terminates_udc():
+    pass
+
+
+@patch("mx_bluesky.hyperion.__main__.Api")
+@patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", MagicMock())
+@patch("mx_bluesky.hyperion.runner.GDARunner.wait_on_queue", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+@pytest.mark.parametrize("mode", ["gda", "udc"])
+def test_hyperion_exposes_run_endpoint_only_if_gda_mode_selected(
+    mock_api: MagicMock,
+    mock_flask_thread: MagicMock,
+    mode: str,
+):
+    with patch("sys.argv", new=["hyperion", "--mode", mode]):
+        main()
+
+    assert len(
+        [
+            c
+            for c in mock_api.return_value.add_resource.mock_calls
+            if c.args[0] == RunExperiment
+        ]
+    ) == (1 if mode == "gda" else 0)
+
+
+@patch("mx_bluesky.hyperion.__main__.flush_debug_handler")
+def test_flush_logs(mock_flush_debug_handler: MagicMock, test_env: ClientAndRunEngine):
+    response = test_env.client.put(FLUSH_LOGS_ENDPOINT)
+    check_status_in_response(response, Status.SUCCESS)
+    mock_flush_debug_handler.assert_called_once()
