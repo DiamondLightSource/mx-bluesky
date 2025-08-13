@@ -473,9 +473,11 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     return composite
 
 
-# TODO put this fixture logic in ophyd-async testing module, then just call that
+# See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
 def jungfrau(RE: RunEngine):
+    """The extra logic here prevents exceptions during data collection unit tests"""
+
     with init_devices(mock=True):
         detector = Jungfrau("prefix", MagicMock(), "", "", 4, "jungfrau")
 
