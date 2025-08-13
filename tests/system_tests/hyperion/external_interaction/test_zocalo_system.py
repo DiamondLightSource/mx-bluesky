@@ -8,7 +8,9 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
-from mx_bluesky.common.experiment_plans.read_hardware import read_hardware_for_zocalo
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    read_hardware_for_zocalo,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )

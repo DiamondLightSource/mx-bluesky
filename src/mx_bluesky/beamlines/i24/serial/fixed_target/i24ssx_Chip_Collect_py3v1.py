@@ -18,9 +18,9 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
@@ -269,7 +269,7 @@ def start_i24(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     parameters: FixedTargetParameters,
     dcm: DCM,
@@ -490,7 +490,9 @@ def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
         either by pressing the Abort button or because of a timeout, and to reset the \
         P variable.
     """
-    SSX_LOGGER.warning(f"Data Collection Aborted: {format_exception(exception)}")
+    SSX_LOGGER.warning(
+        f"Data Collection Aborted: {''.join(format_exception(exception))}"
+    )
     yield from bps.trigger(pmac.abort_program, wait=True)
 
     end_time = datetime.now()
@@ -504,7 +506,7 @@ def main_fixed_target_plan(
     aperture: Aperture,
     backlight: DualBacklight,
     beamstop: Beamstop,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     shutter: HutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
@@ -655,7 +657,7 @@ def run_fixed_target_plan(
     aperture: Aperture = inject("aperture"),
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    detector_stage: DetectorMotion = inject("detector_motion"),
+    detector_stage: YZStage = inject("detector_motion"),
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
@@ -684,6 +686,38 @@ def run_fixed_target_plan(
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
 
+    yield from run_plan_in_wrapper(
+        zebra,
+        pmac,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        pilatus_metadata,
+    )
+
+
+def run_plan_in_wrapper(
+    zebra: Zebra,
+    pmac: PMAC,
+    aperture: Aperture,
+    backlight: DualBacklight,
+    beamstop: Beamstop,
+    detector_stage: YZStage,
+    shutter: HutchShutter,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_device: DetectorBeamCenter,
+    parameters: FixedTargetParameters,
+    dcid: DCID,
+    pilatus_metadata: PilatusMetadata,
+) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
             zebra,

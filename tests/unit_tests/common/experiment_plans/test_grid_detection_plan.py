@@ -22,6 +22,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
+    optimum_grid_detect_angles,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -461,3 +462,18 @@ def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_i
     min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
     assert min_y == expected_min
     assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "current_angle, expected_detect_angles",
+    [(-91, [-90, 0]), (3, [0, -90]), (-87, [-90, 0])],
+)
+def test_optimum_grid_detect_angles_returns_closest_angle_first(
+    smargon: Smargon,
+    RE: RunEngine,
+    current_angle: float,
+    expected_detect_angles: list[float],
+):
+    set_mock_value(smargon.omega.user_readback, current_angle)
+
+    assert RE(optimum_grid_detect_angles(smargon)).plan_result == expected_detect_angles  # type:ignore

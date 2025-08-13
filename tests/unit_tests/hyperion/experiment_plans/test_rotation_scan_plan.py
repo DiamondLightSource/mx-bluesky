@@ -163,9 +163,12 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     )
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.I03Constants.OMEGA_FLIP",
+    new=False,
+)
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     params = next(test_rotation_params.single_rotation_scans)
-    params.features.omega_flip = False
     params.exposure_time_s = 0.2
     params.omega_start_deg = 10
 
@@ -231,6 +234,7 @@ async def test_rotation_plan_zebra_settings(
     assert await zebra.pc.pulse_start.get_value() == params.shutter_opening_time_s
 
 
+@pytest.mark.timeout(2)
 async def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan: RotationScanComposite,
     test_rotation_params: RotationScan,
@@ -263,6 +267,7 @@ async def test_full_rotation_plan_smargon_settings(
     ]
 
 
+@pytest.mark.timeout(2)
 async def test_rotation_plan_moves_aperture_correctly(
     run_full_rotation_plan: RotationScanComposite,
 ) -> None:
@@ -469,20 +474,44 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.OUT
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.OUT
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+
+
+def test_rotation_scan_waits_on_aperture_being_prepared_before_moving_in(
+    rotation_scan_simulated_messages,
+):
+    msgs = assert_message_and_return_remaining(
+        rotation_scan_simulated_messages,
+        lambda msg: msg.command == "prepare"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == ApertureValue.SMALL
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard-selected_aperture"
+        and msg.args[0] == ApertureValue.SMALL
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
 
@@ -543,14 +572,44 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     )
 
 
-def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_not_specified(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    test_rotation_params.snapshot_omegas_deg = None
+    _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
+        fake_create_rotation_devices,
+        sim_run_engine,
+        test_rotation_params,
+        oav_parameters_for_rotation,
+    )
+
+
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_grid_snapshots_specified(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    test_rotation_params.use_grid_snapshots = True
+    test_rotation_params.snapshot_omegas_deg = None
+    _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
+        fake_create_rotation_devices,
+        sim_run_engine,
+        test_rotation_params,
+        oav_parameters_for_rotation,
+    )
+
+
+def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
     test_rotation_params: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
-    test_rotation_params.snapshot_omegas_deg = None
 
     msgs = sim_run_engine.simulate_plan(
         rotation_scan(
@@ -832,59 +891,65 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     oav_parameters_for_rotation: OAVParameters,
     RE: RunEngine,
 ):
-    test_rotation_params.features.omega_flip = omega_flip
-    for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
-        scan.rotation_direction = rotation_direction
-        scan.omega_start_deg = 30
-    mock_callback = Mock(spec=RotationISPyBCallback)
-    RE.subscribe(mock_callback)
-    omega_put = get_mock_put(fake_create_rotation_devices.smargon.omega.user_setpoint)
-    set_mock_value(fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1)
-    with (
-        patch("bluesky.plan_stubs.wait", autospec=True),
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
+    with patch(
+        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        new=omega_flip,
     ):
-        RE(
-            rotation_scan(
-                fake_create_rotation_devices,
-                test_rotation_params,
-                oav_parameters_for_rotation,
+        for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
+            scan.rotation_direction = rotation_direction
+            scan.omega_start_deg = 30
+        mock_callback = Mock(spec=RotationISPyBCallback)
+        RE.subscribe(mock_callback)
+        omega_put = get_mock_put(
+            fake_create_rotation_devices.smargon.omega.user_setpoint
+        )
+        set_mock_value(
+            fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1
+        )
+        with (
+            patch("bluesky.plan_stubs.wait", autospec=True),
+            patch(
+                "bluesky.preprocessors.__read_and_stash_a_motor",
+                fake_read,
             ),
-        )
+        ):
+            RE(
+                rotation_scan(
+                    fake_create_rotation_devices,
+                    test_rotation_params,
+                    oav_parameters_for_rotation,
+                ),
+            )
 
-    assert omega_put.mock_calls[0:5] == [
-        call(0, wait=True),
-        call(90, wait=True),
-        call(180, wait=True),
-        call(270, wait=True),
-        call(expected_start_angle_with_runup, wait=True),
-    ]
-    mock_setup_zebra_for_rotation.assert_called_once_with(
-        fake_create_rotation_devices.zebra,
-        fake_create_rotation_devices.sample_shutter,
-        start_angle=expected_start_angle,
-        scan_width=180,
-        direction=expected_zebra_direction,
-        shutter_opening_deg=ANY,
-        shutter_opening_s=ANY,
-        group="setup_zebra",
-    )
-    rotation_outer_start_event = next(
-        dropwhile(
-            lambda _: _.args[0] != "start"
-            or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
-            mock_callback.mock_calls,
+        assert omega_put.mock_calls[0:5] == [
+            call(0, wait=True),
+            call(90, wait=True),
+            call(180, wait=True),
+            call(270, wait=True),
+            call(expected_start_angle_with_runup, wait=True),
+        ]
+        mock_setup_zebra_for_rotation.assert_called_once_with(
+            fake_create_rotation_devices.zebra,
+            fake_create_rotation_devices.sample_shutter,
+            start_angle=expected_start_angle,
+            scan_width=180,
+            direction=expected_zebra_direction,
+            shutter_opening_deg=ANY,
+            shutter_opening_s=ANY,
+            group="setup_zebra",
         )
-    )
-    event_params = SingleRotationScan.model_validate_json(
-        rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
-    )
-    # event params are not transformed
+        rotation_outer_start_event = next(
+            dropwhile(
+                lambda _: _.args[0] != "start"
+                or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
+                mock_callback.mock_calls,
+            )
+        )
+        event_params = SingleRotationScan.model_validate_json(
+            rotation_outer_start_event.args[1]["mx_bluesky_parameters"]
+        )
+        # event params are not transformed
     assert event_params.rotation_increment_deg == 0.1
-    assert event_params.features.omega_flip == omega_flip
     assert event_params.rotation_direction == rotation_direction
     assert event_params.scan_width_deg == 180
     assert event_params.omega_start_deg == 30
@@ -1112,13 +1177,11 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "vds_start_index": rotation_params.nexus_vds_start_img,
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
-            "axis_direction": AxisDirection.NEGATIVE
-            if rotation_params.features.omega_flip
-            else AxisDirection.POSITIVE,
+            "axis_direction": AxisDirection.NEGATIVE,
         }
 
 
-@pytest.mark.timeout(2)
+@pytest.mark.timeout(3)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
@@ -1126,7 +1189,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
     RE: RunEngine,
-    feature_flags_update_with_omega_flip: MagicMock,
+    test_omega_flip: bool,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1236,22 +1299,15 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 h5py.Dataset,
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
-            omega_flip = (
-                feature_flags_update_with_omega_flip.mock_calls[0].args[0].omega_flip
-            )
-            assert tuple(omega_vec) == (-1.0 if omega_flip else 1.0, 0, 0)
+            assert tuple(omega_vec) == (-1.0 if test_omega_flip else 1.0, 0, 0)
 
 
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
 )
 def test_full_multi_rotation_plan_ispyb_called_correctly(
     _,
-    mock_ispyb_store: MagicMock,
     RE: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
@@ -1259,7 +1315,8 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     ispyb_config_path: str,
 ):
     callback = RotationISPyBCallback()
-    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store = MagicMock()
+    callback.ispyb = mock_ispyb_store
     _run_multi_rotation_plan(
         RE,
         test_multi_rotation_params,
@@ -1271,7 +1328,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     for instantiation_call, ispyb_store_calls, _ in zip(
         ispyb_calls,
         [  # there should be 4 calls to the IspybStore per run
-            mock_ispyb_store.return_value.method_calls[i * 4 : (i + 1) * 4]
+            mock_ispyb_store.method_calls[i * 4 : (i + 1) * 4]
             for i in range(len(test_multi_rotation_params.rotation_scans))
         ],
         test_multi_rotation_params.single_rotation_scans,
@@ -1381,7 +1438,7 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
 )
-def test_zocalo_callback_end_only_gets_called_at_the_end_of_all_collections(
+def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     _,
     mock_ispyb_store: MagicMock,
     RE: RunEngine,
@@ -1453,15 +1510,11 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
 )
 def test_ispyb_triggered_before_zocalo(
     _,
-    mock_ispyb_store: MagicMock,
     RE: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
@@ -1470,11 +1523,12 @@ def test_ispyb_triggered_before_zocalo(
     _, ispyb_callback = create_rotation_callbacks()
     parent_mock = MagicMock()
 
-    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
-    mock_ispyb_store.return_value.begin_deposition = parent_mock.ispyb_begin
-    mock_ispyb_store.return_value.begin_deposition.return_value = IspybIds(
+    mock_ispyb_store = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store.begin_deposition = parent_mock.ispyb_begin
+    mock_ispyb_store.begin_deposition.return_value = IspybIds(
         data_collection_ids=(123,)
     )
+    ispyb_callback.ispyb = mock_ispyb_store
 
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)
@@ -1498,15 +1552,11 @@ def test_ispyb_triggered_before_zocalo(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     autospec=True,
 )
 def test_zocalo_start_and_end_called_once_for_each_collection(
     _,
-    mock_ispyb_store: MagicMock,
     RE: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
@@ -1514,10 +1564,11 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
 ):
     _, ispyb_callback = create_rotation_callbacks()
 
-    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
-    mock_ispyb_store.return_value.begin_deposition.return_value = IspybIds(
+    mock_ispyb_store = MagicMock(spec=StoreInIspyb)
+    mock_ispyb_store.begin_deposition.return_value = IspybIds(
         data_collection_ids=(123,)
     )
+    ispyb_callback.ispyb = mock_ispyb_store
 
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)
@@ -1537,6 +1588,41 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     assert zocalo_callback.zocalo_interactor.run_end.call_count == len(
         test_multi_rotation_params.rotation_scans
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    autospec=True,
+)
+def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_uses_a_different_sample_id(
+    _,
+    RE: RunEngine,
+    test_multi_rotation_params: RotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    _, ispyb_callback = create_rotation_callbacks()
+
+    mock_ispyb_store = MagicMock(spec=StoreInIspyb)
+    deposition = mock_ispyb_store.begin_deposition
+    deposition.return_value = IspybIds(data_collection_ids=(123,))
+    ispyb_callback.emit_cb = MagicMock()
+    ispyb_callback.ispyb = mock_ispyb_store
+
+    test_multi_rotation_params.rotation_scans[0].sample_id = 123
+    test_multi_rotation_params.rotation_scans[1].sample_id = 456
+    test_multi_rotation_params.rotation_scans[2].sample_id = 789
+
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [ispyb_callback],
+        oav_parameters_for_rotation,
+    )
+    assert deposition.mock_calls[0].args[1][0].data_collection_info.sample_id == 123
+    assert deposition.mock_calls[1].args[1][0].data_collection_info.sample_id == 456
+    assert deposition.mock_calls[2].args[1][0].data_collection_info.sample_id == 789
 
 
 def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(

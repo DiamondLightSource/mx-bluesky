@@ -8,6 +8,10 @@ from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
+from mx_bluesky.common.external_interaction.alerting import set_alerting_service
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
@@ -29,7 +33,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     tag_filter,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -156,6 +160,7 @@ class HyperionCallbackRunner:
     def __init__(self, dev_mode) -> None:
         setup_logging(dev_mode)
         log_info("Hyperion callback process started.")
+        set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
         self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()

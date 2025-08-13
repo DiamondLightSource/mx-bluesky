@@ -21,6 +21,14 @@ from mx_bluesky.common.parameters.components import WithSnapshot
         [
             {
                 "snapshot_directory": Path("/tmp"),
+                "snapshot_omegas_deg": [],
+                "use_grid_snapshots": True,
+            },
+            does_not_raise(),
+        ],
+        [
+            {
+                "snapshot_directory": Path("/tmp"),
                 "snapshot_omegas_deg": [10, 20, 30, 40],
                 "use_grid_snapshots": False,
             },

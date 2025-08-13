@@ -7,7 +7,11 @@ env:
   events:
     broadcast_status_events: false
 api:
-  port: 25565
+  url: http://localhost:25565
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
 stomp:
   enabled: true
-  host: i24-control.diamond.ac.uk
+  url: http://i24-control.diamond.ac.uk:61613
