@@ -1,5 +1,5 @@
 import os
-from enum import Enum
+from enum import Enum, StrEnum
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
@@ -12,6 +12,12 @@ from mx_bluesky.definitions import ROOT_DIR
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30
+
+GDA_DOMAIN_PROPERTIES_PATH = (
+    "tests/test_data/test_domain_properties"
+    if TEST_MODE
+    else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
+)
 
 
 @dataclass(frozen=True)
@@ -28,15 +34,18 @@ class DocDescriptorNames:
     FLYSCAN_RESULTS = "flyscan_results_obtained"
 
 
+def _get_oav_config_json_path():
+    if TEST_MODE:
+        return "tests/test_data/test_OAVCentring.json"
+    elif BEAMLINE == "i03":
+        return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+    else:
+        return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring.json"
+
+
 @dataclass(frozen=True)
 class OavConstants:
-    OAV_CONFIG_JSON = (
-        "tests/test_data/test_OAVCentring.json"
-        if TEST_MODE
-        else (
-            f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
-        )
-    )
+    OAV_CONFIG_JSON = _get_oav_config_json_path()
 
 
 @dataclass(frozen=True)
@@ -150,3 +159,12 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
+
+
+@dataclass
+class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
+
+
+class FeatureSettingources(
+    StrEnum
+): ...  # List of features and the name of that property in domain.properties

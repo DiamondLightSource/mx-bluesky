@@ -1,14 +1,4 @@
-from pydantic import Field
-
-from mx_bluesky.common.parameters.components import (
-    MxBlueskyParameters,
-    WithPandaGridScan,
-)
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
-
-
-class WithHyperionUDCFeatures(WithPandaGridScan):
-    features: HyperionFeatureFlags = Field(default=HyperionFeatureFlags())
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 
 
 class Wait(MxBlueskyParameters):

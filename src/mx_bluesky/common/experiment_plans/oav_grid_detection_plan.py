@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
+from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
@@ -49,6 +50,16 @@ def get_min_and_max_y_of_pin(
     return min_y, max_y
 
 
+def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
+    """We need to match the 0 and -90 that the fast grid scan performs but the order in
+    which we do the grid detection does not matter so we do the closest angle first."""
+    current_omega = yield from bps.rd(smargon.omega)
+    if current_omega < -45:
+        return [-90, 0]
+    else:
+        return [0, -90]
+
+
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
@@ -90,8 +101,7 @@ def grid_detection_plan(
 
     grid_width_pixels = int(grid_width_microns / microns_per_pixel_x)
 
-    # The FGS uses -90 so we need to match it
-    for angle in [0, -90]:
+    for angle in (yield from optimum_grid_detect_angles(smargon)):
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
