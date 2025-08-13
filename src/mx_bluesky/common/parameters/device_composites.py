@@ -29,7 +29,7 @@ from ophyd_async.epics.motor import Motor
 
 
 # FGS plan only uses the gonio to set omega to 0, no need to constrain to a more complex device
-class SampleStageWithMotor(Protocol):
+class SampleStageWithOmega(Protocol):
     omega: Motor
 
 
@@ -38,7 +38,7 @@ class FlyScanEssentialDevices:
     eiger: EigerDetector
     synchrotron: Synchrotron
     zocalo: ZocaloResults
-    sample_stage: SampleStageWithMotor
+    sample_stage: SampleStageWithOmega
     # TODO add fgs device
 
 

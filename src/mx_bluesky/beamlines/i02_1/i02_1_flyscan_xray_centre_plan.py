@@ -107,7 +107,7 @@ def i02_1_flyscan_xray_centre(
         eiger,
         synchrotron,
         zocalo,
-        sample_motors.omega,
+        sample_motors,
         zebra_fast_grid_scan,
         zebra,
         sample_motors,
