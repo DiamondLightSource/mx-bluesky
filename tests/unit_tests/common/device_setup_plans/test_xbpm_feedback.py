@@ -1,23 +1,17 @@
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
-from dodal.devices.baton import Baton
 from dodal.devices.xbpm_feedback import Pause
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 from ophyd.status import Status
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.testing import set_mock_value
 from tests.conftest import XBPMAndTransmissionWrapperComposite
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    IGNORE_FEEDBACK_THRESHOLD_PC,
-    feedback_wrapper_for_commissioning_mode,
-)
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
@@ -131,50 +125,3 @@ async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorato
 
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
     assert await composite.xbpm_feedback.pause_feedback.get_value() == Pause.RUN
-
-
-def test_feedback_wrapper_for_commissioning_mode_wraps_when_mode_enabled(
-    xbpm_and_transmission_wrapper_composite,
-    baton_in_commissioning_mode: Baton,
-    RE: RunEngine,
-):
-    xbpm_feedback = xbpm_and_transmission_wrapper_composite.xbpm_feedback
-    parent = MagicMock()
-    set_mock_value(xbpm_feedback.threshold_pc, 3)
-    parent.attach_mock(get_mock_put(xbpm_feedback.threshold_pc), "threshold_pc")
-
-    def my_plan():
-        yield from bps.null()
-        parent.plan_executed()
-
-    RE(
-        feedback_wrapper_for_commissioning_mode(
-            xbpm_feedback, baton_in_commissioning_mode, my_plan()
-        )
-    )
-
-    parent.assert_has_calls(
-        [
-            call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC, wait=True),
-            call.plan_executed(),
-            call.threshold_pc(3, wait=True),
-        ]
-    )
-
-
-def test_feedback_wrapper_for_commissioning_mode_does_not_adjust_threshold_if_commissioning_mode_not_enabled(
-    xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
-    baton: Baton,
-    RE: RunEngine,
-):
-    xbpm_feedback = xbpm_and_transmission_wrapper_composite.xbpm_feedback
-    parent = MagicMock()
-    set_mock_value(xbpm_feedback.threshold_pc, 3)
-
-    def my_plan():
-        yield from bps.null()
-        parent.plan_executed()
-
-    RE(feedback_wrapper_for_commissioning_mode(xbpm_feedback, baton, my_plan()))
-    parent.plan_executed.assert_called_once()
-    get_mock_put(xbpm_feedback.threshold_pc).assert_not_called()
