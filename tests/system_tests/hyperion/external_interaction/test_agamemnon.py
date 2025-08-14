@@ -12,11 +12,11 @@ from mx_bluesky.common.parameters.components import (
     IspybExperimentType,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
-    AGAMEMNON_URL,
     _get_parameters_from_url,
     _get_pin_type_from_agamemnon_collect_parameters,
     _SinglePin,
     create_parameters_from_agamemnon,
+    get_agamemnon_url,
 )
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -91,14 +91,14 @@ def use_real_agamemnon(request):
 
 @pytest.mark.requires(external="agamemnon")
 def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
-    params = _get_parameters_from_url(AGAMEMNON_URL + "/example/collect")
+    params = _get_parameters_from_url(get_agamemnon_url() + "/example/collect")
     loop_type = _get_pin_type_from_agamemnon_collect_parameters(params["collect"])
     assert loop_type == _SinglePin()
 
 
 @pytest.mark.requires(external="agamemnon")
 @pytest.mark.parametrize(
-    "use_real_agamemnon", [f"{AGAMEMNON_URL}/example/collect"], indirect=True
+    "use_real_agamemnon", [f"{get_agamemnon_url()}/example/collect"], indirect=True
 )
 def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_populated(
     use_real_agamemnon: MagicMock,
@@ -126,7 +126,7 @@ def test_given_test_agamemnon_instruction_then_load_centre_collect_parameters_po
 
 @pytest.mark.requires(external="agamemnon")
 @pytest.mark.parametrize(
-    "use_real_agamemnon", [f"{AGAMEMNON_URL}/example/wait"], indirect=True
+    "use_real_agamemnon", [f"{get_agamemnon_url()}/example/wait"], indirect=True
 )
 def test_create_parameters_from_agamemnon_decodes_wait_instruction(
     use_real_agamemnon: MagicMock,
