@@ -14,13 +14,9 @@ from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.baton import Baton
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    IGNORE_FEEDBACK_THRESHOLD_PC,
-)
 from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
     MxBlueskyParameters,
@@ -651,49 +647,6 @@ def test_run_forever_clears_error_status_on_resume(
     run_forever(udc_runner)
 
     future.result()  # Ensure successful completion
-
-
-@patch(
-    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
-    side_effect=[
-        [AGAMEMNON_WAIT_INSTRUCTION],
-        [],
-    ],
-)
-def test_feedback_wrapper_invoked_around_collection_loop_when_commissioning_mode_enabled(
-    mock_create_parameters_from_agamemnon: MagicMock,
-    udc_runner: PlanRunner,
-    executor: Executor,
-):
-    parent = MagicMock()
-    parent.attach_mock(
-        mock_create_parameters_from_agamemnon, "create_parameters_from_agamemnon"
-    )
-    feedback = find_device_in_context(udc_runner.context, "xbpm_feedback", XBPMFeedback)
-    parent.attach_mock(get_mock_put(feedback.threshold_pc), "threshold_pc")
-    baton = find_device_in_context(udc_runner.context, "baton", Baton)
-    set_mock_value(baton.commissioning, True)
-    set_mock_value(feedback.threshold_pc, 3)
-
-    async def wait_to_finish_then_shutdown():
-        while len(mock_create_parameters_from_agamemnon.mock_calls) != 2:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-
-        udc_runner.shutdown()
-
-    future = launch_test_in_runner_event_loop(
-        wait_to_finish_then_shutdown, udc_runner, executor
-    )
-    run_forever(udc_runner)
-    future.result()  # Ensure successful completion
-    parent.assert_has_calls(
-        [
-            call.threshold_pc(IGNORE_FEEDBACK_THRESHOLD_PC, wait=True),
-            call.create_parameters_from_agamemnon(),
-            call.create_parameters_from_agamemnon(),
-            call.threshold_pc(3, wait=True),
-        ]
-    )
 
 
 @patch(

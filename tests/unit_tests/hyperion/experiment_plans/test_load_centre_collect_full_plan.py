@@ -473,32 +473,6 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     new=MagicMock(),
 )
-def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction_and_commissioning_mode_enabled(
-    mock_rotation_scan: MagicMock,
-    composite: LoadCentreCollectComposite,
-    load_centre_collect_params: LoadCentreCollect,
-    oav_parameters_for_rotation: OAVParameters,
-    sim_run_engine: RunEngineSimulator,
-    grid_detection_callback_with_detected_grid,
-):
-    sim_run_engine.add_read_handler_for(composite.baton.commissioning, True)
-    sim_run_engine.simulate_plan(
-        load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
-        )
-    )
-
-    mock_rotation_scan.assert_called_once()
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
-    return_value=iter([]),
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    new=MagicMock(),
-)
 def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction_and_dummy_xtal_selection_chosen(
     mock_rotation_scan: MagicMock,
     composite: LoadCentreCollectComposite,
