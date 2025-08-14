@@ -4,6 +4,8 @@ from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from mx_bluesky.common.utils.log import LOGGER
 
+IGNORE_FEEDBACK_THRESHOLD_PC = 100000
+
 
 def unpause_xbpm_feedback_and_set_transmission_to_1(
     xbpm_feedback: XBPMFeedback, attenuator: BinaryFilterAttenuator
