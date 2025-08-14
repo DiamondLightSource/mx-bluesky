@@ -8,11 +8,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.baton import Baton
-from dodal.devices.xbpm_feedback import XBPMFeedback
 
-from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
-    feedback_wrapper_for_commissioning_mode,
-)
 from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
     UDCDefaultDevices,
     move_to_udc_default_state,
@@ -115,12 +111,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
     def collect_then_release() -> MsgGenerator:
-        xbpm_feedback = find_device_in_context(context, "xbpm_feedback", XBPMFeedback)
-        yield from feedback_wrapper_for_commissioning_mode(
-            xbpm_feedback,
-            baton,
-            bpp.contingency_wrapper(collect(), final_plan=release_baton),
-        )
+        yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
 
     context.run_engine(acquire_baton())
     _initialise_udc(context)

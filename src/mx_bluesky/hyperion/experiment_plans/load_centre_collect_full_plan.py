@@ -94,12 +94,7 @@ def load_centre_collect_full(
                 flyscan_event_handler,
             )
         except CrystalNotFoundException:
-            commissioning_mode_enabled = yield from bps.rd(
-                composite.baton.commissioning
-            )
-            if commissioning_mode_enabled:
-                LOGGER.info("Commissioning mode enabled, ignoring crystal not found.")
-            elif parameters.select_centres.ignore_xtal_not_found:
+            if parameters.select_centres.ignore_xtal_not_found:
                 LOGGER.info("Ignoring crystal not found due to parameter settings.")
             else:
                 raise
