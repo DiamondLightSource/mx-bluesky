@@ -55,7 +55,7 @@ in a couple of different ways.
 
    -  The ``hmz`` strings are homing commands which will reset the
       encoders counts to 0 for the axis. All three motors are homed by
-      sending the string: ``#1hmz#2hmz#3hmz``. In the plans this is done
+      sending the string: ``#5hmz#6hmz#7hmz``. In the plans this is done
       by triggering the home move:
 
       .. code:: python
@@ -74,7 +74,7 @@ in a couple of different ways.
 
 
 2. The stage motors can also be moved directly through the existing PVs
-   ``ME14E-MO-CHIP-01:{X,Y,Z}``, for example:
+   ``BL24I-EA-CHIP-01:{X,Y,Z}``, for example:
 
    .. code:: python
 
