@@ -2,13 +2,13 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../../" >
+<html lang="en" data-content_root="../../" >
 
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Architectural Decision Records &#8212; mx-bluesky 1.0.1.dev311+gc11132e1d documentation</title>
+    <title>Running Hyperion &#8212; mx-bluesky 1.0.1.dev311+gc11132e1d documentation</title>
   
   
   
@@ -27,27 +27,27 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=f75bf860"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="../../../_static/copybutton.js?v=30646c52"></script>
-    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/general/explanations/decisions';</script>
+    <script src="../../_static/documentation_options.js?v=f75bf860"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/hyperion/running';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
@@ -55,11 +55,10 @@
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
-    <link rel="icon" href="../../../_static/dls-favicon.ico"/>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="1. Record architecture decisions" href="decisions/0001-record-architecture-decisions.html" />
-    <link rel="prev" title="Update the tools" href="../how-to/dev-ops/update-tools.html" />
+    <link rel="icon" href="../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="Special PVs" href="pvs.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -81,7 +80,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="../../../search.html"
+      action="../../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -117,7 +116,7 @@
     
   
 
-<a class="navbar-brand logo" href="../../../index.html">
+<a class="navbar-brand logo" href="../../index.html">
   
   
   
@@ -128,8 +127,8 @@
       
     
     
-    <img src="../../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
-    <img src="../../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
     <p class="title logo__title">mx-bluesky</p>
@@ -146,15 +145,15 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../../index.html">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
     Developer Guide
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../user/hyperion/index.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
     Hyperion User Guide
   </a>
 </li>
@@ -287,15 +286,15 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../../index.html">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
     Developer Guide
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../user/hyperion/index.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
     Hyperion User Guide
   </a>
 </li>
@@ -382,76 +381,16 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Topics</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">General MX-Bluesky Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/profile-tests.html">Unit test performance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/get-started.html">Get Started with mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/contribute.html">Contributing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/create-a-release.html">Create a New Release</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/deploy-a-release.html">Deploy a New Release</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/update-tools.html">Update the tools</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">Architectural Decision Records</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0003-python-version-support.html">3. Python version support</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="callback_and_run_logic.html">Callbacks and Run Logic</a></li>
-<li class="toctree-l2"><a class="reference internal" href="containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
-</ul>
-</details></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../hyperion/index.html">Hyperion Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/readme.html">Hyperion Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="alerts.html">Alerts</a></li>
 
 
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pvs.html">Special PVs</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Running Hyperion</a></li>
 
-
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/deploying-hyperion.html">Building a deployable Docker image</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/system-tests.html">System Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
-</ul>
-</details></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Serial Crystallography on I24</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../serial-crystallography-on-i24/index.html">I24 Serial Crystallography</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../serial-crystallography-on-i24/project-planning/roadmap.html">Roadmap</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../serial-crystallography-on-i24/how-to/environment-setup.html">Set up for serial experiments on I24</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../serial-crystallography-on-i24/how-to/run-a-collection.html">Run a collection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../serial-crystallography-on-i24/how-to/pmac-docs.html">PMAC-run operations on I24 serial</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../serial-crystallography-on-i24/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../serial-crystallography-on-i24/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-</ul>
-</details></li>
-</ul>
-</details></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Murko Integration</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../murko-integration/index.html">Murko Integration</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../murko-integration/explanations/architecture.html">Murko Architecture</a></li>
-</ul>
-</details></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Code Map</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../code-map/index.html">Code Map</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../code-map/grid_detect_xrc.html">Grid Detect Then Xray Centre</a></li>
-</ul>
-</details></li>
 </ul>
 </div>
 </nav></div>
@@ -488,17 +427,14 @@
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="../../../index.html" class="nav-link" aria-label="Home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Hyperion User Guide</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">General MX-Bluesky Developer Guide</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Architectural Decision Records</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Running Hyperion</span></li>
   </ul>
 </nav>
 </div>
@@ -515,18 +451,16 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="architectural-decision-records">
-<h1>Architectural Decision Records<a class="headerlink" href="#architectural-decision-records" title="Link to this heading">#</a></h1>
-<p>We record major architectural decisions in Architecture Decision Records (ADRs),
-as <a class="reference external" href="http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions">described by Michael Nygard</a>.
-Below is the list of our current ADRs.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="decisions/0003-python-version-support.html">3. Python version support</a></li>
-</ul>
-</div>
+  <section id="running-hyperion">
+<h1>Running Hyperion<a class="headerlink" href="#running-hyperion" title="Link to this heading">#</a></h1>
+<p>When installed, Hyperion should be running automatically.</p>
+</section>
+<section id="restarting-hyperion">
+<h1>Restarting Hyperion<a class="headerlink" href="#restarting-hyperion" title="Link to this heading">#</a></h1>
+<p>If Hyperion is running as a standalone server installation, it can be (re)started from GDA by
+invoking <code class="docutils literal notranslate"><span class="pre">hyperion_restart()</span></code> from the Jython console.</p>
+<p>If Hyperion is running in a Kubernetes container, then it can be restarted by scaling the deployment or
+deleting the pod (which will cause a new instance to be created)</p>
 </section>
 
 
@@ -540,22 +474,13 @@ Below is the list of our current ADRs.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../how-to/dev-ops/update-tools.html"
+       href="pvs.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Update the tools</p>
+        <p class="prev-next-title">Special PVs</p>
       </div>
-    </a>
-    <a class="right-next"
-       href="decisions/0001-record-architecture-decisions.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">1. Record architecture decisions</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
@@ -569,10 +494,24 @@ Below is the list of our current ADRs.</p>
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Running Hyperion</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#restarting-hyperion">Restarting Hyperion</a></li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/developer/general/explanations/decisions.rst">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/user/hyperion/running.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -588,7 +527,7 @@ Below is the list of our current ADRs.</p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../../../_sources/developer/general/explanations/decisions.rst.txt"
+      <li><a href="../../_sources/user/hyperion/running.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
@@ -606,8 +545,8 @@ Below is the list of our current ADRs.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
