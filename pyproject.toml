@@ -144,6 +144,8 @@ filterwarnings = [
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
     #Remove when we drop python 3.11
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
+    # epicscorelibs requires setuptools >= 70.1
+    "ignore:.*The 'wheel' package is no longer the canonical location of the 'bdist_wheel' command.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
