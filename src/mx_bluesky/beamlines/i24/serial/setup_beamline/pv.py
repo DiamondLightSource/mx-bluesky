@@ -278,26 +278,23 @@ ioc13_gp13 = "BL24I-MO-IOC-13:GP13"
 ioc13_gp14 = "BL24I-MO-IOC-13:GP14"
 ioc13_gp15 = "BL24I-MO-IOC-13:GP15"
 
-# BL24I
+# BL24I beamline-specific labelled PVs
 me14e_filter = "BL24I-EA-CHIP-01:FILTER"  # to check
-me14e_filepath = "L24I-MO-CHIP-01:filePath"
-me14e_chip_name = "L24I-MO-CHIP-01:chipName"
-me14e_chipcapacity = "L24I-MO-CHIP-01:chipCapacity"
-me14e_blockcapacity = "L24I-MO-CHIP-01:blockCapacity"
-me14e_exptime = "L24I-MO-CHIP-01:expTime"
-me14e_dcdetdist = "L24I-MO-CHIP-01:detDistance"
+me14e_filepath = "BL24I-MO-CHIP-01:filePath"
+me14e_chip_name = "BL24I-MO-CHIP-01:chipName"
+me14e_chipcapacity = "BL24I-MO-CHIP-01:chipCapacity"
+me14e_blockcapacity = "BL24I-MO-CHIP-01:blockCapacity"
+me14e_exptime = "BL24I-MO-CHIP-01:expTime"
+me14e_dcdetdist = "BL24I-MO-CHIP-01:detDistance"
 
 # STEP-13 chip motion
-ioc13_filepath = "L24I-MO-CHIP-01:filePath"
-ioc13_chip_name = "L24I-MO-CHIP-01:chipName"
-ioc13_chipcapacity = "L24I-MO-CHIP-01:chipCapacity"
-ioc13_blockcapacity = "L24I-MO-CHIP-01:blockCapacity"
-ioc13_exptime = "L24I-MO-CHIP-01:expTime"
-ioc13_dcdetdist = "L24I-MO-CHIP-01:detDistance"
+ioc13_filepath = "BL24I-MO-CHIP-01:filePath"
+ioc13_chip_name = "BL24I-MO-CHIP-01:chipName"
+ioc13_chipcapacity = "BL24I-MO-CHIP-01:chipCapacity"
+ioc13_blockcapacity = "BL24I-MO-CHIP-01:blockCapacity"
+ioc13_exptime = "BL24I-MO-CHIP-01:expTime"
+ioc13_dcdetdist = "BL24I-MO-CHIP-01:detDistance"
 
-# BL24I General Purpose PV
-# one proposed format: Replace "me14e_" with "ioc13_"
-# that will required replacing all references to me14e placeholders
 me14e_gp1 = "BL24I-MO-IOC-13:GP1"
 me14e_gp2 = "BL24I-MO-IOC-13:GP2"
 me14e_gp3 = "BL24I-MO-IOC-13:GP3"
