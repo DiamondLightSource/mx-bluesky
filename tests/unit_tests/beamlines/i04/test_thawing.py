@@ -10,7 +10,7 @@ from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
-from dodal.devices.thawer import Thawer, ThawerStates
+from dodal.devices.thawer import OnOff, Thawer
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
@@ -110,7 +110,7 @@ def _do_thaw_and_confirm_cleanup(
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer.control).call_args_list[-1]
-    assert last_thawer_call == call(ThawerStates.OFF, wait=ANY)
+    assert last_thawer_call == call(OnOff.OFF, wait=ANY)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
     assert last_velocity_call == call(initial_velocity, wait=ANY)
 
