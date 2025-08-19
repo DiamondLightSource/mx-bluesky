@@ -15,7 +15,7 @@ from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -475,7 +475,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.OUT
+        and msg.args[0] == InOut.OUT
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
@@ -552,7 +552,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         rotation_scan_simulated_messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.IN
+        and msg.args[0] == InOut.IN
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(
