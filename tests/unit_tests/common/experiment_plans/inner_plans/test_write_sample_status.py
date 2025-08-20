@@ -38,7 +38,7 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
     mock_expeye = MagicMock()
     with (
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
+            "mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback"
             ".ExpeyeInteraction",
             return_value=mock_expeye,
         ),
@@ -55,7 +55,7 @@ def test_depositing_sample_loaded(
 ):
     mock_expeye = MagicMock()
     with patch(
-        "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
+        "mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback"
         ".ExpeyeInteraction",
         return_value=mock_expeye,
     ):

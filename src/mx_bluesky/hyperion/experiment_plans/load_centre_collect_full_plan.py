@@ -69,7 +69,11 @@ def load_centre_collect_full(
                 "visit": parameters.visit,
                 "container": parameters.sample_puck,
             },
-            "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
+            "activate_callbacks": [
+                "BeamDrawingCallback",
+                "SampleHandlingCallback",
+                "AlertOnContainerChange",
+            ],
             "with_snapshot": parameters.multi_rotation_scan.model_dump_json(
                 include=WithSnapshot.model_fields.keys()  # type: ignore
             ),
