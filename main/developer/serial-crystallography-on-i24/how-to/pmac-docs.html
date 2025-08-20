@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PMAC-run operations on I24 serial &#8212; mx-bluesky 1.0.1.dev313+gaf76a6519 documentation</title>
+    <title>PMAC-run operations on I24 serial &#8212; mx-bluesky 1.0.1.dev314+g179eb2e31 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=9b73ec18"></script>
+    <script src="../../../_static/documentation_options.js?v=ca4483bb"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -557,7 +557,7 @@ motor Y by 10 motor steps:</p>
 </li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">hmz</span></code> strings are homing commands which will reset the
 encoders counts to 0 for the axis. All three motors are homed by
-sending the string: <code class="docutils literal notranslate"><span class="pre">#1hmz#2hmz#3hmz</span></code>. In the plans this is done
+sending the string: <code class="docutils literal notranslate"><span class="pre">#5hmz#6hmz#7hmz</span></code>. In the plans this is done
 by triggering the home move:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="n">pmac</span><span class="o">.</span><span class="n">home</span><span class="p">)</span>
 </pre></div>
@@ -574,7 +574,7 @@ code is <code class="docutils literal notranslate"><span class="pre">!x0y0z0</sp
 </ul>
 </li>
 <li><p>The stage motors can also be moved directly through the existing PVs
-<code class="docutils literal notranslate"><span class="pre">ME14E-MO-CHIP-01:{X,Y,Z}</span></code>, for example:</p>
+<code class="docutils literal notranslate"><span class="pre">BL24I-EA-CHIP-01:{X,Y,Z}</span></code>, for example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">pmac</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pmac</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
