@@ -5,7 +5,7 @@ from pydantic import BaseModel, model_validator
 from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
     WithCentreSelection,
-    WithSample,
+    WithRequiredSample,
     WithVisit,
 )
 from mx_bluesky.hyperion.parameters.robot_load import (
@@ -25,7 +25,7 @@ def construct_from_values(parent_context: dict, child_dict: dict, t: type[T]) ->
 class LoadCentreCollect(
     MxBlueskyParameters,
     WithVisit,
-    WithSample,
+    WithRequiredSample,
     WithCentreSelection,
 ):
     """Experiment parameters to perform the combined robot load,
@@ -51,7 +51,7 @@ class LoadCentreCollect(
 
         keys_from_outer_load_centre_collect = (
             MxBlueskyParameters.model_fields.keys()
-            | WithSample.model_fields.keys()
+            | WithRequiredSample.model_fields.keys()
             | WithVisit.model_fields.keys()
         )
         duplicated_robot_load_then_centre_keys = (

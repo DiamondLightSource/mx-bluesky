@@ -3,7 +3,7 @@ from pydantic import Field
 from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
     WithOptionalEnergyChange,
-    WithSample,
+    WithRequiredSample,
     WithSnapshot,
     WithVisit,
 )
@@ -17,7 +17,11 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 
 
 class RobotLoadAndEnergyChange(
-    MxBlueskyParameters, WithSample, WithSnapshot, WithOptionalEnergyChange, WithVisit
+    MxBlueskyParameters,
+    WithRequiredSample,
+    WithSnapshot,
+    WithOptionalEnergyChange,
+    WithVisit,
 ):
     thawing_time: float = Field(default=HardwareConstants.THAWING_TIME)
 
