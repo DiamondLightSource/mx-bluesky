@@ -1,3 +1,4 @@
+import logging
 import os
 from logging import FileHandler
 from logging.handlers import TimedRotatingFileHandler
@@ -18,6 +19,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 from ....conftest import clear_log_handlers
 
 TEST_GRAYLOG_PORT = 5555
+OPHYD_ASYNC_LOGGER = logging.getLogger("ophyd_async")
 
 
 @pytest.fixture(scope="function")
@@ -253,3 +255,20 @@ def test_default_logging_setup_integrate_logs_flag(
         "hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True, integrate_all_logs=False
     )
     mock_integrate_logs.assert_not_called()
+
+
+@pytest.mark.skip_log_setup
+def test_logging_correct_after_running_setup_debug_logging_for_blueapi_plan(
+    clear_and_mock_loggers,
+):
+    mock_filehandler_emit, _ = clear_and_mock_loggers
+    log.setup_debug_logging_for_blueapi_plan("test.log", dev_mode=True)
+    log.LOGGER.debug("mx-bluesky-log-msg")
+    OPHYD_ASYNC_LOGGER.debug("ophyd_async_logger")
+    mock_filehandler_emit.assert_not_called()
+    OPHYD_ASYNC_LOGGER.error("error happens")
+    assert len(mock_filehandler_emit.mock_calls) == 3
+    messages = [call.args[0].message for call in mock_filehandler_emit.mock_calls]
+    assert "mx-bluesky-log-msg" in messages
+    assert "ophyd_async_logger" in messages
+    assert "error happens" in messages

@@ -65,7 +65,7 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.log import LOGGER, setup_debug_logging_for_blueapi_plan
 from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -110,6 +110,7 @@ def i04_grid_detect_then_xray_centre(
     isn't running in a continious Bluesky UDC loop, we take additional steps in beamline
     tidy-up.
     """
+    setup_debug_logging_for_blueapi_plan()
 
     composite = GridDetectThenXRayCentreComposite(
         eiger,

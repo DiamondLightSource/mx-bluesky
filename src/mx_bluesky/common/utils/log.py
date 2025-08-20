@@ -9,6 +9,7 @@ from dodal.log import (
     DodalLogHandlers,
     integrate_bluesky_and_ophyd_logging,
     set_up_all_logging_handlers,
+    set_up_DEBUG_memory_handler,
 )
 from dodal.log import LOGGER as dodal_logger
 
@@ -84,6 +85,31 @@ def do_default_logging_setup(
 
     global __logger_handlers
     __logger_handlers = handlers
+
+
+def setup_debug_logging_for_blueapi_plan(filename="mx-bluesky-debug", dev_mode=False):
+    """Set-up debug logging when running a BlueAPI application.
+
+    General logging is managed through BlueAPI helm configuration when running a
+    BlueAPI application. However, there is currently no easy way to save debug logs
+    in a sensible way. Run this function at the entry point to your BlueAPI plan
+    to get debug log files saved with the behaviour specified in set_up_DEBUG_memory_handler.
+
+    IMPORTANT: For these logging files to persist beyond a pods lifetime,
+    within you BlueAPI helm configuration,you must mount the logging directory to a PVC
+
+    See https://github.com/DiamondLightSource/blueapi/issues/1170 for
+    a longer term solution
+    """
+
+    logging_path, debug_logging_path = _get_logging_dirs(dev_mode=dev_mode)
+    set_up_DEBUG_memory_handler(
+        dodal_logger,
+        debug_logging_path or logging_path,
+        filename,
+        ERROR_LOG_BUFFER_LINES,
+    )
+    integrate_bluesky_and_ophyd_logging(dodal_logger)
 
 
 def _get_debug_handler() -> CircularMemoryHandler:

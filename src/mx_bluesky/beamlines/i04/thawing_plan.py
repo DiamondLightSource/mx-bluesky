@@ -13,6 +13,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
+from mx_bluesky.common.utils.log import setup_debug_logging_for_blueapi_plan
 
 
 def thaw_and_stream_to_redis(
@@ -24,6 +25,7 @@ def thaw_and_stream_to_redis(
     oav: OAV = inject("oav"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
+    setup_debug_logging_for_blueapi_plan()
     zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
     sample_id = yield from bps.rd(robot.sample_id)
 
@@ -90,6 +92,7 @@ def thaw(
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
 ) -> MsgGenerator:
+    setup_debug_logging_for_blueapi_plan()
     yield from _thaw(time_to_thaw, rotation, thawer, smargon)
 
 
