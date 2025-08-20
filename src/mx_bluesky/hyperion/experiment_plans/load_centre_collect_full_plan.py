@@ -54,7 +54,6 @@ def load_centre_collect_full(
     * If X-ray centring finds a diffracting centre then move to that centre and
     * do a collection with the specified parameters.
     """
-
     get_hyperion_config_client().refresh_cache()
 
     if not oav_params:
