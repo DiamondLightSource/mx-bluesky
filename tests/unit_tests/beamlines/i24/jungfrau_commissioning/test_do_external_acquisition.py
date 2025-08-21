@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -14,10 +15,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition imp
 )
 
 
-async def _do_sleep():
-    await asyncio.sleep(0)
-
-
 def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog):
     @run_decorator()
     def test_plan():
@@ -29,7 +26,7 @@ def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog)
             set_mock_value(jungfrau._writer._drv.num_captured, val)
 
             # Let status update
-            yield from bps.wait_for([_do_sleep])
+            yield from bps.wait_for([partial(asyncio.sleep, 0)])
         yield from bps.wait("jf_complete")
 
     jungfrau._controller.arm = AsyncMock()
