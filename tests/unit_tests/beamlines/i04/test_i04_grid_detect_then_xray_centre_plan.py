@@ -13,7 +13,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraFastGridScan,
+    ZebraThreeDFastGridScan,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -51,7 +51,7 @@ def i04_grid_detect_then_xrc_default_params(
     backlight: Backlight,
     beamstop_phase1: Beamstop,
     dcm: BaseDCM,
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraThreeDFastGridScan,
     flux: Flux,
     oav: OAV,
     pin_tip_detection_with_found_pin: PinTipDetection,

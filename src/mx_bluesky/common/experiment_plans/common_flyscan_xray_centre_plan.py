@@ -290,6 +290,7 @@ def run_gridscan(
 
     # GDA's gridscans requires Z steps to be at 0, so make sure we leave this device
     # in a GDA-happy state.
+    # TODO if fgs motors is 3d then do the below
     yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 
