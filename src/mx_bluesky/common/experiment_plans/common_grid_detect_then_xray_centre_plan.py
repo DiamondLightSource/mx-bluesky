@@ -7,7 +7,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -168,7 +168,7 @@ def detect_grid_and_do_gridscan(
 
     yield from bps.abs_set(
         composite.backlight,
-        BacklightPosition.OUT,
+        InOut.OUT,
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
 

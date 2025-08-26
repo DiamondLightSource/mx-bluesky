@@ -10,7 +10,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
-from dodal.devices.thawer import Thawer, ThawerStates
+from dodal.devices.thawer import OnOff, Thawer
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
 
@@ -117,7 +117,7 @@ def _thaw(
 
     def do_thaw():
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, ThawerStates.ON, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
         yield from bps.rel_set(smargon.omega, rotation, wait=True)
         if plan_between_rotations:
             yield from plan_between_rotations()
@@ -125,7 +125,7 @@ def _thaw(
 
     def cleanup():
         yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, ThawerStates.OFF, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
     # Always cleanup even if there is a failure
     yield from bpp.contingency_wrapper(
