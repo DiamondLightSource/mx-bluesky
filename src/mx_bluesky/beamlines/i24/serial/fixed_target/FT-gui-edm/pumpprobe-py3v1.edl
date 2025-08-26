@@ -195,7 +195,7 @@ x 155
 y 428
 w 75
 h 25
-controlPv "ME14E-MO-CHIP-01:expTime"
+controlPv "BL24I-EA-CHIP-01:expTime"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -216,7 +216,7 @@ x 422
 y 398
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP104"
+controlPv "BL24I-MO-IOC-01:GP104"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -553,7 +553,7 @@ x 422
 y 431
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP105"
+controlPv "BL24I-MO-IOC-01:GP105"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -574,7 +574,7 @@ x 422
 y 464
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP106"
+controlPv "BL24I-MO-IOC-01:GP106"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -595,7 +595,7 @@ x 422
 y 495
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP107"
+controlPv "BL24I-MO-IOC-01:GP107"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -616,7 +616,7 @@ x 422
 y 526
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP108"
+controlPv "BL24I-MO-IOC-01:GP108"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -658,7 +658,7 @@ x 156
 y 382
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP103"
+controlPv "BL24I-MO-IOC-01:GP103"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -866,7 +866,7 @@ x 141
 y 637
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP109"
+controlPv "BL24I-MO-IOC-01:GP109"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1058,7 +1058,7 @@ fontAlign "center"
 fgColor index 38
 bgColor index 0
 useDisplayBg
-visPv "ME14E-MO-IOC-01:GP109"
+visPv "BL24I-MO-IOC-01:GP109"
 visMin "0.00001"
 visMax "999"
 value {
@@ -1158,7 +1158,7 @@ x 144
 y 124
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP103"
+controlPv "BL24I-MO-IOC-01:GP103"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1451,7 +1451,7 @@ x 144
 y 155
 w 75
 h 25
-controlPv "ME14E-MO-IOC-01:GP110"
+controlPv "BL24I-MO-IOC-01:GP110"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1573,7 +1573,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "ME14E-MO-IOC-01:GP111"
+controlPv "BL24I-MO-IOC-01:GP111"
 font "arial-medium-r-18.0"
 numItems 2
 symbolTag {

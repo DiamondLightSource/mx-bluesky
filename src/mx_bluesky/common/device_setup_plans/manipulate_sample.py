@@ -5,7 +5,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
 )
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import CombinedMove, Smargon
 
@@ -22,7 +22,7 @@ def setup_sample_environment(
     group="setup_senv",
 ):
     """Move the aperture into required position, move out the backlight."""
-    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
+    yield from bps.abs_set(backlight, InOut.OUT, group=group)
 
     aperture_value = (
         None
