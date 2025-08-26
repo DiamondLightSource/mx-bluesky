@@ -6,7 +6,7 @@ from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
-from mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback import (
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
@@ -23,7 +23,7 @@ TEST_CONTAINER = 8
 @pytest.fixture()
 def mock_expeye_cls():
     with patch(
-        "mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback"
+        "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback"
         ".ExpeyeInteraction"
     ) as mock_expeye:
         yield mock_expeye

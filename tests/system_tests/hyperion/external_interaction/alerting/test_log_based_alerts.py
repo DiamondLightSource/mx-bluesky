@@ -16,7 +16,7 @@ from mx_bluesky.common.external_interaction.alerting import (
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
-from mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback import (
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
@@ -58,7 +58,7 @@ def test_alert_to_graylog():
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback.ExpeyeInteraction",
+    "mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback.ExpeyeInteraction",
     MagicMock(),
 )
 @pytest.mark.requires(external="graylog")

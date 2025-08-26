@@ -3,7 +3,7 @@ from enum import StrEnum
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 
-from mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback import (
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
 from mx_bluesky.common.utils.exceptions import SampleException

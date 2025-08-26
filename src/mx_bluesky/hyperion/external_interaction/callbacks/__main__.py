@@ -18,11 +18,11 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.udc.alert_on_container_change import (
     AlertOnContainerChange,
-)
-from mx_bluesky.common.external_interaction.callbacks.udc.sample_handling_callback import (
-    SampleHandlingCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
