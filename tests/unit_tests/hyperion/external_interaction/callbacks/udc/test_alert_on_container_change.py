@@ -5,7 +5,7 @@ from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
-from mx_bluesky.common.external_interaction.callbacks.udc.alert_on_container_change import (
+from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
     AlertOnContainerChange,
 )
 

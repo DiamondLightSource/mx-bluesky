@@ -21,9 +21,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.udc.alert_on_container_change import (
-    AlertOnContainerChange,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -35,6 +32,9 @@ from mx_bluesky.common.utils.log import (
     NEXUS_LOGGER,
     _get_logging_dirs,
     tag_filter,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
+    AlertOnContainerChange,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
