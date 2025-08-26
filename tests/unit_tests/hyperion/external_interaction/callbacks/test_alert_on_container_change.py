@@ -1,24 +1,29 @@
+from functools import partial
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
+from dodal.devices.robot import BartRobot
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
+from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
+    robot_load_and_snapshots,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
     AlertOnContainerChange,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 TEST_SAMPLE_ID = 10
 TEST_VISIT = "cm1234-67"
 
 
-def dummy_plan_with_container(container: int):
-    def my_plan():
-        yield from bps.null()
-
+def wrap_plan(container: int, plan):
     yield from bpp.run_wrapper(
-        my_plan(),
+        plan(),
         md={
             "metadata": {
                 "container": container,
@@ -30,53 +35,85 @@ def dummy_plan_with_container(container: int):
     )
 
 
-@patch.dict("os.environ", {"BEAMLINE": "i03"})
-def test_given_callback_just_initialised_then_alerts_on_first_container(
-    RE: RunEngine, mock_alert_service: MagicMock
-):
-    RE.subscribe(AlertOnContainerChange())
+def dummy_plan_with_container(robot: BartRobot, container: int):
+    def my_plan():
+        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_PRE_LOAD)
+        yield from bps.read(robot)
+        yield from bps.save()
 
-    RE(dummy_plan_with_container(5))
-
-    mock_alert_service.raise_alert.assert_called_once_with(
-        "UDC moved on to puck 5 on i03",
-        "Hyperion finished container None and moved on to 5",
-        {
-            Metadata.SAMPLE_ID: "10",
-            Metadata.VISIT: "cm1234-67",
-            Metadata.CONTAINER: "5",
-        },
-    )
+    yield from wrap_plan(container, my_plan)
 
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
 def test_when_data_collected_on_the_same_container_then_only_alerts_for_first_one(
-    RE: RunEngine, mock_alert_service: MagicMock
+    RE: RunEngine, mock_alert_service: MagicMock, robot: BartRobot
 ):
     RE.subscribe(AlertOnContainerChange())
 
-    RE(dummy_plan_with_container(5))
+    set_mock_value(robot.current_puck, 5)
 
-    mock_alert_service.reset_mock()
-
-    RE(dummy_plan_with_container(5))
-    RE(dummy_plan_with_container(5))
-    RE(dummy_plan_with_container(5))
+    RE(dummy_plan_with_container(robot, 5))
+    RE(dummy_plan_with_container(robot, 5))
+    RE(dummy_plan_with_container(robot, 5))
 
     mock_alert_service.raise_alert.assert_not_called()
 
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
 def test_when_data_collected_on_new_container_then_only_alerts(
-    RE: RunEngine, mock_alert_service: MagicMock
+    RE: RunEngine,
+    mock_alert_service: MagicMock,
+    robot: BartRobot,
 ):
     RE.subscribe(AlertOnContainerChange())
+    set_mock_value(robot.current_puck, 5)
 
-    RE(dummy_plan_with_container(5))
+    RE(dummy_plan_with_container(robot, 10))
 
-    mock_alert_service.reset_mock()
+    mock_alert_service.raise_alert.assert_called_once_with(
+        "UDC moved on to puck 10 on i03",
+        "Hyperion finished container 5 and moved on to 10",
+        {
+            Metadata.SAMPLE_ID: "10",
+            Metadata.VISIT: "cm1234-67",
+            Metadata.CONTAINER: "10",
+        },
+    )
 
-    RE(dummy_plan_with_container(10))
+
+@patch.dict("os.environ", {"BEAMLINE": "i03"})
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_robot_load"
+)
+def test_robot_load_and_snapshots_triggers_alert(
+    patched_robot_load: MagicMock,
+    RE: RunEngine,
+    mock_alert_service: MagicMock,
+    robot: BartRobot,
+):
+    RE.subscribe(AlertOnContainerChange())
+    set_mock_value(robot.current_puck, 5)
+
+    mock_composite = MagicMock()
+    mock_composite.robot = robot
+
+    patched_robot_load.side_effect = NotImplementedError()
+
+    with pytest.raises(NotImplementedError):
+        RE(
+            wrap_plan(
+                10,
+                partial(
+                    robot_load_and_snapshots,
+                    mock_composite,
+                    MagicMock(),
+                    MagicMock(),
+                    1,
+                    2,
+                    None,
+                ),
+            )
+        )
 
     mock_alert_service.raise_alert.assert_called_once_with(
         "UDC moved on to puck 10 on i03",
