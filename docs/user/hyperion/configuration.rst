@@ -22,4 +22,4 @@ Configuration of several properties that control Hyperion execution are availabl
     "gda.mx.hyperion.use_panda_for_gridscans", "boolean", "If true then the Panda is used instead of the Zebra for XRC gridscans" 
     "gda.mx.hyperion.xrc.use_gpu_results", "boolean", "If true, then zocalo gridscan processing uses the GPU results"
     "gda.mx.hyperion.xrc.use_roi_mode", "boolean", "If true then ROI mode is used."
-    "gda.mx.udc.hyperion.enable", "boolean",  "Enables baton passing to Hyperion."
+    "gda.mx.udc.hyperion.enable", "boolean",  "Enables Hyperion UDC mode."
