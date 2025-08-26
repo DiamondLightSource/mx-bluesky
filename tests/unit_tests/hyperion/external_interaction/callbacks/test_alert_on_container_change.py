@@ -5,6 +5,7 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
+from dodal.devices.backlight import Backlight
 from dodal.devices.robot import BartRobot
 from ophyd_async.testing import set_mock_value
 
@@ -90,12 +91,14 @@ def test_robot_load_and_snapshots_triggers_alert(
     RE: RunEngine,
     mock_alert_service: MagicMock,
     robot: BartRobot,
+    backlight: Backlight,
 ):
     RE.subscribe(AlertOnContainerChange())
     set_mock_value(robot.current_puck, 5)
 
     mock_composite = MagicMock()
     mock_composite.robot = robot
+    mock_composite.backlight = backlight
 
     patched_robot_load.side_effect = NotImplementedError()
 
