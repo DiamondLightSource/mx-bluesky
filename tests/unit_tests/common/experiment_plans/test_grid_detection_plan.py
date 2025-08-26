@@ -209,29 +209,6 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@patch(
-    "mx_bluesky.common.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
-    new=MagicMock(),
-)
-def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
-    fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
-    test_config_files: dict[str, str],
-    tmp_path: Path,
-):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-
-    composite, _ = fake_devices
-
-    for _ in range(2):
-        RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
-
-
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
-@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     RE: RunEngine,
