@@ -10,7 +10,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraThreeDFastGridScan,
+    ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -62,7 +62,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     beamstop: Beamstop
     dcm: BaseDCM
     detector_motion: DetectorMotion
-    zebra_fast_grid_scan: ZebraThreeDFastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection

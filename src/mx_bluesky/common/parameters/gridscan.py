@@ -4,7 +4,7 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
-    ZebraGridScanParams,
+    ZebraGridScanParamsThreeD,
 )
 from dodal.utils import get_beamline_name
 from pydantic import Field, PrivateAttr
@@ -115,8 +115,8 @@ class SpecifiedThreeDGridScan(
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @property
-    def FGS_params(self) -> ZebraGridScanParams:
-        return ZebraGridScanParams(
+    def FGS_params(self) -> ZebraGridScanParamsThreeD:
+        return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,

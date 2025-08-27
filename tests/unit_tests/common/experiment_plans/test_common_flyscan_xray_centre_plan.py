@@ -12,7 +12,7 @@ from dodal.beamlines import i03
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.fast_grid_scan import ZebraThreeDFastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
@@ -229,7 +229,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraThreeDFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -247,7 +247,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraThreeDFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -447,7 +447,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
-        zebra_fast_grid_scan: ZebraThreeDFastGridScan,
+        zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     ):
         id_1, id_2 = 100, 200
 

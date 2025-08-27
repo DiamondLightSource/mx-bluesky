@@ -13,7 +13,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraThreeDFastGridScan,
+    ZebraFastGridScanThreeD,
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
@@ -80,7 +80,7 @@ def i04_grid_detect_then_xray_centre(
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     dcm: BaseDCM = inject("dcm"),
-    zebra_fast_grid_scan: ZebraThreeDFastGridScan = inject("zebra_fast_grid_scan"),
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
     oav: OAV = inject("oav"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
