@@ -1,17 +1,18 @@
-# hyperion
+# Hyperion Overview
 
 Repository for the Hyperion project to implement Unattended Data Collections on the Diamond MX beamlines using the [BlueSky](https://nsls-ii.github.io/bluesky/) / Ophyd framework from BNL.
 
-Currently the software is able to:
+The software is able to:
 
+- Fetch and decode UDC instructions from Agamemnon
+- Mount/unmount samples
+- Change energy of the beamline
 - Centre a sample, first using an optical camera, then using an xray grid scan. This centring is done at two orthogonal angles so that the sample is centred in 3D.
 - Perform a rotation scan to take diffraction data of the sample
 
 Left to do is:
 
-- Mount/unmount samples
 - Set up the beamline to be in a standard state for collection
-- Change energy of the beamline
 
 # Development Installation
 
@@ -41,8 +42,6 @@ If in a dev environment Hyperion will log to a local graylog instance instead an
 
 This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
 
-The hyperion python module can also be run directly without the startup script. It takes the same command line options, including:
-
 ## Testing
 
 Unit tests can be run with `pytest --random-order`. To see log output from tests you can turn on logging with the `--logging` command line option and then use the `-s` command line option to print logs into the console. So to run the unit tests such that all logs are at printed to the terminal, you can use `python -m pytest --random-order --logging -s`. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the `-k "<test name pattern>"` option.
@@ -52,6 +51,11 @@ To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_sta
 ## Tracing
 
 Tracing information (the time taken to complete different steps of experiments) is collected by an [OpenTelemetry](https://opentelemetry.io/) tracer, and currently we export this information to a local Jaeger monitor (if available). To see the tracing output, run the [Jaeger all-in-one container](https://www.jaegertracing.io/docs/1.6/getting-started/), and go to the web interface at http://localhost:16686.
+
+
+# REST API (GDA Mode)
+
+When running in GDA mode, Hyperion offers the following API
 
 ## Starting a scan
 
@@ -86,3 +90,7 @@ To make the app write the `DEBUG` level logs stored in the `CircularMemoryHandle
 curl -X PUT http://127.0.0.1:5005/flush_debug_log
 
 ```
+
+# REST API (UDC Mode)
+
+In UDC Mode, the only endpoint available is the `/status` endpoint.

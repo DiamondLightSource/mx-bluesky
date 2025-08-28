@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
@@ -371,7 +371,7 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.IN,
+        and msg.args[0] == InOut.IN,
     )
 
     backlight_move_group = msgs[0].kwargs.get("group")

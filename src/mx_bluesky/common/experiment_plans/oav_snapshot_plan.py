@@ -4,7 +4,7 @@ from typing import Protocol
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -36,7 +36,7 @@ def setup_beamline_for_OAV(
 ):
     max_vel = yield from bps.rd(smargon.omega.max_velocity)
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
-    yield from bps.abs_set(backlight, BacklightPosition.IN, group=group)
+    yield from bps.abs_set(backlight, InOut.IN, group=group)
     yield from bps.abs_set(
         aperture_scatterguard.selected_aperture, ApertureValue.OUT_OF_BEAM, group=group
     )
