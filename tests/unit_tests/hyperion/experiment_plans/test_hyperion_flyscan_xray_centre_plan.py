@@ -17,7 +17,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
+    FlyScanBaseComposite,
     common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
@@ -153,7 +153,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         sim_run_engine: RunEngineSimulator,
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: FlyScanBaseComposite,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
@@ -196,7 +196,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_kickoff_and_complete: MagicMock,
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: FlyScanBaseComposite,
         beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
     ):

@@ -25,7 +25,7 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    FlyScanEssentialDevices,
+    FlyScanBaseComposite,
 )
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
@@ -33,7 +33,7 @@ from mx_bluesky.common.parameters.device_composites import (
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
+class HyperionFlyScanXRayCentreComposite(FlyScanBaseComposite):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard

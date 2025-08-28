@@ -15,7 +15,6 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
-    ZOCALO_STAGE_GROUP,
     XrcResult,
     get_full_processing_results,
 )
@@ -26,26 +25,13 @@ from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
-    LogUidTaggingCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
-    ZocaloCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
-)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
-    EnvironmentConstants,
     GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import FlyScanBaseComposite
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
@@ -54,17 +40,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-
-# Hyperion handles its own callbacks via an external process. Other beamlines using this plan should wrap their entry point with
-# @bpp.subs_decorator(CALLBACKS_FOR_SUBS_DECORATOR)
-CALLBACKS_FOR_SUBS_DECORATOR = [
-    GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
-    GridscanISPyBCallback(
-        param_type=SpecifiedThreeDGridScan,
-        emit=ZocaloCallback(PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV),
-    ),
-    LogUidTaggingCallback(),
-]
 
 
 @dataclasses.dataclass
@@ -77,16 +52,12 @@ class BeamlineSpecificFGSFeatures:
         ..., MsgGenerator
     ]  # Eventually replace with https://github.com/DiamondLightSource/mx-bluesky/issues/819
     read_during_collection_plan: Callable[..., MsgGenerator]
-    get_xrc_results_from_zocalo: bool
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
-    """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
+def generic_tidy(xrc_composite: FlyScanBaseComposite, wait=True) -> MsgGenerator:
+    """Turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
-    LOGGER.info("Tidying up Zocalo")
     group = "generic_tidy"
-    # make sure we don't consume any other results
-    yield from bps.unstage(xrc_composite.zocalo, group=group)
 
     # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
     LOGGER.info("Turning off Eiger dev/shm streaming")
@@ -106,7 +77,6 @@ def construct_beamline_specific_FGS_features(
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: list[Readable],
     signals_to_read_during_collection: list[Readable],
-    get_xrc_results_from_zocalo: bool = False,
 ) -> BeamlineSpecificFGSFeatures:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
@@ -149,19 +119,18 @@ def construct_beamline_specific_FGS_features(
         fgs_motors,
         read_pre_flyscan_plan,
         read_during_collection_plan,
-        get_xrc_results_from_zocalo,
     )
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices,
+    composite: FlyScanBaseComposite,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
-        composite (FlyScanEssentialDevices): Devices required to perform this plan.
+        composite (FlyScanBaseComposite): Devices required to perform this plan.
 
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
 
@@ -194,24 +163,18 @@ def common_flyscan_xray_centre(
                 ],
             }
         )
+        # todo make decorator which stages and unstages zocalo around GRIDSCAN_OUTER as well as fetches results
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices,
+            fgs_composite: FlyScanBaseComposite,
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
             yield from beamline_specific.setup_trigger_plan(fgs_composite, parameters)
 
             LOGGER.info("Starting grid scan")
-            yield from bps.stage(
-                fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
-            )  # connect to zocalo and make sure the queue is clear
             yield from run_gridscan(fgs_composite, params, beamline_specific)
-
             LOGGER.info("Grid scan finished")
-
-            if beamline_specific.get_xrc_results_from_zocalo:
-                yield from _fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
 
         yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
 
@@ -219,6 +182,7 @@ def common_flyscan_xray_centre(
     yield from _decorated_flyscan()
 
 
+# TODO move this func somewhere else
 def _fetch_xrc_results_from_zocalo(
     zocalo_results: ZocaloResults,
     parameters: SpecifiedThreeDGridScan,
@@ -259,7 +223,7 @@ def _fetch_xrc_results_from_zocalo(
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
 @bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_MAIN})
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices,
+    fgs_composite: FlyScanBaseComposite,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):

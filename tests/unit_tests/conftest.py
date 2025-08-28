@@ -32,7 +32,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
+    FlyScanBaseComposite,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -348,7 +348,7 @@ async def fake_fgs_composite(
     panda,
     backlight,
 ):
-    fake_composite = FlyScanEssentialDevices(
+    fake_composite = FlyScanBaseComposite(
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
         smargon=smargon,

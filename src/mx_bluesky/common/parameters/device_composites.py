@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
 from dodal.devices.aperturescatterguard import (
@@ -10,7 +10,9 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraFastGridScanThreeD,
+    FastGridScanCommon,
+    GridScanParamsCommon,
+    GridScanParamsThreeD,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -27,19 +29,28 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.epics.motor import Motor
 
-
 # FGS plan only uses the gonio to set omega to 0, no need to constrain to a more complex device
+
+
+@runtime_checkable
 class SampleStageWithOmega(Protocol):
     omega: Motor
 
 
+GridScanParamType = TypeVar(
+    "GridScanParamType", bound=GridScanParamsCommon, covariant=True
+)
+
+# Smargon is required in plans which move crystal post-gridscan or require stub-offsets
+MotorType = TypeVar("MotorType")
+
+
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices:
+class FlyScanBaseComposite(Generic[GridScanParamType, MotorType]):
     eiger: EigerDetector
     synchrotron: Synchrotron
-    zocalo: ZocaloResults
-    sample_stage: SampleStageWithOmega
-    # TODO add fgs device
+    sample_stage: MotorType
+    grid_scan: FastGridScanCommon[GridScanParamType]
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -53,7 +64,9 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
+class GridDetectThenXRayCentreComposite(
+    FlyScanBaseComposite[GridScanParamsThreeD, Smargon]
+):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -62,7 +75,6 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     beamstop: Beamstop
     dcm: BaseDCM
     detector_motion: DetectorMotion
-    zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
@@ -72,4 +84,4 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     zebra: Zebra
     robot: BartRobot
     sample_shutter: ZebraShutter
-    smargon: Smargon
+    zocalo: ZocaloResults

@@ -23,7 +23,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
+    FlyScanBaseComposite,
     _fetch_xrc_results_from_zocalo,
     common_flyscan_xray_centre,
     kickoff_and_complete_gridscan,
@@ -106,7 +106,7 @@ class TestFlyscanXrayCentrePlan:
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
         RE: RunEngine,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -139,7 +139,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         bps_abs_set: MagicMock,
         test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         RE: RunEngine,
     ):
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
@@ -165,7 +165,7 @@ class TestFlyscanXrayCentrePlan:
         zoc_trigger: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -191,7 +191,7 @@ class TestFlyscanXrayCentrePlan:
         check_topup_and_wait,
         RE: RunEngine,
         test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
@@ -297,7 +297,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_kickoff,
         mock_abs_set,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         RE_with_subs: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -359,7 +359,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_complete,
         mock_wait,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
         done_status: Status,
@@ -392,7 +392,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         mock_kickoff,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         RE: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -445,7 +445,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete: MagicMock,
         mock_kickoff: MagicMock,
         RE: RunEngine,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         dummy_rotation_data_collection_group_info,
         zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     ):
@@ -502,7 +502,7 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -548,7 +548,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -576,7 +576,7 @@ class TestFlyscanXrayCentrePlan:
     async def test_results_adjusted_and_event_raised(
         self,
         run_gridscan: MagicMock,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
         RE_with_subs: ReWithSubs,
@@ -616,7 +616,7 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
         self,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
         RE: RunEngine,
@@ -645,7 +645,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
+        fake_fgs_composite: FlyScanBaseComposite,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs

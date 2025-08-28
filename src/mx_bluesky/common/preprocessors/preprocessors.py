@@ -1,12 +1,19 @@
+import bluesky.plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import plan_mutator
 from bluesky.utils import Msg, MsgGenerator, make_decorator
+from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import ZOCALO_STAGE_GROUP
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     check_and_pause_feedback,
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    _fetch_xrc_results_from_zocalo,
+)
 from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.protocols.protocols import (
     XBPMPauseDevices,
 )
@@ -99,6 +106,49 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
         )
     )
 
+
+def use_gridscan_with_zocalo_wrapper(
+    plan: MsgGenerator, zocalo: ZocaloResults, parameters: SpecifiedThreeDGridScan
+):
+    """Integrate Zocalo into a gridscan by intercepting the GRIDSCAN_OUTER run decorator.
+
+    Stages zocalo when a GRIDSCAN_OUTER run Message is seen. When the run is closed,
+    fetch results and unstage.
+    """
+
+    run_key_to_wrap = PlanNameConstants.GRIDSCAN_MAIN
+
+    def head(msg: Msg):
+        yield from bps.stage(
+            zocalo, group=ZOCALO_STAGE_GROUP
+        )  # connect to zocalo and make sure the queue is clear
+        yield msg
+
+    def tail():
+        yield from _fetch_xrc_results_from_zocalo(zocalo, parameters)
+        # TODO better group here?
+        yield from bps.unstage(zocalo, group="generic_tidy")
+
+    def insert_plans(msg: Msg):
+        match msg.command:
+            case "open_run":
+                if run_key_to_wrap is msg.run:
+                    return head(msg), None
+
+            case "close_run":
+                # Check if the run tracked from above was closed
+                # An exception is raised in the RunEngine if two unnamed runs are opened
+                # at the same time, so we are safe from unpausing on the wrong run
+                if run_key_to_wrap is msg.run:
+                    return None, tail()
+        return None, None
+
+    return plan_mutator(plan, insert_plans)
+
+
+use_gridscan_with_zocalo_decorator = make_decorator(
+    transmission_and_xbpm_feedback_for_collection_wrapper
+)
 
 transmission_and_xbpm_feedback_for_collection_decorator = make_decorator(
     transmission_and_xbpm_feedback_for_collection_wrapper
