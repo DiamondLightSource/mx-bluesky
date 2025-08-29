@@ -3,7 +3,8 @@ from enum import Enum, StrEnum
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
-from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
+from dodal.devices.zocalo.zocalo_constants import \
+    ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
 
@@ -39,6 +40,8 @@ def _get_oav_config_json_path():
         return "tests/test_data/test_OAVCentring.json"
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+    elif BEAMLINE == "AITHRE":
+        return f"/dls/science/groups/i23/aithre/daq_configuration/json/OAVCentring_aithre.json"
     else:
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring.json"
 
@@ -167,4 +170,5 @@ class FeatureSetting: ...  # List of features and their default values. Subclass
 
 class FeatureSettingources(
     StrEnum
+): ...  # List of features and the name of that property in domain.properties
 ): ...  # List of features and the name of that property in domain.properties
