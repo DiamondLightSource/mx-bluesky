@@ -86,6 +86,8 @@ class HardwareConstants:
     CRYOJET_MARGIN_MM = 0.2
     THAWING_TIME = 40
     TIP_OFFSET_UM = 0
+    MAX_CRYO_TEMP_K = 110
+    MAX_CRYO_PRESSURE_BAR = 0.1
 
     # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
     # causes dropped frames, so increase value for safety
