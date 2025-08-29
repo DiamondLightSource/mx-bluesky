@@ -43,15 +43,18 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    FlyScanEssentialDevices,
+    FlyScanBaseComposite,
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.preprocessors.preprocessors import (
+    use_gridscan_with_zocalo_decorator,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
-TFlyScanEssentialDevices = TypeVar(
-    "TFlyScanEssentialDevices", bound=FlyScanEssentialDevices, contravariant=True
+TFlyScanBaseComposite = TypeVar(
+    "TFlyScanBaseComposite", bound=FlyScanBaseComposite, contravariant=True
 )
 TSpecifiedThreeDGridScan = TypeVar(
     "TSpecifiedThreeDGridScan", bound=SpecifiedThreeDGridScan, contravariant=True
@@ -106,7 +109,7 @@ def grid_detect_then_xray_centre(
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],
-        composite.smargon,
+        composite.sample_stage,
         composite.aperture_scatterguard,
     )
 
@@ -124,7 +127,7 @@ def detect_grid_and_do_gridscan(
     grid_params_callback = GridDetectionCallback()
 
     yield from setup_beamline_for_OAV(
-        composite.smargon,
+        composite.sample_stage,
         composite.backlight,
         composite.aperture_scatterguard,
         wait=True,
@@ -139,7 +142,7 @@ def detect_grid_and_do_gridscan(
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
             oav=composite.oav,
-            smargon=composite.smargon,
+            smargon=composite.sample_stage,
             pin_tip_detection=composite.pin_tip_detection,
         )
 
@@ -183,15 +186,19 @@ def detect_grid_and_do_gridscan(
     )
     beamline_specific = construct_beamline_specific(composite, xrc_params)
 
-    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+    @use_gridscan_with_zocalo_decorator(composite.zocalo, xrc_params)
+    def do_common_gridscan_with_zocalo_device():
+        yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+
+    yield from do_common_gridscan_with_zocalo_device()
 
 
 class ConstructBeamlineSpecificFeatures(
-    Protocol[TFlyScanEssentialDevices, TSpecifiedThreeDGridScan]
+    Protocol[TFlyScanBaseComposite, TSpecifiedThreeDGridScan]
 ):
     def __call__(
         self,
-        xrc_composite: TFlyScanEssentialDevices,
+        xrc_composite: TFlyScanBaseComposite,
         xrc_parameters: TSpecifiedThreeDGridScan,
     ) -> BeamlineSpecificFGSFeatures: ...
 

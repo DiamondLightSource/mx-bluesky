@@ -12,7 +12,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03 import Beamstop
@@ -72,7 +72,7 @@ class RobotLoadThenCentreComposite:
     backlight: Backlight
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
+    grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
@@ -111,8 +111,12 @@ def _flyscan_plan_from_robot_load_params(
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
+    new_composite = cast(HyperionGridDetectThenXRayCentreComposite, composite)
+    # XRC composite uses more generic devices, so need to convert smargon to sample_stage
+    new_composite.sample_stage = composite.smargon
+
     yield from pin_centre_then_flyscan_plan(
-        cast(HyperionGridDetectThenXRayCentreComposite, composite),
+        new_composite,
         params.pin_centre_then_xray_centre_params,
         oav_config_file,
     )

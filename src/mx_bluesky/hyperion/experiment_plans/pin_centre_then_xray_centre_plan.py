@@ -78,18 +78,18 @@ def pin_centre_then_flyscan_plan(
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
-        smargon=composite.smargon,
+        smargon=composite.sample_stage,
         backlight=composite.backlight,
         pin_tip_detection=composite.pin_tip_detection,
     )
 
     def _pin_centre_then_flyscan_plan():
         yield from setup_beamline_for_OAV(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
+            composite.sample_stage, composite.backlight, composite.aperture_scatterguard
         )
 
         yield from move_phi_chi_omega(
-            composite.smargon,
+            composite.sample_stage,
             parameters.phi_start_deg,
             parameters.chi_start_deg,
             group=CONST.WAIT.READY_FOR_OAV,
@@ -144,5 +144,5 @@ def pin_tip_centre_then_xray_centre(
         "Flyscan result event not received or no crystal found and exception not raised"
     )
     yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
+        flyscan_results[0], composite.sample_stage, composite.aperture_scatterguard
     )

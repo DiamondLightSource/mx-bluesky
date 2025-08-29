@@ -13,7 +13,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraFastGridScan,
+    ZebraFastGridScanThreeD,
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
@@ -43,17 +43,10 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     setup_beamline_for_OAV,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
-    ZocaloCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
+from mx_bluesky.common.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
 )
 from mx_bluesky.common.parameters.constants import (
-    EnvironmentConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -80,7 +73,7 @@ def i04_grid_detect_then_xray_centre(
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     dcm: BaseDCM = inject("dcm"),
-    zebra_fast_grid_scan: ZebraFastGridScan = inject("zebra_fast_grid_scan"),
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
     oav: OAV = inject("oav"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
@@ -114,15 +107,14 @@ def i04_grid_detect_then_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
+        zebra_fast_grid_scan,
         aperture_scatterguard,
         attenuator,
         backlight,
         beamstop,
         dcm,
         detector_motion,
-        zebra_fast_grid_scan,
         flux,
         oav,
         pin_tip_detection,
@@ -132,12 +124,13 @@ def i04_grid_detect_then_xray_centre(
         zebra,
         robot,
         sample_shutter,
+        zocalo,
     )
 
     def tidy_beamline_if_not_udc():
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
-                composite.smargon,
+                composite.sample_stage,
                 composite.backlight,
                 composite.aperture_scatterguard,
                 composite.detector_motion,
@@ -190,20 +183,6 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(group)
 
 
-def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
-]:
-    return (
-        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
-        GridscanISPyBCallback(
-            param_type=GridCommon,
-            emit=ZocaloCallback(
-                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
-            ),
-        ),
-    )
-
-
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
     xrc_parameters: SpecifiedThreeDGridScan,
@@ -216,9 +195,7 @@ def construct_i04_specific_features(
         xrc_composite.synchrotron.synchrotron_mode,
         xrc_composite.s4_slit_gaps.xgap,
         xrc_composite.s4_slit_gaps.ygap,
-        xrc_composite.smargon.x,
-        xrc_composite.smargon.y,
-        xrc_composite.smargon.z,
+        xrc_composite.sample_stage,
         xrc_composite.dcm.energy_in_kev,
     ]
 
@@ -239,10 +216,10 @@ def construct_i04_specific_features(
     )
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
-        xrc_composite.zebra_fast_grid_scan,
+        xrc_composite.grid_scan,
         xrc_parameters.FGS_params,
     )
-    fgs_motors = xrc_composite.zebra_fast_grid_scan
+    fgs_motors = xrc_composite.grid_scan
     return construct_beamline_specific_FGS_features(
         setup_zebra_for_gridscan,
         tidy_plan,
@@ -250,5 +227,4 @@ def construct_i04_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
     )

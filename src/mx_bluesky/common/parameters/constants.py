@@ -134,6 +134,7 @@ class PlanGroupCheckpointConstants:
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
+    GRIDSCAN_MAIN_TIDY = "gridscan main tidy"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

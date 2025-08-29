@@ -13,7 +13,7 @@ from dodal.devices.detector.det_dim_constants import (
 )
 from dodal.devices.fast_grid_scan import (
     GridAxis,
-    ZebraGridScanParams,
+    ZebraGridScanParamsThreeD,
 )
 
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
@@ -152,7 +152,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: ZebraGridScanParams = test_fgs_params.FGS_params
+    grid_scan_params: ZebraGridScanParamsThreeD = test_fgs_params.FGS_params
     nexus_writer_1.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
@@ -285,7 +285,7 @@ def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_dire
 
 
 def assert_x_data_stride_correct(
-    data_path, grid_scan_params: ZebraGridScanParams, varying_axis_steps
+    data_path, grid_scan_params: ZebraGridScanParamsThreeD, varying_axis_steps
 ):
     sam_x_data = data_path["sam_x"][:]
     assert len(sam_x_data) == (grid_scan_params.x_steps) * (varying_axis_steps)
@@ -295,7 +295,7 @@ def assert_x_data_stride_correct(
 
 
 def assert_varying_axis_stride_correct(
-    axis_data, grid_scan_params: ZebraGridScanParams, varying_axis: GridAxis
+    axis_data, grid_scan_params: ZebraGridScanParamsThreeD, varying_axis: GridAxis
 ):
     assert len(axis_data) == (grid_scan_params.x_steps) * (varying_axis.full_steps)
     assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(

@@ -13,7 +13,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
-    ZebraFastGridScan,
+    ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -51,7 +51,7 @@ def i04_grid_detect_then_xrc_default_params(
     backlight: Backlight,
     beamstop_phase1: Beamstop,
     dcm: BaseDCM,
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     flux: Flux,
     oav: OAV,
     pin_tip_detection_with_found_pin: PinTipDetection,
@@ -107,7 +107,7 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
 
     msgs = sim_run_engine.simulate_plan(
         get_ready_for_oav_and_close_shutter(
-            grid_detect_xrc_devices.smargon,
+            grid_detect_xrc_devices.sample_stage,
             grid_detect_xrc_devices.backlight,
             grid_detect_xrc_devices.aperture_scatterguard,
             grid_detect_xrc_devices.detector_motion,
@@ -312,7 +312,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo",
+    "mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils.fetch_xrc_results_from_zocalo",
 )
 @patch(
     "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",

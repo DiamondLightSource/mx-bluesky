@@ -16,12 +16,14 @@ from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    _fire_xray_centre_result_event,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     ConstructBeamlineSpecificFeatures,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    _fire_xray_centre_result_event,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,

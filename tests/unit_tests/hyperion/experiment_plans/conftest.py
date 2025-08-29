@@ -261,7 +261,7 @@ def robot_load_composite(
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
-        zebra_fast_grid_scan=fast_grid_scan,
+        grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
         pin_tip_detection=pin_tip_detection_with_found_pin,

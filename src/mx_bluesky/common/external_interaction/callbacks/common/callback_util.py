@@ -11,7 +11,7 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 
 
 def create_gridscan_callbacks() -> tuple[
@@ -20,7 +20,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan,
+            param_type=GridCommon,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
             ),
