@@ -89,7 +89,7 @@ x 143
 y 82
 w 110
 h 30
-controlPv "ME14E-MO-IOC-01:GP6"
+controlPv "BL24I-MO-IOC-01:GP6"
 font "arial-medium-r-18.0"
 fontAlign "right"
 fgColor index 25
@@ -180,7 +180,7 @@ x 144
 y 126
 w 110
 h 30
-controlPv "ME14E-MO-IOC-01:GP7"
+controlPv "BL24I-MO-IOC-01:GP7"
 font "arial-medium-r-18.0"
 fontAlign "right"
 fgColor index 25
@@ -464,7 +464,7 @@ x 145
 y 171
 w 110
 h 30
-controlPv "ME14E-MO-IOC-01:GP8"
+controlPv "BL24I-MO-IOC-01:GP8"
 font "arial-medium-r-18.0"
 fontAlign "right"
 fgColor index 25
@@ -580,7 +580,7 @@ h 144
 lineColor index 7
 fill
 fillColor index 7
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "2"
 endObjectProperties
@@ -598,7 +598,7 @@ h 143
 lineColor index 7
 fill
 fillColor index 7
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "2"
 endObjectProperties
@@ -618,7 +618,7 @@ fontAlign "center"
 fgColor index 14
 bgColor index 0
 useDisplayBg
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "2"
 value {
@@ -648,7 +648,7 @@ botShadowColor index 11
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "caput ME14E-MO-CHIP-01:PMAC_STRING \\#1hmz\\#2hmz\\#3hmz"
+  0 "caput BL24I-EA-CHIP-01:PMAC_STRING \\#5hmz\\#6hmz\\#7hmz"
 }
 endObjectProperties
 
@@ -728,7 +728,7 @@ h 143
 lineColor index 7
 fill
 fillColor index 7
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "2"
 endObjectProperties
@@ -748,7 +748,7 @@ fontAlign "center"
 fgColor index 14
 bgColor index 0
 useDisplayBg
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "2"
 value {
@@ -792,7 +792,7 @@ x 146
 y 209
 w 110
 h 25
-controlPv "ME14E-MO-IOC-01:GP99"
+controlPv "BL24I-MO-IOC-01:GP99"
 font "arial-medium-r-18.0"
 fontAlign "right"
 fgColor index 25

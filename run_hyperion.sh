@@ -5,6 +5,7 @@
 STOP=0
 START=1
 IN_DEV=false
+MODE=gda
 
 for option in "$@"; do
     case $option in
@@ -22,7 +23,9 @@ for option in "$@"; do
         --dev)
             IN_DEV=true
             ;;
-
+        --udc)
+            MODE=udc
+            ;;
         --help|--info|--h)
             source .venv/bin/activate
             echo "`basename $0` [options]"
@@ -38,6 +41,7 @@ Options:
   --skip-startup-connection
                           Do not connect to devices at startup
   --dev                   Enable dev mode to run from a local workspace on a development machine.
+  --udc                   Start hyperion in UDC mode instead of taking commands from GDA
   --help                  This help
 
 By default this script will start an Hyperion server unless the --no-start flag is specified.
@@ -121,7 +125,7 @@ if [[ $START == 1 ]]; then
     declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
     declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
-    h_commands=()
+    h_commands="--mode $MODE"
     cb_commands=()
     for i in "${!h_and_cb_args[@]}"
     do
