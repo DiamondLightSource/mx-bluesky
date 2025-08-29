@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Generic, TypedDict, TypeVar
 
 import numpy as np
 from bluesky.callbacks import CallbackBase
@@ -6,6 +6,8 @@ from dodal.devices.oav.utils import calculate_x_y_z_of_pixel
 from event_model.documents import Event
 
 from mx_bluesky.common.utils.log import LOGGER
+
+T = TypeVar("T", int, float)
 
 
 class GridParamUpdate(TypedDict):
@@ -40,14 +42,22 @@ class GridParamUpdate(TypedDict):
     z_step_size_um: float
 
 
+class XYZParams(TypedDict, Generic[T]):
+    x: T
+    y: T
+    z: T
+
+
 class GridDetectionCallback(CallbackBase):
+    OMEGA_TOLERANCE = 1
+
     def __init__(
         self,
         *args,
     ) -> None:
         super().__init__(*args)
-        self.start_positions_mm: list = []
-        self.box_numbers: list = []
+        self.start_positions_um: XYZParams[float] = XYZParams(x=0, y=0, z=0)
+        self.box_numbers: XYZParams[int] = XYZParams(x=0, y=0, z=0)
 
     def event(self, doc: Event):
         data = doc.get("data")
@@ -82,13 +92,21 @@ class GridDetectionCallback(CallbackBase):
         )
         LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
-        self.start_positions_mm.append(position_grid_start_mm)
-        self.box_numbers.append(
-            (
-                data["oav-grid_snapshot-num_boxes_x"],
-                data["oav-grid_snapshot-num_boxes_y"],
+        # If data is taken at omega=~0 then it gives us x-y info, at omega=~-90 it is x-z
+        if abs(smargon_omega) < self.OMEGA_TOLERANCE:
+            self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
+            self.start_positions_um["y"] = position_grid_start_mm[1] * 1000
+            self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
+            self.box_numbers["y"] = data["oav-grid_snapshot-num_boxes_y"]
+        elif abs(smargon_omega + 90) < self.OMEGA_TOLERANCE:
+            self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
+            self.start_positions_um["z"] = position_grid_start_mm[2] * 1000
+            self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
+            self.box_numbers["z"] = data["oav-grid_snapshot-num_boxes_y"]
+        else:
+            raise ValueError(
+                f"Grid detection only works at omegas of 0 or -90, omega of {smargon_omega} given."
             )
-        )
 
         self.x_step_size_um = box_width_px * microns_per_pixel_x
         self.y_step_size_um = box_width_px * microns_per_pixel_y
@@ -97,14 +115,14 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridParamUpdate:
         return {
-            "x_start_um": self.start_positions_mm[0][0] * 1000,
-            "y_start_um": self.start_positions_mm[0][1] * 1000,
-            "y2_start_um": self.start_positions_mm[0][1] * 1000,
-            "z_start_um": self.start_positions_mm[1][2] * 1000,
-            "z2_start_um": self.start_positions_mm[1][2] * 1000,
-            "x_steps": self.box_numbers[0][0],
-            "y_steps": self.box_numbers[0][1],
-            "z_steps": self.box_numbers[1][1],
+            "x_start_um": self.start_positions_um["x"],
+            "y_start_um": self.start_positions_um["y"],
+            "y2_start_um": self.start_positions_um["y"],
+            "z_start_um": self.start_positions_um["z"],
+            "z2_start_um": self.start_positions_um["z"],
+            "x_steps": self.box_numbers["x"],
+            "y_steps": self.box_numbers["y"],
+            "z_steps": self.box_numbers["z"],
             "x_step_size_um": self.x_step_size_um,
             "y_step_size_um": self.y_step_size_um,
             "z_step_size_um": self.z_step_size_um,

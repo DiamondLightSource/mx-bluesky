@@ -37,8 +37,8 @@ selectColor index 15
 inconsistentColor index 14
 topShadowColor index 0
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:SHUTTER_CTRL"
-indicatorPv "ME14E-MO-CHIP-01:SHUTTER_STATE_RBV"
+controlPv "BL24I-EA-CHIP-01:SHUTTER_CTRL"
+indicatorPv "BL24I-EA-CHIP-01:SHUTTER_STATE_RBV"
 font "arial-medium-r-18.0"
 orientation "horizontal"
 endObjectProperties
@@ -53,7 +53,7 @@ x 175
 y 95
 w 141
 h 23
-controlPv "ME14E-MO-CHIP-01:SHUTTER_STATE_RBV"
+controlPv "BL24I-EA-CHIP-01:SHUTTER_STATE_RBV"
 font "arial-medium-r-18.0"
 fgColor index 14
 bgColor index 0

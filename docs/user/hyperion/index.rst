@@ -10,11 +10,13 @@ What is Hyperion?
 Hyperion is a service for running high throughput unattended data collection (UDC). It does not provide a user 
 interface, instead instructions are pulled from Agamemnon which is controlled by information obtained in ISPyB.
 
-Running Hyperion
-----------------
+The software supports two modes of operation:
 
-When installed, Hyperion should be running automatically. If it is not running, it can be (re)started from GDA by 
-invoking ``hyperion_restart()`` from the Jython console.
+* UDC mode (experimental) where Hyperion automatically fetches instructions from Agamemnon.
+* GDA mode (where GDA fetches and decodes the Agamemnon
+  instructions). GDA mode will be removed in a future release.
+
+The mode of operation is determined by configuration using the ``gda.mx.udc.hyperion.enable`` parameter
 
 
 .. toctree::
