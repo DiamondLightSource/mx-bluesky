@@ -9,16 +9,16 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
 from dodal.devices.oav.utils import (
-    PinNotFoundException, Pixel, get_move_required_so_that_beam_is_at_pixel,
-    wait_for_tip_to_be_found)
+    PinNotFoundException,
+    Pixel,
+    get_move_required_so_that_beam_is_at_pixel_non_smargon,
+    wait_for_tip_to_be_found,
+)
 
-from mx_bluesky.aithre_lasershaping.parameters.constants import CONST
-from mx_bluesky.common.device_setup_plans.setup_oav import \
-    pre_centring_setup_oav
-from mx_bluesky.common.utils.exceptions import (SampleException,
-                                                catch_exception_and_warn)
+from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oav
+from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.cosmmon.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
 
@@ -95,7 +95,7 @@ def move_pin_into_view(
         yield from bps.mv(goniometer.x, move_within_limits)
 
         # Some time for the view to settle after the move
-        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
+        # yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
     tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
@@ -132,12 +132,13 @@ def pin_tip_centre_plan(
 
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
-        position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
+        # Need a standard gonio version of this function
+        position_mm = yield from get_move_required_so_that_beam_is_at_pixel_non_smargon(
             goniometer, pixel_to_move_to, oav
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
         yield from bps.mv(goniometer.x, position_mm[0], goniometer.y, position_mm[1])
-        
+
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
     # need to wait for the OAV image to update

@@ -171,4 +171,3 @@ class FeatureSetting: ...  # List of features and their default values. Subclass
 class FeatureSettingources(
     StrEnum
 ): ...  # List of features and the name of that property in domain.properties
-): ...  # List of features and the name of that property in domain.properties
