@@ -111,8 +111,12 @@ def _flyscan_plan_from_robot_load_params(
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
+    new_composite = cast(HyperionGridDetectThenXRayCentreComposite, composite)
+    # XRC composite uses more generic devices, so need to convert smargon to sample_stage
+    new_composite.sample_stage = composite.smargon
+
     yield from pin_centre_then_flyscan_plan(
-        cast(HyperionGridDetectThenXRayCentreComposite, composite),
+        new_composite,
         params.pin_centre_then_xray_centre_params,
         oav_config_file,
     )

@@ -1,22 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from functools import partial
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
-)
-from dodal.devices.zocalo import ZocaloResults
-from dodal.devices.zocalo.zocalo_results import (
-    XrcResult,
-    get_full_processing_results,
 )
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
@@ -27,19 +21,16 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
-    GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import FlyScanBaseComposite
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
     SampleException,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.common.xrc_result import XRayCentreResult
 
 
 @dataclasses.dataclass
@@ -163,7 +154,6 @@ def common_flyscan_xray_centre(
                 ],
             }
         )
-        # todo make decorator which stages and unstages zocalo around GRIDSCAN_OUTER as well as fetches results
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
             fgs_composite: FlyScanBaseComposite,
@@ -180,44 +170,6 @@ def common_flyscan_xray_centre(
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
     yield from _decorated_flyscan()
-
-
-# TODO move this func somewhere else
-def _fetch_xrc_results_from_zocalo(
-    zocalo_results: ZocaloResults,
-    parameters: SpecifiedThreeDGridScan,
-) -> MsgGenerator:
-    """
-    Get XRC results from the ZocaloResults device which was staged during a grid scan,
-    and store them in XRayCentreEventHandler.xray_centre_results by firing an event.
-
-    The RunEngine must be subscribed to XRayCentreEventHandler for this plan to work.
-    """
-
-    LOGGER.info("Getting X-ray center Zocalo results...")
-
-    yield from bps.trigger(zocalo_results)
-    LOGGER.info("Zocalo triggered and read, interpreting results.")
-    xrc_results = yield from get_full_processing_results(zocalo_results)
-    LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
-    filtered_results = [
-        result
-        for result in xrc_results
-        if result["total_count"]
-        >= GridscanParamConstants.ZOCALO_MIN_TOTAL_COUNT_THRESHOLD
-    ]
-    discarded_count = len(xrc_results) - len(filtered_results)
-    if discarded_count > 0:
-        LOGGER.info(f"Removed {discarded_count} results because below threshold")
-    if filtered_results:
-        flyscan_results = [
-            _xrc_result_in_boxes_to_result_in_mm(xr, parameters)
-            for xr in filtered_results
-        ]
-    else:
-        LOGGER.warning("No X-ray centre received")
-        raise CrystalNotFoundException()
-    yield from _fire_xray_centre_result_event(flyscan_results)
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
@@ -274,49 +226,3 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise SampleException("Scan invalid - pin too long/short/bent and out of range")
-
-
-def _xrc_result_in_boxes_to_result_in_mm(
-    xrc_result: XrcResult, parameters: SpecifiedThreeDGridScan
-) -> XRayCentreResult:
-    fgs_params = parameters.FGS_params
-    xray_centre = fgs_params.grid_position_to_motor_position(
-        np.array(xrc_result["centre_of_mass"])
-    )
-    # A correction is applied to the bounding box to map discrete grid coordinates to
-    # the corners of the box in motor-space; we do not apply this correction
-    # to the xray-centre as it is already in continuous space and the conversion has
-    # been performed already
-    # In other words, xrc_result["bounding_box"] contains the position of the box centre,
-    # so we subtract half a box to get the corner of the box
-    return XRayCentreResult(
-        centre_of_mass_mm=xray_centre,
-        bounding_box_mm=(
-            fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][0]) - 0.5
-            ),
-            fgs_params.grid_position_to_motor_position(
-                np.array(xrc_result["bounding_box"][1]) - 0.5
-            ),
-        ),
-        max_count=xrc_result["max_count"],
-        total_count=xrc_result["total_count"],
-        sample_id=xrc_result["sample_id"],
-    )
-
-
-def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
-    def empty_plan():
-        return iter([])
-
-    yield from bpp.set_run_key_wrapper(
-        bpp.run_wrapper(
-            empty_plan(),
-            md={
-                PlanNameConstants.FLYSCAN_RESULTS: [
-                    dataclasses.asdict(r) for r in results
-                ]
-            },
-        ),
-        PlanNameConstants.FLYSCAN_RESULTS,
-    )

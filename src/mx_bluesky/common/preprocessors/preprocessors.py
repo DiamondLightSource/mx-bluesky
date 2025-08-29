@@ -9,10 +9,13 @@ from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     check_and_pause_feedback,
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    _fetch_xrc_results_from_zocalo,
+from mx_bluesky.common.experiment_plans.inner_plans.xray_results_utils import (
+    fetch_xrc_results_from_zocalo,
 )
-from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.constants import (
+    PlanGroupCheckpointConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.protocols.protocols import (
     XBPMPauseDevices,
@@ -125,9 +128,10 @@ def use_gridscan_with_zocalo_wrapper(
         yield msg
 
     def tail():
-        yield from _fetch_xrc_results_from_zocalo(zocalo, parameters)
-        # TODO better group here?
-        yield from bps.unstage(zocalo, group="generic_tidy")
+        yield from fetch_xrc_results_from_zocalo(zocalo, parameters)
+        yield from bps.unstage(
+            zocalo, group=PlanGroupCheckpointConstants.GRIDSCAN_MAIN_TIDY
+        )
 
     def insert_plans(msg: Msg):
         match msg.command:
