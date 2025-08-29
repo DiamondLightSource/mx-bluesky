@@ -1,16 +1,24 @@
 from collections.abc import Sequence
+from functools import partial
+from typing import Any
 
-from blueapi.core import BlueskyContext
+from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.devices.baton import Baton
 
+from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
+    UDCDefaultDevices,
+    move_to_udc_default_state,
+)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
-from mx_bluesky.common.utils.context import find_device_in_context
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.context import (
+    device_composite_from_context,
+    find_device_in_context,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
-    LoadCentreCollectComposite,
     create_devices,
     load_centre_collect_full,
 )
@@ -19,6 +27,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 )
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
     setup_devices,
@@ -28,56 +37,78 @@ HYPERION_USER = "Hyperion"
 NO_USER = "None"
 
 
-def wait_for_hyperion_requested(baton: Baton):
-    SLEEP_PER_CHECK = 0.1
-    while True:
-        requested_user = yield from bps.rd(baton.requested_user)
-        if requested_user == HYPERION_USER:
-            break
-        yield from bps.sleep(SLEEP_PER_CHECK)
+def run_forever(runner: PlanRunner):
+    try:
+        while True:
+            try:
+                run_udc_when_requested(runner.context, runner)
+            except PlanException as e:
+                LOGGER.info(
+                    "Caught exception during plan execution, stopped and waiting for baton.",
+                    exc_info=e,
+                )
 
-
-def ignore_sample_errors(exception: Exception):
-    yield from bps.null()
-    # For sample errors we want to continue the loop
-    if not isinstance(exception, WarningException):
-        raise exception
-
-
-def main_hyperion_loop(baton: Baton, composite: LoadCentreCollectComposite):
-    requested_user = yield from bps.rd(baton.requested_user)
-    while requested_user == HYPERION_USER:
-
-        def inner_loop():
-            parameter_list: Sequence[MxBlueskyParameters] = (
-                create_parameters_from_agamemnon()
-            )
-            if parameter_list:
-                for parameters in parameter_list:
-                    match parameters:
-                        case LoadCentreCollect():
-                            yield from load_centre_collect_full(composite, parameters)
-                        case Wait():
-                            yield from bps.sleep(parameters.duration_s)
-                        case _:
-                            raise AssertionError(
-                                f"Unsupported instruction decoded from agamemnon {type(parameters)}"
-                            )
-            else:
-                yield from bps.mv(baton.requested_user, NO_USER)
-
-        yield from bpp.contingency_wrapper(
-            inner_loop(), except_plan=ignore_sample_errors, auto_raise=False
+    except RunEngineInterrupted:
+        # In the event that BlueskyRunner.stop() or shutdown() was called then
+        # RunEngine.abort() will have been called and we will get RunEngineInterrupted
+        LOGGER.info(
+            f"RunEngine was interrupted. Runner state is {runner.current_status}, "
+            f"run engine is {runner.RE.state}"
         )
-        requested_user = yield from bps.rd(baton.requested_user)
 
 
-def move_to_default_state():
-    # To be filled in in https://github.com/DiamondLightSource/mx-bluesky/issues/396
-    yield from bps.null()
+def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
+    """This will wait for the baton to be handed to hyperion and then run through the
+    UDC queue from agamemnon until:
+      1. There are no more instructions from agamemnon
+      2. There is an error on the beamline
+      3. The baton is requested by another party
+      4. A shutdown is requested
+
+    In the case of 1. 2. or 4. hyperion will immediately release the baton. In the case of
+    3. the baton will be released after the next collection has finished."""
+
+    baton = _get_baton(context)
+
+    def acquire_baton() -> MsgGenerator:
+        yield from _wait_for_hyperion_requested(baton)
+        yield from bps.abs_set(baton.current_user, HYPERION_USER)
+
+    def collect() -> MsgGenerator:
+        """
+        Move to the default state for collection, then enter a loop fetching instructions
+        from Agamemnon and continue the loop until any of the following occur:
+        * A user requests the baton away from Hyperion
+        * Hyperion releases the baton when Agamemnon has no more instructions
+        * The RunEngine raises a RequestAbort exception, most likely due to a shutdown command
+        * A plan raises an exception not of type WarningException (which is then wrapped as a PlanException)
+        Args:
+            baton: The baton device
+            runner: The runner
+        """
+        yield from _move_to_udc_default_state(context)
+
+        # re-fetch the baton because the device has been reinstantiated
+        baton = _get_baton(context)
+        while (yield from _is_requesting_baton(baton)):
+            yield from _fetch_and_process_agamemnon_instruction(baton, runner)
+
+    def release_baton() -> MsgGenerator:
+        # If hyperion has given up the baton itself we need to also release requested
+        # user so that hyperion doesn't think we're requested again
+        baton = _get_baton(context)
+        yield from _safely_release_baton(baton)
+        yield from bps.abs_set(baton.current_user, NO_USER)
+
+    def collect_then_release() -> MsgGenerator:
+        yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
+
+    context.run_engine(acquire_baton())
+    _initialise_udc(context)
+    context.run_engine(collect_then_release())
 
 
-def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
+def _initialise_udc(context: BlueskyContext):
     """
     Perform all initialisation that happens at the start of UDC just after the
     baton is acquired, but before we execute any plans or move hardware.
@@ -87,45 +118,65 @@ def initialise_udc(context: BlueskyContext, dev_mode: bool = False):
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
     clear_all_device_caches(context)
-    setup_devices(context, dev_mode)
+    setup_devices(context, False)
+
+
+def _wait_for_hyperion_requested(baton: Baton):
+    SLEEP_PER_CHECK = 0.1
+    while True:
+        requested_user = yield from bps.rd(baton.requested_user)
+        if requested_user == HYPERION_USER:
+            break
+        yield from bps.sleep(SLEEP_PER_CHECK)
+
+
+def _fetch_and_process_agamemnon_instruction(
+    baton: Baton, runner: PlanRunner
+) -> MsgGenerator:
+    parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
+    if parameter_list:
+        for parameters in parameter_list:
+            LOGGER.info(
+                f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+            )
+            match parameters:
+                case LoadCentreCollect():
+                    devices: Any = create_devices(runner.context)
+                    yield from runner.execute_plan(
+                        partial(load_centre_collect_full, devices, parameters)
+                    )
+                case Wait():
+                    yield from runner.execute_plan(partial(_runner_sleep, parameters))
+                case _:
+                    raise AssertionError(
+                        f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                    )
+    else:
+        # Release the baton for orderly exit from the instruction loop
+        yield from _safely_release_baton(baton)
+
+
+def _runner_sleep(parameters: Wait) -> MsgGenerator:
+    yield from bps.sleep(parameters.duration_s)
+
+
+def _is_requesting_baton(baton: Baton) -> MsgGenerator:
+    requested_user = yield from bps.rd(baton.requested_user)
+    return requested_user == HYPERION_USER
+
+
+def _move_to_udc_default_state(context: BlueskyContext):
+    udc_default_devices = device_composite_from_context(context, UDCDefaultDevices)
+    yield from move_to_udc_default_state(udc_default_devices)
 
 
 def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
 
 
-def run_udc_when_requested(context: BlueskyContext, dev_mode: bool = False):
-    """This will wait for the baton to be handed to hyperion and then run through the
-    UDC queue from agamemnon until:
-      1. There are no more instructions from agamemnon
-      2. There is an error on the beamline
-      3. The baton is requested by another party
-
-    In the case of 1. or 2. hyperion will immediately release the baton. In the case of
-    3. the baton will be released after the next collection has finished."""
-
-    baton = _get_baton(context)
-    yield from wait_for_hyperion_requested(baton)
-    yield from bps.abs_set(baton.current_user, HYPERION_USER)
-
-    def initialise_then_collect():
-        initialise_udc(context, dev_mode)
-        yield from move_to_default_state()
-
-        # re-fetch the baton because the device has been reinstantiated
-        new_baton = _get_baton(context)
-        composite = create_devices(context)
-        yield from main_hyperion_loop(new_baton, composite)
-
-    def release_baton():
-        # If hyperion has given up the baton itself we need to also release requested
-        # user so that hyperion doesn't think we're requested again
-        baton = _get_baton(context)
-        requested_user = yield from bps.rd(baton.requested_user)
-        if requested_user == HYPERION_USER:
-            yield from bps.abs_set(baton.requested_user, NO_USER)
-        yield from bps.abs_set(baton.current_user, NO_USER)
-
-    yield from bpp.contingency_wrapper(
-        initialise_then_collect(), final_plan=release_baton
-    )
+def _safely_release_baton(baton: Baton) -> MsgGenerator:
+    """Relinquish the requested user of the baton if it is not already requested
+    by another user."""
+    requested_user = yield from bps.rd(baton.requested_user)
+    if requested_user == HYPERION_USER:
+        yield from bps.abs_set(baton.requested_user, NO_USER)

@@ -8,7 +8,6 @@ from dodal.beamlines import i03
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import HyperionFeatureFlags
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -82,15 +81,26 @@ def test_fgs_params(tmp_path):
     )
 
 
-@pytest.fixture
-def test_panda_fgs_params(test_fgs_params: HyperionSpecifiedThreeDGridScan):
-    test_fgs_params.features.use_panda_for_gridscan = True
-    return test_fgs_params
+@pytest.fixture(params=[False, True])
+def test_omega_flip(request):
+    with patch(
+        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        new=request.param,
+    ):
+        yield request.param
 
 
 @pytest.fixture
-def feature_flags():
-    return HyperionFeatureFlags()
+def fgs_params_use_panda(tmp_path):
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new="tests/test_data/test_domain_properties_with_panda",
+    ):
+        params = raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_parameters.json",
+            tmp_path,
+        )
+        yield HyperionSpecifiedThreeDGridScan(**params)
 
 
 @pytest.fixture

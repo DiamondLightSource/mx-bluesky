@@ -1,5 +1,5 @@
 import os
-from enum import Enum
+from enum import Enum, StrEnum
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
@@ -12,6 +12,12 @@ from mx_bluesky.definitions import ROOT_DIR
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30
+
+GDA_DOMAIN_PROPERTIES_PATH = (
+    "tests/test_data/test_domain_properties"
+    if TEST_MODE
+    else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
+)
 
 
 @dataclass(frozen=True)
@@ -153,3 +159,12 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
+
+
+@dataclass
+class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
+
+
+class FeatureSettingources(
+    StrEnum
+): ...  # List of features and the name of that property in domain.properties

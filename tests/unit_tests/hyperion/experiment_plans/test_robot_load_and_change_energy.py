@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
@@ -155,6 +155,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     exp_eye: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
+    RE: RunEngine,
 ):
     robot = robot_load_and_energy_change_composite.robot
     webcam = robot_load_and_energy_change_composite.webcam
@@ -166,7 +167,6 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     webcam.trigger = MagicMock(return_value=NullStatus())
     set_mock_value(robot.barcode, "BARCODE")
 
-    RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
@@ -198,13 +198,12 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")
 async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
-    mock_datetime: MagicMock, oav: OAV, webcam: Webcam
+    mock_datetime: MagicMock, oav: OAV, webcam: Webcam, RE: RunEngine
 ):
     TEST_DIRECTORY = "TEST"
 
     mock_datetime.now.return_value.strftime.return_value = "TIME"
 
-    RE = RunEngine()
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
@@ -372,7 +371,7 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "backlight"
-        and msg.args[0] == BacklightPosition.IN,
+        and msg.args[0] == InOut.IN,
     )
 
     backlight_move_group = msgs[0].kwargs.get("group")
