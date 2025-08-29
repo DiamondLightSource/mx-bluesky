@@ -9,29 +9,29 @@ from ophyd_async.core import (
 )
 from ophyd_async.fastcs.jungfrau import (
     Jungfrau,
-    create_jungfrau_external_triggering_info,
+    create_jungfrau_internal_triggering_info,
 )
 from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import fly_jungfrau
 
 
-def do_external_acquisition(
+def do_internal_acquisition(
     exp_time_s: float,
-    total_triggers: PositiveInt = 1,
-    period_between_frames_s: float | None = None,
+    total_frames: PositiveInt = 1,
     jungfrau: Jungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
     wait: bool = False,
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """
-    Kickoff external triggering on the Jungfrau, and optionally wait for completion.
+    Kickoff internal triggering on the Jungfrau, and optionally wait for completion. Frames
+    per trigger will trigger as rapidly as possible according to the Jungfrau deadtime.
 
     Must be used within an open Bluesky run.
 
     Args:
         exp_time_s: Length of detector exposure for each frame.
-        total_triggers: Number of external triggers recieved before acquisition is marked as complete.
+        total_frames: Number of frames taken after being internally triggered.
         period_between_frames_s: Time between each detector frame, including deadtime. Not needed if frames_per_triggers is 1.
         jungfrau: Jungfrau device
         path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
@@ -47,8 +47,6 @@ def do_external_acquisition(
         path_provider = StaticPathProvider(filename_provider, _file_path.parent)
         jungfrau._writer._path_provider = path_provider  # noqa: SLF001
 
-    trigger_info = create_jungfrau_external_triggering_info(
-        total_triggers, exp_time_s, period_between_frames_s
-    )
+    trigger_info = create_jungfrau_internal_triggering_info(total_frames, exp_time_s)
     status = yield from fly_jungfrau(jungfrau, trigger_info, wait)
     return status
