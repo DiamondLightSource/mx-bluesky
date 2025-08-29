@@ -72,7 +72,7 @@ class RobotLoadThenCentreComposite:
     backlight: Backlight
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScanThreeD
+    grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection

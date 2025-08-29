@@ -7,6 +7,7 @@ from functools import partial
 from typing import cast
 from unittest.mock import MagicMock, patch
 
+import pydantic
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
@@ -63,6 +64,11 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import raw_params_from_file
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class FlyScanCompositeWithZocalo(FlyScanBaseComposite):
+    zocalo: ZocaloResults
 
 
 @pytest.fixture
@@ -347,13 +353,15 @@ async def fake_fgs_composite(
     zocalo,
     panda,
     backlight,
+    fast_grid_scan,
 ):
-    fake_composite = FlyScanBaseComposite(
+    fake_composite = FlyScanCompositeWithZocalo(
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
-        smargon=smargon,
+        sample_stage=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
+        grid_scan=fast_grid_scan,
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -380,7 +388,6 @@ async def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     return fake_composite
 
@@ -405,7 +412,6 @@ def beamline_specific(
         fgs_motors=zebra_fast_grid_scan,
         read_pre_flyscan_plan=MagicMock(),
         read_during_collection_plan=MagicMock(),
-        get_xrc_results_from_zocalo=False,
     )
 
 
@@ -447,11 +453,11 @@ async def grid_detect_xrc_devices(
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
-        zebra_fast_grid_scan=fast_grid_scan,
+        grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
         pin_tip_detection=ophyd_pin_tip_detection,
-        smargon=smargon,
+        sample_stage=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         undulator=undulator,

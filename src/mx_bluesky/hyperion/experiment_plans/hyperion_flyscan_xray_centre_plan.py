@@ -51,9 +51,9 @@ def construct_hyperion_specific_features(
         xrc_composite.synchrotron.synchrotron_mode,
         xrc_composite.s4_slit_gaps.xgap,
         xrc_composite.s4_slit_gaps.ygap,
-        xrc_composite.smargon.x,
-        xrc_composite.smargon.y,
-        xrc_composite.smargon.z,
+        xrc_composite.sample_stage.x,
+        xrc_composite.sample_stage.y,
+        xrc_composite.sample_stage.z,
         xrc_composite.dcm.energy_in_kev,
     ]
 
@@ -88,10 +88,10 @@ def construct_hyperion_specific_features(
         )
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
-            xrc_composite.zebra_fast_grid_scan,
+            xrc_composite.grid_scan,
             xrc_parameters.FGS_params,
         )
-        fgs_motors = xrc_composite.zebra_fast_grid_scan
+        fgs_motors = xrc_composite.grid_scan
     return construct_beamline_specific_FGS_features(
         setup_trigger_plan,
         tidy_plan,
@@ -129,7 +129,7 @@ def _panda_triggering_setup(
     time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
-        xrc_composite.smargon.x.max_velocity
+        xrc_composite.sample_stage.x.max_velocity
     )
 
     sample_velocity_mm_per_s = (
@@ -160,7 +160,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         xrc_composite.panda,
         parameters.panda_FGS_params,
-        xrc_composite.smargon,
+        xrc_composite.sample_stage,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,

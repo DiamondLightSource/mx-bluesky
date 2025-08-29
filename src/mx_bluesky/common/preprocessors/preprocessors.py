@@ -9,7 +9,7 @@ from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     check_and_pause_feedback,
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
-from mx_bluesky.common.experiment_plans.inner_plans.xray_results_utils import (
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     fetch_xrc_results_from_zocalo,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -150,9 +150,7 @@ def use_gridscan_with_zocalo_wrapper(
     return plan_mutator(plan, insert_plans)
 
 
-use_gridscan_with_zocalo_decorator = make_decorator(
-    transmission_and_xbpm_feedback_for_collection_wrapper
-)
+use_gridscan_with_zocalo_decorator = make_decorator(use_gridscan_with_zocalo_wrapper)
 
 transmission_and_xbpm_feedback_for_collection_decorator = make_decorator(
     transmission_and_xbpm_feedback_for_collection_wrapper

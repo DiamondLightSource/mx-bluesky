@@ -192,7 +192,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo",
+        "mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils.fetch_xrc_results_from_zocalo",
     )
     @patch(
         "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",

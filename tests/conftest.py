@@ -959,6 +959,7 @@ async def hyperion_flyscan_xrc_composite(
     panda,
     backlight,
     s4_slit_gaps,
+    fast_grid_scan,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -967,12 +968,10 @@ async def hyperion_flyscan_xrc_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
+        grid_scan=i03.zebra_fast_grid_scan(connect_immediately=True, mock=True),
         flux=i03.flux(connect_immediately=True, mock=True),
         s4_slit_gaps=s4_slit_gaps,
-        smargon=smargon,
+        sample_stage=smargon,
         undulator=i03.undulator(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,
@@ -1009,10 +1008,9 @@ async def hyperion_flyscan_xrc_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
-    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
-    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
-
+    set_mock_value(fake_composite.grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.grid_scan.position_counter, 0)
+    set_mock_value(fake_composite.sample_stage.x.max_velocity, 10)
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
     return fake_composite

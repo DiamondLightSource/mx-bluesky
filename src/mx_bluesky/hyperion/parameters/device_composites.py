@@ -8,15 +8,11 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import (
-    PandAFastGridScan,
-    ZebraFastGridScanThreeD,
-)
+from dodal.devices.fast_grid_scan import GridScanParamsThreeD, PandAFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -33,7 +29,9 @@ from mx_bluesky.common.parameters.device_composites import (
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class HyperionFlyScanXRayCentreComposite(FlyScanBaseComposite):
+class HyperionFlyScanXRayCentreComposite(
+    FlyScanBaseComposite[GridScanParamsThreeD, Smargon]
+):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -43,7 +41,6 @@ class HyperionFlyScanXRayCentreComposite(FlyScanBaseComposite):
     flux: Flux
     s4_slit_gaps: S4SlitGaps
     undulator: Undulator
-    synchrotron: Synchrotron
     zebra: Zebra
     zocalo: ZocaloResults
     panda: HDFPanda
@@ -52,8 +49,6 @@ class HyperionFlyScanXRayCentreComposite(FlyScanBaseComposite):
     sample_shutter: ZebraShutter
     backlight: Backlight
     xbpm_feedback: XBPMFeedback
-    zebra_fast_grid_scan: ZebraFastGridScanThreeD
-    smargon: Smargon
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

@@ -57,7 +57,6 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
-    use_gridscan_with_zocalo_decorator,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
@@ -149,7 +148,6 @@ def i04_grid_detect_then_xray_centre(
         @transmission_and_xbpm_feedback_for_collection_decorator(
             composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
         )
-        @use_gridscan_with_zocalo_decorator(composite.zocalo, SpecifiedThreeDGridScan)
         def grid_detect_then_xray_centre_with_callbacks():
             yield from grid_detect_then_xray_centre(
                 composite=composite,

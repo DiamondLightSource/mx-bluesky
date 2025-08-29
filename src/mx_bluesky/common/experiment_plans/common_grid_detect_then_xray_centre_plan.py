@@ -47,6 +47,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.preprocessors.preprocessors import (
+    use_gridscan_with_zocalo_decorator,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
@@ -183,7 +186,11 @@ def detect_grid_and_do_gridscan(
     )
     beamline_specific = construct_beamline_specific(composite, xrc_params)
 
-    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+    @use_gridscan_with_zocalo_decorator(composite.zocalo, xrc_params)
+    def do_common_gridscan_with_zocalo_device():
+        yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+
+    yield from do_common_gridscan_with_zocalo_device()
 
 
 class ConstructBeamlineSpecificFeatures(
