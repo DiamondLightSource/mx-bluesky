@@ -33,7 +33,6 @@ def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog)
     RE(test_plan())
     for i in range(20, 120, 20):
         assert f"Jungfrau data collection triggers recieved: {i}%" in caplog.messages
-    print(caplog)
 
 
 @patch(
