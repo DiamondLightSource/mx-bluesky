@@ -13,30 +13,29 @@ from ophyd_async.fastcs.jungfrau import (
     Jungfrau,
     create_jungfrau_external_triggering_info,
 )
-from pydantic import PositiveInt
 
 from mx_bluesky.common.utils.log import LOGGER
 
 
-def do_external_acquisition(
+def do_internal_acquisition(
     exp_time_s: float,
-    total_triggers: PositiveInt = 1,
-    frames_per_trigger: PositiveInt = 1,
-    period_between_frames_s: float | None = None,
+    period_between_frames_s: float,
+    frames_per_trigger: int = 1,
+    total_triggers: int = 1,
     jungfrau: Jungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
     wait: bool = False,
 ):
     """
-    Kickoff external triggering on the Jungfrau, and optionally wait for completion.
+    Kickoff internal triggering on the Jungfrau, and optionally wait for completion.
 
     Must be used within an open Bluesky run.
 
     Args:
-        exp_time_s: Length of detector exposure for each frame.
-        total_triggers: Number of external triggers recieved before acquisition is marked as complete.
-        frames_per_trigger: Number of frames for each external trigger.
-        period_between_frames_s: Time between each detector frame, including deadtime. Not needed if frames_per_triggers is 1.
+        exp_time_s: Length of detector exposure for each frame
+        period_between_frames_s: Time between each detector frame, including deadtime
+        frames_per_trigger: Number of frames for each external trigger
+        total_triggers: Number of external triggers recieved before acquisition is marked as complete
         jungfrau: Jungfrau device
         path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
             set during jungfrau device instantiation

@@ -24,18 +24,18 @@ ZOOMCALIBRATOR = 6
     [
         (
             (15, 10),
-            "#1J:-" + str(10 * 15 * ZOOMCALIBRATOR),
-            "#2J:" + str(10 * 10 * ZOOMCALIBRATOR),
+            "&2#5J:-" + str(10 * 15 * ZOOMCALIBRATOR),
+            "&2#6J:" + str(10 * 10 * ZOOMCALIBRATOR),
         ),
         (
             (475, 309),
-            "#1J:-" + str(10 * 475 * ZOOMCALIBRATOR),
-            "#2J:" + str(10 * 309 * ZOOMCALIBRATOR),
+            "&2#5J:-" + str(10 * 475 * ZOOMCALIBRATOR),
+            "&2#6J:" + str(10 * 309 * ZOOMCALIBRATOR),
         ),
         (
             (638, 392),
-            "#1J:-" + str(10 * 638 * ZOOMCALIBRATOR),
-            "#2J:" + str(10 * 392 * ZOOMCALIBRATOR),
+            "&2#5J:-" + str(10 * 638 * ZOOMCALIBRATOR),
+            "&2#6J:" + str(10 * 392 * ZOOMCALIBRATOR),
         ),
     ],
 )

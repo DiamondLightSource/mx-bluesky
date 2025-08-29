@@ -18,7 +18,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition imp
 def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog):
     @run_decorator()
     def test_plan():
-        status = yield from do_external_acquisition(0.001, 0.002, 5, 5, jungfrau)
+        status = yield from do_external_acquisition(0.001, 5, 5, 0.002, jungfrau)
         assert not status.done
         val = 0
         while not status.done:
@@ -45,7 +45,7 @@ def test_do_external_acquisition_does_wait(
     jungfrau: Jungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(
-        do_external_acquisition(0.01, 0.02, 1, 1, jungfrau, wait=True)
+        do_external_acquisition(0.01, 1, 1, 0.02, jungfrau, wait=True)
     )
     assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "jf_complete"
@@ -64,7 +64,7 @@ def test_do_external_acquisition_setting_path(
     test_path = f"{tmpdir}/test_file"
     sim_run_engine.simulate_plan(
         do_external_acquisition(
-            0.01, 0.02, 1, 1, jungfrau, path_of_output_file=test_path
+            0.01, 1, 1, 0.02, jungfrau, path_of_output_file=test_path
         )
     )
     real_path_provider = jungfrau._writer._path_provider
