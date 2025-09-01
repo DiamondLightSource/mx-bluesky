@@ -13,6 +13,7 @@ from ophyd_async.testing import set_mock_value
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition import (
     do_external_acquisition,
 )
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
 
 
 def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog):
@@ -27,7 +28,7 @@ def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog)
 
             # Let status update
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
-        yield from bps.wait("jf_complete")
+        yield from bps.wait(JF_COMPLETE_GROUP)
 
     jungfrau._controller.arm = AsyncMock()
     RE(test_plan())
@@ -47,7 +48,8 @@ def test_do_external_acquisition_does_wait(
         do_external_acquisition(0.01, 1, 0.02, jungfrau, wait=True)
     )
     assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "jf_complete"
+        msgs,
+        lambda msg: msg.command == "wait" and msg.kwargs["group"] == JF_COMPLETE_GROUP,
     )
 
 
