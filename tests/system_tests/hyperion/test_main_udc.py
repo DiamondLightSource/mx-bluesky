@@ -35,6 +35,12 @@ def patch_setup_devices():
         yield patched_func
 
 
+@pytest.fixture(autouse=True)
+def patch_udc_default_state():
+    with patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"):
+        yield
+
+
 def baton_with_requested_user(
     bluesky_context: BlueskyContext, user: str = HYPERION_USER
 ) -> Baton:
