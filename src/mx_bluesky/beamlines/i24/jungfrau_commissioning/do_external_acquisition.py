@@ -21,7 +21,6 @@ from mx_bluesky.common.utils.log import LOGGER
 def do_external_acquisition(
     exp_time_s: float,
     total_triggers: PositiveInt = 1,
-    frames_per_trigger: PositiveInt = 1,
     period_between_frames_s: float | None = None,
     jungfrau: Jungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
@@ -35,7 +34,6 @@ def do_external_acquisition(
     Args:
         exp_time_s: Length of detector exposure for each frame.
         total_triggers: Number of external triggers recieved before acquisition is marked as complete.
-        frames_per_trigger: Number of frames for each external trigger.
         period_between_frames_s: Time between each detector frame, including deadtime. Not needed if frames_per_triggers is 1.
         jungfrau: Jungfrau device
         path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
@@ -51,7 +49,7 @@ def do_external_acquisition(
         jungfrau._writer._path_provider = path_provider  # noqa: SLF001
 
     trigger_info = create_jungfrau_external_triggering_info(
-        total_triggers, frames_per_trigger, exp_time_s, period_between_frames_s
+        total_triggers, exp_time_s, period_between_frames_s
     )
     yield from bps.stage(jungfrau)
     LOGGER.info("Setting up detector...")
