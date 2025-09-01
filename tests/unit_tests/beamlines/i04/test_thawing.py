@@ -65,7 +65,7 @@ async def oav(RE: RunEngine) -> OAV:
 
 @pytest.fixture
 async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
-    smargon = Smargon(name="smargon")
+    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
