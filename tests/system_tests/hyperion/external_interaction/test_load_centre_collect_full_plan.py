@@ -191,7 +191,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "overlap": 0,
     "omegastart": 90,
     "startimagenumber": 1,
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
     "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90_grid_overlay.png",
@@ -223,7 +223,7 @@ ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": -350,
     # "chiStart": 0, mx-bluesky 325
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.004,
