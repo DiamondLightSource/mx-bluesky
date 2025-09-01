@@ -31,19 +31,6 @@ def create_app_for_udc(runner):
     return app
 
 
-class ShutdownResource(Resource):
-    """Shutdown endpoint, required for implementing hyperion_restart() functionality
-    when running in a container."""
-
-    def __init__(self, runner: PlanRunner):
-        super().__init__()
-        self._runner = runner
-
-    def post(self):
-        LOGGER.info("Received shutdown API request, sending shutdown.")
-        self._runner.shutdown()
-
-
 class StatusResource(Resource):
     """Status endpoint, used by k8s healthcheck probe"""
 
