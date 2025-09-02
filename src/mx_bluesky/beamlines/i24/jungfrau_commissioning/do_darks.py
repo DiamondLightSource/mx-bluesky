@@ -10,7 +10,6 @@ from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     Jungfrau,
-    PedestalMode,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -52,8 +51,6 @@ def do_pedestal_darks(
     yield from bps.mv(
         jungfrau.drv.acquisition_type,
         AcquisitionType.PEDESTAL,
-        jungfrau.drv.pedestal_mode,
-        PedestalMode.ON,
         jungfrau.drv.gain_mode,
         GainMode.DYNAMIC,
     )
