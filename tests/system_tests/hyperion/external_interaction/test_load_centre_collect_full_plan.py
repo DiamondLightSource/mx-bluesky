@@ -171,9 +171,9 @@ def robot_load_cb() -> RobotLoadISPyBCallback:
 GRID_DC_1_EXPECTED_VALUES = {
     "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
-    "axisstart": 0.0,
+    "axisstart": 90.0,
     "axisrange": 0,
-    "axisend": 0,
+    "axisend": 90,
     "focalspotsizeatsamplex": 0.02,
     "focalspotsizeatsampley": 0.02,
     "slitgapvertical": 0.234,
@@ -189,15 +189,15 @@ GRID_DC_1_EXPECTED_VALUES = {
     "imagesuffix": "h5",
     "numberofpasses": 1,
     "overlap": 0,
-    "omegastart": 0,
+    "omegastart": 90,
     "startimagenumber": 1,
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
-    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_0_outer_overlay.png",
-    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0.png",
+    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90.png",
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
@@ -205,25 +205,25 @@ GRID_DC_1_EXPECTED_VALUES = {
 }
 
 GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
-    "axisstart": 90,
-    "axisend": 90,
-    "omegastart": 90,
+    "axisstart": 0,
+    "axisend": 0,
+    "omegastart": 0,
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
     "numberofimages": 180,
     "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90_grid_overlay.png",
+    "/robot_load_centring_file_1_0_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "/robot_load_centring_file_1_0_outer_overlay.png",
     "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90.png",
+    "/robot_load_centring_file_1_0.png",
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": -350,
     # "chiStart": 0, mx-bluesky 325
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.004,
@@ -372,7 +372,7 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, 341) Aperture: "
+        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, -571) Aperture: "
         "Small. ",
     )
     assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
@@ -1033,8 +1033,8 @@ class TestGenerateSnapshot:
             [
                 # 1 extra for robot load
                 "tests/test_data/test_images/thau_1_91_0.png",
-                "tests/test_data/test_images/thau_1_91_0.png",
                 "tests/test_data/test_images/thau_1_91_90.png",
+                "tests/test_data/test_images/thau_1_91_0.png",
             ]
         )
 
@@ -1067,14 +1067,14 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_GRID_SNAPSHOT_VALUES_0 = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
-            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
-        }
-        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
             "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
+        }
+        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
+            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
         }
         grid_dcg_id = ispyb_gridscan_cb.ispyb_ids.data_collection_group_id
         grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)
@@ -1090,8 +1090,8 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_ROTATION_SNAPSHOT_VALUES = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
         }
 
         rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -1109,10 +1109,10 @@ class TestGenerateSnapshot:
 
         for expected_path, actual_path in zip(
             [
-                "tests/test_data/test_images/thau_1_91_expected_0.png",
-                "tests/test_data/test_images/thau_1_91_expected_0.png",
                 "tests/test_data/test_images/thau_1_91_expected_270.png",
                 "tests/test_data/test_images/thau_1_91_expected_270.png",
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
             ],
             [
                 fetch_datacollection_attribute(rotation_dc_ids[i], col)

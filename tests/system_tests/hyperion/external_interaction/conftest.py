@@ -224,6 +224,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
     zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
@@ -231,7 +232,9 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
         fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
-        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        fake_recipe_wrapper.recipe_step = {
+            "parameters": {"dcid": 1234, "dcgid": 123, "gpu": True}
+        }
         message = {
             "results": zocalo.my_zocalo_result  # type: ignore
         }
