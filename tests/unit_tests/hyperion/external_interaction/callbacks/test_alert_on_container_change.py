@@ -46,7 +46,7 @@ def dummy_plan_with_container(robot: BartRobot, container: int):
 
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
-def test_when_data_collected_on_the_same_container_then_only_alerts_for_first_one(
+def test_when_data_collected_on_the_same_container_then_does_not_alert_multiple_times(
     RE: RunEngine, mock_alert_service: MagicMock, robot: BartRobot
 ):
     RE.subscribe(AlertOnContainerChange())
@@ -61,7 +61,7 @@ def test_when_data_collected_on_the_same_container_then_only_alerts_for_first_on
 
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
-def test_when_data_collected_on_new_container_then_only_alerts(
+def test_when_data_collected_on_new_container_then_alerts(
     RE: RunEngine,
     mock_alert_service: MagicMock,
     robot: BartRobot,
