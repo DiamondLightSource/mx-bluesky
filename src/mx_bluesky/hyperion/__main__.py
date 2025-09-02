@@ -198,9 +198,9 @@ def main():
 
 def _register_sigterm_handler(runner: PlanRunner):
     def shutdown_on_sigterm(sig_num, frame):
+        LOGGER.info("Received SIGTERM, shutting down...")
         runner.shutdown()
 
-    LOGGER.info("Received SIGTERM, shutting down...")
     signal.signal(signal.SIGTERM, shutdown_on_sigterm)
 
 
