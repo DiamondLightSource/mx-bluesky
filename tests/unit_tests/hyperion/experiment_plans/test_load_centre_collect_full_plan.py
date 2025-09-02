@@ -70,13 +70,15 @@ POS_MED = {
     FLYSCAN_RESULT_POS_4,
     FLYSCAN_RESULT_POS_5,
 ) = [
-    dataclasses.replace(FLYSCAN_RESULT_MED, centre_of_mass_mm=np.array(coords))
-    for coords in [
-        [0.01, 0.02, 0.03],
-        [0.02, 0.02, 0.03],
-        [0.03, 0.02, 0.03],
-        [0.04, 0.02, 0.03],
-        [0.05, 0.02, 0.03],
+    dataclasses.replace(
+        FLYSCAN_RESULT_MED, centre_of_mass_mm=np.array(coords), sample_id=sample_id
+    )
+    for (coords, sample_id) in [
+        ([0.01, 0.02, 0.03], 1),
+        ([0.02, 0.02, 0.03], 2),
+        ([0.03, 0.02, 0.03], 3),
+        ([0.04, 0.02, 0.03], 4),
+        ([0.05, 0.02, 0.03], 5),
     ]
 ]
 
@@ -699,34 +701,29 @@ def test_load_centre_collect_full_sorts_collections_by_distance_from_pin_tip(
     )
 
     expected_xyz = [
-        [
-            (10.0, 20.0, 30.0, 0.0),
-            (10.0, 20.0, 30.0, 30.0),
-            (20.0, 20.0, 30.0, 0.0),
-            (20.0, 20.0, 30.0, 30.0),
-            (30.0, 20.0, 30.0, 0.0),
-            (30.0, 20.0, 30.0, 30.0),
-            (40.0, 20.0, 30.0, 0.0),
-            (40.0, 20.0, 30.0, 30.0),
-            (50.0, 20.0, 30.0, 0.0),
-            (50.0, 20.0, 30.0, 30.0),
-        ]
+        (10.0, 20.0, 30.0, 0.0),
+        (10.0, 20.0, 30.0, 30.0),
+        (20.0, 20.0, 30.0, 0.0),
+        (20.0, 20.0, 30.0, 30.0),
+        (30.0, 20.0, 30.0, 0.0),
+        (30.0, 20.0, 30.0, 30.0),
+        (40.0, 20.0, 30.0, 0.0),
+        (40.0, 20.0, 30.0, 30.0),
+        (50.0, 20.0, 30.0, 0.0),
+        (50.0, 20.0, 30.0, 30.0),
     ]
 
-    def assert_rotation_scan_call(
-        mock_call, expected_coords: list[tuple[float, float, float, float]]
-    ):
-        params: RotationScan = mock_call.args[1]
-        actual_coords = [
-            (scan.x_start_um, scan.y_start_um, scan.z_start_um, scan.chi_start_deg)
-            for scan in list(params.single_rotation_scans)
-        ]
-        assert actual_coords == expected_coords
+    expected_sample_ids = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
 
-    for mock_call, expected_coords in zip(
-        mock_multi_rotation_scan.mock_calls, expected_xyz, strict=True
-    ):
-        assert_rotation_scan_call(mock_call, expected_coords)
+    mock_multi_rotation_scan.assert_called_once()
+    params: RotationScan = mock_multi_rotation_scan.mock_calls[0].args[1]
+    actual_coords = [
+        (scan.x_start_um, scan.y_start_um, scan.z_start_um, scan.chi_start_deg)
+        for scan in list(params.single_rotation_scans)
+    ]
+    assert actual_coords == expected_xyz
+    actual_ids = [scan.sample_id for scan in list(params.single_rotation_scans)]
+    assert actual_ids == expected_sample_ids
 
 
 def _rotation_at(
