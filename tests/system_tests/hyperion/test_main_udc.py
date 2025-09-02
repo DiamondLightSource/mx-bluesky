@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from blueapi.core import BlueskyContext
@@ -16,10 +16,8 @@ def patch_setup_devices():
 
     def patched_setup_devices(context: BlueskyContext, dev_mode: bool):
         setup_devices(context, True)
-        if not isinstance(context.run_engine, MagicMock):
-            # reapply requested user to the newly created fake baton
-            # but not if it's a magicmock
-            baton_with_requested_user(context, HYPERION_USER)
+        # reapply requested user to the newly created fake baton
+        baton_with_requested_user(context, HYPERION_USER)
 
     # Patch setup_devices to patch the baton again when it is re-created
     with (
