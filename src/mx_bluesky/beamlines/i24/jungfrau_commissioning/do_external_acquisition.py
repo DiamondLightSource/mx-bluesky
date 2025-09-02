@@ -1,10 +1,6 @@
-from pathlib import Path
-
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from ophyd_async.core import (
-    AutoIncrementFilenameProvider,
-    StaticPathProvider,
     WatchableAsyncStatus,
 )
 from ophyd_async.fastcs.jungfrau import (
@@ -13,7 +9,10 @@ from ophyd_async.fastcs.jungfrau import (
 )
 from pydantic import PositiveInt
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import fly_jungfrau
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+    fly_jungfrau,
+    override_file_name_and_path,
+)
 
 
 def do_external_acquisition(
@@ -39,13 +38,8 @@ def do_external_acquisition(
         wait: Optionally block until data collection is complete.
     """
 
-    # While we should generally use device instantiation to set the path,
-    # this will be useful during commissioning
     if path_of_output_file:
-        _file_path = Path(path_of_output_file)
-        filename_provider = AutoIncrementFilenameProvider(_file_path.name)
-        path_provider = StaticPathProvider(filename_provider, _file_path.parent)
-        jungfrau._writer._path_provider = path_provider  # noqa: SLF001
+        override_file_name_and_path(jungfrau, path_of_output_file)
 
     trigger_info = create_jungfrau_external_triggering_info(
         total_triggers, exp_time_s, period_between_frames_s
