@@ -24,6 +24,7 @@ def fly_jungfrau(
     jungfrau: Jungfrau,
     trigger_info: TriggerInfo,
     wait: bool = False,
+    log_on_percentage_message: str = "Jungfrau data collection triggers recieved",
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -49,7 +50,7 @@ def fly_jungfrau(
     # StandardDetector.complete converts regular status to watchable status,
     # but bluesky plan stubs can't see this currently
     status = cast(WatchableAsyncStatus, status)
-    log_on_percentage_complete(status, "Jungfrau data collection triggers recieved", 10)
+    log_on_percentage_complete(status, log_on_percentage_message, 10)
     if wait:
         yield from bps.wait(JF_COMPLETE_GROUP)
     return status
