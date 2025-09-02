@@ -10,6 +10,7 @@ from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     Jungfrau,
+    create_jungfrau_internal_triggering_info,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -37,12 +38,11 @@ def do_pedestal_darks(
         pedestal_loops: Number of times to acquire a set of pedestal_frames
         jungfrau: Jungfrau device
         path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
-            set during jungfrau device instantiation
+            set during Jungfrau device instantiation
         wait: Optionally block until data collection is complete.
     """
 
     prev_acq_type = yield from bps.rd(jungfrau.drv.acquisition_type)
-    prev_gain = yield from bps.rd(jungfrau.drv.gain_mode)
     prev_pedestal_mode = yield from bps.rd(jungfrau.drv.pedestal_mode)
 
     if path_of_output_file:
@@ -61,13 +61,11 @@ def do_pedestal_darks(
         exp_time_s, pedestal_frames, pedestal_loops
     )
 
-    # Revert pedestal soft signal, pedestal hard signal, and gain mode to whatever they were before running the plan
+    # Revert pedestal soft signal and pedestal hard signal to whatever they were before running the plan
     def _revert_acq_type_and_gain():
         yield from bps.mv(
             jungfrau.drv.acquisition_type,
             prev_acq_type,
-            jungfrau.drv.gain_mode,
-            prev_gain,
             jungfrau.drv.pedestal_mode,
             prev_pedestal_mode,
         )
@@ -78,35 +76,40 @@ def do_pedestal_darks(
             jungfrau,
             trigger_info,
             wait,
-            log_on_percentage_message="Jungfrau dynamic gain mode darks triggers recieved",
+            log_on_percentage_message="Jungfrau pedestal dynamic gain mode darks triggers recieved",
         )
         return status
 
     return (yield from _fly_then_revert_acquisition_type_and_gain())
 
 
-def do_darks_full(
+def do_darks_for_dynamic_gain_switching(
     exp_time_s: float = 0.001,
-    pedestal_frames: PositiveInt = 20,
-    pedestal_loops: PositiveInt = 200,
+    triggers_per_dark_scan: PositiveInt = 1000,
     jungfrau: Jungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
-    wait: bool = True,
-) -> MsgGenerator[WatchableAsyncStatus]:
-    prev_acq_type = yield from bps.rd(jungfrau.drv.acquisition_type)
-    prev_gain = yield from bps.rd(jungfrau.drv.gain_mode)
-    prev_pedestal_mode = yield from bps.rd(jungfrau.drv.pedestal_mode)
+) -> MsgGenerator:
+    """Internally take a set of images at dynamic gain, forced gain 1, and forced gain 2.
+        Blocks until all 3 collections are complete.
+
+    Args:
+        exp_time_s: Length of detector exposure for each frame.
+        triggers_per_dark_scan: Number of frames acquired for each of the 3 dark scans.
+        jungfrau: Jungfrau device
+        path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
+            set during Jungfrau device instantiation
+    """
+
+    wait = True
 
     if path_of_output_file:
         override_file_name_and_path(jungfrau, path_of_output_file)
 
-    trigger_info = create_jungfrau_pedestal_triggering_info(
-        exp_time_s, pedestal_frames, pedestal_loops
+    trigger_info = create_jungfrau_internal_triggering_info(
+        triggers_per_dark_scan, exp_time_s
     )
 
     yield from bps.mv(
-        jungfrau.drv.acquisition_type,
-        AcquisitionType.PEDESTAL,
         jungfrau.drv.gain_mode,
         GainMode.DYNAMIC,
     )
@@ -131,26 +134,3 @@ def do_darks_full(
         wait,
         log_on_percentage_message=f"Jungfrau {GainMode.FORCE_SWITCH_G2} gain mode darks triggers recieved",
     )
-
-    # Revert pedestal soft signal, pedestal hard signal, and gain mode to whatever they were before running the plan
-    def _revert_acq_type_and_gain():
-        yield from bps.mv(
-            jungfrau.drv.acquisition_type,
-            prev_acq_type,
-            jungfrau.drv.gain_mode,
-            prev_gain,
-            jungfrau.drv.pedestal_mode,
-            prev_pedestal_mode,
-        )
-
-    @bpp.finalize_decorator(final_plan=lambda: _revert_acq_type_and_gain())
-    def _fly_then_revert_acquisition_type_and_gain():
-        status = yield from fly_jungfrau(
-            jungfrau,
-            trigger_info,
-            wait,
-            log_on_percentage_message=f"Jungfrau {GainMode.FORCE_SWITCH_G2} gain mode darks triggers recieved",
-        )
-        return status
-
-    return (yield from _fly_then_revert_acquisition_type_and_gain())
