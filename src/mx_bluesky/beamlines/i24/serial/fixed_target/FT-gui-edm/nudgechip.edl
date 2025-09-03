@@ -71,7 +71,7 @@ x 143
 y 291
 w 166
 h 33
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -89,7 +89,7 @@ x 139
 y 331
 w 167
 h 21
-controlPv "ME14E-MO-CHIP-01:SEND_STRING.AINP"
+controlPv "BL24I-EA-CHIP-01:SEND_STRING.AINP"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 14
@@ -226,7 +226,7 @@ x 342
 y 281
 w 87
 h 23
-controlPv "ME14E-MO-CHIP-01:X.RBV"
+controlPv "BL24I-EA-CHIP-01:X.RBV"
 font "arial-medium-r-18.0"
 fgColor index 25
 bgColor index 5
@@ -308,7 +308,7 @@ x 344
 y 307
 w 87
 h 23
-controlPv "ME14E-MO-CHIP-01:Y.RBV"
+controlPv "BL24I-EA-CHIP-01:Y.RBV"
 font "arial-medium-r-18.0"
 fgColor index 25
 bgColor index 5
@@ -350,7 +350,7 @@ x 343
 y 333
 w 87
 h 23
-controlPv "ME14E-MO-CHIP-01:Z.RBV"
+controlPv "BL24I-EA-CHIP-01:Z.RBV"
 font "arial-medium-r-18.0"
 fgColor index 25
 bgColor index 5
@@ -377,7 +377,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-2500"
 releaseValue "#1P"
 3d
@@ -399,7 +399,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-25000"
 releaseValue "#1P"
 3d
@@ -421,7 +421,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-20"
 releaseValue "#1P"
 3d
@@ -443,7 +443,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:25000"
 releaseValue "#1P"
 3d
@@ -465,7 +465,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:2500"
 releaseValue "#1P"
 3d
@@ -487,7 +487,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:20"
 releaseValue "#1P"
 3d
@@ -509,7 +509,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:22000"
 releaseValue "#2P"
 3d
@@ -531,7 +531,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:2500"
 releaseValue "#2P"
 3d
@@ -553,7 +553,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:20"
 releaseValue "#2P"
 3d
@@ -575,7 +575,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-22000"
 releaseValue "#2P"
 3d
@@ -597,7 +597,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-2500"
 releaseValue "#2P"
 3d
@@ -619,7 +619,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-20"
 releaseValue "#2P"
 3d
@@ -721,7 +721,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:250"
 releaseValue "#2P"
 3d
@@ -743,7 +743,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:-250"
 releaseValue "#2P"
 3d
@@ -805,8 +805,8 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
-pressValue "#1hmz#2hmz#3hmz"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
+pressValue "#5hmz#6hmz#7hmz"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -949,7 +949,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "ver"
 3d
 font "arial-medium-r-18.0"
@@ -1020,7 +1020,7 @@ onColor index 3
 offColor index 3
 topShadowColor index 3
 botShadowColor index 14
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "ver"
 3d
 font "arial-medium-r-18.0"
@@ -1165,6 +1165,6 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "caget ME14E-MO-CHIP-01:X"
+  0 "caget BL24I-EA-CHIP-01:X"
 }
 endObjectProperties

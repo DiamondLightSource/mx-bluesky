@@ -1,13 +1,15 @@
+import os
 import re
 import subprocess
+from datetime import datetime
 from os import environ
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -17,7 +19,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import extract_metafile, raw_params_from_file
 
@@ -25,11 +27,12 @@ DOCKER = environ.get("DOCKER", "docker")
 
 
 @pytest.fixture
-def test_params(tmpdir):
+def test_params(tmp_path):
     param_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
-    params = RotationScan(**param_dict)
+    params = SingleRotationScan(**param_dict)
     params.demand_energy_ev = 12700
     params.scan_width_deg = 360
     params.storage_directory = "tests/test_data"
@@ -55,9 +58,15 @@ def test_params(tmpdir):
         ),
     ],
 )
+@patch(
+    "mx_bluesky.common.external_interaction.nexus.nexus_utils.time.time",
+    new=MagicMock(
+        return_value=datetime.fromisoformat("2024-05-03T17:59:43Z").timestamp()
+    ),
+)
 @pytest.mark.system_test
 def test_rotation_nexgen(
-    test_params: RotationScan,
+    test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
     test_data_directory,
@@ -76,16 +85,11 @@ def test_rotation_nexgen(
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
-
-    with patch(
-        "mx_bluesky.common.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
-        return_value=("test_time", "test_time"),
-    ):
-        RE(
-            _fake_rotation_scan(
-                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
-            )
+    RE(
+        _fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
+    )
 
     master_file = f"{tmpdir}/{prefix}_{run_number}_master.h5"
     _check_nexgen_output_passes_imginfo(
@@ -123,8 +127,6 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
                 i += 1
                 expected_line = f.readline().rstrip("\n")
                 actual_line = next(it_actual_lines)
-                if DATE_PATTERN.match(actual_line):
-                    continue
                 assert actual_line == expected_line, (
                     f"Header line {i} didn't match contents of {reference_file}: {actual_line} <-> {expected_line}"
                 )
@@ -136,9 +138,10 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
 
 
 def _run_imginfo(filename):
+    imginfo_path = os.environ.get("IMGINFO_PATH", "utility_scripts/run_imginfo.sh")
     process = subprocess.run(
         # This file is provided in the system test docker image
-        ["/usr/local/bin/imginfo", filename],
+        [imginfo_path, filename],
         text=True,
         capture_output=True,
     )
@@ -151,7 +154,7 @@ def _run_imginfo(filename):
 
 
 def _fake_rotation_scan(
-    parameters: RotationScan,
+    parameters: SingleRotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):

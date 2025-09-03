@@ -8,11 +8,10 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
-from mx_bluesky.hyperion.parameters.components import WithHyperionUDCFeatures
 from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
-from mx_bluesky.hyperion.parameters.rotation import MultiRotationScan
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -28,21 +27,21 @@ class LoadCentreCollect(
     WithVisit,
     WithSample,
     WithCentreSelection,
-    WithHyperionUDCFeatures,
 ):
     """Experiment parameters to perform the combined robot load,
     pin-tip centre and rotation scan operations."""
 
     robot_load_then_centre: RobotLoadThenCentre
-    multi_rotation_scan: MultiRotationScan
+    multi_rotation_scan: RotationScan
 
     @model_validator(mode="before")
     @classmethod
     def validate_model(cls, values):
+        values = values.copy()
         allowed_keys = (
             LoadCentreCollect.model_fields.keys()
             | RobotLoadThenCentre.model_fields.keys()
-            | MultiRotationScan.model_fields.keys()
+            | RotationScan.model_fields.keys()
         )
 
         disallowed_keys = values.keys() - allowed_keys
@@ -70,11 +69,14 @@ class LoadCentreCollect(
             f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
         )
 
+        for rotation in values["multi_rotation_scan"]["rotation_scans"]:
+            rotation["sample_id"] = values["sample_id"]
+
         new_robot_load_then_centre_params = construct_from_values(
             values, values["robot_load_then_centre"], RobotLoadThenCentre
         )
         new_multi_rotation_scan_params = construct_from_values(
-            values, values["multi_rotation_scan"], MultiRotationScan
+            values, values["multi_rotation_scan"], RotationScan
         )
         values["multi_rotation_scan"] = new_multi_rotation_scan_params
         values["robot_load_then_centre"] = new_robot_load_then_centre_params

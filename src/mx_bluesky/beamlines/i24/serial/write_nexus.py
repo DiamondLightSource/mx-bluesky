@@ -4,6 +4,7 @@ import pprint
 import time
 from datetime import datetime
 
+import bluesky.plan_stubs as bps
 import requests
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType, MappingType
@@ -20,7 +21,7 @@ def call_nexgen(
     parameters: ExtruderParameters | FixedTargetParameters,
     wavelength_in_a: float,
     beam_center_in_pix: tuple[float, float],
-    start_time: datetime | None = None,
+    start_time: datetime,
 ):
     """Call the nexus writer by sending a request to nexgen-server.
 
@@ -31,7 +32,7 @@ def call_nexgen(
         parameters (SerialAndLaserExperiment): Collection parameters.
         wavelength_in_a (float): Wavelength, in A.
         beam_center_in_pix (list[float]): Beam center position on detector, in pixels.
-        start_time (datetime, optional): Collection start time.
+        start_time (datetime): Collection start time.
 
     Raises:
         ValueError: For a wrong experiment type passed (either unknwon or not matched \
@@ -61,10 +62,10 @@ def call_nexgen(
     while time.time() - t0 < max_wait:
         if meta_h5.exists():
             SSX_LOGGER.info(f"Found {meta_h5} after {time.time() - t0:.1f} seconds")
-            time.sleep(5)
+            yield from bps.sleep(5)
             break
         SSX_LOGGER.debug(f"Waiting for {meta_h5}")
-        time.sleep(1)
+        yield from bps.sleep(1)
     if not meta_h5.exists():
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return
@@ -95,7 +96,7 @@ def call_nexgen(
         "visitpath": os.fspath(meta_h5.parent),
         "wavelength": wavelength_in_a,
         "bit_depth": bit_depth,
-        "start_time": start_time,
+        "start_time": start_time.isoformat(),
     }
     SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
     SSX_LOGGER.info(pprint.pformat(payload))

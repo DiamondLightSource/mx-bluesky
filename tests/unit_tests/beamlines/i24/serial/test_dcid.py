@@ -3,10 +3,12 @@ from unittest.mock import patch
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
+    get_pilatus_filename_template_from_device,
     get_resolution,
     read_beam_info_from_hardware,
 )
@@ -22,7 +24,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger, Pilatus
 def test_read_beam_info_from_hardware(
     dcm: DCM, mirrors: FocusMirrorsMode, eiger_beam_center: DetectorBeamCenter, RE
 ):
-    set_mock_value(dcm.wavelength_in_a, 0.6)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     expected_beam_x = 1605 * 0.075
     expected_beam_y = 1702 * 0.075
 
@@ -35,6 +37,16 @@ def test_read_beam_info_from_hardware(
     assert res.wavelength_in_a == 0.6
     assert res.beam_size_in_um == (7, 7)
     assert res.beam_center_in_mm == (expected_beam_x, expected_beam_y)
+
+
+def test_pilatus_filename(pilatus_metadata: PilatusMetadata, RE):
+    set_mock_value(pilatus_metadata.filenumber, 100)
+    expected_template = "test00100_#####.cbf"
+    template = RE(
+        get_pilatus_filename_template_from_device(pilatus_metadata)
+    ).plan_result
+
+    assert template == expected_template
 
 
 def test_get_resolution():

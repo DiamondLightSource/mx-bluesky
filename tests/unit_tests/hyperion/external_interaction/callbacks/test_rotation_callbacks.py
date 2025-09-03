@@ -12,7 +12,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
@@ -30,10 +29,11 @@ from .....conftest import raw_params_from_file
 
 
 @pytest.fixture
-def params():
+def params(tmp_path):
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+            tmp_path,
         )
     )
 
@@ -52,6 +52,7 @@ def do_rotation_scan(
     )
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -77,6 +78,7 @@ def test_nexus_handler_gets_documents_in_plan(
     assert CONST.PLAN.ROTATION_OUTER in subplans
 
 
+@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
@@ -95,88 +97,8 @@ def test_nexus_handler_only_writes_once(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
-    ispyb_store,
-    zocalo_trigger_class,
-    nexus_writer,
-    RE: RunEngine,
-    params: RotationScan,
-    do_rotation_scan,
-):
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    zocalo_trigger = zocalo_trigger_class.return_value
-
-    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-    ispyb_callback.params = params
-    RE.subscribe(nexus_callback)
-    RE.subscribe(ispyb_callback)
-    with pytest.raises(ISPyBDepositionNotMade):
-        RE(do_rotation_scan)
-    zocalo_trigger.run_start.assert_not_called()  # type: ignore
-
-
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
-)
-def test_ispyb_triggered_before_zocalo(
-    ispyb_store, zocalo_trigger_class, nexus_writer, RE: RunEngine, do_rotation_scan
-):
-    mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
-    returned_ids = IspybIds(data_collection_group_id=0, data_collection_ids=(0,))
-    mock_store_in_ispyb_instance.begin_deposition.return_value = returned_ids
-    mock_store_in_ispyb_instance.update_deposition.return_value = returned_ids
-
-    ispyb_store.return_value = mock_store_in_ispyb_instance
-    nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, ispyb_callback = create_rotation_callbacks()
-    activate_callbacks((nexus_callback, ispyb_callback))
-    ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore
-
-    parent_mock = MagicMock()
-    parent_mock.attach_mock(zocalo_trigger_class.return_value, "zocalo")
-    parent_mock.attach_mock(mock_store_in_ispyb_instance, "ispyb")
-
-    RE.subscribe(nexus_callback)
-    RE.subscribe(ispyb_callback)
-    RE(do_rotation_scan)
-
-    call_names = [call[0] for call in parent_mock.method_calls]
-
-    assert "ispyb.begin_deposition" in call_names
-    assert "zocalo.run_start" in call_names
-
-    assert call_names.index("ispyb.begin_deposition") < call_names.index(
-        "zocalo.run_start"
-    )
-
-
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )
 def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     ispyb_store, zocalo, RE: RunEngine, do_rotation_scan
@@ -189,24 +111,24 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     ispyb_callback.activity_gated_stop = MagicMock(
         autospec=True, side_effect=ispyb_callback.activity_gated_stop
     )
-
+    ispyb_store = MagicMock(spec=StoreInIspyb)
+    ispyb_callback.ispyb = ispyb_store
     parent_mock = MagicMock()
-    parent_mock.attach_mock(ispyb_store.return_value.end_deposition, "end_deposition")
+    parent_mock.attach_mock(ispyb_store.end_deposition, "end_deposition")
     parent_mock.attach_mock(ispyb_callback.activity_gated_stop, "callback_stopped")
 
     RE.subscribe(ispyb_callback)
     RE(do_rotation_scan)
 
-    assert ispyb_callback.activity_gated_stop.call_count == 2
+    assert ispyb_callback.activity_gated_stop.call_count == 3
     assert parent_mock.method_calls[1][0] == "end_deposition"
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan._move_and_rotation",
+    MagicMock(),
 )
 def test_ispyb_reuses_dcgid_on_same_sampleID(
-    rotation_ispyb: MagicMock,
     RE: RunEngine,
     params: RotationScan,
     fake_create_rotation_devices,
@@ -215,7 +137,9 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     ispyb_cb = RotationISPyBCallback()
     ispyb_cb.active = True
     ispyb_ids = IspybIds(data_collection_group_id=23, data_collection_ids=(45,))
-    rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
+    rotation_ispyb = MagicMock(spec=StoreInIspyb)
+    rotation_ispyb.begin_deposition.return_value = ispyb_ids
+    ispyb_cb.ispyb = rotation_ispyb
 
     test_cases = zip(
         [123, 123, 123, 456, 123],
@@ -228,7 +152,8 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     RE.subscribe(ispyb_cb)
 
     for sample_id, same_dcgid in test_cases:
-        params.sample_id = sample_id
+        for sweep in params.rotation_scans:
+            sweep.sample_id = sample_id
 
         RE(
             rotation_scan(
@@ -237,7 +162,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         )
 
         begin_deposition_scan_data: ScanDataInfo = (
-            rotation_ispyb.return_value.begin_deposition.call_args.args[1][0]
+            rotation_ispyb.begin_deposition.call_args.args[1][0]
         )
         if same_dcgid:
             assert begin_deposition_scan_data.data_collection_info.parent_id is not None
@@ -286,14 +211,14 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         "time": 0,
         "uid": "abc123",
     }
-
-    params.sample_id = 987678
-    params.scan_width_deg = n_images / 10
+    for scan_params in params.rotation_scans:
+        scan_params.sample_id = 987678
+        scan_params.scan_width_deg = n_images / 10
     if n_images < 200:
         params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images
     doc["subplan_name"] = CONST.PLAN.ROTATION_OUTER  # type: ignore
-    doc["mx_bluesky_parameters"] = params.model_dump_json()  # type: ignore
+    doc["mx_bluesky_parameters"] = next(params.single_rotation_scans).model_dump_json()  # type: ignore
 
     cb.start(doc)
     assert (cb.last_sample_id == 987678) is store_id

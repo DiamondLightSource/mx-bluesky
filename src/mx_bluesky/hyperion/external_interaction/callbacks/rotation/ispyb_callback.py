@@ -25,7 +25,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping i
     populate_data_collection_info_for_rotation,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
@@ -54,6 +54,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__(emit=emit)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
+        self.ispyb = StoreInIspyb(self.ispyb_config)
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
@@ -62,7 +63,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             )
             hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
-            self.params = RotationScan.model_validate_json(hyperion_params)
+            self.params = SingleRotationScan.model_validate_json(hyperion_params)
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -82,11 +83,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            self.ispyb = StoreInIspyb(self.ispyb_config)
             ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
-                cast(RotationScan, self.params)
+                cast(SingleRotationScan, self.params)
             )
             data_collection_info = populate_remaining_data_collection_info(
                 self.params.comment,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from dodal.beamline_specific_utils.i03 import beam_size_from_aperture
@@ -26,7 +27,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, SimConstants
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
 
@@ -70,10 +71,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.ispyb: StoreInIspyb
         self.descriptors: dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
-        if (
-            self.ispyb_config == SimConstants.ISPYB_CONFIG
-            or self.ispyb_config == SimConstants.DEV_ISPYB_DATABASE_CFG
-        ):
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            f"Using ISPyB configuration from {self.ispyb_config}"
+        )
+        if not self.ispyb_config or not Path(self.ispyb_config).is_absolute():
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
                 "want to use the real database, please set the ISPYB_CONFIG_PATH "
@@ -121,10 +122,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "ISPyB handler received event from read hardware"
         )
-        assert isinstance(
-            synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
-            SynchrotronMode,
-        )
+        synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
+        assert isinstance(synchrotron_mode, SynchrotronMode)
 
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],

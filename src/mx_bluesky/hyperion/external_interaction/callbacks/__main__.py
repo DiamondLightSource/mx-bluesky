@@ -1,18 +1,25 @@
 import logging
 from collections.abc import Callable, Sequence
 from threading import Thread
-from time import sleep
+from time import sleep  # noqa
 
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
+from mx_bluesky.common.external_interaction.alerting import set_alerting_service
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
+    SampleHandlingCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -23,10 +30,13 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
-    _get_logging_dir,
+    _get_logging_dirs,
     tag_filter,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
+    AlertOnContainerChange,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -35,8 +45,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
+from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
+    BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -67,18 +77,22 @@ def create_rotation_callbacks() -> tuple[
     return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
-            emit=ZocaloCallback(CONST.PLAN.ROTATION_MAIN, CONST.ZOCALO_ENV)
+            emit=ZocaloCallback(CONST.PLAN.ROTATION_MULTI, CONST.ZOCALO_ENV)
         ),
     )
 
 
 def setup_callbacks() -> list[CallbackBase]:
+    rot_nexus_cb, rot_ispyb_cb = create_rotation_callbacks()
+    snapshot_cb = BeamDrawingCallback(emit=rot_ispyb_cb)
     return [
         *create_gridscan_callbacks(),
-        *create_rotation_callbacks(),
+        rot_nexus_cb,
+        snapshot_cb,
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),
+        AlertOnContainerChange(),
     ]
 
 
@@ -87,14 +101,16 @@ def setup_logging(dev_mode: bool):
         (ISPYB_ZOCALO_CALLBACK_LOGGER, "hyperion_ispyb_callback.log"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
     ]:
+        logging_path, debug_logging_path = _get_logging_dirs(dev_mode)
         if logger.handlers == []:
             handlers = set_up_all_logging_handlers(
                 logger,
-                _get_logging_dir(),
+                logging_path,
                 filename,
                 dev_mode,
-                error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
-                graylog_port=CONST.GRAYLOG_PORT,
+                ERROR_LOG_BUFFER_LINES,
+                CONST.GRAYLOG_PORT,
+                debug_logging_path,
             )
             handlers["graylog_handler"].addFilter(tag_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
@@ -148,6 +164,7 @@ class HyperionCallbackRunner:
     def __init__(self, dev_mode) -> None:
         setup_logging(dev_mode)
         log_info("Hyperion callback process started.")
+        set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
         self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()

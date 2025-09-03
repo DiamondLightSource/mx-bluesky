@@ -99,15 +99,6 @@ def config(
         dev_mode (bool, optional): If true, will log to graylog on localhost instead \
             of production. Defaults to False.
     """
-    do_default_logging_setup(
-        "mx-bluesky.log",
-        DEFAULT_GRAYLOG_PORT,
-        dev_mode=dev_mode,
-        integrate_all_logs=False,
-    )
-    # Remove dodal StreamHandler to avoid duplication of messages above debug
-    dodal_logger.removeHandler(dodal_logger.handlers[0])
-    _integrate_bluesky_logs(dodal_logger)
     if logfile:
         logs = _get_logging_file_path() / logfile
         fileFormatter = logging.Formatter(
@@ -118,6 +109,15 @@ def config(
         FH.setLevel(logging.DEBUG)
         FH.setFormatter(fileFormatter)
         SSX_LOGGER.addHandler(FH)
+    do_default_logging_setup(
+        "mx-bluesky.log",
+        DEFAULT_GRAYLOG_PORT,
+        dev_mode=dev_mode,
+        integrate_all_logs=False,
+    )
+    # Remove dodal StreamHandler to avoid duplication of messages above debug
+    dodal_logger.removeHandler(dodal_logger.handlers[0])
+    _integrate_bluesky_logs(dodal_logger)
 
 
 def log_on_entry(func):

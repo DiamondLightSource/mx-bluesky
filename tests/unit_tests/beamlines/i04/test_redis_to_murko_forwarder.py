@@ -8,9 +8,12 @@ import pytest
 from PIL import Image
 
 from mx_bluesky.beamlines.i04.redis_to_murko_forwarder import (
+    MURKO_ADDRESS,
     BatchMurkoForwarder,
+    MurkoRequest,
     RedisListener,
     get_image_size,
+    send_to_murko_and_get_results,
 )
 
 
@@ -196,3 +199,36 @@ def test_given_jpeg_image_received_then_converted_to_numpy_array_and_sent_to_for
     assert add_call[0] == "sample_id_1"
     assert add_call[1] == "uuid_1"
     assert np.array_equal(add_call[2], np.array([[[0, 0, 0]]]))
+
+
+@patch("mx_bluesky.beamlines.i04.redis_to_murko_forwarder.zmq")
+def test_send_to_murko_and_get_results_calls_murko_as_expected(patch_zmq):
+    mock_request: MurkoRequest = {"prefix": "test"}  # type: ignore
+
+    mock_socket = patch_zmq.Context.return_value.socket.return_value
+    expected_return_dict = {"descriptions": ["returned"]}
+    mock_socket.recv.return_value = pickle.dumps(expected_return_dict)
+
+    returned = send_to_murko_and_get_results(mock_request)
+
+    mock_socket.connect.assert_called_once_with(MURKO_ADDRESS)
+    mock_socket.send.assert_called_once_with(pickle.dumps(mock_request))
+    assert returned == expected_return_dict
+
+
+@patch("mx_bluesky.beamlines.i04.redis_to_murko_forwarder.LOGGER")
+def test_given_no_bytes_received_then_warn_and_do_nothing(
+    patch_logger: MagicMock,
+    redis_listener: RedisListener,
+):
+    redis_listener.forwarder = MagicMock()
+    data = {"uuid": "uuid_1", "sample_id": "sample_id_1"}
+    redis_listener.pubsub.get_message.return_value = {  # type:ignore
+        "type": "message",
+        "data": json.dumps(data),
+    }
+    redis_listener.redis_client.hget.return_value = None  # type:ignore
+    redis_listener._get_and_handle_message()
+
+    patch_logger.warning.assert_called_once()
+    redis_listener.forwarder.add.assert_not_called()  # type:ignore

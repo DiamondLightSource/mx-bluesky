@@ -6,7 +6,7 @@ from dodal.devices.focusing_mirror import (
     MirrorStripe,
     MirrorVoltages,
 )
-from dodal.devices.undulator_dcm import UndulatorDCM
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
@@ -59,31 +59,41 @@ def _apply_and_wait_for_voltages_to_settle(
 def adjust_mirror_stripe(
     energy_kev, mirror: FocusingMirrorWithStripes, mirror_voltages: MirrorVoltages
 ):
-    """Feedback should be OFF prior to entry, in order to prevent
+    """Adjusts the mirror stripe based on the new energy.
+
+    Changing this takes some time and moves motors that are liable to overheating so we
+    check whether its required first.
+
+    Feedback should be OFF prior to entry, in order to prevent
     feedback from making unnecessary corrections while beam is being adjusted."""
     mirror_config = mirror.energy_to_stripe(energy_kev)
 
-    LOGGER.info(
-        f"Adjusting mirror stripe for {energy_kev}keV selecting {mirror_config['stripe']} stripe"
-    )
-    yield from bps.abs_set(mirror.stripe, mirror_config["stripe"], wait=True)
-    yield from bps.trigger(mirror.apply_stripe)
+    current_mirror_stripe = yield from bps.rd(mirror.stripe)
+    new_stripe = mirror_config["stripe"]
 
-    # yaw, lat cannot be done simultaneously
-    LOGGER.info(f"Adjusting {mirror.name} lat to {mirror_config['lat_mm']}")
-    yield from bps.abs_set(
-        mirror.x_mm, mirror_config["lat_mm"], wait=True, timeout=YAW_LAT_TIMEOUT_S
-    )
+    if current_mirror_stripe != new_stripe:
+        LOGGER.info(
+            f"Adjusting mirror stripe for {energy_kev}keV selecting {new_stripe} stripe"
+        )
+        yield from bps.abs_set(mirror.stripe, new_stripe, wait=True)
+        yield from bps.trigger(mirror.apply_stripe)
 
-    LOGGER.info(f"Adjusting {mirror.name} yaw to {mirror_config['yaw_mrad']}")
-    yield from bps.abs_set(
-        mirror.yaw_mrad, mirror_config["yaw_mrad"], wait=True, timeout=YAW_LAT_TIMEOUT_S
-    )
+        # yaw, lat cannot be done simultaneously
+        LOGGER.info(f"Adjusting {mirror.name} lat to {mirror_config['lat_mm']}")
+        yield from bps.abs_set(
+            mirror.x_mm, mirror_config["lat_mm"], wait=True, timeout=YAW_LAT_TIMEOUT_S
+        )
 
-    LOGGER.info("Adjusting mirror voltages...")
-    yield from _apply_and_wait_for_voltages_to_settle(
-        mirror_config["stripe"], mirror_voltages
-    )
+        LOGGER.info(f"Adjusting {mirror.name} yaw to {mirror_config['yaw_mrad']}")
+        yield from bps.abs_set(
+            mirror.yaw_mrad,
+            mirror_config["yaw_mrad"],
+            wait=True,
+            timeout=YAW_LAT_TIMEOUT_S,
+        )
+
+        LOGGER.info("Adjusting mirror voltages...")
+        yield from _apply_and_wait_for_voltages_to_settle(new_stripe, mirror_voltages)
 
 
 def adjust_dcm_pitch_roll_vfm_from_lut(
@@ -102,7 +112,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     dcm = undulator_dcm.dcm_ref()
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
     d_spacing_a: float = yield from bps.rd(
-        undulator_dcm.dcm_ref().crystal_metadata_d_spacing
+        undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
@@ -110,7 +120,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         linear_interpolation_lut(
             *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
         ),
-        dcm.pitch_in_mrad,
+        dcm.xtal_1.pitch_in_mrad,
         bragg_deg,
     )
     yield from dcm_pitch_adjuster(DCM_GROUP)
@@ -122,15 +132,10 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         linear_interpolation_lut(
             *parse_lookup_table(undulator_dcm.roll_energy_table_path)
         ),
-        dcm.roll_in_mrad,
+        dcm.xtal_1.roll_in_mrad,
         bragg_deg,
     )
     yield from dcm_roll_adjuster(DCM_GROUP)
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
-    #
-    # Adjust vfm mirror stripe and mirror voltages
-    #
-
-    # VFM Stripe selection
     yield from adjust_mirror_stripe(energy_kev, vfm, mirror_voltages)

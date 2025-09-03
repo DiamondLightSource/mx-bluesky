@@ -1,15 +1,29 @@
+import json
+import os
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import h5py
 import pytest
+from bluesky import RunEngine
+from bluesky import preprocessors as bpp
 from h5py import Dataset, Datatype, File, Group
 from numpy import dtype
 
-from mx_bluesky.hyperion.utils.validation import _generate_fake_nexus
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    standard_read_hardware_during_collection,
+)
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
+    RotationNexusFileCallback,
+)
+from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-from .....conftest import extract_metafile
+from .....conftest import extract_metafile, raw_params_from_file
 
 TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
@@ -50,8 +64,11 @@ FilesAndgroups = tuple[h5py.File, set[str], h5py.File, set[str]]
 
 
 @pytest.fixture
-def files_and_groups(tmpdir):
-    filename, run_number = _generate_fake_nexus(TEST_NEXUS_FILENAME, tmpdir)
+def files_and_groups(tmp_path, RE: RunEngine, fake_create_rotation_devices):
+    tmpdir = tmp_path
+    filename, run_number = _generate_fake_nexus(
+        TEST_NEXUS_FILENAME, RE, fake_create_rotation_devices, tmp_path
+    )
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
         f"{tmpdir}/{filename}_{run_number}_meta.h5",
@@ -142,7 +159,7 @@ DATATYPE_EXCEPTION_TABLE = {
     ),
     "/entry/instrument/name": (dtype("S20"), dtype("S1024")),
     "/entry/end_time_estimated": (
-        dtype("S10"),
+        dtype("S20"),
         "gda item end_time_estimated not present",
     ),
     "/entry/start_time": (dtype("S10"), dtype("S20")),
@@ -187,6 +204,7 @@ def mockitem(name, item):
     return m
 
 
+@pytest.mark.timeout(2)
 def test_determine_datatype_differences(
     files_and_groups: FilesAndgroups,
 ):
@@ -235,6 +253,7 @@ def test_determine_datatype_differences(
     print(diffs)
 
 
+@pytest.mark.timeout(2)
 def test_hyperion_vs_gda_datatypes(
     files_and_groups: FilesAndgroups,
 ):
@@ -245,7 +264,6 @@ def test_hyperion_vs_gda_datatypes(
         if item in hyperion_groups:
             hyperion_group = hyperion_nexus[item]
             gda_group = gda_nexus[item]
-            print(hyperion_group, gda_group)
             assert isinstance(hyperion_group, Group) and isinstance(gda_group, Group)
             for dset_or_attr in hyperion_group:
                 hyperion_item = mockitem("hyperion", dset_or_attr)
@@ -269,3 +287,90 @@ def test_hyperion_vs_gda_datatypes(
                         or DATATYPE_EXCEPTION_TABLE[item + "/" + str(dset_or_attr)]
                         == (hyperion_item.dtype, gda_item.dtype)
                     )
+
+
+def _test_params(filename_stub, tmp_path: Path):
+    def get_params(filename):
+        with open(filename) as f:
+            return json.loads(f.read())
+
+    params = RotationScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
+            tmp_path,
+        )
+    )
+    for scan_params in params.rotation_scans:
+        scan_params.x_start_um = 0
+        scan_params.y_start_um = 0
+        scan_params.z_start_um = 0
+        scan_params.scan_width_deg = 360
+    params.file_name = filename_stub
+    params.demand_energy_ev = 12700
+    params.storage_directory = str(tmp_path)
+    params.exposure_time_s = 0.004
+    return params
+
+
+def _generate_fake_nexus(
+    filename,
+    RE: RunEngine,
+    rotation_scan_composite: RotationScanComposite,
+    tmp_path: Path,
+):
+    params = _test_params(filename, tmp_path)
+    run_number = params.detector_params.run_number
+    filename_stub, run_number = sim_rotation_scan_to_create_nexus(
+        params, rotation_scan_composite, filename, RE
+    )
+    return filename_stub, run_number
+
+
+def sim_rotation_scan_to_create_nexus(
+    test_params: RotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    filename_stub,
+    RE,
+):
+    run_number = test_params.detector_params.run_number
+    nexus_filename = f"{filename_stub}_{run_number}.nxs"
+
+    fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
+
+    RE(
+        fake_rotation_scan(
+            test_params, RotationNexusFileCallback(), fake_create_rotation_devices
+        )
+    )
+
+    nexus_path = Path(test_params.storage_directory) / nexus_filename
+    assert os.path.isfile(nexus_path)
+    return filename_stub, run_number
+
+
+def fake_rotation_scan(
+    parameters: RotationScan,
+    subscription: RotationNexusFileCallback,
+    rotation_devices: RotationScanComposite,
+):
+    single_scan_parameters = next(parameters.single_rotation_scans)
+
+    @bpp.subs_decorator(subscription)
+    @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": CONST.PLAN.ROTATION_OUTER,
+            "mx_bluesky_parameters": single_scan_parameters.model_dump_json(),
+            "activate_callbacks": "RotationNexusFileCallback",
+        }
+    )
+    def plan():
+        yield from standard_read_hardware_during_collection(
+            rotation_devices.aperture_scatterguard,
+            rotation_devices.attenuator,
+            rotation_devices.flux,
+            rotation_devices.dcm,
+            rotation_devices.eiger,
+        )
+
+    return plan()

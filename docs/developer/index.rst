@@ -53,3 +53,15 @@ Documentation is split general and topic-specific sections. Each section is spli
         +++
 
         Documentation relating to integrating the murko image recognition system
+
+    .. grid-item-card:: :material-regular:`code;3em`
+
+        .. toctree::
+            :caption: Code Map
+            :maxdepth: 1
+
+            code-map/index
+
+        +++
+
+        Code map explaining the structure of the codebase

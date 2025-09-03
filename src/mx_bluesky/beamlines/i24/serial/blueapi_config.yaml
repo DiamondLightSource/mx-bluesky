@@ -5,8 +5,13 @@ env:
     - kind: planFunctions
       module: mx_bluesky.beamlines.i24.serial
   events:
-    broadcast_status_events: False
+    broadcast_status_events: false
 api:
-  port: 25565
+  url: http://localhost:25565
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
 stomp:
-  host: i24-control.diamond.ac.uk
+  enabled: true
+  url: http://i24-control.diamond.ac.uk:61613

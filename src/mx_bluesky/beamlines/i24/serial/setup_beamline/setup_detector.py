@@ -8,12 +8,12 @@ from enum import IntEnum
 import bluesky.plan_stubs as bps
 from bluesky.utils import Msg, MsgGenerator
 from dodal.common import inject
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import SSXType
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
-from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget
+from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
     Detector,
     Eiger,
@@ -22,7 +22,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
 
 EXPT_TYPE_DETECTOR_PVS = {
     SSXType.FIXED: pv.me14e_gp101,
-    SSXType.EXTRUDER: pv.ioc12_gp15,
+    SSXType.EXTRUDER: pv.ioc13_gp15,
 }
 
 
@@ -38,9 +38,9 @@ class UnknownDetectorType(Exception):
     pass
 
 
-def get_detector_type(detector_stage: DetectorMotion) -> Generator[Msg, None, Detector]:
+def get_detector_type(detector_stage: YZStage) -> Generator[Msg, None, Detector]:
     det_y = yield from bps.rd(detector_stage.y)
-    # DetectorMotion should also be used for this.
+    # YZStage should also be used for this.
     # This should be part of https://github.com/DiamondLightSource/mx_bluesky/issues/51
     if float(det_y) < Eiger.det_y_threshold:
         SSX_LOGGER.info("Eiger detector in use.")
@@ -53,9 +53,9 @@ def get_detector_type(detector_stage: DetectorMotion) -> Generator[Msg, None, De
         raise UnknownDetectorType("Detector not found.")
 
 
-def _move_detector_stage(detector_stage: DetectorMotion, target: float) -> MsgGenerator:
+def _move_detector_stage(detector_stage: YZStage, target: float) -> MsgGenerator:
     SSX_LOGGER.info(f"Moving detector stage to target position: {target}.")
-    yield from bps.mv(detector_stage.y, target)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.y, target)
 
 
 # Workaround in case the PV value has been set to the detector name
@@ -82,7 +82,7 @@ def _get_requested_detector(det_type_pv: str) -> str:
 
 
 def setup_detector_stage(
-    expt_type: SSXType, detector_stage: DetectorMotion = inject("detector_motion")
+    expt_type: SSXType, detector_stage: YZStage = inject("detector_motion")
 ) -> MsgGenerator:
     # Grab the correct PV depending on experiment
     # Its value is set with MUX on edm screen
@@ -93,4 +93,5 @@ def setup_detector_stage(
         Eiger.det_y_target if requested_detector == "eiger" else Pilatus.det_y_target
     )
     yield from _move_detector_stage(detector_stage, det_y_target)
+    caput(det_type_pv, requested_detector)
     SSX_LOGGER.info("Detector setup done.")

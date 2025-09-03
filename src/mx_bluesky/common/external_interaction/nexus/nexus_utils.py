@@ -144,7 +144,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
         list(
             detector_params.get_beam_position_pixels(detector_params.detector_distance)
         ),
-        detector_params.exposure_time,
+        detector_params.exposure_time_s,
         [(-1.0, 0.0, 0.0), (0.0, -1.0, 0.0)],
     )
 
@@ -158,6 +158,6 @@ def create_beam_and_attenuator_parameters(
         tuple[Beam, Attenuator]: Descriptions of the beam and attenuator for nexgen.
     """
     return (
-        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),  # pyright: ignore
-        Attenuator(transmission_fraction),  # pyright: ignore
+        Beam(wavelength=convert_eV_to_angstrom(energy_kev * 1000), flux=flux),
+        Attenuator(transmission=transmission_fraction),
     )

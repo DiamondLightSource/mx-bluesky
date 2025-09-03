@@ -8,8 +8,8 @@ from dodal.devices.focusing_mirror import (
     MirrorStripe,
     MirrorVoltages,
 )
-from dodal.devices.undulator_dcm import UndulatorDCM
-from ophyd_async.testing import get_mock_put
+from dodal.devices.i03.undulator_dcm import UndulatorDCM
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 from mx_bluesky.hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
@@ -61,10 +61,10 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
 
 
 @pytest.mark.parametrize(
-    "energy_kev, expected_stripe, expected_lat, expected_yaw, first_voltage, last_voltage",
+    "energy_kev, initial_stripe, expected_stripe, expected_lat, expected_yaw, first_voltage, last_voltage",
     [
-        (6.999, MirrorStripe.BARE, 0.0, 6.2, 140, 15),
-        (7.001, MirrorStripe.RHODIUM, 10.0, 0.0, 124, -46),
+        (6.999, MirrorStripe.RHODIUM, MirrorStripe.BARE, 0.0, 6.2, 140, 15),
+        (7.001, MirrorStripe.BARE, MirrorStripe.RHODIUM, 10.0, 0.0, 124, -46),
     ],
 )
 def test_adjust_mirror_stripe(
@@ -72,12 +72,15 @@ def test_adjust_mirror_stripe(
     mirror_voltages: MirrorVoltages,
     vfm: FocusingMirrorWithStripes,
     energy_kev,
-    expected_stripe,
+    initial_stripe: MirrorStripe,
+    expected_stripe: MirrorStripe,
     expected_lat,
     expected_yaw,
     first_voltage,
     last_voltage,
 ):
+    set_mock_value(vfm.stripe, initial_stripe)
+
     parent = MagicMock()
     parent.attach_mock(get_mock_put(vfm.stripe), "stripe_set")
     parent.attach_mock(get_mock_put(vfm.apply_stripe), "apply_stripe")
@@ -101,6 +104,30 @@ def test_adjust_mirror_stripe(
     )
 
 
+@pytest.mark.parametrize(
+    "energy_kev, expected_stripe",
+    [
+        (6.999, MirrorStripe.BARE),
+        (7.001, MirrorStripe.RHODIUM),
+    ],
+)
+def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
+    RE: RunEngine,
+    mirror_voltages: MirrorVoltages,
+    vfm: FocusingMirrorWithStripes,
+    energy_kev: float,
+    expected_stripe: MirrorStripe,
+):
+    set_mock_value(vfm.stripe, expected_stripe)
+
+    RE(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
+
+    get_mock_put(vfm.stripe).assert_not_called()
+    get_mock_put(vfm.apply_stripe).assert_not_called()
+    get_mock_put(vfm.x_mm.user_setpoint).assert_not_called()
+    get_mock_put(vfm.yaw_mrad.user_setpoint).assert_not_called()
+
+
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
     undulator_dcm: UndulatorDCM,
     vfm: FocusingMirrorWithStripes,
@@ -116,14 +143,14 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-pitch_in_mrad"
+        and msg.obj.name == "dcm-xtal_1-pitch_in_mrad"
         and abs(msg.args[0] - -0.78229639) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-roll_in_mrad"
+        and msg.obj.name == "dcm-xtal_1-roll_in_mrad"
         and abs(msg.args[0] - -0.2799) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )

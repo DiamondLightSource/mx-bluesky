@@ -3,11 +3,8 @@
 The __all__ list in here are the plans that are externally available from outside Hyperion.
 """
 
-from mx_bluesky.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    flyscan_xray_centre,
-)
-from mx_bluesky.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    grid_detect_then_xray_centre,
+from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
+    hyperion_grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     load_centre_collect_full,
@@ -15,20 +12,13 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
-from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
-    robot_load_then_centre,
-)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    multi_rotation_scan,
     rotation_scan,
 )
 
 __all__ = [
-    "flyscan_xray_centre",
-    "grid_detect_then_xray_centre",
-    "rotation_scan",
+    "hyperion_grid_detect_then_xray_centre",
     "pin_tip_centre_then_xray_centre",
-    "multi_rotation_scan",
-    "robot_load_then_centre",
+    "rotation_scan",
     "load_centre_collect_full",
 ]

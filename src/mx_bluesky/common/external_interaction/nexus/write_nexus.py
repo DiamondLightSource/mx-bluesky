@@ -20,13 +20,13 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_goniometer_axes,
     get_start_and_predicted_end_time,
 )
-from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.components import DiffractionExperiment
 
 
 class NexusWriter:
     def __init__(
         self,
-        parameters: DiffractionExperimentWithSample,
+        parameters: DiffractionExperiment,
         data_shape: tuple[int, int, int],
         scan_points: AxesPoints,
         *,

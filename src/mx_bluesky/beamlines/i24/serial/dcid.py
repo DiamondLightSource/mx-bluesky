@@ -7,7 +7,7 @@ from functools import lru_cache
 
 import bluesky.plan_stubs as bps
 import requests
-from dodal.beamlines import i24
+from bluesky.utils import MsgGenerator
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
@@ -51,7 +51,7 @@ def read_beam_info_from_hardware(
     mirrors: FocusMirrorsMode,
     beam_center: DetectorBeamCenter,
     detector_name: DetectorName,
-):
+) -> MsgGenerator[BeamSettings]:
     """ Read the beam information from hardware.
 
     Args:
@@ -361,7 +361,9 @@ class DCID:
             SSX_LOGGER.warning("Error completing DCID: %s (%s)", e, resp_str)
 
 
-def get_pilatus_filename_template_from_device():
+def get_pilatus_filename_template_from_device(
+    pilatus_metadata: PilatusMetadata,
+) -> MsgGenerator[str]:
     """
     Get the template file path by querying the detector PVs, mirror the construction \
     that the PPU does.
@@ -369,8 +371,6 @@ def get_pilatus_filename_template_from_device():
     Returns:
         A template string, with the image numbers replaced with '#'
     """
-    pilatus_metadata: PilatusMetadata = i24.pilatus_metadata()
-
     filename_template = yield from bps.rd(pilatus_metadata.filename_template)
     return filename_template
 

@@ -4,7 +4,7 @@ major 4
 minor 0
 release 1
 x 1006
-y 192
+y 300
 w 700
 h 900
 font "arial-medium-r-18.0"
@@ -34,8 +34,8 @@ h 308
 lineColor index 26
 fill
 fillColor index 25
-alarmPv "BL24I-EA-IOC-12:GP6"
-visPv "BL24I-EA-IOC-12:GP6"
+alarmPv "BL24I-MO-IOC-13:GP6"
+visPv "BL24I-MO-IOC-13:GP6"
 visMin "1"
 visMax "10"
 endObjectProperties
@@ -65,7 +65,7 @@ x 145
 y 328
 w 97
 h 30
-controlPv "BL24I-EA-IOC-12:GP9"
+controlPv "BL24I-MO-IOC-13:GP9"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -83,7 +83,7 @@ x 145
 y 366
 w 97
 h 30
-controlPv "BL24I-EA-IOC-12:GP10"
+controlPv "BL24I-MO-IOC-13:GP10"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -192,7 +192,7 @@ x 394
 y 124
 w 273
 h 30
-controlPv "BL24I-EA-IOC-12:GP2"
+controlPv "BL24I-MO-IOC-13:GP2"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -210,7 +210,7 @@ x 394
 y 163
 w 273
 h 30
-controlPv "BL24I-EA-IOC-12:GP3"
+controlPv "BL24I-MO-IOC-13:GP3"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -268,7 +268,7 @@ x 449
 y 200
 w 125
 h 30
-controlPv "BL24I-EA-IOC-12:GP4"
+controlPv "BL24I-MO-IOC-13:GP4"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -286,7 +286,7 @@ x 448
 y 237
 w 125
 h 30
-controlPv "BL24I-EA-IOC-12:GP5"
+controlPv "BL24I-MO-IOC-13:GP5"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -370,7 +370,7 @@ font "arial-medium-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan '\{\"zebra\":\"zebra\",\"aperture\":\"aperture\",\"backlight\":\"backlight\",\"beamstop\":\"beamstop\",\"detector_stage\":\"detector_motion\",\"shutter\":\"shutter\",\"dcm\":\"dcm\",\"mirrors\":\"focus_mirrors\",\"attenuator\":\"attenuator\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan"
 }
 endObjectProperties
 
@@ -636,7 +636,7 @@ x 448
 y 315
 w 125
 h 30
-controlPv "BL24I-EA-IOC-12:GP7"
+controlPv "BL24I-MO-IOC-13:GP7"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -832,7 +832,7 @@ botShadowColor index 11
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run initialise_extruder '\{\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run initialise_extruder"
 }
 endObjectProperties
 
@@ -989,8 +989,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 10
-y 611
+x 11
+y 606
 w 680
 h 252
 lineColor index 9
@@ -1374,7 +1374,7 @@ x 393
 y 99
 w 253
 h 18
-controlPv "BL24I-EA-IOC-12:GP1"
+controlPv "BL24I-MO-IOC-13:GP1"
 format "decimal"
 font "arial-medium-r-16.0"
 fgColor index 25
@@ -1870,7 +1870,7 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 573
+x 568
 y 675
 w 72
 h 46
@@ -1896,7 +1896,7 @@ x 430
 y 662
 w 86
 h 18
-controlPv "BL24I-EA-IOC-12:GP15"
+controlPv "BL24I-MO-IOC-13:GP15"
 format "decimal"
 font "arial-medium-r-16.0"
 fgColor index 16
@@ -1963,7 +1963,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "BL24I-EA-IOC-12:GP6"
+controlPv "BL24I-MO-IOC-13:GP6"
 font "arial-medium-r-18.0"
 numItems 2
 symbolTag {
@@ -2179,7 +2179,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser On"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseron\",\"zebra\":\"zebra\",\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseron\"\}'"
 }
 endObjectProperties
 
@@ -2201,7 +2201,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser Off"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseroff\",\"zebra\":\"zebra\",\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseroff\"\}'"
 }
 endObjectProperties
 
@@ -2223,7 +2223,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Enter hutch"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run enter_hutch '\{\"detector_stage\":\"detector_motion\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run enter_hutch"
 }
 endObjectProperties
 

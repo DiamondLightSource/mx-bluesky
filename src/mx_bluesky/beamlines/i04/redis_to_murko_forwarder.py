@@ -6,7 +6,7 @@ from typing import TypedDict
 
 import numpy as np
 import zmq
-from dodal.beamlines.i04 import MURKO_REDIS_DB, REDIS_HOST, REDIS_PASSWORD
+from dodal.devices.i04.constants import RedisConstants
 from dodal.devices.i04.murko_results import FullMurkoResults, MurkoResult
 from numpy.typing import NDArray
 from PIL import Image
@@ -42,6 +42,7 @@ def send_to_murko_and_get_results(request: MurkoRequest) -> FullMurkoResults:
     socket.connect(MURKO_ADDRESS)
     socket.send(pickle.dumps(request))
     raw_results = socket.recv()
+    assert isinstance(raw_results, bytes)
     results = pickle.loads(raw_results)
     LOGGER.info(f"Got {len(results['descriptions'])} results")
     return results
@@ -93,9 +94,10 @@ class BatchMurkoForwarder:
             ],
             "prefix": uuids,
         }
-        predictions = send_to_murko_and_get_results(request_arguments)
-        results = _correlate_results_to_uuids(request_arguments, predictions)
-        self._send_murko_results_to_redis(sample_id, results)
+
+        results = send_to_murko_and_get_results(request_arguments)
+        results_with_uuids = _correlate_results_to_uuids(request_arguments, results)
+        self._send_murko_results_to_redis(sample_id, results_with_uuids)
 
     def _send_murko_results_to_redis(
         self, sample_id: str, results: list[tuple[str, MurkoResult]]
@@ -136,9 +138,9 @@ class RedisListener:
 
     def __init__(
         self,
-        redis_host=REDIS_HOST,
-        redis_password=REDIS_PASSWORD,
-        db=MURKO_REDIS_DB,
+        redis_host=RedisConstants.REDIS_HOST,
+        redis_password=RedisConstants.REDIS_PASSWORD,
+        db=RedisConstants.MURKO_REDIS_DB,
         redis_channel="murko",
     ):
         self.redis_client = StrictRedis(
@@ -159,8 +161,15 @@ class RedisListener:
             sample_id = data["sample_id"]
 
             # Images are put in redis as raw jpeg bytes, murko needs numpy arrays
-            raw_image = self.redis_client.hget(f"murko:{sample_id}:raw", uuid)
-            assert isinstance(raw_image, bytes)
+            image_key = f"murko:{sample_id}:raw"
+            raw_image = self.redis_client.hget(image_key, uuid)
+
+            if not isinstance(raw_image, bytes):
+                LOGGER.warning(
+                    f"Image at {image_key}:{uuid} is {raw_image}, expected bytes. Ignoring the data"
+                )
+                return
+
             image = Image.open(io.BytesIO(raw_image))
             image = np.asarray(image)
 

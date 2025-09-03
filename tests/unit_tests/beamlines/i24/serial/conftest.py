@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines import i24
+from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.hutch_shutter import (
     HUTCH_SAFE_FOR_OPERATIONS,
     HutchShutter,
@@ -16,6 +18,7 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
+from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
 from dodal.utils import AnyDeviceFactory
@@ -30,7 +33,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     get_chip_format,
 )
 
-from ....conftest import device_factories_for_beamline
+from .....conftest import device_factories_for_beamline
 
 
 @pytest.fixture(scope="session")
@@ -81,6 +84,11 @@ def dummy_params_ex():
         "pump_status": False,
     }
     return ExtruderParameters(**params)
+
+
+def fake_generator(value):
+    yield from bps.null()
+    return value
 
 
 def patch_motor(motor: Motor, initial_position: float = 0):
@@ -198,3 +206,22 @@ def mirrors(RE) -> FocusMirrorsMode:
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors
+
+
+@pytest.fixture
+def attenuator(RE) -> ReadOnlyAttenuator:
+    attenuator: ReadOnlyAttenuator = i24.attenuator(connect_immediately=True, mock=True)
+    set_mock_value(attenuator.actual_transmission, 1.0)
+    return attenuator
+
+
+@pytest.fixture
+def pilatus_metadata(RE) -> PilatusMetadata:
+    pilatus_metadata: PilatusMetadata = i24.pilatus_metadata(
+        connect_immediately=True, mock=True
+    )
+    set_mock_value(pilatus_metadata.filename, "test")
+    set_mock_value(pilatus_metadata.template, "%s%s%05d.cbf")
+    set_mock_value(pilatus_metadata.filenumber, 10)
+    # Reading pilatus_metadata.filename_template should give "test00010_#####.cbf"`
+    return pilatus_metadata

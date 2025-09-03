@@ -1,14 +1,13 @@
 from pathlib import Path
-from time import sleep
 
 import bluesky.plan_stubs as bps
-from dodal.beamlines import i24
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
+from dodal.devices.motors import YZStage
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
     parse_lookup_table,
@@ -17,13 +16,6 @@ from dodal.devices.util.lookup_tables import (
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
-
-
-def get_beam_center_device(detector_in_use: str) -> DetectorBeamCenter:
-    if detector_in_use == "eiger":
-        return i24.eiger_beam_center(connect_immediately=True)
-    else:
-        return i24.pilatus_beam_center(connect_immediately=True)
 
 
 def compute_beam_center_position_from_lut(
@@ -77,14 +69,14 @@ def setup_beamline_for_collection_plan(
 
 
 def move_detector_stage_to_position_plan(
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     detector_distance: float,
 ):
     SSX_LOGGER.debug("Setup beamline: moving detector stage.")
     SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
-    yield from bps.mv(detector_stage.z, detector_distance)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.mv(detector_stage.z, detector_distance)
 
 
 def set_detector_beam_center_plan(
@@ -149,9 +141,9 @@ def modechange(action):
         caput(pv.vgon_pinzs, 0)
         caput(pv.fluo_trans, "OUT")
         caput(pv.bs_roty, 0)
-        sleep(0.5)
+        yield from bps.sleep(0.5)
         caput(pv.bs_mp_select, "Data Collection")
-        sleep(2.3)
+        yield from bps.sleep(2.3)
         caput(pv.bl_mp_select, "In")
         SSX_LOGGER.debug("Pin Data Collection Done")
 
@@ -168,9 +160,9 @@ def modechange(action):
         caput(pv.vgon_pinyh, 0)
         caput(pv.vgon_pinzs, 0)
         caput(pv.fluo_trans, "OUT")
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         caput(pv.bs_roty, 0)
-        sleep(2.6)
+        yield from bps.sleep(2.6)
         caput(pv.bl_mp_select, "In")
         caput(pv.bs_mp_select, "Data Collection")
         SSX_LOGGER.debug("RT Data Collection Done")
@@ -182,11 +174,11 @@ def modechange(action):
         caput(pv.hgon_omega, 0.0)
         caput(pv.fluo_trans, "OUT")
         caput(pv.bl_mp_select, "Out")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.aptr1_mp_select, "Manual Mounting")
         caput(pv.bs_mp_select, "Tray Mount")
         while float(caget(pv.ttab_x + ".RBV")) > 3:
-            sleep(1)
+            yield from bps.sleep(1)
         SSX_LOGGER.debug("Tray Hand Mount Done")
 
     # Tray Robot Load. This action needs to be reviewed and revised
@@ -199,15 +191,15 @@ def modechange(action):
         caput(pv.fluo_trans, "OUT")
         caput(pv.aptr1_mp_select, "In")
         caput(pv.bl_mp_select, "Out")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_roty, 0)
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_mp_select, "Robot")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_mp_select, "Data Collection Far")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_roty, 0)
-        sleep(4)
+        yield from bps.sleep(4)
         caput(pv.bl_mp_select, "In")
         SSX_LOGGER.debug("Tray Robot Mount Done")
 
@@ -220,15 +212,15 @@ def modechange(action):
         caput(pv.aptr1_mp_select, "In")
         caput(pv.fluo_trans, "OUT")
         caput(pv.bl_mp_select, "Out")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_roty, 0)
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_mp_select, "Robot")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_mp_select, "Data Collection")
-        sleep(1)
+        yield from bps.sleep(1)
         caput(pv.bs_roty, 0)
-        sleep(4)
+        yield from bps.sleep(4)
         caput(pv.bl_mp_select, "In")
         SSX_LOGGER.debug("Tray Data Collection Done")
 
@@ -252,17 +244,17 @@ def modechange(action):
         caput(pv.vgon_pinzs, 0)
         while float(caget(pv.ttab_x + ".RBV")) > 1:
             SSX_LOGGER.debug(f"moving ttab_x {caget(pv.ttab_x)}")
-            sleep(0.1)
+            yield from bps.sleep(0.1)
         while caget(pv.fluo_out_limit) == "OFF":
             SSX_LOGGER.debug("waiting on fluorescence detector")
-            sleep(0.1)
+            yield from bps.sleep(0.1)
         while caget(pv.bl_mp_select) != "Out":
             SSX_LOGGER.debug("waiting on back light to move to out")
-            sleep(0.1)
+            yield from bps.sleep(0.1)
         caput(pv.bs_mp_select, "Robot")
         caput(pv.bs_roty, 0)
         while float(caget(pv.ptab_y + ".RBV")) > -89.0:
-            sleep(1)
+            yield from bps.sleep(1)
         SSX_LOGGER.debug("Switch To Tray Done")
 
     # Tray Switch to Pin
@@ -272,11 +264,11 @@ def modechange(action):
         caput(pv.hgon_trayys, 0.0)
         caput(pv.hgon_trayzs, 0.0)
         while float(caget(pv.ttab_x + ".RBV")) > 1.0:
-            sleep(1)
+            yield from bps.sleep(1)
         caput(pv.ptab_y, 0)
         while float(caget(pv.ptab_y + ".RBV")) < -1.0:
-            sleep(1)
-        modechange("Pin_data_collection")
+            yield from bps.sleep(1)
+        yield from modechange("Pin_data_collection")
         SSX_LOGGER.debug("Switch To Pin Done")
     else:
         SSX_LOGGER.debug(f"Unknown action: {action}")
@@ -290,7 +282,6 @@ def pilatus(action, args_list):
         for arg in args_list:
             SSX_LOGGER.debug(f"Argument: {arg}")
 
-    # caput(pv.pilat_wavelength, caget(pv.dcm_lambda))
     caput(pv.pilat_detdist, caget(pv.det_z))
     caput(pv.pilat_filtertrasm, caget(pv.attn_match))
 
@@ -323,9 +314,9 @@ def pilatus(action, args_list):
         [filepath, filename, num_imgs, exptime] = args_list
         rampath = filepath.replace("dls/i24/data", "ramdisk")
         caput(pv.pilat_filepath, rampath)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         caput(pv.pilat_filename, filename)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.001
         caput(pv.pilat_acquiretime, str(acqtime))
         caput(pv.pilat_acquireperiod, str(exptime))
@@ -336,21 +327,21 @@ def pilatus(action, args_list):
         SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
         SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
         SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
-        sleep(2)
+        yield from bps.sleep(2)
         caput(pv.pilat_delaytime, 0.00)
         caput(pv.pilat_numimages, str(num_imgs))
         caput(pv.pilat_imagemode, "Continuous")
         caput(pv.pilat_triggermode, "Ext. Trigger")
-        sleep(0.2)
+        yield from bps.sleep(0.2)
 
     elif action == "quickshot-internaltrig":
         SSX_LOGGER.debug("quickshot-internaltrig")
         [filepath, filename, num_imgs, exptime] = args_list
         rampath = filepath.replace("dls/i24/data", "ramdisk")
         caput(pv.pilat_filepath, rampath)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         caput(pv.pilat_filename, filename)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.001
         caput(pv.pilat_acquiretime, str(acqtime))
         caput(pv.pilat_acquireperiod, str(exptime))
@@ -361,12 +352,12 @@ def pilatus(action, args_list):
         SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
         SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
         SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
-        sleep(2)
+        yield from bps.sleep(2)
         caput(pv.pilat_delaytime, 0.00)
         caput(pv.pilat_numimages, str(num_imgs))
         caput(pv.pilat_imagemode, "Continuous")
         caput(pv.pilat_triggermode, "Internal")
-        sleep(0.2)
+        yield from bps.sleep(0.2)
 
     # Put it all back to GDA acceptable defaults
     elif action == "return to normal":
@@ -374,21 +365,21 @@ def pilatus(action, args_list):
         caput(pv.pilat_triggermode, "Ext. Trigger")
         caput(pv.pilat_numexpimage, 1)
     SSX_LOGGER.debug("***** leaving pilatus")
-    sleep(0.1)
+    yield from bps.sleep(0.1)
     return 0
 
 
-def eiger(action, args_list):
+def eiger(action, args_list, dcm: DCM):
     SSX_LOGGER.debug("***** Entering Eiger")
     SSX_LOGGER.info(f"Setup eiger - {action}")
     if args_list:
         for arg in args_list:
             SSX_LOGGER.debug(f"Argument: {arg}")
-    # caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
     caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
-    caput(pv.eiger_wavelength, caget(pv.dcm_lambda))
+    dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
+    caput(pv.eiger_wavelength, dcm_wavelength_a)
     caput(pv.eiger_omegaincr, 0.0)
-    sleep(0.1)
+    yield from bps.sleep(0.1)
     # Setup common to all collections ###
     caput(pv.eiger_filewriter, "No")
     caput(pv.eiger_stream, "Yes")
@@ -409,9 +400,9 @@ def eiger(action, args_list):
         [filepath, filename, num_imgs, exptime] = args_list
         filename = filename + "_" + str(caget(pv.eiger_seqID))
         caput(pv.eiger_ODfilepath, filepath)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         caput(pv.eiger_ODfilename, filename)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
         SSX_LOGGER.debug(f"Filepath was set as {filepath}")
@@ -425,7 +416,7 @@ def eiger(action, args_list):
         caput(pv.eiger_triggermode, "Internal Series")
         caput(pv.eiger_numtriggers, 1)
         caput(pv.eiger_manualtrigger, "Yes")
-        sleep(1.0)
+        yield from bps.sleep(1.0)
         # ODIN setup
         SSX_LOGGER.info("Setting up Odin")
         caput(pv.eiger_ODfilename, filename)
@@ -435,7 +426,7 @@ def eiger(action, args_list):
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
         caput(pv.eiger_ODdatatype, eigerbdrbv)
         caput(pv.eiger_ODcompress, "BSL24")
-        sleep(1.0)
+        yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
         caput(pv.eiger_ODcapture, "Capture")
@@ -451,9 +442,9 @@ def eiger(action, args_list):
         [filepath, filename, num_imgs, exptime] = args_list
         filename = filename + "_" + str(caget(pv.eiger_seqID))
         caput(pv.eiger_ODfilepath, filepath)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         caput(pv.eiger_ODfilename, filename)
-        sleep(0.1)
+        yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
         SSX_LOGGER.debug(f"Filepath was set as {filepath}")
@@ -467,7 +458,7 @@ def eiger(action, args_list):
         caput(pv.eiger_triggermode, "External Enable")
         caput(pv.eiger_numtriggers, str(num_imgs))
         caput(pv.eiger_manualtrigger, "Yes")
-        sleep(1.0)
+        yield from bps.sleep(1.0)
         # ODIN setup #
         SSX_LOGGER.info("Setting up Odin")
         caput(pv.eiger_ODfilename, filename)
@@ -477,7 +468,7 @@ def eiger(action, args_list):
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
         caput(pv.eiger_ODdatatype, eigerbdrbv)
         caput(pv.eiger_ODcompress, "BSL24")
-        sleep(1.0)
+        yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
         caput(pv.eiger_ODcapture, "Capture")
@@ -492,7 +483,7 @@ def eiger(action, args_list):
         caput(pv.eiger_manualtrigger, "No")
         # caput(pv.eiger_seqID, int(caget(pv.eiger_seqID))+1)
     SSX_LOGGER.debug("***** leaving Eiger")
-    sleep(0.1)
+    yield from bps.sleep(0.1)
     return 0
 
 
@@ -510,10 +501,10 @@ def xspress3(action, args_list):
         caput(pv.xsp3_acquiretime, exp_time)
         caput(pv.xsp3_c1_mca_roi1_llm, lo)
         caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        sleep(0.2)
+        yield from bps.sleep(0.2)
         caput(pv.xsp3_c1_mca_roi1_llm, lo)
         caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        sleep(0.2)
+        yield from bps.sleep(0.2)
         caput(pv.xsp3_erase, 0)
 
     elif action == "on-the-fly":
@@ -522,10 +513,10 @@ def xspress3(action, args_list):
         caput(pv.xsp3_numimages, num_frms)
         caput(pv.xsp3_c1_mca_roi1_llm, lo)
         caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        sleep(0.2)
+        yield from bps.sleep(0.2)
         caput(pv.xsp3_c1_mca_roi1_llm, lo)
         caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        sleep(0.2)
+        yield from bps.sleep(0.2)
         caput(pv.xsp3_erase, 0)
 
     elif action == "return-to-normal":
@@ -539,6 +530,6 @@ def xspress3(action, args_list):
     else:
         SSX_LOGGER.error("Unknown action for xspress3 method:", action)
 
-    sleep(0.1)
+    yield from bps.sleep(0.1)
     SSX_LOGGER.debug("***** leaving xspress3")
     return 1

@@ -33,8 +33,13 @@ def _get_beam_centre(oav: OAV):
 
 def _calculate_zoom_calibrator(oav: OAV):
     """Set the scale for the zoom calibrator for the pmac moves."""
-    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-    zoomcalibrator = 1.547 - (0.03 * currentzoom) + (0.0001634 * currentzoom**2)
+    currentzoom = yield from bps.rd(oav.zoom_controller.percentage)
+    zoomcalibrator = (
+        1.285
+        - (0.02866 * currentzoom)
+        + (0.00025 * currentzoom**2)
+        - (0.0000008151 * currentzoom**3)
+    )
     return zoomcalibrator
 
 
@@ -49,11 +54,13 @@ def _move_on_mouse_click_plan(
     zoomcalibrator = yield from _calculate_zoom_calibrator(oav)
     beamX, beamY = yield from _get_beam_centre(oav)
     x, y = clicked_position
-    xmove = -1 * (beamX - x) * zoomcalibrator
-    ymove = 1 * (beamY - y) * zoomcalibrator
+    xmove = -10 * (beamX - x) * zoomcalibrator
+    ymove = 10 * (beamY - y) * zoomcalibrator
+    SSX_LOGGER.info(f"Zoom calibrator {zoomcalibrator}")
+    SSX_LOGGER.info(f"Beam centre {beamX} {beamY}")
     SSX_LOGGER.info(f"Moving X and Y {xmove} {ymove}")
-    xmovepmacstring = "#1J:" + str(xmove)
-    ymovepmacstring = "#2J:" + str(ymove)
+    xmovepmacstring = "&2#5J:" + str(xmove)
+    ymovepmacstring = "&2#6J:" + str(ymove)
     yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
     yield from bps.abs_set(pmac.pmac_string, ymovepmacstring, wait=True)
 
@@ -188,21 +195,21 @@ def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
                 manager.block_check()
             )  # doesn't work well for blockcheck as image doesn't update
         if k == 104:  # H
-            RE(bps.abs_set(pmac.pmac_string, "#2J:-10", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#6J:-10", wait=True))
         if k == 110:  # N
-            RE(bps.abs_set(pmac.pmac_string, "#2J:10", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#6J:10", wait=True))
         if k == 109:  # M
-            RE(bps.abs_set(pmac.pmac_string, "#1J:-10", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#5J:-10", wait=True))
         if k == 98:  # B
-            RE(bps.abs_set(pmac.pmac_string, "#1J:10", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#5J:10", wait=True))
         if k == 105:  # I
-            RE(bps.abs_set(pmac.pmac_string, "#3J:-150", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#7J:-150", wait=True))
         if k == 111:  # O
-            RE(bps.abs_set(pmac.pmac_string, "#3J:150", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#7J:150", wait=True))
         if k == 117:  # U
-            RE(bps.abs_set(pmac.pmac_string, "#3J:-1000", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#7J:-1000", wait=True))
         if k == 112:  # P
-            RE(bps.abs_set(pmac.pmac_string, "#3J:1000", wait=True))
+            RE(bps.abs_set(pmac.pmac_string, "&2#7J:1000", wait=True))
         if k == 0x1B:  # esc
             cv.destroyWindow("OAV1view")
             print("Pressed escape. Closing window")
