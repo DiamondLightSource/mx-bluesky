@@ -2,7 +2,7 @@ import bluesky.plan_stubs as bps
 import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.collimation_table import CollimationTable
-from dodal.devices.cryostream import CryoStream
+from dodal.devices.cryostream import CompositeCryoStreamCryoJet
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import (
     FluorescenceDetector,
@@ -12,10 +12,12 @@ from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
 
+from mx_bluesky.hyperion.parameters.constants import CONST
+
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices:
-    cryostream: CryoStream
+    cryostream: CompositeCryoStreamCryoJet
     fluorescence_det_motion: FluorescenceDetector
     beamstop: Beamstop
     scintillator: Scintillator
@@ -25,12 +27,12 @@ class UDCDefaultDevices:
 
 def move_to_udc_default_state(devices: UDCDefaultDevices):
     """Moves beamline to known positions prior to UDC start"""
-
-    cryostream_temp = yield from bps.rd(devices.cryostream.temperature_k)
-    cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure_bar)
-    if cryostream_temp > devices.cryostream.MAX_TEMP_K:
+    cryostream = devices.cryostream.cryostream.status
+    cryostream_temp = yield from bps.rd(cryostream.temp)
+    cryostream_pressure = yield from bps.rd(cryostream.back_pressure)
+    if cryostream_temp > CONST.HARDWARE.MAX_CRYO_TEMP_K:
         raise ValueError("Cryostream temperature is too high, not starting UDC")
-    if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
+    if cryostream_pressure > CONST.HARDWARE.MAX_CRYO_PRESSURE_BAR:
         raise ValueError("Cryostream back pressure is too high, not starting UDC")
 
     yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
@@ -59,7 +61,11 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         group="udc_default",
     )
 
-    yield from bps.abs_set(devices.cryostream.course, CryoInOut.IN, group="udc_default")
-    yield from bps.abs_set(devices.cryostream.fine, CryoInOut.IN, group="udc_default")
+    yield from bps.abs_set(
+        devices.cryostream.cryojet.course, CryoInOut.IN, group="udc_default"
+    )
+    yield from bps.abs_set(
+        devices.cryostream.cryojet.fine, CryoInOut.IN, group="udc_default"
+    )
 
     yield from bps.wait("udc_default")
