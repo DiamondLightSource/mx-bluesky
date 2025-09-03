@@ -84,3 +84,12 @@ deployment is currently running. You should see two processes, the main process 
     $ ps ax | grep hyperion
     1181420 ?        Sl     2:36 /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/python /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/hyperion
     1181422 ?        Sl     1:54 /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/python /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/hyperion-callbacks
+
+Kubernetes Install
+------------------
+
+If Hyperion is deployed on Kubernetes then it can be managed from the beamline kubernetes dashboard, e.g. 
+https://k8s-i03-dashboard.diamond.ac.uk
+
+In the beamline namespace there will be a deployment ``hyperion-deployment``, a ``hyperion-svc`` service and associated 
+pods, ingress etc. through which the current state may be observed / managed.

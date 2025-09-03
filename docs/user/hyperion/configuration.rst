@@ -42,11 +42,11 @@ Config Server
 =============
 
 If the `Config Server`_ is deployed and running, Hyperion is configured to use it in preference to reading the 
-configuration files 
-directly. However in the event of the config server being unavailable Hyperion will fall back to reading them from 
-the filesystem.
+``domain.properties`` file directly. However in the event of the config server being unavailable Hyperion will fall
+back to reading it from the filesystem.
 
-Note that currently not all of the configuration files are read from the config server, but the intention is that 
-ultimately it will be the source of all configuration.
+Note that currently the rest of the configuration files are not read from the config server, but the intention is that 
+ultimately it will be the source of all configuration and the remainder of the files in ``daq_configuration`` will be
+moved over to it.
 
 .. _Config Server: https://github.com/DiamondLightSource/daq-config-server/
