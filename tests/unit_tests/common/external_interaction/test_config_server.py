@@ -8,7 +8,7 @@ from mx_bluesky.common.external_interaction.config_server import MXConfigClient
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
     FeatureSetting,
-    FeatureSettingources,
+    FeatureSettingSources,
     OavConstants,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
@@ -18,14 +18,14 @@ from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 
 def test_verify_feature_parameters():
-    class BadHyperionFeatureSettingources(FeatureSettingources):
+    class BadHyperionFeatureSettingSources(FeatureSettingSources):
         USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
         USE_ZEBRA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
         SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
 
     with pytest.raises(AssertionError):
         MXConfigClient(
-            feature_sources=BadHyperionFeatureSettingources,
+            feature_sources=BadHyperionFeatureSettingSources,
             feature_dc=HyperionFeatureSetting,
         )
 
@@ -123,7 +123,7 @@ def test_refresh_cache():
     server.get_file_contents.assert_has_calls(call_list, any_order=True)
 
 
-class BadFeatureSettingSources(FeatureSettingources):
+class BadFeatureSettingSources(FeatureSettingSources):
     USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
     USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
     SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"

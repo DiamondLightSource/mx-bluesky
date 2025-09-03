@@ -4,6 +4,9 @@ from collections.abc import Callable
 from typing import TypedDict
 
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.hyperion.experiment_plans import (
     hyperion_grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
@@ -15,7 +18,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 
 def not_implemented():

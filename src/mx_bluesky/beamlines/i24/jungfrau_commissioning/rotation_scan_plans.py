@@ -1,0 +1,239 @@
+from __future__ import annotations
+
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+import pydantic
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
+from dodal.devices.hutch_shutter import HutchShutter, ShutterState
+from dodal.devices.i24.aperture import Aperture, AperturePositions
+from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.i24.dcm import DCM
+from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.motors import YZStage
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
+from ophyd_async.fastcs.jungfrau import (
+    Jungfrau,
+    create_jungfrau_external_triggering_info,
+)
+
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
+    JsonMetadataWriter,
+)
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+    JF_COMPLETE_GROUP,
+    fly_jungfrau,
+    override_file_name_and_path,
+)
+from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
+    disarm_zebra,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    read_hardware_plan,
+)
+from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
+    RotationMotionProfile,
+    calculate_motion_profile,
+)
+from mx_bluesky.common.experiment_plans.setup_zebra import (
+    arm_zebra,
+    setup_zebra_for_rotation,
+)
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    PlanGroupCheckpointConstants,
+    PlanNameConstants,
+)
+from mx_bluesky.common.parameters.device_composites import GonioWithXYZOmega
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
+from mx_bluesky.common.utils.log import LOGGER
+
+EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
+READING_DUMP_FILENAME = "collection_info.json"
+
+JF_DET_STAGE_Y_POSITION = 0  # TODO find out what this is!
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class RotationScanComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    aperture: Aperture
+    attenuator: EnumFilterAttenuator
+    jungfrau: Jungfrau
+    gonio: GonioWithXYZOmega
+    synchrotron: Synchrotron
+    sample_shutter: ZebraShutter
+    zebra: Zebra
+    xbpm_feedback: XBPMFeedback
+    hutch_shutter: HutchShutter
+    beamstop: Beamstop
+    det_stage: YZStage  # TODO add JF position to det stage device
+    backlight: DualBacklight
+    dcm: DCM
+
+
+def set_up_beamline_for_rotation(
+    composite: RotationScanComposite,
+):
+    """Check hutch is open, move backlight in, then, in parallel,
+    move aperture in, move backlight out and move det stage in"""
+
+    hutch_shutter_state: ShutterState = yield from bps.rd(
+        composite.hutch_shutter.status
+    )
+    LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
+    if hutch_shutter_state != ShutterState.OPEN:
+        LOGGER.error(f"Hutch shutter is not open! State is {hutch_shutter_state}")
+        raise Exception()
+    LOGGER.info("Making sure backlight is moved out...")
+    yield from bps.mv(composite.backlight.backlight_position, BacklightPositions.OUT)
+
+    LOGGER.info(
+        "Making sure aperture and beamstop are in, and detector stage is in position"
+    )
+    yield from bps.mv(
+        composite.aperture,
+        AperturePositions,
+        composite.beamstop.pos_select,
+        composite.beamstop,
+        BeamstopPositions.DATA_COLLECTION,
+        composite.det_stage.y,
+        JF_DET_STAGE_Y_POSITION,
+    )
+
+
+def single_rotation_plan(
+    composite: RotationScanComposite,
+    params: SingleRotationScan,
+):
+    """A stub plan to collect diffraction images from a sample continuously rotating
+    about a fixed axis - for now this axis is limited to omega.
+    Needs additional setup of the sample environment and a wrapper to clean up."""
+
+    # This should be somewhere more sensible - like in the parameter model
+    if not params.detector_distance_mm:
+        raise ValueError("Must specify detector distance in mm")
+    beam_xy = params.detector_params.get_beam_position_mm(params.detector_distance_mm)
+
+    yield from set_up_beamline_for_rotation(composite)
+    LOGGER.info(
+        f"Moving detector Z stage to specified {params.detector_distance_mm} mm..."
+    )
+    # This can probably be done in parallel with other stuff, but will do wait for now until tested
+    yield from bps.mv(composite.det_stage.z, params.detector_distance_mm)
+
+    # This value isn't actually used, see https://github.com/DiamondLightSource/mx-bluesky/issues/1224
+    _motor_time_to_speed = 1
+    _max_velocity_deg_s = yield from bps.rd(composite.gonio.omega.max_velocity)
+
+    motion_values = calculate_motion_profile(
+        params, _motor_time_to_speed, _max_velocity_deg_s
+    )
+
+    metadata_writer = JsonMetadataWriter(beam_xy)
+
+    @bpp.subs_decorator([metadata_writer])
+    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROTATION_MAIN,
+            "scan_points": [params.scan_points],
+        }
+    )
+    def _rotation_scan_plan(
+        motion_values: RotationMotionProfile,
+        composite: RotationScanComposite,
+    ):
+        _jf_trigger_info = create_jungfrau_external_triggering_info(
+            params.num_images, params.detector_params.exposure_time_s
+        )
+
+        axis = composite.gonio.omega
+
+        # can move to start as fast as possible
+        yield from bps.abs_set(
+            axis.velocity, motion_values.max_velocity_deg_s, wait=True
+        )
+        LOGGER.info(f"Moving omega to beginning, {motion_values.start_scan_deg=}")
+        yield from bps.abs_set(
+            axis,
+            motion_values.start_motion_deg,
+            group=PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
+        )
+
+        yield from setup_zebra_for_rotation(
+            composite.zebra,
+            composite.sample_shutter,
+            start_angle=motion_values.start_scan_deg,
+            scan_width=motion_values.scan_width_deg,
+            direction=motion_values.direction,
+            shutter_opening_deg=motion_values.shutter_opening_deg,
+            shutter_opening_s=motion_values.shutter_time_s,
+            group="setup_zebra",
+        )
+
+        LOGGER.info("Wait for any previous moves...")
+        # wait for all the setup tasks at once
+        yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)
+        yield from bps.wait(PlanGroupCheckpointConstants.MOVE_GONIO_TO_START)
+
+        yield from read_hardware_plan(
+            [composite.synchrotron, composite.gonio],
+            DocDescriptorNames.HARDWARE_READ_PRE,
+        )
+
+        # Get ready for the actual scan
+        yield from bps.abs_set(
+            axis.velocity, motion_values.speed_for_rotation_deg_s, wait=True
+        )
+
+        yield from bps.wait("setup_zebra")
+        yield from arm_zebra(composite.zebra)
+
+        # Check topup gate
+        yield from check_topup_and_wait_if_necessary(
+            composite.synchrotron,
+            motion_values.total_exposure_s,
+            ops_time=10.0,  # Additional time to account for rotation, is s
+        )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+
+        override_file_name_and_path(
+            composite.jungfrau, params.detector_params.full_filename
+        )
+
+        yield from fly_jungfrau(
+            composite.jungfrau,
+            _jf_trigger_info,
+            wait=False,
+            log_on_percentage_message="Jungfrau rotation scan triggers received",
+        )
+
+        LOGGER.info("Executing rotation scan")
+        yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
+
+        yield from read_hardware_plan(
+            [composite.attenuator, composite.jungfrau],
+            DocDescriptorNames.HARDWARE_READ_DURING,
+        )
+
+        yield from bps.wait(group=JF_COMPLETE_GROUP)
+
+    # TODO check bluesky doesnt do this for us
+    yield from bpp.contingency_wrapper(
+        _rotation_scan_plan(motion_values, composite),
+        except_plan=lambda: (yield from bps.unstage(composite.jungfrau)),
+    )
+
+    yield from _rotation_scan_plan(motion_values, composite)
+
+
+def cleanup_plan(zebra: Zebra, group="cleanup"):
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
+    yield from disarm_zebra(zebra)
+    yield from bps.wait("cleanup")

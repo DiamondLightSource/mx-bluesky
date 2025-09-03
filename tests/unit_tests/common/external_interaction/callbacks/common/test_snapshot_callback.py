@@ -18,11 +18,13 @@ from PIL import Image
 
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ......conftest import assert_images_pixelwise_equal, raw_params_from_file
 

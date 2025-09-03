@@ -10,13 +10,15 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
     OddYStepsException,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import raw_params_from_file
 

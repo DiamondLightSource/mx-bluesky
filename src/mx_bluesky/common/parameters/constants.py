@@ -107,6 +107,8 @@ class GridscanParamConstants:
 @dataclass(frozen=True)
 class RotationParamConstants:
     DEFAULT_APERTURE_POSITION = ApertureValue.LARGE
+    DEFAULT_SHUTTER_TIME_S = 0.06
+    OMEGA_FLIP = True  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1223 to make beamline-specific
 
 
 @dataclass(frozen=True)
@@ -165,6 +167,6 @@ class Status(Enum):
 class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
-class FeatureSettingources(
+class FeatureSettingSources(
     StrEnum
 ): ...  # List of features and the name of that property in domain.properties

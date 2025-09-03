@@ -23,6 +23,9 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_decorator,
 )
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -36,7 +39,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
 from ..conftest import (  # noqa

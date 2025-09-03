@@ -20,12 +20,14 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     populate_data_collection_info_for_rotation,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop

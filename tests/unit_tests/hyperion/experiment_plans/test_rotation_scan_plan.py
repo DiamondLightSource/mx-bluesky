@@ -39,6 +39,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+    SingleRotationScan,
+)
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
@@ -57,7 +61,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
     DocumentCapturer,
@@ -876,9 +879,7 @@ def test_rotation_scan_moves_beamstop_into_place(
     "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
     MagicMock(),
 )
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
-)
+@patch("mx_bluesky.common.experiment_plans.setup_zebra.setup_zebra_for_rotation")
 def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_event_params(
     mock_setup_zebra_for_rotation: MagicMock,
     omega_flip: bool,

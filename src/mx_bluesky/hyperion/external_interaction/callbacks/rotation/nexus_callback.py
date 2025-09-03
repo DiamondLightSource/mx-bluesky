@@ -14,9 +14,12 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     vds_type_based_on_bit_depth,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
+from mx_bluesky.common.parameters.constants import RotationParamConstants
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -103,6 +106,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 full_num_of_images=self.full_num_of_images,
                 meta_data_run_number=self.meta_data_run_number,
                 axis_direction=AxisDirection.NEGATIVE
-                if I03Constants.OMEGA_FLIP
+                if RotationParamConstants.OMEGA_FLIP
                 else AxisDirection.POSITIVE,
             )

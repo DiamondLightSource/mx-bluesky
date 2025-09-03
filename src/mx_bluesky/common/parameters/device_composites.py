@@ -23,6 +23,8 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.core import StandardReadable
+from ophyd_async.epics.motor import Motor
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -63,3 +65,10 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     zebra: Zebra
     robot: BartRobot
     sample_shutter: ZebraShutter
+
+
+class GonioWithXYZOmega(StandardReadable):
+    omega: Motor
+    x: Motor
+    y: Motor
+    z: Motor

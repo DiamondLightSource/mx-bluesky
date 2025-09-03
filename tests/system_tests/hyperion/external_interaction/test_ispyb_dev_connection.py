@@ -35,6 +35,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -56,7 +59,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from ....conftest import SimConstants, replace_all_tmp_paths
 from ...conftest import (

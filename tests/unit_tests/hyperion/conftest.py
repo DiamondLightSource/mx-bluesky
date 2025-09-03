@@ -8,12 +8,14 @@ from dodal.beamlines import i03
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
 )
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from tests.conftest import (
     raw_params_from_file,
 )

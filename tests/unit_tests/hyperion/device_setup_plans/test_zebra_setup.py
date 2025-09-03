@@ -10,9 +10,9 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
 )
 
+from mx_bluesky.common.experiment_plans.setup_zebra import setup_zebra_for_rotation
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_panda_flyscan,
-    setup_zebra_for_rotation,
 )
 from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     configure_zebra_and_shutter_for_auto_shutter,

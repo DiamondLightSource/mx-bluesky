@@ -1,0 +1,83 @@
+import json
+from pathlib import Path
+
+from bluesky.callbacks import CallbackBase
+
+from mx_bluesky.common.parameters.rotation import SingleRotationScan
+from mx_bluesky.common.utils.log import LOGGER
+
+EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
+READING_DUMP_FILENAME = "collection_info.json"
+
+
+class JsonMetadataWriter(CallbackBase):
+    """Callback class to handle the creation of metadata json files for commissioning.
+
+    To use, subscribe the Bluesky RunEngine to an instance of this class.
+    E.g.:
+        metadata_writer_callback = JsonMetadataWriter(parameters)
+        RE.subscribe(metadata_writer_callback)
+    Or decorate a plan using bluesky.preprocessors.subs_decorator.
+
+    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
+
+    """
+
+    def __init__(self, beam_xy: tuple[float, float]):
+        self.beam_xy = beam_xy
+        super().__init__()
+
+    descriptors: dict[str, dict] = {}
+    parameters: SingleRotationScan
+    wavelength: float | None = None
+    flux: float | None = None
+    transmission: float | None = None
+
+    def start(self, doc: dict):  # type: ignore
+        if doc.get("subplan_name") == "rotation_scan_with_cleanup":
+            LOGGER.info(
+                "Metadata writer recieved start document with experiment parameters."
+            )
+            json_params = doc.get("rotation_scan_params")
+            assert json_params is not None
+            self.parameters = SingleRotationScan(**json.loads(json_params))
+            self.run_start_uid = doc.get("uid")
+
+    def descriptor(self, doc: dict):  # type: ignore
+        self.descriptors[doc["uid"]] = doc
+
+    def event(self, doc: dict):  # type: ignore
+        LOGGER.info("Nexus handler received event document.")
+        event_descriptor = self.descriptors[doc["descriptor"]]
+
+        if event_descriptor.get("name") == "beam params":
+            assert self.parameters is not None
+            data = doc.get("data")
+            assert data is not None
+            self.wavelength_in_a = data.get("dcm-wavelength_in_a")
+            self.energy_in_kev = data.get("dcm-energy_in_kev")
+            self.detector_distance_mm = data.get("detector_motion-z")
+            LOGGER.info(
+                f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance}, beam_xy: {self.beam_xy}"
+            )
+            LOGGER.info("")
+
+    def stop(self, doc: dict):  # type: ignore
+        if (
+            self.run_start_uid is not None
+            and doc.get("run_start") == self.run_start_uid
+        ):
+            with open(
+                Path(self.parameters.storage_directory) / READING_DUMP_FILENAME, "w"
+            ) as f:
+                f.write(
+                    json.dumps(
+                        {
+                            "wavelength_in_a": self.wavelength_in_a,
+                            "energy_kev": self.energy_in_kev,
+                            "angular_increment_deg": self.parameters.rotation_increment_deg,
+                            "beam_xy_mm": self.beam_xy,
+                            "detector_distance_mm": self.detector_distance_mm,
+                        }
+                    )
+                )
