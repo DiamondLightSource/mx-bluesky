@@ -370,7 +370,7 @@ font "arial-medium-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_extruder_plan"
+  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION run_extruder_plan"
 }
 endObjectProperties
 
@@ -832,7 +832,7 @@ botShadowColor index 11
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run initialise_extruder"
+  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION initialise_extruder"
 }
 endObjectProperties
 
@@ -2179,7 +2179,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser On"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseron\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION laser_check '\{\"mode\":\"laseron\"\}'"
 }
 endObjectProperties
 
@@ -2201,7 +2201,7 @@ font "arial-medium-r-20.0"
 buttonLabel "Laser Off"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run laser_check '\{\"mode\":\"laseroff\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION laser_check '\{\"mode\":\"laseroff\"\}'"
 }
 endObjectProperties
 
@@ -2223,7 +2223,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Enter hutch"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run enter_hutch"
+  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION enter_hutch"
 }
 endObjectProperties
 
