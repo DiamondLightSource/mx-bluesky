@@ -17,4 +17,4 @@ The image streaming must be done with an ophyd device as there is too much data 
 
 When the data is entered into redis it will publish a message to the redis ``murko`` channel. This will get picked up by the `redis_to_murko_forwarder <https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/beamlines/i04/redis_to_murko_forwarder.py>`_, which will forward the data to murko.
 
-Murko will then enter the results back into redis where they are retrieved by the `MurkoResultsDevice <https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i04/murko_results.py>` in ``dodal``. This device uses these results to calculate where the sample should be moved to and carry out these movements.
+Murko will then enter the results back into redis where they are retrieved by the `MurkoResultsDevice <https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i04/murko_results.py>`_ in ``dodal``. This device uses these results to calculate where the sample should be moved to and carry out these movements.
