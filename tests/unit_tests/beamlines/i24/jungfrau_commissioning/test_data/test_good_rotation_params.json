@@ -1,0 +1,16 @@
+{
+    "parameter_model_version": "5.0.0",
+    "storage_directory": "{tmp_data}/123456/",
+    "detector_distance_mm": 100.0,
+    "exposure_time_s": 0.1,
+    "omega_start_deg": 45,
+    "file_name": "file_name",
+    "rotation_increment_deg": 0.1,
+    "sample_id": 123456,
+    "shutter_opening_time_s": 0.5,
+    "visit": "cm31105-4",
+    "transmission_frac": 0.1
+}
+
+
+

@@ -16,8 +16,8 @@ from ophyd_async.fastcs.panda import (
 )
 
 from mx_bluesky.common.device_setup_plans.setup_panda import load_panda_from_yaml
+from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.parameters.constants import DeviceSettingsConstants
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60

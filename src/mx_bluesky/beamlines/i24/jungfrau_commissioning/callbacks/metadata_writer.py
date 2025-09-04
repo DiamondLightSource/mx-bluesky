@@ -3,6 +3,8 @@ from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
 
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import METADATA_READ
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -25,6 +27,10 @@ class JsonMetadataWriter(CallbackBase):
 
     def __init__(self, beam_xy: tuple[float, float]):
         self.beam_xy = beam_xy
+        self.wavelength_in_a = None
+        self.energy_in_kev = None
+        self.detector_distance_mm = None
+
         super().__init__()
 
     descriptors: dict[str, dict] = {}
@@ -34,7 +40,7 @@ class JsonMetadataWriter(CallbackBase):
     transmission: float | None = None
 
     def start(self, doc: dict):  # type: ignore
-        if doc.get("subplan_name") == "rotation_scan_with_cleanup":
+        if doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
             LOGGER.info(
                 "Metadata writer recieved start document with experiment parameters."
             )
@@ -50,15 +56,15 @@ class JsonMetadataWriter(CallbackBase):
         LOGGER.info("Nexus handler received event document.")
         event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if event_descriptor.get("name") == "beam params":
+        if event_descriptor.get("name") == METADATA_READ:
             assert self.parameters is not None
             data = doc.get("data")
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_kev")
-            self.detector_distance_mm = data.get("detector_motion-z")
+            self.detector_distance_mm = data.get("det_stage-z")
             LOGGER.info(
-                f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance}, beam_xy: {self.beam_xy}"
+                f"Nexus handler received beam parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance_mm}, beam_xy: {self.beam_xy}"
             )
             LOGGER.info("")
 

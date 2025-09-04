@@ -1,7 +1,7 @@
 import bluesky.plan_stubs as bps
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plans import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
     RotationScanComposite,
 )
 from mx_bluesky.common.utils.log import LOGGER
@@ -32,3 +32,4 @@ def read_devices_for_metadata(composite: RotationScanComposite):
     yield from bps.read(composite.dcm.energy_in_kev)
     yield from bps.read(composite.dcm.wavelength_in_a)
     yield from bps.read(composite.det_stage.z)
+    yield from bps.save()
