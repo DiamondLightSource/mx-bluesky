@@ -575,6 +575,11 @@ def attenuator(RE: RunEngine):
 
 
 @pytest.fixture
+def baton(RE: RunEngine):
+    return i03.baton(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
 def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,

@@ -7,8 +7,13 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.baton import Baton
+from dodal.devices.motors import XYZStage
+from dodal.devices.robot import BartRobot
+from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
     UDCDefaultDevices,
     move_to_udc_default_state,
@@ -98,14 +103,19 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
+        current_visit: str | None = None
         while (yield from _is_requesting_baton(baton)):
-            yield from _fetch_and_process_agamemnon_instruction(baton, runner)
+            current_visit = yield from _fetch_and_process_agamemnon_instruction(
+                baton, runner, current_visit
+            )
+        if current_visit:
+            yield from _perform_robot_unload(runner.context, current_visit)
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
         # user so that hyperion doesn't think we're requested again
         baton = _get_baton(context)
-        previous_requested_user = yield from _safely_release_baton(baton)
+        previous_requested_user = yield from _unrequest_baton(baton)
         LOGGER.debug("Hyperion no longer current baton holder.")
         yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
@@ -145,8 +155,8 @@ def _wait_for_hyperion_requested(baton: Baton):
 
 
 def _fetch_and_process_agamemnon_instruction(
-    baton: Baton, runner: PlanRunner
-) -> MsgGenerator:
+    baton: Baton, runner: PlanRunner, current_visit: str | None
+) -> MsgGenerator[str | None]:
     parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
     if parameter_list:
         for parameters in parameter_list:
@@ -155,6 +165,7 @@ def _fetch_and_process_agamemnon_instruction(
             )
             match parameters:
                 case LoadCentreCollect():
+                    current_visit = parameters.visit
                     devices: Any = create_devices(runner.context)
                     yield from runner.execute_plan(
                         partial(load_centre_collect_full, devices, parameters)
@@ -168,7 +179,8 @@ def _fetch_and_process_agamemnon_instruction(
     else:
         _raise_udc_completed_alert(get_alerting_service())
         # Release the baton for orderly exit from the instruction loop
-        yield from _safely_release_baton(baton)
+        yield from _unrequest_baton(baton)
+    return current_visit
 
 
 def _raise_udc_start_alert(alert_service: AlertService):
@@ -212,7 +224,7 @@ def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
 
 
-def _safely_release_baton(baton: Baton) -> MsgGenerator[str]:
+def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     """Relinquish the requested user of the baton if it is not already requested
     by another user.
 
@@ -225,3 +237,13 @@ def _safely_release_baton(baton: Baton) -> MsgGenerator[str]:
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER
     return requested_user
+
+
+def _perform_robot_unload(context: BlueskyContext, visit: str) -> MsgGenerator:
+    robot = find_device_in_context(context, "robot", BartRobot)
+    smargon = find_device_in_context(context, "smargon", Smargon)
+    aperture_scatterguard = find_device_in_context(
+        context, "aperture_scatterguard", ApertureScatterguard
+    )
+    lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
+    yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)

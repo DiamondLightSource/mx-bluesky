@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from dataclasses import fields
 from threading import Event
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from blueapi.core import BlueskyContext
@@ -105,11 +105,24 @@ def dont_patch_clear_devices():
 
 
 @pytest.fixture
-def bluesky_context(RE: RunEngine, use_beamline_t01):
+def bluesky_context(
+    RE: RunEngine,
+    smargon,
+    aperture_scatterguard,
+    robot,
+    lower_gonio,
+    baton,
+    use_beamline_t01,
+):
     # Baton for real run engine
 
     # Set the initial baton state
     context = BlueskyContext(RE)
+
+    def mock_load_module(module, **kwargs):
+        for device in [smargon, aperture_scatterguard, robot, lower_gonio, baton]:
+            context.register_device(device)
+
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         mock=True,
@@ -117,7 +130,8 @@ def bluesky_context(RE: RunEngine, use_beamline_t01):
     )
 
     baton_with_requested_user(context, HYPERION_USER)
-    yield context
+    with patch.object(context, "with_dodal_module", mock_load_module):
+        yield context
 
 
 @pytest.fixture
@@ -164,6 +178,37 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
             fake_with_ophyd_sim=True,
         )
         yield msgs, context
+
+
+@pytest.fixture
+def single_collection_agamemnon_request(
+    load_centre_collect_params, mock_load_centre_collect
+):
+    with (
+        patch(
+            "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+            side_effect=[[load_centre_collect_params], []],
+        ),
+        patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state"),
+    ):
+        yield mock_load_centre_collect
+
+
+@pytest.fixture
+def single_collection_agamemnon_request_then_wait_forever(
+    load_centre_collect_params, mock_load_centre_collect
+):
+    with (
+        patch(
+            "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+            side_effect=[
+                [load_centre_collect_params],
+                [AGAMEMNON_WAIT_INSTRUCTION] * 1000,
+            ],
+        ),
+        patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state"),
+    ):
+        yield mock_load_centre_collect
 
 
 def baton_with_requested_user(
@@ -805,3 +850,69 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
             ),
         ]
     )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_performed_when_no_more_agamemnon_instructions(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    mock_load_centre_collect.return_value = iter([])
+    parent = MagicMock()
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request_then_wait_forever,
+):
+    def request_baton_away_from_hyperion(*args):
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        yield from bps.abs_set(baton.requested_user, NO_USER)
+
+    parent = MagicMock()
+    mock_load_centre_collect = single_collection_agamemnon_request_then_wait_forever
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+    mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_not_performed_when_beamline_error(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    mock_load_centre_collect.side_effect = RuntimeError("Simulated beamline error")
+
+    with pytest.raises(PlanException):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    mock_robot_unload.assert_not_called()
