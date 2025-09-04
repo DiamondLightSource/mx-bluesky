@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Murko Architecture &#8212; mx-bluesky 1.0.1.dev320+g8ae251ea7 documentation</title>
+    <title>Murko Architecture &#8212; mx-bluesky 1.0.1.dev321+g3fb109964 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=730b5d0a"></script>
+    <script src="../../../_static/documentation_options.js?v=422c7f18"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -524,7 +524,8 @@
 <p>The thawing plan will first create a <code class="docutils literal notranslate"><span class="pre">MurkoCallback</span></code> callback, this will stream metadata into a key in a redis database running on i04-control (this should be moved in <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/145">#145</a>).</p>
 <p>It will then trigger the <code class="docutils literal notranslate"><span class="pre">OAVToRedisForwarder</span></code> device in <code class="docutils literal notranslate"><span class="pre">dodal</span></code> that will stream image data to redis in the form of pickled RGB numpy arrays. Each image is given a uuid by this device, which is used to correlate the images with the other metadata, which could be streamed with a different frequency.</p>
 <p>The image streaming must be done with an ophyd device as there is too much data for it all to be emitted in bluesky documents.</p>
-<p>When the data is entered into redis it will publish a message to the redis <code class="docutils literal notranslate"><span class="pre">murko</span></code> channel. This will get picked up by the <a class="reference external" href="https://github.com/DiamondLightSource/mx_auto_mjpeg_capture/tree/main/socket_handler">socket_handler</a>, which will forward the data to murko. Currently, during testing the socket_handler is just manually run on a workstation, <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/146">#146</a> should fix this.</p>
+<p>When the data is entered into redis it will publish a message to the redis <code class="docutils literal notranslate"><span class="pre">murko</span></code> channel. This will get picked up by the <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/blob/main/src/mx_bluesky/beamlines/i04/redis_to_murko_forwarder.py">redis_to_murko_forwarder</a>, which will forward the data to murko.</p>
+<p>Murko will then enter the results back into redis where they are retrieved by the <a class="reference external" href="https://github.com/DiamondLightSource/dodal/blob/main/src/dodal/devices/i04/murko_results.py">MurkoResultsDevice</a> in <code class="docutils literal notranslate"><span class="pre">dodal</span></code>. This device uses these results to calculate where the sample should be moved to and carry out these movements.</p>
 </section>
 
 
