@@ -657,6 +657,7 @@ def test_run_forever_clears_error_status_on_resume(
     ],
 )
 @patch("mx_bluesky.hyperion.baton_handler.set_commissioning_signal")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
 async def test_commissioning_signal_set_on_baton_acquire(
     mock_set_commissioning_signal: MagicMock,
     mock_create_parameters_from_agamemnon: MagicMock,
