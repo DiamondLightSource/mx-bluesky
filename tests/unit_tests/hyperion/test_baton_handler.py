@@ -26,7 +26,7 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import SampleException, WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
@@ -916,3 +916,26 @@ def test_robot_unload_not_performed_when_beamline_error(
         run_udc_when_requested(bluesky_context, udc_runner)
 
     mock_robot_unload.assert_not_called()
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_still_performed_when_sample_exception(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    parent = MagicMock()
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+    mock_load_centre_collect.side_effect = SampleException("Simulated beamline error")
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
