@@ -12,6 +12,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 
 import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
+from mx_bluesky.common.parameters.rotation import (
+    RotationScanPerSweep,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
@@ -29,7 +32,6 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.parameters.rotation import RotationScanPerSweep
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

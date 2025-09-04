@@ -18,6 +18,10 @@ from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+    RotationScanPerSweep,
+)
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
@@ -35,10 +39,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.hyperion.parameters.rotation import (
-    RotationScan,
-    RotationScanPerSweep,
-)
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
 from .conftest import (

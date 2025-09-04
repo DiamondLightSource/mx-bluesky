@@ -53,7 +53,7 @@ async def test_full_do_pedestal_darks(
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
     await jungfrau.drv.gain_mode.set(GainMode.FIX_G2)
-    await jungfrau.drv.pedestal_mode.set(PedestalMode.OFF)
+    await jungfrau.drv.pedestal_mode_state.set(PedestalMode.OFF)
     monitor_tracker = CheckMonitor(
         [
             "jungfrau-drv-acquisition_type",
@@ -67,7 +67,7 @@ async def test_full_do_pedestal_darks(
             [
                 jungfrau.drv.acquisition_type,
                 jungfrau.drv.gain_mode,
-                jungfrau.drv.pedestal_mode,
+                jungfrau.drv.pedestal_mode_state,
             ],
         )
     )

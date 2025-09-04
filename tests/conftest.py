@@ -85,6 +85,9 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
@@ -104,7 +107,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 

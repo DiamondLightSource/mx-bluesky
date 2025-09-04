@@ -1,7 +1,9 @@
 import pytest
 
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 
 @pytest.fixture
