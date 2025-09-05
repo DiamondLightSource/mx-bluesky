@@ -10,22 +10,25 @@ import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.motors import XYZPositioner
+from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
+from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import Thawer
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
-from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.device_setup_plans.robot_load_unload import (
+    do_plan_while_lower_gonio_at_home,
+    prepare_for_robot_load,
+    wait_for_smargon_not_disabled,
+)
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     set_energy_plan,
@@ -47,7 +50,7 @@ class RobotLoadAndEnergyChangeComposite:
     # RobotLoad fields
     robot: BartRobot
     webcam: Webcam
-    lower_gonio: XYZPositioner
+    lower_gonio: XYZStage
     thawer: Thawer
     oav: OAV
     smargon: Smargon
@@ -59,25 +62,6 @@ def create_devices(context: BlueskyContext) -> RobotLoadAndEnergyChangeComposite
     from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadAndEnergyChangeComposite)
-
-
-def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
-    """Waits for the smargon disabled flag to go low. The robot hardware is responsible
-    for setting this to low when it is safe to move. It does this through a physical
-    connection between the robot and the smargon.
-    """
-    LOGGER.info("Waiting for smargon enabled")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        smargon_disabled = yield from bps.rd(smargon.disabled)
-        if not smargon_disabled:
-            LOGGER.info("Smargon now enabled")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise TimeoutError(
-        "Timed out waiting for smargon to become enabled after robot load"
-    )
 
 
 def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
@@ -93,28 +77,15 @@ def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
         yield from bps.wait("snapshots")
 
 
-def prepare_for_robot_load(
-    aperture_scatterguard: ApertureScatterguard, smargon: Smargon
-):
-    yield from bps.abs_set(
-        aperture_scatterguard.selected_aperture,
-        ApertureValue.OUT_OF_BEAM,
-        group="prepare_robot_load",
-    )
-
-    yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
-
-    yield from bps.mv(smargon, CombinedMove(x=0, y=0, z=0, chi=0, phi=0, omega=0))
-
-    yield from bps.wait("prepare_robot_load")
-
-
 def do_robot_load(
     composite: RobotLoadAndEnergyChangeComposite,
     sample_location: SampleLocation,
+    sample_id: int,
     demand_energy_ev: float | None,
     thawing_time: float,
 ):
+    yield from bps.abs_set(composite.robot.next_sample_id, sample_id, wait=True)
+
     yield from bps.abs_set(
         composite.robot,
         sample_location,
@@ -133,16 +104,6 @@ def do_robot_load(
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
 
-def raise_exception_if_moved_out_of_cryojet(exception):
-    yield from bps.null()
-    if isinstance(exception, MoveTooLarge):
-        raise Exception(
-            f"Moving {exception.axis} back to {exception.position} after \
-                        robot load would move it out of the cryojet. The max safe \
-                        distance is {exception.maximum_move}"
-        )
-
-
 def pin_already_loaded(
     robot: BartRobot, sample_location: SampleLocation
 ) -> Generator[Msg, None, bool]:
@@ -158,45 +119,38 @@ def robot_load_and_snapshots(
     composite: RobotLoadAndEnergyChangeComposite,
     location: SampleLocation,
     snapshot_directory: Path,
+    sample_id: int,
     thawing_time: float,
     demand_energy_ev: float | None,
 ):
-    yield from bps.abs_set(composite.backlight, BacklightPosition.IN, group="snapshot")
+    yield from bps.abs_set(composite.backlight, InOut.IN, group="snapshot")
+
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_PRE_LOAD)
+    yield from bps.read(composite.robot)
+    yield from bps.save()
 
     robot_load_plan = do_robot_load(
         composite,
         location,
+        sample_id,
         demand_energy_ev,
         thawing_time,
     )
 
-    # The lower gonio must be in the correct position for the robot load and we
-    # want to put it back afterwards. Note we don't wait the robot is interlocked
-    # to the lower gonio and the  move is quicker than the robot takes to get to the
-    # load position.
-    yield from bpp.contingency_wrapper(
-        home_and_reset_wrapper(
-            robot_load_plan,
-            composite.lower_gonio,
-            BartRobot.LOAD_TOLERANCE_MM,
-            CONST.HARDWARE.CRYOJET_MARGIN_MM,
-            "lower_gonio",
-            wait_for_all=False,
-        ),
-        except_plan=raise_exception_if_moved_out_of_cryojet,
+    gonio_finished = yield from do_plan_while_lower_gonio_at_home(
+        robot_load_plan, composite.lower_gonio
     )
-
     yield from bps.wait(group="snapshot")
 
     yield from take_robot_snapshots(composite.oav, composite.webcam, snapshot_directory)
 
-    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
-    yield from bps.read(composite.robot.barcode)
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
+    yield from bps.read(composite.robot)
     yield from bps.read(composite.oav.snapshot)
     yield from bps.read(composite.webcam)
     yield from bps.save()
 
-    yield from bps.wait("reset-lower_gonio")
+    yield from bps.wait(gonio_finished)
 
 
 def robot_load_and_change_energy_plan(
@@ -218,17 +172,13 @@ def robot_load_and_change_energy_plan(
                 composite,
                 sample_location,
                 params.snapshot_directory,
+                params.sample_id,
                 params.thawing_time,
                 params.demand_energy_ev,
             ),
             md={
                 "subplan_name": CONST.PLAN.ROBOT_LOAD,
-                "metadata": {
-                    "visit": params.visit,
-                    "sample_id": params.sample_id,
-                    "sample_puck": sample_location.puck,
-                    "sample_pin": sample_location.pin,
-                },
+                "metadata": {"visit": params.visit, "sample_id": params.sample_id},
                 "activate_callbacks": [
                     "RobotLoadISPyBCallback",
                 ],

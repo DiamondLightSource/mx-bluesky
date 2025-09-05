@@ -7,6 +7,9 @@ import pytest
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import LOGGER as DODAL_LOGGER
 
+from mx_bluesky.common.external_interaction.alerting.log_based_service import (
+    LoggingAlertService,
+)
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     main,
@@ -24,7 +27,11 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_threads")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.set_alerting_service"
+)
 def test_main_function(
+    setup_alerting: MagicMock,
     setup_threads: MagicMock,
     setup_logging: MagicMock,
     setup_callbacks: MagicMock,
@@ -36,10 +43,12 @@ def test_main_function(
     setup_threads.assert_called()
     setup_logging.assert_called()
     setup_callbacks.assert_called()
+    setup_alerting.assert_called_once()
+    assert isinstance(setup_alerting.mock_calls[0].args[0], LoggingAlertService)
 
 
 def test_setup_callbacks():
-    current_number_of_callbacks = 7
+    current_number_of_callbacks = 8
     cbs = setup_callbacks()
     assert len(cbs) == current_number_of_callbacks
     assert len(set(cbs)) == current_number_of_callbacks

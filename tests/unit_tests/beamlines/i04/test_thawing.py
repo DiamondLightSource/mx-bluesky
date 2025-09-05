@@ -10,7 +10,7 @@ from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
-from dodal.devices.thawer import Thawer, ThawerStates
+from dodal.devices.thawer import OnOff, Thawer
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
@@ -65,7 +65,7 @@ async def oav(RE: RunEngine) -> OAV:
 
 @pytest.fixture
 async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
-    smargon = Smargon(name="smargon")
+    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
@@ -85,6 +85,7 @@ async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
         oav_forwarder = OAVToRedisForwarder(
             "prefix", "host", "password", name="oav_to_redis_forwarder"
         )
+    set_mock_value(oav_forwarder.uuid, "test")
 
     # Replace when https://github.com/bluesky/ophyd-async/issues/521 is released
     @AsyncStatus.wrap
@@ -109,7 +110,7 @@ def _do_thaw_and_confirm_cleanup(
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer.control).call_args_list[-1]
-    assert last_thawer_call == call(ThawerStates.OFF, wait=ANY)
+    assert last_thawer_call == call(OnOff.OFF, wait=ANY)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
     assert last_velocity_call == call(initial_velocity, wait=ANY)
 

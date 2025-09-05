@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
-import pydantic
 from blueapi.core import BlueskyContext
-from dodal.devices.backlight import Backlight
+from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
@@ -17,23 +16,17 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, HardwareConstants
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    HardwareConstants,
+)
+from mx_bluesky.common.parameters.device_composites import OavGridDetectionComposite
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class OavGridDetectionComposite:
-    """All devices which are directly or indirectly required by this plan"""
-
-    backlight: Backlight
-    oav: OAV
-    smargon: Smargon
-    pin_tip_detection: PinTipDetection
 
 
 def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
@@ -55,6 +48,16 @@ def get_min_and_max_y_of_pin(
     ]
     max_y = max(filtered_bottom) if len(filtered_bottom) else full_image_height_px
     return min_y, max_y
+
+
+def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
+    """We need to match the 0 and -90 that the fast grid scan performs but the order in
+    which we do the grid detection does not matter so we do the closest angle first."""
+    current_omega = yield from bps.rd(smargon.omega)
+    if current_omega < -45:
+        return [-90, 0]
+    else:
+        return [0, -90]
 
 
 def grid_detection_plan(
@@ -98,8 +101,7 @@ def grid_detection_plan(
 
     grid_width_pixels = int(grid_width_microns / microns_per_pixel_x)
 
-    # The FGS uses -90 so we need to match it
-    for angle in [0, -90]:
+    for angle in (yield from optimum_grid_detect_angles(smargon)):
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements

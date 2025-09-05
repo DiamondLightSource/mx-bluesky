@@ -66,7 +66,7 @@ def test_set_datasize_for_one_block_and_two_exposures(
     dummy_params_without_pp.chip_map = [20]
     assert dummy_params_without_pp.total_num_images == 800
     set_datasize(dummy_params_without_pp)
-    fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP10", 800)
+    fake_caput.assert_called_once_with("BL24I-MO-IOC-13:GP10", 800)
     assert fake_log.info.call_count == 1
     assert fake_log.debug.call_count == 4
 
@@ -349,7 +349,7 @@ def test_finish_i24(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
+    mock_pmac_string.assert_has_calls([call("&2!x0y0z0", wait=True)])
 
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls([call("Close", wait=True)])
@@ -526,7 +526,7 @@ async def test_main_fixed_target_plan(
     mock_motion_program.asset_called_once()
     mock_start.assert_called_once()
     mock_pmac_str.assert_called_once_with(
-        "!x0y0z0", wait=True
+        "&2!x0y0z0", wait=True
     )  # Check pmac moved to start
     assert fake_dcid.notify_start.call_count == 1
     mock_zebra_input.assert_called_once_with(
@@ -576,8 +576,8 @@ def test_setup_tasks_in_run_fixed_target_plan(
     fake_read.side_effect = [fake_generator(dummy_params_without_pp)]
     with (
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bpp.contingency_wrapper"
-        ),
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.run_plan_in_wrapper"
+        ) as patch_wrapped_plan,
         patch(
             "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.upload_chip_map_to_geobrick"
         ) as patch_upload,
@@ -600,4 +600,5 @@ def test_setup_tasks_in_run_fixed_target_plan(
             )
         )
         fake_mkdir.assert_called_once()
+        patch_wrapped_plan.assert_called_once()
         patch_upload.assert_called_once_with(pmac, dummy_params_without_pp.chip_map)

@@ -16,8 +16,8 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
-from dodal.devices.i24.pmac import PMAC, EncReset, LaserSettings
+from dodal.devices.i24.pmac import CS_STR, PMAC, EncReset, LaserSettings
+from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -104,7 +104,7 @@ def initialise_stages(
         if i == 100:
             # Do not clear visit PV
             continue
-        pvar = "ME14E-MO-IOC-01:GP" + str(i)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
@@ -121,14 +121,14 @@ def _is_checker_pattern() -> bool:
 
 @log_on_entry
 def read_parameters(
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     attenuator: ReadOnlyAttenuator,
 ) -> MsgGenerator:
     """ Read the parameters from user input and create the parameter model for a fixed \
         target collection.
 
     Args:
-        detector_stage (DetectorMotion): The detector stage device.
+        detector_stage (YZStage): The detector stage device.
         attenuator (ReadOnlyAttenuator): A read-only attenuator device to get the \
             transmission value.
 
@@ -256,6 +256,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
     """
     SSX_LOGGER.info("Uploading Parameters for Oxford Chip to the GeoBrick")
     SSX_LOGGER.info(f"Chipid {ChipType.Oxford}, width {OXFORD_CHIP_WIDTH}")
+    SSX_LOGGER.warning(f"MAP TO UPLOAD: {chip_map}")
     for block in range(1, 65):
         value = 1 if block in chip_map else 0
         pvar = PVAR_TEMPLATE % block
@@ -264,7 +265,7 @@ def upload_chip_map_to_geobrick(pmac: PMAC, chip_map: list[int]) -> MsgGenerator
         yield from bps.abs_set(pmac.pmac_string, pvar_str, wait=True)
         # Wait for PMAC to be done processing PVAR string
         yield from bps.sleep(0.02)
-    SSX_LOGGER.debug("Upload parameters done.")
+    SSX_LOGGER.info("Upload parameters done.")
 
 
 @log_on_entry
@@ -456,14 +457,14 @@ def load_stock_map(map_choice: str = "clear") -> MsgGenerator:
 
     SSX_LOGGER.info("Clearing GP 10-74")  # Actually 11-44
     for i in range(1, 65):
-        pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
     SSX_LOGGER.info("Map cleared")
     SSX_LOGGER.info(f"Loading Map Choice {map_choice}")
     for i in map_dict[map_choice]:
-        pvar = "ME14E-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
         caput(pvar, 1)
     SSX_LOGGER.debug("Load stock map done.")
     yield from bps.null()
@@ -528,7 +529,7 @@ def load_lite_map() -> MsgGenerator:
         block_name = entry[0]
         yesno = entry[1]
         block_num = block_dict[block_name]
-        pvar = "ME14E-MO-IOC-01:GP" + str(int(block_num) + 10)
+        pvar = "BL24I-MO-IOC-01:GP" + str(int(block_num) + 10)
         SSX_LOGGER.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
     SSX_LOGGER.debug("Load lite map done")
     yield from bps.null()
@@ -565,7 +566,7 @@ def moveto_preset(
     pmac: PMAC = inject("pmac"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: DualBacklight = inject("backlight"),
-    det_stage: DetectorMotion = inject("detector_motion"),
+    det_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
     # Non Chip Specific Move
     if place == "zero":
@@ -603,7 +604,6 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         SSX_LOGGER.info("Laser 1 /BNC2 shutter is open")
         # Use M712 = 0 if triggering on falling edge. M712 =1 if on rising edge
         # Be sure to also change laser1off
-        # caput(pv.me14e_pmac_str, ' M712=0 M711=1')
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
 
     elif laser_setting == "laser1off":
@@ -844,7 +844,7 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     yield from bps.sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
-        yield from bps.abs_set(pmac.pmac_string, "!x0.4y0.4", wait=True)
+        yield from bps.abs_set(pmac.pmac_string, f"{CS_STR}!x0.4y0.4", wait=True)
         yield from bps.sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
     else:
@@ -855,9 +855,9 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
 
 def cs_reset(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     """Used to clear CS when using Custom Chip"""
-    cs1 = "#1->10000X+0Y+0Z"
-    cs2 = "#2->+0X-10000Y+0Z"
-    cs3 = "#3->0X+0Y-10000Z"
+    cs1 = "#5->10000X+0Y+0Z"
+    cs2 = "#6->+0X-10000Y+0Z"
+    cs3 = "#7->0X+0Y-10000Z"
     strg = "\n".join([cs1, cs2, cs3])
     print(strg)
     yield from set_pmac_strings_for_cs(pmac, {"cs1": cs1, "cs2": cs2, "cs3": cs3})
@@ -880,7 +880,7 @@ def set_pmac_strings_for_cs(pmac: PMAC, cs_str: dict):
 
     Note. On the PMAC the axes allocations are: #1 - X, #2 - Y, #3 - Z.
     """
-    yield from bps.abs_set(pmac.pmac_string, "&2", wait=True)
+    yield from bps.abs_set(pmac.pmac_string, CS_STR, wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs1"], wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs2"], wait=True)
     yield from bps.abs_set(pmac.pmac_string, cs_str["cs3"], wait=True)
@@ -940,7 +940,9 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
                     break
                 block, x, y = entry
                 SSX_LOGGER.debug(f"Block: {block} -> (x={x} y={y})")
-                yield from bps.abs_set(pmac.pmac_string, f"!x{x}y{y}", wait=True)
+                yield from bps.abs_set(
+                    pmac.pmac_string, f"{CS_STR}!x{x}y{y}", wait=True
+                )
                 yield from bps.sleep(0.4)
         else:
             SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")

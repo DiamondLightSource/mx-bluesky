@@ -9,7 +9,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from mx_bluesky.common.plans.read_hardware import (
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -27,9 +27,10 @@ DOCKER = environ.get("DOCKER", "docker")
 
 
 @pytest.fixture
-def test_params(tmpdir):
+def test_params(tmp_path):
     param_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
+        tmp_path,
     )
     params = SingleRotationScan(**param_dict)
     params.demand_energy_ev = 12700

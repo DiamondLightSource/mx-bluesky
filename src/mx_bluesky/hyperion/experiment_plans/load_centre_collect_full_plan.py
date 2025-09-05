@@ -24,7 +24,10 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan_internal,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
+from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.rotation import RotationScanPerSweep
 
@@ -51,7 +54,8 @@ def load_centre_collect_full(
     * If X-ray centring finds a diffracting centre then move to that centre and
     * do a collection with the specified parameters.
     """
-    parameters.features.update_self_from_server()
+
+    get_hyperion_config_client().refresh_cache()
 
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
@@ -60,8 +64,16 @@ def load_centre_collect_full(
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
     @run_decorator(
         md={
-            "metadata": {"sample_id": parameters.sample_id},
-            "activate_callbacks": ["BeamDrawingCallback", "SampleHandlingCallback"],
+            "metadata": {
+                "sample_id": parameters.sample_id,
+                "visit": parameters.visit,
+                "container": parameters.sample_puck,
+            },
+            "activate_callbacks": [
+                "BeamDrawingCallback",
+                "SampleHandlingCallback",
+                "AlertOnContainerChange",
+            ],
             "with_snapshot": parameters.multi_rotation_scan.model_dump_json(
                 include=WithSnapshot.model_fields.keys()  # type: ignore
             ),
@@ -76,17 +88,29 @@ def load_centre_collect_full(
             flyscan_event_handler,
         )
 
-        locations_to_collect_um: list[np.ndarray] = []
+        locations_to_collect_um: list[np.ndarray]
+        samples_to_collect: list[int]
 
         if flyscan_event_handler.xray_centre_results:
             selection_func = flyscan_result.resolve_selection_fn(
                 parameters.selection_params
             )
             hits = selection_func(flyscan_event_handler.xray_centre_results)
-            locations_to_collect_um = [hit.centre_of_mass_mm * 1000 for hit in hits]
+            hits_to_collect = []
+            for hit in hits:
+                if hit.sample_id is None:
+                    LOGGER.warning(
+                        f"Diffracting centre {hit} not collected because no sample id was assigned."
+                    )
+                else:
+                    hits_to_collect.append(hit)
 
+            locations_to_collect_um = [
+                hit.centre_of_mass_mm * 1000 for hit in hits_to_collect
+            ]
+            samples_to_collect = [hit.sample_id for hit in hits_to_collect]
             LOGGER.info(
-                f"Selected hits {hits} using {selection_func}, args={parameters.selection_params}"
+                f"Selected hits {hits_to_collect} using {selection_func}, args={parameters.selection_params}"
             )
         else:
             # If the xray centring hasn't found a result but has not thrown an error it
@@ -98,19 +122,22 @@ def load_centre_collect_full(
             locations_to_collect_um = [
                 np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000
             ]
+            samples_to_collect = [parameters.sample_id]
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()
 
         multi_rotation.rotation_scans.clear()
 
-        is_alternating = parameters.features.alternate_rotation_direction
+        is_alternating = I03Constants.ALTERNATE_ROTATION_DIRECTION
 
         generator = rotation_scan_generator(is_alternating)
         next(generator)
-        for location in locations_to_collect_um:
+        for location, sample_id in zip(
+            locations_to_collect_um, samples_to_collect, strict=True
+        ):
             for rot in rotation_template:
-                combination = generator.send((rot, location))
+                combination = generator.send((rot, location, sample_id))
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = RotationScan.model_validate(multi_rotation)
 
@@ -125,8 +152,10 @@ def load_centre_collect_full(
 
 def rotation_scan_generator(
     is_alternating: bool,
-) -> Generator[RotationScanPerSweep, tuple[RotationScanPerSweep, np.ndarray], None]:
-    scan_template, location = yield  # type: ignore
+) -> Generator[
+    RotationScanPerSweep, tuple[RotationScanPerSweep, np.ndarray, int], None
+]:
+    scan_template, location, sample_id = yield  # type: ignore
     next_rotation_direction = scan_template.rotation_direction
     while True:
         scan = scan_template.model_copy()
@@ -135,6 +164,7 @@ def rotation_scan_generator(
             scan.y_start_um,
             scan.z_start_um,
         ) = location
+        scan.sample_id = sample_id
         if is_alternating:
             if next_rotation_direction != scan.rotation_direction:
                 # If originally specified direction of the current scan is different
@@ -146,4 +176,4 @@ def rotation_scan_generator(
                 scan.rotation_direction = next_rotation_direction
             next_rotation_direction = next_rotation_direction.opposite
 
-        scan_template, location = yield scan
+        scan_template, location, sample_id = yield scan

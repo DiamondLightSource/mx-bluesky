@@ -35,6 +35,20 @@ from mx_bluesky.common.utils.exceptions import WarningException
 
 from ...conftest import assert_event
 
+X_Y_EDGE_DATA = SampleLocation(
+    8,
+    5,
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 4, 4, 3, 3, 2, 2, 3, 3, 4, 4]),
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
+)
+
+X_Z_EDGE_DATA = SampleLocation(
+    8,
+    20,
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 20, 17, 14, 14, 13, 13, 12, 12, 13, 13, 14, 14]),
+    np.array([0, 0, 0, 0, 0, 0, 0, 0, 20, 25, 29, 36, 37, 37, 38, 38, 37, 27, 26, 26]),
+)
+
 
 @pytest.fixture
 def fake_devices(
@@ -57,12 +71,7 @@ def fake_devices(
 
     pin_tip_detection = i03.pin_tip_detection(connect_immediately=True, mock=True)
     pin_tip_detection._get_tip_and_edge_data = AsyncMock(
-        return_value=SampleLocation(
-            8,
-            5,
-            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 4, 4, 3, 3, 2, 2, 3, 3, 4, 4]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
-        )
+        side_effect=[X_Y_EDGE_DATA, X_Z_EDGE_DATA]
     )
 
     with (
@@ -192,30 +201,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     assert gridscan_params["y_start_um"] == pytest.approx(
         -550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1
     )
-    assert gridscan_params["z_start_um"] == pytest.approx(-550, abs=1)
-
-
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
-@patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@patch(
-    "mx_bluesky.common.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
-    new=MagicMock(),
-)
-def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
-    fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
-    test_config_files: dict[str, str],
-    tmp_path: Path,
-):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-
-    composite, _ = fake_devices
-
-    for _ in range(2):
-        RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
+    assert gridscan_params["z_start_um"] == pytest.approx(-534, abs=1)
 
 
 @patch(
@@ -268,9 +254,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
             cb.activity_gated_event.mock_calls[1],  # pyright:ignore
             {
                 "oav-grid_snapshot-top_left_x": 8,
-                "oav-grid_snapshot-top_left_y": 2,
+                "oav-grid_snapshot-top_left_y": pytest.approx(12, abs=1),
                 "oav-grid_snapshot-num_boxes_x": 9,
-                "oav-grid_snapshot-num_boxes_y": 1,
+                "oav-grid_snapshot-num_boxes_y": 3,
                 "oav-grid_snapshot-box_width": pytest.approx(12, abs=1),
                 "oav-microns_per_pixel_x": 1.58,
                 "oav-microns_per_pixel_y": 1.58,
@@ -310,15 +296,87 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
     assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
     assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-539.84)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-539.84)
+    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
+    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
     assert my_grid_params["x_step_size_um"] == box_size_um
     assert my_grid_params["y_step_size_um"] == box_size_um
     assert my_grid_params["z_step_size_um"] == box_size_um
     assert my_grid_params["x_steps"] == pytest.approx(9)
     assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(1)
+    assert my_grid_params["z_steps"] == pytest.approx(3)
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
+
+
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detection_callback_gets_correct_values(
+    fake_devices: tuple[OavGridDetectionComposite, MagicMock],
+    RE: RunEngine,
+    test_config_files: dict[str, str],
+    test_fgs_params: SpecifiedThreeDGridScan,
+    tmp_path: Path,
+):
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    composite, _ = fake_devices
+
+    # This will cause the grid detect plan to take data at -90 first
+    set_mock_value(composite.smargon.omega.user_readback, -90)
+    composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
+        side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
+    )
+
+    box_size_um = 20
+    cb = GridDetectionCallback()
+    RE.subscribe(cb)
+
+    RE(
+        ispyb_activation_wrapper(
+            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+        )
+    )
+
+    my_grid_params = cb.get_grid_parameters()
+
+    assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
+    assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
+    assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
+    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
+    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
+    assert my_grid_params["x_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_size_um"] == box_size_um
+    assert my_grid_params["z_step_size_um"] == box_size_um
+    assert my_grid_params["x_steps"] == pytest.approx(9)
+    assert my_grid_params["y_steps"] == pytest.approx(2)
+    assert my_grid_params["z_steps"] == pytest.approx(3)
+    assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
+
+
+def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
+    cb = GridDetectionCallback()
+
+    event = {
+        "data": {
+            "oav-grid_snapshot-top_left_x": 8,
+            "oav-grid_snapshot-top_left_y": 12,
+            "oav-grid_snapshot-num_boxes_x": 9,
+            "oav-grid_snapshot-num_boxes_y": 3,
+            "oav-grid_snapshot-box_width": 12,
+            "oav-microns_per_pixel_x": 1.58,
+            "oav-microns_per_pixel_y": 1.58,
+            "oav-beam_centre_i": 200,
+            "oav-beam_centre_j": 300,
+            "smargon-x": 100,
+            "smargon-y": 234,
+            "smargon-z": 467,
+            "smargon-omega": 45,
+        }
+    }
+
+    with pytest.raises(ValueError):
+        cb.event(event)  # type: ignore
 
 
 @pytest.mark.parametrize(

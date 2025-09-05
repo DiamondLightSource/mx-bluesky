@@ -1,21 +1,39 @@
 import asyncio
+import pprint
+import sys
 import time
 from collections.abc import Callable
 from functools import partial
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.common.beamlines import beamline_parameters
-from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.flux import Flux
+from dodal.devices.i03 import Beamstop
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model.documents import Event
 from ophyd_async.core import AsyncStatus
+from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+    FlyScanEssentialDevices,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -37,9 +55,12 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.common.plans.common_flyscan_xray_centre_plan import (
-    FlyScanEssentialDevices,
+from mx_bluesky.common.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import raw_params_from_file
 
@@ -57,21 +78,70 @@ async def RE():
     yield RE
     # RunEngine creates its own loop if we did not supply it, we must terminate it
     RE.loop.call_soon_threadsafe(RE.loop.stop)
+    RE._th.join()
 
 
-MOCK_DAQ_CONFIG_PATH = "tests/devices/unit_tests/test_daq_configuration"
-mock_paths = [
-    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", "tests/devices/unit_tests/test_display.configuration"),
-    ("LOOK_UPTABLE_DIR", "tests/devices/i10/lookupTables/"),
-]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
+_ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
+
+
+def _error_and_kill_pending_tasks(
+    loop: asyncio.AbstractEventLoop, test_name: str, test_passed: bool
+) -> set[asyncio.Task]:
+    """Cancels pending tasks in the event loop for a test. Raises an exception if
+    the test hasn't already.
+
+    Args:
+        loop: The event loop to check for pending tasks.
+        test_name: The name of the test.
+        test_passed: Indicates whether the test passed.
+
+    Returns:
+        set[asyncio.Task]: The set of unfinished tasks that were cancelled.
+
+    Raises:
+        RuntimeError: If there are unfinished tasks and the test didn't fail.
+    """
+    unfinished_tasks = {
+        task
+        for task in asyncio.all_tasks(loop)
+        if (coro := task.get_coro()) is not None
+        and hasattr(coro, "__name__")
+        and coro.__name__ not in _ALLOWED_PYTEST_TASKS
+        and not task.done()
+    }
+    for task in unfinished_tasks:
+        task.cancel()
+
+    # We only raise an exception here if the test didn't fail anyway.
+    # If it did then it makes sense that there's some tasks we need to cancel,
+    # but an exception will already have been raised.
+    if unfinished_tasks and test_passed:
+        raise RuntimeError(
+            f"Not all tasks closed during test {test_name}:\n"
+            f"{pprint.pformat(unfinished_tasks, width=88)}"
+        )
+
+    return unfinished_tasks
+
+
+@pytest.fixture(autouse=True, scope="function")
+async def fail_test_on_unclosed_tasks(request: FixtureRequest):
+    """
+    Used on every test to ensure failure if there are pending tasks
+    by the end of the test.
+    """
+
+    fail_count = request.session.testsfailed
+    loop = asyncio.get_running_loop()
+
+    loop.set_debug(True)
+
+    request.addfinalizer(
+        lambda: _error_and_kill_pending_tasks(
+            loop, request.node.name, request.session.testsfailed == fail_count
+        )
+    )
+
 
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
@@ -105,14 +175,6 @@ def assert_event(mock_call, expected):
         assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
 
 
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        beamline_parameters.BEAMLINE_PARAMETER_PATHS[bl_name] = (
-            "tests/test_data/i04_beamlineParameters"
-        )
-
-
 def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridscanISPyBCallback
 ]:
@@ -125,6 +187,18 @@ def create_gridscan_callbacks() -> tuple[
             ),
         ),
     )
+
+
+@pytest.fixture
+def use_beamline_t01():
+    """Beamline t01 is a beamline for unit tests that just contains a baton, so that
+    loading the beamline context does not require importing lots of modules and instantiating
+    many devices"""
+    with patch.dict("os.environ", {"BEAMLINE": "t01"}):
+        import tests.unit_tests.t01
+
+        with patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}):
+            yield
 
 
 @pytest.fixture
@@ -173,10 +247,10 @@ def RE_with_subs(
 
 
 @pytest.fixture
-def test_fgs_params():
+def test_fgs_params(tmp_path):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
         )
     )
 
@@ -295,6 +369,7 @@ async def fake_fgs_composite(
         "n_voxels": 321,
         "total_count": 999999,
         "bounding_box": [[3, 3, 3], [9, 9, 9]],
+        "sample_id": 12345,
     }
 
     @AsyncStatus.wrap
@@ -317,3 +392,81 @@ def dummy_rotation_data_collection_group_info():
         experiment_type="SAD",
         sample_id=364758,
     )
+
+
+@pytest.fixture
+def beamline_specific(
+    zebra_fast_grid_scan: ZebraFastGridScan,
+) -> BeamlineSpecificFGSFeatures:
+    return BeamlineSpecificFGSFeatures(
+        setup_trigger_plan=MagicMock(),
+        tidy_plan=MagicMock(),
+        set_flyscan_params_plan=MagicMock(),
+        fgs_motors=zebra_fast_grid_scan,
+        read_pre_flyscan_plan=MagicMock(),
+        read_during_collection_plan=MagicMock(),
+        get_xrc_results_from_zocalo=False,
+    )
+
+
+@pytest.fixture
+def test_full_grid_scan_params(tmp_path):
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        tmp_path,
+    )
+    return GridCommon(**params)
+
+
+@pytest.fixture
+async def grid_detect_xrc_devices(
+    aperture_scatterguard: ApertureScatterguard,
+    backlight: Backlight,
+    beamstop_phase1: Beamstop,
+    detector_motion: DetectorMotion,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    oav: OAV,
+    ophyd_pin_tip_detection: PinTipDetection,
+    zocalo: ZocaloResults,
+    synchrotron: Synchrotron,
+    fast_grid_scan: ZebraFastGridScan,
+    s4_slit_gaps: S4SlitGaps,
+    flux: Flux,
+    zebra,
+    zebra_shutter,
+    xbpm_feedback,
+    attenuator,
+    undulator,
+    dcm,
+):
+    yield GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop_phase1,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        zebra_fast_grid_scan=fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=ophyd_pin_tip_detection,
+        smargon=smargon,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        zocalo=zocalo,
+        dcm=dcm,
+        robot=MagicMock(spec=BartRobot),
+        sample_shutter=zebra_shutter,
+    )
+
+
+@pytest.fixture
+async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
+    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
+    composite.panda = MagicMock(spec=HDFPanda)
+    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    return composite

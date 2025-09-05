@@ -41,7 +41,6 @@ class IspybIds(BaseModel):
 class StoreInIspyb:
     def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
-        self._data_collection_group_id: int | None
 
     def begin_deposition(
         self,
@@ -146,11 +145,17 @@ class StoreInIspyb:
     def append_to_comment(
         self, data_collection_id: int, comment: str, delimiter: str = " "
     ) -> None:
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            assert conn is not None, "Failed to connect to ISPyB!"
-            mx_acquisition: MXAcquisition = conn.mx_acquisition
-            mx_acquisition.update_data_collection_append_comments(
-                data_collection_id, comment, delimiter
+        try:
+            with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+                assert conn is not None, "Failed to connect to ISPyB!"
+                mx_acquisition: MXAcquisition = conn.mx_acquisition
+                mx_acquisition.update_data_collection_append_comments(
+                    data_collection_id, comment, delimiter
+                )
+        except ispyb.ReadWriteError as e:
+            ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
+                f"Unable to log comment, comment probably exceeded column length: {comment}",
+                exc_info=e,
             )
 
     def update_data_collection_group_table(
@@ -187,7 +192,6 @@ class StoreInIspyb:
             params["parentid"] = data_collection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-
             mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_position_table(

@@ -5,11 +5,13 @@ from bluesky.preprocessors import run_decorator, subs_decorator
 from ophyd_async.core import init_devices
 from ophyd_async.epics.core import epics_signal_rw
 
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    read_hardware_plan,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.plans.read_hardware import read_hardware_plan
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
@@ -18,10 +20,10 @@ from .....conftest import (
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
-    TestData,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
     remap_upsert_columns,
+    replace_all_tmp_paths,
 )
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
@@ -33,7 +35,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
-    "imgdir": "/tmp/",
+    "imgdir": "{tmp_data}/",
     "imgprefix": "file_name",
     "imgsuffix": "h5",
     "n_passes": 1,
@@ -66,11 +68,11 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 class TestXrayCentreISPyBCallback:
-    def test_activity_gated_start_3d(self, mock_ispyb_conn):
+    def test_activity_gated_start_3d(self, mock_ispyb_conn, TestEventData, tmp_path):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -84,12 +86,12 @@ class TestXrayCentreISPyBCallback:
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_3D_XY,
+            replace_all_tmp_paths(EXPECTED_DATA_COLLECTION_3D_XY, tmp_path),
         )
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[1],
             mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_3D_XZ,
+            replace_all_tmp_paths(EXPECTED_DATA_COLLECTION_3D_XZ, tmp_path),
         )
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
@@ -98,17 +100,15 @@ class TestXrayCentreISPyBCallback:
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
     )
     def test_reason_provided_if_crystal_not_found_error(
-        self,
-        mock_update_data_collection_group_table,
-        mock_ispyb_conn,
+        self, mock_update_data_collection_group_table, mock_ispyb_conn, TestEventData
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_stop(
-            TestData.test_gridscan3d_stop_document_with_crystal_exception
+            TestEventData.test_gridscan3d_stop_document_with_crystal_exception
         )
         assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
             (
@@ -122,18 +122,20 @@ class TestXrayCentreISPyBCallback:
             == "Diffraction not found, skipping sample."
         )
 
-    def test_hardware_read_event_3d(self, mock_ispyb_conn):
+    def test_hardware_read_event_3d(self, mock_ispyb_conn, TestEventData):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
         callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_pre_data_collection
+            TestEventData.test_descriptor_document_pre_data_collection
         )
-        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+        callback.activity_gated_event(
+            TestEventData.test_event_document_pre_data_collection
+        )
         mx_acq.upsert_data_collection_group.assert_called_once()
         expected_upsert = {
             "parentid": TEST_DATA_COLLECTION_GROUP_ID,
@@ -155,24 +157,26 @@ class TestXrayCentreISPyBCallback:
             {"id": TEST_DATA_COLLECTION_IDS[1], **expected_upsert},
         )
 
-    def test_flux_read_events_3d(self, mock_ispyb_conn):
+    def test_flux_read_events_3d(self, mock_ispyb_conn, TestEventData):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_pre_data_collection
+            TestEventData.test_descriptor_document_pre_data_collection
         )
-        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+        callback.activity_gated_event(
+            TestEventData.test_event_document_pre_data_collection
+        )
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_during_data_collection
+            TestEventData.test_descriptor_document_during_data_collection
         )
         callback.activity_gated_event(
-            TestData.test_event_document_during_data_collection
+            TestEventData.test_event_document_during_data_collection
         )
 
         assert_upsert_call_with(
@@ -210,20 +214,22 @@ class TestXrayCentreISPyBCallback:
         mx_acq.update_dc_position.assert_not_called()
         mx_acq.upsert_dc_grid.assert_not_called()
 
-    def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):
+    def test_activity_gated_event_oav_snapshot_triggered(
+        self, mock_ispyb_conn, TestEventData
+    ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_oav_snapshot
+            TestEventData.test_descriptor_document_oav_snapshot
         )
-        callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
-        callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xz)
+        callback.activity_gated_event(TestEventData.test_event_document_oav_snapshot_xy)
+        callback.activity_gated_event(TestEventData.test_event_document_oav_snapshot_xz)
 
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
@@ -360,17 +366,20 @@ class TestXrayCentreISPyBCallback:
         mock_update_data_collection_group_table,
         mock_update_deposition,
         mock__handle_oav_grid_snapshot_triggered,
+        TestEventData,
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_oav_snapshot
+            TestEventData.test_descriptor_document_oav_snapshot
         )
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
         callback.data_collection_group_info = None
         with pytest.raises(AssertionError) as e:
-            callback.activity_gated_event(TestData.test_event_document_oav_snapshot_xy)
+            callback.activity_gated_event(
+                TestEventData.test_event_document_oav_snapshot_xy
+            )
 
         assert "No data collection group info" in str(e.value)

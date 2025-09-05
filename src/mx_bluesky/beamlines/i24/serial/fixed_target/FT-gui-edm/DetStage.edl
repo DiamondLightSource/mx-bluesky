@@ -78,7 +78,7 @@ fgColour index 14
 bgColour index 4
 topShadowColour index 1
 botShadowColour index 8
-controlPv "ME14E-MO-IOC-01:GP101"
+controlPv "BL24I-MO-IOC-01:GP101"
 font "arial-medium-r-18.0"
 numItems 2
 symbolTag {

@@ -2,7 +2,7 @@
     "parameter_model_version": "5.0.0",
     "beamline": "BL03S",
     "insertion_prefix": "SR03S",
-    "storage_directory": "/tmp",
+    "storage_directory": "{tmp_data}",
     "file_name": "file_name",
     "run_number": 0,
     "sample_id": 123456,

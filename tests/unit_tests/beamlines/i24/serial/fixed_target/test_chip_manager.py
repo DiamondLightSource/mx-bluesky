@@ -5,8 +5,8 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 import pytest
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.i24_detector_motion import DetectorMotion
 from dodal.devices.i24.pmac import PMAC
+from dodal.devices.motors import YZStage
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
@@ -182,7 +182,7 @@ async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, RE):
 
 async def test_moveto_chip_aspecific(pmac: PMAC, RE):
     RE(moveto("zero", pmac))
-    assert await pmac.pmac_string.get_value() == "!x0y0z0"
+    assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
@@ -191,11 +191,11 @@ async def test_moveto_preset(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
-    assert await pmac.pmac_string.get_value() == "!x0y0z0"
+    assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
     RE(moveto_preset("load_position", pmac, beamstop, backlight, detector_stage))
     assert await beamstop.pos_select.get_value() == "Robot"
@@ -220,7 +220,7 @@ async def test_moveto_preset_with_pmac_move(
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
-    detector_stage: DetectorMotion,
+    detector_stage: YZStage,
     RE,
 ):
     RE(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))
