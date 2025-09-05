@@ -331,6 +331,7 @@ def start_i24(
                 parameters.total_num_images,
                 parameters.exposure_time_s,
             ],
+            dcm,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -465,7 +466,7 @@ def finish_i24(
         SSX_LOGGER.debug("Finish I24 Pilatus")
         complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
         yield from reset_zebra_when_collection_done_plan(zebra)
-        yield from sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None, dcm)
         yield from bps.sleep(0.2)
     elif parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
@@ -578,7 +579,7 @@ def main_fixed_target_plan(
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
-        call_nexgen(
+        yield from call_nexgen(
             chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 

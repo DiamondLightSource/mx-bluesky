@@ -98,8 +98,16 @@ def call_nexgen(
         "bit_depth": bit_depth,
         "start_time": start_time.isoformat(),
     }
-    SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
-    SSX_LOGGER.info(pprint.pformat(payload))
-    response = requests.post(url, headers=headers, json=payload)
-    response.raise_for_status()
+    try:
+        SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
+        SSX_LOGGER.info(pprint.pformat(payload))
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        SSX_LOGGER.error(f"Nexus writer failed. Reason from server {e.response.text}")
+        raise
+    except Exception as e:
+        SSX_LOGGER.exception(f"Error generating nexus file: {e}")
+        raise
     SSX_LOGGER.info(f"Response: {response.text} (status code: {response.status_code})")
+    yield from bps.sleep(0.2)
