@@ -36,7 +36,7 @@ if [[ "${visit: -1}" != "/" ]]; then
 fi
 
 ex_pv=BL24I-MO-IOC-13:GP1
-ft_pv=ME14E-MO-IOC-01:GP100
+ft_pv=BL24I-MO-IOC-13:GP100
 
 shopt -s nocasematch
 

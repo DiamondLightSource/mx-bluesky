@@ -21,6 +21,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -48,7 +49,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
-from dodal.devices.util.test_utils import patch_motor
+from dodal.devices.util.test_utils import patch_all_motors, patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -78,7 +79,6 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from mx_bluesky.common.external_interaction.config_server import FeatureFlags
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -96,6 +96,9 @@ from mx_bluesky.common.utils.log import (
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
+)
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -200,6 +203,19 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "sample_id": _NO_SAMPLE_ID,
     }
 ]
+
+MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+mock_paths = [
+    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
+    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+]
+mock_attributes_table = {
+    "i03": mock_paths,
+    "i10": mock_paths,
+    "i04": mock_paths,
+    "i24": mock_paths,
+}
 
 
 @dataclass(frozen=True)
@@ -345,6 +361,7 @@ def RE():
 
         RE.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
+        # RE.loop.close()
     del RE
 
 
@@ -368,17 +385,6 @@ def patch_async_motor(
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
-@pytest.fixture(params=[False, True])
-def feature_flags_update_with_omega_flip(request):
-    def update_with_overrides(self):
-        self.overriden_features["omega_flip"] = request.param
-        self.omega_flip = request.param
-
-    with patch.object(FeatureFlags, "update_self_from_server", autospec=True) as update:
-        update.side_effect = update_with_overrides
-        yield update
-
-
 @pytest.fixture
 def beamline_parameters():
     return GDABeamlineParameters.from_file(
@@ -393,7 +399,13 @@ def i03_beamline_parameters():
         "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
         {"i03": "tests/test_data/test_beamline_parameters.txt"},
     ) as params:
-        yield params
+        with ExitStack() as context_stack:
+            for context_mgr in [
+                patch(f"dodal.beamlines.i03.{name}", value, create=True)
+                for name, value in mock_paths
+            ]:
+                context_stack.enter_context(context_mgr)
+            yield params
 
 
 @pytest.fixture
@@ -485,7 +497,9 @@ def detector_motion(RE: RunEngine):
 
 @pytest.fixture
 def undulator(RE: RunEngine):
-    return i03.undulator(connect_immediately=True, mock=True)
+    undulator = i03.undulator(connect_immediately=True, mock=True)
+    with patch_all_motors(undulator):
+        yield undulator
 
 
 @pytest.fixture
@@ -568,7 +582,7 @@ def attenuator(RE: RunEngine):
 
 
 @pytest.fixture
-def beamstop_i03(
+def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
     RE: RunEngine,
@@ -578,9 +592,7 @@ def beamstop_i03(
         return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
-        patch_motor(beamstop.x_mm)
-        patch_motor(beamstop.y_mm)
-        patch_motor(beamstop.z_mm)
+        patch_all_motors(beamstop)
 
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
@@ -610,13 +622,11 @@ def xbpm_feedback(done_status, RE: RunEngine):
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
+    patch_all_motors(dcm)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
-    patch_motor(dcm.xtal_1.roll_in_mrad)
-    patch_motor(dcm.xtal_1.pitch_in_mrad)
-    patch_motor(dcm.offset_in_mm)
     return dcm
 
 
@@ -633,8 +643,7 @@ def vfm(RE: RunEngine):
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    with ExitStack() as stack:
-        stack.enter_context(patch_motor(vfm.x_mm))
+    with patch_motor(vfm.x_mm):
         yield vfm
 
 
@@ -652,11 +661,7 @@ def lower_gonio(
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
-    with (
-        patch_motor(lower_gonio.x),
-        patch_motor(lower_gonio.y),
-        patch_motor(lower_gonio.z),
-    ):
+    with patch_all_motors(lower_gonio):
         yield lower_gonio
 
 
@@ -673,13 +678,14 @@ def mirror_voltages(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
+def undulator_dcm(RE: RunEngine, sim_run_engine, undulator, dcm):
+    # This depends on the undulator and dcm as they must be connected as mocks first
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
     beamline_utils.clear_devices()
 
@@ -736,6 +742,14 @@ async def aperture_scatterguard(RE: RunEngine):
             scatterguard_y=19,
             radius=0,
         ),
+        ApertureValue.PARKED: AperturePosition(
+            aperture_x=20,
+            aperture_y=25,
+            aperture_z=0,
+            scatterguard_x=36,
+            scatterguard_y=56,
+            radius=0,
+        ),
     }
     with (
         patch(
@@ -778,7 +792,7 @@ def test_config_files():
 
 @pytest.fixture()
 def fake_create_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -792,7 +806,7 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
-        "beamstop": beamstop_i03,
+        "beamstop": beamstop_phase1,
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
@@ -805,7 +819,7 @@ def fake_create_devices(
 
 @pytest.fixture()
 def fake_create_rotation_devices(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -828,7 +842,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
@@ -1018,6 +1032,7 @@ def extract_metafile(input_filename, output_filename):
 
 @pytest.fixture
 def sim_run_engine():
+    logging.getLogger("asyncio").setLevel(logging.DEBUG)
     return RunEngineSimulator()
 
 
@@ -1793,3 +1808,44 @@ def assert_images_pixelwise_equal(actual, expected):
             assert bytes_expected_bytes, (
                 f"Actual and expected images differ, {actual} != {expected}"
             )
+
+
+def _fake_config_server_read(
+    filepath: str | Path, desired_return_type=str, reset_cached_result=False
+):
+    filepath = Path(filepath)
+    # Minimal logic required for unit tests
+    with filepath.open("r") as f:
+        contents = f.read()
+        if desired_return_type is str:
+            return contents
+        elif desired_return_type is dict:
+            return json.loads(contents)
+
+
+@pytest.fixture(autouse=True)
+def mock_config_server():
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    get_hyperion_config_client.cache_clear()
+
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
+        side_effect=_fake_config_server_read,
+    ):
+        yield
+
+
+def mock_beamline_module_filepaths(bl_name, bl_module):
+    if mock_attributes := mock_attributes_table.get(bl_name):
+        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
+        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
+
+
+@pytest.fixture(autouse=True)
+def mock_alert_service():
+    with patch(
+        "mx_bluesky.common.external_interaction.alerting._service._alert_service",
+        create=True,
+    ) as service:
+        yield service

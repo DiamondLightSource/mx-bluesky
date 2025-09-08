@@ -66,7 +66,7 @@ h 120
 lineColor index 14
 fill
 fillColor index 38
-visPv "ME14E-MO-IOC-01:GP2"
+visPv "BL24I-MO-IOC-01:GP2"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -84,7 +84,7 @@ h 20
 lineColor index 9
 fill
 fillColor index 23
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -146,7 +146,7 @@ h 20
 lineColor index 9
 fill
 fillColor index 23
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "0"
 visMax "1"
 endObjectProperties
@@ -234,12 +234,12 @@ y2Max 1
 # Trace Properties
 numTraces 2
 xPv {
-  0 "ME14E-MO-CHIP-01:X.RBV"
-  1 "ME14E-MO-CHIP-01:X.VAL"
+  0 "BL24I-EA-CHIP-01:X.RBV"
+  1 "BL24I-EA-CHIP-01:X.VAL"
 }
 yPv {
-  0 "ME14E-MO-CHIP-01:Y.RBV"
-  1 "ME14E-MO-CHIP-01:Y.VAL"
+  0 "BL24I-EA-CHIP-01:Y.RBV"
+  1 "BL24I-EA-CHIP-01:Y.VAL"
 }
 plotStyle {
   0 "single point"
@@ -280,7 +280,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"load_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"load_position\"\}'"
 }
 endObjectProperties
 
@@ -301,7 +301,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"collect_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"collect_position\"\}'"
 }
 endObjectProperties
 
@@ -323,7 +323,7 @@ font "helvetica-bold-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run run_fixed_target_plan"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION run_fixed_target_plan"
 }
 endObjectProperties
 
@@ -418,7 +418,7 @@ x 120
 y 830
 w 87
 h 17
-controlPv "ME14E-MO-CHIP-01:X.RBV"
+controlPv "BL24I-EA-CHIP-01:X.RBV"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -460,7 +460,7 @@ x 120
 y 855
 w 87
 h 18
-controlPv "ME14E-MO-CHIP-01:Y.RBV"
+controlPv "BL24I-EA-CHIP-01:Y.RBV"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -482,7 +482,7 @@ x 120
 y 880
 w 87
 h 18
-controlPv "ME14E-MO-CHIP-01:Z.RBV"
+controlPv "BL24I-EA-CHIP-01:Z.RBV"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -509,7 +509,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:200"
 releaseValue "#2P"
 3d
@@ -531,7 +531,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:-200"
 releaseValue "#2P"
 3d
@@ -615,7 +615,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run cs_maker"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION cs_maker"
 }
 endObjectProperties
 
@@ -652,7 +652,7 @@ x 215
 y 830
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:X.LLS"
+controlPv "BL24I-EA-CHIP-01:X.LLS"
 lineColor index 14
 onColor index 35
 offColor index 39
@@ -669,7 +669,7 @@ x 215
 y 855
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:Y.LLS"
+controlPv "BL24I-EA-CHIP-01:Y.LLS"
 lineColor index 14
 onColor index 35
 offColor index 39
@@ -686,7 +686,7 @@ x 215
 y 880
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:Z.LLS"
+controlPv "BL24I-EA-CHIP-01:Z.LLS"
 lineColor index 14
 onColor index 35
 offColor index 39
@@ -728,7 +728,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:1200"
 releaseValue "#2P"
 3d
@@ -750,7 +750,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#3J:-1200"
 releaseValue "#2P"
 3d
@@ -807,7 +807,7 @@ x 255
 y 830
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:X.MOVN"
+controlPv "BL24I-EA-CHIP-01:X.MOVN"
 lineColor index 14
 onColor index 15
 offColor index 19
@@ -824,7 +824,7 @@ x 255
 y 855
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:Y.MOVN"
+controlPv "BL24I-EA-CHIP-01:Y.MOVN"
 lineColor index 14
 onColor index 15
 offColor index 19
@@ -841,7 +841,7 @@ x 255
 y 880
 w 30
 h 20
-controlPv "ME14E-MO-CHIP-01:Z.MOVN"
+controlPv "BL24I-EA-CHIP-01:Z.MOVN"
 lineColor index 14
 onColor index 15
 offColor index 19
@@ -1022,7 +1022,7 @@ x 120
 y 910
 w 170
 h 20
-controlPv "ME14E-MO-CHIP-01:SEND_STRING.AINP"
+controlPv "BL24I-EA-CHIP-01:SEND_STRING.AINP"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -1157,7 +1157,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run initialise_stages"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION initialise_stages"
 }
 endObjectProperties
 
@@ -1196,7 +1196,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "ME14E-MO-IOC-01:GP4"
+controlPv "BL24I-MO-IOC-01:GP4"
 font "arial-medium-r-18.0"
 numItems 9
 symbolTag {
@@ -1268,7 +1268,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "ME14E-MO-IOC-01:GP2"
+controlPv "BL24I-MO-IOC-01:GP2"
 font "arial-medium-r-18.0"
 numItems 2
 symbolTag {
@@ -1461,7 +1461,7 @@ h 90
 lineColor index 7
 fill
 fillColor index 7
-visPv "ME14E-MO-IOC-01:GP2"
+visPv "BL24I-MO-IOC-01:GP2"
 visInvert
 visMin "1"
 visMax "2"
@@ -1494,7 +1494,7 @@ h 115
 lineColor index 14
 fill
 fillColor index 38
-visPv "ME14E-MO-IOC-01:GP4"
+visPv "BL24I-MO-IOC-01:GP4"
 visMin "1"
 visMax "10"
 endObjectProperties
@@ -1538,7 +1538,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run block_check"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION block_check"
 }
 endObjectProperties
 
@@ -1698,7 +1698,7 @@ x 645
 y 545
 w 125
 h 25
-controlPv "ME14E-MO-CHIP-01:detDistance"
+controlPv "BL24I-EA-CHIP-01:detDistance"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1765,7 +1765,7 @@ x 645
 y 475
 w 125
 h 25
-controlPv "ME14E-MO-CHIP-01:expTime"
+controlPv "BL24I-EA-CHIP-01:expTime"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1792,7 +1792,7 @@ x 710
 y 445
 w 60
 h 25
-controlPv "ME14E-MO-IOC-01:GP3"
+controlPv "BL24I-MO-IOC-01:GP3"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1859,7 +1859,7 @@ x 600
 y 415
 w 195
 h 25
-controlPv "ME14E-MO-CHIP-01:chipName"
+controlPv "BL24I-EA-CHIP-01:chipName"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1886,7 +1886,7 @@ x 600
 y 385
 w 235
 h 25
-controlPv "ME14E-MO-CHIP-01:filePath"
+controlPv "BL24I-EA-CHIP-01:filePath"
 font "helvetica-medium-r-18.0"
 fgColor index 25
 bgColor index 3
@@ -1953,7 +1953,7 @@ x 580
 y 835
 w 75
 h 18
-controlPv "ME14E-MO-IOC-01:GP10"
+controlPv "BL24I-MO-IOC-01:GP10"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -2017,7 +2017,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:10"
 releaseValue "#2P"
 3d
@@ -2039,7 +2039,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:60"
 releaseValue "#1P"
 offLabel "+3"
@@ -2062,7 +2062,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:10"
 releaseValue "#1P"
 3d
@@ -2084,7 +2084,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-60"
 releaseValue "#1P"
 offLabel "-3"
@@ -2107,7 +2107,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-10"
 releaseValue "#1P"
 3d
@@ -2129,7 +2129,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:60"
 releaseValue "#2P"
 offLabel "-3"
@@ -2152,7 +2152,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-60"
 releaseValue "#2P"
 offLabel "+3"
@@ -2175,7 +2175,7 @@ onColor index 21
 offColor index 16
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-10"
 releaseValue "#2P"
 3d
@@ -2197,7 +2197,7 @@ onColor index 24
 offColor index 19
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-31750"
 releaseValue "#2P"
 onLabel "Y+Y"
@@ -2221,7 +2221,7 @@ onColor index 24
 offColor index 19
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:31750"
 releaseValue "#1P"
 onLabel "X+X"
@@ -2245,7 +2245,7 @@ onColor index 24
 offColor index 19
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-31750"
 releaseValue "#1P"
 onLabel "X-X"
@@ -2269,7 +2269,7 @@ onColor index 24
 offColor index 19
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:31750"
 releaseValue "#2P"
 onLabel "Y-Y"
@@ -2293,7 +2293,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:3750"
 releaseValue "#1P"
 offLabel "+3"
@@ -2316,7 +2316,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:1250"
 releaseValue "#1P"
 offLabel "+1"
@@ -2339,7 +2339,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-3750"
 releaseValue "#1P"
 offLabel "-3"
@@ -2362,7 +2362,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#1J:-1250"
 releaseValue "#1P"
 offLabel "-1"
@@ -2385,7 +2385,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:3750"
 releaseValue "#2P"
 offLabel "-3"
@@ -2408,7 +2408,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:1250"
 releaseValue "#2P"
 offLabel "-1"
@@ -2431,7 +2431,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-3750"
 releaseValue "#2P"
 offLabel "+3"
@@ -2454,7 +2454,7 @@ onColor index 22
 offColor index 17
 topShadowColor index 7
 botShadowColor index 7
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 pressValue "#2J:-1250"
 releaseValue "#2P"
 offLabel "+1"
@@ -2682,7 +2682,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2700,7 +2700,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2718,7 +2718,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2736,7 +2736,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2754,7 +2754,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2772,7 +2772,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2790,7 +2790,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2843,7 +2843,7 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 value {
@@ -2865,7 +2865,7 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 value {
@@ -2912,7 +2912,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"2\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION fiducial '\{\"point\":\"2\"\}'"
 }
 endObjectProperties
 
@@ -2934,7 +2934,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f2\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"f2\"\}'"
 }
 endObjectProperties
 
@@ -2956,7 +2956,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 0"
 numCmds 1
 command {
-  0 "caput ME14E-MO-CHIP-01:PMAC_STRING \\#1hmz\\#2hmz\\#3hmz"
+  0 "caput BL24I-EA-CHIP-01:PMAC_STRING \\#5hmz\\#6hmz\\#7hmz"
 }
 endObjectProperties
 
@@ -2978,7 +2978,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run fiducial '\{\"point\":\"1\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION fiducial '\{\"point\":\"1\"\}'"
 }
 endObjectProperties
 
@@ -3000,7 +3000,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"f1\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"f1\"\}'"
 }
 endObjectProperties
 
@@ -3017,7 +3017,7 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "ME14E-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-01:GP1"
 visMin "1"
 visMax "2"
 value {
@@ -3184,7 +3184,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "ME14E-MO-IOC-01:GP1"
+controlPv "BL24I-MO-IOC-01:GP1"
 font "arial-medium-r-18.0"
 numItems 5
 symbolTag {
@@ -3371,7 +3371,7 @@ h 90
 lineColor index 7
 fill
 fillColor index 7
-visPv "ME14E-MO-IOC-01:GP4"
+visPv "BL24I-MO-IOC-01:GP4"
 visInvert
 visMin "1"
 visMax "10"
@@ -3555,7 +3555,7 @@ x 595
 y 360
 w 280
 h 20
-controlPv "ME14E-MO-IOC-01:GP100"
+controlPv "BL24I-MO-IOC-13:GP100"
 font "arial-medium-r-16.0"
 fgColor index 25
 bgColor index 7
@@ -3581,7 +3581,7 @@ fgColor index 14
 bgColor index 3
 topShadowColor index 1
 botShadowColor index 8
-controlPv "ME14E-MO-IOC-01:GP1"
+controlPv "BL24I-MO-IOC-01:GP1"
 font "arial-medium-r-18.0"
 numItems 5
 symbolTag {
@@ -3660,7 +3660,7 @@ x 350
 y 880
 w 60
 h 18
-controlPv "ME14E-MO-IOC-01:GP101"
+controlPv "BL24I-MO-IOC-01:GP101"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -3731,7 +3731,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto '\{\"place\":\"zero\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"zero\"\}'"
 }
 endObjectProperties
 
@@ -3773,7 +3773,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run moveto_preset '\{\"place\":\"microdrop_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"microdrop_position\"\}'"
 }
 endObjectProperties
 
@@ -3859,7 +3859,7 @@ buttonLabel "Stages"
 numPvs 4
 numDsps 1
 displayFileName {
-  0 "/dls_sw/work/R3.14.12.7/ioc/ME14E/BL/data/ME14E-motors.edl"
+  0 "/dls_sw/work/R3.14.12.7/ioc/BL24I/BL/data/BL24I-motors.edl"
 }
 endObjectProperties
 

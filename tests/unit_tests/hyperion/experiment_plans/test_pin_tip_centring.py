@@ -330,7 +330,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     args, _ = get_move.call_args_list[0]
     assert args[1] == (117, 100)
 
-    assert await smargon.omega.user_setpoint.get_value() == 90
+    assert await smargon.omega.user_setpoint.get_value() == -90
 
     args, _ = get_move.call_args_list[1]
     assert args[1] == (217, 200)

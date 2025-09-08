@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import CombinedMove
@@ -59,11 +59,11 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
+    RE: RunEngine,
 ):
     mock_detect_and_do_gridscan.side_effect = lambda *_: _fire_xray_centre_result_event(
         [FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW]
     )
-    RE = RunEngine()
     RE(
         pin_tip_centre_then_xray_centre(
             hyperion_grid_detect_xrc_devices,
@@ -105,8 +105,8 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
+    RE: RunEngine,
 ):
-    RE = RunEngine()
     RE(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
@@ -291,7 +291,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "backlight"
-        and msg.args == (BacklightPosition.IN,)
+        and msg.args == (InOut.IN,)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
     msgs = assert_message_and_return_remaining(

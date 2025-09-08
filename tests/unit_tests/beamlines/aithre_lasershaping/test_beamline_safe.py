@@ -5,7 +5,10 @@ from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
 from dodal.devices.aithre_lasershaping.laser_robot import LaserRobot
 
-from mx_bluesky.beamlines.aithre_lasershaping import set_beamline_safe_on_robot
+from mx_bluesky.beamlines.aithre_lasershaping import (
+    go_to_zero,
+    set_beamline_safe_on_robot,
+)
 
 
 @pytest.fixture
@@ -64,3 +67,24 @@ async def test_beamline_safe_reads_safe_correctly(
         and msg.obj.name == "robot-set_beamline_safe"
         and msg.args[0] == "On",
     )
+
+
+@pytest.mark.parametrize("wait", [True, False])
+async def test_go_to_zero_gives_expected_result(
+    sim_run_engine: RunEngineSimulator, goniometer: Goniometer, wait: bool
+):
+    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=wait))
+
+    for name in ["omega", "x", "y", "z", "sampy", "sampz"]:
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"goniometer-{name}"
+            and msg.args[0] == 0
+            and msg.kwargs["group"] == "move_to_zero",
+        )
+    if wait:
+        assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait" and msg.kwargs["group"] == "move_to_zero",
+        )

@@ -12,8 +12,8 @@ Documentation specific for the Hyperion module within MX-Bluesky
             :caption: Reference
             :maxdepth: 1
 
-            reference/param-hierarchy
             reference/readme
+            reference/param-hierarchy
             reference/coordinate-systems
             deploying-hyperion
             system-tests

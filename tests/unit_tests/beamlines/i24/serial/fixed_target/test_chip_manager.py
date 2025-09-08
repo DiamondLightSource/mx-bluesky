@@ -182,7 +182,7 @@ async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, RE):
 
 async def test_moveto_chip_aspecific(pmac: PMAC, RE):
     RE(moveto("zero", pmac))
-    assert await pmac.pmac_string.get_value() == "!x0y0z0"
+    assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
@@ -195,7 +195,7 @@ async def test_moveto_preset(
     RE,
 ):
     RE(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
-    assert await pmac.pmac_string.get_value() == "!x0y0z0"
+    assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
     RE(moveto_preset("load_position", pmac, beamstop, backlight, detector_stage))
     assert await beamstop.pos_select.get_value() == "Robot"
@@ -442,10 +442,10 @@ def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, RE):
     assert fake_caput.call_count == 5
     fake_caput.assert_has_calls(
         [
-            call(ANY, 0.62),
-            call(ANY, 1.24),
-            call(ANY, 1.86),
-            call(ANY, 3.1),
-            call(ANY, 6.2),
+            call(ANY, 0.86),
+            call(ANY, 1.72),
+            call(ANY, 2.58),
+            call(ANY, 4.3),
+            call(ANY, 8.6),
         ]
     )

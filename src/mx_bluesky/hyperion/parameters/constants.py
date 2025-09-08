@@ -8,6 +8,8 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     ExperimentParamConstants,
+    FeatureSetting,
+    FeatureSettingources,
     HardwareConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
@@ -24,18 +26,30 @@ class I03Constants:
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
-    USE_PANDA_FOR_GRIDSCAN = False
-    SET_STUB_OFFSETS = False
+    USE_GPU_RESULTS = True
     OMEGA_FLIP = True
     ALTERNATE_ROTATION_DIRECTION = True
 
-    # Turns on GPU processing for zocalo and uses the results that come back
-    USE_GPU_RESULTS = True
+
+# These currently exist in GDA domain.properties
+class HyperionFeatureSettingources(FeatureSettingources):
+    USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
+    USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
+    SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
+    PANDA_RUNUP_DISTANCE_MM = "gda.mx.hyperion.panda_runup_distance_mm"
+
+
+# Use these defaults if we can't read from the config server
+@dataclass
+class HyperionFeatureSetting(FeatureSetting):
+    USE_GPU_RESULTS: bool = True
+    USE_PANDA_FOR_GRIDSCAN: bool = False
+    SET_STUB_OFFSETS: bool = False
+    PANDA_RUNUP_DISTANCE_MM: float = 0.16
 
 
 @dataclass(frozen=True)
 class HyperionConstants:
-    DESCRIPTORS = DocDescriptorNames()
     ZOCALO_ENV = EnvironmentConstants.ZOCALO_ENV
     HARDWARE = HardwareConstants()
     I03 = I03Constants()
@@ -49,7 +63,8 @@ class HyperionConstants:
         if TEST_MODE
         else "https://daq-config.diamond.ac.uk/api"
     )
-    GRAYLOG_PORT = 12232
+    GRAYLOG_PORT = 12232  # Hyperion stream
+    GRAYLOG_STREAM_ID = "66264f5519ccca6d1c9e4e03"
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()

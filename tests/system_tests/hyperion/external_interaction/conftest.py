@@ -215,7 +215,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
     """
     This attempts to connect to a fake zocalo via rabbitmq
     """
-    zd = ZocaloResults()
+    zd = ZocaloResults("zocalo")
     zd.timeout_s = 10
     await zd.connect()
     return zd
@@ -224,6 +224,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
     zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
@@ -231,7 +232,9 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
         fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
-        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        fake_recipe_wrapper.recipe_step = {
+            "parameters": {"dcid": 1234, "dcgid": 123, "gpu": True}
+        }
         message = {
             "results": zocalo.my_zocalo_result  # type: ignore
         }
@@ -256,7 +259,7 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
-    beamstop_i03,
+    beamstop_phase1,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -281,7 +284,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         panda_fast_grid_scan=panda_fast_grid_scan,
         smargon=smargon,
         undulator=undulator_for_system_test,
@@ -397,7 +400,7 @@ def params_for_rotation_scan(
 
 @pytest.fixture
 def composite_for_rotation_scan(
-    beamstop_i03: Beamstop,
+    beamstop_phase1: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -423,7 +426,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_i03,
+        beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

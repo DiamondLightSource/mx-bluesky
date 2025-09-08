@@ -1,6 +1,7 @@
 import copy
 import json
 from datetime import timedelta
+from typing import TypedDict
 
 from bluesky.callbacks import CallbackBase
 from dodal.log import LOGGER
@@ -8,7 +9,43 @@ from event_model.documents import Event, RunStart, RunStop
 from redis import StrictRedis
 
 
+class OmegaReading(TypedDict):
+    value: float
+    timestamp: float
+
+
+def extrapolate_omega(
+    latest_omega: OmegaReading, previous_omega: OmegaReading, image_timestamp: float
+) -> float:
+    """Extrapolate an image omega from previous omegas.
+
+    There are a number of assumptions in this calculation:
+    * The speed of the smargon is fixed
+    * The timestamps from the two different devices are synchronised and match the data
+      exactly
+
+    These are accepted to be reasonable based on larger errors likely coming from murko
+    itself and that the results ultimately will be averaged out.
+    """
+    omega_per_sec = (latest_omega["value"] - previous_omega["value"]) / (
+        latest_omega["timestamp"] - previous_omega["timestamp"]
+    )
+    time_elapsed = image_timestamp - latest_omega["timestamp"]
+    return latest_omega["value"] + time_elapsed * omega_per_sec
+
+
 class MurkoCallback(CallbackBase):
+    """A callback that triggers murko processing of images.
+
+    It combines metadata readings from e.g the goniometer rotation with the uuid's given
+    to us by an `OAVToRedisForwarder` (which describe the location of images in redis).
+    And writes these as a package to redis. A separate service then forwards this to murko.
+
+    The metadata and image data arrive independently, it is expected that the image data
+    is arriving at a faster rate than gonio metadata and so the value of omega for when
+    the image arrives is extrapolated based on previous omega readings.
+    """
+
     DATA_EXPIRY_DAYS = 7
 
     def __init__(self, redis_host: str, redis_password: str, redis_db: int = 0):
@@ -16,6 +53,7 @@ class MurkoCallback(CallbackBase):
             host=redis_host, password=redis_password, db=redis_db
         )
         self.last_uuid = None
+        self.previous_omegas: list[OmegaReading] = []
 
     def start(self, doc: RunStart) -> RunStart | None:
         self.sample_id = doc.get("sample_id")
@@ -28,14 +66,31 @@ class MurkoCallback(CallbackBase):
             "sample_id": self.sample_id,
         }
         self.last_uuid = None
+        self.previous_omegas = []
         LOGGER.info(f"Starting to stream metadata to murko under {self.sample_id}")
         return doc
 
     def event(self, doc: Event) -> Event:
         if latest_omega := doc["data"].get("smargon-omega"):
-            if self.last_uuid is not None:
+            if len(self.previous_omegas) <= 2 and self.last_uuid:
+                # For the first few images there's not enough data to extrapolate so we
+                # match them one to one
                 self.call_murko(self.last_uuid, latest_omega)
+            self.previous_omegas.append(
+                OmegaReading(
+                    value=latest_omega,
+                    timestamp=doc["timestamps"]["smargon-omega"],
+                )
+            )
         elif (uuid := doc["data"].get("oav_to_redis_forwarder-uuid")) is not None:
+            if len(self.previous_omegas) >= 2:
+                omega = extrapolate_omega(
+                    self.previous_omegas[-1],
+                    self.previous_omegas[-2],
+                    doc["timestamps"]["oav_to_redis_forwarder-uuid"],
+                )
+                LOGGER.info(f"Using extrapolated omega of {omega}")
+                self.call_murko(uuid, omega)
             self.last_uuid = uuid
         return doc
 

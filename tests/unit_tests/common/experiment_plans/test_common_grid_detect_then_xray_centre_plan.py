@@ -1,6 +1,4 @@
 import dataclasses
-from collections.abc import Generator
-from typing import cast
 from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -9,7 +7,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.backlight import BacklightPosition
+from dodal.devices.backlight import InOut
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -55,22 +53,6 @@ def _fake_flyscan(*args):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
-def test_full_grid_scan(
-    test_full_grid_scan_params: HyperionSpecifiedThreeDGridScan,
-    test_config_files: dict[str, str],
-    construct_beamline_specific,
-):
-    devices = MagicMock()
-    plan = grid_detect_then_xray_centre(
-        devices,
-        cast(GridScanWithEdgeDetect, test_full_grid_scan_params),
-        SpecifiedThreeDGridScan,
-        construct_beamline_specific,
-        test_config_files["oav_config_json"],
-    )
-    assert isinstance(plan, Generator)
-
-
 @pytest.fixture()
 def construct_beamline_specific(
     beamline_specific: BeamlineSpecificFGSFeatures,
@@ -108,7 +90,7 @@ async def test_detect_grid_and_do_gridscan_in_real_RE(
     # Check backlight was moved IN for grid detect then OUT for gridscan
     backlight_mock = get_mock_put(composite.backlight.position)
     backlight_mock.assert_has_calls(
-        [call(BacklightPosition.IN, wait=True), call(BacklightPosition.OUT, wait=True)],
+        [call(InOut.IN, wait=True), call(InOut.OUT, wait=True)],
         any_order=False,
     )
     assert backlight_mock.call_count == 2
