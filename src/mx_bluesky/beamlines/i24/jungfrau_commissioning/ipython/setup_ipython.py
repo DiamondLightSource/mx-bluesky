@@ -28,7 +28,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import *
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import *
 from mx_bluesky.common.utils.log import do_default_logging_setup
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import *
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_internal_acquisition import *
 
 
 class Col:
