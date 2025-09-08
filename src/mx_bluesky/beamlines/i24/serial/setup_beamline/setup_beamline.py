@@ -70,9 +70,10 @@ def setup_beamline_for_collection_plan(
 
 
 def _check_z_stage_limits(detector_stage: DetectorMotion, target: float):
-    ll = yield from bps.rd(detector_stage.z.low_limit_travel)
-    hl = yield from bps.rd(detector_stage.z.high_limit_travel)
-    if target < ll or target > hl:
+    # Remove this check when https://github.com/bluesky/ophyd-async/issues/933 is fixed
+    low_limit = yield from bps.rd(detector_stage.z.low_limit_travel)
+    high_limit = yield from bps.rd(detector_stage.z.high_limit_travel)
+    if target < low_limit or target > high_limit:
         raise ValueError("Requested detector distance is beyond the limits.")
 
 
