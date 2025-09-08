@@ -42,7 +42,13 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
     DetectorName,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
+from mx_bluesky.beamlines.i24.serial.setup_beamline import (
+    Pilatus,
+    caget,
+    cagetstring,
+    caput,
+    pv,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     UnknownDetectorType,
@@ -269,6 +275,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_extruder_with_pump_probe_plan(
                 zebra,
@@ -290,6 +297,7 @@ def main_extruder_plan(
                     parameters.num_images,
                     parameters.exposure_time_s,
                 ],
+                dcm,
             )
             yield from setup_zebra_for_quickshot_plan(
                 zebra, parameters.exposure_time_s, parameters.num_images, wait=True
@@ -361,6 +369,8 @@ def main_extruder_plan(
     # Do DCID creation BEFORE arming the detector
     if parameters.detector_name == "eiger":
         filetemplate = f"{parameters.filename}.nxs"
+        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)
+        filetemplate = f"{complete_filename}.nxs"
     else:
         filetemplate = yield from get_pilatus_filename_template_from_device(
             pilatus_metadata
@@ -390,7 +400,7 @@ def main_extruder_plan(
         SSX_LOGGER.debug("Call nexgen server for nexus writing.")
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
-        call_nexgen(
+        yield from call_nexgen(
             None,
             parameters,
             beam_settings.wavelength_in_a,
@@ -463,7 +473,7 @@ def tidy_up_at_collection_end_plan(
 
     # Clean Up
     if parameters.detector_name == "pilatus":
-        yield from sup.pilatus("return-to-normal", None)
+        yield from sup.pilatus("return-to-normal", None, dcm)
     elif parameters.detector_name == "eiger":
         yield from sup.eiger("return-to-normal", None, dcm)
         SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")

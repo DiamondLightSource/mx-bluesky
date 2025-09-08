@@ -2,6 +2,7 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
