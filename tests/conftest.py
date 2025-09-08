@@ -363,6 +363,7 @@ def RE():
 
         RE.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
+        # RE.loop.close()
     del RE
 
 

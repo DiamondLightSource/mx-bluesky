@@ -1,7 +1,7 @@
 Alerts
 ------
 
-Hyperion can be configured to raise  in order to notify staff of issues with data collections or with Hyperion 
+Hyperion can be configured to raise alerts in order to notify staff of issues with data collections or with Hyperion 
 itself.
 
 The currently supported alerting backend uses graylog alerting to send email alert notifications.
