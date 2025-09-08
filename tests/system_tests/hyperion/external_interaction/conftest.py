@@ -215,7 +215,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
     """
     This attempts to connect to a fake zocalo via rabbitmq
     """
-    zd = ZocaloResults()
+    zd = ZocaloResults("zocalo")
     zd.timeout_s = 10
     await zd.connect()
     return zd
