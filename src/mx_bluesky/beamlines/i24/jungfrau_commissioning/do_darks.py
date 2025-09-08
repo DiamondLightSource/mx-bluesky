@@ -43,7 +43,7 @@ def do_pedestal_darks(
     """
 
     prev_acq_type = yield from bps.rd(jungfrau.drv.acquisition_type)
-    prev_pedestal_mode = yield from bps.rd(jungfrau.drv.pedestal_mode)
+    prev_pedestal_mode = yield from bps.rd(jungfrau.drv.pedestal_mode_state)
 
     if path_of_output_file:
         override_file_name_and_path(jungfrau, path_of_output_file)
@@ -66,7 +66,7 @@ def do_pedestal_darks(
         yield from bps.mv(
             jungfrau.drv.acquisition_type,
             prev_acq_type,
-            jungfrau.drv.pedestal_mode,
+            jungfrau.drv.pedestal_mode_state,
             prev_pedestal_mode,
         )
 

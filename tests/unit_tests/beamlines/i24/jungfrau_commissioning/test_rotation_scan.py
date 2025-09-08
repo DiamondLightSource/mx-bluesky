@@ -10,7 +10,6 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.util.test_utils import patch_all_motors
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.core import init_devices
@@ -42,7 +41,6 @@ def rotation_composite(jungfrau: Jungfrau, zebra: Zebra) -> RotationScanComposit
         gonio = VerticalGoniometer("")
         synchrotron = Synchrotron("")
         sample_shutter = ZebraShutter("")
-        xbpm_feedback = XBPMFeedback("")
         hutch_shutter = HutchShutter("")
         beamstop = Beamstop("")
         det_stage = YZStage("")  # TODO add JF position to det stage device
@@ -61,7 +59,6 @@ def rotation_composite(jungfrau: Jungfrau, zebra: Zebra) -> RotationScanComposit
         synchrotron,
         sample_shutter,
         zebra,
-        xbpm_feedback,
         hutch_shutter,
         beamstop,
         det_stage,

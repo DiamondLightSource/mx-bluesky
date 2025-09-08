@@ -256,7 +256,7 @@ source_modules = "mx_bluesky.beamlines.**"
 forbidden_modules = "mx_bluesky.hyperion.**"
 
 [[tool.importlinter.contracts]]
-name = "Only Hyperion and i04 can import from phase1_zebra"
+name = "Only Hyperion and i04 and i24 can import from phase1_zebra"
 type = "forbidden"
 source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
 forbidden_modules = ["mx_bluesky.phase1_zebra.**"]

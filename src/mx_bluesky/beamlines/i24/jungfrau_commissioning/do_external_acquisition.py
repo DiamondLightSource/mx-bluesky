@@ -41,8 +41,6 @@ def do_external_acquisition(
     if path_of_output_file:
         override_file_name_and_path(jungfrau, path_of_output_file)
 
-    trigger_info = create_jungfrau_external_triggering_info(
-        total_triggers, exp_time_s, period_between_frames_s
-    )
+    trigger_info = create_jungfrau_external_triggering_info(total_triggers, exp_time_s)
     status = yield from fly_jungfrau(jungfrau, trigger_info, wait)
     return status

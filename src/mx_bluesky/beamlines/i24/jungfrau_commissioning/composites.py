@@ -10,7 +10,6 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.vgonio import VerticalGoniometer
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.fastcs.jungfrau import (
@@ -29,7 +28,6 @@ class RotationScanComposite:
     synchrotron: Synchrotron
     sample_shutter: ZebraShutter
     zebra: Zebra
-    xbpm_feedback: XBPMFeedback
     hutch_shutter: HutchShutter
     beamstop: Beamstop
     det_stage: YZStage  # TODO add JF position to det stage device

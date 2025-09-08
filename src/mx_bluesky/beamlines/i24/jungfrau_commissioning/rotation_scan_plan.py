@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import partial
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from dodal.devices.hutch_shutter import ShutterState
@@ -84,9 +86,13 @@ def single_rotation_plan(
     composite: RotationScanComposite,
     params: SingleRotationScan,
 ):
-    """A stub plan to collect diffraction images from a sample continuously rotating
-    about a fixed axis - for now this axis is limited to omega.
-    Needs additional setup of the sample environment and a wrapper to clean up."""
+    """Set-up beamline for rotation by moving out backlight, then moving aperture, beamstop and detetor stages into position.
+    Then rotate around the omega axis, capturing images at the specified omega interval.
+
+    Args:
+    composite: Composite for all devices required for this plan
+    params: Minimum set of parameters required for this plan
+    """
 
     # This should be somewhere more sensible - like in the parameter model
     if not params.detector_distance_mm:
@@ -199,11 +205,14 @@ def single_rotation_plan(
         except_plan=lambda _: (yield from bps.unstage(composite.jungfrau)),
     )
 
-    yield from _rotation_scan_plan(motion_values, composite)
-    print("test")
+    yield from bpp.finalize_wrapper(
+        _rotation_scan_plan(motion_values, composite),
+        final_plan=partial(_cleanup_plan, composite.zebra),
+    )
 
 
-def cleanup_plan(zebra: Zebra, group="cleanup"):
+def _cleanup_plan(zebra: Zebra, group="cleanup"):
+    LOGGER.info("Tidying up zebra...")
     yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
     yield from disarm_zebra(zebra)
     yield from bps.wait("cleanup")
