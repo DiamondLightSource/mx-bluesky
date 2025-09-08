@@ -280,7 +280,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto_preset '\{\"place\":\"load_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"load_position\"\}'"
 }
 endObjectProperties
 
@@ -301,7 +301,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto_preset '\{\"place\":\"collect_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"collect_position\"\}'"
 }
 endObjectProperties
 
@@ -323,7 +323,7 @@ font "helvetica-bold-r-24.0"
 buttonLabel "Start"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION run_fixed_target_plan"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION run_fixed_target_plan"
 }
 endObjectProperties
 
@@ -615,7 +615,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION cs_maker"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION cs_maker"
 }
 endObjectProperties
 
@@ -1157,7 +1157,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION initialise_stages"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION initialise_stages"
 }
 endObjectProperties
 
@@ -1538,7 +1538,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION block_check"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION block_check"
 }
 endObjectProperties
 
@@ -2912,7 +2912,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION fiducial '\{\"point\":\"2\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION fiducial '\{\"point\":\"2\"\}'"
 }
 endObjectProperties
 
@@ -2934,7 +2934,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 2"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto '\{\"place\":\"f2\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"f2\"\}'"
 }
 endObjectProperties
 
@@ -2978,7 +2978,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Set Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION fiducial '\{\"point\":\"1\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION fiducial '\{\"point\":\"1\"\}'"
 }
 endObjectProperties
 
@@ -3000,7 +3000,7 @@ font "helvetica-medium-r-18.0"
 buttonLabel "Goto Fiducial 1"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto '\{\"place\":\"f1\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"f1\"\}'"
 }
 endObjectProperties
 
@@ -3731,7 +3731,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto '\{\"place\":\"zero\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto '\{\"place\":\"zero\"\}'"
 }
 endObjectProperties
 
@@ -3773,7 +3773,7 @@ botShadowColor index 14
 font "arial-medium-r-18.0"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run -i INSTRUMENT_SESSION moveto_preset '\{\"place\":\"microdrop_position\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION moveto_preset '\{\"place\":\"microdrop_position\"\}'"
 }
 endObjectProperties
 
