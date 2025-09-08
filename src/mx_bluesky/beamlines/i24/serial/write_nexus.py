@@ -110,4 +110,3 @@ def call_nexgen(
         SSX_LOGGER.exception(f"Error generating nexus file: {e}")
         raise
     SSX_LOGGER.info(f"Response: {response.text} (status code: {response.status_code})")
-    yield from bps.sleep(0.2)
