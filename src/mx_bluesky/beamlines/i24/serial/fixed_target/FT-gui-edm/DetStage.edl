@@ -113,7 +113,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Move Stage"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run setup_detector_stage '\{\"expt_type\":\"Serial Fixed\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION setup_detector_stage '\{\"expt_type\":\"Serial Fixed\"\}'"
 }
 endObjectProperties
 
