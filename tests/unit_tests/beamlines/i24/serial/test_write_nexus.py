@@ -1,7 +1,15 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
+import pytest
+from bluesky import RunEngine
+from httpx import HTTPError
+
+from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
+    ExtruderParameters,
+    FixedTargetParameters,
+)
+from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen, submit_to_server
 
 
 @patch("mx_bluesky.beamlines.i24.serial.write_nexus.bps.sleep", MagicMock())
@@ -16,8 +24,8 @@ def test_call_nexgen_for_extruder(
     fake_read_text,
     fake_caget_str,
     fake_caget,
-    dummy_params_ex,
-    RE,
+    dummy_params_ex: ExtruderParameters,
+    RE: RunEngine,
 ):
     fake_caget_str.return_value = f"{dummy_params_ex.filename}_5001"
     fake_caget.return_value = 32
@@ -45,8 +53,8 @@ def test_call_nexgen_for_fixed_target(
     fake_read_text,
     fake_caget_str,
     fake_caget,
-    dummy_params_without_pp,
-    RE,
+    dummy_params_without_pp: FixedTargetParameters,
+    RE: RunEngine,
 ):
     expected_filename = f"{dummy_params_without_pp.filename}_5002"
     fake_caget_str.return_value = expected_filename
@@ -61,3 +69,47 @@ def test_call_nexgen_for_fixed_target(
     assert nexgen_args["expt_type"] == "fixed-target"
     assert nexgen_args["filename"] == expected_filename
     assert nexgen_args["start_time"] == fake_start_time.isoformat()
+
+
+@patch("mx_bluesky.beamlines.i24.serial.write_nexus.pathlib.Path.exists")
+@patch("mx_bluesky.beamlines.i24.serial.write_nexus.pathlib.Path.read_text")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.write_nexus.requests.post",
+    side_effect=HTTPError("No connection"),
+)
+def test_submit_to_nexgen_server_raises_http_error(
+    patch_request,
+    fake_path,
+    fake_read_text,
+):
+    fake_path.return_value = ""
+    fake_read_text.return_value = ""
+
+    with pytest.raises(HTTPError):
+        submit_to_server(None)
+
+
+@patch("mx_bluesky.beamlines.i24.serial.write_nexus.pathlib.Path.exists")
+@patch("mx_bluesky.beamlines.i24.serial.write_nexus.pathlib.Path.read_text")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.write_nexus.requests.post",
+    side_effect=ValueError("Invalid payload"),
+)
+def test_submit_to_nexgen_server_raises_value_error(
+    patch_request,
+    fake_path,
+    fake_read_text,
+):
+    fake_path.return_value = ""
+    fake_read_text.return_value = ""
+
+    with pytest.raises(ValueError):
+        submit_to_server(None)
+
+
+# @patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests")
+# def test_submit_to_nexgen_server_raises_value_error(
+#     patch_request,
+# ):
+#     with pytest.raises(ValueError):
+#         submit_to_server(None)
