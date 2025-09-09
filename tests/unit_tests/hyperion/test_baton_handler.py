@@ -38,6 +38,7 @@ from mx_bluesky.hyperion.baton_handler import (
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
@@ -649,3 +650,102 @@ def test_run_forever_clears_error_status_on_resume(
     run_forever(udc_runner)
 
     future.result()  # Ensure successful completion
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []]),
+)
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_udc_start_alert_when_baton_acquired(
+    mock_get_alerting_service: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    mock_alert_service = mock_get_alerting_service.return_value
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    mock_alert_service.raise_alert.assert_called_with(
+        Subjects.UDC_STARTED, "Unattended Data Collection has started.", {}
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_baton_release_udc_completed_event_when_hyperion_releases_the_baton(
+    mock_get_alerting_service: MagicMock,
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    parent = MagicMock()
+
+    def wait_then_nothing():
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+
+        mock_alert_service = mock_get_alerting_service.return_value
+        parent.attach_mock(mock_alert_service.raise_alert, "raise_alert")
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        parent.attach_mock(get_mock_put(baton.current_user), "current_user")
+        yield []
+
+    mock_create_params.side_effect = wait_then_nothing()
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.raise_alert(Subjects.UDC_COMPLETED, "Hyperion UDC has completed.", {}),
+            call.current_user(NO_USER, wait=True),
+            call.raise_alert(
+                Subjects.UDC_BATON_RELEASED,
+                "Hyperion has released the baton. The baton is currently "
+                "requested by: None",
+                {},
+            ),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_from_hyperion(
+    mock_get_alerting_service: MagicMock,
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    parent = MagicMock()
+
+    def wait_then_nothing():
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        set_mock_value(baton.requested_user, "GDA")
+        mock_alert_service = mock_get_alerting_service.return_value
+        parent.attach_mock(mock_alert_service.raise_alert, "raise_alert")
+        parent.attach_mock(get_mock_put(baton.current_user), "current_user")
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+        raise AssertionError(
+            "This should never be reached as the baton has already been released."
+        )
+
+    mock_create_params.side_effect = wait_then_nothing()
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.current_user(NO_USER, wait=True),
+            call.raise_alert(
+                Subjects.UDC_BATON_RELEASED,
+                "Hyperion has released the baton. The baton is currently "
+                "requested by: GDA",
+                {},
+            ),
+        ]
+    )

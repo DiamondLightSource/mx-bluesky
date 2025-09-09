@@ -54,6 +54,12 @@ expand to the event timestamp.
 
 All the fields that are available in the event are available under the ``event.fields`` object, e.g. ``${event.fields.alert_summary}``
 
+The email subject and body use the JMTE templating engine, to generate more complex templates and for more 
+information see the `JMTE Project Documentation`_
+
+
+.. _JMTE Project Documentation: https://github.com/DJCordhose/jmte
+
 Event Definitions
 -----------------
 

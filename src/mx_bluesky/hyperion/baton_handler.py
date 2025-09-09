@@ -12,6 +12,10 @@ from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
     UDCDefaultDevices,
     move_to_udc_default_state,
 )
+from mx_bluesky.common.external_interaction.alerting import (
+    AlertService,
+    get_alerting_service,
+)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
@@ -25,6 +29,7 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
+from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
@@ -86,6 +91,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             baton: The baton device
             runner: The runner
         """
+        _raise_udc_start_alert(get_alerting_service())
         yield from _move_to_udc_default_state(context)
 
         # re-fetch the baton because the device has been reinstantiated
@@ -97,8 +103,9 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         # If hyperion has given up the baton itself we need to also release requested
         # user so that hyperion doesn't think we're requested again
         baton = _get_baton(context)
-        yield from _safely_release_baton(baton)
-        yield from bps.abs_set(baton.current_user, NO_USER)
+        previous_requested_user = yield from _safely_release_baton(baton)
+        yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
+        _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
     def collect_then_release() -> MsgGenerator:
         yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
@@ -152,8 +159,28 @@ def _fetch_and_process_agamemnon_instruction(
                         f"Unsupported instruction decoded from agamemnon {type(parameters)}"
                     )
     else:
+        _raise_udc_completed_alert(get_alerting_service())
         # Release the baton for orderly exit from the instruction loop
         yield from _safely_release_baton(baton)
+
+
+def _raise_udc_start_alert(alert_service: AlertService):
+    alert_service.raise_alert(
+        Subjects.UDC_STARTED, "Unattended Data Collection has started.", {}
+    )
+
+
+def _raise_baton_released_alert(alert_service: AlertService, baton_requester: str):
+    alert_service.raise_alert(
+        Subjects.UDC_BATON_RELEASED,
+        f"Hyperion has released the baton. The baton is currently requested by:"
+        f" {baton_requester}",
+        {},
+    )
+
+
+def _raise_udc_completed_alert(alert_service: AlertService):
+    alert_service.raise_alert(Subjects.UDC_COMPLETED, "Hyperion UDC has completed.", {})
 
 
 def _runner_sleep(parameters: Wait) -> MsgGenerator:
@@ -174,9 +201,15 @@ def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
 
 
-def _safely_release_baton(baton: Baton) -> MsgGenerator:
+def _safely_release_baton(baton: Baton) -> MsgGenerator[str]:
     """Relinquish the requested user of the baton if it is not already requested
-    by another user."""
+    by another user.
+
+    Returns:
+        The previously requested user, or NO_USER if no user was already requested.
+    """
     requested_user = yield from bps.rd(baton.requested_user)
     if requested_user == HYPERION_USER:
         yield from bps.abs_set(baton.requested_user, NO_USER)
+        return NO_USER
+    return requested_user
