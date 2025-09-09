@@ -2,8 +2,8 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from bluesky import RunEngine
-from httpx import HTTPError
 
 from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     ExtruderParameters,
@@ -75,17 +75,17 @@ def test_call_nexgen_for_fixed_target(
 @patch("mx_bluesky.beamlines.i24.serial.write_nexus.pathlib.Path.read_text")
 @patch(
     "mx_bluesky.beamlines.i24.serial.write_nexus.requests.post",
-    side_effect=HTTPError("No connection"),
+    side_effect=requests.HTTPError("No connection"),
 )
 def test_submit_to_nexgen_server_raises_http_error(
-    patch_request,
-    fake_path,
+    fake_post,
     fake_read_text,
+    fake_path,
 ):
-    fake_path.return_value = ""
+    fake_path.return_value = True
     fake_read_text.return_value = ""
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(requests.HTTPError, match="No connection"):
         submit_to_server(None)
 
 
@@ -96,12 +96,12 @@ def test_submit_to_nexgen_server_raises_http_error(
     side_effect=ValueError("Invalid payload"),
 )
 def test_submit_to_nexgen_server_raises_value_error(
-    patch_request,
-    fake_path,
+    fake_post,
     fake_read_text,
+    fake_path,
 ):
-    fake_path.return_value = ""
+    fake_path.return_value = True
     fake_read_text.return_value = ""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid payload"):
         submit_to_server(None)

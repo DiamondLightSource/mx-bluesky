@@ -122,7 +122,7 @@ def submit_to_server(
         response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
     except requests.HTTPError as e:
-        SSX_LOGGER.error(f"Nexus writer failed. Reason from server {e.response.text}")
+        SSX_LOGGER.error(f"Nexus writer failed. Reason from server {e}")
         raise
     except Exception as e:
         SSX_LOGGER.exception(f"Error generating nexus file: {e}")
