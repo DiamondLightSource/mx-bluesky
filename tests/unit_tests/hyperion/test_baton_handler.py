@@ -666,7 +666,7 @@ def test_run_udc_when_requested_raises_udc_start_alert_when_baton_acquired(
     mock_alert_service = mock_get_alerting_service.return_value
     run_udc_when_requested(bluesky_context, udc_runner)
 
-    mock_alert_service.raise_alert.assert_called_with(
+    assert mock_alert_service.raise_alert.mock_calls[0] == call(
         Subjects.UDC_STARTED, "Unattended Data Collection has started.", {}
     )
 
