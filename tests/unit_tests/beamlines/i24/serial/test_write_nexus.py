@@ -105,11 +105,3 @@ def test_submit_to_nexgen_server_raises_value_error(
 
     with pytest.raises(ValueError):
         submit_to_server(None)
-
-
-# @patch("mx_bluesky.beamlines.i24.serial.write_nexus.requests")
-# def test_submit_to_nexgen_server_raises_value_error(
-#     patch_request,
-# ):
-#     with pytest.raises(ValueError):
-#         submit_to_server(None)
