@@ -6,6 +6,14 @@ itself.
 
 The currently supported alerting backend uses graylog alerting to send email alert notifications.
 
+The currently supported events that will generate alerts are:
+
+- On encountering a beamline error that requires user intervention.
+- When Hyperion starts UDC collection.
+- When Hyperion finishes UDC collection (there are no more Agamemnon instructions).
+- When Hyperion releases the baton.
+- When Hyperion moves on to a new container (puck). 
+
 Graylog Alert Configuration
 ===========================
 
