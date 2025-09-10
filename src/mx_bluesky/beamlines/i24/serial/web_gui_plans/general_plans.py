@@ -18,6 +18,7 @@ from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
+from ophyd_async.fastcs.jungfrau import Jungfrau
 
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -141,6 +142,7 @@ def gui_run_chip_collection(
     beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
     pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
+    jungfrau: Jungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -235,4 +237,5 @@ def gui_run_chip_collection(
         parameters,
         dcid,
         pilatus_metadata,
+        jungfrau,
     )

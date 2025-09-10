@@ -13,6 +13,7 @@ class SSXType(StrEnum):
 class DetectorName(StrEnum):
     EIGER = "eiger"
     PILATUS = "pilatus"
+    JUNGFRAU = "jungfrau"
 
 
 # TODO figue sth out for tests
