@@ -68,4 +68,9 @@ class Eiger:
         return self.name
 
 
-Detector = Pilatus | Eiger
+class Jungfrau:
+    # TODO fill this out
+    ...
+
+
+Detector = Pilatus | Eiger | Jungfrau
