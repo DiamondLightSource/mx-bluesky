@@ -2,7 +2,6 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
-from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
@@ -69,14 +68,6 @@ def setup_beamline_for_collection_plan(
         yield from bps.wait(group=group)
 
 
-def _check_z_stage_limits(detector_stage: DetectorMotion, target: float):
-    # Remove this check when https://github.com/bluesky/ophyd-async/issues/933 is fixed
-    low_limit = yield from bps.rd(detector_stage.z.low_limit_travel)
-    high_limit = yield from bps.rd(detector_stage.z.high_limit_travel)
-    if target < low_limit or target > high_limit:
-        raise ValueError("Requested detector distance is beyond the limits.")
-
-
 def move_detector_stage_to_position_plan(
     detector_stage: YZStage,
     detector_distance: float,
@@ -85,7 +76,6 @@ def move_detector_stage_to_position_plan(
     SSX_LOGGER.debug(
         f"Waiting for detector move. Detector distance: {detector_distance} mm."
     )
-    yield from _check_z_stage_limits(detector_stage, detector_distance)
     yield from bps.mv(detector_stage.z, detector_distance)
 
 
@@ -283,104 +273,6 @@ def modechange(action):
     else:
         SSX_LOGGER.debug(f"Unknown action: {action}")
     return 1
-
-
-def pilatus(action, args_list, dcm: DCM):
-    SSX_LOGGER.debug("***** Entering Pilatus")
-    SSX_LOGGER.info(f"Setup pilatus - {action}")
-    if args_list:
-        for arg in args_list:
-            SSX_LOGGER.debug(f"Argument: {arg}")
-
-    caput(pv.pilat_detdist, caget(pv.det_z))
-    caput(pv.pilat_filtertrasm, caget(pv.attn_match))
-
-    dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
-    SSX_LOGGER.debug(f"Setting Pilatus wavelength PV to : {dcm_wavelength_a}")
-    caput(pv.pilat_wavelength, dcm_wavelength_a)
-
-    # Fixed Target stage (very fast start and stop w/ triggering from GeoBrick
-    if action == "fastchip":
-        [filepath, filename, total_numb_imgs, exptime] = args_list
-        rampath = filepath.replace("dls/i24/data", "ramdisk")
-        acqtime = float(exptime) - 0.001
-        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
-        SSX_LOGGER.debug(f"Rampath set as {rampath}")
-        SSX_LOGGER.debug(f"Filename set as {filename}")
-        SSX_LOGGER.debug(f"total_numb_imgs {total_numb_imgs}")
-        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
-        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
-        caput(pv.pilat_startangle, 0.0)
-        caput(pv.pilat_angleincr, 0.0)
-        caput(pv.pilat_omegaincr, 0.0)
-        caput(pv.pilat_filepath, rampath + "/")
-        caput(pv.pilat_filename, filename)
-        caput(pv.pilat_numimages, str(total_numb_imgs))
-        caput(pv.pilat_acquiretime, str(acqtime))
-        caput(pv.pilat_acquireperiod, str(exptime))
-        caput(pv.pilat_imagemode, "Single")
-        caput(pv.pilat_triggermode, "Mult. Trigger")
-        caput(pv.pilat_delaytime, 0)
-
-    # Quick set of images no coordinated motion
-    elif action == "quickshot":
-        SSX_LOGGER.debug("quickshot")
-        [filepath, filename, num_imgs, exptime] = args_list
-        rampath = filepath.replace("dls/i24/data", "ramdisk")
-        caput(pv.pilat_filepath, rampath)
-        yield from bps.sleep(0.1)
-        caput(pv.pilat_filename, filename)
-        yield from bps.sleep(0.1)
-        acqtime = float(exptime) - 0.001
-        caput(pv.pilat_acquiretime, str(acqtime))
-        caput(pv.pilat_acquireperiod, str(exptime))
-        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
-        SSX_LOGGER.debug(f"Rampath set as {rampath}")
-        SSX_LOGGER.debug(f"Filename set as {filename}")
-        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
-        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
-        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
-        SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
-        yield from bps.sleep(2)
-        caput(pv.pilat_delaytime, 0.00)
-        caput(pv.pilat_numimages, str(num_imgs))
-        caput(pv.pilat_imagemode, "Continuous")
-        caput(pv.pilat_triggermode, "Ext. Trigger")
-        yield from bps.sleep(0.2)
-
-    elif action == "quickshot-internaltrig":
-        SSX_LOGGER.debug("quickshot-internaltrig")
-        [filepath, filename, num_imgs, exptime] = args_list
-        rampath = filepath.replace("dls/i24/data", "ramdisk")
-        caput(pv.pilat_filepath, rampath)
-        yield from bps.sleep(0.1)
-        caput(pv.pilat_filename, filename)
-        yield from bps.sleep(0.1)
-        acqtime = float(exptime) - 0.001
-        caput(pv.pilat_acquiretime, str(acqtime))
-        caput(pv.pilat_acquireperiod, str(exptime))
-        SSX_LOGGER.debug(f"Filepath was set as {filepath}")
-        SSX_LOGGER.debug(f"Rampath set as {rampath}")
-        SSX_LOGGER.debug(f"Filename set as {filename}")
-        SSX_LOGGER.debug(f"num_imgs {num_imgs}")
-        SSX_LOGGER.debug(f"Exposure time set as {exptime} s")
-        SSX_LOGGER.debug(f"Acquire time set as {acqtime} s")
-        SSX_LOGGER.debug("Pilatus takes time apprx 2sec")
-        yield from bps.sleep(2)
-        caput(pv.pilat_delaytime, 0.00)
-        caput(pv.pilat_numimages, str(num_imgs))
-        caput(pv.pilat_imagemode, "Continuous")
-        caput(pv.pilat_triggermode, "Internal")
-        yield from bps.sleep(0.2)
-
-    # Put it all back to GDA acceptable defaults
-    elif action == "return to normal":
-        caput(pv.pilat_imagemode, "Continuous")
-        caput(pv.pilat_triggermode, "Ext. Trigger")
-        caput(pv.pilat_numexpimage, 1)
-    SSX_LOGGER.debug("***** leaving pilatus")
-    yield from bps.sleep(0.1)
-    return 0
 
 
 def eiger(action, args_list, dcm: DCM):
