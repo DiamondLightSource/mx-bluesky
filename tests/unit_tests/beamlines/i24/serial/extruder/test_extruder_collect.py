@@ -95,7 +95,7 @@ def test_initialise_extruder(
     fake_caget.return_value = "/path/to/visit"
     fake_det.side_effect = [fake_generator(Eiger())]
     RE(initialise_extruder(detector_stage))
-    assert fake_caput.call_count == 10
+    assert fake_caput.call_count == 9
     assert fake_caget.call_count == 1
 
 

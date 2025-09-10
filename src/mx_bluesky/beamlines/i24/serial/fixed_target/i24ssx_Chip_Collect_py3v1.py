@@ -394,7 +394,7 @@ def finish_i24(
     )
 
     complete_filename: str
-    transmission = float(caget(pv.pilat_filtertrasm))
+    transmission = float(caget(pv.requested_transmission))
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
 
     if parameters.detector_name == "eiger":

@@ -45,7 +45,6 @@ TEST_PATH = Path("tests/test_data/test_daq_configuration")
 
 TEST_LUT = {
     DetectorName.EIGER: TEST_PATH / "lookup/test_det_dist_converter.txt",
-    DetectorName.PILATUS: TEST_PATH / "lookup/test_det_dist_converter.txt",
 }
 
 
