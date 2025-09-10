@@ -22,7 +22,16 @@ from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
+from ophyd_async.core import TriggerInfo
+from ophyd_async.fastcs.jungfrau import (
+    Jungfrau,
+    create_jungfrau_external_triggering_info,
+)
 
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+    JF_COMPLETE_GROUP,
+    fly_jungfrau,
+)
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
     get_pilatus_filename_template_from_device,
@@ -283,6 +292,8 @@ def start_i24(
     Returns the start_time.
     """
 
+    trigger_info = None
+
     beam_settings = yield from read_beam_info_from_hardware(
         dcm, mirrors, beam_center_device, parameters.detector_name
     )
@@ -434,6 +445,62 @@ def start_i24(
 
         yield from bps.sleep(1.5)
 
+    elif parameters.detector_name == "jungfrau":
+        SSX_LOGGER.info("Using Jungfrau detector")
+        # TODO who is creating the folder?
+        # TODO confirm zebra wiring for auto shutter is correct
+        SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
+
+        SSX_LOGGER.info(f"Triggered Jungfrau setup: filepath {filepath}")
+        SSX_LOGGER.info(f"Triggered Jungfrau setup: filename {filename}")
+        SSX_LOGGER.info(
+            f"Triggered Jungfrau setup: number of images {parameters.total_num_images}"
+        )
+        SSX_LOGGER.info(
+            f"Triggered Jungfrau setup: exposure time {parameters.exposure_time_s}"
+        )
+
+        trigger_info = create_jungfrau_external_triggering_info(
+            parameters.total_num_images, parameters.exposure_time_s
+        )
+
+        # TODO where to get filename from?
+        SSX_LOGGER.debug("Start DCID process")
+        complete_filename = "test"
+        filetemplate = f"{complete_filename}.nxs"
+        dcid.generate_dcid(
+            beam_settings=beam_settings,
+            image_dir=filepath,
+            file_template=filetemplate,
+            num_images=parameters.total_num_images,
+            shots_per_position=parameters.num_exposures,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
+        )
+
+        SSX_LOGGER.debug("Arm Zebra.")
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
+        yield from setup_zebra_for_fastchip_plan(
+            zebra,
+            parameters.detector_name,
+            num_gates,
+            parameters.num_exposures,
+            parameters.exposure_time_s,
+            shutter_time_offset,
+            wait=True,
+        )
+        if parameters.pump_repeat == PumpProbeSetting.Medium1:
+            yield from open_fast_shutter_at_each_position_plan(
+                zebra, parameters.num_exposures, parameters.exposure_time_s
+            )
+        yield from arm_zebra(zebra)
+
+        yield from bps.sleep(1.5)
+
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
         SSX_LOGGER.error(msg)
@@ -442,7 +509,7 @@ def start_i24(
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
-    return start_time
+    return start_time, trigger_info
 
 
 @log_on_entry
@@ -514,6 +581,7 @@ def main_fixed_target_plan(
     parameters: FixedTargetParameters,
     dcid: DCID,
     pilatus_metadata: PilatusMetadata,
+    jungfrau: Jungfrau,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -546,7 +614,7 @@ def main_fixed_target_plan(
 
     set_datasize(parameters)
 
-    start_time = yield from start_i24(
+    start_time, trigger_info = yield from start_i24(
         zebra,
         aperture,
         backlight,
@@ -582,10 +650,15 @@ def main_fixed_target_plan(
             chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 
-    yield from kickoff_and_complete_collection(pmac, parameters)
+    yield from kickoff_and_complete_collection(pmac, parameters, jungfrau, trigger_info)
 
 
-def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameters):
+def kickoff_and_complete_collection(
+    pmac: PMAC,
+    parameters: FixedTargetParameters,
+    jungfrau: Jungfrau,
+    trigger_info: TriggerInfo | None = None,
+):
     prog_num = get_prog_num(
         parameters.chip.chip_type, parameters.map_type, parameters.pump_repeat
     )
@@ -594,9 +667,18 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
+        if trigger_info:
+            SSX_LOGGER.info("Flying jungfrau")
+            yield from fly_jungfrau(jungfrau, trigger_info)
+
         SSX_LOGGER.info(f"Kick off PMAC with program number {prog_num}.")
         yield from bps.kickoff(pmac.run_program, wait=True)
         yield from bps.complete(pmac.run_program, wait=True)
+
+        if trigger_info:
+            SSX_LOGGER.info("Waiting for Jungfrau to mark collection as finished...")
+            yield from bps.wait(JF_COMPLETE_GROUP)
+
         SSX_LOGGER.info("Collection completed without errors.")
 
     yield from run_collection()
@@ -665,6 +747,7 @@ def run_fixed_target_plan(
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
     beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
+    jungfrau: Jungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -700,6 +783,7 @@ def run_fixed_target_plan(
         parameters,
         dcid,
         pilatus_metadata,
+        jungfrau,
     )
 
 
@@ -717,6 +801,7 @@ def run_plan_in_wrapper(
     parameters: FixedTargetParameters,
     dcid: DCID,
     pilatus_metadata: PilatusMetadata,
+    jungfrau: Jungfrau,
 ) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
@@ -733,6 +818,7 @@ def run_plan_in_wrapper(
             parameters,
             dcid,
             pilatus_metadata,
+            jungfrau,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
