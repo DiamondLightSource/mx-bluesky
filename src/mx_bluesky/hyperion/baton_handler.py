@@ -180,7 +180,11 @@ def _raise_baton_released_alert(alert_service: AlertService, baton_requester: st
 
 
 def _raise_udc_completed_alert(alert_service: AlertService):
-    alert_service.raise_alert(Subjects.UDC_COMPLETED, "Hyperion UDC has completed.", {})
+    alert_service.raise_alert(
+        Subjects.UDC_COMPLETED,
+        "Hyperion UDC has completed all pending Agamemnon requests.",
+        {},
+    )
 
 
 def _runner_sleep(parameters: Wait) -> MsgGenerator:

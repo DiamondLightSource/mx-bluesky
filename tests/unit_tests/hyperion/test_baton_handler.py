@@ -698,7 +698,11 @@ def test_run_udc_when_requested_raises_baton_release_udc_completed_event_when_hy
 
     parent.assert_has_calls(
         [
-            call.raise_alert(Subjects.UDC_COMPLETED, "Hyperion UDC has completed.", {}),
+            call.raise_alert(
+                Subjects.UDC_COMPLETED,
+                "Hyperion UDC has completed all pending Agamemnon requests.",
+                {},
+            ),
             call.current_user(NO_USER, wait=True),
             call.raise_alert(
                 Subjects.UDC_BATON_RELEASED,
