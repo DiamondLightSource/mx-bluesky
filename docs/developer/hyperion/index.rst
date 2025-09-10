@@ -13,6 +13,7 @@ Documentation specific for the Hyperion module within MX-Bluesky
             :maxdepth: 1
 
             reference/readme
+            reference/baton
             reference/param-hierarchy
             reference/coordinate-systems
             deploying-hyperion
