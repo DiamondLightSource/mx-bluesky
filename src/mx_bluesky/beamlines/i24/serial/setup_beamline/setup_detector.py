@@ -27,7 +27,6 @@ EXPT_TYPE_DETECTOR_PVS = {
 
 class DetRequest(IntEnum):
     eiger = 0
-    pilatus = 1
 
     def __str__(self) -> str:
         return self.name
@@ -64,10 +63,10 @@ def _get_requested_detector(det_type_pv: str) -> str:
             a string or and int.
 
     Returns:
-        str: The detector name as a string, currently "eiger" or "pilatus".
+        str: The detector name as a string, currently "eiger".
     """
     det_type = caget(det_type_pv)
-    if det_type in ["pilatus", "eiger"]:
+    if det_type in ["eiger"]:
         return det_type
     else:
         try:

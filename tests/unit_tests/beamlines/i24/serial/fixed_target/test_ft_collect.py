@@ -491,9 +491,7 @@ def test_setup_tasks_in_run_fixed_target_plan(
     dcm,
     mirrors,
     eiger_beam_center,
-    pilatus_beam_center,
     RE,
-    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_attenuator = MagicMock()
