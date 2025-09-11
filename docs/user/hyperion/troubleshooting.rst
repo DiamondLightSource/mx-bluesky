@@ -7,8 +7,7 @@ Logging
 -------
 
 Hyperion logs to a number of different locations. The sections below describe the locations that are configured via 
-environment variables for a standard server install; for kubernetes deployments please check the deployment 
-``values.yaml`` for the configured locations. 
+environment variables for a standard server install.
 
 Graylog
 ~~~~~~~
@@ -23,9 +22,6 @@ Startup Log
 When ``hyperion_restart()`` is called by GDA, it will log the initial console output to a log file. This log file 
 location is 
 controlled by the ``gda.logs.dir`` property and is typically ``/dls_sw/<beamline>/logs/bluesky``.
-
-On kubernetes deployments, the initial startup is sent to standard IO and is captured as part of the standard 
-kubernetes logging facility.
 
 Log files
 ~~~~~~~~~
@@ -88,8 +84,54 @@ deployment is currently running. You should see two processes, the main process 
 Kubernetes Install
 ------------------
 
-If Hyperion is deployed on Kubernetes then it can be managed from the beamline kubernetes dashboard, e.g. 
+If Hyperion is deployed on Kubernetes (currently experimental) then it can be managed from the beamline kubernetes 
+dashboard, e.g. 
 https://k8s-i03-dashboard.diamond.ac.uk
 
 In the beamline namespace there will be a deployment ``hyperion-deployment``, a ``hyperion-svc`` service and associated 
 pods, ingress etc. through which the current state may be observed / managed.
+
+Logging
+~~~~~~~
+
+On kubernetes deployments, the initial startup is sent to standard IO and is captured as part of the standard 
+kubernetes logging facility.
+
+The configured logging locations are defined in the ``values.yaml`` for the specific deployment Helm chart. 
+
+Known Issues
+------------
+
+Odin Errors when there are filesystem issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+https://github.com/DiamondLightSource/mx-bluesky/issues/1199
+
+On occasions where there are issues with the filesystem you may see errors similar to
+
+::
+
+    ophyd.utils.errors.UnknownStatusFailure: The status (Status(obj=EpicsSignalWithRBV
+    (read_pv='BL03I-EA-EIGER-01:OD:Capture_RBV', name='eiger_odin_file_writer_capture', parent='eiger_odin_file_writer',
+    value=0, timestamp=1754488753.208739, auto_monitor=False, string=False, write_pv='BL03I-EA-EIGER-01:OD:Capture',
+    limits=False, put_complete=False), done=True, success=False) & SubscriptionStatus(device=eiger_odin_meta_ready,
+    done=False, success=False)) has failed. To obtain more specific, helpful errors in the future, update the Device
+    to use set_exception(...) instead of _finished(success=False).
+
+hyperion_restart() sometimes times out
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes hyperion_restart() will time out waiting for Hyperion to start, in the Jython console you may see the 
+following
+
+::
+
+    InteractiveConsole exception: hyperion_utils.exceptions.HyperionFailedException: Hyperion failed to start, see /dls_sw/i03/logs/bluesky/start_log.log for log
+    org.python.core.PyException: hyperion_utils.exceptions.HyperionFailedException: Hyperion failed to start, see /dls_sw/i03/logs/bluesky/start_log.log for log
+	at org.python.core.PyException.doRaise(PyException.java:239)
+	at org.python.core.Py.makeException(Py.java:1654)
+	at org.python.core.Py.makeException(Py.java:1658)
+	at org.python.core.Py.makeException(Py.java:1662)
+
+However on inspection the start log will not show any errors. Hyperion running can be verified as above `Verifying 
+that Hyperion is running`_
