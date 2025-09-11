@@ -83,15 +83,12 @@ font "arial-medium-r-18.0"
 numItems 2
 symbolTag {
   0 "Eiger"
-  1 "Pilatus"
 }
 symbol0 {
   0 "E9M"
-  1 "P6M"
 }
 PV0 {
   0 "eiger"
-  1 "pilatus"
 }
 endObjectProperties
 

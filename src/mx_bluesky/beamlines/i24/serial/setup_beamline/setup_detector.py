@@ -17,7 +17,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
     Detector,
     Eiger,
-    Pilatus,
 )
 
 EXPT_TYPE_DETECTOR_PVS = {
@@ -28,7 +27,6 @@ EXPT_TYPE_DETECTOR_PVS = {
 
 class DetRequest(IntEnum):
     eiger = 0
-    pilatus = 1
 
     def __str__(self) -> str:
         return self.name
@@ -45,9 +43,6 @@ def get_detector_type(detector_stage: YZStage) -> Generator[Msg, None, Detector]
     if float(det_y) < Eiger.det_y_threshold:
         SSX_LOGGER.info("Eiger detector in use.")
         return Eiger()
-    elif float(det_y) > Pilatus.det_y_threshold:
-        SSX_LOGGER.info("Pilatus detector in use.")
-        return Pilatus()
     else:
         SSX_LOGGER.error("Detector not found.")
         raise UnknownDetectorType("Detector not found.")
@@ -68,10 +63,10 @@ def _get_requested_detector(det_type_pv: str) -> str:
             a string or and int.
 
     Returns:
-        str: The detector name as a string, currently "eiger" or "pilatus".
+        str: The detector name as a string, currently "eiger".
     """
     det_type = caget(det_type_pv)
-    if det_type in ["pilatus", "eiger"]:
+    if det_type in ["eiger"]:
         return det_type
     else:
         try:
@@ -89,9 +84,8 @@ def setup_detector_stage(
     det_type_pv = EXPT_TYPE_DETECTOR_PVS[expt_type]
     requested_detector = _get_requested_detector(det_type_pv)
     SSX_LOGGER.info(f"Requested detector: {requested_detector}.")
-    det_y_target = (
-        Eiger.det_y_target if requested_detector == "eiger" else Pilatus.det_y_target
-    )
+    det_y_target = Eiger.det_y_target
+
     yield from _move_detector_stage(detector_stage, det_y_target)
     caput(det_type_pv, requested_detector)
     SSX_LOGGER.info("Detector setup done.")

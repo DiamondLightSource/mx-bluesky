@@ -12,7 +12,6 @@ class SSXType(StrEnum):
 
 class DetectorName(StrEnum):
     EIGER = "eiger"
-    PILATUS = "pilatus"
 
 
 # TODO figue sth out for tests
@@ -20,7 +19,6 @@ LUT_FILES_PATH = Path("/dls_sw/i24/software/daq_configuration/lookup")
 
 BEAM_CENTER_LUT_FILES = {
     DetectorName.EIGER: LUT_FILES_PATH / "DetDistToBeamXYConverterE9M.txt",
-    DetectorName.PILATUS: LUT_FILES_PATH / "DetDistToBeamXYConverterP6M.txt",
 }
 
 

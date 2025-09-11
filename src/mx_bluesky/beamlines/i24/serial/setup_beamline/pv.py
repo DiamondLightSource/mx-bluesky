@@ -25,31 +25,6 @@ def __which__():
 
 requested_transmission = "BL24I-OP-ATTN-01:T2A:SETVAL1"
 
-# PILATUS
-pilat_filepath = "BL24I-EA-PILAT-01:cam1:FilePath"
-pilat_filename = "BL24I-EA-PILAT-01:cam1:FileName"
-pilat_filetemplate = "BL24I-EA-PILAT-01:cam1:FileTemplate"
-pilat_numimages = "BL24I-EA-PILAT-01:cam1:NumImages"
-pilat_numexpimage = "BL24I-EA-PILAT-01:cam1:NumExposures"
-pilat_filenumber = "BL24I-EA-PILAT-01:cam1:FileNumber"
-pilat_acquire = "BL24I-EA-PILAT-01:cam1:Acquire"
-pilat_acquiretime = "BL24I-EA-PILAT-01:cam1:AcquireTime"
-pilat_acquireperiod = "BL24I-EA-PILAT-01:cam1:AcquirePeriod"
-pilat_imagemode = "BL24I-EA-PILAT-01:cam1:ImageMode"
-pilat_triggermode = "BL24I-EA-PILAT-01:cam1:TriggerMode"
-pilat_delaytime = "BL24I-EA-PILAT-01:cam1:DelayTime"
-pilat_wavelength = "BL24I-EA-PILAT-01:cam1:Wavelength"
-pilat_detdist = "BL24I-EA-PILAT-01:cam1:DetDist"
-pilat_filtertrasm = "BL24I-EA-PILAT-01:cam1:FilterTransm"
-pilat_filetemplate = "BL24I-EA-PILAT-01:cam1:FileTemplate"
-pilat_beamx = "BL24I-EA-PILAT-01:cam1:BeamX"
-pilat_beamy = "BL24I-EA-PILAT-01:cam1:BeamY"
-pilat_startangle = "BL24I-EA-PILAT-01:cam1:StartAngle"
-pilat_angleincr = "BL24I-EA-PILAT-01:cam1:AngleIncr"
-pilat_omegaincr = "BL24I-EA-PILAT-01:cam1:OmegaIncr"
-pilat_cbftemplate = "BL24I-EA-PILAT-01:cam1:CbfTemplateFile"
-pilat_filenum = "BL24I-EA-PILAT-01:cam1:FileNumber_RBV"
-
 
 # Eiger
 eiger_filepath = "BL24I-EA-EIGER-01:CAM:FilePath"

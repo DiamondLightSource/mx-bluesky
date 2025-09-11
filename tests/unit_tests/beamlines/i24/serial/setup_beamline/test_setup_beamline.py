@@ -70,31 +70,6 @@ async def test_set_detector_beam_center_plan(
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-def test_pilatus_raises_error_if_fastchip_and_no_args_list(fake_caget, fake_caput, RE):
-    with pytest.raises(TypeError):
-        RE(setup_beamline.pilatus("fastchip", None))
-
-
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_pilatus_quickshot(_, fake_caget, fake_caput, RE):
-    RE(setup_beamline.pilatus("quickshot", ["", "", 1, 0.1]))
-    assert fake_caput.call_count == 10
-    assert fake_caget.call_count == 2
-
-
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_pilatus_fastchip(_, fake_caget, fake_caput, RE):
-    RE(setup_beamline.pilatus("fastchip", ["", "", 10, 0.1]))
-    assert fake_caput.call_count == 13
-    assert fake_caget.call_count == 2
-
-
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 def test_eiger_raises_error_if_quickshot_and_no_args_list(
     fake_caget, fake_caput, RE, dcm
 ):

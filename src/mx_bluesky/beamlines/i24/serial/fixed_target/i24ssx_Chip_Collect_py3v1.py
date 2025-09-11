@@ -18,14 +18,12 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
-    get_pilatus_filename_template_from_device,
     read_beam_info_from_hardware,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -41,7 +39,6 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER, log_on_entry
 from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
-    DetectorName,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
@@ -276,7 +273,6 @@ def start_i24(
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
     dcid: DCID,
-    pilatus_metadata: PilatusMetadata,
 ):
     """Set up for I24 fixed target data collection, trigger the detector and open \
     the hutch shutter.
@@ -312,67 +308,7 @@ def start_i24(
     SSX_LOGGER.info(f"Number of exposures: {parameters.num_exposures}")
     SSX_LOGGER.info(f"Number of gates (=Total images/N exposures): {num_gates:.4f}")
 
-    if parameters.detector_name == "pilatus":
-        SSX_LOGGER.info("Using Pilatus detector")
-        SSX_LOGGER.info(f"Fastchip Pilatus setup: filepath {filepath}")
-        SSX_LOGGER.info(f"Fastchip Pilatus setup: filename {filename}")
-        SSX_LOGGER.info(
-            f"Fastchip Pilatus setup: number of images {parameters.total_num_images}"
-        )
-        SSX_LOGGER.info(
-            f"Fastchip Pilatus setup: exposure time {parameters.exposure_time_s}"
-        )
-
-        yield from sup.pilatus(
-            "fastchip",
-            [
-                filepath,
-                filename,
-                parameters.total_num_images,
-                parameters.exposure_time_s,
-            ],
-        )
-
-        # DCID process depends on detector PVs being set up already
-        SSX_LOGGER.debug("Start DCID process")
-        filetemplate = yield from get_pilatus_filename_template_from_device(
-            pilatus_metadata
-        )
-        dcid.generate_dcid(
-            beam_settings=beam_settings,
-            image_dir=filepath,
-            file_template=filetemplate,
-            num_images=parameters.total_num_images,
-            shots_per_position=parameters.num_exposures,
-            start_time=start_time,
-            pump_probe=bool(parameters.pump_repeat),
-        )
-
-        SSX_LOGGER.debug("Arm Pilatus. Arm Zebra.")
-        shutter_time_offset = (
-            SHUTTER_OPEN_TIME
-            if parameters.pump_repeat is PumpProbeSetting.Medium1
-            else 0.0
-        )
-        yield from setup_zebra_for_fastchip_plan(
-            zebra,
-            parameters.detector_name,
-            num_gates,
-            parameters.num_exposures,
-            parameters.exposure_time_s,
-            shutter_time_offset,
-            wait=True,
-        )
-        if parameters.pump_repeat == PumpProbeSetting.Medium1:
-            yield from open_fast_shutter_at_each_position_plan(
-                zebra, parameters.num_exposures, parameters.exposure_time_s
-            )
-        caput(pv.pilat_acquire, "1")  # Arm pilatus
-        yield from arm_zebra(zebra)
-        caput(pv.pilat_filename, filename)
-        yield from bps.sleep(1.5)
-
-    elif parameters.detector_name == "eiger":
+    if parameters.detector_name == "eiger":
         SSX_LOGGER.info("Using Eiger detector")
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
@@ -458,22 +394,16 @@ def finish_i24(
     )
 
     complete_filename: str
-    transmission = float(caget(pv.pilat_filtertrasm))
+    transmission = float(caget(pv.requested_transmission))
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
 
-    if parameters.detector_name == "pilatus":
-        SSX_LOGGER.debug("Finish I24 Pilatus")
-        complete_filename = f"{parameters.filename}_{caget(pv.pilat_filenum)}"
-        yield from reset_zebra_when_collection_done_plan(zebra)
-        yield from sup.pilatus("return-to-normal", None)
-        yield from bps.sleep(0.2)
-    elif parameters.detector_name == "eiger":
+    if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
-        raise ValueError(f"{parameters.detector_name=} unrecognised")
+        raise ValueError(f"{parameters.detector_name} unrecognised")
 
     # Detector independent moves
     SSX_LOGGER.info("Move chip back to home position by setting PMAC_STRING pv.")
@@ -513,7 +443,6 @@ def main_fixed_target_plan(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
-    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -558,7 +487,6 @@ def main_fixed_target_plan(
         mirrors,
         beam_center_device,
         dcid,
-        pilatus_metadata,
     )
 
     SSX_LOGGER.info("Moving to Start")
@@ -578,7 +506,7 @@ def main_fixed_target_plan(
         beam_x = yield from bps.rd(beam_center_device.beam_x)
         beam_y = yield from bps.rd(beam_center_device.beam_y)
         SSX_LOGGER.debug("Start nexus writing service.")
-        call_nexgen(
+        yield from call_nexgen(
             chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 
@@ -631,14 +559,11 @@ def tidy_up_after_collection_plan(
     yield from bps.sleep(2.0)
 
     # This probably should go in main then
-    if parameters.detector_name == "pilatus":
-        SSX_LOGGER.debug("Pilatus Acquire STOP")
-        caput(pv.pilat_acquire, 0)
-    elif parameters.detector_name == "eiger":
+    if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
         caput(pv.eiger_ODcapture, "Done")
-    yield from bps.sleep(0.5)
+        yield from bps.sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 
@@ -663,8 +588,6 @@ def run_fixed_target_plan(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
-    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
-    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -677,11 +600,7 @@ def run_fixed_target_plan(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = (
-        beam_center_eiger
-        if parameters.detector_name is DetectorName.EIGER
-        else beam_center_pilatus
-    )
+    beam_center_device = beam_center_eiger
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
@@ -699,7 +618,6 @@ def run_fixed_target_plan(
         beam_center_device,
         parameters,
         dcid,
-        pilatus_metadata,
     )
 
 
@@ -716,7 +634,6 @@ def run_plan_in_wrapper(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
-    pilatus_metadata: PilatusMetadata,
 ) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
@@ -732,7 +649,6 @@ def run_plan_in_wrapper(
             beam_center_device,
             parameters,
             dcid,
-            pilatus_metadata,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (

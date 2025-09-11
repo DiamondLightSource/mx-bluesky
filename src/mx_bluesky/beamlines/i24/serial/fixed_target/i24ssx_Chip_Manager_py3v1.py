@@ -4,7 +4,6 @@ This version changed to python3 March2020 by RLO
 """
 
 import json
-import re
 import sys
 from pathlib import Path
 from pprint import pformat
@@ -40,7 +39,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     PARAM_FILE_PATH_FT,
     PVAR_FILE_PATH,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Pilatus, caget, caput, pv
+from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     get_detector_type,
 )
@@ -96,8 +95,6 @@ def initialise_stages(
     yield from bps.abs_set(pmac.enc_reset, EncReset.ENC7, group=group)
     yield from bps.abs_set(pmac.enc_reset, EncReset.ENC8, group=group)
 
-    caput(pv.pilat_cbftemplate, 0)
-
     yield from bps.sleep(0.1)
     SSX_LOGGER.info("Clearing General Purpose PVs 1-120")
     for i in range(4, 120):
@@ -150,19 +147,6 @@ def read_parameters(
     else:
         chip_map = []
     pump_repeat = int(caget(PUMP_REPEAT_PV))
-
-    # If file name ends in a digit this causes processing/pilatus pain.
-    # Append an underscore
-    if isinstance(det_type, Pilatus):
-        caput(pv.pilat_cbftemplate, 0)
-        m = re.search(r"\d+$", filename)
-        if m is not None:
-            # Note for future reference. Appending underscore causes more hassle and
-            # high probability of users accidentally overwriting data. Use a dash
-            filename = filename + "-"
-            SSX_LOGGER.debug(
-                f"Requested filename ends in a number. Appended dash: {filename}"
-            )
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
