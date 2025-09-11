@@ -9,3 +9,5 @@ To preserve this metadata:
 - Make sure the "Include a copy of my diagram" or similar checkbox is selected during export.
 
 This ensures that the image isn't just a flat graphic—it includes the necessary data for Draw.io to reconstruct and edit the diagram later.
+
+Tip: There is a chance of losing the metadata though if not handled properly. Sharing the image through Slack for example will delete the metadata associated with the image. Instead, use something like e-mail.
