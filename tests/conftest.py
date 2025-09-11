@@ -489,6 +489,8 @@ def detector_motion(RE: RunEngine):
 @pytest.fixture
 def undulator(RE: RunEngine):
     undulator = i03.undulator(connect_immediately=True, mock=True)
+    # force the child baton to be connected
+    i03.baton(connect_immediately=True, mock=True)
     with patch_all_motors(undulator):
         yield undulator
 
