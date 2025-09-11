@@ -20,8 +20,8 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
+from dodal.testing import patch_all_motors
 from dodal.utils import AnyDeviceFactory
-from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
@@ -89,18 +89,6 @@ def fake_generator(value):
     return value
 
 
-def patch_motor(motor: Motor, initial_position: float = 0):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    set_mock_value(motor.velocity, 3)
-    return callback_on_mock_put(
-        motor.user_setpoint,
-        lambda pos, *args, **kwargs: set_mock_value(motor.user_readback, pos),
-    )
-
-
 @pytest.fixture
 def zebra(RE) -> Zebra:
     zebra = i24.zebra(connect_immediately=True, mock=True)
@@ -133,14 +121,14 @@ def shutter(RE) -> HutchShutter:
 def detector_stage(RE):
     detector_motion = i24.detector_motion(connect_immediately=True, mock=True)
 
-    with patch_motor(detector_motion.y), patch_motor(detector_motion.z):
+    with patch_all_motors(detector_motion):
         yield detector_motion
 
 
 @pytest.fixture
 def aperture(RE):
     aperture: Aperture = i24.aperture(connect_immediately=True, mock=True)
-    with patch_motor(aperture.x), patch_motor(aperture.y):
+    with patch_all_motors(aperture):
         yield aperture
 
 
@@ -154,23 +142,14 @@ def backlight(RE) -> DualBacklight:
 def beamstop(RE):
     beamstop: Beamstop = i24.beamstop(connect_immediately=True, mock=True)
 
-    with (
-        patch_motor(beamstop.x),
-        patch_motor(beamstop.y),
-        patch_motor(beamstop.z),
-        patch_motor(beamstop.y_rotation),
-    ):
+    with patch_all_motors(beamstop):
         yield beamstop
 
 
 @pytest.fixture
 def pmac(RE):
     pmac: PMAC = i24.pmac(connect_immediately=True, mock=True)
-    with (
-        patch_motor(pmac.x),
-        patch_motor(pmac.y),
-        patch_motor(pmac.z),
-    ):
+    with patch_all_motors(pmac):
         yield pmac
 
 

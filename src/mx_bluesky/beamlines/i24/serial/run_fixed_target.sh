@@ -9,6 +9,23 @@ case "$2" in
         ;;
 esac
 
+# Get visit from PV and set the instrument session thet will be read by the edms
+# Hack to make the blueapi CLI happy as the client now requires an instrument session
+# on every POST request. For the command line, that means a -i $INSTRUMENT_SESSION
+visit_pv=BL24I-MO-IOC-13:GP100
+# visit=$(caget -S $ft_pv)
+visit=$(echo "$(caget -S $visit_pv)" | awk '{print $NF}')
+session=${visit##$visit_pv}
+echo $session
+
+if [[ -z "$session" ]]; then
+    # if PV is empty print error message and exit
+    echo "The visit PV has not been set, please contact beamline staff"
+    exit 1
+fi
+
+export INSTRUMENT_SESSION=$session
+
 # Get edm path from input
 edm_path=$1
 
