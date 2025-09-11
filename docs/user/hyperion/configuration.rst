@@ -11,6 +11,8 @@ Configuration of several properties that control Hyperion execution are availabl
 
     /dls_sw/<beamline>/software/daq_configuration/domain.properties
 
+Note that making a change to these properties generally requires a restart of the GDA server.
+
 
 .. csv-table:: Configuration properties
     :widths: auto
