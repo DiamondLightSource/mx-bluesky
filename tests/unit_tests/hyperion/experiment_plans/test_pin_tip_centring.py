@@ -42,6 +42,17 @@ def mock_pin_tip(pin_tip: PinTipDetection):
     return pin_tip
 
 
+@pytest.fixture
+def smargon_with_limits(smargon: Smargon) -> Smargon:
+    set_mock_value(smargon.x.high_limit_travel, 2)
+    set_mock_value(smargon.x.low_limit_travel, -2)
+    set_mock_value(smargon.y.high_limit_travel, 2)
+    set_mock_value(smargon.y.low_limit_travel, -2)
+    set_mock_value(smargon.z.high_limit_travel, 2)
+    set_mock_value(smargon.z.low_limit_travel, -2)
+    return smargon
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
@@ -200,7 +211,7 @@ def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
 )
 async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     mock_trigger_and_return_tip: MagicMock,
-    smargon: Smargon,
+    smargon_with_limits: Smargon,
     oav: OAV,
     RE: RunEngine,
     pin_tip: PinTipDetection,
@@ -210,13 +221,13 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(0, 100),
     ]
 
-    set_mock_value(smargon.x.user_setpoint, -1.8)
-    set_mock_value(smargon.x.user_readback, -1.8)
+    set_mock_value(smargon_with_limits.x.user_setpoint, -1.8)
+    set_mock_value(smargon_with_limits.x.user_readback, -1.8)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
+        RE(move_pin_into_view(pin_tip, smargon_with_limits, max_steps=1))
 
-    assert await smargon.x.user_setpoint.get_value() == -2
+    assert await smargon_with_limits.x.user_setpoint.get_value() == -2
 
 
 @patch(
@@ -228,7 +239,7 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 )
 async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_trigger_and_return_pin_tip: MagicMock,
-    smargon: Smargon,
+    smargon_with_limits: Smargon,
     oav: OAV,
     RE: RunEngine,
     pin_tip: PinTipDetection,
@@ -241,13 +252,13 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
             PinTipDetection.INVALID_POSITION[0], PinTipDetection.INVALID_POSITION[1]
         ),
     ]
-    set_mock_value(smargon.x.user_setpoint, 1.8)
-    set_mock_value(smargon.x.user_readback, 1.8)
+    set_mock_value(smargon_with_limits.x.user_setpoint, 1.8)
+    set_mock_value(smargon_with_limits.x.user_readback, 1.8)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
+        RE(move_pin_into_view(pin_tip, smargon_with_limits, max_steps=1))
 
-    assert await smargon.x.user_setpoint.get_value() == 2
+    assert await smargon_with_limits.x.user_setpoint.get_value() == 2
 
 
 @patch(

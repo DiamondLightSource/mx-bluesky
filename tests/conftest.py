@@ -430,12 +430,6 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
 
     with patch_all_motors(smargon):
-        set_mock_value(smargon.x.high_limit_travel, 2)
-        set_mock_value(smargon.x.low_limit_travel, -2)
-        set_mock_value(smargon.y.high_limit_travel, 2)
-        set_mock_value(smargon.y.low_limit_travel, -2)
-        set_mock_value(smargon.z.high_limit_travel, 2)
-        set_mock_value(smargon.z.low_limit_travel, -2)
         set_mock_value(smargon.omega.max_velocity, 1)
         yield smargon
     clear_devices()
