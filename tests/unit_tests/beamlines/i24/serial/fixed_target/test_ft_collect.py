@@ -261,7 +261,6 @@ def test_finish_i24(
     fake_read.side_effect = [fake_generator(0.6)]
     fake_caget.return_value = 0.0
     fake_cagetstring.return_value = "chip_01"
-    dummy_params_without_pp.detector_name = "eiger"
     RE(finish_i24(zebra, pmac, shutter, dcm, dummy_params_without_pp))
 
     fake_reset_zebra.assert_called_once()
