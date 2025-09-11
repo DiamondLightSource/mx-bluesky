@@ -403,7 +403,7 @@ def finish_i24(
         yield from sup.eiger("return-to-normal", None, dcm)
         complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
-        raise ValueError(f"{parameters.detector_name=} unrecognised")
+        raise ValueError(f"{parameters.detector_name} unrecognised")
 
     # Detector independent moves
     SSX_LOGGER.info("Move chip back to home position by setting PMAC_STRING pv.")
