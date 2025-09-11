@@ -229,7 +229,7 @@ def _fetch_xrc_results_from_zocalo(
     else:
         commissioning_mode = yield from read_commissioning_mode()
         if commissioning_mode:
-            LOGGER.info("commissioning mode enabled, returning dummy result")
+            LOGGER.info("Commissioning mode enabled, returning dummy result")
             flyscan_results = [_generate_dummy_xrc_result(parameters)]
         else:
             LOGGER.warning("No X-ray centre received")
