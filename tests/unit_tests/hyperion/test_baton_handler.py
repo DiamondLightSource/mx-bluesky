@@ -44,26 +44,19 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import setup_context
 
+from .conftest import AGAMEMNON_WAIT_INSTRUCTION
+
 # For tests to complete reliably, these should all be successively much
 # larger than each other
 
 # Time to wait in test script between checks for a generic condition
 SLEEP_FAST_SPIN_WAIT_S = 0.02
-# Time to wait for the test to progress to the next step
-AGAMEMNON_WAIT_FOR_TEST_STEP_S = 0.2
 # Time to wait for the whole test script thread to complete
 TEST_SCRIPT_TIMEOUT_S = 2
 # Time for pytest to timeout if the script thread is deadlocked (shouldn't need this)
 # PYTEST_TEST_TIMEOUT_S > TEST_SCRIPT_TIMEOUT in order that an exception on the script
 # is bubbled up via the future and not lost.
 PYTEST_TEST_TIMEOUT_S = 10
-
-AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
-    {
-        "duration_s": AGAMEMNON_WAIT_FOR_TEST_STEP_S,
-        "parameter_model_version": PARAMETER_VERSION,
-    }
-)
 
 
 @pytest.fixture(scope="session")
@@ -175,7 +168,7 @@ def baton_with_requested_user(
 
 @pytest.fixture()
 def udc_runner(bluesky_context: BlueskyContext, RE: RunEngine) -> PlanRunner:
-    return PlanRunner(bluesky_context)
+    return PlanRunner(bluesky_context, True)
 
 
 @pytest.fixture
@@ -404,7 +397,7 @@ def test_initialise_udc_reloads_all_devices():
         context, LoadCentreCollectComposite
     )
 
-    _initialise_udc(context)
+    _initialise_udc(context, True)
 
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
@@ -436,7 +429,7 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     sim_run_engine: RunEngineSimulator,
 ):
     msgs, context = bluesky_context_with_sim_run_engine
-    udc_runner = PlanRunner(context)
+    udc_runner = PlanRunner(context, True)
     run_udc_when_requested(context, udc_runner)
 
     assert_message_and_return_remaining(
@@ -465,7 +458,7 @@ def test_main_loop_rejects_unrecognised_instruction_when_received(
             ),
         ),
     ):
-        run_udc_when_requested(context, PlanRunner(context))
+        run_udc_when_requested(context, PlanRunner(context, True))
 
 
 @patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
