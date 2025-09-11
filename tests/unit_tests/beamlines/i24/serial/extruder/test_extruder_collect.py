@@ -186,6 +186,7 @@ def test_run_extruder_quickshot_with_eiger(
         fake_generator(1702),
         fake_generator(0),  # zebra disarm
     ]
+    fake_cagetstring.return_value = "filename"
     with patch(
         "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
