@@ -143,6 +143,9 @@ async def test_laser_check(
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.cagetstring"
+)
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sup")
 @patch(
     "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_zebra_for_quickshot_plan"
@@ -156,6 +159,7 @@ def test_run_extruder_quickshot_with_eiger(
     fake_read,
     mock_quickshot_plan,
     fake_sup,
+    fake_cagetstring,
     fake_caget,
     fake_caput,
     fake_nexgen,
