@@ -6,6 +6,14 @@ itself.
 
 The currently supported alerting backend uses graylog alerting to send email alert notifications.
 
+The currently supported events that will generate alerts are:
+
+- On encountering a beamline error that requires user intervention.
+- When Hyperion starts UDC collection.
+- When Hyperion finishes UDC collection (there are no more Agamemnon instructions).
+- When Hyperion releases the baton.
+- When Hyperion moves on to a new container (puck). 
+
 Graylog Alert Configuration
 ===========================
 
@@ -53,6 +61,12 @@ Inside the subject and body fields, you can include metadata from the event, for
 expand to the event timestamp. 
 
 All the fields that are available in the event are available under the ``event.fields`` object, e.g. ``${event.fields.alert_summary}``
+
+The email subject and body use the JMTE templating engine, to generate more complex templates and for more 
+information see the `JMTE Project Documentation`_
+
+
+.. _JMTE Project Documentation: https://github.com/DJCordhose/jmte
 
 Event Definitions
 -----------------

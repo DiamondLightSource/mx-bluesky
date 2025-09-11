@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Alerts &#8212; mx-bluesky 1.0.1.dev329+g6725bd690 documentation</title>
+    <title>Alerts &#8212; mx-bluesky 1.0.1.dev330+g8a92887d4 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=c678d762"></script>
+    <script src="../../_static/documentation_options.js?v=82b36373"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -457,6 +457,14 @@
 <p>Hyperion can be configured to raise alerts in order to notify staff of issues with data collections or with Hyperion
 itself.</p>
 <p>The currently supported alerting backend uses graylog alerting to send email alert notifications.</p>
+<p>The currently supported events that will generate alerts are:</p>
+<ul class="simple">
+<li><p>On encountering a beamline error that requires user intervention.</p></li>
+<li><p>When Hyperion starts UDC collection.</p></li>
+<li><p>When Hyperion finishes UDC collection (there are no more Agamemnon instructions).</p></li>
+<li><p>When Hyperion releases the baton.</p></li>
+<li><p>When Hyperion moves on to a new container (puck).</p></li>
+</ul>
 <section id="graylog-alert-configuration">
 <h2>Graylog Alert Configuration<a class="headerlink" href="#graylog-alert-configuration" title="Link to this heading">#</a></h2>
 <p>When hyperion generates an alert it will generate the alert in the form of a log message that will be logged to graylog
@@ -518,6 +526,8 @@ notification you want to edit and click the “Edit Notification” button.</p>
 <p>Inside the subject and body fields, you can include metadata from the event, for example <code class="docutils literal notranslate"><span class="pre">${event.timestamp}</span></code> will
 expand to the event timestamp.</p>
 <p>All the fields that are available in the event are available under the <code class="docutils literal notranslate"><span class="pre">event.fields</span></code> object, e.g. <code class="docutils literal notranslate"><span class="pre">${event.fields.alert_summary}</span></code></p>
+<p>The email subject and body use the JMTE templating engine, to generate more complex templates and for more
+information see the <a class="reference external" href="https://github.com/DJCordhose/jmte">JMTE Project Documentation</a></p>
 </section>
 <section id="event-definitions">
 <h1>Event Definitions<a class="headerlink" href="#event-definitions" title="Link to this heading">#</a></h1>
