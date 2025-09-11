@@ -60,7 +60,12 @@ def fly_jungfrau(
 # this will be useful during commissioning
 def override_file_name_and_path(jungfrau: Jungfrau, path_of_output_file: str):
     _file_path = Path(path_of_output_file)
-    #filename_provider = AutoIncrementFilenameProvider(_file_path.name)
-    #path_provider = StaticPathProvider(filename_provider, _file_path.parent)
-    yield from bps.mv(jungfrau._writer.file_name, _file_path.name, jungfrau._writer.file_path,  _file_path.parent)
-    #jungfrau._writer._path_provider = path_provider  # noqa: SLF001
+    # filename_provider = AutoIncrementFilenameProvider(_file_path.name)
+    # path_provider = StaticPathProvider(filename_provider, _file_path.parent)
+    yield from bps.mv(
+        jungfrau._writer.file_name,
+        _file_path.name,
+        jungfrau._writer.file_path,
+        _file_path.parent,
+    )
+    # jungfrau._writer._path_provider = path_provider  # noqa: SLF001
