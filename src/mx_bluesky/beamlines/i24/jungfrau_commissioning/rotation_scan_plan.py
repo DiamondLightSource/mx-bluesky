@@ -51,7 +51,7 @@ from mx_bluesky.common.utils.log import LOGGER
 EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
 READING_DUMP_FILENAME = "collection_info.json"
 
-JF_DET_STAGE_Y_POSITION = 0  # TODO find out what this is!
+JF_DET_STAGE_Y_POSITION = 730
 
 
 def set_up_beamline_for_rotation(composite: RotationScanComposite, det_z_mm: float):
@@ -180,10 +180,10 @@ def single_rotation_plan(
             ops_time=10.0,  # Additional time to account for rotation, is s
         )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
-        override_file_name_and_path(
-            composite.jungfrau,
-            f"{params.storage_directory}/{params.detector_params.full_filename}",
-        )
+        # override_file_name_and_path(
+        #     composite.jungfrau,
+        #     f"{params.storage_directory}/{params.detector_params.full_filename}",
+        # )
 
         yield from read_devices_for_metadata(composite)
 

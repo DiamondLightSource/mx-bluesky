@@ -55,8 +55,6 @@ def do_pedestal_darks(
         GainMode.DYNAMIC,
     )
 
-    yield from bps.wait_for([partial(asyncio.sleep, 0.5)])
-
     trigger_info = create_jungfrau_pedestal_triggering_info(
         exp_time_s, pedestal_frames, pedestal_loops
     )
