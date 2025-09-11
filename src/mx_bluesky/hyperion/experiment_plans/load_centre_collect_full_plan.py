@@ -8,11 +8,13 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
+from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
@@ -36,6 +38,8 @@ from mx_bluesky.hyperion.parameters.rotation import RotationScanPerSweep
 class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
     """Composite that provides access to the required devices."""
 
+    baton: Baton
+
 
 def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
     """Create the necessary devices for the plan."""
@@ -51,8 +55,9 @@ def load_centre_collect_full(
     * Load the sample if necessary
     * Move to the specified goniometer start angles
     * Perform optical centring, then X-ray centring
-    * If X-ray centring finds a diffracting centre then move to that centre and
-    * do a collection with the specified parameters.
+    * If X-ray centring finds one or more diffracting centres then for each centre
+     that satisfies the chosen selection function,
+     move to that centre and do a collection with the specified parameters.
     """
 
     get_hyperion_config_client().refresh_cache()
@@ -81,12 +86,18 @@ def load_centre_collect_full(
     )
     def plan_with_callback_subs():
         flyscan_event_handler = XRayCentreEventHandler()
-        yield from subs_wrapper(
-            robot_load_then_xray_centre(
-                composite, parameters.robot_load_then_centre, oav_config_file
-            ),
-            flyscan_event_handler,
-        )
+        try:
+            yield from subs_wrapper(
+                robot_load_then_xray_centre(
+                    composite, parameters.robot_load_then_centre, oav_config_file
+                ),
+                flyscan_event_handler,
+            )
+        except CrystalNotFoundException:
+            if parameters.select_centres.ignore_xtal_not_found:
+                LOGGER.info("Ignoring crystal not found due to parameter settings.")
+            else:
+                raise
 
         locations_to_collect_um: list[np.ndarray]
         samples_to_collect: list[int]

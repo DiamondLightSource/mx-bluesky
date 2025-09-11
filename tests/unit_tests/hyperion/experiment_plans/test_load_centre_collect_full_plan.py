@@ -8,6 +8,7 @@ from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from dodal.devices.baton import Baton
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -17,7 +18,9 @@ from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
+from mx_bluesky.common.parameters.components import (
+    TopNByMaxCountForEachSampleSelection,
+)
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundException,
     WarningException,
@@ -69,6 +72,7 @@ def composite(
     fake_create_rotation_devices,
     pin_tip_detection_with_found_pin,
     sim_run_engine: RunEngineSimulator,
+    baton: Baton,
 ) -> LoadCentreCollectComposite:
     rlaec_args = {
         field.name: getattr(robot_load_composite, field.name)
@@ -79,7 +83,7 @@ def composite(
         for field in dataclasses.fields(fake_create_rotation_devices)
     }
 
-    composite = LoadCentreCollectComposite(**(rlaec_args | rotation_args))
+    composite = LoadCentreCollectComposite(baton=baton, **(rlaec_args | rotation_args))
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
     composite.undulator_dcm.set = MagicMock(return_value=NullStatus())
     minaxis = Location(setpoint=-2, readback=-2)
@@ -124,6 +128,8 @@ def composite(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, (tip_x_px, tip_y_px)
     )
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
+    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
     return composite
 
 
@@ -422,8 +428,6 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
     sim_run_engine.add_read_handler_for(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
     )
-    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
-    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
 
     with pytest.raises(WarningException, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
@@ -451,9 +455,6 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     sim_run_engine: RunEngineSimulator,
     grid_detection_callback_with_detected_grid,
 ):
-    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_x, 1.58)
-    sim_run_engine.add_read_handler_for(composite.oav.microns_per_pixel_y, 1.58)
-
     with pytest.raises(CrystalNotFoundException):
         sim_run_engine.simulate_plan(
             load_centre_collect_full(
@@ -462,6 +463,34 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
         )
 
     mock_rotation_scan.assert_not_called()
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
+    return_value=iter([]),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
+    new=MagicMock(),
+)
+def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction_and_dummy_xtal_selection_chosen(
+    mock_rotation_scan: MagicMock,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    sim_run_engine: RunEngineSimulator,
+    grid_detection_callback_with_detected_grid,
+):
+    load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
+        ignore_xtal_not_found=True, n=5
+    )
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+
+    mock_rotation_scan.assert_called_once()
 
 
 @patch(

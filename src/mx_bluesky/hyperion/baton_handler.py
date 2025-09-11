@@ -6,6 +6,7 @@ from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
+from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.baton import Baton
 
 from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
@@ -77,6 +78,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
 
     def acquire_baton() -> MsgGenerator:
         yield from _wait_for_hyperion_requested(baton)
+        LOGGER.debug("Hyperion is now current baton holder.")
         yield from bps.abs_set(baton.current_user, HYPERION_USER)
 
     def collect() -> MsgGenerator:
@@ -104,6 +106,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         # user so that hyperion doesn't think we're requested again
         baton = _get_baton(context)
         previous_requested_user = yield from _safely_release_baton(baton)
+        LOGGER.debug("Hyperion no longer current baton holder.")
         yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
@@ -125,14 +128,18 @@ def _initialise_udc(context: BlueskyContext):
     """
     LOGGER.info("Initialising mx-bluesky for UDC start...")
     clear_all_device_caches(context)
+    LOGGER.debug("Reinitialising beamline devices")
     setup_devices(context, False)
+    set_commissioning_signal(_get_baton(context).commissioning)
 
 
 def _wait_for_hyperion_requested(baton: Baton):
+    LOGGER.debug("Hyperion waiting for baton...")
     SLEEP_PER_CHECK = 0.1
     while True:
         requested_user = yield from bps.rd(baton.requested_user)
         if requested_user == HYPERION_USER:
+            LOGGER.debug("Baton requested for Hyperion")
             break
         yield from bps.sleep(SLEEP_PER_CHECK)
 
@@ -214,6 +221,7 @@ def _safely_release_baton(baton: Baton) -> MsgGenerator[str]:
     """
     requested_user = yield from bps.rd(baton.requested_user)
     if requested_user == HYPERION_USER:
+        LOGGER.debug("Hyperion no longer requesting baton")
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER
     return requested_user
