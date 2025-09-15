@@ -7,6 +7,8 @@ from bluesky.utils import MsgGenerator
 
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState, ZebraShutterControl
+from sqlalchemy import Boolean
 
 """
 My task: 
@@ -26,12 +28,24 @@ def set_transmission_percentage(
 
     yield from bps.abs_set(attenuator, percentage/100)
 
-  
+
+def open_close_fast_shutter(
+        shutter: ZebraShutter, 
+        shutter_state: Boolean, 
+        #shutter_control: ZebraShutterControl
+
+) -> MsgGenerator:
+    
+    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL)
+    if shutter_state:
+        yield from bps.abs_set(shutter._manual_position_setpoint, ZebraShutterState.OPEN)
+    else: 
+        yield from bps.abs_set(shutter._manual_position_setpoint, ZebraShutterState.CLOSE)
+
 def move_scintillator():
     pass
 
 def take_OAV_image():
     pass 
 
-def open_close_fast_shutter():
-    pass
+
