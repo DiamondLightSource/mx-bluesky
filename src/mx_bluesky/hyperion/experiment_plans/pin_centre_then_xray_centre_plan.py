@@ -78,7 +78,7 @@ def pin_centre_then_flyscan_plan(
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
-        smargon=composite.smargon,
+        xyzomegastage=composite.smargon,
         pin_tip_detection=composite.pin_tip_detection,
     )
 

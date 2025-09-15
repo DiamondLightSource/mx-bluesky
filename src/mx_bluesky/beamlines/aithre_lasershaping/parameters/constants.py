@@ -8,10 +8,12 @@ from mx_bluesky.common.parameters.constants import (
 
 TEST_MODE = os.environ.get("AITHRE_TEST_MODE")
 
+
 @dataclass(frozen=True)
 class AithreConstants:
     BEAMLINE = "AITHRE"
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     LOG_FILE_NAME = "aithre.log"
+
 
 CONST = AithreConstants()
