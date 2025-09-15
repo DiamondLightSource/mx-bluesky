@@ -107,6 +107,12 @@ def gui_move_detector(
 
 
 @bpp.run_decorator()
+def gui_set_fiducial_0(pmac: PMAC = inject("PMAC")) -> MsgGenerator:
+    SSX_LOGGER.debug("Set fiducial 0 to home string")
+    yield from bps.trigger(pmac.home, wait=True)
+
+
+@bpp.run_decorator()
 def gui_run_chip_collection(
     sub_dir: str,
     chip_name: str,
