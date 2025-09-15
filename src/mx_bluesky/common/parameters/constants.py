@@ -24,6 +24,7 @@ GDA_DOMAIN_PROPERTIES_PATH = (
 @dataclass(frozen=True)
 class DocDescriptorNames:
     # Robot load/unload event descriptor
+    ROBOT_PRE_LOAD = "robot_update_pre_load"
     ROBOT_UPDATE = "robot_update"
     # For callbacks to use
     OAV_ROTATION_SNAPSHOT_TRIGGERED = "rotation_snapshot_triggered"
