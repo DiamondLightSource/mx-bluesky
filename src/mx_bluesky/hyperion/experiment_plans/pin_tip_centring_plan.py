@@ -4,7 +4,6 @@ import bluesky.plan_stubs as bps
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
@@ -32,7 +31,6 @@ DEFAULT_STEP_SIZE = 0.5
 class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
-    backlight: Backlight
     oav: OAV
     smargon: Smargon
     pin_tip_detection: PinTipDetection

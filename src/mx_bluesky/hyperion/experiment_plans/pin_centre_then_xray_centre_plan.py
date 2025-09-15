@@ -79,13 +79,12 @@ def pin_centre_then_flyscan_plan(
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
         smargon=composite.smargon,
-        backlight=composite.backlight,
         pin_tip_detection=composite.pin_tip_detection,
     )
 
     def _pin_centre_then_flyscan_plan():
         yield from setup_beamline_for_OAV(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
+            composite.smargon, composite.aperture_scatterguard
         )
 
         yield from move_phi_chi_omega(
