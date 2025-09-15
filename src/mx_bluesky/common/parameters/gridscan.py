@@ -95,7 +95,7 @@ class GridCommon(
         )
 
 
-class SpecifiedGrid(XyzStarts, WithScan, Generic[GridScanParamType]):
+class SpecifiedGrid(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType]):
     """A specified grid is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
@@ -154,7 +154,6 @@ class SpecifiedGrid(XyzStarts, WithScan, Generic[GridScanParamType]):
 
 
 class SpecifiedThreeDGridScan(
-    GridCommon,
     SpecifiedGrid[ZebraGridScanParamsThreeD],
     SplitScan,
     WithOptionalEnergyChange,

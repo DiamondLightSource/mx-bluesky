@@ -2,11 +2,10 @@ from dodal.devices.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
 from scanspec.specs import Product
 
 from mx_bluesky.common.parameters.components import SplitScan, WithOptionalEnergyChange
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedGrid
+from mx_bluesky.common.parameters.gridscan import SpecifiedGrid
 
 
 class SpecifiedTwoDGridScan(
-    GridCommon,
     SpecifiedGrid[ZebraGridScanParamsTwoD],
     SplitScan,
     WithOptionalEnergyChange,
