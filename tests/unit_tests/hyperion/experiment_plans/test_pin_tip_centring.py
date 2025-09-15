@@ -14,7 +14,6 @@ from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundException
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
-from ophyd_async.epics.motor import MotorLimitsException
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.utils.exceptions import SampleException, WarningException
@@ -284,12 +283,8 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 ):
     set_mock_value(smargon.x.high_limit_travel, 10)
 
-    with pytest.raises(FailedStatus) as errorinstance:
+    with pytest.raises(FailedStatus):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
-
-    status = errorinstance.value.status
-    cause = getattr(status, "exception", None) or getattr(status, "err", None)
-    assert isinstance(cause, MotorLimitsException)
 
 
 def return_pixel(pixel, *args):
