@@ -2,6 +2,8 @@ import numpy as np
 from bluesky import plan_stubs as bps
 from dodal.devices.smargon import CombinedMove, Smargon
 
+from mx_bluesky.common.utils.exceptions import SampleException
+
 
 def move_smargon_warn_on_out_of_range(
     smargon: Smargon, position: np.ndarray | list[float] | tuple[float, float, float]
