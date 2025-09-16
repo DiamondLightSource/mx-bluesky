@@ -1,0 +1,746 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Building a deployable Docker image &#8212; mx-bluesky 1.5.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=b8aeccfa"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/hyperion/deploying-hyperion';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.5.5';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="System Tests" href="system-tests.html" />
+    <link rel="prev" title="Hyperion Coordinate Systems" href="reference/coordinate-systems.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.5.5" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">mx-bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user/hyperion/index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user/hyperion/index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../general/index.html">General MX-Bluesky Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../general/tutorials/profile-tests.html">Unit test performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/how-to/get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/how-to/contribute.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/how-to/create-a-release.html">Create a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/how-to/deploy-a-release.html">Deploy a New Release</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../general/how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../general/how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general/how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general/how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general/how-to/dev-ops/update-tools.html">Update the tools</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../general/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../general/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general/explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general/explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/explanations/callback_and_run_logic.html">Callbacks and Run Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/explanations/containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general/reference/standards.html">Standards</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Hyperion Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="reference/readme.html">Hyperion Overview</a></li>
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Building a deployable Docker image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system-tests.html">System Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Serial Crystallography on I24</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../serial-crystallography-on-i24/index.html">I24 Serial Crystallography</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../serial-crystallography-on-i24/project-planning/roadmap.html">Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serial-crystallography-on-i24/how-to/environment-setup.html">Set up for serial experiments on I24</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serial-crystallography-on-i24/how-to/run-a-collection.html">Run a collection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serial-crystallography-on-i24/how-to/pmac-docs.html">PMAC-run operations on I24 serial</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../serial-crystallography-on-i24/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../serial-crystallography-on-i24/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Murko Integration</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../murko-integration/index.html">Murko Integration</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../murko-integration/explanations/architecture.html">Murko Architecture</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Code Map</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../code-map/index.html">Code Map</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../code-map/grid_detect_xrc.html">Grid Detect Then Xray Centre</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Hyperion Developer Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Building a deployable Docker image</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="building-a-deployable-docker-image">
+<h1>Building a deployable Docker image<a class="headerlink" href="#building-a-deployable-docker-image" title="Link to this heading">#</a></h1>
+<p>Release builds of container images should be built by the github CI on release, ad-hoc builds can be performed via
+manual invocation of the Publish Docker Image workflow.</p>
+<p>Development builds of container images can be made by running the <code class="docutils literal notranslate"><span class="pre">utility_scripts/build_docker_image.sh</span></code> script.
+By default it will both build and push the image unless you specify <code class="docutils literal notranslate"><span class="pre">--no-build</span></code> or <code class="docutils literal notranslate"><span class="pre">--no-push</span></code>. To push an image
+you will first need to create a GH personal access token and then log in with podman as described below.</p>
+<section id="pushing-the-docker-image">
+<h2>Pushing the docker image<a class="headerlink" href="#pushing-the-docker-image" title="Link to this heading">#</a></h2>
+<section id="obtaining-a-github-access-token">
+<h3>Obtaining a GitHub access token<a class="headerlink" href="#obtaining-a-github-access-token" title="Link to this heading">#</a></h3>
+<p>You will need to obtain a GitHub personal access token (classic) - not the new fine-grained token.
+It will need the specific permission scopes as detailed in the <a class="reference external" href="https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic">ghcr documentation</a></p>
+</section>
+<section id="building-the-image">
+<h3>Building the image<a class="headerlink" href="#building-the-image" title="Link to this heading">#</a></h3>
+<p>If building a test image, the image should be pushed to your personal GH account:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">&lt;</span><span class="n">mysecretfile</span><span class="o">&gt;</span> <span class="o">|</span> <span class="n">podman</span> <span class="n">login</span> <span class="n">ghcr</span><span class="o">.</span><span class="n">io</span> <span class="o">--</span><span class="n">username</span> <span class="o">&lt;</span><span class="n">your</span> <span class="n">gh</span> <span class="n">login</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">password</span><span class="o">-</span><span class="n">stdin</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">mysecretfile</span></code> contains your personal access token</p>
+<p>Then run the <code class="docutils literal notranslate"><span class="pre">build_docker_image.sh</span></code> script.</p>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h3>
+<p>If you run into issues with <code class="docutils literal notranslate"><span class="pre">podman</span> <span class="pre">build</span> <span class="pre">.</span></code> failing with the error message
+<code class="docutils literal notranslate"><span class="pre">io:</span> <span class="pre">read/write</span> <span class="pre">on</span> <span class="pre">closed</span> <span class="pre">pipe</span></code> then you may be running out of disk space - try setting TMPDIR environment variable</p>
+<p><a class="github reference external" href="https://github.com/containers/podman/issues/22342">containers/podman#22342</a></p>
+</section>
+<section id="building-image-on-ubuntu">
+<h3>Building image on ubuntu<a class="headerlink" href="#building-image-on-ubuntu" title="Link to this heading">#</a></h3>
+<p>If you run into issues such as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">potentially</span> <span class="n">insufficient</span> <span class="n">UIDs</span> <span class="ow">or</span> <span class="n">GIDs</span> <span class="n">available</span> <span class="ow">in</span> <span class="n">user</span> <span class="n">namespace</span> <span class="p">(</span><span class="n">requested</span> <span class="mi">0</span><span class="p">:</span><span class="mi">42</span> <span class="k">for</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">gshadow</span><span class="p">):</span> <span class="n">Check</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">subuid</span> <span class="ow">and</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">subgid</span><span class="p">:</span> <span class="n">lchown</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">gshadow</span><span class="p">:</span> <span class="n">invalid</span> <span class="n">argument</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Ensure newuidmap is installed</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">uidmap</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Add appropriate entries to <code class="docutils literal notranslate"><span class="pre">/etc/subuid</span></code> and <code class="docutils literal notranslate"><span class="pre">/etc/subgid</span></code> e.g.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># subuid/subgid file</span>
+<span class="n">myuser</span><span class="p">:</span><span class="mi">10000000</span><span class="p">:</span><span class="mi">65536</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>kill any existing podman processes and retry</p></li>
+</ul>
+<p>For further information, see <a class="github reference external" href="https://github.com/containers/podman/issues/2542">containers/podman#2542</a></p>
+</section>
+</section>
+<section id="deploying-to-kubernetes">
+<h2>Deploying to kubernetes<a class="headerlink" href="#deploying-to-kubernetes" title="Link to this heading">#</a></h2>
+<p>Once the docker image is built, the image can be deployed to kubernetes using the <code class="docutils literal notranslate"><span class="pre">deploy_mx_bluesky_app_to_k8s.sh</span></code>
+script.</p>
+<section id="secrets">
+<h3>Secrets<a class="headerlink" href="#secrets" title="Link to this heading">#</a></h3>
+<p>The deployment requires the following secrets to be created with the corresponding zocalo rabbitmq credentials if they
+are not already present:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rmq-creds</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rmq-api-reader</span></code></p></li>
+</ul>
+<p>In addition, an ispyb credentials secret must be created with the following name:
+* <code class="docutils literal notranslate"><span class="pre">ispyb-hyperion-cfg</span></code></p>
+<p>For creating the secrets, use <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">create</span> <span class="pre">secret</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kubectl</span> <span class="n">create</span> <span class="n">secret</span> <span class="o">-</span><span class="n">n</span> <span class="n">i03</span><span class="o">-</span><span class="n">beamline</span> <span class="n">generic</span> <span class="n">ispyb</span><span class="o">-</span><span class="n">hyperion</span><span class="o">-</span><span class="n">cfg</span> <span class="o">--</span><span class="n">from</span><span class="o">-</span><span class="n">file</span><span class="o">=</span><span class="n">ispyb</span><span class="o">.</span><span class="n">cfg</span><span class="o">=&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">ispyb</span><span class="o">-</span><span class="n">hyperion</span><span class="o">-</span><span class="n">ixx</span><span class="o">.</span><span class="n">cfg</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="production-deployment">
+<h3>Production deployment<a class="headerlink" href="#production-deployment" title="Link to this heading">#</a></h3>
+<p>Then create and deploy the helm release</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_mx_bluesky_app_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">appVersion</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">z</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">checkout</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">prod</span> <span class="n">hyperion</span> <span class="n">hyperion</span>
+</pre></div>
+</div>
+<p>This will run the <code class="docutils literal notranslate"><span class="pre">deploy_mx_bluesky.py</span></code> script to deploy the latest hyperion to <code class="docutils literal notranslate"><span class="pre">/dls_sw</span></code>.
+You will be prompted to log into the beamline cluster, then it will create a helm release “hyperion”.
+The source folders will be mounted as bind mounts to allow the pod to pick up changes in production.
+For production these are expected to be in the normal place defined in <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>.
+If the non-k8s deployment of hyperion has already been performed, then omit <code class="docutils literal notranslate"><span class="pre">--checkout-to-prod</span></code>.</p>
+</section>
+<section id="development-deployment">
+<h3>Development deployment<a class="headerlink" href="#development-deployment" title="Link to this heading">#</a></h3>
+<p>From a development <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> workspace, either with a release image or using a development image built with the
+script
+above, you install a dev deployment to the cluster you are currently logged into with <code class="docutils literal notranslate"><span class="pre">kubectl</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">utility_scripts</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">deploy_mx_bluesky_app_to_k8s</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">beamline</span><span class="o">=&lt;</span><span class="n">beamline</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">repository</span><span class="o">=&lt;</span><span class="n">your</span> <span class="n">image</span> <span class="n">repo</span><span class="o">&gt;</span> <span class="n">hyperion</span><span class="o">-</span><span class="n">test</span> <span class="n">hyperion</span>
+</pre></div>
+</div>
+<p>The dev deployment bind-mounts the current <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> workspace and <code class="docutils literal notranslate"><span class="pre">../dodal</span></code> into the container so that you can
+run against your own development code. <strong>Clusters do not allow bind mounts from arbitrary directories so
+your workspace will have to be in a permitted directory such as your home directory.</strong></p>
+<p>By default the script will log into the <code class="docutils literal notranslate"><span class="pre">argus</span></code> cluster, if you want to deploy to an alternate cluster,
+log in with <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">set-context</span> <span class="pre">--current</span> <span class="pre">--namespace=&lt;NAMESPACE&gt;</span></code> and then specify <code class="docutils literal notranslate"><span class="pre">--no-login</span></code> when running the
+script</p>
+<p>Please note, the deployment script is intended to be run from a checked-out matching version of the git repository.</p>
+<p><code class="docutils literal notranslate"><span class="pre">helm</span> <span class="pre">list</span></code> should then show details of the installed release on a successful install</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="reference/coordinate-systems.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Hyperion Coordinate Systems</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="system-tests.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">System Tests</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pushing-the-docker-image">Pushing the docker image</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obtaining-a-github-access-token">Obtaining a GitHub access token</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#building-the-image">Building the image</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#building-image-on-ubuntu">Building image on ubuntu</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deploying-to-kubernetes">Deploying to kubernetes</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#secrets">Secrets</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#production-deployment">Production deployment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#development-deployment">Development deployment</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/1.5.5/docs/developer/hyperion/deploying-hyperion.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/developer/hyperion/deploying-hyperion.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
