@@ -108,7 +108,6 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     msgs = sim_run_engine.simulate_plan(
         get_ready_for_oav_and_close_shutter(
             grid_detect_xrc_devices.smargon,
-            grid_detect_xrc_devices.backlight,
             grid_detect_xrc_devices.aperture_scatterguard,
             grid_detect_xrc_devices.detector_motion,
         )
