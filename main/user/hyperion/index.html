@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion User Guide &#8212; mx-bluesky 1.0.1.dev334+g63535b9f5 documentation</title>
+    <title>Hyperion User Guide &#8212; mx-bluesky 1.0.1.dev335+g57563e65c documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=fd4645c7"></script>
+    <script src="../../_static/documentation_options.js?v=cd6d7d11"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -388,10 +388,10 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pvs.html">Special PVs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running Hyperion</a></li>
 
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
 </ul>
 </div>
 </nav></div>
@@ -464,6 +464,21 @@ interface, instead instructions are pulled from Agamemnon which is controlled by
 instructions). GDA mode will be removed in a future release.</p></li>
 </ul>
 <p>The mode of operation is determined by configuration using the <code class="docutils literal notranslate"><span class="pre">gda.mx.udc.hyperion.enable</span></code> parameter</p>
+<p>Once Hyperion has received a request, either from GDA or directly from Agamemnon, it will do the following tasks:</p>
+<ul class="simple">
+<li><p>Robot Load (if necessary)</p></li>
+<li><p>Pin tip detection using the OAV</p></li>
+<li><p>Xray Centring</p></li>
+<li><p>A number of data collections, depending on the number of centres returned from Zocalo and the applied selection criteria</p></li>
+</ul>
+<p>During this it will generate the following outputs:</p>
+<ul class="simple">
+<li><p>Snapshots on robot load, XRC and rotations</p></li>
+<li><p>Data collections in ISPyB for the gridscans and rotations as well as entries for robot load/unload</p></li>
+<li><p>Nexus files for each data collection</p></li>
+<li><p>Alert notifications on loading a new container and on beamline error conditions when intervention is required.</p></li>
+</ul>
+<p>For a more detailed breakdown of the operation, it may be helpful to browse the  <a class="reference external" href="../../developer/code-map">Code Map</a></p>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Topics</span></p>
 <ul>
@@ -471,10 +486,10 @@ instructions). GDA mode will be removed in a future release.</p></li>
 <li class="toctree-l1"><a class="reference internal" href="alerts.html#notification-configuration">Notification Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="alerts.html#event-definitions">Event Definitions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pvs.html">Special PVs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running Hyperion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html#restarting-hyperion">Restarting Hyperion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
 </ul>
 </div>
 </section>
