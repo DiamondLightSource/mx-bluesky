@@ -12,7 +12,10 @@ from dodal.beamlines import i03
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
+from dodal.devices.fast_grid_scan import (
+    ZebraFastGridScanThreeD,
+    set_fast_grid_scan_params,
+)
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
@@ -28,7 +31,6 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
     kickoff_and_complete_gridscan,
     run_gridscan,
-    wait_for_gridscan_valid,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
@@ -239,42 +241,24 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
 
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.sleep",
-        autospec=True,
-    )
-    def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
-        self, patch_sleep: MagicMock, RE: RunEngine
+    def test_if_timeout_fails_then_sample_exception_raised(
+        self,
+        RE: RunEngine,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        test_fgs_params: SpecifiedThreeDGridScan,
     ):
-        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
+        beamline_specific.set_flyscan_params_plan = partial(
+            set_fast_grid_scan_params,
+            beamline_specific.fgs_motors,
+            test_fgs_params.FGS_params,
         )
 
-        set_mock_value(test_fgs.position_counter, 0)
-        set_mock_value(test_fgs.scan_invalid, False)
-
-        RE(wait_for_gridscan_valid(test_fgs))
-
-        patch_sleep.assert_not_called()
-
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.sleep",
-        autospec=True,
-    )
-    def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
-        self, patch_sleep: MagicMock, RE: RunEngine
-    ):
-        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
-        )
-
-        set_mock_value(test_fgs.scan_invalid, True)
-        set_mock_value(test_fgs.position_counter, 0)
+        set_mock_value(beamline_specific.fgs_motors.scan_invalid, True)
+        set_mock_value(beamline_specific.fgs_motors.position_counter, 0)
 
         with pytest.raises(WarningException):
-            RE(wait_for_gridscan_valid(test_fgs))
-
-        patch_sleep.assert_called()
+            RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.abs_set",
@@ -293,10 +277,6 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.wait_for_gridscan_valid",
-        autospec=True,
-    )
-    @patch(
         "mx_bluesky.common.external_interaction.nexus.write_nexus.NexusWriter",
         autospec=True,
         spec_set=True,
@@ -309,7 +289,6 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_check_topup,
         nexuswriter,
-        wait_for_valid,
         mock_mv,
         mock_complete,
         mock_kickoff,
