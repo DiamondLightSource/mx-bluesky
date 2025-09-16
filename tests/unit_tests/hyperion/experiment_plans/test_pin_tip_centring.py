@@ -6,7 +6,6 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
-from bluesky.utils import FailedStatus
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -284,12 +283,8 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 ):
     set_mock_value(smargon.x.high_limit_travel, 10)
 
-    with pytest.raises(FailedStatus) as errorinstance:
+    with pytest.raises(MotorLimitsException):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
-
-    status = errorinstance.value.status
-    cause = getattr(status, "exception", None) or getattr(status, "err", None)
-    assert isinstance(cause, MotorLimitsException)
 
 
 def return_pixel(pixel, *args):
