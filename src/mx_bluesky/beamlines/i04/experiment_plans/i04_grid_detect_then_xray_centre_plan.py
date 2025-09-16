@@ -171,14 +171,13 @@ def i04_grid_detect_then_xray_centre(
 
 def get_ready_for_oav_and_close_shutter(
     smargon: Smargon,
-    backlight: Backlight,
     aperture_scatterguard: ApertureScatterguard,
     detector_motion: DetectorMotion,
 ):
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     LOGGER.info("Non-udc tidy: Seting up beamline for OAV")
-    yield from setup_beamline_for_OAV(smargon, backlight, aperture_scatterguard, group)
+    yield from setup_beamline_for_OAV(smargon, aperture_scatterguard, group)
     LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(
         detector_motion.shutter,
