@@ -1,5 +1,4 @@
 # Get Started with mx-bluesky
----------------------------
 
 ## Development Environment
 
