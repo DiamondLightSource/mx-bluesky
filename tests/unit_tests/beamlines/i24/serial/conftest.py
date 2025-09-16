@@ -18,11 +18,10 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
-from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
+from dodal.testing import patch_all_motors
 from dodal.utils import AnyDeviceFactory
-from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
@@ -45,7 +44,6 @@ TEST_PATH = Path("tests/test_data/test_daq_configuration")
 
 TEST_LUT = {
     DetectorName.EIGER: TEST_PATH / "lookup/test_det_dist_converter.txt",
-    DetectorName.PILATUS: TEST_PATH / "lookup/test_det_dist_converter.txt",
 }
 
 
@@ -91,18 +89,6 @@ def fake_generator(value):
     return value
 
 
-def patch_motor(motor: Motor, initial_position: float = 0):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    set_mock_value(motor.velocity, 3)
-    return callback_on_mock_put(
-        motor.user_setpoint,
-        lambda pos, *args, **kwargs: set_mock_value(motor.user_readback, pos),
-    )
-
-
 @pytest.fixture
 def zebra(RE) -> Zebra:
     zebra = i24.zebra(connect_immediately=True, mock=True)
@@ -135,14 +121,14 @@ def shutter(RE) -> HutchShutter:
 def detector_stage(RE):
     detector_motion = i24.detector_motion(connect_immediately=True, mock=True)
 
-    with patch_motor(detector_motion.y), patch_motor(detector_motion.z):
+    with patch_all_motors(detector_motion):
         yield detector_motion
 
 
 @pytest.fixture
 def aperture(RE):
     aperture: Aperture = i24.aperture(connect_immediately=True, mock=True)
-    with patch_motor(aperture.x), patch_motor(aperture.y):
+    with patch_all_motors(aperture):
         yield aperture
 
 
@@ -156,23 +142,14 @@ def backlight(RE) -> DualBacklight:
 def beamstop(RE):
     beamstop: Beamstop = i24.beamstop(connect_immediately=True, mock=True)
 
-    with (
-        patch_motor(beamstop.x),
-        patch_motor(beamstop.y),
-        patch_motor(beamstop.z),
-        patch_motor(beamstop.y_rotation),
-    ):
+    with patch_all_motors(beamstop):
         yield beamstop
 
 
 @pytest.fixture
 def pmac(RE):
     pmac: PMAC = i24.pmac(connect_immediately=True, mock=True)
-    with (
-        patch_motor(pmac.x),
-        patch_motor(pmac.y),
-        patch_motor(pmac.z),
-    ):
+    with patch_all_motors(pmac):
         yield pmac
 
 
@@ -191,16 +168,6 @@ def eiger_beam_center(RE) -> DetectorBeamCenter:
 
 
 @pytest.fixture
-def pilatus_beam_center(RE) -> DetectorBeamCenter:
-    bc: DetectorBeamCenter = i24.pilatus_beam_center(
-        connect_immediately=True, mock=True
-    )
-    set_mock_value(bc.beam_x, 1298)
-    set_mock_value(bc.beam_y, 1307)
-    return bc
-
-
-@pytest.fixture
 def mirrors(RE) -> FocusMirrorsMode:
     mirrors: FocusMirrorsMode = i24.focus_mirrors(connect_immediately=True, mock=True)
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
@@ -213,15 +180,3 @@ def attenuator(RE) -> ReadOnlyAttenuator:
     attenuator: ReadOnlyAttenuator = i24.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 1.0)
     return attenuator
-
-
-@pytest.fixture
-def pilatus_metadata(RE) -> PilatusMetadata:
-    pilatus_metadata: PilatusMetadata = i24.pilatus_metadata(
-        connect_immediately=True, mock=True
-    )
-    set_mock_value(pilatus_metadata.filename, "test")
-    set_mock_value(pilatus_metadata.template, "%s%s%05d.cbf")
-    set_mock_value(pilatus_metadata.filenumber, 10)
-    # Reading pilatus_metadata.filename_template should give "test00010_#####.cbf"`
-    return pilatus_metadata

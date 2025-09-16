@@ -66,7 +66,7 @@ def test_set_datasize_for_one_block_and_two_exposures(
     dummy_params_without_pp.chip_map = [20]
     assert dummy_params_without_pp.total_num_images == 800
     set_datasize(dummy_params_without_pp)
-    fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP10", 800)
+    fake_caput.assert_called_once_with("BL24I-MO-IOC-13:GP10", 800)
     assert fake_log.info.call_count == 1
     assert fake_log.debug.call_count == 4
 
@@ -176,7 +176,6 @@ def test_start_i24_with_eiger(
     dcm,
     mirrors,
     eiger_beam_center,
-    pilatus_metadata,
     dummy_params_without_pp,
 ):
     expected_start = datetime.now()
@@ -205,7 +204,6 @@ def test_start_i24_with_eiger(
             mirrors,
             eiger_beam_center,
             fake_dcid,
-            pilatus_metadata,
         )
     )
     assert fake_sup.eiger.call_count == 1
@@ -220,85 +218,6 @@ def test_start_i24_with_eiger(
         shots_per_position=dummy_params_without_pp.num_exposures,
         start_time=expected_start,
         pump_probe=False,
-    )
-
-    shutter_call_list = [
-        call("Reset", wait=True),
-        call("Open", wait=True),
-    ]
-    mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls(shutter_call_list)
-
-
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
-)
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
-)
-def test_start_i24_with_pilatus_and_pp(
-    fake_datetime,
-    fake_sleep,
-    fake_sup,
-    fake_caget,
-    fake_caput,
-    fake_dcid,
-    zebra: Zebra,
-    shutter: HutchShutter,
-    RE,
-    aperture,
-    backlight,
-    beamstop,
-    detector_stage,
-    dcm,
-    mirrors,
-    pilatus_beam_center,
-    pilatus_metadata,
-    dummy_params_with_pp,
-):
-    dummy_params_with_pp.detector_name = "pilatus"
-    expected_start = datetime.now()
-    fake_datetime.now.return_value = expected_start
-    dummy_params_with_pp.chip_map = [1, 2]
-    assert dummy_params_with_pp.total_num_images == 800
-    set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
-    expected_beam_settings = BeamSettings(
-        wavelength_in_a=0.6,
-        beam_size_in_um=(7.0, 7.0),
-        beam_center_in_mm=(1298 * 0.172, 1307 * 0.172),
-    )
-
-    RE(
-        start_i24(
-            zebra,
-            aperture,
-            backlight,
-            beamstop,
-            detector_stage,
-            shutter,
-            dummy_params_with_pp,
-            dcm,
-            mirrors,
-            pilatus_beam_center,
-            fake_dcid,
-            pilatus_metadata,
-        )
-    )
-    assert fake_sup.pilatus.call_count == 1
-    assert fake_sup.setup_beamline_for_collection_plan.call_count == 1
-    assert fake_sup.move_detector_stage_to_position_plan.call_count == 1
-    fake_dcid.generate_dcid.assert_called_with(
-        beam_settings=expected_beam_settings,
-        image_dir=dummy_params_with_pp.collection_directory.as_posix(),
-        file_template="test00010_#####.cbf",
-        num_images=dummy_params_with_pp.total_num_images,
-        shots_per_position=dummy_params_with_pp.num_exposures,
-        start_time=expected_start,
-        pump_probe=True,
     )
 
     shutter_call_list = [
@@ -349,7 +268,7 @@ def test_finish_i24(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("!x0y0z0", wait=True)])
+    mock_pmac_string.assert_has_calls([call("&2!x0y0z0", wait=True)])
 
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls([call("Close", wait=True)])
@@ -483,7 +402,6 @@ async def test_main_fixed_target_plan(
     dcm,
     mirrors,
     eiger_beam_center,
-    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_get_chip_prog.return_value = MagicMock()
@@ -510,7 +428,6 @@ async def test_main_fixed_target_plan(
                     eiger_beam_center,
                     dummy_params_without_pp,
                     fake_dcid,
-                    pilatus_metadata,
                 )
             )
 
@@ -526,7 +443,7 @@ async def test_main_fixed_target_plan(
     mock_motion_program.asset_called_once()
     mock_start.assert_called_once()
     mock_pmac_str.assert_called_once_with(
-        "!x0y0z0", wait=True
+        "&2!x0y0z0", wait=True
     )  # Check pmac moved to start
     assert fake_dcid.notify_start.call_count == 1
     mock_zebra_input.assert_called_once_with(
@@ -567,9 +484,7 @@ def test_setup_tasks_in_run_fixed_target_plan(
     dcm,
     mirrors,
     eiger_beam_center,
-    pilatus_beam_center,
     RE,
-    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_attenuator = MagicMock()
@@ -595,8 +510,6 @@ def test_setup_tasks_in_run_fixed_target_plan(
                 mirrors,
                 mock_attenuator,
                 eiger_beam_center,
-                pilatus_beam_center,
-                pilatus_metadata,
             )
         )
         fake_mkdir.assert_called_once()

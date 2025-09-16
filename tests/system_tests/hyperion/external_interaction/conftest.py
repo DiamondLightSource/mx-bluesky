@@ -58,7 +58,6 @@ from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from ....conftest import (
     TEST_RESULT_MEDIUM,
     SimConstants,
-    fake_read,
     pin_tip_edge_data,
     raw_params_from_file,
 )
@@ -215,7 +214,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
     """
     This attempts to connect to a fake zocalo via rabbitmq
     """
-    zd = ZocaloResults()
+    zd = ZocaloResults("zocalo")
     zd.timeout_s = 10
     await zd.connect()
     return zd
@@ -224,6 +223,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
     zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
@@ -231,7 +231,9 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
         fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
-        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        fake_recipe_wrapper.recipe_step = {
+            "parameters": {"dcid": 1234, "dcgid": 123, "gpu": True}
+        }
         message = {
             "results": zocalo.my_zocalo_result  # type: ignore
         }
@@ -456,8 +458,4 @@ def composite_for_rotation_scan(
     set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
     set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
 
-    with (
-        patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),
-        patch("bluesky.plan_stubs.wait"),
-    ):
-        yield fake_create_rotation_devices
+    yield fake_create_rotation_devices

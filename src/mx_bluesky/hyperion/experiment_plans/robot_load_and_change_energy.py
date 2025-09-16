@@ -12,7 +12,7 @@ from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.backlight import Backlight, BacklightPosition
+from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
@@ -123,7 +123,11 @@ def robot_load_and_snapshots(
     thawing_time: float,
     demand_energy_ev: float | None,
 ):
-    yield from bps.abs_set(composite.backlight, BacklightPosition.IN, group="snapshot")
+    yield from bps.abs_set(composite.backlight, InOut.IN, group="snapshot")
+
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_PRE_LOAD)
+    yield from bps.read(composite.robot)
+    yield from bps.save()
 
     robot_load_plan = do_robot_load(
         composite,

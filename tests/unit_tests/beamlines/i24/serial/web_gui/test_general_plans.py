@@ -29,7 +29,7 @@ def test_gui_sleep(fake_sleep, RE):
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.SSX_LOGGER")
 async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, RE):
     RE(gui_move_detector("eiger", detector_stage))
-    fake_caput.assert_called_once_with("ME14E-MO-IOC-01:GP101", "eiger")
+    fake_caput.assert_called_once_with("BL24I-MO-IOC-13:GP101", "eiger")
 
     assert await detector_stage.y.user_readback.get_value() == 59.0
     mock_logger.debug.assert_called_once()
@@ -62,9 +62,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
     shutter,
     dcm,
     mirrors,
-    pilatus_beam_center,
     eiger_beam_center,
-    pilatus_metadata,
 ):
     mock_det_type.side_effect = [fake_generator(Eiger())]
     device_list = [
@@ -77,9 +75,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
         shutter,
         dcm,
         mirrors,
-        pilatus_beam_center,
         eiger_beam_center,
-        pilatus_metadata,
     ]
     with pytest.raises(EmptyMapError):
         RE(
@@ -142,9 +138,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
     shutter,
     dcm,
     mirrors,
-    pilatus_beam_center,
     eiger_beam_center,
-    pilatus_metadata,
     dummy_params_without_pp,
 ):
     mock_read_visit.return_value = Path("/tmp/dls/i24/fixed/foo")
@@ -159,9 +153,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
         shutter,
         dcm,
         mirrors,
-        pilatus_beam_center,
         eiger_beam_center,
-        pilatus_metadata,
     ]
 
     expected_params = dummy_params_without_pp
@@ -209,5 +201,4 @@ def test_setup_tasks_in_gui_run_chip_collection(
                 eiger_beam_center,
                 expected_params,
                 mock_dcid(),
-                pilatus_metadata,
             )

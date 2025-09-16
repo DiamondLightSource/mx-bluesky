@@ -49,7 +49,6 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
-from dodal.devices.util.test_utils import patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -58,6 +57,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
+from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
@@ -70,7 +70,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.testing import set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -361,6 +361,7 @@ def RE():
 
         RE.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
+        # RE.loop.close()
     del RE
 
 
@@ -371,17 +372,6 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
             call_log(value, wait=wait)
 
     return _pass_on_mock
-
-
-def patch_async_motor(
-    motor: Motor, initial_position=0, call_log: MagicMock | None = None
-):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    set_mock_value(motor.velocity, 1)
-    return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
 @pytest.fixture
@@ -438,22 +428,9 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-    set_mock_value(smargon.x.high_limit_travel, 2)
-    set_mock_value(smargon.x.low_limit_travel, -2)
-    set_mock_value(smargon.y.high_limit_travel, 2)
-    set_mock_value(smargon.y.low_limit_travel, -2)
-    set_mock_value(smargon.z.high_limit_travel, 2)
-    set_mock_value(smargon.z.low_limit_travel, -2)
-    set_mock_value(smargon.omega.max_velocity, 1)
 
-    with (
-        patch_async_motor(smargon.omega),
-        patch_async_motor(smargon.x),
-        patch_async_motor(smargon.y),
-        patch_async_motor(smargon.z),
-        patch_async_motor(smargon.chi),
-        patch_async_motor(smargon.phi),
-    ):
+    with patch_all_motors(smargon):
+        set_mock_value(smargon.omega.max_velocity, 1)
         yield smargon
     clear_devices()
 
@@ -490,13 +467,15 @@ def fast_grid_scan(RE: RunEngine):
 @pytest.fixture
 def detector_motion(RE: RunEngine):
     det = i03.detector_motion(connect_immediately=True, mock=True)
-    with patch_async_motor(det.z):
+    with patch_all_motors(det):
         yield det
 
 
 @pytest.fixture
 def undulator(RE: RunEngine):
-    return i03.undulator(connect_immediately=True, mock=True)
+    undulator = i03.undulator(connect_immediately=True, mock=True)
+    with patch_all_motors(undulator):
+        yield undulator
 
 
 @pytest.fixture
@@ -589,9 +568,7 @@ def beamstop_phase1(
         return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
-        patch_motor(beamstop.x_mm)
-        patch_motor(beamstop.y_mm)
-        patch_motor(beamstop.z_mm)
+        patch_all_motors(beamstop)
 
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
@@ -621,13 +598,11 @@ def xbpm_feedback(done_status, RE: RunEngine):
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
+    patch_all_motors(dcm)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
-    patch_motor(dcm.xtal_1.roll_in_mrad)
-    patch_motor(dcm.xtal_1.pitch_in_mrad)
-    patch_motor(dcm.offset_in_mm)
     return dcm
 
 
@@ -644,8 +619,7 @@ def vfm(RE: RunEngine):
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    with ExitStack() as stack:
-        stack.enter_context(patch_motor(vfm.x_mm))
+    with patch_all_motors(vfm):
         yield vfm
 
 
@@ -663,11 +637,7 @@ def lower_gonio(
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
-    with (
-        patch_motor(lower_gonio.x),
-        patch_motor(lower_gonio.y),
-        patch_motor(lower_gonio.z),
-    ):
+    with patch_all_motors(lower_gonio):
         yield lower_gonio
 
 
@@ -684,13 +654,14 @@ def mirror_voltages(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(RE: RunEngine, sim_run_engine, dcm):
+def undulator_dcm(RE: RunEngine, sim_run_engine, undulator, dcm):
+    # This depends on the undulator and dcm as they must be connected as mocks first
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
     )
-    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)  # type: ignore
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
     beamline_utils.clear_devices()
 
@@ -747,6 +718,14 @@ async def aperture_scatterguard(RE: RunEngine):
             scatterguard_y=19,
             radius=0,
         ),
+        ApertureValue.PARKED: AperturePosition(
+            aperture_x=20,
+            aperture_y=25,
+            aperture_z=0,
+            scatterguard_x=36,
+            scatterguard_y=56,
+            radius=0,
+        ),
     }
     with (
         patch(
@@ -766,11 +745,8 @@ async def aperture_scatterguard(RE: RunEngine):
     ):
         ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
     with (
-        patch_async_motor(ap_sg.aperture.x),
-        patch_async_motor(ap_sg.aperture.y),
-        patch_async_motor(ap_sg.aperture.z, 2),
-        patch_async_motor(ap_sg.scatterguard.x),
-        patch_async_motor(ap_sg.scatterguard.y),
+        patch_all_motors(ap_sg),
+        patch_motor(ap_sg.aperture.z, 2),
     ):
         await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 

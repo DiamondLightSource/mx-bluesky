@@ -48,7 +48,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@53a7ab512c0ac824471381283ca742951f088c11",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git",
 ]
 
 
@@ -144,6 +144,8 @@ filterwarnings = [
     "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
     #Remove when we drop python 3.11
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
+    # epicscorelibs requires setuptools >= 70.1
+    "ignore:.*The 'wheel' package is no longer the canonical location of the 'bdist_wheel' command.*:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"
@@ -177,7 +179,7 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: pyright src tests {posargs}
-    tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \

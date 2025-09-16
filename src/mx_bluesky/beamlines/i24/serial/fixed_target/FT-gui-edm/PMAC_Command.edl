@@ -51,7 +51,7 @@ x 188
 y 17
 w 178
 h 43
-controlPv "ME14E-MO-CHIP-01:PMAC_STRING"
+controlPv "BL24I-EA-CHIP-01:PMAC_STRING"
 fgColor index 25
 fgAlarm
 bgColor index 5
@@ -69,7 +69,7 @@ x 188
 y 88
 w 198
 h 23
-controlPv "ME14E-MO-CHIP-01:SEND_STRING.AINP"
+controlPv "BL24I-EA-CHIP-01:SEND_STRING.AINP"
 font "arial-medium-r-18.0"
 fgColor index 16
 bgColor index 14
