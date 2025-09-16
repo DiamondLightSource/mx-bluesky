@@ -17,17 +17,17 @@ code .
 
 - Make sure you have the [devcontainers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) installed in vscode.
 - In vscode, press `shift+ctrl+p`, and type "Dev Containers: Open Folder in Container", then select the mx-bluesky folder.
-- Once this has built, in vscode at the top right, click `File -> Open workspace from file`, then select `mx-bluesky/.vscode/mx-bluesky.code-workspace`.
+- Once this has built, in vscode at the top right, click `File -> Open workspace from file`, then select `mx-bluesky/.vscode/mx-bluesky-dev-container.code-workspace`.
 - This should get dodal and mx-bluesky opened up in your workspace with all the correct settings. To prove to yourself that the environment is correct, type `tox -e tests` in a terminal in your devcontainer while inside the dodal and inside the mx-bluesky directory.
 
 ### Notes
 - The devcontainer initially takes quite a long time to build. It will be much faster every other time, and only needs to be rebuild if we change the container environment.
 - The first time you make a commit after building, you will need to follow some git prompts to set your git name and email.
-
+- The old `dls_dev_env.sh` script creates a virtual environment in `mx-bluesky/.venv`, while the devcontainer creates one in `mx-bluesky/venv`. This is the only reason why we need separate code-workspace files.
 
 ## Supported Python versions
 
 
-As a standard for the python versions to support, we are using the [numpy deprecation policy] (https://numpy.org/neps/nep-0029-deprecation_policy.html)
+As a standard for the python versions to support, we are using the [numpy deprecation policy](https://numpy.org/neps/nep-0029-deprecation_policy.html)
 
 Currently supported versions are: 3.11, 3.12.

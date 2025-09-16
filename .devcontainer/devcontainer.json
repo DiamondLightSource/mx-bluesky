@@ -32,7 +32,7 @@
             ],
             "python.testing.unittestEnabled": false,
             "python.testing.pytestEnabled": true,
-            "python.defaultInterpreterPath": ".venv/bin/python",
+            "python.defaultInterpreterPath": "/venv/bin/python",
             "editor.formatOnSave": true,
             "editor.codeActionsOnSave": {
                 "source.organizeImports": "explicit"
@@ -67,6 +67,9 @@
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
+    "mounts": [
+        "source=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,target=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,type=bind,consistency=cached"
+    ],
     // After the container is created, install the python project in editable form
-    "postCreateCommand": "pip install $([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e '.[dev]' && pip install -e /workspaces/dodal[dev] && pre-commit install"
+    "postCreateCommand": "pip install $([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e '.[dev]' && pip install -e /workspaces/dodal[dev] && pre-commit install && ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ /venv/lib/python3.12/site-packages/dlstbx"
 }
