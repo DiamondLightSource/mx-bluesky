@@ -10,7 +10,7 @@ from dodal.devices.common_dcm import BaseDCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     PandAFastGridScan,
-    ZebraFastGridScan,
+    ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
@@ -51,7 +51,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
     sample_shutter: ZebraShutter
     backlight: Backlight
     xbpm_feedback: XBPMFeedback
-    zebra_fast_grid_scan: ZebraFastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
