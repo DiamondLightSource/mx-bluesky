@@ -13,7 +13,7 @@ from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
-from dodal.devices.util.test_utils import patch_all_motors
+from dodal.testing import patch_all_motors
 from ophyd.sim import NullStatus
 from ophyd_async.core import completed_status, init_devices
 from ophyd_async.testing import (

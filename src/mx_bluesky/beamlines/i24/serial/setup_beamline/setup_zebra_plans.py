@@ -24,7 +24,7 @@ from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 
 # Detector specific outs
 TTL_EIGER = 1
-TTL_PILATUS = 2
+TTL_LASER = 2
 TTL_FAST_SHUTTER = 4
 
 SHUTTER_MODE = {
@@ -171,12 +171,11 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
 
     For this use case, both the laser and detector set up is taken care of by the Zebra.
     WARNING. This means that some hardware changes have been made.
-    Because all four of the zebra ttl outputs are in use in this mode, when the \
-    detector in use is the Eiger, the Pilatus cable is repurposed to trigger the light \
-    source, and viceversa.
+    All four of the zebra ttl outputs are in use in this mode. When the \
+    detector in use is the Eiger, the previous Pilatus cable is repurposed to trigger \
+    the light source.
 
-    The data collection output is OUT1_TTL for Eiger and OUT2_TTL for Pilatus and \
-    should be set to AND3.
+    The data collection output is OUT1_TTL for Eiger and should be set to AND3.
 
     Position compare settings:
         - The gate input is on SOFT_IN2.
@@ -191,7 +190,7 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
 
     Args:
         zebra (Zebra): The zebra ophyd device.
-        det_type (str): Detector in use, current choices are Eiger or Pilatus.
+        det_type (str): Detector in use.
         exp_time (float): Collection exposure time, in s.
         num_images (int): Number of images to be collected.
         pump_exp (float): Laser dwell, in s.
@@ -210,8 +209,8 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     yield from set_logic_gates_for_porto_triggering(zebra)
 
     # Set TTL out depending on detector type
-    DET_TTL = TTL_EIGER if det_type == "eiger" else TTL_PILATUS
-    LASER_TTL = TTL_PILATUS if det_type == "eiger" else TTL_EIGER
+    DET_TTL = TTL_EIGER
+    LASER_TTL = TTL_LASER  # may change with additional detectors
     yield from bps.abs_set(
         zebra.output.out_pvs[DET_TTL], zebra.mapping.sources.AND4, group=group
     )
@@ -281,8 +280,7 @@ def setup_zebra_for_fastchip_plan(
 
     For this use case, the laser set up is taken care of by the geobrick, leaving only \
     the detector side set up to the Zebra.
-    The data collection output is OUT1_TTL for Eiger and OUT2_TTL for Pilatus and \
-    should be set to AND3.
+    The data collection output is OUT1_TTL for Eiger and should be set to AND3.
 
     Position compare settings:
         - The gate input is on IN3_TTL.
@@ -291,16 +289,14 @@ def setup_zebra_for_fastchip_plan(
         - Trigger source set to the exposure time with a 100us buffer in order to \
             avoid missing any triggers.
         - The trigger width is calculated depending on which detector is in use: the \
-            Pilatus only needs the trigger rising edge to collect for a set time, while \
-            the Eiger (used here in Externally Interrupter Exposure Series mode) \
+            Eiger (used here in Externally Interrupter Exposure Series mode) \
             will only collect while the signal is high and will stop once a falling \
             edge is detected. For this reason a square wave pulse width will be set to \
-            half the exposure time in the Pilatus case, and to the exposure time minus \
-            a small drop (~100um) for the Eiger.
+            the exposure time minus a small drop (~100um) for the Eiger.
 
     Args:
         zebra (Zebra): The zebra ophyd device.
-        det_type (str): Detector in use, current choices are Eiger or Pilatus.
+        det_type (str): Detector in use.
         num_gates (int): Number of apertures to visit in a chip.
         num_exposures (int): Number of times data is collected in each aperture.
         exposure_time_s (float): Exposure time for each shot.
@@ -334,10 +330,6 @@ def setup_zebra_for_fastchip_plan(
     if det_type == "eiger":
         yield from bps.abs_set(
             zebra.output.out_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
-        )
-    if det_type == "pilatus":
-        yield from bps.abs_set(
-            zebra.output.out_pvs[TTL_PILATUS], zebra.mapping.sources.AND3, group=group
         )
 
     # Square wave - needs a small drop to make it work for eiger

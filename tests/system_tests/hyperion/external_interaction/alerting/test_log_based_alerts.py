@@ -19,6 +19,11 @@ from mx_bluesky.common.external_interaction.alerting.log_based_service import (
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
+from mx_bluesky.hyperion.baton_handler import (
+    _raise_baton_released_alert,
+    _raise_udc_completed_alert,
+    _raise_udc_start_alert,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 
 from .....conftest import SimConstants
@@ -85,3 +90,24 @@ def test_alert_from_plan_exception(
 
     with pytest.raises(RuntimeError):
         RE(plan_with_exception())
+
+
+@pytest.mark.requires(external="graylog")
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
+def test_alert_udc_start():
+    service = LoggingAlertService(CONST.GRAYLOG_STREAM_ID)
+    _raise_udc_start_alert(service)
+
+
+@pytest.mark.requires(external="graylog")
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
+def test_alert_udc_baton_released():
+    service = LoggingAlertService(CONST.GRAYLOG_STREAM_ID)
+    _raise_baton_released_alert(service, "GDA")
+
+
+@pytest.mark.requires(external="graylog")
+@patch.dict(os.environ, {"BEAMLINE": "i03"})
+def test_alert_udc_completed():
+    service = LoggingAlertService(CONST.GRAYLOG_STREAM_ID)
+    _raise_udc_completed_alert(service)
