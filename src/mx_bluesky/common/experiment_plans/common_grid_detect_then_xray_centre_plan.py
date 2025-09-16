@@ -125,7 +125,6 @@ def detect_grid_and_do_gridscan(
 
     yield from setup_beamline_for_OAV(
         composite.smargon,
-        composite.backlight,
         composite.aperture_scatterguard,
         wait=True,
     )

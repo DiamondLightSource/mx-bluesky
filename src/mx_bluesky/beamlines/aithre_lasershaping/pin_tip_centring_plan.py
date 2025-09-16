@@ -11,7 +11,7 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
 from dodal.devices.oav.utils import (
     PinNotFoundException,
     Pixel,
-    get_move_required_so_that_beam_is_at_pixel_non_smargon,
+    get_move_required_so_that_beam_is_at_pixel,
     wait_for_tip_to_be_found,
 )
 
@@ -133,7 +133,7 @@ def pin_tip_centre_plan(
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         # Need a standard gonio version of this function
-        position_mm = yield from get_move_required_so_that_beam_is_at_pixel_non_smargon(
+        position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
             goniometer, pixel_to_move_to, oav
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
