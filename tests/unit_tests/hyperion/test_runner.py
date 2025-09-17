@@ -1,4 +1,4 @@
-from asyncio import sleep
+from asyncio import Event
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -11,8 +11,7 @@ from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.runner import Command, GDARunner
-
-from .conftest import launch_test_in_runner_event_loop
+from unit_tests.hyperion.conftest import launch_test_in_runner_event_loop
 
 
 @pytest.fixture
@@ -84,12 +83,14 @@ def test_wait_on_queue_stop_interrupts_running_plan(
     mock_composite,
     executor,
 ):
+    wait_for_plan_start = Event()
+
     def mock_plan(composite, params) -> MsgGenerator:
+        wait_for_plan_start.set()
         yield from bps.sleep(10.0)
 
     async def wait_and_then_stop():
-        while runner.current_status.status != Status.BUSY.value:
-            await sleep(0.1)
+        await wait_for_plan_start.wait()
         runner.stop()
 
     runner.start(mock_plan, load_centre_collect_params, "load_centre_collect_full")
