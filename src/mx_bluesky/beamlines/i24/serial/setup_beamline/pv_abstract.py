@@ -8,35 +8,6 @@ abstract wrapper around them.
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 
 
-class Pilatus:
-    id = 58
-    name = "pilatus"
-
-    # fast, slow / width, height
-    image_size_pixels = (2463, 2527)
-    pixel_size_mm = (0.172, 0.172)
-    image_size_mm = tuple(
-        round(a * b, 3) for a, b in zip(image_size_pixels, pixel_size_mm, strict=False)
-    )
-
-    det_y_threshold = 640.0
-    det_y_target = 647.0
-
-    class pv:
-        detector_distance = pv.pilat_detdist
-        wavelength = pv.pilat_wavelength
-        transmission = pv.pilat_filtertrasm
-        file_name = pv.pilat_filename
-        file_path = pv.pilat_filepath
-        file_template = pv.pilat_filetemplate
-        file_number = pv.pilat_filenumber
-        beamx = pv.pilat_beamx
-        beamy = pv.pilat_beamy
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Eiger:
     id = 94
     name = "eiger"
@@ -68,4 +39,4 @@ class Eiger:
         return self.name
 
 
-Detector = Pilatus | Eiger
+Detector = Eiger

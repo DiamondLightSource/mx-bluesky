@@ -13,7 +13,6 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
@@ -39,14 +38,13 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import (
-    DetectorName,
     FixedTargetParameters,
     get_chip_format,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
-from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
+from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
     get_detector_type,
@@ -96,10 +94,10 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
 
 @bpp.run_decorator()
 def gui_move_detector(
-    det: Literal["eiger", "pilatus"],
+    det: Literal["eiger"],
     detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
-    det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
+    det_y_target = Eiger.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable
     SSX_LOGGER.debug(f"Detector move done, resetting general PV to {det}")
@@ -137,9 +135,7 @@ def gui_run_chip_collection(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
-    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
 ) -> MsgGenerator:
     """Set the parameter model for the data collection.
 
@@ -209,11 +205,7 @@ def gui_run_chip_collection(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = (
-        beam_center_eiger
-        if parameters.detector_name is DetectorName.EIGER
-        else beam_center_pilatus
-    )
+    beam_center_device = beam_center_eiger
     SSX_LOGGER.info("Beam center device ready")
 
     # DCID instance - do not create yet
@@ -233,5 +225,4 @@ def gui_run_chip_collection(
         beam_center_device,
         parameters,
         dcid,
-        pilatus_metadata,
     )
