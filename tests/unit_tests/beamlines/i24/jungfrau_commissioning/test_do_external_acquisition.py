@@ -3,6 +3,7 @@ from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -15,10 +16,13 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition imp
 )
 
 
+@pytest.mark.skip(
+    reason="Waiting on ophyd-async PR https://github.com/bluesky/ophyd-async/pull/1038/files"
+)
 def test_full_do_external_acquisition(jungfrau: Jungfrau, RE: RunEngine, caplog):
     @run_decorator()
     def test_plan():
-        status = yield from do_external_acquisition(0.001, 5, 0.002, jungfrau)
+        status = yield from do_external_acquisition(0.001, 5, jungfrau)
         assert not status.done
         val = 0
         while not status.done:
@@ -44,7 +48,7 @@ def test_do_external_acquisition_does_wait(
     jungfrau: Jungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(
-        do_external_acquisition(0.01, 1, 0.02, jungfrau, wait=True)
+        do_external_acquisition(0.01, 1, jungfrau, wait=True)
     )
     assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "jf_complete"
@@ -62,7 +66,7 @@ def test_do_external_acquisition_setting_path(
 ):
     test_path = f"{tmpdir}/test_file"
     sim_run_engine.simulate_plan(
-        do_external_acquisition(0.01, 1, 0.02, jungfrau, path_of_output_file=test_path)
+        do_external_acquisition(0.01, 1, jungfrau, path_of_output_file=test_path)
     )
     real_path_provider = jungfrau._writer._path_provider
     assert isinstance(real_path_provider, StaticPathProvider)
