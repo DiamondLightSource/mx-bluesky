@@ -1,4 +1,3 @@
-import asyncio
 from asyncio import sleep
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +11,8 @@ from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.runner import Command, GDARunner
+
+from .conftest import launch_test_in_runner_event_loop
 
 
 @pytest.fixture
@@ -78,7 +79,10 @@ def test_wait_on_queue_intercepts_beamline_exception_reports_failed_status(
 
 
 def test_wait_on_queue_stop_interrupts_running_plan(
-    runner: GDARunner, load_centre_collect_params: LoadCentreCollect, mock_composite
+    runner: GDARunner,
+    load_centre_collect_params: LoadCentreCollect,
+    mock_composite,
+    executor,
 ):
     def mock_plan(composite, params) -> MsgGenerator:
         yield from bps.sleep(10.0)
@@ -88,8 +92,8 @@ def test_wait_on_queue_stop_interrupts_running_plan(
             await sleep(0.1)
         runner.stop()
 
-    stop_task = asyncio.run_coroutine_threadsafe(wait_and_then_stop(), runner.RE.loop)
     runner.start(mock_plan, load_centre_collect_params, "load_centre_collect_full")
     runner._command_queue.put(Command(action=Actions.SHUTDOWN))
+    stop_task = launch_test_in_runner_event_loop(wait_and_then_stop, runner, executor)
     runner.wait_on_queue()
     assert stop_task.done()
