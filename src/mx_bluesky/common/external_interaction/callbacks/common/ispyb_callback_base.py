@@ -186,7 +186,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         pass
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
-        """Subclasses must check that they are recieving a stop document for the correct
+        """Subclasses must check that they are receiving a stop document for the correct
         uid to use this method!"""
         assert self.ispyb is not None, (
             "ISPyB handler received stop document, but deposition object doesn't exist!"

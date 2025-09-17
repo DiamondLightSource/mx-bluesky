@@ -17,8 +17,9 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 
 class SampleHandlingCallback(PlanReactiveCallback):
-    """Intercepts exceptions from experiment plans and updates the ISPyB BLSampleStatus
-    field according to the type of exception raised."""
+    """Intercepts exceptions from experiment plans and:
+    * Updates the ISPyB BLSampleStatus field according to the type of exception raised.
+    * Triggers an alert with details of the error."""
 
     def __init__(self, record_loaded_on_success=False):
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)

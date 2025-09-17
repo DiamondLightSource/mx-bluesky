@@ -1,12 +1,11 @@
-import asyncio
 import os
 from asyncio import run_coroutine_threadsafe, sleep
-from collections.abc import Generator
-from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from concurrent.futures import Executor
+from contextlib import nullcontext
 from dataclasses import fields
 from threading import Event
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from blueapi.core import BlueskyContext
@@ -27,7 +26,8 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import SampleException, WarningException
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
@@ -38,76 +38,82 @@ from mx_bluesky.hyperion.baton_handler import (
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
 from mx_bluesky.hyperion.utils.context import setup_context
+
+from .conftest import AGAMEMNON_WAIT_INSTRUCTION, launch_test_in_runner_event_loop
 
 # For tests to complete reliably, these should all be successively much
 # larger than each other
 
 # Time to wait in test script between checks for a generic condition
 SLEEP_FAST_SPIN_WAIT_S = 0.02
-# Time to wait for the test to progress to the next step
-AGAMEMNON_WAIT_FOR_TEST_STEP_S = 0.2
-# Time to wait for the whole test script thread to complete
-TEST_SCRIPT_TIMEOUT_S = 2
 # Time for pytest to timeout if the script thread is deadlocked (shouldn't need this)
 # PYTEST_TEST_TIMEOUT_S > TEST_SCRIPT_TIMEOUT in order that an exception on the script
 # is bubbled up via the future and not lost.
 PYTEST_TEST_TIMEOUT_S = 10
 
-AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
-    {
-        "duration_s": AGAMEMNON_WAIT_FOR_TEST_STEP_S,
-        "parameter_model_version": PARAMETER_VERSION,
-    }
-)
-
-
-@pytest.fixture(scope="session")
-def executor() -> Generator[Executor, Any, Any]:
-    ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix="test thread")
-    yield ex
-    ex.shutdown(wait=True)
-
-
-@pytest.fixture()
-def base_bluesky_context(use_beamline_t01):
-    context = BlueskyContext()
-    context.with_dodal_module(
-        get_beamline_based_on_environment_variable(),
-        mock=True,
-        fake_with_ophyd_sim=True,
-    )
-    yield context
-
 
 @pytest.fixture(autouse=True)
-def patch_setup_devices():
+def patch_setup_devices(request):
+    """
+    Patch setup_devices() so that it doesn't rebuild all the devices
+    if they already exist.
+    """
     from mx_bluesky.hyperion.utils.context import setup_devices
 
     def patched_setup_devices(context: BlueskyContext, dev_mode: bool):
-        setup_devices(context, True)
-        if not isinstance(context.run_engine, MagicMock):
-            # reapply requested user to the newly created fake baton
-            # but not if it's a magicmock
-            baton_with_requested_user(context, HYPERION_USER)
+        if isinstance(context.run_engine, MagicMock):
+            # We are using the sim run engine, device state doesn't matter
+            setup_devices(context, True)
+        else:
+            try:
+                find_device_in_context(context, "baton", Baton)
+                # If we found a baton, leave devices alone and do nothing
+            except ValueError:
+                # No baton, setup devices and configure it
+                setup_devices(context, True)
+                baton_with_requested_user(context, HYPERION_USER)
 
-    # Patch setup_devices to patch the baton again when it is re-created
-    with patch(
-        "mx_bluesky.hyperion.baton_handler.setup_devices",
-        side_effect=patched_setup_devices,
-    ) as patched_func:
+    with (
+        patch(
+            "mx_bluesky.hyperion.baton_handler.setup_devices",
+            side_effect=patched_setup_devices,
+        ) as patched_func,
+        nullcontext()
+        if "dont_patch_clear_devices" in request.fixturenames
+        else patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches"),
+    ):
         yield patched_func
 
 
 @pytest.fixture
-def bluesky_context(RE: RunEngine, use_beamline_t01):
+def dont_patch_clear_devices():
+    return
+
+
+@pytest.fixture
+def bluesky_context(
+    RE: RunEngine,
+    smargon,
+    aperture_scatterguard,
+    robot,
+    lower_gonio,
+    baton,
+    use_beamline_t01,
+):
     # Baton for real run engine
 
     # Set the initial baton state
     context = BlueskyContext(RE)
+
+    def mock_load_module(module, **kwargs):
+        for device in [smargon, aperture_scatterguard, robot, lower_gonio, baton]:
+            context.register_device(device)
+
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         mock=True,
@@ -115,7 +121,8 @@ def bluesky_context(RE: RunEngine, use_beamline_t01):
     )
 
     baton_with_requested_user(context, HYPERION_USER)
-    yield context
+    with patch.object(context, "with_dodal_module", mock_load_module):
+        yield context
 
 
 @pytest.fixture
@@ -164,6 +171,37 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         yield msgs, context
 
 
+@pytest.fixture
+def single_collection_agamemnon_request(
+    load_centre_collect_params, mock_load_centre_collect
+):
+    with (
+        patch(
+            "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+            side_effect=[[load_centre_collect_params], []],
+        ),
+        patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state"),
+    ):
+        yield mock_load_centre_collect
+
+
+@pytest.fixture
+def single_collection_agamemnon_request_then_wait_forever(
+    load_centre_collect_params, mock_load_centre_collect
+):
+    with (
+        patch(
+            "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+            side_effect=[
+                [load_centre_collect_params],
+                [AGAMEMNON_WAIT_INSTRUCTION] * 1000,
+            ],
+        ),
+        patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state"),
+    ):
+        yield mock_load_centre_collect
+
+
 def baton_with_requested_user(
     bluesky_context: BlueskyContext, user: str = HYPERION_USER
 ) -> Baton:
@@ -174,7 +212,7 @@ def baton_with_requested_user(
 
 @pytest.fixture()
 def udc_runner(bluesky_context: BlueskyContext, RE: RunEngine) -> PlanRunner:
-    return PlanRunner(bluesky_context)
+    return PlanRunner(bluesky_context, True)
 
 
 @pytest.fixture
@@ -360,6 +398,7 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
     mock_load_centre_collect: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
     udc_runner: PlanRunner,
+    dont_patch_clear_devices,
 ):
     plan_continuing = MagicMock()
     agamemnon.return_value = [load_centre_collect_params]
@@ -397,13 +436,13 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
 
 
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
-def test_initialise_udc_reloads_all_devices():
+def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
     context = setup_context(True)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
     )
 
-    _initialise_udc(context)
+    _initialise_udc(context, True)
 
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
@@ -435,7 +474,7 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     sim_run_engine: RunEngineSimulator,
 ):
     msgs, context = bluesky_context_with_sim_run_engine
-    udc_runner = PlanRunner(context)
+    udc_runner = PlanRunner(context, True)
     run_udc_when_requested(context, udc_runner)
 
     assert_message_and_return_remaining(
@@ -464,7 +503,7 @@ def test_main_loop_rejects_unrecognised_instruction_when_received(
             ),
         ),
     ):
-        run_udc_when_requested(context, PlanRunner(context))
+        run_udc_when_requested(context, PlanRunner(context, True))
 
 
 @patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
@@ -491,18 +530,6 @@ async def test_shutdown_releases_the_baton(
     assert shutdown_task.done()
 
 
-def _launch_test_in_runner_event_loop(async_func, udc_runner, executor) -> Future:
-    """Launch the async func in a separate thread because the RunEngine under
-    test must run in the main thread and block our test code, and return
-    result and any exception to the caller."""
-
-    def _launch_in_new_thread():
-        future = asyncio.run_coroutine_threadsafe(async_func(), udc_runner.RE.loop)
-        return future.result(TEST_SCRIPT_TIMEOUT_S)
-
-    return executor.submit(_launch_in_new_thread)
-
-
 @patch(
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     side_effect=[
@@ -523,19 +550,21 @@ async def test_run_forever_resumes_collection_when_baton_taken_away(
     async def take_requested_baton_away_then_wait_for_release_then_re_request():
         while udc_runner.current_status != Status.BUSY:
             await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        baton = find_device_in_context(udc_runner.context, "baton", Baton)
-        # un-request baton, hyperion should have processed first instruction
-        await baton.requested_user.set(NO_USER)
-        while await baton.current_user.get_value() != NO_USER:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
-        # Re-request baton, wait until hyperion picks up baton
-        await baton.requested_user.set(HYPERION_USER)
-        while udc_runner.current_status != Status.BUSY:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        udc_runner.shutdown()
+        try:
+            baton = find_device_in_context(udc_runner.context, "baton", Baton)
+            # un-request baton, hyperion should have processed first instruction
+            await baton.requested_user.set(NO_USER)
+            while await baton.current_user.get_value() != NO_USER:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
+            # Re-request baton, wait until hyperion picks up baton
+            await baton.requested_user.set(HYPERION_USER)
+            while udc_runner.current_status != Status.BUSY:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+        finally:
+            udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         take_requested_baton_away_then_wait_for_release_then_re_request,
         udc_runner,
         executor,
@@ -563,18 +592,20 @@ async def test_run_forever_resumes_collection_when_normal_completion_and_baton_r
     executor: Executor,
 ):
     async def wait_for_baton_release_then_re_request():
-        while udc_runner.current_status != Status.BUSY:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        baton = find_device_in_context(udc_runner.context, "baton", Baton)
-        while await baton.current_user.get_value() != NO_USER:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
-        await baton.requested_user.set(HYPERION_USER)
-        while udc_runner.current_status != Status.BUSY:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        udc_runner.shutdown()
+        try:
+            while udc_runner.current_status != Status.BUSY:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            baton = find_device_in_context(udc_runner.context, "baton", Baton)
+            while await baton.current_user.get_value() != NO_USER:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
+            await baton.requested_user.set(HYPERION_USER)
+            while udc_runner.current_status != Status.BUSY:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+        finally:
+            udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         wait_for_baton_release_then_re_request, udc_runner, executor
     )
     run_forever(udc_runner)
@@ -597,11 +628,13 @@ async def test_run_forever_handles_shutdown_while_waiting_for_baton(
     await baton.requested_user.set(NO_USER)
 
     async def issue_shutdown_without_baton():
-        await sleep(0.1)
-        assert udc_runner.current_status == Status.IDLE
-        udc_runner.shutdown()
+        try:
+            await sleep(0.1)
+            assert udc_runner.current_status == Status.IDLE
+        finally:
+            udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         issue_shutdown_without_baton, udc_runner, executor
     )
     run_forever(udc_runner)
@@ -626,26 +659,278 @@ def test_run_forever_clears_error_status_on_resume(
     function_is_patched = Event()
 
     async def error_with_command_then_resume():
-        with patch(
-            "mx_bluesky.hyperion.baton_handler._runner_sleep",
-            side_effect=RuntimeError("Simulated plan exception"),
-        ):
-            function_is_patched.set()
-            while udc_runner.current_status != Status.FAILED:
+        try:
+            with patch(
+                "mx_bluesky.hyperion.baton_handler._runner_sleep",
+                side_effect=RuntimeError("Simulated plan exception"),
+            ):
+                function_is_patched.set()
+                while udc_runner.current_status != Status.FAILED:
+                    await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
+            baton = find_device_in_context(udc_runner.context, "baton", Baton)
+            while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
-        baton = find_device_in_context(udc_runner.context, "baton", Baton)
-        while await baton.current_user.get_value() != NO_USER:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        await baton.requested_user.set(HYPERION_USER)
-        while udc_runner.current_status != Status.BUSY:
-            await sleep(SLEEP_FAST_SPIN_WAIT_S)
-        udc_runner.shutdown()
+            await baton.requested_user.set(HYPERION_USER)
+            while udc_runner.current_status != Status.BUSY:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+        finally:
+            udc_runner.shutdown()
 
-    future = _launch_test_in_runner_event_loop(
+    future = launch_test_in_runner_event_loop(
         error_with_command_then_resume, udc_runner, executor
     )
     function_is_patched.wait()
     run_forever(udc_runner)
 
     future.result()  # Ensure successful completion
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[
+        [AGAMEMNON_WAIT_INSTRUCTION],
+        [],
+    ],
+)
+@patch("mx_bluesky.hyperion.baton_handler.set_commissioning_signal")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+async def test_commissioning_signal_set_on_baton_acquire(
+    mock_set_commissioning_signal: MagicMock,
+    mock_create_parameters_from_agamemnon: MagicMock,
+    udc_runner: PlanRunner,
+    executor: Executor,
+):
+    baton = find_device_in_context(udc_runner.context, "baton", Baton)
+    parent = MagicMock()
+    parent.attach_mock(mock_set_commissioning_signal, "set_commissioning_signal")
+    parent.attach_mock(get_mock_put(baton.current_user), "current_user")
+    parent.attach_mock(
+        mock_create_parameters_from_agamemnon, "create_parameters_from_agamemnon"
+    )
+    LOGGER.debug("Set no requested user")
+    set_mock_value(baton.requested_user, NO_USER)
+
+    async def release_baton_and_check_commissioning_signal_set():
+        try:
+            mock_set_commissioning_signal.assert_not_called()
+            LOGGER.debug("Set requested user")
+            set_mock_value(baton.requested_user, HYPERION_USER)
+            LOGGER.debug("Wait for create_parameters call")
+            while len(parent.create_parameters_from_agamemnon.mock_calls) == 0:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            LOGGER.debug("Wait for idle")
+            while udc_runner.current_status != Status.IDLE:
+                await sleep(SLEEP_FAST_SPIN_WAIT_S)
+            parent.assert_has_calls(
+                [
+                    call.current_user("Hyperion", wait=True),
+                    call.set_commissioning_signal(baton.commissioning),
+                    call.create_parameters_from_agamemnon(),
+                    call.create_parameters_from_agamemnon(),
+                ]
+            )
+        finally:
+            LOGGER.debug("shutdown runner")
+            udc_runner.shutdown()
+
+    future = launch_test_in_runner_event_loop(
+        release_baton_and_check_commissioning_signal_set, udc_runner, executor
+    )
+    run_forever(udc_runner)
+    future.result()  # Ensure successful completion
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []]),
+)
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_udc_start_alert_when_baton_acquired(
+    mock_get_alerting_service: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    mock_alert_service = mock_get_alerting_service.return_value
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    assert mock_alert_service.raise_alert.mock_calls[0] == call(
+        Subjects.UDC_STARTED, "Unattended Data Collection has started.", {}
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_baton_release_udc_completed_event_when_hyperion_releases_the_baton(
+    mock_get_alerting_service: MagicMock,
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    parent = MagicMock()
+
+    def wait_then_nothing():
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+
+        mock_alert_service = mock_get_alerting_service.return_value
+        parent.attach_mock(mock_alert_service.raise_alert, "raise_alert")
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        parent.attach_mock(get_mock_put(baton.current_user), "current_user")
+        yield []
+
+    mock_create_params.side_effect = wait_then_nothing()
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.raise_alert(
+                Subjects.UDC_COMPLETED,
+                "Hyperion UDC has completed all pending Agamemnon requests.",
+                {},
+            ),
+            call.current_user(NO_USER, wait=True),
+            call.raise_alert(
+                Subjects.UDC_BATON_RELEASED,
+                "Hyperion has released the baton. The baton is currently "
+                "requested by: None",
+                {},
+            ),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", new=MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.get_alerting_service")
+def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_from_hyperion(
+    mock_get_alerting_service: MagicMock,
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    parent = MagicMock()
+
+    def wait_then_nothing():
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        set_mock_value(baton.requested_user, "GDA")
+        mock_alert_service = mock_get_alerting_service.return_value
+        parent.attach_mock(mock_alert_service.raise_alert, "raise_alert")
+        parent.attach_mock(get_mock_put(baton.current_user), "current_user")
+        yield [AGAMEMNON_WAIT_INSTRUCTION]
+        raise AssertionError(
+            "This should never be reached as the baton has already been released."
+        )
+
+    mock_create_params.side_effect = wait_then_nothing()
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.current_user(NO_USER, wait=True),
+            call.raise_alert(
+                Subjects.UDC_BATON_RELEASED,
+                "Hyperion has released the baton. The baton is currently "
+                "requested by: GDA",
+                {},
+            ),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_performed_when_no_more_agamemnon_instructions(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+    dont_patch_clear_devices,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    mock_load_centre_collect.return_value = iter([])
+    parent = MagicMock()
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request_then_wait_forever,
+    dont_patch_clear_devices,
+):
+    def request_baton_away_from_hyperion(*args):
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        yield from bps.abs_set(baton.requested_user, NO_USER)
+
+    parent = MagicMock()
+    mock_load_centre_collect = single_collection_agamemnon_request_then_wait_forever
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+    mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_not_performed_when_beamline_error(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    mock_load_centre_collect.side_effect = RuntimeError("Simulated beamline error")
+
+    with pytest.raises(PlanException):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    mock_robot_unload.assert_not_called()
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_robot_unload_still_performed_when_sample_exception(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request,
+    dont_patch_clear_devices,
+):
+    mock_load_centre_collect = single_collection_agamemnon_request
+    parent = MagicMock()
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_robot_unload, "robot_unload")
+    mock_load_centre_collect.side_effect = SampleException("Simulated beamline error")
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    parent.assert_has_calls(
+        [
+            call.load_centre_collect_full(ANY, ANY),
+            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+        ]
+    )
