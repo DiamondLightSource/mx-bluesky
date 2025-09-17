@@ -15,19 +15,32 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_STAGE_GROUP,
     XrcResult,
     get_full_processing_results,
 )
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
-    ZOCALO_STAGE_GROUP,
     kickoff_and_complete_gridscan,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
+    EnvironmentConstants,
     GridscanParamConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -41,6 +54,17 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
+
+# Hyperion handles its own callbacks via an external process. Other beamlines using this plan should wrap their entry point with
+# @bpp.subs_decorator(CALLBACKS_FOR_SUBS_DECORATOR)
+CALLBACKS_FOR_SUBS_DECORATOR = [
+    GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+    GridscanISPyBCallback(
+        param_type=SpecifiedThreeDGridScan,
+        emit=ZocaloCallback(PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV),
+    ),
+    LogUidTaggingCallback(),
+]
 
 
 @dataclasses.dataclass
@@ -263,7 +287,7 @@ def run_gridscan(
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
+        yield from bps.abs_set(fgs_composite.sample_stage.omega, 0)
 
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()
