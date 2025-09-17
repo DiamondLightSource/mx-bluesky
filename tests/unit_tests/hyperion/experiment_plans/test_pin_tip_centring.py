@@ -286,6 +286,17 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
 
 
+def test_catch_exception_that_is_not_MotorLimitsException(
+    RE: RunEngine, smargon: Smargon
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+        side_effect=RuntimeError("RuntimeError"),
+    ):
+        with pytest.raises(RuntimeError, match="RuntimeError"):
+            RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+
+
 def return_pixel(pixel, *args):
     yield from null()
     return pixel
