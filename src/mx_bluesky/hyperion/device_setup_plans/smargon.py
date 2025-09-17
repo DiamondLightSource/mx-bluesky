@@ -15,7 +15,7 @@ def move_smargon_warn_on_out_of_range(
         yield from bps.mv(
             smargon, CombinedMove(x=position[0], y=position[1], z=position[2])
         )
-    except Exception:
-        raise SampleException from MotorLimitsException(
+    except MotorLimitsException as mle:
+        raise SampleException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
-        )
+        ) from mle
