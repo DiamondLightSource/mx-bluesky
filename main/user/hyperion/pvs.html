@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Special PVs &#8212; mx-bluesky 1.0.1.dev335+g57563e65c documentation</title>
+    <title>Special PVs &#8212; mx-bluesky 1.0.1.dev336+g9ab8ab2e7 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=cd6d7d11"></script>
+    <script src="../../_static/documentation_options.js?v=d0213087"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -462,6 +462,13 @@ CURRENT_USER.</p>
 CURRENT_USER. To request the baton from Hyperion, set REQUESTED_USER to some other value, when Hyperion completes the
 current action, it will relinquish CURRENT_USER.</p>
 </section>
+<section id="commissioning-mode">
+<h2>Commissioning Mode<a class="headerlink" href="#commissioning-mode" title="Link to this heading">#</a></h2>
+<p>The baton device also has a COMMISSIONING PV, which when the PV is set to 1, indicates that commissioning mode is
+enabled.</p>
+<p>Commissioning mode enables testing of Hyperion when there is no beam. Beamline scientists should ensure that the
+COMMISSIONING PV is set to 0 before running Hyperion in production.</p>
+</section>
 </section>
 
 
@@ -512,6 +519,7 @@ current action, it will relinquish CURRENT_USER.</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baton">Baton</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#commissioning-mode">Commissioning Mode</a></li>
 </ul>
   </nav></div>
 
