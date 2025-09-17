@@ -407,6 +407,7 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
     mock_load_centre_collect: MagicMock,
     load_centre_collect_params: LoadCentreCollect,
     udc_runner: PlanRunner,
+    dont_patch_clear_devices,
 ):
     plan_continuing = MagicMock()
     agamemnon.return_value = [load_centre_collect_params]
@@ -858,6 +859,7 @@ def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
     single_collection_agamemnon_request,
+    dont_patch_clear_devices,
 ):
     mock_load_centre_collect = single_collection_agamemnon_request
     mock_load_centre_collect.return_value = iter([])
@@ -881,6 +883,7 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
     single_collection_agamemnon_request_then_wait_forever,
+    dont_patch_clear_devices,
 ):
     def request_baton_away_from_hyperion(*args):
         baton = find_device_in_context(bluesky_context, "baton", Baton)
@@ -924,6 +927,7 @@ def test_robot_unload_still_performed_when_sample_exception(
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
     single_collection_agamemnon_request,
+    dont_patch_clear_devices,
 ):
     mock_load_centre_collect = single_collection_agamemnon_request
     parent = MagicMock()
