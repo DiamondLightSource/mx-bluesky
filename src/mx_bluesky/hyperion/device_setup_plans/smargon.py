@@ -17,6 +17,9 @@ def move_smargon_warn_on_out_of_range(
             smargon, CombinedMove(x=position[0], y=position[1], z=position[2])
         )
     except FailedStatus as fs:
+        print(f"FailedStatus attributes: {dir(fs)}")
+        print(f"FailedStatus args: {fs.args}")
+        print(f"FailedStatus __cause__: {fs.__cause__}")
         if isinstance(fs.exception, MotorLimitsException):
             raise SampleException(
                 "Pin tip centring failed - pin too long/short/bent and out of range"
