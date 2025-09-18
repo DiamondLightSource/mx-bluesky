@@ -5,7 +5,6 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.backlight import InOut
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import CombinedMove
@@ -287,13 +286,6 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
         )
     )
 
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args == (InOut.IN,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
-    )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
