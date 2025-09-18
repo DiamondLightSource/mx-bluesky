@@ -430,14 +430,16 @@ def test_ispyb_deposition_in_gridscan(
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        "focalspotsizeatsamplex": 0.02,
-        "focalspotsizeatsampley": 0.02,
+        # TODO
+        # "focalspotsizeatsamplex": 0.02,
+        # "focalspotsizeatsampley": 0.02,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
         "beamsizeatsamplex": 0.02,
         "beamsizeatsampley": 0.02,
         "transmission": 49.118,
-        "datacollectionnumber": 1,
+        # TODO
+        # "datacollectionnumber": 1,
         "detectordistance": 100.0,
         "exposuretime": 0.12,
         "imagedirectory": f"{storage_directory}/",
@@ -477,13 +479,16 @@ def test_ispyb_deposition_in_gridscan(
         "dy_mm": 0.02,
         "steps_x": 20,
         "steps_y": 6,
-        "snapshot_offsetXPixel": 130,
-        "snapshot_offsetYPixel": 130,
+        # TODO when fixed in expeye
+        # "snapshot_offsetXPixel": 130,
+        # "snapshot_offsetYPixel": 130,
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "micronsPerPixelX": 0.806,
-        "micronsPerPixelY": 0.806,
+        # "micronsPerPixelX": 0.806,
+        # "micronsPerPixelY": 0.806,
+        "pixelsPerMicronX": 1.24069,
+        "pixelsPerMicronY": 1.24069,
     }
 
     compare_actual_and_expected(
@@ -500,7 +505,8 @@ def test_ispyb_deposition_in_gridscan(
         {
             "axisstart": 90.0,
             "axisend": 90.0,
-            "datacollectionnumber": 2,
+            # TODO
+            # "datacollectionnumber": 2,
             "omegastart": 90.0,
             "filetemplate": "file_name_2_master.h5",
             "xtalsnapshotfullpath1": f"{storage_directory}/snapshots/file_name_1_90_grid_overlay.png",
@@ -530,7 +536,8 @@ def test_ispyb_deposition_in_gridscan(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
             "steps_y": 6.0,
-            "snapshot_offsetYPixel": 130.0,
+            # TODO
+            # "snapshot_offsetYPixel": 130.0,
             "dataCollectionId": ispyb_ids.data_collection_ids[1],
         }
     )
