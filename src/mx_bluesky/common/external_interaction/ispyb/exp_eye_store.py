@@ -7,6 +7,12 @@ from event_model.documents import Event
 from requests import JSONDecodeError, patch, post
 from requests.auth import AuthBase
 
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
+    DataCollectionGroupInfo,
+    DataCollectionInfo,
+    DataCollectionPositionInfo,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_ispyb_config,
@@ -179,3 +185,157 @@ class ExpeyeInteraction:
             bl_sample_status=response["blSampleStatus"],
             container_id=response["containerId"],
         )
+
+    def create_data_group(
+        self, proposal_reference: str, visit_number: int, data: DataCollectionGroupInfo
+    ) -> int:
+        response = _send_and_get_response(
+            self._auth,
+            self._base_url + f"/proposals/{proposal_reference}/sessions/"
+            f"{visit_number}/data-groups",
+            _data_collection_group_info_to_json(data),
+            post,
+        )
+        return response["dataCollectionGroupId"]
+
+    def update_data_group(self, group_id: int, data: DataCollectionGroupInfo):
+        _send_and_get_response(
+            self._auth,
+            self._base_url + f"/data-groups/{group_id}",
+            _data_collection_group_info_to_json(data),
+            patch,
+        )
+
+    def create_data_collection(self, group_id: int, data: DataCollectionInfo) -> int:
+        response = _send_and_get_response(
+            self._auth,
+            self._base_url + f"/data-groups/{group_id}/data-collections",
+            _data_collection_info_to_json(data),
+            post,
+        )
+        return response["dataCollectionId"]
+
+    def update_data_collection(self, data_collection_id: int, data: DataCollectionInfo):
+        _send_and_get_response(
+            self._auth,
+            self._base_url + f"/data-collections/{data_collection_id}",
+            _data_collection_info_to_json(data),
+            patch,
+        )
+
+    def create_position(
+        self, data_collection_id: int, data: DataCollectionPositionInfo
+    ) -> int:
+        response = _send_and_get_response(
+            self._auth,
+            self._base_url + f"/data-collections/{data_collection_id}/position",
+            _position_info_to_json(data),
+            post,
+        )
+        return response["positionId"]
+
+    def create_grid(self, data_collection_id: int, data: DataCollectionGridInfo) -> int:
+        response = _send_and_get_response(
+            self._auth,
+            self._base_url + f"/data-collections/{data_collection_id}/grids",
+            _grid_info_to_json(data),
+            post,
+        )
+        return response["gridInfoId"]
+
+
+def _none_to_absent(json: dict) -> dict:
+    for key in [key for key in json if json[key] is None]:
+        del json[key]
+    return json
+
+
+def _data_collection_group_info_to_json(data: DataCollectionGroupInfo) -> dict:
+    return _none_to_absent(
+        {
+            "experimentType": data.experiment_type,
+            "sampleId": data.sample_id,
+            "actualSampleBarcode": data.sample_barcode,
+            "comments": data.comments,
+        }
+    )
+
+
+def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
+    return _none_to_absent(
+        {
+            "omegaStart": data.omega_start,
+            # TODO "data_collection_number": _,
+            "xtalSnapshotFullPath1": data.xtal_snapshot1,
+            "xtalSnapshotFullPath2": data.xtal_snapshot2,
+            "xtalSnapshotFullPath3": data.xtal_snapshot3,
+            "xtalSnapshotFullPath4": data.xtal_snapshot4,
+            "numberOfImages": data.n_images,
+            "axisRange": data.axis_range,
+            "axisEnd": data.axis_end,
+            "chiStart": data.chi_start,
+            "kappaStart": data.kappa_start,
+            # TODO
+            # "dataCollectionGroupId": data. ? - this is not needed
+            # "visitString": data.visit_string - this is not needed
+            # "sampleId": data.sample_id
+            "detectorId": data.detector_id,
+            "axisStart": data.axis_start,
+            # "focal_spot_size_at_samplex": data.focal_spot_size_at_samplex
+            # "focal_spot_size_at_sampley": data.focal_spot_size_at_sampley
+            "slitGapVertical": data.slitgap_vertical,
+            "slitGapHorizontal": data.slitgap_horizontal,
+            "beamSizeAtSampleX": data.beamsize_at_samplex,
+            "beamSizeAtSampleY": data.beamsize_at_sampley,
+            "transmission": data.transmission,
+            "comments": data.comments,
+            "detectorDistance": data.detector_distance,
+            "exposureTime": data.exp_time,
+            "imageDirectory": data.imgdir,
+            "fileTemplate": data.file_template,
+            "imagePrefix": data.imgprefix,
+            "imageSuffix": data.imgsuffix,
+            "numberOfPasses": data.n_passes,
+            "overlap": data.overlap,
+            "flux": data.flux,
+            "startImageNumber": data.start_image_number,
+            "resolution": data.resolution,
+            "wavelength": data.wavelength,
+            "xBeam": data.xbeam,
+            "yBeam": data.ybeam,
+            "synchrotronMode": data.synchrotron_mode,
+            "undulatorGap1": data.undulator_gap1,
+            "startTime": data.start_time,
+            "endTime": data.end_time,
+            "runStatus": data.run_status,
+        }
+    )
+
+
+def _position_info_to_json(data: DataCollectionPositionInfo) -> dict:
+    return _none_to_absent(
+        {
+            # "relativePositionId": data.
+            "posX": data.pos_x,
+            "posY": data.pos_y,
+            "posZ": data.pos_z,
+        }
+    )
+
+
+def _grid_info_to_json(data: DataCollectionGridInfo) -> dict:
+    return _none_to_absent(
+        {
+            # XXX - where does snapshot_offset_x/ypixel go?
+            # "xOffset": data.snapshot_offset_x_pixel,
+            # "yOffset": data.snapshot_offset_y_pixel,
+            "dx": data.dx_in_mm,
+            "dy": data.dy_in_mm,
+            "stepsX": data.steps_x,
+            "stepsY": data.steps_y,
+            "orientation": data.orientation.value,
+            "pixelsPerMicronX": 1 / data.microns_per_pixel_x,
+            "pixelsPerMicronY": 1 / data.microns_per_pixel_y,
+            "snaked": data.snaked,
+        }
+    )

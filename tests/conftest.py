@@ -500,7 +500,7 @@ def detector_motion(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator(RE: RunEngine):
+def undulator(RE: RunEngine, baton):
     undulator = i03.undulator(connect_immediately=True, mock=True)
     # force the child baton to be connected
     i03.baton(connect_immediately=True, mock=True)
@@ -628,7 +628,19 @@ def beamstop_phase1(
 
 
 @pytest.fixture
-def xbpm_feedback(done_status, RE: RunEngine):
+def baton(RE: RunEngine):
+    baton = i03.baton(connect_immediately=True, mock=True)
+    set_mock_value(baton.requested_user, HYPERION_USER)
+    set_mock_value(baton.current_user, HYPERION_USER)
+    yield baton
+
+
+@pytest.fixture
+def xbpm_feedback(
+    done_status,
+    baton: Baton,  # Ensure baton is cached with mock configuration
+    RE: RunEngine,
+):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
