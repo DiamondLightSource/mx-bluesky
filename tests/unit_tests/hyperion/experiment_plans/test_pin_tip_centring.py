@@ -290,7 +290,7 @@ def test_catch_exception_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+        "mx_bluesky.hyperion.device_setup_plans.smargon.move_smargon_warn_on_out_of_range",
         side_effect=RuntimeError("RuntimeError"),
     ):
         with pytest.raises(RuntimeError, match="RuntimeError"):
