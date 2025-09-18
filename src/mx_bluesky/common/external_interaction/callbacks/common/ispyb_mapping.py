@@ -4,14 +4,13 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
 )
-from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
-    EIGER_FILE_SUFFIX,
-    I03_EIGER_DETECTOR,
-)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
+
+I03_EIGER_DETECTOR = 78
+EIGER_FILE_SUFFIX = "h5"
 
 
 def populate_data_collection_group(params: DiffractionExperimentWithSample):

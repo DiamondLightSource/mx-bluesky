@@ -28,6 +28,7 @@ class DataCollectionInfo:
     n_images: int | None = None
     axis_range: float | None = None
     axis_end: float | None = None
+    chi_start: float | None = None
     kappa_start: float | None = None
 
     parent_id: int | None = None
@@ -60,6 +61,8 @@ class DataCollectionInfo:
     synchrotron_mode: str | None = None
     undulator_gap1: float | None = None
     start_time: str | None = None
+    end_time: str | None = None
+    run_status: str | None = None
 
 
 @dataclass
