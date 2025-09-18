@@ -118,6 +118,8 @@ def _get_logging_dirs(dev_mode: bool) -> tuple[Path, Path]:
     beamline = environ.get("BEAMLINE")
 
     if beamline and not dev_mode:
+        # default_logging_str = f"/dls_sw/{beamline}/logs/bluesky/"
+        # default_debug_logging_str = f"/dls/tmp/{beamline}/logs/bluesky/"
         default_logging_str = f"/dls_sw/{beamline}/logs/bluesky/"
         default_debug_logging_str = f"/dls/tmp/{beamline}/logs/bluesky/"
     else:

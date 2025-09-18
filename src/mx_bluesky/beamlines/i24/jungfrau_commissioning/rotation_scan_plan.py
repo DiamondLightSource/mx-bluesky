@@ -13,6 +13,10 @@ from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
     create_jungfrau_external_triggering_info,
 )
+from ophyd_async.fastcs.jungfrau import (
+    Jungfrau,
+)
+from dodal.devices.zebra.zebra import I24Axes
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
@@ -28,6 +32,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
     read_devices_for_metadata,
 )
+
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     disarm_zebra,
 )
@@ -68,6 +73,9 @@ def set_up_beamline_for_rotation(composite: RotationScanComposite, det_z_mm: flo
     LOGGER.info("Making sure backlight is moved out...")
     yield from bps.mv(composite.backlight.backlight_position, BacklightPositions.OUT)
 
+    # Confirm we get feedback on backlight out here
+    yield from bps.sleep(20)
+
     LOGGER.info(
         "Making sure aperture and beamstop are in, detector stage is in position, and detector distance is correct."
     )
@@ -77,8 +85,8 @@ def set_up_beamline_for_rotation(composite: RotationScanComposite, det_z_mm: flo
         composite.beamstop.pos_select,
         BeamstopPositions.DATA_COLLECTION,
         composite.det_stage.y,
-        JF_DET_STAGE_Y_POSITION,
-        composite.det_stage.z,
+        # JF_DET_STAGE_Y_POSITION,
+        # composite.det_stage.z,
     )
 
 
@@ -94,11 +102,16 @@ def single_rotation_plan(
     params: Minimum set of parameters required for this plan
     """
 
+    override_file_name_and_path(
+        composite.jungfrau,
+        f"{params.storage_directory}/{params.detector_params.full_filename}",
+    )
+
     # This should be somewhere more sensible - like in the parameter model
     if not params.detector_distance_mm:
         raise ValueError("Must specify detector distance in mm")
 
-    yield from set_up_beamline_for_rotation(composite, params.detector_distance_mm)
+    #yield from set_up_beamline_for_rotation(composite, params.detector_distance_mm)
     beam_xy = params.detector_params.get_beam_position_mm(params.detector_distance_mm)
     LOGGER.info(
         f"Moving detector Z stage to specified {params.detector_distance_mm} mm..."
@@ -114,9 +127,10 @@ def single_rotation_plan(
         params, _motor_time_to_speed, _max_velocity_deg_s
     )
 
+    yield from bps.mv(composite.attenuator.transmission_setpoint, params.transmission_frac)
+
     metadata_writer = JsonMetadataWriter(beam_xy)
 
-    @bpp.subs_decorator([metadata_writer])
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
     @bpp.run_decorator(
         md={
@@ -136,6 +150,8 @@ def single_rotation_plan(
             params.num_images, params.detector_params.exposure_time_s, _deadtime
         )
 
+        _jf_trigger_info.exposure_timeout = 60
+
         axis = composite.gonio.omega
 
         # can move to start as fast as possible
@@ -152,6 +168,7 @@ def single_rotation_plan(
         yield from setup_zebra_for_rotation(
             composite.zebra,
             composite.sample_shutter,
+            axis=I24Axes.OMEGA,
             start_angle=motion_values.start_scan_deg,
             scan_width=motion_values.scan_width_deg,
             direction=motion_values.direction,
@@ -174,18 +191,27 @@ def single_rotation_plan(
         yield from arm_zebra(composite.zebra)
 
         # Check topup gate
-        yield from check_topup_and_wait_if_necessary(
-            composite.synchrotron,
-            motion_values.total_exposure_s,
-            ops_time=10.0,  # Additional time to account for rotation, is s
-        )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+        # yield from check_topup_and_wait_if_necessary(
+        #     composite.synchrotron,
+        #     motion_values.total_exposure_s,
+        #     ops_time=10.0,  # Additional time to account for rotation, is s
+        # )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
-        # override_file_name_and_path(
-        #     composite.jungfrau,
-        #     f"{params.storage_directory}/{params.detector_params.full_filename}",
-        # )
 
-        yield from read_devices_for_metadata(composite)
+        #Get metadata file to write things before collection has finished
+        @bpp.subs_decorator([metadata_writer])
+        @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_META_READ)
+        @bpp.run_decorator(
+            md={
+                "subplan_name": PlanNameConstants.ROTATION_META_READ,
+                "scan_points": [params.scan_points],
+                "rotation_scan_params": params.model_dump_json(),
+            }
+        )
+        def _do_read():
+            yield from read_devices_for_metadata(composite)
+
+        yield from _do_read()
 
         yield from fly_jungfrau(
             composite.jungfrau,
@@ -197,22 +223,18 @@ def single_rotation_plan(
         LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
+        LOGGER.info("Waiting on frames")
         yield from bps.wait(group=JF_COMPLETE_GROUP)
-
-    # TODO check bluesky doesnt already do this for us
-    yield from bpp.contingency_wrapper(
-        _rotation_scan_plan(motion_values, composite),
-        except_plan=lambda _: (yield from bps.unstage(composite.jungfrau)),
-    )
 
     yield from bpp.finalize_wrapper(
         _rotation_scan_plan(motion_values, composite),
-        final_plan=partial(_cleanup_plan, composite.zebra),
+        final_plan=partial(_cleanup_plan, composite.zebra, composite.jungfrau),
     )
 
 
-def _cleanup_plan(zebra: Zebra, group="cleanup"):
+def _cleanup_plan(zebra: Zebra, jf: Jungfrau, group="cleanup"):
     LOGGER.info("Tidying up zebra...")
+    yield from bps.unstage(jf)
     yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
     yield from disarm_zebra(zebra)
     yield from bps.wait("cleanup")

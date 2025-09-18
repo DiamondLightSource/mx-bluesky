@@ -1,5 +1,5 @@
 # flake8: noqa
-
+from ophyd_async.core import init_devices
 import inspect
 from collections.abc import Callable
 from inspect import getmembers, isgeneratorfunction, signature
@@ -9,7 +9,7 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i24
 from dodal.utils import collect_factories
 from pydantic_extra_types.semantic_version import SemanticVersion
-
+import json
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning import (
     do_darks,
@@ -31,7 +31,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import *
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     override_file_name_and_path,
 )
-
+import os
 
 class Col:
     HEADER = "\033[95m"
@@ -123,19 +123,20 @@ def hlp(arg: Callable | None = None):
         print(inspect.getdoc(arg))
 
 
-def create_rotation_composite() -> RotationScanComposite:
-    aperture = i24.aperture()
-    attenuator = i24.attenuator()
-    jungfrau = i24.jungfrau()
-    gonio = i24.vgonio()
-    synchrotron = i24.synchrotron()
-    sample_shutter = i24.sample_shutter()
-    zebra = i24.zebra()
-    hutch_shutter = i24.shutter()
-    beamstop = i24.beamstop()
-    det_stage = i24.detector_motion()  # TODO add JF position to det stage device
-    backlight = i24.backlight()
-    dcm = i24.dcm()
+async def create_rotation_composite() -> RotationScanComposite:
+    with init_devices():
+        aperture = i24.aperture()
+        attenuator = i24.attenuator()
+        jungfrau = i24.jungfrau()
+        gonio = i24.vgonio()
+        synchrotron = i24.synchrotron()
+        sample_shutter = i24.sample_shutter()
+        zebra = i24.zebra()
+        hutch_shutter = i24.shutter()
+        beamstop = i24.beamstop()
+        det_stage = i24.detector_motion()  # TODO add JF position to det stage device
+        backlight = i24.backlight()
+        dcm = i24.dcm()
     return RotationScanComposite(
         aperture,
         attenuator,
@@ -197,11 +198,41 @@ def create_rotation_scan_params(
 """
 
 
-def run_single_rotation_scan(params: SingleRotationScan):
-    yield from rotation_scan_plan.single_rotation_plan(
-        create_rotation_composite(), params
-    )
+# def run_single_rotation_scan(params: SingleRotationScan, de):
+#     yield from rotation_scan_plan.single_rotation_plan(
+#         , params
+#     )
 
+rotation_scan_inc = 0
+
+async def do_rotation_multiple_transmissions():
+    transmissions = [1.5625/100, 6.25/100, 25/100, 1]
+    for t in transmissions:
+        LOGGER.info(f"Doing rotation at {t}")
+        await do_rotation(t)
+
+
+async def do_rotation(transmission=None):
+    with open("/dls_sw/i24/software/bluesky/jungfrau_25/mx-bluesky/src/mx_bluesky/beamlines/i24/jungfrau_commissioning/params.json") as f:
+        params_json = json.load(f)
+
+    if transmission:
+        params_json["transmission_frac"] = transmission
+
+    global rotation_scan_inc
+    while True:
+        storage_dir = params_json["storage_directory"] + str(rotation_scan_inc)
+        if not os.path.exists(Path(storage_dir)):
+            break
+        rotation_scan_inc += 1
+    print(f"Params: {params_json}")
+
+    params_json["storage_directory"] = storage_dir
+    params = create_rotation_scan_params(**params_json)
+    devices = await create_rotation_composite()
+    RE = RunEngine({})
+    RE(rotation_scan_plan.single_rotation_plan(devices, params))
+    rotation_scan_inc += 1
 
 do_default_logging_setup("i24-bluesky.log", 12231)  # Dodal graylog stream
 hlp()

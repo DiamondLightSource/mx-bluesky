@@ -6,13 +6,14 @@ from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from ophyd_async.core import (
     AutoIncrementFilenameProvider,
-    StaticPathProvider,
+    StaticFilenameProvider,
     TriggerInfo,
     WatchableAsyncStatus,
 )
 from ophyd_async.fastcs.jungfrau import (
     Jungfrau,
 )
+from ophyd_async.core import StaticPathProvider
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -47,12 +48,21 @@ def fly_jungfrau(
     LOGGER.info("Waiting for acquisition to complete...")
     status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 
+    path = yield from bps.rd(jungfrau._writer.file_path)
+    file = yield from bps.rd(jungfrau._writer.file_name)
+
+    LOGGER.info(f"Written data to {path}/{file}")
+
     # StandardDetector.complete converts regular status to watchable status,
     # but bluesky plan stubs can't see this currently
     status = cast(WatchableAsyncStatus, status)
-    log_on_percentage_complete(status, log_on_percentage_message, 10)
+
+    #Bug here to do with last update on watcher
+    #log_on_percentage_complete(status, log_on_percentage_message, 10)
+
     if wait:
         yield from bps.wait(JF_COMPLETE_GROUP)
+        LOGGER.info("Acquisition complete!")
     return status
 
 
@@ -62,10 +72,13 @@ def override_file_name_and_path(jungfrau: Jungfrau, path_of_output_file: str):
     _file_path = Path(path_of_output_file)
     # filename_provider = AutoIncrementFilenameProvider(_file_path.name)
     # path_provider = StaticPathProvider(filename_provider, _file_path.parent)
-    yield from bps.mv(
-        jungfrau._writer.file_name,
-        _file_path.name,
-        jungfrau._writer.file_path,
-        _file_path.parent,
-    )
+    # yield from bps.mv(
+    #     jungfrau._writer.file_name,
+    #     _file_path.name,
+    #     jungfrau._writer.file_path,
+    #     _file_path.parent,
+    # )
     # jungfrau._writer._path_provider = path_provider  # noqa: SLF001
+    LOGGER.info(f"Changing folder to {_file_path.parent} and file to {_file_path.name}")
+    jungfrau.provider._filename_provider = StaticFilenameProvider(_file_path.name)
+    jungfrau.provider._directory_path = _file_path.parent

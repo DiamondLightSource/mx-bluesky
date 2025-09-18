@@ -8,18 +8,20 @@ from dodal.common import inject
 from ophyd_async.core import WatchableAsyncStatus
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
+    PedestalMode,
     GainMode,
     Jungfrau,
     create_jungfrau_internal_triggering_info,
     create_jungfrau_pedestal_triggering_info,
 )
+from ophyd_async.fastcs.jungfrau._signals import JungfrauTriggerMode
 from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     fly_jungfrau,
     override_file_name_and_path,
 )
-
+from dodal.log import LOGGER
 
 def do_pedestal_darks(
     exp_time_s: float = 0.001,
@@ -48,32 +50,43 @@ def do_pedestal_darks(
     if path_of_output_file:
         override_file_name_and_path(jungfrau, path_of_output_file)
 
+    yield from bps.mv(jungfrau.drv.trigger_mode, JungfrauTriggerMode.INTERNAL)
+
     yield from bps.mv(
         jungfrau.drv.acquisition_type,
         AcquisitionType.PEDESTAL,
         jungfrau.drv.gain_mode,
-        GainMode.DYNAMIC,
+        GainMode.DYNAMIC,#
     )
-
+    jungfrau._writer.pedestal_fudge_factor = 2
+    
     trigger_info = create_jungfrau_pedestal_triggering_info(
         exp_time_s, pedestal_frames, pedestal_loops
     )
+    trigger_info.exposure_timeout = 30
 
-    # Revert pedestal soft signal and pedestal hard signal to whatever they were before running the plan
+    # # XXX FIXME
+    # import time
+    # time.sleep(20)
+
+    # changed to take out of pedestal mode
     def _revert_acq_type_and_gain():
         yield from bps.mv(
             jungfrau.drv.acquisition_type,
-            prev_acq_type,
+            AcquisitionType.STANDARD,
             jungfrau.drv.pedestal_mode_state,
-            prev_pedestal_mode,
+            PedestalMode.OFF,
         )
+        jungfrau._writer.pedestal_fudge_factor = 1
 
-    @bpp.finalize_decorator(final_plan=lambda: _revert_acq_type_and_gain())
+    
+    @bpp.finalize_decorator(lambda: _revert_acq_type_and_gain())
+    @bpp.run_decorator()
     def _fly_then_revert_acquisition_type_and_gain():
         status = yield from fly_jungfrau(
             jungfrau,
             trigger_info,
-            wait,
+            wait=True,
             log_on_percentage_message="Jungfrau pedestal dynamic gain mode darks triggers recieved",
         )
         return status

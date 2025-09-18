@@ -40,7 +40,7 @@ class JsonMetadataWriter(CallbackBase):
     transmission: float | None = None
 
     def start(self, doc: dict):  # type: ignore
-        if doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
+        if doc.get("subplan_name") == PlanNameConstants.ROTATION_META_READ:
             LOGGER.info(
                 "Metadata writer recieved start document with experiment parameters."
             )

@@ -70,6 +70,7 @@ class PlanNameConstants:
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
+    ROTATION_META_READ = "rotation_meta_read"
     FLYSCAN_RESULTS = "xray_centre_results"
     SET_ENERGY = "set_energy"
     UNNAMED_RUN = "unnamed_run"
