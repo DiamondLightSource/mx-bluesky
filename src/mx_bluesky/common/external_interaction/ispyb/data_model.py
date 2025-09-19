@@ -31,9 +31,9 @@ class DataCollectionInfo:
     chi_start: float | None = None
     kappa_start: float | None = None
 
-    parent_id: int | None = None
+    parent_id: int | None = None  # TODO remove this
     visit_string: str | None = None
-    sample_id: int | None = None
+    sample_id: int | None = None  # TODO remove this
     detector_id: int | None = None
     axis_start: float | None = None
     focal_spot_size_at_samplex: float | None = None
