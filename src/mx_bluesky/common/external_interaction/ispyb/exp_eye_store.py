@@ -225,14 +225,13 @@ class ExpeyeInteraction:
 
     def create_position(
         self, data_collection_id: int, data: DataCollectionPositionInfo
-    ) -> int:
-        response = _send_and_get_response(
+    ):
+        _send_and_get_response(
             self._auth,
             self._base_url + f"/data-collections/{data_collection_id}/position",
             _position_info_to_json(data),
             post,
         )
-        return response["positionId"]
 
     def create_grid(self, data_collection_id: int, data: DataCollectionGridInfo) -> int:
         response = _send_and_get_response(

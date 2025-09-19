@@ -3,6 +3,7 @@ import gzip
 import json
 import logging
 import os
+import re
 import sys
 import threading
 from collections.abc import Callable, Generator, Sequence
@@ -17,6 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import numpy
 import pydantic
 import pytest
+import responses
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
@@ -1679,6 +1681,14 @@ class TestData(OavGridSnapshotTestEvents):
     ]
 
 
+URL_PREFIX = "(http://[^/]+|)"
+DCG_RE = re.compile(URL_PREFIX + r"/proposals/([a-z]+\d+)/sessions/(\d+)/data-groups$")
+DCS_RE = re.compile(URL_PREFIX + r"/data-groups/(\d+)/data-collections$")
+DC_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)$")
+POSITION_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)/position$")
+GRID_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)/grids$")
+
+
 def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
     def upsert_data_collection(values):
         kvpairs = remap_upsert_columns(
@@ -1705,12 +1715,90 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
     upsert_dc_grid.i = iter(giids)  # pyright: ignore
 
     mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
-    return base_ispyb_conn
+
+    # Simulate exp-eye functionality as per above
+
+    def create_dcg_response(request):
+        return (
+            201,
+            {},
+            json.dumps(
+                {
+                    "dataCollectionGroupId": dcgid,
+                }
+            ),
+        )
+
+    def create_dc_response(request):
+        requested_dcg_id = int(DCS_RE.match(request.path_url)[2])
+        assert requested_dcg_id == dcgid
+        return (
+            201,
+            {},
+            json.dumps(
+                {
+                    "dataCollectionId": next(upsert_data_collection.i),
+                    "dataCollectionGroupId": dcgid,
+                }
+            ),
+        )
+
+    def update_dc_response(request):
+        requested_dc_id = int(DC_RE.match(request.path_url)[2])
+        assert requested_dc_id in dcids
+        return (
+            201,
+            {},
+            json.dumps(
+                {"dataCollectionId": requested_dc_id, "dataCollectionGroupId": dcgid}
+            ),
+        )
+
+    def create_position_response(request):
+        requested_dc_id = int(POSITION_RE.match(request.path_url)[2])
+        assert requested_dc_id in dcids
+        return (201, {}, json.dumps({}))
+
+    def create_grid_response(request):
+        requested_dc_id = int(GRID_RE.match(request.path_url)[2])
+        assert requested_dc_id in dcids
+        return (201, {}, json.dumps({"gridInfoId": next(upsert_dc_grid.i)}))
+
+    def calls_for(mock_req: responses.RequestsMock, pattern: str | re.Pattern):
+        if not isinstance(pattern, re.Pattern):
+            return [c for c in mock_req.calls if c.request.url == pattern]
+        else:
+            return [c for c in mock_req.calls if pattern.match(c.request.url)]
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rq_mock:
+        for pattern, callback in {
+            DCG_RE: create_dcg_response,
+            DCS_RE: create_dc_response,
+            POSITION_RE: create_position_response,
+            GRID_RE: create_grid_response,
+        }.items():
+            rq_mock.add_callback(
+                responses.POST,
+                pattern,
+                callback=callback,
+                content_type="application/json",
+            )
+
+        for pattern, callback in {DC_RE: update_dc_response}.items():
+            rq_mock.add_callback(
+                responses.PATCH,
+                pattern,
+                callback=callback,
+                content_type="application/json",
+            )
+
+        base_ispyb_conn.calls_for = partial(calls_for, rq_mock)
+        yield base_ispyb_conn
 
 
 @pytest.fixture
 def mock_ispyb_conn(base_ispyb_conn):
-    return _mock_ispyb_conn(
+    yield from _mock_ispyb_conn(
         base_ispyb_conn,
         TEST_POSITION_ID,
         TEST_DATA_COLLECTION_GROUP_ID,
@@ -1750,7 +1838,7 @@ def base_ispyb_conn():
 
 @pytest.fixture
 def mock_ispyb_conn_multiscan(base_ispyb_conn):
-    return _mock_ispyb_conn(
+    yield from _mock_ispyb_conn(
         base_ispyb_conn,
         TEST_POSITION_ID,
         TEST_DATA_COLLECTION_GROUP_ID,
