@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 3182
-y 235
+x 389
+y 257
 w 1030
 h 950
 font "arial-medium-r-18.0"
@@ -66,7 +66,7 @@ h 120
 lineColor index 14
 fill
 fillColor index 38
-visPv "BL24I-MO-IOC-01:GP2"
+visPv "BL24I-MO-IOC-13:GP2"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -234,12 +234,12 @@ y2Max 1
 # Trace Properties
 numTraces 2
 xPv {
-  0 "BL24I-EA-CHIP-01:X.RBV"
-  1 "BL24I-EA-CHIP-01:X.VAL"
+  0 "BL24I-MO-CHIP-01:X.RBV"
+  1 "BL24I-MO-CHIP-01:X.VAL"
 }
 yPv {
-  0 "BL24I-EA-CHIP-01:Y.RBV"
-  1 "BL24I-EA-CHIP-01:Y.VAL"
+  0 "BL24I-MO-CHIP-01:Y.RBV"
+  1 "BL24I-MO-CHIP-01:Y.VAL"
 }
 plotStyle {
   0 "single point"
@@ -510,8 +510,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#3J:200"
-releaseValue "#2P"
+pressValue "#7J:200"
+releaseValue "#6P"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -532,8 +532,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#3J:-200"
-releaseValue "#2P"
+pressValue "#7J:-200"
+releaseValue "#6P"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -729,8 +729,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#3J:1200"
-releaseValue "#2P"
+pressValue "#7J:1200"
+releaseValue "#6P"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -751,8 +751,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#3J:-1200"
-releaseValue "#2P"
+pressValue "#7J:-1200"
+releaseValue "#6P"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -1382,7 +1382,10 @@ buttonLabel "GP PV"
 numPvs 4
 numDsps 1
 displayFileName {
-  0 "EDM_LOCATION/ME14E-GeneralPurpose.edl"
+  0 "/dls_sw/work/R3.14.12.7/ioc/BL24I/BL/data/BL24I-generalPurpose.edl"
+}
+symbols {
+  0 "P=BL24I-MO-IOC-13"
 }
 endObjectProperties
 
@@ -1461,7 +1464,7 @@ h 90
 lineColor index 7
 fill
 fillColor index 7
-visPv "BL24I-MO-IOC-01:GP2"
+visPv "BL24I-MO-IOC-13:GP2"
 visInvert
 visMin "1"
 visMax "2"
@@ -1494,7 +1497,7 @@ h 115
 lineColor index 14
 fill
 fillColor index 38
-visPv "BL24I-MO-IOC-01:GP4"
+visPv "BL24I-MO-IOC-13:GP4"
 visMin "1"
 visMax "10"
 endObjectProperties
@@ -1574,7 +1577,7 @@ x 580
 y 860
 w 75
 h 18
-controlPv "BL24I-MO-STEP-14:signal:P2402"
+controlPv "BL24I-MO-STEP-13:pmac:read:P2402"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10
@@ -1639,7 +1642,7 @@ h 30
 lineColor index 3
 fill
 fillColor index 3
-visPv "BL24I-MO-STEP-14:signal:P2401"
+visPv "BL24I-MO-STEP-13:pmac:read:P2401"
 visInvert
 visMin "1"
 visMax "2"
@@ -2018,8 +2021,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:10"
-releaseValue "#2P"
+pressValue "#6J:10"
+releaseValue "#6P"
 3d
 font "helvetica-medium-r-18.0"
 endObjectProperties
@@ -2040,8 +2043,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:60"
-releaseValue "#1P"
+pressValue "#5J:60"
+releaseValue "#5P"
 offLabel "+3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2063,8 +2066,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:10"
-releaseValue "#1P"
+pressValue "#5J:10"
+releaseValue "#5P"
 3d
 font "helvetica-medium-r-18.0"
 endObjectProperties
@@ -2085,8 +2088,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:-60"
-releaseValue "#1P"
+pressValue "#5J:-60"
+releaseValue "#5P"
 offLabel "-3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2108,8 +2111,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:-10"
-releaseValue "#1P"
+pressValue "#5J:-10"
+releaseValue "#5P"
 3d
 font "arial-medium-r-18.0"
 endObjectProperties
@@ -2130,8 +2133,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:60"
-releaseValue "#2P"
+pressValue "#6J:60"
+releaseValue "#6P"
 offLabel "-3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2153,8 +2156,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:-60"
-releaseValue "#2P"
+pressValue "#6J:-60"
+releaseValue "#6P"
 offLabel "+3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2176,8 +2179,8 @@ offColor index 16
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:-10"
-releaseValue "#2P"
+pressValue "#6J:-10"
+releaseValue "#6P"
 3d
 font "helvetica-medium-r-18.0"
 endObjectProperties
@@ -2198,8 +2201,8 @@ offColor index 19
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:-31750"
-releaseValue "#2P"
+pressValue "#6J:-31750"
+releaseValue "#6P"
 onLabel "Y+Y"
 offLabel "+Y+"
 3d
@@ -2222,8 +2225,8 @@ offColor index 19
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:31750"
-releaseValue "#1P"
+pressValue "#5J:31750"
+releaseValue "#5P"
 onLabel "X+X"
 offLabel "+X+"
 3d
@@ -2246,8 +2249,8 @@ offColor index 19
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:-31750"
-releaseValue "#1P"
+pressValue "#5J:-31750"
+releaseValue "#5P"
 onLabel "X-X"
 offLabel "-X-"
 3d
@@ -2270,8 +2273,8 @@ offColor index 19
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:31750"
-releaseValue "#2P"
+pressValue "#6J:31750"
+releaseValue "#6P"
 onLabel "Y-Y"
 offLabel "-Y-"
 3d
@@ -2294,8 +2297,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:3750"
-releaseValue "#1P"
+pressValue "#5J:3750"
+releaseValue "#5P"
 offLabel "+3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2317,8 +2320,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:1250"
-releaseValue "#1P"
+pressValue "#5J:1250"
+releaseValue "#5P"
 offLabel "+1"
 3d
 font "helvetica-medium-r-8.0"
@@ -2340,8 +2343,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:-3750"
-releaseValue "#1P"
+pressValue "#5J:-3750"
+releaseValue "#5P"
 offLabel "-3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2363,8 +2366,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#1J:-1250"
-releaseValue "#1P"
+pressValue "#5J:-1250"
+releaseValue "#5P"
 offLabel "-1"
 3d
 font "arial-medium-r-16.0"
@@ -2386,8 +2389,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:3750"
-releaseValue "#2P"
+pressValue "#6J:3750"
+releaseValue "#6P"
 offLabel "-3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2409,8 +2412,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:1250"
-releaseValue "#2P"
+pressValue "#6J:1250"
+releaseValue "#6P"
 offLabel "-1"
 3d
 font "helvetica-medium-r-8.0"
@@ -2432,8 +2435,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:-3750"
-releaseValue "#2P"
+pressValue "#6J:-3750"
+releaseValue "#6P"
 offLabel "+3"
 3d
 font "helvetica-medium-r-18.0"
@@ -2455,8 +2458,8 @@ offColor index 17
 topShadowColor index 7
 botShadowColor index 7
 controlPv "BL24I-MO-IOC-13:PMAC:console"
-pressValue "#2J:-1250"
-releaseValue "#2P"
+pressValue "#6J:-1250"
+releaseValue "#6P"
 offLabel "+1"
 3d
 font "helvetica-medium-r-8.0"
@@ -2682,7 +2685,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2700,7 +2703,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2718,7 +2721,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2736,7 +2739,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2754,7 +2757,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2772,7 +2775,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2790,7 +2793,7 @@ h 10
 lineColor index 25
 fill
 fillColor index 35
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 endObjectProperties
@@ -2843,7 +2846,7 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 value {
@@ -2865,7 +2868,7 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 value {
@@ -3017,36 +3020,13 @@ h 21
 font "arial-medium-r-18.0"
 fgColor index 35
 bgColor index 13
-visPv "BL24I-MO-IOC-01:GP1"
+visPv "BL24I-MO-IOC-13:GP1"
 visMin "1"
 visMax "2"
 value {
   " Home A1_aa "
 }
 autoSize
-endObjectProperties
-
-# (Text Monitor)
-object activeXTextDspClass:noedit
-beginObjectProperties
-major 4
-minor 6
-release 0
-x 350
-y 830
-w 60
-h 18
-controlPv "BL24I-EA-PILAT-01:cam1:DetectorState_RBV"
-font "arial-medium-r-16.0"
-fgColor index 16
-fgAlarm
-bgColor index 10
-autoHeight
-limitsFromDb
-nullColor index 0
-useHexPrefix
-newPos
-objType "monitors"
 endObjectProperties
 
 # (Static Text)
@@ -3057,14 +3037,14 @@ minor 1
 release 1
 x 305
 y 830
-w 35
+w 42
 h 18
 font "arial-medium-r-16.0"
 fgColor index 14
 bgColor index 0
 useDisplayBg
 value {
-  "P6M"
+  "JF9M"
 }
 autoSize
 endObjectProperties
@@ -3371,7 +3351,7 @@ h 90
 lineColor index 7
 fill
 fillColor index 7
-visPv "BL24I-MO-IOC-01:GP4"
+visPv "BL24I-MO-IOC-13:GP4"
 visInvert
 visMin "1"
 visMax "10"
@@ -3859,7 +3839,7 @@ buttonLabel "Stages"
 numPvs 4
 numDsps 1
 displayFileName {
-  0 "/dls_sw/work/R3.14.12.7/ioc/BL24I/BL/data/BL24I-motors.edl"
+  0 "/dls_sw/work/R3.14.12.7/ioc/BL24I/BL/data/BL24I-VGONIO-SERIAL-1.edl"
 }
 endObjectProperties
 
@@ -4134,3 +4114,24 @@ value {
 }
 autoSize
 endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 365
+y 830
+w 35
+h 18
+font "arial-medium-i-16.0"
+fgColor index 11
+bgColor index 0
+useDisplayBg
+value {
+  "soon"
+}
+autoSize
+endObjectProperties
+

@@ -53,11 +53,11 @@ CHIP_MOVES = {
 }
 OXFORD_CHIP_WIDTH = 8
 PVAR_TEMPLATE = f"P3%0{2}d1"
-CHIPTYPE_PV = pv.me14e_gp1
-MAPTYPE_PV = pv.me14e_gp2
-NUM_EXPOSURES_PV = pv.me14e_gp3
-PUMP_REPEAT_PV = pv.me14e_gp4
-MAP_FILEPATH_PV = pv.me14e_gp5
+CHIPTYPE_PV = pv.ioc13_gp1
+MAPTYPE_PV = pv.ioc13_gp2
+NUM_EXPOSURES_PV = pv.ioc13_gp3
+PUMP_REPEAT_PV = pv.ioc13_gp4
+MAP_FILEPATH_PV = pv.ioc13_gp5
 
 
 @log_on_entry
@@ -70,9 +70,9 @@ def initialise_stages(
     group = "initialise_stages"
     SSX_LOGGER.info("Setting velocity, acceleration and limits for stages")
 
-    yield from bps.abs_set(pmac.x.velocity, 20, group=group)
-    yield from bps.abs_set(pmac.y.velocity, 20, group=group)
-    yield from bps.abs_set(pmac.z.velocity, 20, group=group)
+    yield from bps.abs_set(pmac.x.velocity, 15, group=group)
+    yield from bps.abs_set(pmac.y.velocity, 15, group=group)
+    yield from bps.abs_set(pmac.z.velocity, 15, group=group)
     yield from bps.abs_set(pmac.x.acceleration_time, 0.01, group=group)
     yield from bps.abs_set(pmac.y.acceleration_time, 0.01, group=group)
     yield from bps.abs_set(pmac.z.acceleration_time, 0.01, group=group)
@@ -101,7 +101,7 @@ def initialise_stages(
         if i == 100:
             # Do not clear visit PV
             continue
-        pvar = "BL24I-MO-IOC-01:GP" + str(i)
+        pvar = "BL24I-MO-IOC-13:GP" + str(i)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
@@ -112,7 +112,7 @@ def initialise_stages(
 
 def _is_checker_pattern() -> bool:
     """Read the checker pattern value and return True if selected."""
-    checks = int(caget(pv.me14e_gp111))
+    checks = int(caget(pv.ioc13_gp111))
     return bool(checks)
 
 
@@ -164,9 +164,9 @@ def read_parameters(
         "pump_repeat": pump_repeat,
         "checker_pattern": _is_checker_pattern(),
         "chip_map": chip_map,
-        "laser_dwell_s": float(caget(pv.me14e_gp103)) if pump_repeat != 0 else 0.0,
-        "laser_delay_s": float(caget(pv.me14e_gp110)) if pump_repeat != 0 else 0.0,
-        "pre_pump_exposure_s": float(caget(pv.me14e_gp109))
+        "laser_dwell_s": float(caget(pv.ioc13_gp103)) if pump_repeat != 0 else 0.0,
+        "laser_delay_s": float(caget(pv.ioc13_gp110)) if pump_repeat != 0 else 0.0,
+        "pre_pump_exposure_s": float(caget(pv.ioc13_gp109))
         if pump_repeat != 0
         else None,
     }
@@ -212,7 +212,7 @@ def define_current_chip(
     """
     Not sure what this is for:
     print 'Setting Mapping Type to Lite'
-    caput(pv.me14e_gp2, 1)
+    caput(pv.ioc13_gp2, 1)
     """
     chip_type = int(caget(CHIPTYPE_PV))
     SSX_LOGGER.info(f"Chip type:{chip_type} Chipid:{chipid}")
@@ -441,14 +441,14 @@ def load_stock_map(map_choice: str = "clear") -> MsgGenerator:
 
     SSX_LOGGER.info("Clearing GP 10-74")  # Actually 11-44
     for i in range(1, 65):
-        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-13:GP" + str(i + 10)
         caput(pvar, 0)
         sys.stdout.write(".")
         sys.stdout.flush()
     SSX_LOGGER.info("Map cleared")
     SSX_LOGGER.info(f"Loading Map Choice {map_choice}")
     for i in map_dict[map_choice]:
-        pvar = "BL24I-MO-IOC-01:GP" + str(i + 10)
+        pvar = "BL24I-MO-IOC-13:GP" + str(i + 10)
         caput(pvar, 1)
     SSX_LOGGER.debug("Load stock map done.")
     yield from bps.null()
@@ -513,7 +513,7 @@ def load_lite_map() -> MsgGenerator:
         block_name = entry[0]
         yesno = entry[1]
         block_num = block_dict[block_name]
-        pvar = "BL24I-MO-IOC-01:GP" + str(int(block_num) + 10)
+        pvar = "BL24I-MO-IOC-13:GP" + str(int(block_num) + 10)
         SSX_LOGGER.info(f"Block: {block_name} \tScanned: {yesno} \tPVAR: {pvar}")
     SSX_LOGGER.debug("Load lite map done")
     yield from bps.null()
@@ -603,7 +603,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_OFF, wait=True)
 
     elif laser_setting == "laser1burn":
-        led_burn_time = caget(pv.me14e_gp103)
+        led_burn_time = caget(pv.ioc13_gp103)
         SSX_LOGGER.info("Laser 1  on")
         SSX_LOGGER.info(f"Burn time is {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_ON, wait=True)
@@ -612,7 +612,7 @@ def laser_control(laser_setting: str, pmac: PMAC = inject("pmac")) -> MsgGenerat
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_1_OFF, wait=True)
 
     elif laser_setting == "laser2burn":
-        led_burn_time = caget(pv.me14e_gp109)
+        led_burn_time = caget(pv.ioc13_gp109)
         SSX_LOGGER.info("Laser 2 on")
         SSX_LOGGER.info(f"burntime {led_burn_time} s")
         yield from bps.abs_set(pmac.laser, LaserSettings.LASER_2_ON, wait=True)
@@ -806,9 +806,9 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     new_x2factor = (x2factor * cosD) + (y2factor * sinD)
     new_y2factor = (x2factor * sinD) + (y2factor * cosD)
 
-    cs1 = f"#1->{new_x1factor:+1.3f}X{new_y1factor:+1.3f}Y{z1factor:+1.3f}Z"
-    cs2 = f"#2->{new_x2factor:+1.3f}X{new_y2factor:+1.3f}Y{z2factor:+1.3f}Z"
-    cs3 = f"#3->{x3factor:+1.3f}X{y3factor:+1.3f}Y{z3factor:+1.3f}Z"
+    cs1 = f"#5->{new_x1factor:+1.3f}X{new_y1factor:+1.3f}Y{z1factor:+1.3f}Z"
+    cs2 = f"#6->{new_x2factor:+1.3f}X{new_y2factor:+1.3f}Y{z2factor:+1.3f}Z"
+    cs3 = f"#7->{x3factor:+1.3f}X{y3factor:+1.3f}Y{z3factor:+1.3f}Z"
     SSX_LOGGER.info(f"PMAC strings. \ncs1: {cs1} \ncs2: {cs2}cs3: {cs3}")
     SSX_LOGGER.info(
         """These next values should be 1.
@@ -825,14 +825,17 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     yield from bps.trigger(pmac.to_xyz_zero)
     yield from bps.sleep(2.5)
     yield from bps.trigger(pmac.home, wait=True)
+    yield from bps.trigger(pmac.abort_program, wait=True)
     yield from bps.sleep(2.5)
     SSX_LOGGER.debug(f"Chip_type is {chip_type}")
     if chip_type == 0:
         yield from bps.abs_set(pmac.pmac_string, f"{CS_STR}!x0.4y0.4", wait=True)
         yield from bps.sleep(2.5)
         yield from bps.trigger(pmac.home, wait=True)
+        yield from bps.trigger(pmac.abort_program, wait=True)
     else:
         yield from bps.trigger(pmac.home, wait=True)
+        yield from bps.trigger(pmac.abort_program, wait=True)
     SSX_LOGGER.debug("CSmaker done.")
     yield from bps.null()
 
@@ -875,7 +878,7 @@ def pumpprobe_calc() -> MsgGenerator:
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/122
     SSX_LOGGER.info("Calculate and show exposure and dwell time for each option.")
     exptime = float(caget(pv.me14e_exptime))
-    pumpexptime = float(caget(pv.me14e_gp103))
+    pumpexptime = float(caget(pv.ioc13_gp103))
     movetime = 0.014
     SSX_LOGGER.info(f"X-ray exposure time {exptime}")
     SSX_LOGGER.info(f"Laser dwell time {pumpexptime}")
@@ -885,11 +888,11 @@ def pumpprobe_calc() -> MsgGenerator:
     repeat5 = 10 * 20 * (movetime + (pumpexptime + exptime) / 2)
     repeat10 = 20 * 20 * (movetime + (pumpexptime + exptime) / 2)
     for pv_name, repeat in (
-        (pv.me14e_gp104, repeat1),
-        (pv.me14e_gp105, repeat2),
-        (pv.me14e_gp106, repeat3),
-        (pv.me14e_gp107, repeat5),
-        (pv.me14e_gp108, repeat10),
+        (pv.ioc13_gp104, repeat1),
+        (pv.ioc13_gp105, repeat2),
+        (pv.ioc13_gp106, repeat3),
+        (pv.ioc13_gp107, repeat5),
+        (pv.ioc13_gp108, repeat10),
     ):
         rounded = round(repeat, 4)
         caput(pv_name, rounded)
@@ -901,9 +904,9 @@ def pumpprobe_calc() -> MsgGenerator:
 @log_on_entry
 def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
     # TODO See https://github.com/DiamondLightSource/mx_bluesky/issues/117
-    caput(pv.me14e_gp9, 0)
+    caput(pv.ioc13_gp9, 0)
     while True:
-        if int(caget(pv.me14e_gp9)) == 0:
+        if int(caget(pv.ioc13_gp9)) == 0:
             chip_type = int(caget(CHIPTYPE_PV))
             if chip_type == ChipType.Minichip:
                 SSX_LOGGER.info("Oxford mini chip in use.")
@@ -918,7 +921,7 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
                 SSX_LOGGER.warning("Default is Oxford chip block start list.")
                 block_start_list = scrape_pvar_file("oxford.pvar")
             for entry in block_start_list:
-                if int(caget(pv.me14e_gp9)) != 0:
+                if int(caget(pv.ioc13_gp9)) != 0:
                     SSX_LOGGER.warning("Block Check Aborted")
                     yield from bps.sleep(1.0)
                     break
@@ -927,7 +930,7 @@ def block_check(pmac: PMAC = inject("pmac")) -> MsgGenerator:
                 yield from bps.abs_set(
                     pmac.pmac_string, f"{CS_STR}!x{x}y{y}", wait=True
                 )
-                yield from bps.sleep(0.4)
+                yield from bps.sleep(0.5)
         else:
             SSX_LOGGER.warning("Block Check Aborted due to GP 9 not equalling 0")
             break

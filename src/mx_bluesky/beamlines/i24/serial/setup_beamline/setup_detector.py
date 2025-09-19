@@ -20,7 +20,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
 )
 
 EXPT_TYPE_DETECTOR_PVS = {
-    SSXType.FIXED: pv.me14e_gp101,
+    SSXType.FIXED: pv.ioc13_gp101,
     SSXType.EXTRUDER: pv.ioc13_gp15,
 }
 
