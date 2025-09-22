@@ -292,10 +292,15 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     side_effect=FailedStatus(RuntimeError("RuntimeError")),
 )
 def test_re_raise_failed_status(RE: RunEngine, smargon: Smargon):
-    with pytest.raises(FailedStatus) as exc_info:
+    with pytest.raises(FailedStatus) as fs:
         RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
-    assert isinstance(exc_info.value, FailedStatus)
-    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    print(f"FailedStatus attributes: {dir(fs)}")
+    print(f"FailedStatus args: {fs.args}")
+    print(f"FailedStatus class: {fs.__class__}")
+    print(f"FailedStatus context: {fs.__context__}")
+
+    assert isinstance(fs, FailedStatus)
+    assert isinstance(fs.__cause__, RuntimeError)
 
 
 @patch(
