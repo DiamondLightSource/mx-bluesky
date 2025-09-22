@@ -296,7 +296,7 @@ def test_re_raise_failed_status(RE: RunEngine, smargon: Smargon):
         RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
-    assert fs.value.args[0] is RuntimeError("RuntimeError")
+    assert isinstance(fs.value.args[0], RuntimeError("RuntimeError"))
 
 
 @patch(
