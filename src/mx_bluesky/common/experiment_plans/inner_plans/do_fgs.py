@@ -17,6 +17,9 @@ from scanspec.core import AxesPoints, Axis
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanPlane,
+)
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
@@ -66,7 +69,6 @@ def kickoff_and_complete_gridscan(
     detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
-    scan_start_indices: list[int],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
@@ -80,14 +82,9 @@ def kickoff_and_complete_gridscan(
         synchrotron (Synchrotron):              Synchrotron device
         scan_points (list[AxesPoints[Axis]]):   Each element in the list contains all the grid points for that grid scan.
                                                 Two elements in this list indicates that two grid scans will be done, eg for Hyperion's 3D grid scans.
-        scan_start_indices (list[int]):         Contains the first index of each grid scan
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff and completion,
                                                 eg waiting on zocalo.
     """
-
-    assert len(scan_points) == len(scan_start_indices), (
-        "scan_points and scan_start_indices must be lists of the same length!"
-    )
 
     plan_name = PlanNameConstants.DO_FGS
 
@@ -96,8 +93,10 @@ def kickoff_and_complete_gridscan(
     @bpp.run_decorator(
         md={
             "subplan_name": plan_name,
-            "scan_points": scan_points,
-            "scan_start_indices": scan_start_indices,
+            "omega_to_scan_spec": {
+                GridscanPlane.OMEGA_XY: scan_points[0],
+                GridscanPlane.OMEGA_XZ: scan_points[1],
+            },
         }
     )
     @bpp.contingency_decorator(

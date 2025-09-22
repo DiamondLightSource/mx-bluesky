@@ -1,31 +1,11 @@
 from __future__ import annotations
 
 import numpy
-from dodal.devices.detector import DetectorParams
 from dodal.devices.oav import utils as oav_utils
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
-    DataCollectionInfo,
 )
-
-
-def populate_xz_data_collection_info(detector_params: DetectorParams):
-    assert (
-        detector_params.omega_start is not None
-        and detector_params.run_number is not None
-    ), "StoreGridscanInIspyb failed to get parameters"
-    run_number = detector_params.run_number + 1
-    info = DataCollectionInfo(
-        data_collection_number=run_number,
-    )
-    return info
-
-
-def populate_xy_data_collection_info(detector_params: DetectorParams):
-    return DataCollectionInfo(
-        data_collection_number=detector_params.run_number,
-    )
 
 
 def construct_comment_for_gridscan(grid_info: DataCollectionGridInfo) -> str:
