@@ -3,6 +3,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
@@ -53,5 +54,7 @@ def take_OAV_image(
     yield from bps.trigger(oav.grid_snapshot)
 
 
-def move_scintillator():
-    pass
+def move_scintillator(
+    scintillator: Scintillator, scintillator_state: InOut
+) -> MsgGenerator:
+    yield from bps.abs_set(scintillator, scintillator_state)
