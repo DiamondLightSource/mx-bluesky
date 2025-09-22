@@ -14,6 +14,7 @@ from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundException
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
+from ophyd_async.epics.motor import MotorLimitsException
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.utils.exceptions import SampleException, WarningException
@@ -291,11 +292,14 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.mv",
     side_effect=FailedStatus(RuntimeError("RuntimeError")),
 )
-def test_re_raise_failed_status(RE: RunEngine, smargon: Smargon):
+def test_re_raise_failed_status_that_is_not_MotorLimitsException(
+    RE: RunEngine, smargon: Smargon
+):
     with pytest.raises(FailedStatus) as fs:
         RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
+    assert not isinstance(fs.value.args[0], MotorLimitsException)
     assert isinstance(fs.value.args[0], RuntimeError)
 
 
