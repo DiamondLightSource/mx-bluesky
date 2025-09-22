@@ -1,6 +1,7 @@
 from typing import cast
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
@@ -31,21 +32,27 @@ def fly_jungfrau(
     wait: Optionally block until data collection is complete.
     """
 
-    yield from bps.stage(jungfrau)
-    LOGGER.info("Setting up detector...")
-    yield from bps.prepare(jungfrau, trigger_info, wait=True)
-    LOGGER.info("Detector prepared. Starting acquisition")
-    yield from bps.kickoff(jungfrau, wait=True)
-    LOGGER.info("Waiting for acquisition to complete...")
-    status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
+    @bpp.contingency_decorator(except_plan=lambda _: (yield from bps.unstage(jungfrau)))
+    def _fly_with_unstage_contingency():
+        yield from bps.stage(jungfrau)
+        LOGGER.info("Setting up detector...")
+        yield from bps.prepare(jungfrau, trigger_info, wait=True)
+        LOGGER.info("Detector prepared. Starting acquisition")
+        yield from bps.kickoff(jungfrau, wait=True)
+        LOGGER.info("Waiting for acquisition to complete...")
+        status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 
-    # StandardDetector.complete converts regular status to watchable status,
-    # but bluesky plan stubs can't see this currently
-    status = cast(WatchableAsyncStatus, status)
-    log_on_percentage_complete(status, "Jungfrau data collection triggers recieved", 10)
-    if wait:
-        yield from bps.wait(JF_COMPLETE_GROUP)
-    return status
+        # StandardDetector.complete converts regular status to watchable status,
+        # but bluesky plan stubs can't see this currently
+        status = cast(WatchableAsyncStatus, status)
+        log_on_percentage_complete(
+            status, "Jungfrau data collection triggers recieved", 10
+        )
+        if wait:
+            yield from bps.wait(JF_COMPLETE_GROUP)
+        return status
+
+    return (yield from _fly_with_unstage_contingency())
 
 
 # While we should generally use device instantiation to set the path,
