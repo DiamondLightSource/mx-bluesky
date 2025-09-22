@@ -295,9 +295,7 @@ def test_re_raise_failed_status(RE: RunEngine, smargon: Smargon):
     with pytest.raises(FailedStatus) as fs:
         RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
     print(f"FailedStatus attributes: {dir(fs)}")
-    print(f"FailedStatus args: {fs.args}")
     print(f"FailedStatus class: {fs.__class__}")
-    print(f"FailedStatus context: {fs.__context__}")
 
     assert isinstance(fs, FailedStatus)
     assert isinstance(fs.__cause__, RuntimeError)
