@@ -47,6 +47,7 @@ def test_full_do_external_acquisition(
 def test_do_external_acquisition_does_wait(
     mock_log_on_percent_complete: MagicMock,
     sim_run_engine: RunEngineSimulator,
+    RE: RunEngine,
     jungfrau: CommissioningJungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(

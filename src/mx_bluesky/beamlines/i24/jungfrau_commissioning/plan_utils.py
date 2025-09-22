@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import cast
 
 import bluesky.plan_stubs as bps
@@ -51,6 +50,6 @@ def fly_jungfrau(
 
 # While we should generally use device instantiation to set the path,
 # this will be useful during commissioning
-def override_file_name(jungfrau: CommissioningJungfrau, path_of_output_file: str):
-    _file_path = Path(path_of_output_file)
-    jungfrau.provider._filename_provider = StaticFilenameProvider(_file_path.name)  # noqa: SLF001
+def override_file_name(jungfrau: CommissioningJungfrau, file_name: str):
+    jungfrau.provider._filename_provider = StaticFilenameProvider(file_name)  # noqa: SLF001
+    yield from bps.abs_set(jungfrau._writer.file_name, file_name)  # noqa: SLF001

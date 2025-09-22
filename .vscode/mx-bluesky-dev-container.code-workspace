@@ -5,12 +5,15 @@
         },
         {
             "path": "../../dodal"
+        },
+        {
+            "path": "../../ophyd-async"
         }
     ],
     "settings": {
         "python.languageServer": "Pylance",
         "[python]": {
-            "editor.defaultFormatter": "ms-python.black-formatter"
+            "editor.defaultFormatter": "charliermarsh.ruff"
         },
         "python.defaultInterpreterPath": "venv/bin/python",
         "python.analysis.extraPaths": [
