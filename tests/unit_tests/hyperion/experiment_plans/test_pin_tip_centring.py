@@ -310,12 +310,7 @@ def return_pixel(pixel, *args):
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
     autospec=True,
 )
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
-    autospec=True,
-)
 async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     get_move: MagicMock,
@@ -364,12 +359,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
     autospec=True,
 )
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
-    autospec=True,
-)
 def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_expected_plans_called(
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     mock_move_into_view,
@@ -410,16 +400,11 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     autospec=True,
 )
 def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
     mock_wait_for_tip,
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     mock_move_into_view,
