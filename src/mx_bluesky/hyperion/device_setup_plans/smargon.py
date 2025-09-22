@@ -21,3 +21,5 @@ def move_smargon_warn_on_out_of_range(
             raise SampleException(
                 "Pin tip centring failed - pin too long/short/bent and out of range"
             ) from fs.__cause__
+        else:
+            raise fs
