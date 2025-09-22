@@ -52,4 +52,5 @@ def fly_jungfrau(
 # this will be useful during commissioning
 def override_file_name(jungfrau: CommissioningJungfrau, file_name: str):
     jungfrau.provider._filename_provider = StaticFilenameProvider(file_name)  # noqa: SLF001
+    jungfrau._writer._path_info().filename = file_name  # noqa: SLF001
     yield from bps.abs_set(jungfrau._writer.file_name, file_name)  # noqa: SLF001
