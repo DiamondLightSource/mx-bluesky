@@ -81,6 +81,9 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanPlane,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -279,7 +282,7 @@ def raw_params_from_file(filename, tmp_path):
         return loads
 
 
-def create_dummy_scan_spec(x_steps, y_steps, z_steps):
+def create_dummy_scan_spec():
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)
     z_line = Line("sam_z", 30, 50, 30)
@@ -1161,6 +1164,16 @@ def pin_tip_edge_data():
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
 
 
+def thin_pin_edges():
+    return pin_tip_edge_data()
+
+
+def fat_pin_edges():
+    tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+    bottom_edge_array += 60
+    return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
 def find_a_pin(pin_tip_detection):
     def set_good_position():
         x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
@@ -1451,6 +1464,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
 
     @property
     def test_do_fgs_start_document(self) -> RunStart:
+        specs = create_dummy_scan_spec()
         return {  # type: ignore
             "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "time": 1666604299.6149616,
@@ -1459,7 +1473,10 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "plan_type": "generator",
             "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
             "subplan_name": PlanNameConstants.DO_FGS,
-            "scan_points": create_dummy_scan_spec(10, 20, 30),
+            "omega_to_scan_spec": {
+                GridscanPlane.OMEGA_XY: specs[0],
+                GridscanPlane.OMEGA_XZ: specs[1],
+            },
         }
 
     @property

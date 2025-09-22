@@ -284,7 +284,6 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
-        parameters.scan_indices,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
 

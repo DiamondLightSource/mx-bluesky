@@ -48,6 +48,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -198,7 +199,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanISPyBCallback(
             param_type=GridCommon,
             emit=ZocaloCallback(
-                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+                PlanNameConstants.DO_FGS,
+                EnvironmentConstants.ZOCALO_ENV,
+                generate_start_info_from_omega_map,
             ),
         ),
     )
