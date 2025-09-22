@@ -289,7 +289,7 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.mv",
+    "mx_bluesky.hyperion.device_setup_plans.smargon.bps.mv",
     side_effect=FailedStatus(RuntimeError("RuntimeError")),
 )
 def test_re_raise_failed_status_that_is_not_MotorLimitsException(
