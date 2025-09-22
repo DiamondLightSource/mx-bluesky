@@ -6,6 +6,7 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
+from bluesky.utils import FailedStatus
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -287,10 +288,21 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 
 
 @patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.mv",
+    side_effect=RuntimeError("RuntimeError"),
+)
+def test_re_raise_failed_status(RE: RunEngine, smargon: Smargon):
+    with pytest.raises(FailedStatus) as fs:
+        RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+    assert fs is FailedStatus
+    assert fs.__cause__ is RuntimeError
+
+
+@patch(
     "mx_bluesky.hyperion.device_setup_plans.smargon.move_smargon_warn_on_out_of_range",
     side_effect=RuntimeError("RuntimeError"),
 )
-def test_catch_exception_that_is_not_MotorLimitsException(
+def test_does_not_catch_exception_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with pytest.raises(RuntimeError, match="RuntimeError"):
