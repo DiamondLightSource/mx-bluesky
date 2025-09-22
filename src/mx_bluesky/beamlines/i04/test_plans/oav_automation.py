@@ -4,6 +4,7 @@ from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.scintillator import InOut, Scintillator
+from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
@@ -20,7 +21,12 @@ My task:
     Open and close fast shutter
 """
 
+
 # def oav_automation_test()
+def feedback_check(
+    device: XBPMFeedback = inject("xbpm_feedback"),
+):
+    yield from bps.trigger(device)
 
 
 def set_transmission_percentage(
@@ -31,8 +37,8 @@ def set_transmission_percentage(
 
 
 def open_close_fast_shutter(
-    shutter: ZebraShutter,
     shutter_state: ZebraShutterState,
+    shutter: ZebraShutter = inject("fast_shutter"),
 ) -> MsgGenerator:
     base_control_mode = yield from bps.rd(shutter.control_mode)
 
@@ -55,6 +61,6 @@ def take_OAV_image(
 
 
 def move_scintillator(
-    scintillator: Scintillator, scintillator_state: InOut
+    scintillator_state: InOut, scintillator: Scintillator = inject("scintillator")
 ) -> MsgGenerator:
-    yield from bps.abs_set(scintillator, scintillator_state)
+    yield from bps.abs_set(scintillator.selected_pos, scintillator_state)
