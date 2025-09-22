@@ -1,26 +1,29 @@
+from pathlib import Path
 from typing import cast
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
+    StaticFilenameProvider,
     TriggerInfo,
     WatchableAsyncStatus,
-)
-from ophyd_async.fastcs.jungfrau import (
-    Jungfrau,
 )
 
 from mx_bluesky.common.utils.log import LOGGER
 
+JF_COMPLETE_GROUP = "JF complete"
+
 
 def fly_jungfrau(
-    jungfrau: Jungfrau, trigger_info: TriggerInfo, wait: bool = False
+    jungfrau: CommissioningJungfrau, trigger_info: TriggerInfo, wait: bool = False
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
 
-    Note that this plan doesn't include unstaging of the Jungfrau.
+    Note that this plan doesn't include unstaging of the Jungfrau, and a run must be open
+    before this plan is called.
 
     Args:
     jungfrau: Jungfrau device.
@@ -35,12 +38,19 @@ def fly_jungfrau(
     LOGGER.info("Detector prepared. Starting acquisition")
     yield from bps.kickoff(jungfrau, wait=True)
     LOGGER.info("Waiting for acquisition to complete...")
-    status = yield from bps.complete(jungfrau, group="jf_complete")
+    status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 
     # StandardDetector.complete converts regular status to watchable status,
     # but bluesky plan stubs can't see this currently
     status = cast(WatchableAsyncStatus, status)
     log_on_percentage_complete(status, "Jungfrau data collection triggers recieved", 10)
     if wait:
-        yield from bps.wait("jf_complete")
+        yield from bps.wait(JF_COMPLETE_GROUP)
     return status
+
+
+# While we should generally use device instantiation to set the path,
+# this will be useful during commissioning
+def override_file_name(jungfrau: CommissioningJungfrau, path_of_output_file: str):
+    _file_path = Path(path_of_output_file)
+    jungfrau.provider._filename_provider = StaticFilenameProvider(_file_path.name)  # noqa: SLF001
