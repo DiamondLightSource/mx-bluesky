@@ -24,16 +24,16 @@ My task:
 
 # def oav_automation_test()
 def feedback_check(
-    device: XBPMFeedback = inject("xbpm_feedback"),
+    feedback: XBPMFeedback = inject("xbpm_feedback"),
 ):
-    yield from bps.trigger(device)
+    yield from bps.trigger(feedback, wait=True)
 
 
 def set_transmission_percentage(
     percentage: float,
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
-    yield from bps.abs_set(attenuator, percentage / 100)
+    yield from bps.mv(attenuator, percentage / 100)
 
 
 def open_close_fast_shutter(
@@ -42,10 +42,10 @@ def open_close_fast_shutter(
 ) -> MsgGenerator:
     base_control_mode = yield from bps.rd(shutter.control_mode)
 
-    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL)
-    yield from bps.abs_set(shutter, shutter_state)
+    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
+    yield from bps.abs_set(shutter, shutter_state, wait=True)
 
-    yield from bps.abs_set(shutter.control_mode, base_control_mode)
+    yield from bps.abs_set(shutter.control_mode, base_control_mode, wait=True)
 
 
 def take_OAV_image(
@@ -54,13 +54,13 @@ def take_OAV_image(
     oav: OAV = inject("oav"),
 ) -> MsgGenerator:
     group = "path setting"
-    yield from bps.abs_set(oav.grid_snapshot.filename, file_name, group=group)
-    yield from bps.abs_set(oav.grid_snapshot.directory, file_path, group=group)
+    yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
+    yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
     yield from bps.wait(group)
-    yield from bps.trigger(oav.grid_snapshot)
+    yield from bps.trigger(oav.snapshot, wait=True)
 
 
 def move_scintillator(
     scintillator_state: InOut, scintillator: Scintillator = inject("scintillator")
 ) -> MsgGenerator:
-    yield from bps.abs_set(scintillator.selected_pos, scintillator_state)
+    yield from bps.mv(scintillator.selected_pos, scintillator_state)
