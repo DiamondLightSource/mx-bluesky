@@ -19,6 +19,9 @@ from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oa
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.device_setup_plan.smargon import (
+    move_xyzomegastage_warn_on_out_of_range,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 DEFAULT_STEP_SIZE = 0.5
@@ -137,9 +140,7 @@ def pin_tip_centre_plan(
             xyzomegastage, pixel_to_move_to, oav
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
-        yield from bps.mv(xyzomegastage.x, position_mm[0])
-        yield from bps.mv(xyzomegastage.y, position_mm[1])
-        yield from bps.mv(xyzomegastage.z, position_mm[2])
+        yield from move_xyzomegastage_warn_on_out_of_range(xyzomegastage, position_mm)
 
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
