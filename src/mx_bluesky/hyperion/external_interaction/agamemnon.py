@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import os
 import re
 import traceback
 from collections.abc import Sequence
@@ -27,7 +28,6 @@ from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
-AGAMEMNON_URL = "http://agamemnon.diamond.ac.uk/"
 MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
@@ -191,7 +191,11 @@ def _get_pin_type_from_agamemnon_collect_parameters(
 
 
 def _get_next_instruction(beamline: str) -> dict:
-    return _get_parameters_from_url(AGAMEMNON_URL + f"getnextcollect/{beamline}")
+    return _get_parameters_from_url(get_agamemnon_url() + f"getnextcollect/{beamline}")
+
+
+def get_agamemnon_url() -> str:
+    return os.environ.get("AGAMEMNON_URL", "http://agamemnon.diamond.ac.uk/")
 
 
 def _get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
