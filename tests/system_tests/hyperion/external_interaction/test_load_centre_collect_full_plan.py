@@ -122,11 +122,13 @@ def load_centre_collect_composite(
     undulator_dcm,
     webcam,
     lower_gonio,
+    baton,
 ):
     composite = LoadCentreCollectComposite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
+        baton=baton,
         beamstop=beamstop_phase1,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
