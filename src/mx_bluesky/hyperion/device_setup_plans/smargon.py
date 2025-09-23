@@ -1,7 +1,7 @@
 import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
-from dodal.devices.motor import XYZOmegaStage
+from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.smargon import CombinedMove, Smargon
 from ophyd_async.epics.motor import MotorLimitsException
 

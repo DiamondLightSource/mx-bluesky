@@ -19,7 +19,7 @@ from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oa
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plan.smargon import (
+from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_xyzomegastage_warn_on_out_of_range,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
