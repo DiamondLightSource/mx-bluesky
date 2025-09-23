@@ -38,7 +38,7 @@ def set_transmission_percentage(
 
 def open_close_fast_shutter(
     shutter_state: ZebraShutterState,
-    shutter: ZebraShutter = inject("fast_shutter"),
+    shutter: ZebraShutter = inject("sample_shutter"),
 ) -> MsgGenerator:
     base_control_mode = yield from bps.rd(shutter.control_mode)
 
