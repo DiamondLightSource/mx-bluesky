@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -97,6 +98,7 @@ def i04_grid_detect_then_xray_centre(
     detector_motion: DetectorMotion = inject("detector_motion"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
     udc: bool = False,
+    transfocator: Transfocator = inject("transfocator"),
 ) -> MsgGenerator:
     """
     A composite plan which:
