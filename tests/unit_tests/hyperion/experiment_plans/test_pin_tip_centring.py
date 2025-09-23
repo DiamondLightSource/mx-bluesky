@@ -324,7 +324,6 @@ def return_pixel(pixel, *args):
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
-    autospec=True,
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
@@ -347,6 +346,14 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     test_config_files: dict[str, str],
     RE: RunEngine,
 ):
+    def mock_get_move_plan(gonio, pixel, oav):
+        """Mock bluesky plan"""
+        if False:
+            yield
+        return np.array([1.0, 2.0, 3.0])
+
+    get_move.side_effect = mock_get_move_plan
+
     set_mock_value(oav.zoom_controller.level, "1.0")
     composite = PinTipCentringComposite(
         oav=oav,
@@ -373,7 +380,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    "dodal.devices.oav.utils.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
@@ -413,7 +420,7 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    "dodal.devices.oav.utils.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
