@@ -109,7 +109,7 @@ def i04_grid_detect_then_xray_centre(
 
 
     i04's implementation of this plan is very similar to Hyperion. However, since i04
-    isn't running in a continious Bluesky UDC loop, we take additional steps in beamline
+    isn't running in a continuous Bluesky UDC loop, we take additional steps in beamline
     tidy-up.
     """
 
@@ -169,6 +169,12 @@ def i04_grid_detect_then_xray_centre(
         yield from grid_detect_then_xray_centre_with_callbacks()
 
     yield from _inner_grid_detect_then_xrc()
+
+
+def set_beamsize_to_20(
+    transfocator: Transfocator,
+):
+    bps.abs_set(transfocator, 20, wait=True)
 
 
 def get_ready_for_oav_and_close_shutter(
