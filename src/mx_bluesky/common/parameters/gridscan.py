@@ -101,7 +101,6 @@ class SpecifiedGrid(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType])
     those parameters at some point (e.g. through optical pin detection)."""
 
     grid1_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_1)
-    grid2_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_2)
     x_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     y_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     x_steps: int = Field(gt=0)
@@ -165,6 +164,7 @@ class SpecifiedThreeDGridScan(
     z_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     y2_start_um: float
     z2_start_um: float
+    grid2_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_2)
 
     @property
     def FGS_params(self) -> ZebraGridScanParamsThreeD:
