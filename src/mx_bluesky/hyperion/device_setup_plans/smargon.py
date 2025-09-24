@@ -33,25 +33,7 @@ def move_xyzomegastage_warn_on_out_of_range(
     """General version of move_smargon_warn_on_out_of_range"""
     try:
         yield from bps.mv(xyzomegastage.x, position[0])
-    except FailedStatus as fs:
-        if isinstance(fs.__cause__, MotorLimitsException):
-            raise SampleException(
-                "Pin tip centring failed - pin too long/short/bent and out of range"
-            ) from fs.__cause__
-        else:
-            raise fs
-
-    try:
         yield from bps.mv(xyzomegastage.y, position[1])
-    except FailedStatus as fs:
-        if isinstance(fs.__cause__, MotorLimitsException):
-            raise SampleException(
-                "Pin tip centring failed - pin too long/short/bent and out of range"
-            ) from fs.__cause__
-        else:
-            raise fs
-
-    try:
         yield from bps.mv(xyzomegastage.z, position[2])
     except FailedStatus as fs:
         if isinstance(fs.__cause__, MotorLimitsException):
