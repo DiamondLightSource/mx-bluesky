@@ -48,7 +48,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@aithre-get_move_required_so_that_beam_is_at_pixel_non_smargon",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@44c1ce63c9a8fbac128ee5c8e5d4610ae77e7e56",
 ]
 
 
