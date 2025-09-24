@@ -17,7 +17,7 @@ from ophyd_async.testing import (
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
-    override_file_name,
+    override_file_path,
 )
 
 
@@ -39,7 +39,7 @@ def test_fly_jungfrau(RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: 
             yield from bps.sleep(0.001)
         yield from bps.wait(JF_COMPLETE_GROUP)
         assert val == frames
-        assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00001"
+        assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
     RE(_open_run_and_fly())
     assert mock_stop.await_count == 2  # once when staging, once after run complete
@@ -61,7 +61,14 @@ def test_fly_jungfrau_stops_if_exception_after_stage(
     assert mock_stop.await_count == 2  # once when staging, once on exception
 
 
-async def test_override_file_name(jungfrau: CommissioningJungfrau, RE: RunEngine):
+async def test_override_file_path(
+    jungfrau: CommissioningJungfrau, RE: RunEngine, tmp_path: Path
+):
     new_file_name = "test_file_name"
-    RE(override_file_name(jungfrau, new_file_name))
+    new_path = f"{tmp_path}/{new_file_name}"
+    override_file_path(jungfrau, new_path)
+    assert await jungfrau._writer.file_name.get_value() == ""
+    assert await jungfrau._writer.file_path.get_value() == ""
+    await jungfrau._writer.open("")
     assert await jungfrau._writer.file_name.get_value() == new_file_name
+    assert await jungfrau._writer.file_path.get_value() == str(tmp_path)

@@ -11,7 +11,7 @@ from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     fly_jungfrau,
-    override_file_name,
+    override_file_path,
 )
 
 
@@ -39,7 +39,7 @@ def do_internal_acquisition(
     """
 
     if path_of_output_file:
-        override_file_name(jungfrau, path_of_output_file)
+        override_file_path(jungfrau, path_of_output_file)
 
     trigger_info = create_jungfrau_internal_triggering_info(total_frames, exp_time_s)
     status = yield from fly_jungfrau(jungfrau, trigger_info, wait)
