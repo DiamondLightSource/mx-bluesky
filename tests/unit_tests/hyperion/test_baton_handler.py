@@ -108,7 +108,7 @@ def bluesky_context(
     # Baton for real run engine
 
     # Set the initial baton state
-    context = BlueskyContext(RE)
+    context = BlueskyContext(run_engine=RE)
 
     def mock_load_module(module, **kwargs):
         for device in [smargon, aperture_scatterguard, robot, lower_gonio, baton]:
@@ -162,7 +162,7 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         patch("blueapi.utils.connect_devices.ensure_connected", dont_connect),
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
     ):
-        context = BlueskyContext(faked_run_engine)
+        context = BlueskyContext(run_engine=faked_run_engine)
         context.with_dodal_module(
             get_beamline_based_on_environment_variable(),
             mock=True,
