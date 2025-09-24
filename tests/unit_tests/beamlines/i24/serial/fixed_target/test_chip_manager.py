@@ -117,7 +117,7 @@ async def test_initialise(
 ):
     RE(initialise_stages(pmac))
 
-    assert await pmac.x.velocity.get_value() == 20
+    assert await pmac.x.velocity.get_value() == 15
     assert await pmac.y.acceleration_time.get_value() == 0.01
     assert await pmac.z.high_limit_travel.get_value() == 5.1
     assert await pmac.z.low_limit_travel.get_value() == -4.1
