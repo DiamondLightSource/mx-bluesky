@@ -18,7 +18,7 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.utils.exceptions import SampleException, WarningException
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
-    move_smargon_warn_on_out_of_range,
+    move_xyzomegastage_warn_on_out_of_range,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
     DEFAULT_STEP_SIZE,
@@ -284,7 +284,7 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     set_mock_value(smargon.x.high_limit_travel, 10)
 
     with pytest.raises(WarningException):
-        RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
+        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (100, 0, 0)))
 
 
 @patch(
@@ -295,7 +295,7 @@ def test_re_raise_failed_status_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with pytest.raises(FailedStatus) as fs:
-        RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
     assert not isinstance(fs.value.args[0], MotorLimitsException)
@@ -310,7 +310,7 @@ def test_does_not_catch_exception_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with pytest.raises(RuntimeError, match="RuntimeError"):
-        RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 0)))
 
 
 def return_pixel(pixel, *args):
