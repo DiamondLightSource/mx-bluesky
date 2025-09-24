@@ -174,7 +174,9 @@ def i04_grid_detect_then_xray_centre(
 def set_beamsize_to_20(
     transfocator: Transfocator,
 ):
+    initial_beamsize = bps.rd(transfocator.beamsize_set_microns)
     bps.abs_set(transfocator, 20, wait=True)
+    bps.abs_set(transfocator, initial_beamsize)
 
 
 def get_ready_for_oav_and_close_shutter(
