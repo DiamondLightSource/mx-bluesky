@@ -72,6 +72,8 @@ from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     tidy_up_zebra_after_gridscan,
 )
 
+DEFAULT_BEAMSIZE_MICRONS = 20
+
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
@@ -135,8 +137,9 @@ def i04_grid_detect_then_xray_centre(
         robot,
         sample_shutter,
     )
+    initial_beamsize = bps.rd(transfocator.beamsize_set_microns)
 
-    def tidy_beamline_if_not_udc():
+    def tidy_beamline():
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
                 composite.smargon,
@@ -144,8 +147,9 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
+        bps.abs_set(transfocator, initial_beamsize)
 
-    @bpp.finalize_decorator(tidy_beamline_if_not_udc)
+    @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
         # These callbacks let us talk to ISPyB and Nexgen. They aren't included in the common plan because
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
@@ -168,15 +172,12 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
+    bps.abs_set(
+        transfocator,
+        DEFAULT_BEAMSIZE_MICRONS,
+        group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
+    )
     yield from _inner_grid_detect_then_xrc()
-
-
-def set_beamsize_to_20(
-    transfocator: Transfocator,
-):
-    initial_beamsize = bps.rd(transfocator.beamsize_set_microns)
-    bps.abs_set(transfocator, 20, wait=True)
-    bps.abs_set(transfocator, initial_beamsize)
 
 
 def get_ready_for_oav_and_close_shutter(
