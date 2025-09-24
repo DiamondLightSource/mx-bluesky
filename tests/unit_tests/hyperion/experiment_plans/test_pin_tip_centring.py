@@ -282,9 +282,15 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     RE: RunEngine, smargon: Smargon
 ):
     set_mock_value(smargon.x.high_limit_travel, 10)
+    set_mock_value(smargon.y.low_limit_travel, -10)
+    set_mock_value(smargon.z.high_limit_travel, 10)
 
     with pytest.raises(WarningException):
         RE(move_xyzomegastage_warn_on_out_of_range(smargon, (100, 0, 0)))
+    with pytest.raises(WarningException):
+        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, -100, 0)))
+    with pytest.raises(WarningException):
+        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 100)))
 
 
 @patch(
