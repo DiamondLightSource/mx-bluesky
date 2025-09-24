@@ -29,6 +29,15 @@ class ZocaloCallback(CallbackBase):
 
     Shouldn't be subscribed directly to the RunEngine, instead should be passed to the
     `emit` argument of an ISPyB callback which appends DCIDs to the relevant start doc.
+
+    Args:
+        triggering_plan: Name of the bluesky sub-plan inside of which we generate information
+            to be submitted to zocalo; this is identified by the 'subplan_name' entry in the
+            run start metadata.
+        zocalo_environment: Name of the zocalo environment we use to connect to zocalo
+        start_info_generator_factory: A factory method which returns a Generator,
+            the generator is sent the ZOCALO_HW_READ event document and in return yields
+            one or more ZocaloStartInfo which will each be submitted to zocalo as a job.
     """
 
     def __init__(
