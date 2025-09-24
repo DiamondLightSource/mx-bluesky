@@ -662,3 +662,38 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         with pytest.raises(CrystalNotFoundException):
             RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
+
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
+        MagicMock(),
+    )
+    def test_dummy_result_returned_when_gridscan_finds_no_xtal_and_commissioning_mode_enabled(
+        self,
+        RE: RunEngine,
+        test_fgs_params: SpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        baton_in_commissioning_mode,
+    ):
+        xrc_event_handler = XRayCentreEventHandler()
+        RE.subscribe(xrc_event_handler)
+        beamline_specific.get_xrc_results_from_zocalo = True
+
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
+        RE(
+            common_flyscan_xray_centre(
+                fake_fgs_composite,
+                test_fgs_params,
+                beamline_specific,
+            )
+        )
+
+        results = xrc_event_handler.xray_centre_results or []
+        assert len(results) == 1
+        result = results[0]
+        assert result.sample_id == test_fgs_params.sample_id
+        assert result.max_count == 10000
+        assert result.total_count == 100000
+        assert all(np.isclose(result.bounding_box_mm[0], [1.95, 0.95, 0.45]))
+        assert all(np.isclose(result.bounding_box_mm[1], [2.05, 1.05, 0.55]))
+        assert all(np.isclose(result.centre_of_mass_mm, [2.0, 1.0, 0.5]))

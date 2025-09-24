@@ -27,6 +27,7 @@ from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -34,6 +35,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
@@ -94,6 +96,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     do_default_logging_setup,
 )
+from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -460,6 +463,22 @@ def backlight(RE: RunEngine):
 
 
 @pytest.fixture
+def baton(RE: RunEngine):
+    baton = i03.baton(connect_immediately=True, mock=True)
+    set_mock_value(baton.requested_user, HYPERION_USER)
+    set_mock_value(baton.current_user, HYPERION_USER)
+    return baton
+
+
+@pytest.fixture
+def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
+    set_commissioning_signal(baton.commissioning)
+    set_mock_value(baton.commissioning, True)
+    yield baton
+    set_commissioning_signal(None)
+
+
+@pytest.fixture
 def fast_grid_scan(RE: RunEngine):
     return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
@@ -474,6 +493,8 @@ def detector_motion(RE: RunEngine):
 @pytest.fixture
 def undulator(RE: RunEngine):
     undulator = i03.undulator(connect_immediately=True, mock=True)
+    # force the child baton to be connected
+    i03.baton(connect_immediately=True, mock=True)
     with patch_all_motors(undulator):
         yield undulator
 

@@ -26,9 +26,10 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model.documents import Event
-from ophyd_async.core import AsyncStatus
+from ophyd_async.core import AsyncStatus, init_devices
+from ophyd_async.fastcs.jungfrau import Jungfrau
 from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import callback_on_mock_put, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -197,7 +198,11 @@ def use_beamline_t01():
     with patch.dict("os.environ", {"BEAMLINE": "t01"}):
         import tests.unit_tests.t01
 
-        with patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}):
+        with (
+            patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
+            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
+            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+        ):
             yield
 
 
@@ -470,3 +475,25 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     composite.panda = MagicMock(spec=HDFPanda)
     composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
     return composite
+
+
+# See https://github.com/DiamondLightSource/dodal/issues/1455
+@pytest.fixture
+def jungfrau(RE: RunEngine):
+    """The extra logic here prevents exceptions during data collection unit tests"""
+
+    with init_devices(mock=True):
+        detector = Jungfrau("prefix", MagicMock(), "", "", 4, "jungfrau")
+
+    def set_meta_filename_and_id(value, *args, **kwargs):
+        set_mock_value(detector.odin.meta_file_name, value)
+        set_mock_value(detector.odin.id, value)
+
+    callback_on_mock_put(detector.odin.file_name, set_meta_filename_and_id)
+
+    detector._writer._path_provider.return_value.filename = "filename.h5"  # type: ignore
+
+    set_mock_value(detector.odin.meta_active, "Active")
+    set_mock_value(detector.odin.capture_rbv, "Capturing")
+    set_mock_value(detector.odin.meta_writing, "Writing")
+    return detector
