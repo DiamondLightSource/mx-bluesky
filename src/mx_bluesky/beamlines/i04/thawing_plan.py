@@ -1,8 +1,9 @@
 from collections.abc import Callable
+from functools import partial
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky.preprocessors import run_decorator, stage_wrapper, subs_decorator
+from bluesky.preprocessors import run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i04.constants import RedisConstants
@@ -42,7 +43,7 @@ def thaw_and_stream_to_redis(
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
-    oav: OAV = inject("oav"),
+    oav: OAV = inject("oav_full_screen"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
     """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
@@ -84,7 +85,7 @@ def thaw_and_murko_centre(
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
-    oav: OAV = inject("oav"),
+    oav: OAV = inject("oav_full_screen"),
     murko_results: MurkoResultsDevice = inject("murko_results"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
@@ -109,14 +110,14 @@ def thaw_and_murko_centre(
                      defaults are always correct
     """
 
+    MURKO_RESULTS_GROUP = "get_results"
+
     def centre_then_switch_forwarder_to_ROI() -> MsgGenerator:
         yield from bps.complete(oav_to_redis_forwarder, wait=True)
 
-        yield from bps.trigger(murko_results, group="get_results")
-
         yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
 
-        yield from bps.wait("get_results")
+        yield from bps.wait(MURKO_RESULTS_GROUP)
         x_predict = yield from bps.rd(murko_results.x_mm)
         y_predict = yield from bps.rd(murko_results.y_mm)
         z_predict = yield from bps.rd(murko_results.z_mm)
@@ -127,7 +128,13 @@ def thaw_and_murko_centre(
 
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
-    yield from stage_wrapper(
+    sample_id = yield from bps.rd(robot.sample_id)
+    yield from bps.abs_set(murko_results.sample_id, int(sample_id))
+
+    yield from bps.stage(murko_results)
+    yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+
+    yield from bpp.contingency_wrapper(
         _thaw_and_stream_to_redis(
             time_to_thaw,
             rotation,
@@ -138,7 +145,7 @@ def thaw_and_murko_centre(
             oav_to_redis_forwarder,
             centre_then_switch_forwarder_to_ROI,
         ),
-        [murko_results],
+        final_plan=partial(bps.unstage, murko_results),
     )
 
 
