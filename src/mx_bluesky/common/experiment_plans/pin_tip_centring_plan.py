@@ -15,10 +15,10 @@ from dodal.devices.oav.utils import (
     wait_for_tip_to_be_found,
 )
 
-from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oav
-from mx_bluesky.common.device_setup_plans.xyzomegastage import (
-    move_xyzomegastage_warn_on_out_of_range,
+from mx_bluesky.common.device_setup_plans.gonio import (
+    move_gonio_warn_on_out_of_range,
 )
+from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oav
 from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
@@ -33,7 +33,7 @@ class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     oav: OAV
-    xyzomegastage: XYZOmegaStage
+    gonio: XYZOmegaStage
     pin_tip_detection: PinTipDetection
 
 
@@ -52,7 +52,7 @@ def trigger_and_return_pin_tip(
 
 def move_pin_into_view(
     pin_tip_device: PinTipDetection,
-    xyzomegastage: XYZOmegaStage,
+    gonio: XYZOmegaStage,
     step_magnitude_mm: float = DEFAULT_STEP_SIZE,
     max_steps: int = 2,
 ) -> Generator[Msg, None, Pixel]:
@@ -62,7 +62,7 @@ def move_pin_into_view(
 
     Args:
         pin_tip_device (PinTipDetection): The device being used to detect the pin
-        xyzomegastage (XYZOmegaStage): The stage(gonio) to move the tip
+        gonio (XYZOmegaStage): The stage(gonio) to move the tip
         step_magnitude_mm (float, optional): Distance to move the gonio (in mm) for each
                                     step of the search. Defaults to 0.5.
         max_steps (int, optional): The number of steps to search with. Defaults to 2.
@@ -87,17 +87,17 @@ def move_pin_into_view(
         direction_multiple = -1 if tip_xy_px[0] == 0 else 1
         step_vector_mm = step_magnitude_mm * direction_multiple
 
-        stage_x = yield from bps.rd(xyzomegastage.x.user_readback)
+        stage_x = yield from bps.rd(gonio.x.user_readback)
         ideal_move_to_find_pin = float(stage_x) + step_vector_mm
-        high_limit = yield from bps.rd(xyzomegastage.x.high_limit_travel)
-        low_limit = yield from bps.rd(xyzomegastage.x.low_limit_travel)
+        high_limit = yield from bps.rd(gonio.x.high_limit_travel)
+        low_limit = yield from bps.rd(gonio.x.low_limit_travel)
         move_within_limits = max(min(ideal_move_to_find_pin, high_limit), low_limit)
         if move_within_limits != ideal_move_to_find_pin:
             LOGGER.warning(
                 f"Pin tip is off screen, and moving {step_vector_mm}mm would cross limits, "
                 f"moving to {move_within_limits} instead"
             )
-        yield from bps.mv(xyzomegastage.x, move_within_limits)
+        yield from bps.mv(gonio.x, move_within_limits)
 
         # Some time for the view to settle after the move
         yield from bps.sleep(CONST.OAV_REFRESH_DELAY)
@@ -126,7 +126,7 @@ def pin_tip_centre_plan(
                                     to be.
     """
     oav: OAV = composite.oav
-    xyzomegastage: XYZOmegaStage = composite.xyzomegastage
+    gonio: XYZOmegaStage = composite.gonio
     oav_params = OAVParameters("pinTipCentring", oav_config_file)
 
     pin_tip_setup = composite.pin_tip_detection
@@ -138,10 +138,10 @@ def pin_tip_centre_plan(
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
-            xyzomegastage, pixel_to_move_to, oav
+            gonio, pixel_to_move_to, oav
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
-        yield from move_xyzomegastage_warn_on_out_of_range(xyzomegastage, position_mm)
+        yield from move_gonio_warn_on_out_of_range(gonio, position_mm)
 
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
@@ -151,10 +151,10 @@ def pin_tip_centre_plan(
 
     yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup)
 
-    tip = yield from move_pin_into_view(pin_tip_detect, xyzomegastage)
+    tip = yield from move_pin_into_view(pin_tip_detect, gonio)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(xyzomegastage.omega, -90)
+    yield from bps.mvr(gonio.omega, -90)
 
     # need to wait for the OAV image to update
     # See #673 for improvements
