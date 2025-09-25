@@ -21,6 +21,10 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     setup_beamline_for_OAV,
 )
+from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
+    PinTipCentringComposite,
+    pin_tip_centre_plan,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -30,10 +34,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
-)
-from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
-    PinTipCentringComposite,
-    pin_tip_centre_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
