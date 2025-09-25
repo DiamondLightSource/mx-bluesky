@@ -85,7 +85,7 @@ def pin_centre_then_flyscan_plan(
 
     def _pin_centre_then_flyscan_plan():
         yield from setup_beamline_for_OAV(
-            composite.smargon, composite.aperture_scatterguard
+            composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
 
         yield from move_phi_chi_omega(
