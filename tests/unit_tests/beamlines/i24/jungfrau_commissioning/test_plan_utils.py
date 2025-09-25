@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -39,13 +38,12 @@ async def test_fly_jungfrau(
         while not status.done:
             val += 1
             set_mock_value(jungfrau._writer.frame_counter, val)
-            yield from bps.sleep(0)
+            yield from bps.sleep(0.001)
         yield from bps.wait(JF_COMPLETE_GROUP)
         assert val == frames
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
     RE(_open_run_and_fly())
-    await asyncio.sleep(0.01)
     assert mock_stop.await_count == 2  # once when staging, once after run complete
 
 
