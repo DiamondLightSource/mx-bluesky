@@ -138,6 +138,7 @@ def i04_grid_detect_then_xray_centre(
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
                 composite.smargon,
+                composite.backlight,
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
