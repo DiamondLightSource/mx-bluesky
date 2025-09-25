@@ -346,6 +346,7 @@ def _move_and_rotation(
         if not params.use_grid_snapshots:
             yield from setup_beamline_for_OAV(
                 composite.smargon,
+                composite.backlight,
                 composite.aperture_scatterguard,
                 wait=True,
             )

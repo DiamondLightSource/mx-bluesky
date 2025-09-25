@@ -178,7 +178,9 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     LOGGER.info("Non-udc tidy: Seting up beamline for OAV")
-    yield from setup_beamline_for_OAV(smargon, backlight, aperture_scatterguard, group)
+    yield from setup_beamline_for_OAV(
+        smargon, backlight, aperture_scatterguard, group=group
+    )
     LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(
         detector_motion.shutter,
