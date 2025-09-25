@@ -7,8 +7,8 @@ from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
+    AutoIncrementingPathProvider,
     StaticFilenameProvider,
-    StaticPathProvider,
     TriggerInfo,
     WatchableAsyncStatus,
 )
@@ -68,6 +68,6 @@ def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str
     """
     _file_path = PurePath(path_of_output_file)
     _new_filename_provider = StaticFilenameProvider(_file_path.name)
-    jungfrau._writer._path_info = StaticPathProvider(  # noqa: SLF001
+    jungfrau._writer._path_info = AutoIncrementingPathProvider(  # noqa: SLF001
         _new_filename_provider, _file_path.parent
     )
