@@ -26,15 +26,18 @@ def move_smargon_warn_on_out_of_range(
 """
 
 
-def move_xyzomegastage_warn_on_out_of_range(
-    xyzomegastage: XYZOmegaStage,
+def move_gonio_warn_on_out_of_range(
+    gonio: XYZOmegaStage,
     position: np.ndarray | list[float] | tuple[float, float, float],
 ):
-    """General version of move_smargon_warn_on_out_of_range"""
+    """
+    Throws a SampleException if the specified position is out of range for the
+    gonio. Otherwise moves to that position. The check is from ophyd-async
+    """
     try:
-        yield from bps.mv(xyzomegastage.x, position[0])
-        yield from bps.mv(xyzomegastage.y, position[1])
-        yield from bps.mv(xyzomegastage.z, position[2])
+        yield from bps.mv(gonio.x, position[0])
+        yield from bps.mv(gonio.y, position[1])
+        yield from bps.mv(gonio.z, position[2])
     except FailedStatus as fs:
         if isinstance(fs.__cause__, MotorLimitsException):
             raise SampleException(
