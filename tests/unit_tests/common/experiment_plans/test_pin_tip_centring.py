@@ -376,7 +376,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     def mock_get_move_plan(gonio, pixel, oav):
         """Mock bluesky plan"""
         if False:
-            yield
+            yield from bps.null()
         return np.array([1.0, 2.0, 3.0])
 
     get_move.side_effect = mock_get_move_plan
