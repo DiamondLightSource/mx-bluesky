@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Callbacks and Run Logic &#8212; mx-bluesky 1.0.1.dev345+gaee067c98 documentation</title>
+    <title>Hyperion Baton &#8212; mx-bluesky 1.0.1.dev345+gaee067c98 documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/general/explanations/callback_and_run_logic';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/hyperion/reference/baton';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Containerised mx-bluesky" href="containerised_mx_bluesky.html" />
-    <link rel="prev" title="3. Python version support" href="decisions/0003-python-version-support.html" />
+    <link rel="next" title="Hyperion Parameter class hierarchy" href="param-hierarchy.html" />
+    <link rel="prev" title="Hyperion Overview" href="readme.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -383,46 +383,46 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">General MX-Bluesky Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/profile-tests.html">Unit test performance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/get-started.html">Get Started with mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/contribute.html">Contributing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/create-a-release.html">Create a New Release</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/deploy-a-release.html">Deploy a New Release</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../how-to/dev-ops/update-tools.html">Update the tools</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../general/index.html">General MX-Bluesky Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../general/tutorials/profile-tests.html">Unit test performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/contribute.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/create-a-release.html">Create a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/deploy-a-release.html">Deploy a New Release</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/update-tools.html">Update the tools</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="decisions/0003-python-version-support.html">3. Python version support</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Callbacks and Run Logic</a></li>
-<li class="toctree-l2"><a class="reference internal" href="containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/callback_and_run_logic.html">Callbacks and Run Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/reference/standards.html">Standards</a></li>
 </ul>
 </details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../hyperion/index.html">Hyperion Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/readme.html">Hyperion Overview</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">Hyperion Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="readme.html">Hyperion Overview</a></li>
 
 
 
 
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/baton.html">Hyperion Baton</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/deploying-hyperion.html">Building a deployable Docker image</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/system-tests.html">System Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Hyperion Baton</a></li>
+<li class="toctree-l2"><a class="reference internal" href="param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coordinate-systems.html">Hyperion Coordinate Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../deploying-hyperion.html">Building a deployable Docker image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../system-tests.html">System Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
 </ul>
 </details></li>
 </ul>
@@ -498,9 +498,9 @@
     <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">General MX-Bluesky Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Hyperion Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Callbacks and Run Logic</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Hyperion Baton</span></li>
   </ul>
 </nav>
 </div>
@@ -517,27 +517,18 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="callbacks-and-run-logic">
-<h1>Callbacks and Run Logic<a class="headerlink" href="#callbacks-and-run-logic" title="Link to this heading">#</a></h1>
-<p>Callbacks are used to trigger external services:</p>
-<ul class="simple">
-<li><p>Ispyb deposition</p></li>
-<li><p>Nexus writing</p></li>
-<li><p>Zocalo triggering</p></li>
-</ul>
-<p>These are linked in that to trigger zocalo you need to have made an ispyb deposition, written a nexus file and have finished writing raw data to disk. Nexus files and ispyb depositions can be made at anytime, we do not need to have necessarily finished writing raw data.</p>
-<p>Currently, the requirement of needing to have written to ispyb is explicit as the ispyb callback will emit to the zocalo callback. The nexus file is written when the hardware is read during a collection and so its ordering is implied. When instantiated the zocalo callback is told on which plan to trigger and it is up to the plan developer to make sure this plan finishes after data is written to the detector.</p>
-<p>In general, the ordering flow of when callbacks are triggered is controlled by emitting documents with the expected plan name and data.</p>
-<section id="rotation-scans">
-<h2>Rotation Scans<a class="headerlink" href="#rotation-scans" title="Link to this heading">#</a></h2>
-<p>There are currently two ways of doing rotation scans. A single scan creates one hdf file, one ispyb deposition and then triggers zocalo once. Multi rotation scans create one hdf file for all rotations but then N nexus files, N ispyb depositions and triggers zocalo N times.</p>
-<p>Single scans will be removed in <a class="github reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/847">DiamondLightSource/mx-bluesky#847</a></p>
-<p>For multi rotations this is does by starting 1+2*N different runs:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">CONST.PLAN.ROTATION_MULTI</span></code>: This is emitted once for the whole multiple rotation. It is used by the nexus callback to get the full number of images and meta_data_run_number so that it knows which hdf file to use. When this is finished zocalo end is triggered.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CONST.PLAN.ROTATION_OUTER</span></code>: Emitted N times, inside a <code class="docutils literal notranslate"><span class="pre">CONST.PLAN.ROTATION_MULTI</span></code> run. This is used to create the initial ispyb deposition and create the nexus writer (but not actually write the file)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CONST.PLAN.ROTATION_MAIN</span></code>: Emitted N times, inside <code class="docutils literal notranslate"><span class="pre">CONST.PLAN.ROTATION_OUTER</span></code> run. Used to finish writing to ispyb (i.e. write success/failure) and to send collection information to zocalo.</p></li>
-</ol>
+  <section id="hyperion-baton">
+<h1>Hyperion Baton<a class="headerlink" href="#hyperion-baton" title="Link to this heading">#</a></h1>
+<p>The Hyperion baton is controlled by two PVs; these are described under <a class="reference external" href="../../../user/hyperion/pvs.html">Special PVs</a></p>
+<p>An approximate outline of how the various baton workflows operates is outlined in the flowcharts below:</p>
+<img alt="../../../_images/417717258-afbd813c-8941-445c-9fdf-255c167453cf.png" src="../../../_images/417717258-afbd813c-8941-445c-9fdf-255c167453cf.png" />
+<section id="gda-side-baton-integration">
+<h2>GDA-side Baton Integration<a class="headerlink" href="#gda-side-baton-integration" title="Link to this heading">#</a></h2>
+<p>Below is a diagram showing how baton-handling in GDA integrates the GDA baton with the Hyperion Baton PV, using the
+<code class="docutils literal notranslate"><span class="pre">HyperionUDCRunner</span></code>.</p>
+<p>The diagram represents an interim stage; at some point <code class="docutils literal notranslate"><span class="pre">GDAUDCRunner</span></code> can be eliminated and the baton management
+simplified.</p>
+<img alt="../../../_images/46cf3d83c055a9a00af4304ba0fbd1686de48d91778d791ddc9db8c1f34af556.svg" class="align-center" src="../../../_images/46cf3d83c055a9a00af4304ba0fbd1686de48d91778d791ddc9db8c1f34af556.svg" />
 </section>
 </section>
 
@@ -552,20 +543,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="decisions/0003-python-version-support.html"
+       href="readme.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">3. Python version support</p>
+        <p class="prev-next-title">Hyperion Overview</p>
       </div>
     </a>
     <a class="right-next"
-       href="containerised_mx_bluesky.html"
+       href="param-hierarchy.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Containerised mx-bluesky</p>
+        <p class="prev-next-title">Hyperion Parameter class hierarchy</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -588,7 +579,7 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rotation-scans">Rotation Scans</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gda-side-baton-integration">GDA-side Baton Integration</a></li>
 </ul>
   </nav></div>
 
@@ -596,7 +587,7 @@
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/developer/general/explanations/callback_and_run_logic.rst">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/developer/hyperion/reference/baton.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -612,7 +603,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../../../_sources/developer/general/explanations/callback_and_run_logic.rst.txt"
+      <li><a href="../../../_sources/developer/hyperion/reference/baton.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
