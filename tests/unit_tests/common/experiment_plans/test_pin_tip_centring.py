@@ -16,8 +16,8 @@ from ophyd.sim import NullStatus
 from ophyd_async.epics.motor import MotorLimitsException
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.device_setup_plans.xyzomegastage import (
-    move_xyzomegastage_warn_on_out_of_range,
+from mx_bluesky.common.device_setup_plans.gonio import (
+    move_gonio_warn_on_out_of_range,
 )
 from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
     DEFAULT_STEP_SIZE,
@@ -278,30 +278,50 @@ async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved
     assert await smargon.x.user_setpoint.get_value() == 1
 
 
+@pytest.mark.parametrize(
+    "x_high, x_low, y_high, y_low, z_high, z_low, test_x, test_y, test_z",
+    [
+        (99, -99, 99, -99, 99, -99, 100, 0, 0),
+        (99, -99, 99, -99, 99, -99, -100, 0, 0),
+        (99, -99, 99, -99, 99, -99, 0, 100, 0),
+        (99, -99, 99, -99, 99, -99, 0, -100, 0),
+        (99, -99, 99, -99, 99, -99, 0, 0, 100),
+        (99, -99, 99, -99, 99, -99, 0, 0, -100),
+    ],
+)
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
-    RE: RunEngine, smargon: Smargon
+    RE: RunEngine,
+    smargon: Smargon,
+    x_high,
+    x_low,
+    y_high,
+    y_low,
+    z_high,
+    z_low,
+    test_x,
+    test_y,
+    test_z,
 ):
-    set_mock_value(smargon.x.high_limit_travel, 10)
-    set_mock_value(smargon.y.low_limit_travel, -10)
-    set_mock_value(smargon.z.high_limit_travel, 10)
+    set_mock_value(smargon.x.high_limit_travel, x_high)
+    set_mock_value(smargon.x.low_limit_travel, x_low)
+    set_mock_value(smargon.y.high_limit_travel, y_high)
+    set_mock_value(smargon.y.low_limit_travel, y_low)
+    set_mock_value(smargon.z.high_limit_travel, z_high)
+    set_mock_value(smargon.z.low_limit_travel, z_low)
 
     with pytest.raises(WarningException):
-        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (100, 0, 0)))
-    with pytest.raises(WarningException):
-        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, -100, 0)))
-    with pytest.raises(WarningException):
-        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 100)))
+        RE(move_gonio_warn_on_out_of_range(smargon, (test_x, test_y, test_z)))
 
 
 @patch(
-    "mx_bluesky.common.device_setup_plans.xyzomegastage.bps.mv",
+    "mx_bluesky.common.device_setup_plans.gonio.bps.mv",
     new=MagicMock(side_effect=FailedStatus(RuntimeError("RuntimeError"))),
 )
 def test_re_raise_failed_status_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with pytest.raises(FailedStatus) as fs:
-        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 0)))
+        RE(move_gonio_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
     assert not isinstance(fs.value.args[0], MotorLimitsException)
@@ -309,14 +329,14 @@ def test_re_raise_failed_status_that_is_not_MotorLimitsException(
 
 
 @patch(
-    "mx_bluesky.common.device_setup_plans.xyzomegastage.bps.mv",
+    "mx_bluesky.common.device_setup_plans.gonio.bps.mv",
     new=MagicMock(side_effect=RuntimeError("RuntimeError")),
 )
 def test_does_not_catch_exception_that_is_not_MotorLimitsException(
     RE: RunEngine, smargon: Smargon
 ):
     with pytest.raises(RuntimeError, match="RuntimeError"):
-        RE(move_xyzomegastage_warn_on_out_of_range(smargon, (0, 0, 0)))
+        RE(move_gonio_warn_on_out_of_range(smargon, (0, 0, 0)))
 
 
 def return_pixel(pixel, *args):
@@ -363,7 +383,7 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     set_mock_value(oav.zoom_controller.level, "1.0")
     composite = PinTipCentringComposite(
         oav=oav,
-        xyzomegastage=smargon,
+        gonio=smargon,
         pin_tip_detection=MagicMock(spec=PinTipDetection),
     )
     RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
@@ -414,7 +434,7 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
         oav=oav,
-        xyzomegastage=smargon,
+        gonio=smargon,
         pin_tip_detection=mock_ophyd_pin_tip_detection,
     )
     mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
@@ -459,7 +479,7 @@ def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
         oav=oav,
-        xyzomegastage=smargon,
+        gonio=smargon,
         pin_tip_detection=mock_ophyd_pin_tip_detection,
     )
 
