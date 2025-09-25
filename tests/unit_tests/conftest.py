@@ -16,7 +16,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
@@ -409,7 +409,7 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan=MagicMock(),
@@ -443,7 +443,7 @@ async def grid_detect_xrc_devices(
     ophyd_pin_tip_detection: PinTipDetection,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
-    fast_grid_scan: ZebraFastGridScan,
+    fast_grid_scan: ZebraFastGridScanThreeD,
     s4_slit_gaps: S4SlitGaps,
     flux: Flux,
     zebra,

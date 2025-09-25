@@ -12,6 +12,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
+    FastGridScanThreeD,
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -287,9 +288,10 @@ def run_gridscan(
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
 
-    # GDA's gridscans requires Z steps to be at 0, so make sure we leave this device
+    # GDA's 3D gridscans requires Z steps to be at 0, so make sure we leave this device
     # in a GDA-happy state.
-    yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
+    if isinstance(beamline_specific.fgs_motors, FastGridScanThreeD):
+        yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 
 def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
