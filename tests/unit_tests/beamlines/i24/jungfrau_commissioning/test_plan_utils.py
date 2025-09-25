@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -21,7 +22,9 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
 )
 
 
-def test_fly_jungfrau(RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path):
+async def test_fly_jungfrau(
+    RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path
+):
     set_mock_value(jungfrau._writer.frame_counter, 10)
     mock_stop = AsyncMock()
     jungfrau.drv.acquisition_stop.trigger = mock_stop
@@ -36,12 +39,13 @@ def test_fly_jungfrau(RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: 
         while not status.done:
             val += 1
             set_mock_value(jungfrau._writer.frame_counter, val)
-            yield from bps.sleep(0.001)
+            yield from bps.sleep(0)
         yield from bps.wait(JF_COMPLETE_GROUP)
         assert val == frames
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
     RE(_open_run_and_fly())
+    await asyncio.sleep(0)
     assert mock_stop.await_count == 2  # once when staging, once after run complete
 
 
