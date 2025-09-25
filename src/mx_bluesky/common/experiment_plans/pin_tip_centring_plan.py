@@ -16,15 +16,16 @@ from dodal.devices.oav.utils import (
 )
 
 from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oav
+from mx_bluesky.common.device_setup_plans.xyzomegastage import (
+    move_xyzomegastage_warn_on_out_of_range,
+)
+from mx_bluesky.common.parameters.constants import HardwareConstants
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.device_setup_plans.smargon import (
-    move_xyzomegastage_warn_on_out_of_range,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 DEFAULT_STEP_SIZE = 0.5
+CONST = HardwareConstants()
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -99,7 +100,7 @@ def move_pin_into_view(
         yield from bps.mv(xyzomegastage.x, move_within_limits)
 
         # Some time for the view to settle after the move
-        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
+        yield from bps.sleep(CONST.OAV_REFRESH_DELAY)
 
     tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
