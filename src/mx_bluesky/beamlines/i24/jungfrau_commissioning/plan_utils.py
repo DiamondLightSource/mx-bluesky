@@ -34,7 +34,9 @@ def fly_jungfrau(
     wait: Optionally block until data collection is complete.
     """
 
-    @bpp.contingency_decorator(except_plan=lambda _: (yield from bps.unstage(jungfrau)))
+    @bpp.contingency_decorator(
+        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    )
     def _fly_with_unstage_contingency():
         yield from bps.stage(jungfrau)
         LOGGER.info("Setting up detector...")
