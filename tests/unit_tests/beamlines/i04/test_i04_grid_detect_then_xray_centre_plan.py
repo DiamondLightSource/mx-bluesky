@@ -16,6 +16,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraFastGridScan,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -28,12 +29,14 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.testing import set_mock_value
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
 )
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+    DEFAULT_BEAMSIZE_MICRONS,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
@@ -67,6 +70,7 @@ def i04_grid_detect_then_xrc_default_params(
     smargon: Smargon,
     detector_motion: DetectorMotion,
     test_full_grid_scan_params: GridCommon,
+    transfocator: Transfocator,
 ):
     return partial(
         i04_grid_detect_then_xray_centre,
@@ -91,6 +95,7 @@ def i04_grid_detect_then_xrc_default_params(
         zocalo=zocalo,
         smargon=smargon,
         detector_motion=detector_motion,
+        transfocator=transfocator,
     )
 
 
@@ -361,3 +366,44 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
         )
 
     assert mock_get_ready_for_oav_and_close_shutter.call_count == 1
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_OAV",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    autospec=True,
+)
+def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_reverts(
+    mock_create_gridscan_callbacks: MagicMock,
+    mock_setup_beamline_for_oav: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
+    mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    RE: RunEngine,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    transfocator: Transfocator,
+):
+    initial_beamsize = 5.6
+    set_mock_value(transfocator.beamsize_set_microns, initial_beamsize)
+    transfocator.set = MagicMock()
+    parent_mock = MagicMock()
+    parent_mock.attach_mock(transfocator.set, "transfocator_set")
+    parent_mock.attach_mock(
+        mock_create_gridscan_callbacks, "mock_create_gridscan_callbacks"
+    )
+    RE(i04_grid_detect_then_xrc_default_params())
+    assert parent_mock.method_calls == [
+        call.transfocator_set(DEFAULT_BEAMSIZE_MICRONS),
+        call.mock_create_gridscan_callbacks(),
+        call.transfocator_set(initial_beamsize),
+    ]

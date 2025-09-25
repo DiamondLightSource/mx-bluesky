@@ -42,6 +42,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -68,6 +69,7 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    init_devices,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
@@ -547,6 +549,13 @@ def pin_tip(RE: RunEngine):
 @pytest.fixture
 def ophyd_pin_tip_detection(RE: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+def transfocator():
+    with init_devices(mock=True):
+        transfocator = Transfocator("", "")
+    return transfocator
 
 
 @pytest.fixture

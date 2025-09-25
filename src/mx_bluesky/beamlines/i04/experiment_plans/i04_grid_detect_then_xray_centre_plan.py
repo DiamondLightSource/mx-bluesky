@@ -98,9 +98,9 @@ def i04_grid_detect_then_xray_centre(
     zocalo: ZocaloResults = inject("zocalo"),
     smargon: Smargon = inject("smargon"),
     detector_motion: DetectorMotion = inject("detector_motion"),
+    transfocator: Transfocator = inject("transfocator"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
     udc: bool = False,
-    transfocator: Transfocator = inject("transfocator"),
 ) -> MsgGenerator:
     """
     A composite plan which:
@@ -137,7 +137,7 @@ def i04_grid_detect_then_xray_centre(
         robot,
         sample_shutter,
     )
-    initial_beamsize = bps.rd(transfocator.beamsize_set_microns)
+    initial_beamsize = yield from bps.rd(transfocator.beamsize_set_microns)
 
     def tidy_beamline():
         if not udc:
@@ -147,7 +147,7 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
-        bps.abs_set(transfocator, initial_beamsize)
+        yield from bps.abs_set(transfocator, initial_beamsize)
 
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
@@ -172,7 +172,7 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
-    bps.abs_set(
+    yield from bps.abs_set(
         transfocator,
         DEFAULT_BEAMSIZE_MICRONS,
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
