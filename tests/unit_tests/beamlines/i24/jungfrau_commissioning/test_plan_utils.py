@@ -45,7 +45,7 @@ async def test_fly_jungfrau(
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
     RE(_open_run_and_fly())
-    await asyncio.sleep(0)
+    await asyncio.sleep(0.01)
     assert mock_stop.await_count == 2  # once when staging, once after run complete
 
 
