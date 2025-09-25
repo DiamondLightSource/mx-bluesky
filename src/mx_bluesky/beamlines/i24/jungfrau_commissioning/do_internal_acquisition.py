@@ -1,24 +1,24 @@
 from bluesky.utils import MsgGenerator
+from dodal.beamlines.i24 import CommissioningJungfrau
 from dodal.common import inject
 from ophyd_async.core import (
     WatchableAsyncStatus,
 )
 from ophyd_async.fastcs.jungfrau import (
-    Jungfrau,
     create_jungfrau_internal_triggering_info,
 )
 from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     fly_jungfrau,
-    override_file_name_and_path,
+    override_file_path,
 )
 
 
 def do_internal_acquisition(
     exp_time_s: float,
     total_frames: PositiveInt = 1,
-    jungfrau: Jungfrau = inject("jungfrau"),
+    jungfrau: CommissioningJungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
     wait: bool = False,
 ) -> MsgGenerator[WatchableAsyncStatus]:
@@ -39,7 +39,7 @@ def do_internal_acquisition(
     """
 
     if path_of_output_file:
-        override_file_name_and_path(jungfrau, path_of_output_file)
+        override_file_path(jungfrau, path_of_output_file)
 
     trigger_info = create_jungfrau_internal_triggering_info(total_frames, exp_time_s)
     status = yield from fly_jungfrau(jungfrau, trigger_info, wait)

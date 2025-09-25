@@ -13,7 +13,9 @@
             "editor.defaultFormatter": "ms-python.black-formatter"
         },
         "python.defaultInterpreterPath": ".venv/bin/python",
-        "python.analysis.extraPaths": ["../dodal"],
+        "python.analysis.extraPaths": [
+            "../dodal"
+        ],
         "python.analysis.autoImportCompletions": true,
         "terminal.integrated.gpuAcceleration": "off",
         "esbonio.sphinx.confDir": ""

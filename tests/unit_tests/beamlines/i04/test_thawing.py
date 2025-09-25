@@ -5,26 +5,25 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.beamlines import i04
+from dodal.devices.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
+from dodal.testing import patch_all_motors
 from ophyd.sim import NullStatus
-from ophyd_async.core import (
-    AsyncStatus,
-    init_devices,
-)
-from ophyd_async.epics.motor import Motor
+from ophyd_async.core import completed_status, init_devices
 from ophyd_async.testing import (
-    callback_on_mock_put,
     get_mock_put,
     set_mock_value,
 )
 
 from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw,
+    thaw_and_murko_centre,
     thaw_and_stream_to_redis,
 )
 
@@ -34,18 +33,6 @@ ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
 
 class MyException(Exception):
     pass
-
-
-def patch_motor(motor: Motor, initial_position: float = 0):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    set_mock_value(motor.velocity, 3)
-    return callback_on_mock_put(
-        motor.user_setpoint,
-        lambda pos, *args, **kwargs: set_mock_value(motor.user_readback, pos),
-    )
 
 
 @pytest.fixture
@@ -65,12 +52,12 @@ async def oav(RE: RunEngine) -> OAV:
 
 @pytest.fixture
 async def smargon(RE: RunEngine) -> AsyncGenerator[Smargon, None]:
-    smargon = Smargon(name="smargon")
+    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
 
-    with patch_motor(smargon.omega):
+    with patch_all_motors(smargon):
         yield smargon
 
 
@@ -80,17 +67,22 @@ def thawer(RE: RunEngine) -> Thawer:
 
 
 @pytest.fixture
+@patch("dodal.devices.i04.murko_results.StrictRedis")
+async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
+    murko_results = MurkoResultsDevice(name="murko_results")
+    murko_results.trigger = MagicMock(side_effect=completed_status)
+    murko_results.stage = MagicMock(side_effect=completed_status)
+    murko_results.unstage = MagicMock(side_effect=completed_status)
+    return murko_results
+
+
+@pytest.fixture
 async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
     with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
             "prefix", "host", "password", name="oav_to_redis_forwarder"
         )
     set_mock_value(oav_forwarder.uuid, "test")
-
-    # Replace when https://github.com/bluesky/ophyd-async/issues/521 is released
-    @AsyncStatus.wrap
-    async def completed_status():
-        pass
 
     oav_forwarder.kickoff = MagicMock(side_effect=completed_status)
     oav_forwarder.complete = MagicMock(side_effect=completed_status)
@@ -270,17 +262,10 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
     patch_murko_call.assert_called()
 
 
-def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
-    sim_run_engine,
-    smargon: Smargon,
-    thawer: Thawer,
-    oav_forwarder: OAVToRedisForwarder,
-    oav: OAV,
-    robot: BartRobot,
+def _test_plan_will_switch_murko_source_half_way_through_thaw(
+    sim_run_engine, plan: MsgGenerator
 ):
-    msgs = sim_run_engine.simulate_plan(
-        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder)
-    )
+    msgs = sim_run_engine.simulate_plan(plan)
     for source in [Source.FULL_SCREEN.value, Source.ROI.value]:
         msgs = assert_message_and_return_remaining(
             msgs,
@@ -302,6 +287,20 @@ def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
             lambda msg: msg.command == "complete"
             and msg.obj.name == "oav_to_redis_forwarder",
         )
+
+
+def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
+    sim_run_engine,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+):
+    _test_plan_will_switch_murko_source_half_way_through_thaw(
+        sim_run_engine,
+        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder),
+    )
 
 
 def _run_thaw_and_stream_and_assert_zoom_changes(
@@ -368,4 +367,128 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
     mock__thaw.side_effect = Exception()
     _run_thaw_and_stream_and_assert_zoom_changes(
         smargon, thawer, oav_forwarder, oav, robot, RE, Exception
+    )
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
+def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
+    mock__thaw,
+    patch_murko_callback,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+    RE: RunEngine,
+):
+    RE(
+        thaw_and_murko_centre(
+            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+        ),
+    )
+
+    murko_results.stage.assert_called_once()  # type: ignore
+    murko_results.unstage.assert_called_once()  # type: ignore
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
+def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
+    mock__thaw,
+    patch_murko_callback,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+    RE: RunEngine,
+):
+    mock__thaw.side_effect = ValueError()
+
+    with pytest.raises(ValueError):
+        RE(
+            thaw_and_murko_centre(
+                10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+            ),
+        )
+
+    murko_results.stage.assert_called_once()  # type: ignore
+    murko_results.unstage.assert_called_once()  # type: ignore
+
+
+def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
+    sim_run_engine,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+):
+    _test_plan_will_switch_murko_source_half_way_through_thaw(
+        sim_run_engine,
+        thaw_and_murko_centre(
+            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+        ),
+    )
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+def test_thaw_and_murko_centre_will_centre_based_on_murko_results_half_way_through_thaw(
+    patch_murko_callback,
+    RE,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+):
+    def fake_trigger():
+        murko_results._x_mm_setter(1)
+        murko_results._y_mm_setter(2)
+        murko_results._z_mm_setter(3)
+        return completed_status()
+
+    murko_results.trigger = MagicMock(side_effect=fake_trigger)
+
+    RE(
+        thaw_and_murko_centre(
+            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+        ),
+    )
+
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0, wait=True)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0, wait=True)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0, wait=True)])
+
+
+def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
+    sim_run_engine,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+):
+    sim_run_engine.add_read_handler_for(robot.sample_id, "1234")
+
+    msgs = sim_run_engine.simulate_plan(
+        thaw_and_murko_centre(
+            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "murko_results-sample_id"
+        and msg.args[0] == 1234,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "murko_results"
     )

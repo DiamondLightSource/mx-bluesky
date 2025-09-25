@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
-from dodal.devices.util.test_utils import patch_motor
+from dodal.testing import patch_motor
 from ophyd_async.core import init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import set_mock_value

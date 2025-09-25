@@ -7,6 +7,7 @@ from typing import TypedDict
 import numpy as np
 import zmq
 from dodal.devices.i04.constants import RedisConstants
+from dodal.devices.i04.murko_results import MurkoResult
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
@@ -15,7 +16,6 @@ from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
 
-MurkoResult = dict
 FullMurkoResults = dict[str, list[MurkoResult]]
 
 
@@ -96,6 +96,7 @@ class BatchMurkoForwarder:
             ],
             "prefix": uuids,
         }
+
         results = send_to_murko_and_get_results(request_arguments)
         results_with_uuids = _correlate_results_to_uuids(request_arguments, results)
         self._send_murko_results_to_redis(sample_id, results_with_uuids)

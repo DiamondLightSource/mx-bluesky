@@ -1,35 +1,31 @@
-from pathlib import Path
+from pathlib import PurePath
 from typing import cast
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
-    AutoIncrementFilenameProvider,
+    StaticFilenameProvider,
     StaticPathProvider,
     TriggerInfo,
     WatchableAsyncStatus,
 )
-from ophyd_async.fastcs.jungfrau import (
-    Jungfrau,
-)
 
 from mx_bluesky.common.utils.log import LOGGER
 
-JF_PREPARE_GROUP = "JF prepare"
 JF_COMPLETE_GROUP = "JF complete"
 
 
 def fly_jungfrau(
-    jungfrau: Jungfrau,
-    trigger_info: TriggerInfo,
-    wait: bool = False,
-    log_on_percentage_message: str = "Jungfrau data collection triggers recieved",
+    jungfrau: CommissioningJungfrau, trigger_info: TriggerInfo, wait: bool = False
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
 
-    Note that this plan doesn't include unstaging of the Jungfrau.
+    Note that this plan doesn't include unstaging of the Jungfrau, and a run must be open
+    before this plan is called.
 
     Args:
     jungfrau: Jungfrau device.
@@ -38,28 +34,40 @@ def fly_jungfrau(
     wait: Optionally block until data collection is complete.
     """
 
-    yield from bps.stage(jungfrau)
-    LOGGER.info("Setting up detector...")
-    yield from bps.prepare(jungfrau, trigger_info, group=JF_PREPARE_GROUP)
-    yield from bps.wait(group=JF_PREPARE_GROUP)
-    LOGGER.info("Detector prepared. Starting acquisition")
-    yield from bps.kickoff(jungfrau, wait=True)
-    LOGGER.info("Waiting for acquisition to complete...")
-    status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
+    @bpp.contingency_decorator(
+        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    )
+    def _fly_with_unstage_contingency():
+        yield from bps.stage(jungfrau)
+        LOGGER.info("Setting up detector...")
+        yield from bps.prepare(jungfrau, trigger_info, wait=True)
+        LOGGER.info("Detector prepared. Starting acquisition")
+        yield from bps.kickoff(jungfrau, wait=True)
+        LOGGER.info("Waiting for acquisition to complete...")
+        status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 
-    # StandardDetector.complete converts regular status to watchable status,
-    # but bluesky plan stubs can't see this currently
-    status = cast(WatchableAsyncStatus, status)
-    log_on_percentage_complete(status, log_on_percentage_message, 10)
-    if wait:
-        yield from bps.wait(JF_COMPLETE_GROUP)
-    return status
+        # StandardDetector.complete converts regular status to watchable status,
+        # but bluesky plan stubs can't see this currently
+        status = cast(WatchableAsyncStatus, status)
+        log_on_percentage_complete(
+            status, "Jungfrau data collection triggers recieved", 10
+        )
+        if wait:
+            yield from bps.wait(JF_COMPLETE_GROUP)
+        return status
+
+    return (yield from _fly_with_unstage_contingency())
 
 
-# While we should generally use device instantiation to set the path,
-# this will be useful during commissioning
-def override_file_name_and_path(jungfrau: Jungfrau, path_of_output_file: str):
-    _file_path = Path(path_of_output_file)
-    filename_provider = AutoIncrementFilenameProvider(_file_path.name)
-    path_provider = StaticPathProvider(filename_provider, _file_path.parent)
-    jungfrau._writer._path_provider = path_provider  # noqa: SLF001
+def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str):
+    """While we should generally use device instantiation to set the path,
+    during commissioning, it is useful to be able to explicitly set the filename
+    and path.
+
+    This function must be called before the Jungfrau is prepared.
+    """
+    _file_path = PurePath(path_of_output_file)
+    _new_filename_provider = StaticFilenameProvider(_file_path.name)
+    jungfrau._writer._path_info = StaticPathProvider(  # noqa: SLF001
+        _new_filename_provider, _file_path.parent
+    )

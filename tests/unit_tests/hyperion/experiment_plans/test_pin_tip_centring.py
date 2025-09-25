@@ -6,6 +6,7 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
+from bluesky.utils import FailedStatus
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -13,6 +14,7 @@ from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundException
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
+from ophyd_async.epics.motor import MotorLimitsException
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.utils.exceptions import SampleException, WarningException
@@ -40,6 +42,17 @@ FAKE_EDGE_ARRAYS = np.array([1.0, 2.0, 3.0]), np.array([3.0, 4.0, 5.0])
 def mock_pin_tip(pin_tip: PinTipDetection):
     pin_tip._get_tip_and_edge_data = AsyncMock(return_value=pin_tip.INVALID_POSITION)
     return pin_tip
+
+
+@pytest.fixture
+def smargon_with_limits(smargon: Smargon) -> Smargon:
+    set_mock_value(smargon.x.high_limit_travel, 2)
+    set_mock_value(smargon.x.low_limit_travel, -2)
+    set_mock_value(smargon.y.high_limit_travel, 2)
+    set_mock_value(smargon.y.low_limit_travel, -2)
+    set_mock_value(smargon.z.high_limit_travel, 2)
+    set_mock_value(smargon.z.low_limit_travel, -2)
+    return smargon
 
 
 @patch(
@@ -200,7 +213,7 @@ def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
 )
 async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     mock_trigger_and_return_tip: MagicMock,
-    smargon: Smargon,
+    smargon_with_limits: Smargon,
     oav: OAV,
     RE: RunEngine,
     pin_tip: PinTipDetection,
@@ -210,13 +223,13 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(0, 100),
     ]
 
-    set_mock_value(smargon.x.user_setpoint, -1.8)
-    set_mock_value(smargon.x.user_readback, -1.8)
+    set_mock_value(smargon_with_limits.x.user_setpoint, -1.8)
+    set_mock_value(smargon_with_limits.x.user_readback, -1.8)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
+        RE(move_pin_into_view(pin_tip, smargon_with_limits, max_steps=1))
 
-    assert await smargon.x.user_setpoint.get_value() == -2
+    assert await smargon_with_limits.x.user_setpoint.get_value() == -2
 
 
 @patch(
@@ -228,7 +241,7 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 )
 async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_trigger_and_return_pin_tip: MagicMock,
-    smargon: Smargon,
+    smargon_with_limits: Smargon,
     oav: OAV,
     RE: RunEngine,
     pin_tip: PinTipDetection,
@@ -241,13 +254,13 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
             PinTipDetection.INVALID_POSITION[0], PinTipDetection.INVALID_POSITION[1]
         ),
     ]
-    set_mock_value(smargon.x.user_setpoint, 1.8)
-    set_mock_value(smargon.x.user_readback, 1.8)
+    set_mock_value(smargon_with_limits.x.user_setpoint, 1.8)
+    set_mock_value(smargon_with_limits.x.user_readback, 1.8)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
+        RE(move_pin_into_view(pin_tip, smargon_with_limits, max_steps=1))
 
-    assert await smargon.x.user_setpoint.get_value() == 2
+    assert await smargon_with_limits.x.user_setpoint.get_value() == 2
 
 
 @patch(
@@ -273,6 +286,32 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 
     with pytest.raises(WarningException):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
+
+
+@patch(
+    "mx_bluesky.hyperion.device_setup_plans.smargon.bps.mv",
+    new=MagicMock(side_effect=FailedStatus(RuntimeError("RuntimeError"))),
+)
+def test_re_raise_failed_status_that_is_not_MotorLimitsException(
+    RE: RunEngine, smargon: Smargon
+):
+    with pytest.raises(FailedStatus) as fs:
+        RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+
+    assert fs.type is FailedStatus
+    assert not isinstance(fs.value.args[0], MotorLimitsException)
+    assert isinstance(fs.value.args[0], RuntimeError)
+
+
+@patch(
+    "mx_bluesky.hyperion.device_setup_plans.smargon.bps.mv",
+    new=MagicMock(side_effect=RuntimeError("RuntimeError")),
+)
+def test_does_not_catch_exception_that_is_not_MotorLimitsException(
+    RE: RunEngine, smargon: Smargon
+):
+    with pytest.raises(RuntimeError, match="RuntimeError"):
+        RE(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
 
 
 def return_pixel(pixel, *args):

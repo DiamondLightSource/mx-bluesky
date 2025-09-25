@@ -6,7 +6,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.beamlines.i23 import I23DetectorPositions
 from dodal.devices.motors import SixAxisGonio
 from dodal.devices.positioner import Positioner1D
-from dodal.devices.util.test_utils import patch_motor
+from dodal.testing import patch_motor
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put
 
