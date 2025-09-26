@@ -5,6 +5,7 @@ from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beamstop import Beamstop
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.vgonio import VerticalGoniometer
@@ -13,9 +14,6 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from ophyd_async.fastcs.jungfrau import (
-    Jungfrau,
-)
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -24,7 +22,7 @@ class RotationScanComposite:
 
     aperture: Aperture
     attenuator: EnumFilterAttenuator
-    jungfrau: Jungfrau
+    jungfrau: CommissioningJungfrau
     gonio: VerticalGoniometer
     synchrotron: Synchrotron
     sample_shutter: ZebraShutter
@@ -32,6 +30,6 @@ class RotationScanComposite:
     xbpm_feedback: XBPMFeedback
     hutch_shutter: HutchShutter
     beamstop: Beamstop
-    det_stage: YZStage  # TODO add JF position to det stage device
+    det_stage: YZStage
     backlight: DualBacklight
     dcm: DCM
