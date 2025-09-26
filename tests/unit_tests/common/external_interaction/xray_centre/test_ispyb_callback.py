@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,8 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    GridscanPlane,
+    _smargon_omega_to_xyxz_plane,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
@@ -383,3 +386,33 @@ class TestXrayCentreISPyBCallback:
             )
 
         assert "No data collection group info" in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "omega, expected_plane",
+    [
+        [0, GridscanPlane.OMEGA_XY],
+        [180, GridscanPlane.OMEGA_XY],
+        [-180, GridscanPlane.OMEGA_XY],
+        [540, GridscanPlane.OMEGA_XY],
+        [90, GridscanPlane.OMEGA_XZ],
+        [-90, GridscanPlane.OMEGA_XZ],
+        [270, GridscanPlane.OMEGA_XZ],
+        [-270, GridscanPlane.OMEGA_XZ],
+        [0.999, GridscanPlane.OMEGA_XY],
+        [-0.999, GridscanPlane.OMEGA_XY],
+        [1.001, AssertionError],
+        [-1.001, AssertionError],
+        [91.001, AssertionError],
+        [90.999, GridscanPlane.OMEGA_XZ],
+        [89.999, GridscanPlane.OMEGA_XZ],
+    ],
+)
+def test_smargon_omega_to_xyxz_plane(omega, expected_plane):
+    expects_exception = not (isinstance(expected_plane, GridscanPlane))
+    raises_or_not = (
+        pytest.raises(expected_plane) if expects_exception else (nullcontext())
+    )
+    with raises_or_not:
+        plane = _smargon_omega_to_xyxz_plane(omega)
+        assert expects_exception or plane == expected_plane
