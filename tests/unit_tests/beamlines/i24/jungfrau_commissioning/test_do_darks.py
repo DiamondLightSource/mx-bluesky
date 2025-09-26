@@ -73,6 +73,7 @@ async def test_full_do_pedestal_darks(
                 jungfrau.drv.acquisition_type,
                 jungfrau.drv.pedestal_mode_state,
                 jungfrau.drv.gain_mode,
+                jungfrau.drv.pedestal_mode_state,
             ],
         )
     )

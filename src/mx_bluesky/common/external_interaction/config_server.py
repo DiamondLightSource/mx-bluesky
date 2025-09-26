@@ -10,7 +10,7 @@ from pydantic import TypeAdapter
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
     FeatureSetting,
-    FeatureSettingources,
+    FeatureSettingSources,
     OavConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
@@ -25,7 +25,7 @@ T = TypeVar("T", bound=FeatureSetting)
 class MXConfigClient(ConfigServer, Generic[T]):
     def __init__(
         self,
-        feature_sources: type[FeatureSettingources],
+        feature_sources: type[FeatureSettingSources],
         feature_dc: type[T],
         url: str = "https://daq-config.diamond.ac.uk",
     ):
