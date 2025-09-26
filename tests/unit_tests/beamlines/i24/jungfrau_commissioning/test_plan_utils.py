@@ -73,4 +73,7 @@ async def test_override_file_path(
     assert await jungfrau._writer.file_path.get_value() == ""
     await jungfrau._writer.open("")
     assert await jungfrau._writer.file_name.get_value() == new_file_name
-    assert await jungfrau._writer.file_path.get_value() == str(tmp_path)
+    assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00000"
+    await jungfrau._writer.open("")
+    assert await jungfrau._writer.file_name.get_value() == new_file_name
+    assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00001"
