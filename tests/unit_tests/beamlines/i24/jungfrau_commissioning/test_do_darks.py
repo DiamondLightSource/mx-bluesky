@@ -87,7 +87,8 @@ async def test_full_do_pedestal_darks(
         PedestalMode.OFF,
     ]
 
-    # pedestal darks plan leaves gain mode in dynamic
+    # When using the real detector, the switching of gain mode is a bit more complicated,
+    # see the docstring for the do_pedestal_darks plan.
     assert monitor_tracker.signals_and_values["detector-drv-gain_mode"] == [
         GainMode.FIX_G2,
         GainMode.DYNAMIC,
