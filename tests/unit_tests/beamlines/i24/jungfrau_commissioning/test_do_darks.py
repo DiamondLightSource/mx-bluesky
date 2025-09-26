@@ -6,21 +6,27 @@ import bluesky.plan_stubs as bps
 from bluesky.callbacks import CallbackBase
 from bluesky.preprocessors import monitor_during_wrapper, run_decorator
 from bluesky.run_engine import RunEngine
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
-    Jungfrau,
     PedestalMode,
 )
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
-    do_darks_for_dynamic_gain_switching,
     do_pedestal_darks,
 )
 
 
 class CheckMonitor(CallbackBase):
+    """Store the order and values of updates to specified signals
+
+    Usage: Instantiate this callback with list of signals to track, and subscribe the RE to this
+    callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifing the same signals
+    in the monitor.
+    """
+
     def __init__(self, signals_to_track: list[str]):
         self.signals_and_values = {signal: [] for signal in signals_to_track}
 
@@ -30,11 +36,9 @@ class CheckMonitor(CallbackBase):
         return doc
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_name_and_path"
-)
+@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 async def test_full_do_pedestal_darks(
-    mock_override_path: MagicMock, jungfrau: Jungfrau, RE: RunEngine
+    mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
 ):
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
@@ -46,18 +50,19 @@ async def test_full_do_pedestal_darks(
         val = 0
         while not status.done:
             val += 1
-            set_mock_value(jungfrau._writer._drv.num_captured, val)
+            set_mock_value(jungfrau._writer.frame_counter, val)
             # Let status update
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
 
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
     await jungfrau.drv.gain_mode.set(GainMode.FIX_G2)
-    await jungfrau.drv.pedestal_mode.set(PedestalMode.OFF)
+    await jungfrau.drv.pedestal_mode_state.set(PedestalMode.OFF)
     monitor_tracker = CheckMonitor(
         [
-            "jungfrau-drv-acquisition_type",
-            "jungfrau-drv-pedestal_mode",
+            "detector-drv-acquisition_type",
+            "detector-drv-pedestal_mode_state",
+            "detector-drv-gain_mode",
         ]
     )
     RE.subscribe(monitor_tracker)
@@ -66,56 +71,25 @@ async def test_full_do_pedestal_darks(
             test_plan(),
             [
                 jungfrau.drv.acquisition_type,
+                jungfrau.drv.pedestal_mode_state,
                 jungfrau.drv.gain_mode,
-                jungfrau.drv.pedestal_mode,
             ],
         )
     )
-    assert monitor_tracker.signals_and_values["jungfrau-drv-acquisition_type"] == [
+    assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
         AcquisitionType.STANDARD,
     ]
-    assert monitor_tracker.signals_and_values["jungfrau-drv-pedestal_mode"] == [
+    assert monitor_tracker.signals_and_values["detector-drv-pedestal_mode_state"] == [
         PedestalMode.OFF,
         PedestalMode.ON,
         PedestalMode.OFF,
     ]
-    mock_override_path.assert_called_once_with(jungfrau, test_path)
 
-
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau")
-async def test_full_do_darks_for_dynamic_gain_switching(
-    mock_do_darks: MagicMock,
-    jungfrau: Jungfrau,
-    RE: RunEngine,
-):
-    monitor_tracker = CheckMonitor(
-        [
-            "jungfrau-drv-gain_mode",
-        ]
-    )
-    RE.subscribe(monitor_tracker)
-
-    @run_decorator()
-    def test_plan():
-        yield from do_darks_for_dynamic_gain_switching(
-            triggers_per_dark_scan=5, jungfrau=jungfrau, path_of_output_file="test"
-        )
-
-    jungfrau._controller.arm = AsyncMock()
-    RE(
-        monitor_during_wrapper(
-            test_plan(),
-            [
-                jungfrau.drv.gain_mode,
-            ],
-        )
-    )
-    assert monitor_tracker.signals_and_values["jungfrau-drv-gain_mode"] == [
+    # pedestal darks plan leaves gain mode in dynamic
+    assert monitor_tracker.signals_and_values["detector-drv-gain_mode"] == [
+        GainMode.FIX_G2,
         GainMode.DYNAMIC,
-        GainMode.DYNAMIC,
-        GainMode.FORCE_SWITCH_G1,
-        GainMode.FORCE_SWITCH_G2,
     ]
-    assert mock_do_darks.call_count == 3
+    mock_override_path.assert_called_once_with(jungfrau, test_path)
