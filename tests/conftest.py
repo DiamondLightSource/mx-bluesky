@@ -27,6 +27,7 @@ from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -34,6 +35,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
@@ -49,7 +51,6 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
-from dodal.devices.util.test_utils import patch_all_motors, patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -58,6 +59,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
+from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ispyb.sp.mxacquisition import MXAcquisition
@@ -70,7 +72,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.testing import set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -97,6 +99,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     do_default_logging_setup,
 )
+from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -363,6 +366,7 @@ def RE():
 
         RE.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
+        # RE.loop.close()
     del RE
 
 
@@ -373,17 +377,6 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
             call_log(value, wait=wait)
 
     return _pass_on_mock
-
-
-def patch_async_motor(
-    motor: Motor, initial_position=0, call_log: MagicMock | None = None
-):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    set_mock_value(motor.velocity, 1)
-    return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
 @pytest.fixture
@@ -440,22 +433,9 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-    set_mock_value(smargon.x.high_limit_travel, 2)
-    set_mock_value(smargon.x.low_limit_travel, -2)
-    set_mock_value(smargon.y.high_limit_travel, 2)
-    set_mock_value(smargon.y.low_limit_travel, -2)
-    set_mock_value(smargon.z.high_limit_travel, 2)
-    set_mock_value(smargon.z.low_limit_travel, -2)
-    set_mock_value(smargon.omega.max_velocity, 1)
 
-    with (
-        patch_async_motor(smargon.omega),
-        patch_async_motor(smargon.x),
-        patch_async_motor(smargon.y),
-        patch_async_motor(smargon.z),
-        patch_async_motor(smargon.chi),
-        patch_async_motor(smargon.phi),
-    ):
+    with patch_all_motors(smargon):
+        set_mock_value(smargon.omega.max_velocity, 1)
         yield smargon
     clear_devices()
 
@@ -485,6 +465,22 @@ def backlight(RE: RunEngine):
 
 
 @pytest.fixture
+def baton(RE: RunEngine):
+    baton = i03.baton(connect_immediately=True, mock=True)
+    set_mock_value(baton.requested_user, HYPERION_USER)
+    set_mock_value(baton.current_user, HYPERION_USER)
+    return baton
+
+
+@pytest.fixture
+def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
+    set_commissioning_signal(baton.commissioning)
+    set_mock_value(baton.commissioning, True)
+    yield baton
+    set_commissioning_signal(None)
+
+
+@pytest.fixture
 def fast_grid_scan(RE: RunEngine):
     return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
 
@@ -492,13 +488,15 @@ def fast_grid_scan(RE: RunEngine):
 @pytest.fixture
 def detector_motion(RE: RunEngine):
     det = i03.detector_motion(connect_immediately=True, mock=True)
-    with patch_async_motor(det.z):
+    with patch_all_motors(det):
         yield det
 
 
 @pytest.fixture
 def undulator(RE: RunEngine):
     undulator = i03.undulator(connect_immediately=True, mock=True)
+    # force the child baton to be connected
+    i03.baton(connect_immediately=True, mock=True)
     with patch_all_motors(undulator):
         yield undulator
 
@@ -644,7 +642,7 @@ def vfm(RE: RunEngine):
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    with patch_motor(vfm.x_mm):
+    with patch_all_motors(vfm):
         yield vfm
 
 
@@ -770,11 +768,8 @@ async def aperture_scatterguard(RE: RunEngine):
     ):
         ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
     with (
-        patch_async_motor(ap_sg.aperture.x),
-        patch_async_motor(ap_sg.aperture.y),
-        patch_async_motor(ap_sg.aperture.z, 2),
-        patch_async_motor(ap_sg.scatterguard.x),
-        patch_async_motor(ap_sg.scatterguard.y),
+        patch_all_motors(ap_sg),
+        patch_motor(ap_sg.aperture.z, 2),
     ):
         await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 

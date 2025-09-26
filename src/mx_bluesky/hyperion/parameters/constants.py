@@ -51,6 +51,7 @@ class HyperionConstants:
     HARDWARE = HardwareConstants()
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
+    HYPERION_PORT = 5005
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
     GRAYLOG_PORT = 12232  # Hyperion stream

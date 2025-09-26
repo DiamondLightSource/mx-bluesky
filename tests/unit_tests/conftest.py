@@ -4,6 +4,7 @@ import sys
 import time
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path, PurePath
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -15,9 +16,10 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -26,10 +28,16 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model.documents import Event
-from ophyd_async.core import AsyncStatus, init_devices
-from ophyd_async.fastcs.jungfrau import Jungfrau
+from ophyd_async.core import (
+    AsyncStatus,
+    AutoIncrementingPathProvider,
+    StaticFilenameProvider,
+    init_devices,
+)
 from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.testing import (
+    set_mock_value,
+)
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -198,7 +206,11 @@ def use_beamline_t01():
     with patch.dict("os.environ", {"BEAMLINE": "t01"}):
         import tests.unit_tests.t01
 
-        with patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}):
+        with (
+            patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
+            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
+            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+        ):
             yield
 
 
@@ -397,7 +409,7 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan=MagicMock(),
@@ -431,7 +443,7 @@ async def grid_detect_xrc_devices(
     ophyd_pin_tip_detection: PinTipDetection,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
-    fast_grid_scan: ZebraFastGridScan,
+    fast_grid_scan: ZebraFastGridScanThreeD,
     s4_slit_gaps: S4SlitGaps,
     flux: Flux,
     zebra,
@@ -475,21 +487,11 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(RE: RunEngine):
-    """The extra logic here prevents exceptions during data collection unit tests"""
-
+def jungfrau(tmp_path: Path, RE: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
-        detector = Jungfrau("prefix", MagicMock(), "", "", 4, "jungfrau")
+        name = StaticFilenameProvider("jf_out")
+        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        detector = CommissioningJungfrau("", "", path)
+    set_mock_value(detector._writer.writer_ready, 1)
 
-    def set_meta_filename_and_id(value, *args, **kwargs):
-        set_mock_value(detector.odin.meta_file_name, value)
-        set_mock_value(detector.odin.id, value)
-
-    callback_on_mock_put(detector.odin.file_name, set_meta_filename_and_id)
-
-    detector._writer._path_provider.return_value.filename = "filename.h5"  # type: ignore
-
-    set_mock_value(detector.odin.meta_active, "Active")
-    set_mock_value(detector.odin.capture_rbv, "Capturing")
-    set_mock_value(detector.odin.meta_writing, "Writing")
     return detector

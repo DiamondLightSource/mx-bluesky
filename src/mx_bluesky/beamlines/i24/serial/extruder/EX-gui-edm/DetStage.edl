@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 1316
-y 610
+x 2937
+y 184
 w 450
 h 180
 font "arial-medium-r-18.0"
@@ -78,20 +78,17 @@ fgColour index 14
 bgColour index 4
 topShadowColour index 1
 botShadowColour index 8
-controlPv "BL24I-EA-IOC-12:GP15"
+controlPv "BL24I-MO-IOC-13:GP15"
 font "arial-medium-r-18.0"
 numItems 2
 symbolTag {
   0 "Eiger"
-  1 "Pilatus"
 }
 symbol0 {
   0 "E9M"
-  1 "P6M"
 }
 PV0 {
   0 "eiger"
-  1 "pilatus"
 }
 endObjectProperties
 
@@ -113,7 +110,7 @@ font "arial-medium-r-18.0"
 buttonLabel "Move Stage"
 numCmds 1
 command {
-  0 "blueapi -c CONFIG_LOCATION controller run setup_detector_stage '\{\"expt_type\":\"Serial Jet\"\}'"
+  0 "blueapi -c CONFIG_LOCATION controller run -i $INSTRUMENT_SESSION setup_detector_stage '\{\"expt_type\":\"Serial Jet\"\}'"
 }
 endObjectProperties
 

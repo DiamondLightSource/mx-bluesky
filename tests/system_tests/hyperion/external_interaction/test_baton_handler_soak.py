@@ -101,7 +101,7 @@ def reinitialise_beamline(dev_mode: bool, i: int):
     for f in fields(devices_before_reset):
         device = getattr(devices_before_reset, f.name)
         weak_ids_to_devices[id(device)] = device
-    _initialise_udc(context)
+    _initialise_udc(context, dev_mode)
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
         context, LoadCentreCollectComposite
     )

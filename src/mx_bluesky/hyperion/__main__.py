@@ -1,4 +1,5 @@
 import json
+import signal
 import threading
 from dataclasses import asdict
 from sys import argv
@@ -32,9 +33,10 @@ from mx_bluesky.hyperion.parameters.cli import (
     HyperionMode,
     parse_cli_args,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanRunner
+from mx_bluesky.hyperion.plan_runner_api import create_server_for_udc
 from mx_bluesky.hyperion.runner import (
     GDARunner,
     StatusAndMessage,
@@ -170,7 +172,7 @@ def main():
     """Main application entry point."""
     args = parse_cli_args()
     initialise_globals(args)
-    hyperion_port = 5005
+    hyperion_port = HyperionConstants.HYPERION_PORT
     context = setup_context(dev_mode=args.dev_mode)
 
     if args.mode == HyperionMode.GDA:
@@ -188,7 +190,18 @@ def main():
         )
         runner.wait_on_queue()
     else:
-        run_forever(PlanRunner(context))
+        plan_runner = PlanRunner(context, args.dev_mode)
+        create_server_for_udc(plan_runner)
+        _register_sigterm_handler(plan_runner)
+        run_forever(plan_runner)
+
+
+def _register_sigterm_handler(runner: PlanRunner):
+    def shutdown_on_sigterm(sig_num, frame):
+        LOGGER.info("Received SIGTERM, shutting down...")
+        runner.shutdown()
+
+    signal.signal(signal.SIGTERM, shutdown_on_sigterm)
 
 
 if __name__ == "__main__":

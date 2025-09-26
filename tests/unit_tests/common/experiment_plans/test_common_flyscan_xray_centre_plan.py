@@ -12,7 +12,7 @@ from dodal.beamlines import i03
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
@@ -229,7 +229,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -247,7 +247,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -447,7 +447,7 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
-        zebra_fast_grid_scan: ZebraFastGridScan,
+        zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     ):
         id_1, id_2 = 100, 200
 
@@ -662,3 +662,38 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         with pytest.raises(CrystalNotFoundException):
             RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
+
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
+        MagicMock(),
+    )
+    def test_dummy_result_returned_when_gridscan_finds_no_xtal_and_commissioning_mode_enabled(
+        self,
+        RE: RunEngine,
+        test_fgs_params: SpecifiedThreeDGridScan,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        baton_in_commissioning_mode,
+    ):
+        xrc_event_handler = XRayCentreEventHandler()
+        RE.subscribe(xrc_event_handler)
+        beamline_specific.get_xrc_results_from_zocalo = True
+
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
+        RE(
+            common_flyscan_xray_centre(
+                fake_fgs_composite,
+                test_fgs_params,
+                beamline_specific,
+            )
+        )
+
+        results = xrc_event_handler.xray_centre_results or []
+        assert len(results) == 1
+        result = results[0]
+        assert result.sample_id == test_fgs_params.sample_id
+        assert result.max_count == 10000
+        assert result.total_count == 100000
+        assert all(np.isclose(result.bounding_box_mm[0], [1.95, 0.95, 0.45]))
+        assert all(np.isclose(result.bounding_box_mm[1], [2.05, 1.05, 0.55]))
+        assert all(np.isclose(result.centre_of_mass_mm, [2.0, 1.0, 0.5]))

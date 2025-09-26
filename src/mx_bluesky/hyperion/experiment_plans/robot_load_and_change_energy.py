@@ -125,6 +125,10 @@ def robot_load_and_snapshots(
 ):
     yield from bps.abs_set(composite.backlight, InOut.IN, group="snapshot")
 
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_PRE_LOAD)
+    yield from bps.read(composite.robot)
+    yield from bps.save()
+
     robot_load_plan = do_robot_load(
         composite,
         location,
