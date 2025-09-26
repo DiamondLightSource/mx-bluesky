@@ -30,6 +30,14 @@ def do_pedestal_darks(
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
     for the jungfrau, and must be performed before acquiring real data in dynamic gain mode.
 
+    When Bluesky triggers the detector in pedestal mode, with pedestal frames F and pedestal loops L,
+    the acquisition is managed at the driver level to:
+    1. Acquire F-1 frames in dynamic gain mode
+    2. Acquire 1 frame in ForceSwitchG1 gain mode
+    3. Repeat steps 1-2 L times
+    4. Do the first three steps a second time, except use ForceSwitchG2 instead of ForceSwitchG1
+    during step 2.
+
     Args:
         exp_time_s: Length of detector exposure for each frame.
         pedestal_frames: Number of frames acquired per pedestal loop.
