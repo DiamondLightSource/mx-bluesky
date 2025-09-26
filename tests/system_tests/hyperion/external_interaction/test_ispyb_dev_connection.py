@@ -22,11 +22,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    DataCollectionInfo,
     Orientation,
     ScanDataInfo,
 )
@@ -115,8 +114,8 @@ def dummy_data_collection_group_info(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin_xy(dummy_params):
-    info = populate_xy_data_collection_info(
-        dummy_params.detector_params,
+    info = DataCollectionInfo(
+        data_collection_number=dummy_params.detector_params.run_number,
     )
     info = populate_remaining_data_collection_info(
         "MX-Bluesky: Xray centring 1 -", None, info, dummy_params
@@ -128,9 +127,11 @@ def dummy_scan_data_info_for_begin_xy(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin_xz(dummy_params):
-    info = populate_xz_data_collection_info(
-        dummy_params.detector_params,
+    run_number = dummy_params.detector_params.run_number + 1
+    info1 = DataCollectionInfo(
+        data_collection_number=run_number,
     )
+    info = info1
     info = populate_remaining_data_collection_info(
         "MX-Bluesky: Xray centring 2 -", None, info, dummy_params
     )
@@ -189,9 +190,11 @@ def scan_data_infos_for_update_3d(
     scan_xy_data_info_for_update,
     dummy_params: HyperionSpecifiedThreeDGridScan,
 ):
-    xz_data_collection_info = populate_xz_data_collection_info(
-        dummy_params.detector_params
+    run_number = dummy_params.detector_params.run_number + 1
+    info = DataCollectionInfo(
+        data_collection_number=run_number,
     )
+    xz_data_collection_info = info
 
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
