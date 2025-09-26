@@ -1341,27 +1341,20 @@ def TestEventData(tmp_path):
     return _TestEventData(tmp_path)
 
 
+_UID_GRIDSCAN_OUTER = "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3"
+_UID_GRID_DETECT_AND_DO_GRIDSCAN = "41b82023-c271-449d-9543-260da8d85641"
+_UID_ROTATION_MAIN = "2093c941-ded1-42c4-ab74-ea99980fbbfd"
+_UID_DO_FGS = "636490db-83da-462c-a537-70e6fe416843"
+
+
 class _TestEventData(OavGridSnapshotTestEvents):
     def __init__(self, tmp_path):
         self._tmp_path = tmp_path
 
     @property
-    def test_start_document(self) -> RunStart:
+    def test_grid_detect_and_gridscan_start_document(self) -> RunStart:
         return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
-        }
-
-    @property
-    def test_gridscan3d_start_document(self) -> RunStart:
-        return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
@@ -1372,9 +1365,11 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_gridscan3d_stop_document_with_crystal_exception(self) -> RunStop:
+    def test_grid_detect_and_gridscan_stop_document_with_crystal_exception(
+        self,
+    ) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604299.6149616,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "fail",
@@ -1382,22 +1377,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_gridscan2d_start_document(self):
-        return {
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": "test",
-            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "mx_bluesky_parameters": _dummy_params_2d(self._tmp_path).model_dump_json(),
-        }
-
-    @property
     def test_rotation_start_main_document(self):
         return {
-            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "uid": _UID_ROTATION_MAIN,
             "subplan_name": PlanNameConstants.ROTATION_MAIN,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
         }
@@ -1405,7 +1387,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
     @property
     def test_gridscan_outer_start_document(self):
         return {
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_GRIDSCAN_OUTER,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
@@ -1442,7 +1424,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
     @property
     def test_rotation_stop_main_document(self) -> RunStop:
         return {
-            "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "run_start": _UID_ROTATION_MAIN,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1451,22 +1433,10 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_run_gridscan_start_document(self) -> RunStart:
-        return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-            "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
-        }
-
-    @property
     def test_do_fgs_start_document(self) -> RunStart:
         specs = create_dummy_scan_spec()
         return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_DO_FGS,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
@@ -1483,7 +1453,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_oav_rotation_snapshot(self) -> EventDescriptor:
         return {
             "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         }  # type: ignore
 
@@ -1491,7 +1460,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_pre_data_collection(self) -> EventDescriptor:
         return {
             "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.HARDWARE_READ_PRE,
         }  # type: ignore
 
@@ -1499,7 +1467,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_during_data_collection(self) -> EventDescriptor:
         return {
             "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.HARDWARE_READ_DURING,
         }  # type: ignore
 
@@ -1507,7 +1474,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_zocalo_hardware(self) -> EventDescriptor:
         return {
             "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.ZOCALO_HW_READ,
         }  # type: ignore
 
@@ -1584,9 +1550,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_stop_document(self) -> RunStop:
+    def test_gridscan_outer_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRIDSCAN_OUTER,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1595,9 +1561,19 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_run_gridscan_stop_document(self) -> RunStop:
+    def test_grid_detect_and_gridscan_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+        }
+
+    @property
+    def test_do_fgs_stop_document(self) -> RunStop:
+        return {
+            "run_start": _UID_DO_FGS,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1606,31 +1582,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_do_fgs_gridscan_stop_document(self) -> RunStop:
+    def test_grid_detect_and_gridscan_failed_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604300.0310638,
-            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-            "exit_status": "success",
-            "reason": "",
-            "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        }
-
-    @property
-    def test_failed_stop_document(self) -> RunStop:
-        return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604300.0310638,
-            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-            "exit_status": "fail",
-            "reason": "could not connect to devices",
-            "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        }
-
-    @property
-    def test_run_gridscan_failed_stop_document(self) -> RunStop:
-        return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "fail",

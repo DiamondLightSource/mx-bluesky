@@ -113,7 +113,7 @@ class TestZocaloHandler:
         ispyb_store.return_value.begin_deposition.return_value = mock_ids
         ispyb_store.return_value.update_deposition.return_value = mock_ids
 
-        ispyb_cb.start(TestEventData.test_gridscan3d_start_document)  # type: ignore
+        ispyb_cb.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
         ispyb_cb.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
         ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xy)
         ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xz)
@@ -139,7 +139,8 @@ class TestZocaloHandler:
         )
         assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
 
-        ispyb_cb.stop(TestEventData.test_stop_document)
+        ispyb_cb.stop(TestEventData.test_do_fgs_stop_document)
+        ispyb_cb.stop(TestEventData.test_gridscan_outer_stop_document)
 
         zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
             [call(x) for x in dc_ids]
@@ -180,7 +181,7 @@ class TestZocaloHandler:
         ispyb_store.return_value.begin_deposition.return_value = mock_ids
         ispyb_store.return_value.update_deposition.return_value = mock_ids
 
-        ispyb_cb.start(TestEventData.test_gridscan3d_start_document)  # type: ignore
+        ispyb_cb.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
         ispyb_cb.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
         ispyb_cb.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
         ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xz)
@@ -205,8 +206,8 @@ class TestZocaloHandler:
             expected_start_calls
         )
         assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
-
-        ispyb_cb.stop(TestEventData.test_stop_document)
+        ispyb_cb.stop(TestEventData.test_do_fgs_stop_document)
+        ispyb_cb.stop(TestEventData.test_gridscan_outer_stop_document)
 
         zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
             [call(dc_ids[1]), call(dc_ids[0])]
