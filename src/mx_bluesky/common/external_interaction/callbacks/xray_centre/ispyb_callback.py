@@ -104,7 +104,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.param_type = param_type
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
-        self._omega_to_id_map: dict[GridscanPlane, int] = {}
+        self._grid_plane_to_id_map: dict[GridscanPlane, int] = {}
         self.data_collection_group_info: DataCollectionGroupInfo | None
 
     def activity_gated_start(self, doc: RunStart):
@@ -245,7 +245,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             "Updating ispyb data collection after oav snapshot."
         )
         grid_plane = _smargon_omega_to_xyxz_plane(doc["data"]["smargon-omega"])
-        self._omega_to_id_map[grid_plane] = data_collection_id
+        self._grid_plane_to_id_map[grid_plane] = data_collection_id
 
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
@@ -313,14 +313,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.ispyb_ids.data_collection_group_id,
             )
             self.data_collection_group_info = None
+            self._grid_plane_to_id_map.clear()
             return super().activity_gated_stop(doc)
         return self.tag_doc(doc)
 
     def tag_doc(self, doc: D) -> D:
         doc = super().tag_doc(doc)
         assert isinstance(doc, dict)
-        if self._omega_to_id_map:
-            doc["omega_to_id_map"] = self._omega_to_id_map
+        if self._grid_plane_to_id_map:
+            doc["grid_plane_to_id_map"] = self._grid_plane_to_id_map
         return doc  # type: ignore
 
 
@@ -337,7 +338,9 @@ def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
     for i, omega in enumerate([GridscanPlane.OMEGA_XY, GridscanPlane.OMEGA_XZ]):
         frames = number_of_frames_from_scan_spec(omega_to_scan_spec[omega])
         infos.append(
-            ZocaloStartInfo(doc["omega_to_id_map"][omega], None, start_frame, frames, i)
+            ZocaloStartInfo(
+                doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
+            )
         )
         start_frame += frames
     yield infos

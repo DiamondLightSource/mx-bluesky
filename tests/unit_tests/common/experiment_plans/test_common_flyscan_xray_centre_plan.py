@@ -87,7 +87,9 @@ def RE_with_subs_snapshots_already_taken(RE_with_subs, TestEventData):
         sub for sub in subscriptions if isinstance(sub, GridscanISPyBCallback)
     ][0]
     ispyb_gridscan_callback.active = True
-    ispyb_gridscan_callback.start(TestEventData.test_gridscan3d_start_document)  # type: ignore
+    ispyb_gridscan_callback.start(
+        TestEventData.test_grid_detect_and_gridscan_start_document
+    )  # type: ignore
     ispyb_gridscan_callback.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
     ispyb_gridscan_callback.descriptor(
         TestEventData.test_descriptor_document_oav_snapshot
