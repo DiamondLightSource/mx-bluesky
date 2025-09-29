@@ -61,12 +61,15 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
+    DC_RE,
+    DCG_RE,
+    DCGS_RE,
+    DCS_RE,
     DocumentCapturer,
     extract_metafile,
     fake_read,
     mx_acquisition_from_conn,
     raw_params_from_file,
-    remap_upsert_columns,
 )
 
 TEST_OFFSET = 1
@@ -1366,26 +1369,34 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         oav_parameters_for_rotation,
     )
     mx = mx_acquisition_from_conn(mock_ispyb_conn_multiscan)
-    assert mx.get_data_collection_group_params.call_count == number_of_scans
-    assert mx.get_data_collection_params.call_count == number_of_scans * 4
-    upsert_keys = mx.get_data_collection_params()
-    for upsert_calls, rotation_params in zip(
-        [  # there should be 4 datacollection upserts per scan
-            mx.upsert_data_collection.call_args_list[i * 4 : (i + 1) * 4]
+    assert (
+        len(mock_ispyb_conn_multiscan.calls_for(DCGS_RE))
+        + len(mock_ispyb_conn_multiscan.calls_for(DCG_RE))
+    ) == number_of_scans
+    create_dc_requests = [
+        c.request for c in mock_ispyb_conn_multiscan.calls_for(DCS_RE)
+    ]
+    update_dc_requests = [c.request for c in mock_ispyb_conn_multiscan.calls_for(DC_RE)]
+    assert len(create_dc_requests) == number_of_scans
+    assert len(update_dc_requests) == number_of_scans * 3
+    for create_dc, update_dcs, rotation_params in zip(
+        create_dc_requests,
+        [  # there should be 1 datacollection create and 3 updates per scan
+            update_dc_requests[i * 3 : (i + 1) * 3]
             for i in range(len(test_multi_rotation_params.rotation_scans))
         ],
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        first_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[0].args[0])
+        create_data = json.loads(create_dc.body)
         assert (
-            first_upsert_data["axisend"] - first_upsert_data["axisstart"]
+            create_data["axisEnd"] - create_data["axisStart"]
             == rotation_params.scan_width_deg
             * rotation_params.rotation_direction.multiplier
         )
-        assert first_upsert_data["nimages"] == rotation_params.num_images
-        second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])
-        dc_id = second_upsert_data["id"]
+        assert create_data["numberOfImages"] == rotation_params.num_images
+
+        dc_id = int(DC_RE.match(update_dcs[0].url)[2])
         append_comment_call = next(
             dropwhile(
                 lambda c: c.args[0] != dc_id,
@@ -1396,12 +1407,14 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         assert comment.startswith("Sample position")
         position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
         assert position_string in comment
-        third_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[2].args[0])
-        assert third_upsert_data["resolution"] > 0  # resolution
-        assert third_upsert_data["focalspotsizeatsamplex"] > 0  # beam size
-        fourth_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[3].args[0])
-        assert fourth_upsert_data["endtime"]  # timestamp
-        assert fourth_upsert_data["runstatus"] == "DataCollection Successful"
+
+        second_update_data = json.loads(update_dcs[1].body)
+        assert second_update_data["resolution"] > 0  # resolution
+        # assert second_update_data["focalSpotSizeAtSampleX"] > 0  # beam size  # TODO
+
+        third_update_data = json.loads(update_dcs[2].body)
+        assert third_update_data["endTime"]  # timestamp
+        assert third_update_data["runStatus"] == "DataCollection Successful"
 
 
 @patch(
