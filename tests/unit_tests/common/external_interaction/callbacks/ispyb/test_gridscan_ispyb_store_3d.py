@@ -418,8 +418,8 @@ def test_update_deposition(
         "stepsY": 20,
         "pixelsPerMicronX": 0.8,
         "pixelsPerMicronY": 0.8,
-        # "snapshotOffsetXPixel": 50, TODO
-        # "snapshotOffsetYPixel": 100, TODO
+        "snapshotOffsetXPixel": 50,
+        "snapshotOffsetYPixel": 100,
         "orientation": "horizontal",
         "snaked": True,
     }
@@ -452,8 +452,8 @@ def test_update_deposition(
         "stepsY": 10,
         "pixelsPerMicronX": 0.8,
         "pixelsPerMicronY": 0.8,
-        # "snapshotOffsetXPixel": 50,       TODO
-        # "snapshotOffsetYPixel": 120,      TODO
+        "snapshotOffsetXPixel": 50,
+        "snapshotOffsetYPixel": 120,
         "orientation": "horizontal",
         "snaked": True,
     }
