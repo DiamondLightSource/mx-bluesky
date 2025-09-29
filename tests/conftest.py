@@ -1777,11 +1777,12 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
 
 
 @pytest.fixture
-def mock_ispyb_conn(base_ispyb_conn):
+def mock_ispyb_conn(base_ispyb_conn, request):
+    dcg_id = getattr(request, "param", {}).get("dcg_id", TEST_DATA_COLLECTION_GROUP_ID)
     yield from _mock_ispyb_conn(
         base_ispyb_conn,
         TEST_POSITION_ID,
-        TEST_DATA_COLLECTION_GROUP_ID,
+        dcg_id,
         TEST_DATA_COLLECTION_IDS,
         TEST_GRID_INFO_IDS,
     )
