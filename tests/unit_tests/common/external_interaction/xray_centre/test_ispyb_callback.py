@@ -292,8 +292,8 @@ class TestXrayCentreISPyBCallback:
             "stepsY": 20,
             "pixelsPerMicronX": 1 / 1.58,
             "pixelsPerMicronY": 1 / 1.58,
-            # "snapshotoffsetxpixel": 50,  # TODO
-            # "snapshotoffsetypixel": 100,  # TODO
+            "snapshotOffsetXPixel": 50,
+            "snapshotOffsetYPixel": 100,
             "orientation": "horizontal",
             "snaked": True,
         }
@@ -304,8 +304,8 @@ class TestXrayCentreISPyBCallback:
             "stepsY": 10,
             "pixelsPerMicronX": 1 / 1.58,
             "pixelsPerMicronY": 1 / 1.58,
-            # "snapshotoffsetxpixel": 50,  # TODO
-            # "snapshotoffsetypixel": 0,  # TODO
+            "snapshotOffsetXPixel": 50,
+            "snapshotOffsetYPixel": 0,
             "orientation": "horizontal",
             "snaked": True,
         }

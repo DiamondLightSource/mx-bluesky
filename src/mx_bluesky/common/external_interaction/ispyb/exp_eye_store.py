@@ -325,9 +325,8 @@ def _position_info_to_json(data: DataCollectionPositionInfo) -> dict:
 def _grid_info_to_json(data: DataCollectionGridInfo) -> dict:
     return _none_to_absent(
         {
-            # XXX - where does snapshot_offset_x/ypixel go?
-            # "xOffset": data.snapshot_offset_x_pixel,
-            # "yOffset": data.snapshot_offset_y_pixel,
+            "snapshotOffsetXPixel": data.snapshot_offset_x_pixel,
+            "snapshotOffsetYPixel": data.snapshot_offset_y_pixel,
             "dx": data.dx_in_mm,
             "dy": data.dy_in_mm,
             "stepsX": data.steps_x,
