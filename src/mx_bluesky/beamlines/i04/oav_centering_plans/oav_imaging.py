@@ -1,5 +1,3 @@
-import os
-
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -17,7 +15,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 """
 Check with the robot that there is no pin mounted. If there is raise an exception with a nice error message.
 Move the beamstop to data collection position
-Move the scintillator in 
+Move the scintillator in
 Wait for the above to finish
 Set transmission to 100%
 Open the fast shutter
@@ -25,13 +23,16 @@ Take an OAV image
 """
 
 
-# REMEMBER to add all the injects
+# REMEMBER to CHECK all the injects
 def take_image(
-    robot: BartRobot,
-    beamstop: Beamstop,
-    scintillator: Scintillator,
-    attenuator: BinaryFilterAttenuator,
-    shutter: ZebraShutter,
+    image_name: str = "Image",
+    # check if there is a default path we can use
+    image_path: str = "mx-bluesky/src/mx_bluesky/beamlines/i04/oav_centering_plans/images",
+    robot: BartRobot = inject("robot"),
+    beamstop: Beamstop = inject("beamstop"),
+    scintillator: Scintillator = inject("scintillator"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+    shutter: ZebraShutter = inject("shutter"),
 ):
     initial_wait = "Initial wait group"
     # check pin is mounted - I think this is wrong -- recheck
@@ -58,9 +59,7 @@ def take_image(
     # open fast shutter
     yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
-    # take oav image
-    # image_name = "Image"
-    # take_OAV_image("/workspaces/mx-bluesky/src/mx_bluesky/beamlines/i04/oav_centering_plans/images", )
+    take_OAV_image(file_path=image_path, file_name=image_name)
 
 
 def take_OAV_image(
@@ -73,14 +72,3 @@ def take_OAV_image(
     yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
     yield from bps.wait(group)
     yield from bps.trigger(oav.snapshot, wait=True)
-
-
-def get_available_filename(directory, base_name):
-    # may need to include the extension (jpeg) as a parameter?
-    counter = 1
-    while True:
-        filename = "f{base_name}{counter}"
-        full_path = os.path.join(directory, filename)
-        if not os.path.exists(full_path):
-            return filename
-        counter += 1
