@@ -1,7 +1,7 @@
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.backlight import Backlight
-from dodal.devices.motor import XYZOmegaStage
+from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
