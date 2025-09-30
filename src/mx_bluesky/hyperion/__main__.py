@@ -165,32 +165,25 @@ def initialise_globals(args: HyperionArgs):
         CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
-    LOGGER.info("Alerting setup")
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
-    LOGGER.info("Alerting set")
 
 
 def main():
     """Main application entry point."""
     args = parse_cli_args()
-    LOGGER.info("initialising globals...")
     initialise_globals(args)
     hyperion_port = HyperionConstants.HYPERION_PORT
-    LOGGER.info("setting up context...")
     context = setup_context(dev_mode=args.dev_mode)
 
     if args.mode == HyperionMode.GDA:
         runner = GDARunner(context=context)
-        LOGGER.info("runner created")
         app = create_app(runner)
-        LOGGER.info("app created")
         flask_thread = threading.Thread(
             target=lambda: app.run(
                 host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
             ),
             daemon=True,
         )
-        LOGGER.info("starting thread")
         flask_thread.start()
         LOGGER.info(
             f"Hyperion now listening on {hyperion_port} ({'IN DEV' if args.dev_mode else ''})"
