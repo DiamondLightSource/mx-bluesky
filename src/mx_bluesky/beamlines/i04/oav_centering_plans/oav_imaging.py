@@ -23,7 +23,6 @@ Take an OAV image
 """
 
 
-# REMEMBER to CHECK all the injects
 def take_image(
     image_name: str = "Image",
     # check if there is a default path we can use
@@ -32,21 +31,19 @@ def take_image(
     beamstop: Beamstop = inject("beamstop"),
     scintillator: Scintillator = inject("scintillator"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-    shutter: ZebraShutter = inject("shutter"),
+    shutter: ZebraShutter = inject("sample_shutter"),
 ):
-    initial_wait = "Initial wait group"
-    # check pin is mounted - I think this is wrong -- recheck
+    initial_wait = "Wait for scint to move in"
+    # check pin is mounted
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.NO_PIN_MOUNTED:
         raise ValueError("Pin should not be mounted! ")
-    # elif pin_mounted == PinMounted.PIN_MOUNTED:
 
     # move beamstop to data collection position
     beamstop_pos = beamstop.selected_pos
     yield from bps.abs_set(
         beamstop_pos, BeamstopPositions.DATA_COLLECTION, group=initial_wait
     )
-    # beamstop.selected_pos.set(BeamstopPositions.DATA_COLLECTION)
 
     # move scint in
     yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=initial_wait)
