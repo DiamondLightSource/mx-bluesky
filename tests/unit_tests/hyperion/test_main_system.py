@@ -88,6 +88,12 @@ def test_params(tmp_path):
     )
 
 
+@pytest.fixture(autouse=True)
+def patch_remote_graylog_endpoint():
+    with patch("dodal.log.get_graylog_configuration", return_value=("localhost", 5555)):
+        yield None
+
+
 class MockRunEngine:
     def __init__(self, test_name):
         self.RE_takes_time = True
