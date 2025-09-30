@@ -192,7 +192,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.params, "ISPyB handler didn't receive parameters!"
         assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
-        data_collection_id = None
         data_collection_info = DataCollectionInfo(
             xtal_snapshot1=data.get("oav-grid_snapshot-last_path_full_overlay"),
             xtal_snapshot2=data.get("oav-grid_snapshot-last_path_outer"),
@@ -245,6 +244,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             "Updating ispyb data collection after oav snapshot."
         )
         grid_plane = _smargon_omega_to_xyxz_plane(doc["data"]["smargon-omega"])
+        # Snapshots may be triggered in a different order to gridscans, so save
+        # the mapping to the data collection id in order to trigger Zocalo correctly.
         self._grid_plane_to_id_map[grid_plane] = data_collection_id
 
         self._oav_snapshot_event_idx += 1
