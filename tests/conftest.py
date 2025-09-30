@@ -1288,11 +1288,6 @@ def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
     return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
 
-def assert_upsert_call_with(call, param_template, expected: dict):
-    actual = remap_upsert_columns(list(param_template), call.args[0])
-    assert actual == dict(param_template | expected)
-
-
 def remap_upsert_columns(keys: Sequence[str], values: list):
     return dict(zip(keys, values, strict=False))
 
