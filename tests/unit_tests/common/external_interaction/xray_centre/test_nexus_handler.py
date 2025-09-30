@@ -27,7 +27,7 @@ def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
         param_type=HyperionSpecifiedThreeDGridScan
     )
     nexus_writer.assert_not_called()
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
+    nexus_handler.activity_gated_start(TestEventData.test_gridscan_outer_start_document)
     nexus_writer.assert_not_called()
 
 
@@ -83,7 +83,7 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
+    nexus_handler.activity_gated_start(TestEventData.test_gridscan_outer_start_document)
     nexus_handler.activity_gated_descriptor(
         TestEventData.test_descriptor_document_during_data_collection
     )
@@ -114,7 +114,7 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
+    nexus_handler.activity_gated_start(TestEventData.test_gridscan_outer_start_document)
     nexus_handler.activity_gated_descriptor(
         TestEventData.test_descriptor_document_during_data_collection
     )
