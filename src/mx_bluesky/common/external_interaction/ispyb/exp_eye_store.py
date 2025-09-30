@@ -274,14 +274,10 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
             "axisEnd": data.axis_end,
             "chiStart": data.chi_start,
             "kappaStart": data.kappa_start,
-            # TODO
-            # "dataCollectionGroupId": data. ? - this is not needed
-            # "visitString": data.visit_string - this is not needed
-            # "sampleId": data.sample_id
             "detectorId": data.detector_id,
             "axisStart": data.axis_start,
-            # "focal_spot_size_at_samplex": data.focal_spot_size_at_samplex
-            # "focal_spot_size_at_sampley": data.focal_spot_size_at_sampley
+            # TODO "focal_spot_size_at_samplex": data.focal_spot_size_at_samplex
+            # TODO "focal_spot_size_at_sampley": data.focal_spot_size_at_sampley
             "slitGapVertical": data.slitgap_vertical,
             "slitGapHorizontal": data.slitgap_horizontal,
             "beamSizeAtSampleX": data.beamsize_at_samplex,
@@ -314,7 +310,6 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
 def _position_info_to_json(data: DataCollectionPositionInfo) -> dict:
     return _none_to_absent(
         {
-            # "relativePositionId": data.
             "posX": data.pos_x,
             "posY": data.pos_y,
             "posZ": data.pos_z,
