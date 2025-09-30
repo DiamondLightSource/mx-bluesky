@@ -10,6 +10,10 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 
+from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_FGS_features,
 )
@@ -29,10 +33,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
-    setup_zebra_for_gridscan,
-    tidy_up_zebra_after_gridscan,
-)
 
 
 class SmargonSpeedException(Exception):
@@ -78,7 +78,12 @@ def construct_hyperion_specific_features(
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
     else:
-        setup_trigger_plan = setup_zebra_for_gridscan
+        setup_trigger_plan = partial(
+            setup_zebra_for_gridscan,
+            zebra_output_to_disconnect=xrc_composite.zebra.output.out_pvs[
+                xrc_composite.zebra.mapping.outputs.TTL_XSPRESS3
+            ],
+        )
         tidy_plan = partial(
             tidy_up_zebra_after_gridscan,
             xrc_composite.zebra,
