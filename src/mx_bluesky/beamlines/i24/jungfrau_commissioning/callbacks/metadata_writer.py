@@ -28,14 +28,12 @@ class JsonMetadataWriter(CallbackBase):
         self.wavelength_in_a = None
         self.energy_in_kev = None
         self.detector_distance_mm = None
+        self.descriptors: dict[str, dict] = {}
+        self.flux: float | None = None
+        self.transmission: float | None = None
+        self.parameters: SingleRotationScan | None = None
 
         super().__init__()
-
-    descriptors: dict[str, dict] = {}
-    parameters: SingleRotationScan
-    wavelength: float | None = None
-    flux: float | None = None
-    transmission: float | None = None
 
     def start(self, doc: dict):  # type: ignore
         if doc.get("subplan_name") == PlanNameConstants.ROTATION_META_READ:
@@ -67,10 +65,11 @@ class JsonMetadataWriter(CallbackBase):
                 )
 
             LOGGER.info(
-                f"Metadata writer received parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength}, det distance: {self.detector_distance_mm}, beam_xy: {self.beam_xy}"
+                f"Metadata writer received parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength_in_a}, det distance: {self.detector_distance_mm}, beam_xy: {self.beam_xy}"
             )
 
     def stop(self, doc: dict):  # type: ignore
+        assert self.parameters is not None
         if (
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid
