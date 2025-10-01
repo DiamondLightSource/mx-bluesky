@@ -1,6 +1,8 @@
 import dataclasses
 
+import pytest
 from dodal.devices.zebra.zebra import (
+    I03Axes,
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
@@ -11,6 +13,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     configure_zebra_and_shutter_for_auto_shutter,
     setup_zebra_for_gridscan,
+    setup_zebra_for_rotation,
     tidy_up_zebra_after_gridscan,
 )
 
@@ -66,5 +69,13 @@ async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraS
         == zebra.mapping.sources.IN3_TTL
     )
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
+    assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
+    assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
+
+
+async def test_zebra_set_up_for_rotation(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
+    RE(setup_zebra_for_rotation(zebra, zebra_shutter, wait=True))
+    assert await zebra.pc.gate_trigger.get_value() == I03Axes.OMEGA.value
+    assert await zebra.pc.gate_width.get_value() == pytest.approx(360, 0.01)
     assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
     assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
