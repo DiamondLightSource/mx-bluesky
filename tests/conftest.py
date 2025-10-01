@@ -565,6 +565,27 @@ def robot(done_status, RE: RunEngine):
 
 
 @pytest.fixture
+def beamstop(RE: RunEngine):
+    beamstop = i03.beamstop(connect_immediately=True, mock=True)
+
+    return beamstop
+
+
+@pytest.fixture
+def scintillator(RE: RunEngine):
+    scintillator = i03.scintillator(connect_immediately=True, mock=True)
+
+    return scintillator
+
+
+@pytest.fixture
+def shutter(RE: RunEngine):
+    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+
+    return shutter
+
+
+@pytest.fixture
 def attenuator(RE: RunEngine):
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
