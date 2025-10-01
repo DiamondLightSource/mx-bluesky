@@ -19,7 +19,7 @@ To find different severity of message you can search for ``level: X``. Where X i
 
 * ``3``: Errors messages - usually causing Hyperion to have stopped. Note that no diffraction is currently logged as an error but this doesn't stop Hyperion, only skip the sample. This will be improved by https://github.com/DiamondLightSource/mx-bluesky/issues/427.
 * ``4``: Warnings - usually not a major problem
-* ``5``: Info - Just telling you what Hyperion is doing
+* ``6``: Info - Just telling you what Hyperion is doing
 
 
 Startup Log
