@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion User Guide &#8212; mx-bluesky 1.0.1.dev350+gbef0111e1 documentation</title>
+    <title>Hyperion User Guide &#8212; mx-bluesky 1.0.1.dev351+g64bd34534 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=311f2dd0"></script>
+    <script src="../../_static/documentation_options.js?v=93d2721c"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -452,7 +452,7 @@
   <section id="hyperion-user-guide">
 <h1>Hyperion User Guide<a class="headerlink" href="#hyperion-user-guide" title="Link to this heading">#</a></h1>
 <p>The Hyperion User Guide describes how to run, configure and troubleshoot Hyperion. For installation instructions, see
-the Developer Guide.</p>
+the <a class="reference external" href="../../developer/hyperion/deploying-hyperion">Developer Guide</a>.</p>
 <section id="what-is-hyperion">
 <h2>What is Hyperion?<a class="headerlink" href="#what-is-hyperion" title="Link to this heading">#</a></h2>
 <p>Hyperion is a service for running high throughput unattended data collection (UDC). It does not provide a user
@@ -463,20 +463,31 @@ interface, instead instructions are pulled from Agamemnon which is controlled by
 <li><p>GDA mode (where GDA fetches and decodes the Agamemnon
 instructions). GDA mode will be removed in a future release.</p></li>
 </ul>
-<p>The mode of operation is determined by configuration using the <code class="docutils literal notranslate"><span class="pre">gda.mx.udc.hyperion.enable</span></code> parameter</p>
+<p>The mode of operation is determined by configuration using the <code class="docutils literal notranslate"><span class="pre">gda.mx.udc.hyperion.enable</span></code> parameter inside
+GDA properties. See <a class="reference external" href="./configuration">configuration</a> for other properties that control Hyperions behavior.</p>
 <p>Once Hyperion has received a request, either from GDA or directly from Agamemnon, it will do the following tasks:</p>
 <ul class="simple">
-<li><p>Robot Load (if necessary)</p></li>
-<li><p>Pin tip detection using the OAV</p></li>
-<li><p>Xray Centring</p></li>
+<li><p>Robot Load (if the requested sample has not yet been loaded)</p></li>
+<li><p>Pin tip centring using the OAV</p></li>
+<li><p>Xray Centring using 2 2D gridscans</p></li>
 <li><p>A number of data collections, depending on the number of centres returned from Zocalo and the applied selection criteria</p></li>
 </ul>
 <p>During this it will generate the following outputs:</p>
 <ul class="simple">
 <li><p>Snapshots on robot load, XRC and rotations</p></li>
 <li><p>Data collections in ISPyB for the gridscans and rotations as well as entries for robot load/unload</p></li>
-<li><p>Nexus files for each data collection</p></li>
+<li><p>NeXus files for each data collection</p></li>
 <li><p>Alert notifications on loading a new container and on beamline error conditions when intervention is required.</p></li>
+</ul>
+<p>To increase throughput, the behavior of Hyperion differs in many ways from UDC under GDA. The main ways this manifests
+to a user is:</p>
+<ul class="simple">
+<li><p>Xray Centring is 2 2D gridscans (rather than the one gridscan and one line scan in GDA). For speed, the eiger is only
+armed once for both of these and the data is split up after the fact. This means on the filesystem there is one set of
+hdf files for both gridscans but two NeXus files. The two grid scans are stored in ISPyB under one data collection
+group so at first glance it may look like one gridscan in synchweb but you can click through to see both scans.</p></li>
+<li><p>If an xray centre cannot be done on a pin (because it is too long/short or bent), or if no diffraction is found in the
+xray centring data, the sample will be immediately unloaded without a rotation scan being done and the next sample loaded.</p></li>
 </ul>
 <p>For a more detailed breakdown of the operation, it may be helpful to browse the  <a class="reference external" href="../../developer/code-map">Code Map</a></p>
 <div class="toctree-wrapper compound">
