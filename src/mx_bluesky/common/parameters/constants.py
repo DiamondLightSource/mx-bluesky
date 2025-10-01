@@ -40,7 +40,7 @@ def _get_oav_config_json_path():
         return "tests/test_data/test_OAVCentring.json"
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
-    elif BEAMLINE == "AITHRE":
+    elif BEAMLINE == "aithre":
         return "/dls/science/groups/i23/aithre/daq_configuration/json/OAVCentring_aithre.json"
     else:
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring.json"
