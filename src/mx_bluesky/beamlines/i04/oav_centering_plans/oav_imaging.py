@@ -33,6 +33,7 @@ def take_image(
     scintillator: Scintillator = inject("scintillator"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     shutter: ZebraShutter = inject("sample_shutter"),
+    oav: OAV = inject("oav"),
 ):
     initial_wait = "Wait for scint to move in"
     # check pin is mounted
@@ -60,13 +61,13 @@ def take_image(
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
 
     # take image
-    take_OAV_image(file_path=image_path, file_name=image_name)
+    take_OAV_image(file_path=image_path, file_name=image_name, oav=oav)
 
 
 def take_OAV_image(
     file_path: str,
     file_name: str,
-    oav: OAV = inject("oav"),
+    oav: OAV,
 ) -> MsgGenerator:
     group = "path setting"
     yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
