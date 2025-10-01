@@ -12,6 +12,8 @@ from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
 
+SLEEP_PER_CHECK = 0.1
+
 
 def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     """Waits for the smargon disabled flag to go low. The robot hardware is responsible
@@ -19,7 +21,6 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     connection between the robot and the smargon.
     """
     LOGGER.info("Waiting for smargon enabled")
-    SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
     for _ in range(times_to_check):
         smargon_disabled = yield from bps.rd(smargon.disabled)

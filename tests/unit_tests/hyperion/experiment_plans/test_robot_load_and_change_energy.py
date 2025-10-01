@@ -90,11 +90,14 @@ def run_simulating_smargon_wait(
         "read", return_not_disabled_after_reads, "smargon-disabled"
     )
 
-    return sim_run_engine.simulate_plan(
-        robot_load_and_change_energy_plan(
-            robot_load_composite, robot_load_then_centre_params
+    with patch(
+        "mx_bluesky.common.device_setup_plans.robot_load_unload.SLEEP_PER_CHECK", 1
+    ):
+        return sim_run_engine.simulate_plan(
+            robot_load_and_change_energy_plan(
+                robot_load_composite, robot_load_then_centre_params
+            )
         )
-    )
 
 
 @pytest.mark.parametrize("total_disabled_reads", [5, 3, 14])
@@ -139,7 +142,7 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
         run_simulating_smargon_wait(
             robot_load_and_energy_change_params,
             robot_load_and_energy_change_composite,
-            1000,
+            100,
             sim_run_engine,
         )
 
