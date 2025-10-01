@@ -5,14 +5,14 @@
         },
         {
             "path": "../../dodal"
-        }
+        },
     ],
     "settings": {
         "python.languageServer": "Pylance",
         "[python]": {
             "editor.defaultFormatter": "ms-python.black-formatter"
         },
-        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.defaultInterpreterPath": "venv/bin/python",
         "python.analysis.extraPaths": [
             "../dodal"
         ],

@@ -52,6 +52,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+    generate_start_info_from_ordered_runs,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
@@ -804,7 +805,9 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    mock_zocalo_callback = ZocaloCallback(CONST.PLAN.ROTATION_MAIN, "env")
+    mock_zocalo_callback = ZocaloCallback(
+        CONST.PLAN.ROTATION_MAIN, "env", generate_start_info_from_ordered_runs
+    )
     mock_ispyb_callback = RotationISPyBCallback(emit=mock_zocalo_callback)
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)

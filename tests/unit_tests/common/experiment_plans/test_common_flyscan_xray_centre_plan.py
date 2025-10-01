@@ -12,7 +12,7 @@ from dodal.beamlines import i03
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
@@ -64,7 +64,6 @@ from tests.unit_tests.hyperion.experiment_plans.conftest import mock_zocalo_trig
 
 from ....conftest import TestData
 from ...conftest import (
-    create_gridscan_callbacks,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
@@ -79,6 +78,25 @@ class CompleteException(Exception):
 
 def mock_plan():
     yield from bps.null()
+
+
+@pytest.fixture
+def RE_with_subs_snapshots_already_taken(RE_with_subs, TestEventData):
+    RE, subscriptions = RE_with_subs
+    ispyb_gridscan_callback = [
+        sub for sub in subscriptions if isinstance(sub, GridscanISPyBCallback)
+    ][0]
+    ispyb_gridscan_callback.active = True
+    ispyb_gridscan_callback.start(
+        TestEventData.test_grid_detect_and_gridscan_start_document
+    )  # type: ignore
+    ispyb_gridscan_callback.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
+    ispyb_gridscan_callback.descriptor(
+        TestEventData.test_descriptor_document_oav_snapshot
+    )
+    ispyb_gridscan_callback.event(TestEventData.test_event_document_oav_snapshot_xy)
+    ispyb_gridscan_callback.event(TestEventData.test_event_document_oav_snapshot_xz)
+    return RE, subscriptions
 
 
 @patch(
@@ -209,7 +227,6 @@ class TestFlyscanXrayCentrePlan:
                     test_fgs_params.scan_points_first_grid,
                     test_fgs_params.scan_points_second_grid,
                 ],
-                test_fgs_params.scan_indices,
             )
 
         with pytest.raises(FailedStatus):
@@ -229,7 +246,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -247,7 +264,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(
+        test_fgs: ZebraFastGridScanThreeD = i03.zebra_fast_grid_scan(
             connect_immediately=True, mock=True
         )
 
@@ -299,13 +316,13 @@ class TestFlyscanXrayCentrePlan:
         mock_abs_set,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        RE_with_subs: ReWithSubs,
+        RE_with_subs_snapshots_already_taken: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         test_fgs_params.x_steps = 9
         test_fgs_params.y_steps = 10
         test_fgs_params.z_steps = 12
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs_snapshots_already_taken
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
@@ -335,7 +352,9 @@ class TestFlyscanXrayCentrePlan:
                 )
             )
 
-        mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
+        mock_parent.assert_has_calls(
+            [call.disarm(), call.run_end(100), call.run_end(200)]
+        )
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.wait",
@@ -431,27 +450,23 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
     )
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-        autospec=True,
-    )
-    @patch(
         "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
         autospec=True,
     )
     def test_kickoff_and_complete_gridscan_triggers_zocalo(
         self,
         mock_topup,
-        mock_zocalo_trigger_class: MagicMock,
         mock_complete: MagicMock,
         mock_kickoff: MagicMock,
-        RE: RunEngine,
+        RE_with_subs_snapshots_already_taken,
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
-        zebra_fast_grid_scan: ZebraFastGridScan,
+        zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     ):
         id_1, id_2 = 100, 200
 
-        _, ispyb_cb = create_gridscan_callbacks()
+        RE, subs = RE_with_subs_snapshots_already_taken
+        _, ispyb_cb = subs
         ispyb_cb.active = True
         ispyb_cb.ispyb = MagicMock()
         ispyb_cb.params = MagicMock()
@@ -473,8 +488,7 @@ class TestFlyscanXrayCentrePlan:
                 zebra_fast_grid_scan,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
-                scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
-                scan_start_indices=[0, x_steps * y_steps],
+                scan_points=create_dummy_scan_spec(),
             )
         )
 
