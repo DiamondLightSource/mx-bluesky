@@ -15,9 +15,9 @@ from mx_bluesky.common.parameters.constants import _get_oav_config_json_path
             "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
         ),
         ("i04", False, "/dls_sw/i04/software/daq_configuration/json/OAVCentring.json"),
-        ("AITHRE", True, "tests/test_data/test_OAVCentring.json"),
+        ("aithre", True, "tests/test_data/test_OAVCentring.json"),
         (
-            "AITHRE",
+            "aithre",
             False,
             "/dls/science/groups/i23/aithre/daq_configuration/json/OAVCentring_aithre.json",
         ),
