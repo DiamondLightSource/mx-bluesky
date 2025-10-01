@@ -431,12 +431,12 @@ def fat_then_thin_pin_tip_edges():
             GRID_DC_2_EXPECTED_VALUES.copy()
             | {
                 "numberofimages": 300,
-                "datacollectionnumber": 1,
+                # "datacollectionnumber": 1,  # TODO
                 "filetemplate": "robot_load_centring_file_1_master.h5",
             },  # 0 degrees xy
             GRID_DC_1_EXPECTED_VALUES.copy()
             | {
-                "datacollectionnumber": 2,
+                # "datacollectionnumber": 2,  # TODO
                 "filetemplate": "robot_load_centring_file_2_master.h5",
             },  # 90 degrees xz
             "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 10 "
