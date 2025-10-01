@@ -23,6 +23,7 @@ Take an OAV image
 """
 
 
+# need to make sure you return the MsgGenerator type and read up on this
 def take_image(
     image_name: str = "Image",
     # check if there is a default path we can use
@@ -37,7 +38,7 @@ def take_image(
     # check pin is mounted
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.NO_PIN_MOUNTED:
-        raise ValueError("Pin should not be mounted! ")
+        raise ValueError("Pin should not be mounted!")
 
     # move beamstop to data collection position
     beamstop_pos = beamstop.selected_pos
@@ -48,14 +49,17 @@ def take_image(
     # move scint in
     yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=initial_wait)
 
+    # set trans to 100%
+    yield from bps.abs_set(attenuator, 1, group=initial_wait)
+
     # wait
     yield from bps.wait(initial_wait)
-    # set trans to 100%
-    yield from bps.mv(attenuator, 1)
 
     # open fast shutter
     yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
+
+    # take image
     take_OAV_image(file_path=image_path, file_name=image_name)
 
 
