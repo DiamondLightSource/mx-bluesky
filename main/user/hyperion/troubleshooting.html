@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Troubleshooting &#8212; mx-bluesky 1.0.1.dev349+g80401dab4 documentation</title>
+    <title>Troubleshooting &#8212; mx-bluesky 1.0.1.dev350+gbef0111e1 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=506511c7"></script>
+    <script src="../../_static/documentation_options.js?v=311f2dd0"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -496,6 +496,12 @@ environment variables for a standard server install.</p>
 <h3><a class="toc-backref" href="#id4" role="doc-backlink">Graylog</a><a class="headerlink" href="#graylog" title="Link to this heading">#</a></h3>
 <p>Graylog is the recommended way to view logs. It is used for more centralised logging which is also more easily
 searched and archived. Log messages are sent to the <a class="reference external" href="https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search">Hyperion graylog stream</a>.</p>
+<p>To find different severity of message you can search for <code class="docutils literal notranslate"><span class="pre">level:</span> <span class="pre">X</span></code>. Where X is:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: Errors messages - usually causing Hyperion to have stopped. Note that no diffraction is currently logged as an error but this doesn’t stop Hyperion, only skip the sample. This will be improved by <a class="github reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/427">DiamondLightSource/mx-bluesky#427</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">4</span></code>: Warnings - usually not a major problem</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">6</span></code>: Info - Just telling you what Hyperion is doing</p></li>
+</ul>
 </section>
 <section id="startup-log">
 <h3><a class="toc-backref" href="#id5" role="doc-backlink">Startup Log</a><a class="headerlink" href="#startup-log" title="Link to this heading">#</a></h3>
