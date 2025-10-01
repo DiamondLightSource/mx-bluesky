@@ -34,11 +34,22 @@ def setup_zebra_for_gridscan(
     ttl_input_for_detector_to_use: None | int = None,
     zebra_output_to_disconnect: None | SignalRW = None,
 ) -> MsgGenerator:
-    """This plan assumes that the motion controller will send triggers to the zebra's IN4_TTL whenever the fast shutter
-    should open throughout the gridscan.
+    """
+    Configure the zebra for an MX XRC gridscan by allowing the zebra to trigger the fast shutter and detector via signals
+    sent from the motion controller.
 
-    If the Zebra has multiple detectors connected, you must manually specify which TTL input connects to your desired detector
-    in the ttl_input_for_detector_to_use parameter.
+    Args:
+        composite: Composite device containing a zebra and zebra shutter
+        group: Bluesky group to use when waiting on completion
+        wait: If true, block until completion
+        ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
+        specify which TTL input is being used for the desired detector
+        zebra_output_to_disconnect: Optionally specify a TTL output which should be unmapped (disconnected) from the Zebras inputs
+        before the gridscan begins.
+
+    This plan assumes that the motion controller, as part of its gridscan PLC, will send triggers as required to the zebra's
+    IN4_TTL and IN3_TTL to control the fast_shutter and detector respectively
+
     """
     zebra = composite.zebra
     ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
