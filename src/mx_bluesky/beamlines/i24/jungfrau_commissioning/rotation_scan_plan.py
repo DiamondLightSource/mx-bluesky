@@ -57,12 +57,9 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 
-# todo move constants somewhere more sensible
-EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
 READING_DUMP_FILENAME = "collection_info.json"
 JF_DET_STAGE_Y_POSITION_MM = 730
 DEFAULT_DETECTOR_DISTANCE_MM = 200
-PREPARE_BEAMLINE_GROUP = "prepare beamline"
 
 
 def set_up_beamline_for_rotation(
@@ -152,9 +149,6 @@ def single_rotation_plan(
         motion_values: RotationMotionProfile,
         composite: RotationScanComposite,
     ):
-        # Use smallest safe deadtime and neglect from motion calcualtions
-        _deadtime = 2e-5
-
         _jf_trigger_info = create_jungfrau_external_triggering_info(
             params.num_images, params.detector_params.exposure_time_s
         )

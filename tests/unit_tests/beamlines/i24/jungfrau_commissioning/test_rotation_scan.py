@@ -5,16 +5,16 @@ from dodal.beamlines.i24 import attenuator as i24_attenuator
 from dodal.devices.hutch_shutter import HutchShutter, ShutterState
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beamstop import Beamstop
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.util.test_utils import patch_all_motors
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.testing import patch_all_motors
 from ophyd_async.core import init_devices
-from ophyd_async.fastcs.jungfrau import Jungfrau
 from ophyd_async.testing import set_mock_value
 from tests.conftest import raw_params_from_file
 
@@ -35,7 +35,9 @@ def get_good_rotation_params(tmp_path):
 
 
 @pytest.fixture
-def rotation_composite(jungfrau: Jungfrau, zebra: Zebra) -> RotationScanComposite:
+def rotation_composite(
+    jungfrau: CommissioningJungfrau, zebra: Zebra
+) -> RotationScanComposite:
     with init_devices(mock=True):
         aperture = Aperture("")
         attenuator = i24_attenuator()
@@ -47,7 +49,7 @@ def rotation_composite(jungfrau: Jungfrau, zebra: Zebra) -> RotationScanComposit
         beamstop = Beamstop("")
         det_stage = YZStage("")  # TODO add JF position to det stage device
         backlight = DualBacklight("")
-        dcm = DCM("")
+        dcm = DCM("", "")
 
     patch_all_motors(det_stage)
     patch_all_motors(sample_shutter)
@@ -76,9 +78,7 @@ def test_single_rotation_plan_in_re(
     RE: RunEngine, tmp_path, rotation_composite: RotationScanComposite
 ):
     params = get_good_rotation_params(tmp_path)
-    set_mock_value(
-        rotation_composite.jungfrau._writer._drv.num_captured, params.num_images
-    )
+    set_mock_value(rotation_composite.jungfrau._writer.frame_counter, params.num_images)
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
     RE(single_rotation_plan(rotation_composite, params))
 
@@ -86,7 +86,16 @@ def test_single_rotation_plan_in_re(
 def test_metadata_writer_produces_correct_json_after_plan(): ...
 
 
-def test_set_up_beamline_for_rotation(): ...
+def test_set_up_beamline_for_rotation_in_re(): ...
+
+
+def test_set_up_beamline_for_rotation_in_simulator(): ...
 
 
 def test_single_rotation_plan_error_if_no_det_distance(): ...
+
+
+def test_multi_rotation_plan_varying_transmission(): ...
+
+
+def test_cleanup_plan(): ...

@@ -37,11 +37,11 @@ class JsonMetadataWriter(CallbackBase):
 
     def start(self, doc: dict):  # type: ignore
         if doc.get("subplan_name") == PlanNameConstants.ROTATION_META_READ:
-            LOGGER.info(
-                "Metadata writer recieved start document with experiment parameters."
-            )
             json_params = doc.get("rotation_scan_params")
             assert json_params is not None
+            LOGGER.info(
+                f"Metadata writer recieved start document with experiment parameters {json_params}"
+            )
             self.parameters = SingleRotationScan(**json.loads(json_params))
             self.run_start_uid = doc.get("uid")
 

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from pydantic import field_validator
-from sqlalchemy import Float
 
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 
 
 class MultiRotationScanByTransmissions(SingleRotationScan):
-    transmission_fractions: list[Float]
+    transmission_fractions: list[float]
     transmission_frac: float = -1
 
     @field_validator("transmission_frac")
