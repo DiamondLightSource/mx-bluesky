@@ -34,7 +34,7 @@ def take_image(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     shutter: ZebraShutter = inject("sample_shutter"),
     oav: OAV = inject("oav"),
-):
+) -> MsgGenerator:
     initial_wait = "Wait for scint to move in"
     # check pin is mounted
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
