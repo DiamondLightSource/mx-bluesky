@@ -1,3 +1,5 @@
+import time
+
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -25,9 +27,9 @@ Take an OAV image
 
 # need to make sure you return the MsgGenerator type and read up on this
 def take_image(
-    image_name: str = "Image",
+    image_name: str = f"{time.time_ns()}",
     # check if there is a default path we can use
-    image_path: str = "mx-bluesky/src/mx_bluesky/beamlines/i04/oav_centering_plans/images",
+    image_path: str = "/dls/mx-scratch/OAV_Images",
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
     scintillator: Scintillator = inject("scintillator"),
