@@ -6,10 +6,10 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
 )
 
-from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
-from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
+from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     configure_zebra_and_shutter_for_auto_shutter,
 )
+from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
 
 
 def setup_zebra_for_panda_flyscan(
