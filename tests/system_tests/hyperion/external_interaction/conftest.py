@@ -5,6 +5,7 @@ from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import ispyb.sqlalchemy
 import numpy
 import pytest
@@ -44,6 +45,7 @@ from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -278,6 +280,7 @@ def grid_detect_then_xray_centre_composite(
     sample_shutter,
     panda,
     panda_fast_grid_scan,
+    request,
 ):
     composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
@@ -304,9 +307,19 @@ def grid_detect_then_xray_centre_composite(
         sample_shutter=sample_shutter,
     )
 
+    def default_edge_generator():
+        while True:
+            yield pin_tip_edge_data()
+
+    edge_data_generator = default_edge_generator()
+    if param := getattr(request, "param", None):
+        edge_data_generator = param()
+
     @AsyncStatus.wrap
     async def mock_pin_tip_detect():
-        tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = next(
+            edge_data_generator
+        )
         set_mock_value(
             ophyd_pin_tip_detection.triggered_top_edge,
             top_edge_array,
@@ -459,3 +472,17 @@ def composite_for_rotation_scan(
     set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
 
     yield fake_create_rotation_devices
+
+
+@pytest.fixture
+def fake_grid_snapshot_plan():
+    def plan(smargon, oav):
+        for omega in [-90, 0]:
+            yield from bps.mv(smargon.omega, omega)
+            yield from bps.create(DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED)
+
+            yield from bps.read(oav)
+            yield from bps.read(smargon)
+            yield from bps.save()
+
+    return plan
