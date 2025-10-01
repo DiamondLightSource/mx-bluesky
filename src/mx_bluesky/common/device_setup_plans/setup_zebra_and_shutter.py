@@ -105,7 +105,7 @@ def configure_zebra_and_shutter_for_auto_shutter(
 
     auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
 
-    # Set first input of AND gate to SOFT_IN1, which is high when shutter is in auto mode
+    # Set first input of AND_GATE_FOR_AUTO_SHUTTER to SOFT_IN1, which is high when shutter is in auto mode
     # Note the Zebra should ALWAYS be setup this way. See https://github.com/DiamondLightSource/mx-bluesky/issues/551
     yield from bps.abs_set(
         zebra.logic_gates.and_gates[auto_gate].sources[1],
@@ -125,10 +125,15 @@ def tidy_up_zebra_after_gridscan(
     ttl_input_for_detector_to_use=None,
 ) -> MsgGenerator:
     """
-    Set the zebra back to a state which is expected by GDA
+    Set the zebra back to a state which is expected by GDA.
 
-    If the Zebra has multiple detectors connected, you must manually specify which TTL input connects to your desired detector
-    in the ttl_input_for_detector_to_use parameter.
+    Args:
+        zebra: Zebra device
+        zebra_shutter: Zebra shutter device
+        group: Bluesky group to use when waiting on completion
+        wait: If true, block until completion
+        ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
+        specify which TTL input is being used for the desired detector
     """
 
     LOGGER.info("Tidying up Zebra")
