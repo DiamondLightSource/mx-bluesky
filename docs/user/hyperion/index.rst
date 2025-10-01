@@ -35,6 +35,7 @@ During this it will generate the following outputs:
 
 To increase throughput, the behavior of Hyperion differs in many ways from UDC under GDA. The main ways this manifests 
 to a user is:
+
 - Xray Centring is 2 2D gridscans (rather than the one gridscan and one line scan in GDA). For speed, the eiger is only
   armed once for both of these and the data is split up after the fact. This means on the filesystem there is one set of 
   hdf files for both gridscans but two NeXus files. The two grid scans are stored in ISPyB under one data collection 
