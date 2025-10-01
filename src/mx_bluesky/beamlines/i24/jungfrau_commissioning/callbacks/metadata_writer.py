@@ -7,7 +7,6 @@ from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 from mx_bluesky.common.utils.log import LOGGER
 
-EXPERIMENT_PARAM_DUMP_FILENAME = "experiment_params.json"
 READING_DUMP_FILENAME = "collection_info.json"
 
 
