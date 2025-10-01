@@ -16,6 +16,7 @@ Graylog is the recommended way to view logs. It is used for more centralised log
 searched and archived. Log messages are sent to the `Hyperion graylog stream <https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search>`_.
 
 To find different severity of message you can search for ``level: X``. Where X is:
+
 * ``3``: Errors messages - usually causing Hyperion to have stopped. Note that no diffraction is currently logged as an error but this doesn't stop Hyperion, only skip the sample. This will be improved by https://github.com/DiamondLightSource/mx-bluesky/issues/427.
 * ``4``: Warnings - usually not a major problem
 * ``5``: Info - Just telling you what Hyperion is doing
