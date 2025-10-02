@@ -3,6 +3,7 @@ from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.preprocessors import monitor_during_wrapper, run_decorator
 from bluesky.run_engine import RunEngine
@@ -94,3 +95,31 @@ async def test_full_do_pedestal_darks(
         GainMode.DYNAMIC,
     ]
     mock_override_path.assert_called_once_with(jungfrau, test_path)
+
+
+class TestException(Exception): ...
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau",
+    side_effect=TestException,
+)
+@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
+async def test_pedestal_mode_turned_off_on_exception(
+    mock_fly: MagicMock,
+    mock_override_path: MagicMock,
+    jungfrau: CommissioningJungfrau,
+    RE: RunEngine,
+):
+    await jungfrau.drv.pedestal_mode_state.set(PedestalMode.ON)
+    await jungfrau.drv.acquisition_type.set(AcquisitionType.PEDESTAL)
+
+    @run_decorator()
+    def test_plan():
+        yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
+
+    with pytest.raises(TestException):
+        RE(test_plan())
+
+    assert await jungfrau.drv.pedestal_mode_state.get_value() == PedestalMode.OFF
+    assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
