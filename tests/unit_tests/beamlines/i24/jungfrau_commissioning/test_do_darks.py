@@ -97,12 +97,12 @@ async def test_full_do_pedestal_darks(
     mock_override_path.assert_called_once_with(jungfrau, test_path)
 
 
-class TestException(Exception): ...
+class FakeException(Exception): ...
 
 
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau",
-    side_effect=TestException,
+    side_effect=FakeException,
 )
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 async def test_pedestal_mode_turned_off_on_exception(
@@ -118,7 +118,7 @@ async def test_pedestal_mode_turned_off_on_exception(
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
 
-    with pytest.raises(TestException):
+    with pytest.raises(FakeException):
         RE(test_plan())
 
     assert await jungfrau.drv.pedestal_mode_state.get_value() == PedestalMode.OFF
