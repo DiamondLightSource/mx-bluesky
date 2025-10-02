@@ -1,7 +1,9 @@
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines.i24 import VerticalGoniometer
-from dodal.beamlines.i24 import attenuator as i24_attenuator
+from dodal.devices.attenuator.attenuator import (
+    EnumFilterAttenuator,
+)
 from dodal.devices.hutch_shutter import HutchShutter, ShutterState
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beamstop import Beamstop
@@ -36,11 +38,10 @@ def get_good_rotation_params(tmp_path):
 
 @pytest.fixture
 def rotation_composite(
-    jungfrau: CommissioningJungfrau, zebra: Zebra
+    jungfrau: CommissioningJungfrau, zebra: Zebra, enum_attenuator: EnumFilterAttenuator
 ) -> RotationScanComposite:
     with init_devices(mock=True):
         aperture = Aperture("")
-        attenuator = i24_attenuator()
         gonio = VerticalGoniometer("")
         synchrotron = Synchrotron("")
         sample_shutter = ZebraShutter("")
@@ -57,7 +58,7 @@ def rotation_composite(
 
     composite = RotationScanComposite(
         aperture,
-        attenuator,
+        enum_attenuator,
         jungfrau,
         gonio,
         synchrotron,
