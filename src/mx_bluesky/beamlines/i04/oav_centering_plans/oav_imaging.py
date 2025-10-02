@@ -8,6 +8,7 @@ from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
+from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
@@ -36,12 +37,16 @@ def take_image(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     shutter: ZebraShutter = inject("sample_shutter"),
     oav: OAV = inject("oav"),
+    feedback: XBPMFeedback = inject("xbpm_feedback"),
 ) -> MsgGenerator:
     initial_wait = "Wait for scint to move in"
     # check pin is mounted
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.NO_PIN_MOUNTED:
         raise ValueError("Pin should not be mounted!")
+
+    # feedback check
+    yield from bps.trigger(feedback, wait=True)
 
     # move beamstop to data collection position
     beamstop_pos = beamstop.selected_pos
