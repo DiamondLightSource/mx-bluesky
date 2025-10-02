@@ -81,3 +81,7 @@ def take_OAV_image(
     yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
     yield from bps.wait(group)
     yield from bps.trigger(oav.snapshot, wait=True)
+
+
+def optimise_oav_transmission():
+    pass
