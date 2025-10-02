@@ -8,7 +8,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.protocols import Readable
-from bluesky.utils import MsgGenerator
+from bluesky.utils import FailedStatus, MsgGenerator
 from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -270,10 +270,14 @@ def run_gridscan(
         yield from beamline_specific.read_pre_flyscan_plan()
 
     LOGGER.info("Setting fgs params")
-    yield from beamline_specific.set_flyscan_params_plan()
 
-    LOGGER.info("Waiting for gridscan validity check")
-    yield from wait_for_gridscan_valid(beamline_specific.fgs_motors)
+    try:
+        yield from beamline_specific.set_flyscan_params_plan()
+    except FailedStatus as e:
+        if isinstance(e.__cause__, TimeoutError):
+            raise SampleException(
+                "Scan invalid - pin too long/short/bent and out of range"
+            ) from e
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
@@ -291,23 +295,6 @@ def run_gridscan(
     # in a GDA-happy state.
     if isinstance(beamline_specific.fgs_motors, FastGridScanThreeD):
         yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
-
-
-def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
-    LOGGER.info("Waiting for valid fgs_params")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
-        LOGGER.debug(
-            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
-        )
-        if not scan_invalid and pos_counter == 0:
-            LOGGER.info("Gridscan scan valid and position counter reset")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise SampleException("Scan invalid - pin too long/short/bent and out of range")
 
 
 def _xrc_result_in_boxes_to_result_in_mm(

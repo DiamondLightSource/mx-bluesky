@@ -483,7 +483,10 @@ def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
 
 @pytest.fixture
 def fast_grid_scan(RE: RunEngine):
-    return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
+        set_mock_value(signal, 1)
+    return scan
 
 
 @pytest.fixture
@@ -939,7 +942,10 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 @pytest.fixture
 def panda_fast_grid_scan(RE: RunEngine):
-    return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+    scan = i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+    for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
+        set_mock_value(signal, 1)
+    return scan
 
 
 @pytest.fixture
@@ -957,6 +963,8 @@ async def hyperion_flyscan_xrc_composite(
     panda,
     backlight,
     s4_slit_gaps,
+    fast_grid_scan,
+    panda_fast_grid_scan,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -965,9 +973,7 @@ async def hyperion_flyscan_xrc_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
+        zebra_fast_grid_scan=fast_grid_scan,
         flux=i03.flux(connect_immediately=True, mock=True),
         s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
@@ -977,9 +983,7 @@ async def hyperion_flyscan_xrc_composite(
         zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
         panda=panda,
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
+        panda_fast_grid_scan=panda_fast_grid_scan,
         robot=i03.robot(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
