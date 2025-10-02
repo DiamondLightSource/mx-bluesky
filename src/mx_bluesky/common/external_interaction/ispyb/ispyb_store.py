@@ -191,6 +191,9 @@ class StoreInIspyb:
             )
             return data_collection_id
         else:
+            assert data_collection_info.parent_id, (
+                "Data Collection must have a Data Collection Group"
+            )
             return self._expeye.create_data_collection(
                 data_collection_info.parent_id, data_collection_info
             )

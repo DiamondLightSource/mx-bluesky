@@ -1,5 +1,5 @@
-from contextlib import nullcontext
 import json
+from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -81,19 +81,24 @@ class TestXrayCentreISPyBCallback:
             TestEventData.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
-        assert DCGS_RE.match(create_dcg_request.url)[2] == TEST_PROPOSAL_REF
-        assert int(DCGS_RE.match(create_dcg_request.url)[3]) == TEST_VISIT_NUMBER
+        assert (
+            mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+        )
+        assert (
+            int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3))
+            == TEST_VISIT_NUMBER
+        )
         assert json.loads(create_dcg_request.body) == {
             "experimentType": "Mesh3D",
             "sampleId": TEST_SAMPLE_ID,
         }
         create_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DCS_RE)]
         assert (
-            int(DCS_RE.match(create_dc_requests[0].url)[2])
+            int(mock_ispyb_conn.match(create_dc_requests[0], DCS_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID
         )
         assert (
-            int(DCS_RE.match(create_dc_requests[1].url)[2])
+            int(mock_ispyb_conn.match(create_dc_requests[1], DCS_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID
         )
         assert json.loads(create_dc_requests[0].body) == replace_all_tmp_paths(
@@ -159,11 +164,11 @@ class TestXrayCentreISPyBCallback:
         }
         update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)]
         assert (
-            int(DC_RE.match(update_dc_requests[0].url)[2])
+            int(mock_ispyb_conn.match(update_dc_requests[0], DC_RE, 2))
             == TEST_DATA_COLLECTION_IDS[0]
         )
         assert (
-            int(DC_RE.match(update_dc_requests[1].url)[2])
+            int(mock_ispyb_conn.match(update_dc_requests[1], DC_RE, 2))
             == TEST_DATA_COLLECTION_IDS[1]
         )
         assert json.loads(update_dc_requests[0].body) == expected_upsert
@@ -202,11 +207,11 @@ class TestXrayCentreISPyBCallback:
             "beamSizeAtSampleY": 0.02,
         }
         assert (
-            int(DC_RE.match(update_dc_requests[0].url)[2])
+            int(mock_ispyb_conn.match(update_dc_requests[0], DC_RE, 2))
             == TEST_DATA_COLLECTION_IDS[0]
         )
         assert (
-            int(DC_RE.match(update_dc_requests[1].url)[2])
+            int(mock_ispyb_conn.match(update_dc_requests[1], DC_RE, 2))
             == TEST_DATA_COLLECTION_IDS[1]
         )
         assert json.loads(update_dc_requests[0].body) == expected_payload
@@ -322,7 +327,7 @@ class TestXrayCentreISPyBCallback:
 
         update_dcg_requests = [c.request for c in mock_ispyb_conn.calls_for(DCG_RE)]
         assert (
-            int(DCG_RE.match(update_dcg_requests[0].url)[2])
+            int(mock_ispyb_conn.match(update_dcg_requests[0], DCG_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID
         )
         assert (
@@ -330,7 +335,7 @@ class TestXrayCentreISPyBCallback:
             == "Diffraction grid scan of 40 by 20 "
         )
         assert (
-            int(DCG_RE.match(update_dcg_requests[1].url)[2])
+            int(mock_ispyb_conn.match(update_dcg_requests[1], DCG_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID
         )
         assert (

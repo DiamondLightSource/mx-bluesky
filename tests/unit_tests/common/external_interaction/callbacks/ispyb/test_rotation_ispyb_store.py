@@ -189,14 +189,19 @@ def test_begin_deposition(
     )
 
     create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
-    assert DCGS_RE.match(create_dcg_request.url)[2] == TEST_PROPOSAL_REF
-    assert int(DCGS_RE.match(create_dcg_request.url)[3]) == TEST_VISIT_NUMBER
+    assert mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+    assert (
+        int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3)) == TEST_VISIT_NUMBER
+    )
     assert json.loads(create_dcg_request.body) == {
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,
     }
     create_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
-    assert int(DCS_RE.match(create_dc_request.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    assert (
+        int(mock_ispyb_conn.match(create_dc_request, DCS_RE, 2))
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(create_dc_request.body) == EXPECTED_BEGIN_DATA_COLLECTION
 
 
@@ -222,13 +227,19 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     )
     assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 0
     update_dcg_request = mock_ispyb_conn.calls_for(DCG_RE)[0].request
-    assert int(DCG_RE.match(update_dcg_request.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    assert (
+        int(mock_ispyb_conn.match(update_dcg_request, DCG_RE, 2))
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(update_dcg_request.body) == {
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,
     }
     update_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
-    assert int(DCS_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DCS_RE, 2))
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(update_dc_request.body) == EXPECTED_BEGIN_DATA_COLLECTION
 
 
@@ -251,8 +262,10 @@ def test_begin_deposition_with_alternate_experiment_type(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
     create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
-    assert DCGS_RE.match(create_dcg_request.url)[2] == TEST_PROPOSAL_REF
-    assert int(DCGS_RE.match(create_dcg_request.url)[3]) == TEST_VISIT_NUMBER
+    assert mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+    assert (
+        int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3)) == TEST_VISIT_NUMBER
+    )
     assert json.loads(create_dcg_request.body) == {
         "experimentType": "Characterization",
         "sampleId": TEST_SAMPLE_ID,
@@ -291,7 +304,10 @@ def test_update_deposition(
     )
     assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == EXPECTED_UPDATE_DATA_COLLECTION | {
         "synchrotronMode": "test",
         "slitGapVertical": 1,
@@ -301,7 +317,8 @@ def test_update_deposition(
 
     create_pos_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
     assert (
-        int(POSITION_RE.match(create_pos_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+        int(mock_ispyb_conn.match(create_pos_request, POSITION_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
     )
     assert json.loads(create_pos_request.body) == {
         "posX": 10,
@@ -346,7 +363,10 @@ def test_update_deposition_with_group_id_updates(
     assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 0
     assert len(mock_ispyb_conn.calls_for(DCG_ID)) == 0
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == EXPECTED_UPDATE_DATA_COLLECTION | {
         "synchrotronMode": "test",
         "slitGapVertical": 1,
@@ -356,7 +376,7 @@ def test_update_deposition_with_group_id_updates(
 
     update_position_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
     assert (
-        int(POSITION_RE.match(update_position_request.url)[2])
+        int(mock_ispyb_conn.match(update_position_request, POSITION_RE, 2))
         == TEST_DATA_COLLECTION_IDS[0]
     )
     assert json.loads(update_position_request.body) == {
@@ -406,7 +426,10 @@ def test_end_deposition_happy_path(
     )
     assert len(mock_ispyb_conn.calls_for(DC_RE)) == 2
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[1].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == {
         "endTime": EXPECTED_END_TIME,
         "runStatus": "DataCollection Successful",
@@ -441,7 +464,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     )
     assert ispyb_ids.data_collection_group_id == dcgid
     update_dcg_request = mock_ispyb_conn.calls_for(DCG_RE)[0].request
-    assert int(DCG_RE.match(update_dcg_request.url)[2]) == dcgid
+    assert int(mock_ispyb_conn.match(update_dcg_request, DCG_RE, 2)) == dcgid
     assert json.loads(update_dcg_request.body) == {
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,

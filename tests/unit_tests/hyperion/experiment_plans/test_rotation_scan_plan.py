@@ -1396,7 +1396,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         )
         assert create_data["numberOfImages"] == rotation_params.num_images
 
-        dc_id = int(DC_RE.match(update_dcs[0].url)[2])
+        dc_id = int(mock_ispyb_conn_multiscan.match(update_dcs[0], DC_RE, 2))
         append_comment_call = next(
             dropwhile(
                 lambda c: c.args[0] != dc_id,

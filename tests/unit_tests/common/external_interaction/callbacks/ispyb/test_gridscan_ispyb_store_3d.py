@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ispyb import ReadWriteError
-from requests import Request
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -325,19 +324,25 @@ def test_begin_deposition(
     )
 
     create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
-    assert DCGS_RE.match(create_dcg_request.url)[2] == TEST_PROPOSAL_REF
-    assert int(DCGS_RE.match(create_dcg_request.url)[3]) == TEST_VISIT_NUMBER
+    assert mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+    assert (
+        int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3)) == TEST_VISIT_NUMBER
+    )
     dcg_payload = json.loads(create_dcg_request.body)
     assert dcg_payload["experimentType"] == "Mesh3D"
     assert dcg_payload["sampleId"] == TEST_SAMPLE_ID
 
     create_dc_requests = mock_ispyb_conn.calls_for(DCS_RE)
-    request1: Request = create_dc_requests[0].request
-    assert int(DCS_RE.match(request1.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    request1 = create_dc_requests[0].request
+    assert (
+        int(mock_ispyb_conn.match(request1, DCS_RE, 2)) == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(request1.body) == EXPECTED_DC_XY_BEGIN_UPSERT
 
-    request2: Request = create_dc_requests[1].request
-    assert int(DCS_RE.match(request2.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    request2 = create_dc_requests[1].request
+    assert (
+        int(mock_ispyb_conn.match(request2, DCS_RE, 2)) == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(request2.body) == EXPECTED_DC_XZ_BEGIN_UPSERT
 
     assert len(mock_ispyb_conn.calls_for(POSITION_RE)) == 0
@@ -378,9 +383,15 @@ def test_update_deposition(
     update_xy_req = mock_ispyb_conn.calls_for(DC_RE)[0].request
     update_xz_req = mock_ispyb_conn.calls_for(DC_RE)[1].request
 
-    assert int(DC_RE.match(update_xy_req.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_xy_req, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_xy_req.body) == EXPECTED_DC_XY_UPDATE_UPSERT
-    assert int(DC_RE.match(update_xz_req.url)[2]) == TEST_DATA_COLLECTION_IDS[1]
+    assert (
+        int(mock_ispyb_conn.match(update_xz_req, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[1]
+    )
     assert json.loads(update_xz_req.body) == EXPECTED_DC_XZ_UPDATE_UPSERT
 
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
@@ -398,7 +409,7 @@ def test_update_deposition(
         c.request for c in mock_ispyb_conn.calls_for(POSITION_RE)
     ]
     assert (
-        int(POSITION_RE.match(update_dc_xy_pos_req.url)[2])
+        int(mock_ispyb_conn.match(update_dc_xy_pos_req, POSITION_RE, 2))
         == TEST_DATA_COLLECTION_IDS[0]
     )
     assert json.loads(update_dc_xz_pos_req.body) == {
@@ -410,7 +421,10 @@ def test_update_deposition(
     update_grid_xy_req, update_grid_xz_req = [
         c.request for c in mock_ispyb_conn.calls_for(GRID_RE)
     ]
-    assert int(GRID_RE.match(update_grid_xy_req.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_grid_xy_req, GRID_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_grid_xy_req.body) == {
         "dx": 0.1,
         "dy": 0.1,
@@ -435,7 +449,7 @@ def test_update_deposition(
     )
 
     assert (
-        int(POSITION_RE.match(update_dc_xz_pos_req.url)[2])
+        int(mock_ispyb_conn.match(update_dc_xz_pos_req, POSITION_RE, 2))
         == TEST_DATA_COLLECTION_IDS[1]
     )
     assert json.loads(update_dc_xz_pos_req.body) == {
@@ -444,7 +458,10 @@ def test_update_deposition(
         "posZ": 0,
     }
 
-    assert int(GRID_RE.match(update_grid_xz_req.url)[2]) == TEST_DATA_COLLECTION_IDS[1]
+    assert (
+        int(mock_ispyb_conn.match(update_grid_xz_req, GRID_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[1]
+    )
     assert json.loads(update_grid_xz_req.body) == {
         "dx": 0.1,
         "dy": 0.2,
@@ -493,7 +510,10 @@ def test_end_deposition_happy_path(
         " ",
     )
     update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)[2:]]
-    assert int(DC_RE.match(update_dc_requests[0].url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_requests[0], DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_requests[0].body) == {
         "endTime": EXPECTED_END_TIME,
         "runStatus": "DataCollection Successful",
@@ -503,7 +523,10 @@ def test_end_deposition_happy_path(
         "DataCollection Successful reason: Test succeeded",
         " ",
     )
-    assert int(DC_RE.match(update_dc_requests[1].url)[2]) == TEST_DATA_COLLECTION_IDS[1]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_requests[1], DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[1]
+    )
     assert json.loads(update_dc_requests[1].body) == {
         "endTime": EXPECTED_END_TIME,
         "runStatus": "DataCollection Successful",
@@ -603,7 +626,7 @@ def test_fail_result_run_results_in_bad_run_status(
         update_dc_requests, expected_ids_and_runstatuses, strict=True
     ):
         payload = json.loads(req.body)
-        assert int(DC_RE.match(req.url)[2]) == expected[0]
+        assert int(mock_ispyb_conn.match(req, DC_RE, 2)) == expected[0]
         assert payload.get("runStatus") == expected[1]
 
 
@@ -637,7 +660,7 @@ def test_fail_result_long_comment_still_updates_run_status(
         update_dc_requests, expected_ids_and_runstatuses, strict=True
     ):
         payload = json.loads(req.body)
-        assert int(DC_RE.match(req.url)[2]) == expected[0]
+        assert int(mock_ispyb_conn.match(req, DC_RE, 2)) == expected[0]
         assert payload.get("runStatus") == expected[1]
 
 
@@ -665,7 +688,7 @@ def test_no_exception_during_run_results_in_good_run_status(
         update_dc_requests, expected_ids_and_runstatuses, strict=True
     ):
         payload = json.loads(req.body)
-        assert int(DC_RE.match(req.url)[2]) == expected[0]
+        assert int(mock_ispyb_conn.match(req, DC_RE, 2)) == expected[0]
         assert payload.get("runStatus") == expected[1]
 
 

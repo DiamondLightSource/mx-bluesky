@@ -1702,21 +1702,21 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
         )
 
     def create_dc_response(request):
-        requested_dcg_id = int(DCS_RE.match(request.path_url)[2])
+        requested_dcg_id = int(DCS_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dcg_id == dcgid
         return (
             201,
             {},
             json.dumps(
                 {
-                    "dataCollectionId": next(upsert_data_collection.i),
+                    "dataCollectionId": next(upsert_data_collection.i),  # type: ignore
                     "dataCollectionGroupId": dcgid,
                 }
             ),
         )
 
     def update_dc_response(request):
-        requested_dc_id = int(DC_RE.match(request.path_url)[2])
+        requested_dc_id = int(DC_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dc_id in dcids
         return (
             200,
@@ -1727,20 +1727,25 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
         )
 
     def create_position_response(request):
-        requested_dc_id = int(POSITION_RE.match(request.path_url)[2])
+        requested_dc_id = int(POSITION_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dc_id in dcids
         return (201, {}, json.dumps({}))
 
     def create_grid_response(request):
-        requested_dc_id = int(GRID_RE.match(request.path_url)[2])
+        requested_dc_id = int(GRID_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dc_id in dcids
-        return (201, {}, json.dumps({"gridInfoId": next(upsert_dc_grid.i)}))
+        return (201, {}, json.dumps({"gridInfoId": next(upsert_dc_grid.i)}))  # type: ignore
 
     def calls_for(mock_req: responses.RequestsMock, pattern: str | re.Pattern):
         if not isinstance(pattern, re.Pattern):
             return [c for c in mock_req.calls if c.request.url == pattern]
         else:
             return [c for c in mock_req.calls if pattern.match(c.request.url)]
+
+    def match(mock_req: responses.RequestsMock, pattern: re.Pattern, idx: int) -> str:
+        matcher = pattern.match(mock_req.url)
+        assert matcher
+        return matcher[idx]
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rq_mock:
         for pattern, callback in {
@@ -1768,6 +1773,7 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             )
 
         base_ispyb_conn.calls_for = partial(calls_for, rq_mock)
+        base_ispyb_conn.match = match
         yield base_ispyb_conn
 
 

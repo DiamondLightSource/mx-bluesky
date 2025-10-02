@@ -60,14 +60,19 @@ def test_activity_gated_start(
 
     callback.activity_gated_start(test_rotation_start_outer_document)
     create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
-    assert DCGS_RE.match(create_dcg_request.url)[2] == TEST_PROPOSAL_REF
-    assert int(DCGS_RE.match(create_dcg_request.url)[3]) == TEST_VISIT_NUMBER
+    assert mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+    assert (
+        int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3)) == TEST_VISIT_NUMBER
+    )
     assert json.loads(create_dcg_request.body) == {
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,
     }
     update_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
-    assert int(DCS_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_GROUP_ID
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DCS_RE, 2))
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
     assert json.loads(update_dc_request.body) == replace_all_tmp_paths(
         EXPECTED_DATA_COLLECTION, tmp_path
     )
@@ -93,7 +98,10 @@ def test_hardware_read_events(
     callback.activity_gated_event(TestEventData.test_event_document_pre_data_collection)
     assert len(mock_ispyb_conn.calls_for(DCG_RE)) == 0
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == {
         "slitGapHorizontal": 0.1234,
         "slitGapVertical": 0.2345,
@@ -108,7 +116,7 @@ def test_hardware_read_events(
     expected_data = TestEventData.test_event_document_pre_data_collection["data"]
     create_position_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
     assert (
-        int(POSITION_RE.match(create_position_request.url)[2])
+        int(mock_ispyb_conn.match(create_position_request, POSITION_RE, 2))
         == TEST_DATA_COLLECTION_IDS[0]
     )
     assert json.loads(create_position_request.body) == {
@@ -144,7 +152,10 @@ def test_flux_read_events(
 
     assert len(mock_ispyb_conn.calls_for(DCG_RE)) == 0
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[1].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == {
         # "focal_spot_size_at_samplex": 0.05,  # TODO
         # "focal_spot_size_at_sampley": 0.02,  # TODO
@@ -185,7 +196,10 @@ def test_oav_rotation_snapshot_triggered_event(
         event_doc["data"]["oav-snapshot-last_saved_path"] = snapshot["filename"]  # type: ignore
         callback.activity_gated_event(event_doc)  # type: ignore
         update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[i].request
-        assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+        assert (
+            int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+            == TEST_DATA_COLLECTION_IDS[0]
+        )
         assert json.loads(update_dc_request.body) == {
             snapshot["colname"]: snapshot["filename"],
         }
@@ -229,7 +243,10 @@ def test_activity_gated_stop(
         ),
     )
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == {
         "endTime": EXPECTED_END_TIME,
         "runStatus": "DataCollection Successful",
@@ -260,7 +277,10 @@ def test_comment_correct_after_hardware_read(
     )
     callback.activity_gated_event(TestEventData.test_event_document_pre_data_collection)
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert int(DC_RE.match(update_dc_request.url)[2]) == TEST_DATA_COLLECTION_IDS[0]
+    assert (
+        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
+        == TEST_DATA_COLLECTION_IDS[0]
+    )
     assert json.loads(update_dc_request.body) == {
         "slitGapHorizontal": 0.1234,
         "slitGapVertical": 0.2345,
