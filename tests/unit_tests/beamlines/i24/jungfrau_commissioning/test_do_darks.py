@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.callbacks import CallbackBase
-from bluesky.preprocessors import monitor_during_wrapper, run_decorator
+from bluesky.preprocessors import monitor_during_wrapper
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.fastcs.jungfrau import (
@@ -44,7 +44,6 @@ async def test_full_do_pedestal_darks(
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
 
-    @run_decorator()
     def test_plan():
         status = yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
         assert not status.done
@@ -114,7 +113,6 @@ async def test_pedestal_mode_turned_off_on_exception(
     await jungfrau.drv.pedestal_mode_state.set(PedestalMode.ON)
     await jungfrau.drv.acquisition_type.set(AcquisitionType.PEDESTAL)
 
-    @run_decorator()
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
 
