@@ -81,8 +81,8 @@ def test_when_more_images_added_than_batch_size_then_murko_called(
 def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once(
     batch_forwarder: BatchMurkoForwarder,
 ):
-    result_1 = MurkoResult((100, 100), 0, 1, 2, "")
-    result_2 = MurkoResult((100, 100), 2, 3, 4, "")
+    result_1 = MurkoResult((0, 0), 0, 1, 2, "")
+    result_2 = MurkoResult((0, 0), 2, 3, 4, "")
     results = [("uuid_1", result_1), ("uuid_2", result_2)]
     batch_forwarder._send_murko_results_to_redis("sample_id", results)
 
