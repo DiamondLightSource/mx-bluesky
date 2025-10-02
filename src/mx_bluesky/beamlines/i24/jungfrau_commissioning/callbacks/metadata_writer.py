@@ -57,7 +57,7 @@ class JsonMetadataWriter(CallbackBase):
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_kev")
-            self.detector_distance_mm = data.get("det-stage_z")
+            self.detector_distance_mm = data.get("det_stage-z")
 
             if self.detector_distance_mm:
                 self.beam_xy = self.parameters.detector_params.get_beam_position_mm(

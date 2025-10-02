@@ -83,7 +83,6 @@ def set_up_beamline_for_rotation(
     LOGGER.info(
         "Making sure aperture and beamstop are in, detector stages are in position, backlight is out, and transmission is set..."
     )
-    yield from bps.abs_set(composite.det_stage.y, JF_DET_STAGE_Y_POSITION_MM)
     yield from bps.mv(
         composite.aperture.position,
         AperturePositions.IN,

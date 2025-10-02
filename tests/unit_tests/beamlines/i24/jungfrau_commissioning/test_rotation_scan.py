@@ -1,25 +1,9 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.beamlines.i24 import VerticalGoniometer
-from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
-from dodal.devices.hutch_shutter import HutchShutter, ShutterState
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.motors import YZStage
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.testing import patch_all_motors
-from ophyd_async.core import init_devices
+from dodal.devices.hutch_shutter import ShutterState
 from ophyd_async.testing import set_mock_value
-from tests.conftest import raw_params_from_file
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
@@ -36,16 +20,10 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     calculate_motion_profile,
 )
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
-from mx_bluesky.common.parameters.rotation import SingleRotationScan
-
-
-def get_good_single_rotation_params(tmp_path):
-    params = raw_params_from_file(
-        "tests/unit_tests/beamlines/i24/jungfrau_commissioning/test_data/test_good_rotation_params.json",
-        tmp_path,
-    )
-
-    return SingleRotationScan(**params)
+from tests.conftest import raw_params_from_file
+from tests.unit_tests.beamlines.i24.jungfrau_commissioning.utils import (
+    get_good_single_rotation_params,
+)
 
 
 def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
@@ -56,45 +34,6 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
     del params["transmission_frac"]
     params["transmission_fractions"] = [0.2, 0.4, 0.6]
     return MultiRotationScanByTransmissions(**params)
-
-
-@pytest.fixture
-def rotation_composite(
-    jungfrau: CommissioningJungfrau, zebra: Zebra, enum_attenuator: EnumFilterAttenuator
-) -> RotationScanComposite:
-    with init_devices(mock=True):
-        aperture = Aperture("")
-        gonio = VerticalGoniometer("")
-        synchrotron = Synchrotron("")
-        sample_shutter = ZebraShutter("")
-        xbpm_feedback = XBPMFeedback("")
-        hutch_shutter = HutchShutter("")
-        beamstop = Beamstop("")
-        det_stage = YZStage("")
-        backlight = DualBacklight("")
-        dcm = DCM("", "")
-
-    patch_all_motors(det_stage)
-    patch_all_motors(sample_shutter)
-    patch_all_motors(gonio)
-
-    composite = RotationScanComposite(
-        aperture,
-        enum_attenuator,
-        jungfrau,
-        gonio,
-        synchrotron,
-        sample_shutter,
-        zebra,
-        xbpm_feedback,
-        hutch_shutter,
-        beamstop,
-        det_stage,
-        backlight,
-        dcm,
-    )
-
-    return composite
 
 
 @patch(
@@ -206,9 +145,6 @@ def test_single_rotation_plan_in_simulator(
         lambda msg: msg.command == "close_run"
         and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN,
     )
-
-
-def test_devices_are_unstaged_on_exception(): ...
 
 
 @patch(
