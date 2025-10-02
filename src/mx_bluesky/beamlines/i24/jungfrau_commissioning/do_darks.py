@@ -18,6 +18,8 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 
+PEDESTAL_DARKS_RUN = "PEDESTAL DARKS RUN"
+
 
 def do_pedestal_darks(
     exp_time_s: float = 0.001,
@@ -48,31 +50,36 @@ def do_pedestal_darks(
         wait: Optionally block until data collection is complete.
     """
 
-    if path_of_output_file:
-        override_file_path(jungfrau, path_of_output_file)
+    @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
+    @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
+    def _do_decorated_plan():
+        if path_of_output_file:
+            override_file_path(jungfrau, path_of_output_file)
 
-    yield from bps.mv(
-        jungfrau.drv.acquisition_type,
-        AcquisitionType.PEDESTAL,
-        jungfrau.drv.gain_mode,
-        GainMode.DYNAMIC,
-    )
-
-    trigger_info = create_jungfrau_pedestal_triggering_info(
-        exp_time_s, pedestal_frames, pedestal_loops
-    )
-
-    @bpp.finalize_decorator(final_plan=lambda: _revert_pedestal_mode(jungfrau))
-    def _fly_then_revert_acquisition_type():
-        status = yield from fly_jungfrau(
-            jungfrau,
-            trigger_info,
-            wait,
-            log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
+        yield from bps.mv(
+            jungfrau.drv.acquisition_type,
+            AcquisitionType.PEDESTAL,
+            jungfrau.drv.gain_mode,
+            GainMode.DYNAMIC,
         )
-        return status
 
-    return (yield from _fly_then_revert_acquisition_type())
+        trigger_info = create_jungfrau_pedestal_triggering_info(
+            exp_time_s, pedestal_frames, pedestal_loops
+        )
+
+        @bpp.finalize_decorator(final_plan=lambda: _revert_pedestal_mode(jungfrau))
+        def _fly_then_revert_acquisition_type():
+            status = yield from fly_jungfrau(
+                jungfrau,
+                trigger_info,
+                wait,
+                log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
+            )
+            return status
+
+        return (yield from _fly_then_revert_acquisition_type())
+
+    return (yield from _do_decorated_plan())
 
 
 def _revert_pedestal_mode(jungfrau: CommissioningJungfrau):
