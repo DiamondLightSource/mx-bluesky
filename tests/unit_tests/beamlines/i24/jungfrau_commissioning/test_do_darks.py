@@ -1,6 +1,6 @@
 import asyncio
 from functools import partial
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -12,11 +12,13 @@ from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     PedestalMode,
+    create_jungfrau_internal_triggering_info,
 )
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
     do_pedestal_darks,
+    do_standard_darks,
 )
 
 
@@ -115,3 +117,59 @@ async def test_jungfrau_unstage(
     with pytest.raises(FakeException):
         RE(test_plan())
     mock_unstage.assert_called_once_with(jungfrau, wait=True)
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path",
+    new=MagicMock(),
+)
+@patch("bluesky.plan_stubs.mv")
+@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau")
+def test_do_standard_darks_triggers_correct_plans(
+    mock_fly_jf: MagicMock,
+    mock_move: MagicMock,
+    RE: RunEngine,
+    jungfrau: CommissioningJungfrau,
+):
+    parent_mock = MagicMock()
+    parent_mock.attach_mock(mock_fly_jf, "mock_fly_jf")
+    parent_mock.attach_mock(mock_move, "mock_move")
+    expected_trigger_info = create_jungfrau_internal_triggering_info(1000, 0.001)
+    RE(do_standard_darks(jungfrau=jungfrau))
+
+    assert parent_mock.method_calls == [
+        call.mock_move(jungfrau.drv.gain_mode, GainMode.DYNAMIC),
+        call.mock_fly_jf(
+            jungfrau,
+            expected_trigger_info,
+            True,
+            log_on_percentage_prefix=f"Jungfrau {GainMode.DYNAMIC} gain mode darks triggers recieved",
+        ),
+        call.mock_move(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G1),
+        call.mock_fly_jf(
+            jungfrau,
+            expected_trigger_info,
+            True,
+            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G1} gain mode darks triggers recieved",
+        ),
+        call.mock_move(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G2),
+        call.mock_fly_jf(
+            jungfrau,
+            expected_trigger_info,
+            True,
+            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G2} gain mode darks triggers recieved",
+        ),
+    ]
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau",
+    new=MagicMock(side_effect=FakeException),
+)
+def test_do_standard_darks_unstages_jf_on_exception(
+    RE: RunEngine, jungfrau: CommissioningJungfrau
+):
+    jungfrau.unstage = MagicMock()
+    with pytest.raises(FakeException):
+        RE(do_standard_darks(jungfrau=jungfrau))
+    jungfrau.unstage.assert_called_once()
