@@ -233,7 +233,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         data_collection_id = self.ispyb_ids.data_collection_ids[
             self._oav_snapshot_event_idx
         ]
-        self._populate_axis_info(data_collection_info, doc["data"]["smargon-omega"])
+        self._populate_axis_info(data_collection_info, doc["data"])
 
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
@@ -251,15 +251,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
 
-    def _populate_axis_info(
-        self, data_collection_info: DataCollectionInfo, omega_start: float | None
-    ):
-        if omega_start is not None:
+    def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
+        if (omega_start := doc.get("smargon-omega")) is not None:
             omega_in_gda_space = -omega_start
             data_collection_info.omega_start = omega_in_gda_space
             data_collection_info.axis_start = omega_in_gda_space
             data_collection_info.axis_end = omega_in_gda_space
             data_collection_info.axis_range = 0
+        if (chi_start := doc.get("smargon-chi")) is not None:
+            data_collection_info.chi_start = chi_start
 
     def populate_info_for_update(
         self,
