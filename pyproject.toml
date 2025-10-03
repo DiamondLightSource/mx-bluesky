@@ -218,6 +218,7 @@ lint.select = [
     "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
     "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
     "TID251", # banned api - https://docs.astral.sh/ruff/rules/banned-api/
+    "INP001", # missing __init__.py - https://docs.astral.sh/ruff/rules/implicit-namespace-package/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -228,6 +229,9 @@ lint.extend-ignore = [
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access, walrys operators in asserts, banned api in tests
 "tests/**/*" = ["SLF001", "B023", "RUF018", "TID251"]
+".github/**/*" = ["INP001"]
+"docs/**/*" = ["INP001"]
+"utility_scripts/**/*" = ["INP001"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "time.sleep".msg = "Use bps.sleep instead. # noqa will disable this rule for that line. See https://github.com/DiamondLightSource/mx-bluesky/issues/925"
