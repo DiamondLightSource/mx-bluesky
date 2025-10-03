@@ -53,9 +53,7 @@ def fly_jungfrau(
         # StandardDetector.complete converts regular status to watchable status,
         # but bluesky plan stubs can't see this currently
         status = cast(WatchableAsyncStatus, status)
-        log_on_percentage_complete(
-            status, "Jungfrau data collection triggers recieved", 10
-        )
+        log_on_percentage_complete(status, log_on_percentage_prefix, 10)
         if wait:
             yield from bps.wait(JF_COMPLETE_GROUP)
         return status
