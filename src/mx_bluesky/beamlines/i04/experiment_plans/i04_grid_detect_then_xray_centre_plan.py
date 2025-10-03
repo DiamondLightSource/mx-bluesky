@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -72,6 +73,8 @@ from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
     tidy_up_zebra_after_gridscan,
 )
 
+DEFAULT_BEAMSIZE_MICRONS = 20
+
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
@@ -96,6 +99,7 @@ def i04_grid_detect_then_xray_centre(
     zocalo: ZocaloResults = inject("zocalo"),
     smargon: Smargon = inject("smargon"),
     detector_motion: DetectorMotion = inject("detector_motion"),
+    transfocator: Transfocator = inject("transfocator"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
     udc: bool = False,
 ) -> MsgGenerator:
@@ -108,7 +112,7 @@ def i04_grid_detect_then_xray_centre(
 
 
     i04's implementation of this plan is very similar to Hyperion. However, since i04
-    isn't running in a continious Bluesky UDC loop, we take additional steps in beamline
+    isn't running in a continuous Bluesky UDC loop, we take additional steps in beamline
     tidy-up.
     """
 
@@ -134,8 +138,9 @@ def i04_grid_detect_then_xray_centre(
         robot,
         sample_shutter,
     )
+    initial_beamsize = yield from bps.rd(transfocator.beamsize_set_microns)
 
-    def tidy_beamline_if_not_udc():
+    def tidy_beamline():
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
                 composite.smargon,
@@ -143,8 +148,9 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
+        yield from bps.abs_set(transfocator, initial_beamsize)
 
-    @bpp.finalize_decorator(tidy_beamline_if_not_udc)
+    @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
         # These callbacks let us talk to ISPyB and Nexgen. They aren't included in the common plan because
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
@@ -167,6 +173,11 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
+    yield from bps.abs_set(
+        transfocator,
+        DEFAULT_BEAMSIZE_MICRONS,
+        group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
+    )
     yield from _inner_grid_detect_then_xrc()
 
 
