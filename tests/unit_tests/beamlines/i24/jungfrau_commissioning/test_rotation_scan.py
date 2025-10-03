@@ -37,6 +37,9 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
 
 
 @patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.read_devices_for_metadata"
+)
+@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan._cleanup_plan"
 )
 @patch(
@@ -63,6 +66,7 @@ async def test_single_rotation_plan_in_re(
     mock_arm_zebra: MagicMock,
     mock_check_topup: MagicMock,
     mock_cleanup: MagicMock,
+    mock_metadata_read: MagicMock,
     RE: RunEngine,
     tmp_path,
     rotation_composite: RotationScanComposite,
@@ -80,6 +84,7 @@ async def test_single_rotation_plan_in_re(
     mock_setup_zebra.assert_called_once()
     mock_arm_zebra.assert_called_once()
     mock_check_topup.assert_called_once()
+    mock_metadata_read.assert_called_once()
     mock_fly.assert_called_once()
     mock_cleanup.assert_called_once()
 
