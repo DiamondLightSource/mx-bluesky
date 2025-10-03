@@ -80,6 +80,7 @@ from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
+from requests import PreparedRequest
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -1742,7 +1743,7 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
         else:
             return [c for c in mock_req.calls if pattern.match(c.request.url)]
 
-    def match(mock_req: responses.RequestsMock, pattern: re.Pattern, idx: int) -> str:
+    def match(mock_req: PreparedRequest, pattern: re.Pattern, idx: int) -> str:
         matcher = pattern.match(mock_req.url)
         assert matcher
         return matcher[idx]
