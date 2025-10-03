@@ -2,8 +2,8 @@ import asyncio
 import pprint
 import sys
 import time
-from collections.abc import Callable
 from functools import partial
+from pathlib import Path, PurePath
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -15,21 +15,28 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from dodal.devices.zocalo import ZocaloResults
 from event_model.documents import Event
-from ophyd_async.core import AsyncStatus, init_devices
-from ophyd_async.fastcs.jungfrau import Jungfrau
+from ophyd_async.core import (
+    AsyncStatus,
+    AutoIncrementingPathProvider,
+    StaticFilenameProvider,
+    init_devices,
+)
 from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.testing import (
+    set_mock_value,
+)
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -40,6 +47,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -184,7 +192,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanISPyBCallback(
             param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
-                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+                PlanNameConstants.DO_FGS,
+                EnvironmentConstants.ZOCALO_ENV,
+                generate_start_info_from_omega_map,
             ),
         ),
     )
@@ -211,34 +221,23 @@ def mock_subscriptions(test_fgs_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0), data_collection_group_id=0
-                )
-            ),
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0),
-                    data_collection_group_id=0,
-                    grid_ids=(0, 0),
-                )
-            ),
-        ),
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+        ) as mock_store_in_ispyb,
     ):
+        mock_store_in_ispyb.return_value.begin_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200), data_collection_group_id=0
+        )
+        mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200),
+            data_collection_group_id=0,
+            grid_ids=(0, 0),
+        )
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
-    return (nexus_callback, ispyb_callback)
+        yield (nexus_callback, ispyb_callback)
 
 
 @pytest.fixture
@@ -266,13 +265,6 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
@@ -401,7 +393,7 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan=MagicMock(),
@@ -435,7 +427,7 @@ async def grid_detect_xrc_devices(
     ophyd_pin_tip_detection: PinTipDetection,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
-    fast_grid_scan: ZebraFastGridScan,
+    fast_grid_scan: ZebraFastGridScanThreeD,
     s4_slit_gaps: S4SlitGaps,
     flux: Flux,
     zebra,
@@ -479,21 +471,11 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(RE: RunEngine):
-    """The extra logic here prevents exceptions during data collection unit tests"""
-
+def jungfrau(tmp_path: Path, RE: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
-        detector = Jungfrau("prefix", MagicMock(), "", "", 4, "jungfrau")
+        name = StaticFilenameProvider("jf_out")
+        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        detector = CommissioningJungfrau("", "", path)
+    set_mock_value(detector._writer.writer_ready, 1)
 
-    def set_meta_filename_and_id(value, *args, **kwargs):
-        set_mock_value(detector.odin.meta_file_name, value)
-        set_mock_value(detector.odin.id, value)
-
-    callback_on_mock_put(detector.odin.file_name, set_meta_filename_and_id)
-
-    detector._writer._path_provider.return_value.filename = "filename.h5"  # type: ignore
-
-    set_mock_value(detector.odin.meta_active, "Active")
-    set_mock_value(detector.odin.capture_rbv, "Capturing")
-    set_mock_value(detector.odin.meta_writing, "Writing")
     return detector

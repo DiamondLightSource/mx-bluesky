@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.smargon import Smargon
 from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
@@ -12,6 +14,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanPlane,
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -46,7 +49,10 @@ results exchange, with the routing key 'xrc.i03'
     md={
         "subplan_name": PlanNameConstants.DO_FGS,
         "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-        "scan_points": create_dummy_scan_spec(10, 20, 30),
+        "omega_to_scan_spec": {
+            GridscanPlane.OMEGA_XY: create_dummy_scan_spec()[0],
+            GridscanPlane.OMEGA_XZ: create_dummy_scan_spec()[1],
+        },
     }
 )
 def fake_fgs_plan(eiger: EigerDetector):
@@ -60,14 +66,18 @@ def run_zocalo_with_dev_ispyb(
     RE: RunEngine,
     zocalo_for_fake_zocalo: ZocaloResults,
     eiger: EigerDetector,
+    oav_for_system_test: OAV,
+    smargon: Smargon,
+    fake_grid_snapshot_plan,
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.file_name = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
         RE.subscribe(ispyb_callback)
 
-        @bpp.set_run_key_decorator("testing123")
         def trigger_zocalo_after_fast_grid_scan():
+            yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
+
             @bpp.set_run_key_decorator("testing124")
             @bpp.stage_decorator([zocalo_for_fake_zocalo])
             @bpp.run_decorator(
