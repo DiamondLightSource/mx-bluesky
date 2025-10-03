@@ -79,6 +79,7 @@ dev = [
     "pytest-random-order",
     "pytest-timeout",
     "pytest",
+    "responses",
     "ruff",
     "sphinx-autobuild",
     "sphinx-copybutton",
