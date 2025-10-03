@@ -46,6 +46,9 @@ def do_pedestal_darks(
             set during Jungfrau device instantiation
     """
 
+    @bpp.contingency_decorator(
+        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    )
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
     @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
     def _do_decorated_plan():
