@@ -7,7 +7,6 @@ from ophyd_async.core import WatchableAsyncStatus
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
-    PedestalMode,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -16,7 +15,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     fly_jungfrau,
     override_file_path,
 )
-from mx_bluesky.common.utils.log import LOGGER
 
 PEDESTAL_DARKS_RUN = "PEDESTAL DARKS RUN"
 
@@ -64,27 +62,13 @@ def do_pedestal_darks(
         trigger_info = create_jungfrau_pedestal_triggering_info(
             exp_time_s, pedestal_frames, pedestal_loops
         )
-
-        @bpp.finalize_decorator(final_plan=lambda: _revert_pedestal_mode(jungfrau))
-        def _fly_then_revert_acquisition_type():
-            status = yield from fly_jungfrau(
+        return (
+            yield from fly_jungfrau(
                 jungfrau,
                 trigger_info,
                 wait=True,
                 log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
             )
-            return status
-
-        return (yield from _fly_then_revert_acquisition_type())
+        )
 
     return (yield from _do_decorated_plan())
-
-
-def _revert_pedestal_mode(jungfrau: CommissioningJungfrau):
-    LOGGER.info("Moving Jungfrau out of pedestal mode...")
-    yield from bps.mv(
-        jungfrau.drv.acquisition_type,
-        AcquisitionType.STANDARD,
-        jungfrau.drv.pedestal_mode_state,
-        PedestalMode.OFF,
-    )

@@ -99,25 +99,19 @@ async def test_full_do_pedestal_darks(
 class FakeException(Exception): ...
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.fly_jungfrau",
-    side_effect=FakeException,
-)
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
-async def test_pedestal_mode_turned_off_on_exception(
-    mock_fly: MagicMock,
+@patch("bluesky.plan_stubs.unstage")
+async def test_jungfrau_unstage(
+    mock_unstage: MagicMock,
     mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,
     RE: RunEngine,
 ):
-    await jungfrau.drv.pedestal_mode_state.set(PedestalMode.ON)
-    await jungfrau.drv.acquisition_type.set(AcquisitionType.PEDESTAL)
+    jungfrau.stage = MagicMock(side_effect=FakeException)
 
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
 
     with pytest.raises(FakeException):
         RE(test_plan())
-
-    assert await jungfrau.drv.pedestal_mode_state.get_value() == PedestalMode.OFF
-    assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
+    mock_unstage.assert_called_once_with(jungfrau, wait=True)
