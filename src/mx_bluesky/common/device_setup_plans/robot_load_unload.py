@@ -9,8 +9,12 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
 
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    HardwareConstants,
+    PlanNameConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 SLEEP_PER_CHECK = 0.1
 
@@ -60,7 +64,7 @@ def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZStage)
             plan,
             lower_gonio,
             BartRobot.LOAD_TOLERANCE_MM,
-            CONST.HARDWARE.CRYOJET_MARGIN_MM,
+            HardwareConstants.CRYOJET_MARGIN_MM,
             "lower_gonio",
             wait_for_all=False,
         ),
@@ -100,7 +104,7 @@ def robot_unload(
 
     @bpp.run_decorator(
         md={
-            "subplan_name": CONST.PLAN.ROBOT_UNLOAD,
+            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
             "metadata": {"visit": visit, "sample_id": sample_id},
             "activate_callbacks": [
                 "RobotLoadISPyBCallback",
@@ -108,7 +112,7 @@ def robot_unload(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
-        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
+        yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
         yield from bps.read(robot)
         yield from bps.save()
 

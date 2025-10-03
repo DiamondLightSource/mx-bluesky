@@ -10,11 +10,11 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 )
 from ophyd.status import Status
 from ophyd_async.testing import set_mock_value
-from tests.conftest import XBPMAndTransmissionWrapperComposite
 
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from tests.conftest import XBPMAndTransmissionWrapperComposite
 
 
 @pytest.fixture
