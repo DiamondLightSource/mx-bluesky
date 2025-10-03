@@ -11,7 +11,7 @@ TEST_MODE = os.environ.get("AITHRE_TEST_MODE")
 
 @dataclass(frozen=True)
 class AithreConstants:
-    BEAMLINE = "AITHRE"
+    BEAMLINE = "aithre"
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     LOG_FILE_NAME = "aithre.log"
 
