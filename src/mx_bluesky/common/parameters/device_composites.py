@@ -1,4 +1,7 @@
+from typing import Protocol
+
 import pydantic
+from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
@@ -23,6 +26,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.epics.motor import Motor
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -63,3 +67,10 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     zebra: Zebra
     robot: BartRobot
     sample_shutter: ZebraShutter
+
+
+class GonioWithXYZOmega(Readable, Protocol):
+    omega: Motor
+    x: Motor
+    y: Motor
+    z: Motor

@@ -33,6 +33,10 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_FGS_features,
@@ -66,10 +70,6 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
-    setup_zebra_for_gridscan,
-    tidy_up_zebra_after_gridscan,
-)
 
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
@@ -244,7 +244,12 @@ def construct_i04_specific_features(
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_FGS_features(
-        setup_zebra_for_gridscan,
+        partial(
+            setup_zebra_for_gridscan,
+            zebra_output_to_disconnect=xrc_composite.zebra.output.out_pvs[
+                xrc_composite.zebra.mapping.outputs.TTL_XSPRESS3
+            ],
+        ),
         tidy_plan,
         set_flyscan_params_plan,
         fgs_motors,

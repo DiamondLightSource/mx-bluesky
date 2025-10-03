@@ -2,9 +2,11 @@ import os
 
 import pytest
 
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import (
     default_raw_gridscan_params,

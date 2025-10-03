@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import DataCollectionInfo
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 
 
 def populate_data_collection_info_for_rotation(params: SingleRotationScan):
