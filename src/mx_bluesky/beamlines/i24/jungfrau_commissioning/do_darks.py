@@ -27,7 +27,6 @@ def do_pedestal_darks(
     pedestal_loops: PositiveInt = 200,
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
-    wait: bool = False,
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
     for the jungfrau, and must be performed before acquiring real data in dynamic gain mode.
@@ -47,7 +46,6 @@ def do_pedestal_darks(
         jungfrau: Jungfrau device
         path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
             set during Jungfrau device instantiation
-        wait: Optionally block until data collection is complete.
     """
 
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
@@ -72,7 +70,7 @@ def do_pedestal_darks(
             status = yield from fly_jungfrau(
                 jungfrau,
                 trigger_info,
-                wait,
+                wait=True,
                 log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
             )
             return status
