@@ -4,7 +4,6 @@ import bluesky.plan_stubs as bps
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.backlight import Backlight
 from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
@@ -33,7 +32,6 @@ CONST = HardwareConstants()
 class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
-    backlight: Backlight
     oav: OAV
     gonio: XYZOmegaStage
     pin_tip_detection: PinTipDetection
