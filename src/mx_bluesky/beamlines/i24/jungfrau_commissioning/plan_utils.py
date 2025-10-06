@@ -12,6 +12,7 @@ from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
+from ophyd_async.fastcs.jungfrau import GainMode
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -21,6 +22,7 @@ JF_COMPLETE_GROUP = "JF complete"
 def fly_jungfrau(
     jungfrau: CommissioningJungfrau,
     trigger_info: TriggerInfo,
+    gain_mode: GainMode,
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers recieved",
 ) -> MsgGenerator[WatchableAsyncStatus]:
@@ -34,6 +36,7 @@ def fly_jungfrau(
     jungfrau: Jungfrau device.
     trigger_info: TriggerInfo which should be acquired using jungfrau util functions create_jungfrau_internal_triggering_info.
         or create_jungfrau_external_triggering_info.
+    gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
     wait: Optionally block until data collection is complete.
     log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
     """
@@ -42,10 +45,11 @@ def fly_jungfrau(
         except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
     )
     def _fly_with_unstage_contingency():
+        LOGGER.info("Setting up Jungfrau...")
         yield from bps.stage(jungfrau)
-        LOGGER.info("Setting up detector...")
+        yield from bps.abs_set(jungfrau.drv.gain_mode, gain_mode, wait=True)
         yield from bps.prepare(jungfrau, trigger_info, wait=True)
-        LOGGER.info("Detector prepared. Starting acquisition")
+        LOGGER.info("Jungfrau prepared. Starting acquisition")
         yield from bps.kickoff(jungfrau, wait=True)
         LOGGER.info("Waiting for acquisition to complete...")
         status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
@@ -53,9 +57,7 @@ def fly_jungfrau(
         # StandardDetector.complete converts regular status to watchable status,
         # but bluesky plan stubs can't see this currently
         status = cast(WatchableAsyncStatus, status)
-        log_on_percentage_complete(
-            status, "Jungfrau data collection triggers recieved", 10
-        )
+        log_on_percentage_complete(status, log_on_percentage_prefix, 10)
         if wait:
             yield from bps.wait(JF_COMPLETE_GROUP)
         return status

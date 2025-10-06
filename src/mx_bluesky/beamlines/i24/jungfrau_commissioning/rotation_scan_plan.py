@@ -15,6 +15,7 @@ from dodal.devices.zebra.zebra import I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
+    GainMode,
     create_jungfrau_external_triggering_info,
 )
 
@@ -230,6 +231,7 @@ def single_rotation_plan(
             yield from fly_jungfrau(
                 composite.jungfrau,
                 _jf_trigger_info,
+                GainMode.DYNAMIC,
                 wait=False,
                 log_on_percentage_prefix="Jungfrau rotation scan triggers received",
             )

@@ -3,6 +3,7 @@ from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.preprocessors import monitor_during_wrapper
@@ -44,6 +45,7 @@ async def test_full_do_pedestal_darks(
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
 
+    @bpp.set_run_key_decorator()
     def test_plan():
         status = yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
         assert not status.done
@@ -115,4 +117,6 @@ async def test_jungfrau_unstage(
 
     with pytest.raises(FakeException):
         RE(test_plan())
-    mock_unstage.assert_called_once_with(jungfrau, wait=True)
+    assert (
+        mock_unstage.call_count == 2
+    )  # Once from fly_jungfrau, once from pedestal darks plan
