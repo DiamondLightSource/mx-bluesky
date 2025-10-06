@@ -254,8 +254,7 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params.FGS_params,
         )
 
-        set_mock_value(beamline_specific.fgs_motors.scan_invalid, True)
-        set_mock_value(beamline_specific.fgs_motors.position_counter, 0)
+        set_mock_value(beamline_specific.fgs_motors.device_scan_invalid, 1.0)  # type: ignore
 
         with pytest.raises(WarningException):
             RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))

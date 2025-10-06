@@ -1011,8 +1011,6 @@ async def hyperion_flyscan_xrc_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
-    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
