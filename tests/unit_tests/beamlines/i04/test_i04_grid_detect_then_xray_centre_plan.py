@@ -216,11 +216,12 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     mock_create_gridscan_callbacks: MagicMock,
     RE: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    transfocator: Transfocator,
 ):
     mock_common_flyscan_xray_centre.side_effect = CustomException
 
     with pytest.raises(CustomException):  # noqa: B017
-        RE(i04_grid_detect_then_xrc_default_params())
+        RE(i04_grid_detect_then_xrc_default_params(udc=True))
 
     # Called once on exception and once on close_run
     mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
@@ -338,7 +339,7 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     mock_create_parameters.return_value = hyperion_fgs_params
     mock_run_gridscan.side_effect = CompleteException
     with pytest.raises(CompleteException):
-        RE(i04_grid_detect_then_xrc_default_params())
+        RE(i04_grid_detect_then_xrc_default_params(udc=True))
 
     mock_verify_gap.assert_called_once()
 
