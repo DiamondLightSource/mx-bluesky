@@ -90,7 +90,7 @@ def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once
         sample_id="1",
         omega_angle=0,
         uuid="any",
-        used=None,
+        used_for_centring=None,
     )
 
     result_1 = MurkoResult((0, 0), 0, 1, 2, "", example_metadata)
