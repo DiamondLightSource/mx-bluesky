@@ -276,7 +276,7 @@ def run_gridscan(
     except FailedStatus as e:
         if isinstance(e.__cause__, TimeoutError):
             raise SampleException(
-                "Scan invalid - pin too long/short/bent and out of range"
+                "Scan invalid - gridscan not valid for detected pin position"
             ) from e
 
     LOGGER.info("Waiting for arming to finish")
