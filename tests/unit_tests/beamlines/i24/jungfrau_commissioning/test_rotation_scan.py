@@ -1,15 +1,24 @@
+import asyncio
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.hutch_shutter import ShutterState
+from dodal.devices.i24.aperture import AperturePositions
+from dodal.devices.i24.beamstop import BeamstopPositions
+from dodal.devices.i24.dual_backlight import BacklightPositions
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
+    JF_DET_STAGE_Y_POSITION_MM,
+    HutchClosedException,
     RotationScanComposite,
+    _cleanup_plan,
     multi_rotation_plan_varying_transmission,
+    set_up_beamline_for_rotation,
     single_rotation_plan,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
@@ -173,16 +182,81 @@ def test_multi_rotation_plan_in_re(
     assert desired_transmission_fracs == called_transmission_fracs
 
 
-def test_metadata_writer_produces_correct_json_after_plan(): ...
+async def test_set_up_beamline_for_rotation_success(
+    rotation_composite: RotationScanComposite,
+    RE: RunEngine,
+):
+    trans_frac = 0.1
+    det_z = 200
+    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    RE(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
+
+    assert await asyncio.gather(
+        rotation_composite.aperture.position.get_value(),
+        rotation_composite.beamstop.pos_select.get_value(),
+        rotation_composite.det_stage.y.user_readback.get_value(),
+        rotation_composite.backlight.backlight_position.pos_level.get_value(),
+        rotation_composite.det_stage.z.user_readback.get_value(),
+        rotation_composite.attenuator.actual_transmission.get_value(),
+    ) == [
+        AperturePositions.IN,
+        BeamstopPositions.DATA_COLLECTION,
+        JF_DET_STAGE_Y_POSITION_MM,
+        BacklightPositions.OUT,
+        det_z,
+        trans_frac,
+    ]
 
 
-def test_set_up_beamline_for_rotation_success(): ...  # use RE
+def test_set_up_beamline_for_rotation_error_on_closed_hutch(
+    rotation_composite: RotationScanComposite,
+    RE: RunEngine,
+):
+    trans_frac = 0.1
+    det_z = 200
+    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.CLOSED)
+    with pytest.raises(HutchClosedException):
+        RE(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
 
-def test_set_up_beamline_for_rotation_error_on_closed_hutch(): ...
+class FakeException(Exception): ...
 
 
-def test_single_rotation_plan_uses_default_if_no_det_distance(): ...
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    new=MagicMock(side_effect=FakeException),  # Exit test early by inserting exception
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.set_up_beamline_for_rotation"
+)
+def test_single_rotation_plan_uses_default_if_no_det_distance(
+    mock_set_up_beamline: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    rotation_composite: RotationScanComposite,
+    tmp_path,
+):
+    params = get_good_single_rotation_params(tmp_path)
+    params.detector_distance_mm = None
+    with pytest.raises(FakeException):
+        sim_run_engine.simulate_plan(single_rotation_plan(rotation_composite, params))
+    mock_set_up_beamline.assert_called_once_with(
+        rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, params.transmission_frac
+    )
 
 
-def test_cleanup_plan(): ...
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.tidy_up_zebra_after_rotation_scan"
+)
+def test_cleanup_plan(
+    mock_tidy_zebra: MagicMock, rotation_composite: RotationScanComposite, RE: RunEngine
+):
+    rotation_composite.jungfrau.unstage = MagicMock()
+    RE(
+        _cleanup_plan(
+            rotation_composite.zebra,
+            rotation_composite.jungfrau,
+            rotation_composite.sample_shutter,
+        )
+    )
+    mock_tidy_zebra.assert_called_once()
+    rotation_composite.jungfrau.unstage.assert_called_once()

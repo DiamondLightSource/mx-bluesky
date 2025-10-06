@@ -63,6 +63,9 @@ JF_DET_STAGE_Y_POSITION_MM = 730
 DEFAULT_DETECTOR_DISTANCE_MM = 200
 
 
+class HutchClosedException(Exception): ...
+
+
 def set_up_beamline_for_rotation(
     composite: RotationScanComposite,
     det_z_mm: float,
@@ -78,7 +81,9 @@ def set_up_beamline_for_rotation(
     LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
     if hutch_shutter_state != ShutterState.OPEN:
         LOGGER.error(f"Hutch shutter is not open! State is {hutch_shutter_state}")
-        raise Exception(f"Hutch shutter is not open! State is {hutch_shutter_state}")
+        raise HutchClosedException(
+            f"Hutch shutter is not open! State is {hutch_shutter_state}"
+        )
 
     LOGGER.info(
         "Making sure aperture and beamstop are in, detector stages are in position, backlight is out, and transmission is set..."
