@@ -3,11 +3,11 @@ from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines.i24 import CommissioningJungfrau
+from ophyd_async.fastcs.jungfrau import GainMode
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition import (
@@ -16,15 +16,14 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition imp
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
 
 
-@pytest.mark.skip(
-    reason="Waiting on ophyd-async PR https://github.com/bluesky/ophyd-async/pull/1038/files"
-)
 def test_full_do_external_acquisition(
     jungfrau: CommissioningJungfrau, RE: RunEngine, caplog
 ):
     @run_decorator()
     def test_plan():
-        status = yield from do_external_acquisition(0.001, 5, jungfrau=jungfrau)
+        status = yield from do_external_acquisition(
+            0.001, GainMode.DYNAMIC, 5, jungfrau=jungfrau
+        )
         assert not status.done
         val = 0
         while not status.done:
@@ -51,7 +50,7 @@ def test_do_external_acquisition_does_wait(
     jungfrau: CommissioningJungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(
-        do_external_acquisition(0.01, 1, wait=True, jungfrau=jungfrau)
+        do_external_acquisition(0.01, GainMode.DYNAMIC, 1, wait=True, jungfrau=jungfrau)
     )
     assert_message_and_return_remaining(
         msgs,

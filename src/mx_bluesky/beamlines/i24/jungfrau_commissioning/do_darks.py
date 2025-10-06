@@ -58,8 +58,6 @@ def do_pedestal_darks(
         yield from bps.mv(
             jungfrau.drv.acquisition_type,
             AcquisitionType.PEDESTAL,
-            jungfrau.drv.gain_mode,
-            GainMode.DYNAMIC,
         )
 
         trigger_info = create_jungfrau_pedestal_triggering_info(
@@ -69,6 +67,7 @@ def do_pedestal_darks(
             yield from fly_jungfrau(
                 jungfrau,
                 trigger_info,
+                GainMode.DYNAMIC,
                 wait=True,
                 log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
             )

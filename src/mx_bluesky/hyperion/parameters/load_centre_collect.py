@@ -8,10 +8,12 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithVisit,
 )
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+)
 from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 T = TypeVar("T", bound=BaseModel)
 
