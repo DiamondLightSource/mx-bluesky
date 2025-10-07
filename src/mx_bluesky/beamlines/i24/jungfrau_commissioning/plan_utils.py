@@ -49,6 +49,8 @@ def fly_jungfrau(
         LOGGER.info("Setting up detector...")
         yield from bps.prepare(jungfrau, trigger_info, wait=True)
         LOGGER.info("Detector prepared. Starting acquisition")
+        LOGGER.info("doing a 1s sleep before kickoff")
+        yield from bps.sleep(1)
         yield from bps.kickoff(jungfrau, wait=True)
         LOGGER.info("Waiting for acquisition to complete...")
         status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
