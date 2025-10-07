@@ -86,11 +86,11 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def activity_gated_event(self, doc: Event) -> Event:
         """Subclasses should extend this to add a call to set_dcig_tag from
@@ -112,10 +112,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
             case DocDescriptorNames.HARDWARE_READ_DURING:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
-                return self._tag_doc(doc)
+                return self.tag_doc(doc)
         self.ispyb_ids = self.ispyb.update_deposition(self.ispyb_ids, scan_data_infos)
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Received ISPYB IDs: {self.ispyb_ids}")
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params, "Event handled before activity_gated_start received params"
@@ -186,7 +186,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         pass
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
-        """Subclasses must check that they are recieving a stop document for the correct
+        """Subclasses must check that they are receiving a stop document for the correct
         uid to use this method!"""
         assert self.ispyb is not None, (
             "ISPyB handler received stop document, but deposition object doesn't exist!"
@@ -203,7 +203,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {format_doc_for_log(doc)} with exception: {e}"
             )
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def _append_to_comment(self, id: int, comment: str) -> None:
         assert self.ispyb is not None
@@ -218,7 +218,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         for id in self.ispyb_ids.data_collection_ids:
             self._append_to_comment(id, comment)
 
-    def _tag_doc(self, doc: D) -> D:
+    def tag_doc(self, doc: D) -> D:
         assert isinstance(doc, dict)
         if self.ispyb_ids:
             doc["ispyb_dcids"] = self.ispyb_ids.data_collection_ids

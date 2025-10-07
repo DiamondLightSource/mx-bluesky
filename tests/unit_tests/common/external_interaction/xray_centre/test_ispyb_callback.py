@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,8 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    GridscanPlane,
+    _smargon_omega_to_xyxz_plane,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
@@ -72,7 +75,9 @@ class TestXrayCentreISPyBCallback:
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -105,10 +110,12 @@ class TestXrayCentreISPyBCallback:
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_stop(
-            TestEventData.test_gridscan3d_stop_document_with_crystal_exception
+            TestEventData.test_grid_detect_and_gridscan_stop_document_with_crystal_exception
         )
         assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
             (
@@ -126,7 +133,9 @@ class TestXrayCentreISPyBCallback:
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
@@ -161,7 +170,9 @@ class TestXrayCentreISPyBCallback:
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
             TestEventData.test_descriptor_document_pre_data_collection
@@ -220,7 +231,9 @@ class TestXrayCentreISPyBCallback:
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        callback.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # pyright: ignore
+        callback.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
@@ -361,7 +374,7 @@ class TestXrayCentreISPyBCallback:
     @patch(
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
     )
-    def test_given_event_doc_before_start_doc_recieved_then_exception_raised(
+    def test_given_event_doc_before_start_doc_received_then_exception_raised(
         self,
         mock_update_data_collection_group_table,
         mock_update_deposition,
@@ -383,3 +396,59 @@ class TestXrayCentreISPyBCallback:
             )
 
         assert "No data collection group info" in str(e.value)
+
+    def test_ispyb_callback_clears_state_after_run_stop(
+        self, TestEventData, mock_ispyb_conn
+    ):
+        callback = GridscanISPyBCallback(
+            param_type=GridCommonWithHyperionDetectorParams
+        )
+        callback.active = True
+        callback.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
+        callback.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
+        callback.event(TestEventData.test_event_document_oav_snapshot_xy)
+        callback.event(TestEventData.test_event_document_oav_snapshot_xz)
+        callback.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
+        callback.start(TestEventData.test_do_fgs_start_document)  # type: ignore
+        callback.descriptor(TestEventData.test_descriptor_document_pre_data_collection)  # type: ignore
+        callback.event(TestEventData.test_event_document_pre_data_collection)
+        callback.descriptor(TestEventData.test_descriptor_document_zocalo_hardware)
+        callback.event(TestEventData.test_event_document_zocalo_hardware)
+        callback.descriptor(
+            TestEventData.test_descriptor_document_during_data_collection  # type: ignore
+        )
+        assert callback._grid_plane_to_id_map
+        callback.stop(TestEventData.test_do_fgs_stop_document)
+        callback.stop(TestEventData.test_gridscan_outer_stop_document)  # type: ignore
+        callback.stop(TestEventData.test_grid_detect_and_gridscan_stop_document)
+        assert not callback._grid_plane_to_id_map
+
+
+@pytest.mark.parametrize(
+    "omega, expected_plane",
+    [
+        [0, GridscanPlane.OMEGA_XY],
+        [180, GridscanPlane.OMEGA_XY],
+        [-180, GridscanPlane.OMEGA_XY],
+        [540, GridscanPlane.OMEGA_XY],
+        [90, GridscanPlane.OMEGA_XZ],
+        [-90, GridscanPlane.OMEGA_XZ],
+        [270, GridscanPlane.OMEGA_XZ],
+        [-270, GridscanPlane.OMEGA_XZ],
+        [0.999, GridscanPlane.OMEGA_XY],
+        [-0.999, GridscanPlane.OMEGA_XY],
+        [1.001, AssertionError],
+        [-1.001, AssertionError],
+        [91.001, AssertionError],
+        [90.999, GridscanPlane.OMEGA_XZ],
+        [89.999, GridscanPlane.OMEGA_XZ],
+    ],
+)
+def test_smargon_omega_to_xyxz_plane(omega, expected_plane):
+    expects_exception = not (isinstance(expected_plane, GridscanPlane))
+    raises_or_not = (
+        pytest.raises(expected_plane) if expects_exception else (nullcontext())
+    )
+    with raises_or_not:
+        plane = _smargon_omega_to_xyxz_plane(omega)
+        assert expects_exception or plane == expected_plane

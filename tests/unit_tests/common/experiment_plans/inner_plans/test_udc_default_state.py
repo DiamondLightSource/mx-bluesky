@@ -11,7 +11,7 @@ from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut, Scintillator
-from dodal.devices.util.test_utils import patch_all_motors
+from dodal.testing import patch_all_motors
 from ophyd_async.core import Signal, init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import set_mock_value

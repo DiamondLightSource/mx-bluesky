@@ -6,6 +6,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+
       - name: Install Helm
         uses: Azure/setup-helm@v4.3.0
         id: install

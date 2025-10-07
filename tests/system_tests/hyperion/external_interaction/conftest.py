@@ -5,6 +5,7 @@ from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import ispyb.sqlalchemy
 import numpy
 import pytest
@@ -44,6 +45,7 @@ from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -58,7 +60,6 @@ from mx_bluesky.hyperion.parameters.rotation import RotationScan
 from ....conftest import (
     TEST_RESULT_MEDIUM,
     SimConstants,
-    fake_read,
     pin_tip_edge_data,
     raw_params_from_file,
 )
@@ -215,7 +216,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
     """
     This attempts to connect to a fake zocalo via rabbitmq
     """
-    zd = ZocaloResults()
+    zd = ZocaloResults("zocalo")
     zd.timeout_s = 10
     await zd.connect()
     return zd
@@ -224,6 +225,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
     zocalo.my_zocalo_result[0]["sample_id"] = SimConstants.ST_SAMPLE_ID  # type: ignore
@@ -231,7 +233,9 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
     @AsyncStatus.wrap
     async def mock_zocalo_complete():
         fake_recipe_wrapper = MagicMock(spec=RecipeWrapper)
-        fake_recipe_wrapper.recipe_step = {"parameters": {"dcid": 1234, "dcgid": 123}}
+        fake_recipe_wrapper.recipe_step = {
+            "parameters": {"dcid": 1234, "dcgid": 123, "gpu": True}
+        }
         message = {
             "results": zocalo.my_zocalo_result  # type: ignore
         }
@@ -276,6 +280,7 @@ def grid_detect_then_xray_centre_composite(
     sample_shutter,
     panda,
     panda_fast_grid_scan,
+    request,
 ):
     composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
@@ -302,9 +307,19 @@ def grid_detect_then_xray_centre_composite(
         sample_shutter=sample_shutter,
     )
 
+    def default_edge_generator():
+        while True:
+            yield pin_tip_edge_data()
+
+    edge_data_generator = default_edge_generator()
+    if param := getattr(request, "param", None):
+        edge_data_generator = param()
+
     @AsyncStatus.wrap
     async def mock_pin_tip_detect():
-        tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = next(
+            edge_data_generator
+        )
         set_mock_value(
             ophyd_pin_tip_detection.triggered_top_edge,
             top_edge_array,
@@ -456,8 +471,18 @@ def composite_for_rotation_scan(
     set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
     set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
 
-    with (
-        patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),
-        patch("bluesky.plan_stubs.wait"),
-    ):
-        yield fake_create_rotation_devices
+    yield fake_create_rotation_devices
+
+
+@pytest.fixture
+def fake_grid_snapshot_plan():
+    def plan(smargon, oav):
+        for omega in [-90, 0]:
+            yield from bps.mv(smargon.omega, omega)
+            yield from bps.create(DocDescriptorNames.OAV_GRID_SNAPSHOT_TRIGGERED)
+
+            yield from bps.read(oav)
+            yield from bps.read(smargon)
+            yield from bps.save()
+
+    return plan

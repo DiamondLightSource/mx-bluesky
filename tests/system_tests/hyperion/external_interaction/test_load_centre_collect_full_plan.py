@@ -54,6 +54,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -66,8 +69,10 @@ from ....conftest import (
     TEST_RESULT_SMALL,
     SimConstants,
     assert_images_pixelwise_equal,
+    fat_pin_edges,
     raw_params_from_file,
     replace_all_tmp_paths,
+    thin_pin_edges,
 )
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
@@ -122,11 +127,13 @@ def load_centre_collect_composite(
     undulator_dcm,
     webcam,
     lower_gonio,
+    baton,
 ):
     composite = LoadCentreCollectComposite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
+        baton=baton,
         beamstop=beamstop_phase1,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
@@ -171,9 +178,9 @@ def robot_load_cb() -> RobotLoadISPyBCallback:
 GRID_DC_1_EXPECTED_VALUES = {
     "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
-    "axisstart": 0.0,
+    "axisstart": 90.0,
     "axisrange": 0,
-    "axisend": 0,
+    "axisend": 90,
     "focalspotsizeatsamplex": 0.02,
     "focalspotsizeatsampley": 0.02,
     "slitgapvertical": 0.234,
@@ -189,15 +196,15 @@ GRID_DC_1_EXPECTED_VALUES = {
     "imagesuffix": "h5",
     "numberofpasses": 1,
     "overlap": 0,
-    "omegastart": 0,
+    "omegastart": 90,
     "startimagenumber": 1,
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
-    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_0_outer_overlay.png",
-    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0.png",
+    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90.png",
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
@@ -205,25 +212,25 @@ GRID_DC_1_EXPECTED_VALUES = {
 }
 
 GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
-    "axisstart": 90,
-    "axisend": 90,
-    "omegastart": 90,
+    "axisstart": 0,
+    "axisend": 0,
+    "omegastart": 0,
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
     "numberofimages": 180,
     "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90_grid_overlay.png",
+    "/robot_load_centring_file_1_0_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90_outer_overlay.png",
+    "/robot_load_centring_file_1_0_outer_overlay.png",
     "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90.png",
+    "/robot_load_centring_file_1_0.png",
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": -350,
     # "chiStart": 0, mx-bluesky 325
-    "wavelength": 0.976254,
+    "wavelength": 1.11697,
     "beamSizeAtSampleX": 0.02,
     "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.004,
@@ -372,10 +379,153 @@ def test_execute_load_centre_collect_full(
     compare_comment(
         fetch_datacollection_attribute,
         ispyb_rotation_cb.ispyb_ids.data_collection_ids[0],
-        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, 341) Aperture: "
+        "Hyperion Rotation Scan -  Sample position (µm): (-2309, -591, -571) Aperture: "
         "Small. ",
     )
     assert fetch_blsample(expected_sample_id).blSampleStatus == "LOADED"  # type: ignore
+
+
+def thin_then_fat_pin_tip_edges():
+    while True:
+        yield thin_pin_edges()
+        yield fat_pin_edges()
+
+
+def fat_then_thin_pin_tip_edges():
+    while True:
+        yield fat_pin_edges()
+        yield thin_pin_edges()
+
+
+@pytest.mark.parametrize(
+    "grid_detect_then_xray_centre_composite, initial_omega, expected_grid_dc_1, "
+    "expected_grid_dc_2, "
+    "expected_comment_1, expected_comment_2",
+    [
+        # After pin-tip detection, omega == 0 - 90 == -90
+        # grid detection and grid snapshots are performed
+        # at -90 (thin, 6 rows), 0 (fat, 10 rows ) degrees.
+        # gridscans are performed in the sequence 0, -90 degrees
+        # The first DataCollection contains the -90 degree snapshot and gridscan
+        # The second DataCollection contains the 0 degree snapshot and gridscan
+        [
+            thin_then_fat_pin_tip_edges,
+            0,
+            GRID_DC_1_EXPECTED_VALUES,  # 90 degrees xz
+            GRID_DC_2_EXPECTED_VALUES.copy() | {"numberofimages": 300},  # 0 degrees xy
+            "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 6 "
+            "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+            "bottom right (px): [874,278]. Aperture: Small. ",
+            "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 10 "
+            "images in 20.0 um by 20.0 um steps. Top left (px): [130,117], "
+            "bottom right (px): [874,365]. Aperture: Small. ",
+        ],
+        # After pin-tip detection, omega == 90 - 90 == 0
+        # grid detection and grid snapshots are performed
+        # at 0 (fat, 10 rows), -90 (thin, 6 rows ) degrees.
+        # gridscans are performed in the sequence 0, -90 degrees
+        # The first DataCollection contains the 0 degree snapshot and gridscan
+        # The second DataCollection contains the -90 degree snapshot and gridscan
+        [
+            fat_then_thin_pin_tip_edges,
+            90,
+            GRID_DC_2_EXPECTED_VALUES.copy()
+            | {
+                "numberofimages": 300,
+                "datacollectionnumber": 1,
+                "filetemplate": "robot_load_centring_file_1_master.h5",
+            },  # 0 degrees xy
+            GRID_DC_1_EXPECTED_VALUES.copy()
+            | {
+                "datacollectionnumber": 2,
+                "filetemplate": "robot_load_centring_file_2_master.h5",
+            },  # 90 degrees xz
+            "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 10 "
+            "images in 20.0 um by 20.0 um steps. Top left (px): [130,117], "
+            "bottom right (px): [874,365]. Aperture: Small. ",
+            "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 6 "
+            "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+            "bottom right (px): [874,278]. Aperture: Small. ",
+        ],
+    ],
+    indirect=["grid_detect_then_xray_centre_composite"],
+)
+@pytest.mark.system_test
+def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
+    initial_omega,
+    expected_grid_dc_1,
+    expected_grid_dc_2,
+    expected_comment_1,
+    expected_comment_2,
+    load_centre_collect_composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_ids_for_group_id: Callable[..., Any],
+    fetch_blsample: Callable[[int], BLSample],
+    tmp_path,
+    robot_load_cb: RobotLoadISPyBCallback,
+):
+    # Ensure sample already loaded. Requested chi is 30 so this will trigger a gridscan
+    set_mock_value(load_centre_collect_composite.robot.current_pin, 6)
+    set_mock_value(load_centre_collect_composite.robot.current_puck, 2)
+
+    def move_to_initial_omega():
+        yield from bps.mv(load_centre_collect_composite.smargon.omega, initial_omega)
+
+    RE(move_to_initial_omega())
+    ispyb_gridscan_cb = GridscanISPyBCallback(
+        param_type=GridCommonWithHyperionDetectorParams
+    )
+    ispyb_rotation_cb = RotationISPyBCallback()
+    snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
+    set_mock_value(
+        load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
+    )
+    RE.subscribe(ispyb_gridscan_cb)
+    RE.subscribe(snapshot_cb)
+    RE.subscribe(robot_load_cb)
+    RE(
+        load_centre_collect_full(
+            load_centre_collect_composite,
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    expected_sample_id = load_centre_collect_params.sample_id
+    # Compare gridscan collection
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_group_id,
+        {"experimentType": "Mesh3D", "blSampleId": expected_sample_id},
+        fetch_datacollectiongroup_attribute,
+    )
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
+        replace_all_tmp_paths(expected_grid_dc_1, tmp_path),
+        fetch_datacollection_attribute,
+        DATA_COLLECTION_COLUMN_MAP,
+    )
+    compare_actual_and_expected(
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
+        replace_all_tmp_paths(expected_grid_dc_2, tmp_path),
+        fetch_datacollection_attribute,
+        DATA_COLLECTION_COLUMN_MAP,
+    )
+
+    compare_comment(
+        fetch_datacollection_attribute,
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
+        expected_comment_1,
+    )
+    compare_comment(
+        fetch_datacollection_attribute,
+        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
+        expected_comment_2,
+    )
 
 
 @pytest.mark.system_test
@@ -1033,8 +1183,8 @@ class TestGenerateSnapshot:
             [
                 # 1 extra for robot load
                 "tests/test_data/test_images/thau_1_91_0.png",
-                "tests/test_data/test_images/thau_1_91_0.png",
                 "tests/test_data/test_images/thau_1_91_90.png",
+                "tests/test_data/test_images/thau_1_91_0.png",
             ]
         )
 
@@ -1067,14 +1217,14 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_GRID_SNAPSHOT_VALUES_0 = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
-            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
-        }
-        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
             "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
+        }
+        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
+            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
         }
         grid_dcg_id = ispyb_gridscan_cb.ispyb_ids.data_collection_group_id
         grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)
@@ -1090,8 +1240,8 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_ROTATION_SNAPSHOT_VALUES = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
         }
 
         rotation_dcg_id = ispyb_rotation_cb.ispyb_ids.data_collection_group_id
@@ -1109,10 +1259,10 @@ class TestGenerateSnapshot:
 
         for expected_path, actual_path in zip(
             [
-                "tests/test_data/test_images/thau_1_91_expected_0.png",
-                "tests/test_data/test_images/thau_1_91_expected_0.png",
                 "tests/test_data/test_images/thau_1_91_expected_270.png",
                 "tests/test_data/test_images/thau_1_91_expected_270.png",
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
+                "tests/test_data/test_images/thau_1_91_expected_0.png",
             ],
             [
                 fetch_datacollection_attribute(rotation_dc_ids[i], col)

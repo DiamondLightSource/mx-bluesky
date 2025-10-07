@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
-    ZebraGridScanParams,
+    ZebraGridScanParamsThreeD,
 )
 
 from mx_bluesky.common.parameters.gridscan import (
@@ -44,8 +44,8 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
 
     # Relative to common grid scan, stub offsets are defined by config server
     @property
-    def FGS_params(self) -> ZebraGridScanParams:
-        return ZebraGridScanParams(
+    def FGS_params(self) -> ZebraGridScanParamsThreeD:
+        return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,
