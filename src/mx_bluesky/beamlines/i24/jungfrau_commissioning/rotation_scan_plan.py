@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from functools import partial
-from ophyd_async.fastcs.jungfrau import GainMode
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
@@ -15,6 +15,7 @@ from dodal.devices.zebra.zebra import I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
+    GainMode,
     create_jungfrau_external_triggering_info,
 )
 
@@ -27,7 +28,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
-    override_file_path,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
     read_devices_for_metadata,
