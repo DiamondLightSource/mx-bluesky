@@ -131,33 +131,20 @@ def test_do_standard_darks_triggers_correct_plans(
     RE: RunEngine,
     jungfrau: CommissioningJungfrau,
 ):
+    gain_mode = GainMode.FORCE_SWITCH_G1
     parent_mock = MagicMock()
     parent_mock.attach_mock(mock_fly_jf, "mock_fly_jf")
     parent_mock.attach_mock(mock_move, "mock_move")
     expected_trigger_info = create_jungfrau_internal_triggering_info(1000, 0.001)
-    RE(do_standard_darks(jungfrau=jungfrau))
+    RE(do_standard_darks(gain_mode=gain_mode, jungfrau=jungfrau))
 
     assert parent_mock.method_calls == [
-        call.mock_move(jungfrau.drv.gain_mode, GainMode.DYNAMIC),
+        call.mock_move(jungfrau.drv.gain_mode, gain_mode),
         call.mock_fly_jf(
             jungfrau,
             expected_trigger_info,
             True,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.DYNAMIC} gain mode darks triggers recieved",
-        ),
-        call.mock_move(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G1),
-        call.mock_fly_jf(
-            jungfrau,
-            expected_trigger_info,
-            True,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G1} gain mode darks triggers recieved",
-        ),
-        call.mock_move(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G2),
-        call.mock_fly_jf(
-            jungfrau,
-            expected_trigger_info,
-            True,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G2} gain mode darks triggers recieved",
+            log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers recieved",
         ),
     ]
 
@@ -171,5 +158,5 @@ def test_do_standard_darks_unstages_jf_on_exception(
 ):
     jungfrau.unstage = MagicMock()
     with pytest.raises(FakeException):
-        RE(do_standard_darks(jungfrau=jungfrau))
+        RE(do_standard_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
     jungfrau.unstage.assert_called_once()

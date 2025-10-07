@@ -77,15 +77,16 @@ def do_pedestal_darks(
 
 
 def do_standard_darks(
+    gain_mode: GainMode,
     exp_time_s: float = 0.001,
     triggers_per_dark_scan: PositiveInt = 1000,
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
     path_of_output_file: str | None = None,
 ) -> MsgGenerator:
-    """Internally take a set of images at dynamic gain, forced gain 1, and forced gain 2.
-        Blocks until all 3 collections are complete.
+    """Internally take a set of images at a given gain mode.
 
     Args:
+        gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
         exp_time_s: Length of detector exposure for each frame.
         triggers_per_dark_scan: Number of frames acquired for each of the 3 dark scans.
         jungfrau: Jungfrau device
@@ -110,28 +111,14 @@ def do_standard_darks(
 
         yield from bps.mv(
             jungfrau.drv.gain_mode,
-            GainMode.DYNAMIC,
+            gain_mode,
         )
 
         yield from fly_jungfrau(
             jungfrau,
             trigger_info,
             wait,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.DYNAMIC} gain mode darks triggers recieved",
-        )
-        yield from bps.mv(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G1)
-        yield from fly_jungfrau(
-            jungfrau,
-            trigger_info,
-            wait,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G1} gain mode darks triggers recieved",
-        )
-        yield from bps.mv(jungfrau.drv.gain_mode, GainMode.FORCE_SWITCH_G2)
-        yield from fly_jungfrau(
-            jungfrau,
-            trigger_info,
-            wait,
-            log_on_percentage_prefix=f"Jungfrau {GainMode.FORCE_SWITCH_G2} gain mode darks triggers recieved",
+            log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers recieved",
         )
 
     yield from _do_decorated_plan()
