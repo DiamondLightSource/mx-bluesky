@@ -70,6 +70,7 @@ def thawer(RE: RunEngine) -> Thawer:
 @patch("dodal.devices.i04.murko_results.StrictRedis")
 async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
     murko_results = MurkoResultsDevice(name="murko_results")
+    murko_results.trigger = MagicMock(side_effect=completed_status)
     murko_results.stage = MagicMock(side_effect=completed_status)
     murko_results.unstage = MagicMock(side_effect=completed_status)
     return murko_results
@@ -463,3 +464,31 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_half_way_throu
     get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0, wait=True)])
     get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0, wait=True)])
     get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0, wait=True)])
+
+
+def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
+    sim_run_engine,
+    smargon: Smargon,
+    thawer: Thawer,
+    oav_forwarder: OAVToRedisForwarder,
+    oav: OAV,
+    robot: BartRobot,
+    murko_results: MurkoResultsDevice,
+):
+    sim_run_engine.add_read_handler_for(robot.sample_id, "1234")
+
+    msgs = sim_run_engine.simulate_plan(
+        thaw_and_murko_centre(
+            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "murko_results-sample_id"
+        and msg.args[0] == "1234",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "murko_results"
+    )

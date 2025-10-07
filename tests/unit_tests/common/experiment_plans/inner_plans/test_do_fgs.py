@@ -7,28 +7,34 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
 from dodal.beamlines.i03 import eiger
-from dodal.devices.fast_grid_scan import ZebraFastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 from event_model.documents import Event, RunStart
+from numpy.testing import assert_equal
 from ophyd_async.core import init_devices
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanPlane,
+)
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
+
+from .....conftest import create_dummy_scan_spec
 
 
 @pytest.fixture
 def fgs_devices(RE):
     with init_devices(mock=True):
         synchrotron = Synchrotron()
-        grid_scan_device = ZebraFastGridScan("zebra_fgs")
+        grid_scan_device = ZebraFastGridScanThreeD("zebra_fgs")
 
     # Eiger done separately as not ophyd-async yet
     detector = eiger(mock=True)
@@ -62,8 +68,7 @@ def test_kickoff_and_complete_gridscan_correct_messages(
             fgs_device,
             detector,
             synchrotron,
-            scan_points=[],
-            scan_start_indices=[],
+            scan_points=create_dummy_scan_spec(),
             plan_during_collection=null_plan,
         )
     )
@@ -112,8 +117,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     class TestCallback(CallbackBase):
         def start(self, doc: RunStart):
             self.subplan_name = doc.get("subplan_name")
-            self.scan_points = doc.get("scan_points")
-            self.scan_start_indices = doc.get("scan_start_indices")
+            self.omega_to_scan_spec = doc.get("omega_to_scan_spec")
 
         def event(self, doc: Event):
             self.event_data = list(doc.get("data").keys())
@@ -125,46 +129,32 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     synchrotron = fgs_devices["synchrotron"]
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.DEV)
     detector = fgs_devices["detector"]
-    fgs_device: ZebraFastGridScan = fgs_devices["grid_scan_device"]
+    fgs_device: ZebraFastGridScanThreeD = fgs_devices["grid_scan_device"]
 
     detector.unstage = MagicMock()
 
     set_mock_value(fgs_device.status, 1)
 
+    expected_scan_points = create_dummy_scan_spec()
     with patch("mx_bluesky.common.experiment_plans.inner_plans.do_fgs.bps.complete"):
         RE(
             kickoff_and_complete_gridscan(
                 fgs_device,
                 detector,
                 synchrotron,
-                scan_points=[],
-                scan_start_indices=[],
+                scan_points=expected_scan_points,
             )
         )
 
     assert test_callback.subplan_name == PlanNameConstants.DO_FGS
-    assert test_callback.scan_points == []
-    assert test_callback.scan_start_indices == []
+    assert test_callback.omega_to_scan_spec
+    assert_equal(
+        test_callback.omega_to_scan_spec[GridscanPlane.OMEGA_XY],
+        expected_scan_points[0],
+    )
+    assert_equal(
+        test_callback.omega_to_scan_spec[GridscanPlane.OMEGA_XZ],
+        expected_scan_points[1],
+    )
     assert len(test_callback.event_data) == 1
     assert test_callback.event_data[0] == "eiger_odin_file_writer_id"
-
-
-@patch(
-    "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary"
-)
-def test_error_if_kickoff_and_complete_gridscan_parameters_wrong_lengths(
-    mock_check_topup, sim_run_engine: RunEngineSimulator, fgs_devices
-):
-    synchrotron = fgs_devices["synchrotron"]
-    detector = fgs_devices["detector"]
-    fgs_device = fgs_devices["grid_scan_device"]
-    with pytest.raises(AssertionError):
-        sim_run_engine.simulate_plan(
-            kickoff_and_complete_gridscan(
-                fgs_device,
-                detector,
-                synchrotron,
-                scan_points=[],
-                scan_start_indices=[0],
-            )
-        )

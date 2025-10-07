@@ -15,6 +15,8 @@ import zmq
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -135,11 +137,15 @@ def test_RE_with_external_callbacks_starts_and_stops(
 
 @pytest.mark.system_test
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
+    oav_for_system_test: OAV,
+    smargon: Smargon,
     RE_with_external_callbacks: RunEngine,
     dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     fetch_comment,  # noqa
+    fetch_datacollection_ids_for_group_id,
+    fake_grid_snapshot_plan,
 ):
     """
     This test requires fake zocalo, and a connection to the dev ISPyB database.
@@ -157,6 +163,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
     @ispyb_activation_decorator(dummy_params)
     def wrapped_xray_centre():
+        yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
         )
@@ -173,10 +180,18 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     assert dcid != 0
     assert dcgid != 0
 
+    dcids = fetch_datacollection_ids_for_group_id(dcgid)
+
+    assert dcid in dcids
+
     # check the data in dev ispyb corresponding to this "collection"
-    ispyb_comment = fetch_comment(dcid)
-    assert ispyb_comment != ""
-    assert "Zocalo processing took" in ispyb_comment
+    ispyb_comment1 = fetch_comment(dcids[0])
+    ispyb_comment2 = fetch_comment(dcids[1])
+    assert ispyb_comment1 != "" and ispyb_comment2 != ""
+    assert (
+        "Zocalo processing took" in ispyb_comment1
+        or "Zocalo processing took" in ispyb_comment2
+    )
 
 
 @pytest.mark.system_test
