@@ -124,7 +124,7 @@ def single_rotation_plan(
     about a fixed axis - for now this axis is limited to omega.
     Needs additional setup of the sample environment and a wrapper to clean up."""
 
-    composite.jungfrau._writer._path_info.filename = "rotation_scan" # type: ignore
+    composite.jungfrau._writer._path_info.filename = "rotation_scan"  # type: ignore
 
     @bpp.set_run_key_decorator(I24PlanNameConstants.SINGLE_ROTATION_SCAN)
     @run_decorator()
@@ -207,7 +207,6 @@ def single_rotation_plan(
             #     composite.jungfrau,
             #     f"{params.storage_directory}/{params.detector_params.full_filename}",
             # )
-            
 
             metadata_writer = JsonMetadataWriter()
 
@@ -226,9 +225,9 @@ def single_rotation_plan(
 
             yield from _do_read()
             yield from bps.mv(
-            composite.jungfrau.drv.gain_mode,
-            GainMode.DYNAMIC,
-        )
+                composite.jungfrau.drv.gain_mode,
+                GainMode.DYNAMIC,
+            )
             yield from fly_jungfrau(
                 composite.jungfrau,
                 _jf_trigger_info,
