@@ -13,6 +13,7 @@ from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
+    GridScanInvalidException,
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -274,7 +275,7 @@ def run_gridscan(
     try:
         yield from beamline_specific.set_flyscan_params_plan()
     except FailedStatus as e:
-        if isinstance(e.__cause__, TimeoutError):
+        if isinstance(e.__cause__, GridScanInvalidException):
             raise SampleException(
                 "Scan invalid - gridscan not valid for detected pin position"
             ) from e

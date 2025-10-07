@@ -241,7 +241,7 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
 
-    def test_if_timeout_fails_then_sample_exception_raised(
+    def test_if_gridscan_prepare_fails_then_sample_exception_raised(
         self,
         RE: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
