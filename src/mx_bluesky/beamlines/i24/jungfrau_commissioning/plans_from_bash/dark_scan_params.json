@@ -1,0 +1,6 @@
+{
+    "exp_time_s": 0.001,
+    "number_of_triggers": 1000,
+    "storage_directory": "/dls/i24/data/2025/cm40647-4/jungfrau/2025-09-15/thau",
+    "gain_mode": "Dynamic" 
+}

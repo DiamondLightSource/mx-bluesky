@@ -1,3 +1,6 @@
+import logging
+import sys
+from logging import Logger
 from pathlib import PurePath
 from typing import cast
 
@@ -53,9 +56,7 @@ def fly_jungfrau(
         # StandardDetector.complete converts regular status to watchable status,
         # but bluesky plan stubs can't see this currently
         status = cast(WatchableAsyncStatus, status)
-        log_on_percentage_complete(
-            status, "Jungfrau data collection triggers recieved", 10
-        )
+        log_on_percentage_complete(status, log_on_percentage_prefix, 10)
         if wait:
             yield from bps.wait(JF_COMPLETE_GROUP)
         return status
@@ -75,3 +76,13 @@ def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str
     jungfrau._writer._path_info = AutoIncrementingPathProvider(  # noqa: SLF001
         _new_filename_provider, _file_path.parent
     )
+
+
+def add_info_logs_to_stdout(logger: Logger):
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    stdout_handler.setFormatter(formatter)
+
+    logger.addHandler(stdout_handler)

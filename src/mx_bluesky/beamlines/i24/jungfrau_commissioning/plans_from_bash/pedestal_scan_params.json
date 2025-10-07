@@ -1,0 +1,6 @@
+{
+    "exp_time_s": 0.001,
+    "pedestal_frames": 20,
+    "pedestal_loops": 200,
+    "storage_directory": "/dls/i24/data/2025/cm40647-4/jungfrau/2025-09-15/thau"
+}

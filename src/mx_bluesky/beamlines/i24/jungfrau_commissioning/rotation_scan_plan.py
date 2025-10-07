@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from functools import partial
-
+from ophyd_async.fastcs.jungfrau import GainMode
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
@@ -124,6 +124,8 @@ def single_rotation_plan(
     about a fixed axis - for now this axis is limited to omega.
     Needs additional setup of the sample environment and a wrapper to clean up."""
 
+    composite.jungfrau._writer._path_info.filename = "rotation_scan" # type: ignore
+
     @bpp.set_run_key_decorator(I24PlanNameConstants.SINGLE_ROTATION_SCAN)
     @run_decorator()
     def _plan_in_run_decorator():
@@ -201,10 +203,11 @@ def single_rotation_plan(
                 ops_time=10.0,  # Additional time to account for rotation, is s
             )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
-            override_file_path(
-                composite.jungfrau,
-                f"{params.storage_directory}/{params.detector_params.full_filename}",
-            )
+            # override_file_path(
+            #     composite.jungfrau,
+            #     f"{params.storage_directory}/{params.detector_params.full_filename}",
+            # )
+            
 
             metadata_writer = JsonMetadataWriter()
 
@@ -222,6 +225,10 @@ def single_rotation_plan(
                 yield from read_devices_for_metadata(composite)
 
             yield from _do_read()
+            yield from bps.mv(
+            composite.jungfrau.drv.gain_mode,
+            GainMode.DYNAMIC,
+        )
             yield from fly_jungfrau(
                 composite.jungfrau,
                 _jf_trigger_info,
