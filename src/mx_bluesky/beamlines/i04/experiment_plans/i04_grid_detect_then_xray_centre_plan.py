@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.common_dcm import BaseDCM
@@ -74,6 +74,20 @@ from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
 )
 
 DEFAULT_BEAMSIZE_MICRONS = 20
+
+
+def _change_beamsize(
+    transfocator: Transfocator, beamsize: float, parameters: GridCommon
+):
+    """i04 always uses the large aperture and changes beamsize with the transfocator.
+
+    An aperture is needed to reduce scatter but the transfocator is best used for beamsize
+    changes as it gives more flux compared to a bigger beam with a small aperture.
+    """
+    parameters.selected_aperture = ApertureValue.LARGE
+    yield from bps.abs_set(
+        transfocator, beamsize, group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC
+    )
 
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
@@ -148,7 +162,7 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
-        yield from bps.abs_set(transfocator, initial_beamsize)
+        yield from bps.mv(transfocator, initial_beamsize)
 
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
@@ -173,11 +187,7 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
-    yield from bps.abs_set(
-        transfocator,
-        DEFAULT_BEAMSIZE_MICRONS,
-        group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
-    )
+    yield from _change_beamsize(transfocator, DEFAULT_BEAMSIZE_MICRONS, parameters)
     yield from _inner_grid_detect_then_xrc()
 
 
@@ -189,7 +199,7 @@ def get_ready_for_oav_and_close_shutter(
 ):
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
-    LOGGER.info("Non-udc tidy: Seting up beamline for OAV")
+    LOGGER.info("Non-udc tidy: Setting up beamline for OAV")
     yield from setup_beamline_for_OAV(
         smargon, backlight, aperture_scatterguard, group=group
     )

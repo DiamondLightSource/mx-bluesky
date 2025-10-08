@@ -69,6 +69,7 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    completed_status,
     init_devices,
 )
 from ophyd_async.epics.core import epics_signal_rw
@@ -558,7 +559,7 @@ def ophyd_pin_tip_detection(RE: RunEngine):
 def transfocator(RE: RunEngine):
     with init_devices(mock=True):
         transfocator = Transfocator("", "")
-    transfocator.set = MagicMock()
+    transfocator.set = MagicMock(side_effect=lambda _: completed_status())
     return transfocator
 
 

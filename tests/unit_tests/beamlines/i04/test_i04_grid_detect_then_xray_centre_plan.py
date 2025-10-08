@@ -6,7 +6,7 @@ from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.common_dcm import BaseDCM
@@ -221,7 +221,7 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     mock_common_flyscan_xray_centre.side_effect = CustomException
 
     with pytest.raises(CustomException):  # noqa: B017
-        RE(i04_grid_detect_then_xrc_default_params(udc=True))
+        RE(i04_grid_detect_then_xrc_default_params())
 
     # Called once on exception and once on close_run
     mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
@@ -339,7 +339,7 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     mock_create_parameters.return_value = hyperion_fgs_params
     mock_run_gridscan.side_effect = CompleteException
     with pytest.raises(CompleteException):
-        RE(i04_grid_detect_then_xrc_default_params(udc=True))
+        RE(i04_grid_detect_then_xrc_default_params())
 
     mock_verify_gap.assert_called_once()
 
@@ -404,6 +404,13 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
         mock_create_gridscan_callbacks, "mock_create_gridscan_callbacks"
     )
     RE(i04_grid_detect_then_xrc_default_params())
+
+    assert (
+        mock_grid_detect_then_xray_centre.call_args.kwargs[
+            "parameters"
+        ].selected_aperture
+        == ApertureValue.LARGE
+    )
     assert parent_mock.method_calls == [
         call.transfocator_set(DEFAULT_BEAMSIZE_MICRONS),
         call.mock_create_gridscan_callbacks(),
