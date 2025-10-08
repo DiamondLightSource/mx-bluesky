@@ -9,7 +9,7 @@ from mx_bluesky.common.parameters.device_composites import (
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class I04GridDetectThenXRayCentreComposite(GridDetectThenXRayCentreComposite):
     """
-    The transofcator is specific to i04 and is used instead of the aperture to change
+    The transfocator is specific to i04 and is used instead of the aperture to change
     beamsize.
     """
 

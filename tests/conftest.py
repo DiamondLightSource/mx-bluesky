@@ -554,10 +554,11 @@ def ophyd_pin_tip_detection(RE: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
-@pytest.fixture
-def transfocator():
+@pytest.fixture()
+def transfocator(RE: RunEngine):
     with init_devices(mock=True):
         transfocator = Transfocator("", "")
+    transfocator.set = MagicMock()
     return transfocator
 
 
