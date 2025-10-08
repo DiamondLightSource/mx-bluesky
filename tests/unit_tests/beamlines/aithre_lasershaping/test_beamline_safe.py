@@ -28,8 +28,8 @@ def robot(RE: RunEngine) -> LaserRobot:
         ["x", 0.5],
         ["y", -10],
         ["z", 2],
-        ["sampy", 0.25],
-        ["sampz", -0.76],
+        ["stage_y", 0.25],
+        ["stage_z", -0.76],
     ],
 )
 async def test_beamline_safe_reads_unsafe_correctly(
@@ -75,7 +75,7 @@ async def test_go_to_zero_gives_expected_result(
 ):
     msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=wait))
 
-    for name in ["omega", "x", "y", "z", "sampy", "sampz"]:
+    for name in ["omega", "x", "y", "z", "stage_y", "stage_z"]:
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
