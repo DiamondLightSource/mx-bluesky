@@ -78,6 +78,9 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.beamlines.i04.external_interaction.config_server import (
+    get_i04_config_client,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -1788,11 +1791,18 @@ def _fake_config_server_read(
             return json.loads(contents)
 
 
+IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
+    get_hyperion_config_client,
+    get_i04_config_client,
+]
+
+
 @pytest.fixture(autouse=True)
 def mock_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
-    get_hyperion_config_client.cache_clear()
+    for client in IMPLEMENTED_CONFIG_CLIENTS:
+        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
 
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",

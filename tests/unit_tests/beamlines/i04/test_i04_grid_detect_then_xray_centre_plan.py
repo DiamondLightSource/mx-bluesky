@@ -34,6 +34,7 @@ from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_pl
 )
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+    _fix_transmission_and_exposure_time_for_current_wavelength,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
@@ -361,3 +362,7 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
         )
 
     assert mock_get_ready_for_oav_and_close_shutter.call_count == 1
+
+
+def test_fix_transmission_and_exposure_time_for_current_wavelength():
+    t, e = _fix_transmission_and_exposure_time_for_current_wavelength(5, 5, 5)

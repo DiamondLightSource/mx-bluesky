@@ -1,6 +1,9 @@
 
 gda.px.oav.centring.pinTip=True
 
+#this exists in i04 but not i03
+gda.px.expttable.default.wavelength=0.95373
+
 # Main Hyperion settings
 
 #####################################################

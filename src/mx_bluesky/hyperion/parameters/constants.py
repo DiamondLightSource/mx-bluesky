@@ -8,8 +8,8 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
     ExperimentParamConstants,
-    FeatureSetting,
-    FeatureSettingources,
+    FeatureSettings,
+    FeatureSettingSources,
     HardwareConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
@@ -32,7 +32,7 @@ class I03Constants:
 
 
 # These currently exist in GDA domain.properties
-class HyperionFeatureSettingources(FeatureSettingources):
+class HyperionFeatureSettingsSources(FeatureSettingSources):
     USE_GPU_RESULTS = "gda.mx.hyperion.xrc.use_gpu_results"
     USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
     SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
@@ -41,7 +41,7 @@ class HyperionFeatureSettingources(FeatureSettingources):
 
 # Use these defaults if we can't read from the config server
 @dataclass
-class HyperionFeatureSetting(FeatureSetting):
+class HyperionFeatureSettings(FeatureSettings):
     USE_GPU_RESULTS: bool = True
     USE_PANDA_FOR_GRIDSCAN: bool = False
     SET_STUB_OFFSETS: bool = False

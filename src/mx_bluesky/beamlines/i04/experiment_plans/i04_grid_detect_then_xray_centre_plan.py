@@ -33,6 +33,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.beamlines.i04.external_interaction.config_server import (
+    get_i04_config_client,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_FGS_features,
@@ -135,6 +138,16 @@ def i04_grid_detect_then_xray_centre(
         sample_shutter,
     )
 
+    current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
+
+    parameters.transmission_frac, parameters.exposure_time_s = (
+        _fix_transmission_and_exposure_time_for_current_wavelength(
+            parameters.transmission_frac,
+            parameters.exposure_time_s,
+            current_wavelength_a,
+        )
+    )
+
     def tidy_beamline_if_not_udc():
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
@@ -168,6 +181,34 @@ def i04_grid_detect_then_xray_centre(
         yield from grid_detect_then_xray_centre_with_callbacks()
 
     yield from _inner_grid_detect_then_xrc()
+
+
+def _fix_transmission_and_exposure_time_for_current_wavelength(
+    transmission_frac: float, exposure_time_s: float, current_wavelength_a: float
+):
+    """
+    The transmission and exposure time sent when GDA triggers their plan through the
+    client's "auto XRC button" assumes that the energy is at a certain value.
+    This reads the current energy, compares it to the assumed energy, and adjusts transmission and exposure time
+    accordingly to ensure a sensible dose.
+    """
+
+    assumed_wavelength_a = (
+        get_i04_config_client().get_feature_flags().ASSUMED_WAVELENGTH_IN_A
+    )
+    wavelength_scale = (assumed_wavelength_a / current_wavelength_a) ** 2
+    tmp_transmission_frac = transmission_frac * wavelength_scale
+    if tmp_transmission_frac <= 1:
+        transmission_frac = tmp_transmission_frac
+    else:
+        transmission_frac = 1
+        exposure_time_s *= tmp_transmission_frac
+
+    LOGGER.info(
+        "Fixing transmission fraction to {transmission_frac} and exposure time to {exposure_time_s}s"
+    )
+
+    return transmission_frac, exposure_time_s
 
 
 def get_ready_for_oav_and_close_shutter(
