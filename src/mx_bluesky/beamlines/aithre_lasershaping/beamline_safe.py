@@ -19,8 +19,8 @@ def set_beamline_safe_on_robot(
         goniometer.x,
         goniometer.y,
         goniometer.z,
-        goniometer.sampy,
-        goniometer.sampz,
+        goniometer.stage_y,
+        goniometer.stage_z,
         goniometer.omega,
     ]
 
@@ -47,7 +47,7 @@ def go_to_zero(
     yield from bps.abs_set(goniometer.x, 0, group=group)
     yield from bps.abs_set(goniometer.y, 0, group=group)
     yield from bps.abs_set(goniometer.z, 0, group=group)
-    yield from bps.abs_set(goniometer.sampy, 0, group=group)
-    yield from bps.abs_set(goniometer.sampz, 0, group=group)
+    yield from bps.abs_set(goniometer.stage_y, 0, group=group)
+    yield from bps.abs_set(goniometer.stage_z, 0, group=group)
     if wait:
         yield from bps.wait(group=group)
