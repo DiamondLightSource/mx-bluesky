@@ -159,6 +159,7 @@ def robot_load_and_change_energy_plan(
 ):
     assert params.sample_puck is not None
     assert params.sample_pin is not None
+    assert params.sample_id is not None
 
     sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
