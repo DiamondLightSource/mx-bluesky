@@ -251,7 +251,11 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
 )
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan._fix_transmission_and_exposure_time_for_current_wavelength"
+)
 def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+    mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
     mock_create_parameters: MagicMock,
@@ -264,6 +268,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     hyperion_fgs_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
+    mock_fix_transmission_and_exp_time.return_value = (1, 1)
     flyscan_event_handler = MagicMock()
     flyscan_event_handler.xray_centre_results = "dummy"
     mock_events_handler.return_value = flyscan_event_handler
