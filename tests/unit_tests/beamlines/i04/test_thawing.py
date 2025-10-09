@@ -77,10 +77,10 @@ async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
 
 
 @pytest.fixture
-async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
+async def oav_forwarder(RE: RunEngine, oav: OAV) -> OAVToRedisForwarder:
     with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
-            "prefix", "host", "password", name="oav_to_redis_forwarder"
+            "prefix", oav, oav, "host", "password", name="oav_to_redis_forwarder"
         )
     set_mock_value(oav_forwarder.uuid, "test")
 
