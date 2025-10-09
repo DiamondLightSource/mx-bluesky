@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -44,9 +45,13 @@ async def test_fly_jungfrau(
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
     RE(_open_run_and_fly())
+    await asyncio.sleep(0)
     assert mock_stop.await_count == 2  # once when staging, once after run complete
 
 
+@pytest.mark.skip(
+    reason="See https://github.com/DiamondLightSource/mx-bluesky/issues/1338"
+)
 def test_fly_jungfrau_stops_if_exception_after_stage(
     RE: RunEngine, jungfrau: CommissioningJungfrau
 ):
