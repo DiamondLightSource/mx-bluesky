@@ -28,6 +28,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.testing import set_mock_value
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteException,
@@ -43,6 +44,9 @@ from mx_bluesky.common.parameters.gridscan import GridCommon
 
 
 class CustomException(Exception): ...
+
+
+EXPECTED_WAVELENGTH = 0.95373
 
 
 @pytest.fixture
@@ -69,6 +73,7 @@ def i04_grid_detect_then_xrc_default_params(
     detector_motion: DetectorMotion,
     test_full_grid_scan_params: GridCommon,
 ):
+    set_mock_value(dcm.wavelength_in_a.user_readback, EXPECTED_WAVELENGTH)
     return partial(
         i04_grid_detect_then_xray_centre,
         parameters=test_full_grid_scan_params,
@@ -364,5 +369,45 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
     assert mock_get_ready_for_oav_and_close_shutter.call_count == 1
 
 
-def test_fix_transmission_and_exposure_time_for_current_wavelength():
-    t, e = _fix_transmission_and_exposure_time_for_current_wavelength(5, 5, 5)
+def test_fix_transmission_and_exposure_time_given_expected_wavelength_does_nothing_given_expected_energy():
+    transmission = 0.55
+    exposure_time_s = 0.03
+    assert _fix_transmission_and_exposure_time_for_current_wavelength(
+        transmission, exposure_time_s, EXPECTED_WAVELENGTH
+    ) == (transmission, exposure_time_s)
+
+
+def test_fix_transmission_and_exposure_time_different_wavelength_reduces_transmission_only():
+    transmission = 0.55
+    exposure_time_s = 0.03
+    wavelength_to_use = EXPECTED_WAVELENGTH * 2
+    expected_transmission = transmission * (
+        (EXPECTED_WAVELENGTH / wavelength_to_use) ** 2
+    )
+    assert _fix_transmission_and_exposure_time_for_current_wavelength(
+        transmission, exposure_time_s, wavelength_to_use
+    ) == (expected_transmission, exposure_time_s)
+
+
+def test_fix_transmission_and_exposure_time_low_wavelength_lowers_exposure_time_if_transmission_is_maxed():
+    transmission = 0.95
+    exposure_time_s = 0.03
+    wavelength_to_use = EXPECTED_WAVELENGTH / 2
+    expected_transmission = 1
+    expected_exposure_time = round(
+        transmission
+        * ((EXPECTED_WAVELENGTH / wavelength_to_use) ** 2)
+        * exposure_time_s,
+        3,
+    )
+    assert _fix_transmission_and_exposure_time_for_current_wavelength(
+        transmission, exposure_time_s, wavelength_to_use
+    ) == (expected_transmission, expected_exposure_time)
+
+
+def test_fix_transmission_and_exposure_time_rounds_exposure_time_to_ms():
+    exposure_time_s = 0.234873469
+    transmission = 1
+    assert _fix_transmission_and_exposure_time_for_current_wavelength(
+        transmission, exposure_time_s, EXPECTED_WAVELENGTH
+    ) == (transmission, round(exposure_time_s, 3))
