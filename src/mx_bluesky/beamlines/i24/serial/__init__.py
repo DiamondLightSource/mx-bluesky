@@ -3,6 +3,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_move_backlight,
     gui_move_detector,
     gui_run_chip_collection,
+    gui_run_extruder_collection,
     gui_set_fiducial_0,
     gui_set_zoom_level,
     gui_stage_move_on_click,
@@ -61,4 +62,5 @@ __all__ = [
     "gui_move_backlight",
     "gui_set_zoom_level",
     "gui_set_fiducial_0",
+    "gui_run_extruder_collection",
 ]

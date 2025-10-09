@@ -1,4 +1,5 @@
 # from collections.abc import Sequence
+from datetime import datetime
 from typing import Literal
 
 import bluesky.plan_stubs as bps
@@ -19,13 +20,16 @@ from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
+    run_plan_in_wrapper as run_ex_collection_plan,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
     PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-    run_plan_in_wrapper,
+    run_plan_in_wrapper as run_ft_collection_plan,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
     upload_chip_map_to_geobrick,
@@ -41,13 +45,15 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
+    ExtruderParameters,
+)
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
 from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
-    get_detector_type,
 )
 
 
@@ -137,7 +143,7 @@ def gui_run_chip_collection(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
 ) -> MsgGenerator:
-    """Set the parameter model for the data collection.
+    """Set the parameter model and run the data collection.
 
     Args:
         sub_dir (str): subdirectory of the visit to write data in.
@@ -165,7 +171,7 @@ def gui_run_chip_collection(
     """
     # NOTE still a work in progress, adding to it as the ui grows
     # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
-    det_type = yield from get_detector_type(detector_stage)
+    # det_type = yield from get_detector_type(detector_stage)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
     if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
@@ -184,7 +190,7 @@ def gui_run_chip_collection(
         "filename": chip_name,
         "exposure_time_s": exp_time,
         "detector_distance_mm": det_dist,
-        "detector_name": str(det_type),
+        "detector_name": "eiger",
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
@@ -212,7 +218,7 @@ def gui_run_chip_collection(
     dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
     SSX_LOGGER.info("DCID created")
 
-    yield from run_plan_in_wrapper(
+    yield from run_ft_collection_plan(
         zebra,
         pmac,
         aperture,
@@ -225,4 +231,66 @@ def gui_run_chip_collection(
         beam_center_device,
         parameters,
         dcid,
+    )
+
+
+@bpp.run_decorator()
+def gui_run_extruder_collection(
+    sub_dir: str,
+    file_name: str,
+    exp_time: float,
+    det_dist: float,
+    transmission: float,
+    num_images: int,
+    pump_probe: bool,
+    laser_dwell: float,
+    laser_delay: float,
+    zebra: Zebra = inject("zebra"),
+    aperture: Aperture = inject("aperture"),
+    backlight: DualBacklight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    detector_stage: YZStage = inject("detector_motion"),
+    shutter: HutchShutter = inject("shutter"),
+    dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    # attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+):
+    """Set parameter model for extruder and run the data collection."""
+    # NOTE. TRANSMISSION WILL HAVE TO BE SET THEN!
+    start_time = datetime.now()
+    SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
+
+    params = {
+        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
+        "directory": sub_dir,
+        "filename": file_name,
+        "exposure_time_s": exp_time,
+        "detector_distance_mm": det_dist,
+        "detector_name": "eiger",
+        "transmission": transmission,
+        "num_images": num_images,
+        "pump_status": pump_probe,
+        "laser_dwell_s": laser_dwell,
+        "laser_delay_s": laser_delay,
+    }
+    parameters = ExtruderParameters(**params)
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
+    # DCID - not generated yet
+    dcid = DCID(emit_errors=False, expt_params=parameters)
+
+    yield from run_ex_collection_plan(
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_eiger,
+        parameters,
+        dcid,
+        start_time,
     )
