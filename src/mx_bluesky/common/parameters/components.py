@@ -28,6 +28,7 @@ from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
     GridscanParamConstants,
 )
+from mx_bluesky.common.utils.log import LOGGER
 
 PARAMETER_VERSION = Version.parse("5.3.0")
 
@@ -221,6 +222,20 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
+    sample_id: int | None = (
+        None  # Long term, all sample should be in ispyb, see https://github.com/DiamondLightSource/mx-bluesky/issues/1337
+    )
+    sample_puck: int | None = None
+    sample_pin: int | None = None
+
+    @model_validator(mode="after")
+    def _warn_if_no_sample(self):
+        if not self.sample_id:
+            LOGGER.warning("No sample ID was provided")
+        return self
+
+
+class WithRequiredSample(BaseModel):
     sample_id: int
     sample_puck: int | None = None
     sample_pin: int | None = None

@@ -59,7 +59,6 @@ def load_centre_collect_full(
      that satisfies the chosen selection function,
      move to that centre and do a collection with the specified parameters.
     """
-
     get_hyperion_config_client().refresh_cache()
 
     if not oav_params:
