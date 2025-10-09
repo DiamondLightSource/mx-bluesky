@@ -190,7 +190,7 @@ def _fix_transmission_and_exposure_time_for_current_wavelength(
     The transmission and exposure time sent when GDA triggers their plan through the
     client's "auto XRC button" assumes that the energy is at a certain value.
     This reads the current energy, compares it to the assumed energy, and adjusts transmission and exposure time
-    accordingly to ensure a sensible dose.
+    accordingly to ensure there's enough signal on the detector.
     """
 
     assumed_wavelength_a = (
@@ -205,10 +205,11 @@ def _fix_transmission_and_exposure_time_for_current_wavelength(
         exposure_time_s *= tmp_transmission_frac
 
     LOGGER.info(
-        "Fixing transmission fraction to {transmission_frac} and exposure time to {exposure_time_s}s"
+        f"Fixing transmission fraction to {transmission_frac} and exposure time to {exposure_time_s}s"
     )
 
-    return transmission_frac, exposure_time_s
+    # Exposure time in FGS IOC is in ms, and must be an integer, so round it here
+    return transmission_frac, round(exposure_time_s, 3)
 
 
 def get_ready_for_oav_and_close_shutter(
