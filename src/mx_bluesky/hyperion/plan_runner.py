@@ -1,7 +1,9 @@
 import threading
+import time
 from collections.abc import Callable
 
 from blueapi.core import BlueskyContext
+from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator, RequestAbort
 
 from mx_bluesky.common.parameters.constants import Status
@@ -19,10 +21,15 @@ class PlanError(Exception):
 class PlanRunner(BaseRunner):
     """Runner that executes experiments from inside a running Bluesky plan"""
 
+    EXTERNAL_CALLBACK_WATCHDOG_TIMER_S = 60
+    EXTERNAL_CALLBACK_POLL_INTERVAL_S = 1
+
     def __init__(self, context: BlueskyContext, dev_mode: bool) -> None:
         super().__init__(context)
         self.current_status: Status = Status.IDLE
         self.is_dev_mode = dev_mode
+        self._callbacks_started = False
+        self.callback_watchdog_expiry = time.monotonic()
 
     def execute_plan(
         self,
@@ -38,6 +45,15 @@ class PlanRunner(BaseRunner):
         self.current_status = Status.BUSY
 
         try:
+            while not self._callbacks_started:
+                # If on first launch the external callbacks aren't started yet, wait until they are
+                LOGGER.info("Waiting for external callbacks to start")
+                yield from bps.sleep(self.EXTERNAL_CALLBACK_POLL_INTERVAL_S)
+
+            if not self._external_callbacks_are_alive():
+                raise RuntimeError(
+                    "External callback watchdog timer expired, check external callbacks are running."
+                )
             yield from experiment()
             self.current_status = Status.IDLE
         except WarningError as e:
@@ -74,3 +90,13 @@ class PlanRunner(BaseRunner):
             stopping_thread = threading.Thread(target=issue_abort)
             stopping_thread.start()
             return
+
+    def reset_callback_watchdog_timer(self):
+        """Called periodically to reset the watchdog timer when the external callbacks ping us."""
+        self._callbacks_started = True
+        self.callback_watchdog_expiry = (
+            time.monotonic() + self.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S
+        )
+
+    def _external_callbacks_are_alive(self) -> bool:
+        return time.monotonic() < self.callback_watchdog_expiry
