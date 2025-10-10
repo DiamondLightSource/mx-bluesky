@@ -14,6 +14,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_move_detector,
     gui_run_chip_collection,
     gui_run_extruder_collection,
+    gui_set_fiducial_0,
     gui_stage_move_on_click,
 )
 
@@ -120,6 +121,12 @@ async def test_gui_move_backlight(mock_logger, position, backlight, RE):
         == BacklightPositions(position)
     )
     mock_logger.debug.assert_called_with(f"Backlight moved to {position}")
+
+
+async def test_gui_set_fiducial_0(pmac, RE):
+    RE(gui_set_fiducial_0(pmac))
+
+    assert await pmac.pmac_string.get_value() == r"&2\#5hmz\#6hmz\#7hmz"
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
