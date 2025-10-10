@@ -413,6 +413,52 @@ def collection_complete_plan(
     yield from bps.null()
 
 
+def run_plan_in_wrapper(
+    zebra: Zebra,
+    aperture: Aperture,
+    backlight: DualBacklight,
+    beamstop: Beamstop,
+    detector_stage: YZStage,
+    shutter: HutchShutter,
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    beam_center_eiger: DetectorBeamCenter,
+    parameters: ExtruderParameters,
+    dcid: DCID,
+    start_time: datetime,
+) -> MsgGenerator:
+    yield from bpp.contingency_wrapper(
+        main_extruder_plan(
+            zebra=zebra,
+            aperture=aperture,
+            backlight=backlight,
+            beamstop=beamstop,
+            detector_stage=detector_stage,
+            shutter=shutter,
+            dcm=dcm,
+            mirrors=mirrors,
+            beam_center_device=beam_center_eiger,
+            parameters=parameters,
+            dcid=dcid,
+            start_time=start_time,
+        ),
+        except_plan=lambda e: (
+            yield from collection_aborted_plan(zebra, parameters.detector_name, dcid)
+        ),
+        else_plan=lambda: (
+            yield from collection_complete_plan(
+                parameters.collection_directory, parameters.detector_name, dcid
+            )
+        ),
+        final_plan=lambda: (
+            yield from tidy_up_at_collection_end_plan(
+                zebra, shutter, parameters, dcid, dcm
+            )
+        ),
+        auto_raise=False,
+    )
+
+
 def run_extruder_plan(
     zebra: Zebra = inject("zebra"),
     aperture: Aperture = inject("aperture"),
@@ -439,33 +485,17 @@ def run_extruder_plan(
     # DCID - not generated yet
     dcid = DCID(emit_errors=False, expt_params=parameters)
 
-    yield from bpp.contingency_wrapper(
-        main_extruder_plan(
-            zebra=zebra,
-            aperture=aperture,
-            backlight=backlight,
-            beamstop=beamstop,
-            detector_stage=detector_stage,
-            shutter=shutter,
-            dcm=dcm,
-            mirrors=mirrors,
-            beam_center_device=beam_center_device,
-            parameters=parameters,
-            dcid=dcid,
-            start_time=start_time,
-        ),
-        except_plan=lambda e: (
-            yield from collection_aborted_plan(zebra, parameters.detector_name, dcid)
-        ),
-        else_plan=lambda: (
-            yield from collection_complete_plan(
-                parameters.collection_directory, parameters.detector_name, dcid
-            )
-        ),
-        final_plan=lambda: (
-            yield from tidy_up_at_collection_end_plan(
-                zebra, shutter, parameters, dcid, dcm
-            )
-        ),
-        auto_raise=False,
+    yield from run_plan_in_wrapper(
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_device,
+        parameters,
+        dcid,
+        start_time,
     )
