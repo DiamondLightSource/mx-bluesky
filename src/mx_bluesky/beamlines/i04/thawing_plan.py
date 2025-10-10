@@ -129,9 +129,9 @@ def thaw_and_murko_centre(
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
 
     sample_id = yield from bps.rd(robot.sample_id)
-    yield from bps.abs_set(murko_results.sample_id, int(sample_id))
+    yield from bps.mv(murko_results.sample_id, str(sample_id))
 
-    yield from bps.stage(murko_results)
+    yield from bps.stage(murko_results, wait=True)
     yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
 
     yield from bpp.contingency_wrapper(
@@ -145,7 +145,7 @@ def thaw_and_murko_centre(
             oav_to_redis_forwarder,
             centre_then_switch_forwarder_to_ROI,
         ),
-        final_plan=partial(bps.unstage, murko_results),
+        final_plan=partial(bps.unstage, murko_results, wait=True),
     )
 
 
