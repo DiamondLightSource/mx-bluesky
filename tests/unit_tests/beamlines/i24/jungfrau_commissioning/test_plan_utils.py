@@ -5,8 +5,7 @@ from unittest.mock import AsyncMock
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.preprocessors import run_decorator
-from bluesky.run_engine import RunEngine
-from bluesky.utils import FailedStatus
+from bluesky.run_engine import RunEngine, WaitForTimeoutError
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
@@ -60,7 +59,7 @@ def test_fly_jungfrau_stops_if_exception_after_stage(
     def do_fly():
         yield from fly_jungfrau(jungfrau, bad_trigger_info)
 
-    with pytest.raises(FailedStatus):
+    with pytest.raises(WaitForTimeoutError):
         RE(do_fly())
     assert mock_stop.await_count == 2  # once when staging, once on exception
 
