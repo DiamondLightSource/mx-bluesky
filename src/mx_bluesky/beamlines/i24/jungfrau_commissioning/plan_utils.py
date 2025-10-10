@@ -15,6 +15,10 @@ from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
+from ophyd_async.fastcs.jungfrau import (
+    AcquisitionType,
+    GainMode,
+)
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -26,6 +30,7 @@ def fly_jungfrau(
     trigger_info: TriggerInfo,
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers recieved",
+    pedestals=False,
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -45,8 +50,16 @@ def fly_jungfrau(
         except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
     )
     def _fly_with_unstage_contingency():
-        yield from bps.stage(jungfrau)
+        yield from bps.stage(jungfrau, wait=True)
         LOGGER.info("Setting up detector...")
+        if pedestals:
+            LOGGER.info("Putting detector into pedestal mode...")
+            yield from bps.mv(
+                jungfrau.drv.acquisition_type,
+                AcquisitionType.PEDESTAL,
+                jungfrau.drv.gain_mode,
+                GainMode.DYNAMIC,
+            )
         yield from bps.prepare(jungfrau, trigger_info, wait=True)
         LOGGER.info("Detector prepared. Starting acquisition")
         LOGGER.info("doing a 1s sleep before kickoff")
