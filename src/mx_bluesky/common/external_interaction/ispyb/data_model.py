@@ -28,11 +28,12 @@ class DataCollectionInfo:
     n_images: int | None = None
     axis_range: float | None = None
     axis_end: float | None = None
+    chi_start: float | None = None
     kappa_start: float | None = None
 
-    parent_id: int | None = None
+    parent_id: int | None = None  # TODO remove this
     visit_string: str | None = None
-    sample_id: int | None = None
+    sample_id: int | None = None  # TODO remove this
     detector_id: int | None = None
     axis_start: float | None = None
     focal_spot_size_at_samplex: float | None = None
@@ -60,6 +61,8 @@ class DataCollectionInfo:
     synchrotron_mode: str | None = None
     undulator_gap1: float | None = None
     start_time: str | None = None
+    end_time: str | None = None
+    run_status: str | None = None
 
 
 @dataclass
