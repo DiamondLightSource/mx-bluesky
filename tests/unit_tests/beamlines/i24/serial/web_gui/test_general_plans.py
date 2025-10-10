@@ -2,6 +2,8 @@ from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from dodal.beamlines import i24
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
@@ -14,6 +16,15 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
 )
 
 from ..conftest import fake_generator
+
+
+@pytest.fixture
+def enum_attenuator(RE) -> EnumFilterAttenuator:
+    attenuator: EnumFilterAttenuator = i24.attenuator(
+        connect_immediately=True, mock=True
+    )
+    # set_mock_value(attenuator.actual_transmission, 1.0)
+    return attenuator
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
@@ -52,7 +63,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
     dcm,
     mirrors,
     eiger_beam_center,
-    attenuator,
+    enum_attenuator,
 ):
     device_list = [
         pmac,
@@ -65,7 +76,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
         dcm,
         mirrors,
         eiger_beam_center,
-        attenuator,
+        enum_attenuator,
     ]
     with pytest.raises(EmptyMapError):
         RE(
@@ -127,7 +138,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
     dcm,
     mirrors,
     eiger_beam_center,
-    attenuator,
+    enum_attenuator,
     dummy_params_without_pp,
 ):
     mock_read_visit.return_value = Path("/tmp/dls/i24/fixed/foo")
@@ -142,14 +153,14 @@ def test_setup_tasks_in_gui_run_chip_collection(
         dcm,
         mirrors,
         eiger_beam_center,
-        attenuator,
+        enum_attenuator,
     ]
 
     expected_params = dummy_params_without_pp
     expected_params.pre_pump_exposure_s = 0.0
 
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_plan_in_wrapper",
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_ft_collection_plan",
         MagicMock(return_value=iter([])),
     ) as patch_wrapped_plan:
         with patch(
