@@ -132,12 +132,12 @@ def tidy_up_zebra_after_gridscan(
     Set the zebra back to a state which is expected by GDA.
 
     Args:
-        zebra: Zebra device
-        zebra_shutter: Zebra shutter device
-        group: Bluesky group to use when waiting on completion
-        wait: If true, block until completion
+        zebra: Zebra device.
+        zebra_shutter: Zebra shutter device.
+        group: Bluesky group to use when waiting on completion.
+        wait: If true, block until completion.
         ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
-        specify which TTL input is being used for the desired detector
+        specify which TTL input is being used for the desired detector.
     """
 
     LOGGER.info("Tidying up Zebra")
@@ -154,20 +154,6 @@ def tidy_up_zebra_after_gridscan(
     )
     yield from set_shutter_auto_input(zebra, zebra.mapping.sources.PC_GATE, group=group)
 
-    if wait:
-        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
-
-
-def tidy_up_zebra_after_rotation_scan(
-    zebra: Zebra,
-    zebra_shutter: ZebraShutter,
-    group="tidy_up_zebra_after_rotation",
-    wait=True,
-):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
-    )
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
@@ -253,5 +239,29 @@ def setup_zebra_for_rotation(
         zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
     )
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
+    if wait:
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
+
+
+def tidy_up_zebra_after_rotation_scan(
+    zebra: Zebra,
+    zebra_shutter: ZebraShutter,
+    group="tidy_up_zebra_after_rotation",
+    wait=True,
+):
+    """
+    Set the zebra back to a state which is expected by GDA.
+
+    Args:
+        zebra: Zebra device.
+        zebra_shutter: Zebra shutter device.
+        group: Bluesky group to use when waiting on completion.
+        wait: If true, block until completion.
+    """
+
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
+    yield from bps.abs_set(
+        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
+    )
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
