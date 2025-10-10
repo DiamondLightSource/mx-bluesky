@@ -64,7 +64,7 @@ def test_external_callbacks_not_running_raises_exception_for_plan_execution(
         RE(runner.execute_plan(test_plan))
         with pytest.raises(PlanException) as exc_info:
             RE(runner.execute_plan(test_plan))
-        assert exc_info.value.__cause__.args[0].startswith(
+        assert exc_info.value.__cause__.args[0].startswith(  # type:ignore
             "External callback watchdog timer expired"
         )
         fut.result()
