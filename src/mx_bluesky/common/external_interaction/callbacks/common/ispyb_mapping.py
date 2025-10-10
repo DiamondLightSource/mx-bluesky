@@ -50,9 +50,9 @@ def populate_remaining_data_collection_info(
     data_collection_info.xbeam = beam_position[0]
     data_collection_info.ybeam = beam_position[1]
     data_collection_info.start_time = get_current_time_string()
-    # temporary file template until nxs filewriting is integrated and we can use
-    # that file name
     if data_collection_info.data_collection_number is not None:
+        # Do not write the file template if we don't have sufficient information - for gridscans we  may not
+        # know the data collection number until later
         data_collection_info.file_template = f"{params.detector_params.prefix}_{data_collection_info.data_collection_number}_master.h5"
     return data_collection_info
 
