@@ -263,7 +263,19 @@ def gui_run_extruder_collection(
     attenuator: EnumFilterAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
 ):
-    """Set parameter model for extruder and run the data collection."""
+    """Set parameter model for extruder and run the data collection.
+    Args:
+        sub_dir (str): subdirectory of the visit to write data in.
+        file_name (str): filename to be used for the collection.
+        exp_time (float): exposure time of each image, in s.
+        det_dist (float): sample-detector distance, in mm.
+        transmission (float): requested beam intensity transmission, expressed as
+            a fraction, e.g. 0.3.
+        num_images (int): number of images be collected.
+        pump_probe (bool): pump probe setting.
+        laser_dwell (float): laser exposure time for pump probe collections, in s.
+        laser_delay (float): delay between laser exposure and collection, in s.
+    """
     # NOTE. For now setting attenuation here in place of the edms doing a caput
     yield from bps.abs_set(attenuator, transmission, wait=True)
     start_time = datetime.now()

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
@@ -12,6 +13,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_move_backlight,
     gui_move_detector,
     gui_run_chip_collection,
+    gui_run_extruder_collection,
     gui_stage_move_on_click,
 )
 
@@ -207,4 +209,74 @@ def test_setup_tasks_in_gui_run_chip_collection(
                 eiger_beam_center,
                 expected_params,
                 mock_dcid(),
+            )
+
+
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._read_visit_directory_from_file"
+)
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.datetime")
+def test_gui_run_extruder_collection(
+    mock_datetime,
+    mock_read_visit,
+    mock_dcid,
+    RE,
+    dummy_params_ex,
+    zebra,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    enum_attenuator,
+    eiger_beam_center,
+):
+    fake_start = datetime.now()
+    mock_datetime.now.return_value = fake_start
+    mock_read_visit.return_value = Path("/tmp/dls/i24/extruder/foo")
+
+    device_list = [
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        enum_attenuator,
+        eiger_beam_center,
+    ]
+
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_ex_collection_plan",
+        MagicMock(return_value=iter([])),
+    ) as patch_wrapped_plan:
+        with patch(
+            "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set"
+        ) as patch_set:
+            RE(
+                gui_run_extruder_collection(
+                    "bar", "protein", 0.1, 100, 1.0, 10, False, 0.0, 0.0, *device_list
+                )
+            )
+
+            patch_set.assert_called_once_with(enum_attenuator, 1.0, wait=True)
+            mock_dcid.assert_called_once()
+            patch_wrapped_plan.assert_called_once_with(
+                zebra,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                eiger_beam_center,
+                dummy_params_ex,
+                mock_dcid(),
+                fake_start,
             )
