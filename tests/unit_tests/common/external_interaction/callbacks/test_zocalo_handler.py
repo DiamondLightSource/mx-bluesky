@@ -198,8 +198,8 @@ class TestZocaloHandler:
         assert zocalo_handler.zocalo_interactor is not None
 
         expected_start_calls = [
-            call(ZocaloStartInfo(2, "test_path", 0, 200, 0)),
-            call(ZocaloStartInfo(1, "test_path", 200, 300, 1)),
+            call(ZocaloStartInfo(1, "test_path", 0, 200, 0)),
+            call(ZocaloStartInfo(2, "test_path", 200, 300, 1)),
         ]
 
         zocalo_handler.zocalo_interactor.run_start.assert_has_calls(  # type: ignore
@@ -210,7 +210,7 @@ class TestZocaloHandler:
         ispyb_cb.stop(TestEventData.test_gridscan_outer_stop_document)
 
         zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
-            [call(dc_ids[1]), call(dc_ids[0])]
+            [call(dc_ids[0]), call(dc_ids[1])]
         )
         assert zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)  # type: ignore
 
