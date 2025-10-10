@@ -163,9 +163,14 @@ def test_setup_tasks_in_gui_run_chip_collection(
         "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_ft_collection_plan",
         MagicMock(return_value=iter([])),
     ) as patch_wrapped_plan:
-        with patch(
-            "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
-        ) as patch_upload:
+        with (
+            patch(
+                "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
+            ) as patch_upload,
+            patch(
+                "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set"
+            ) as patch_set,
+        ):
             RE(
                 gui_run_chip_collection(
                     "bar",
@@ -187,6 +192,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
             )
 
             patch_upload.assert_called_once_with(pmac, [1])
+            patch_set.assert_called_once_with(enum_attenuator, 1.0, wait=True)
             mock_dcid.assert_called_once()
             patch_wrapped_plan.assert_called_once_with(
                 zebra,

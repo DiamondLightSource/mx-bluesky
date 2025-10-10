@@ -176,8 +176,6 @@ def gui_run_chip_collection(
     # get_detector_type temporarily disabled as pilatus went away, and for now only eiger in use
     # for this.
     # det_type = yield from get_detector_type(detector_stage)
-    # NOTE. For now setting attenuation here in place of the edms doing a caput
-    yield from bps.abs_set(attenuator, transmission, wait=True)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
     if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
@@ -189,6 +187,9 @@ def gui_run_chip_collection(
     else:
         mapping = MappingType.NoMap
         chip_map = []
+
+    # NOTE. For now setting attenuation here in place of the edms doing a caput
+    yield from bps.abs_set(attenuator, transmission, wait=True)
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
