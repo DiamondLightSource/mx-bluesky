@@ -29,7 +29,7 @@ class PlanRunner(BaseRunner):
         self.current_status: Status = Status.IDLE
         self.is_dev_mode = dev_mode
         self._callbacks_started = False
-        self.callback_watchdog_expiry = time.monotonic()
+        self._callback_watchdog_expiry = time.monotonic()
 
     def execute_plan(
         self,
@@ -94,9 +94,9 @@ class PlanRunner(BaseRunner):
     def reset_callback_watchdog_timer(self):
         """Called periodically to reset the watchdog timer when the external callbacks ping us."""
         self._callbacks_started = True
-        self.callback_watchdog_expiry = (
+        self._callback_watchdog_expiry = (
             time.monotonic() + self.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S
         )
 
     def _external_callbacks_are_alive(self) -> bool:
-        return time.monotonic() < self.callback_watchdog_expiry
+        return time.monotonic() < self._callback_watchdog_expiry
