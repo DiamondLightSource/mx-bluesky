@@ -13,24 +13,17 @@ from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.i24.dual_backlight import BacklightPositions
 from dodal.devices.zebra.zebra import I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
 )
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
-    JsonMetadataWriter,
-)
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
     RotationScanComposite,
 )
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
-)
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
-    read_devices_for_metadata,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import (
     PlanNameConstants as I24PlanNameConstants,
@@ -60,7 +53,7 @@ from mx_bluesky.common.utils.log import LOGGER
 
 READING_DUMP_FILENAME = "collection_info.json"
 JF_DET_STAGE_Y_POSITION_MM = 730
-DEFAULT_DETECTOR_DISTANCE_MM = 200
+DEFAULT_DETECTOR_DISTANCE_MM = 422
 
 
 def set_up_beamline_for_rotation(
@@ -103,6 +96,8 @@ def multi_rotation_plan_varying_transmission(
     composite: RotationScanComposite,
     params: MultiRotationScanByTransmissions,
 ):
+    LOGGER.info("entered milti rotation plan")
+
     @bpp.set_run_key_decorator(I24PlanNameConstants.MULTI_ROTATION_SCAN)
     @run_decorator()
     def _plan_in_run_decorator():
@@ -197,33 +192,33 @@ def single_rotation_plan(
             yield from arm_zebra(composite.zebra)
 
             # Check topup gate
-            yield from check_topup_and_wait_if_necessary(
-                composite.synchrotron,
-                motion_values.total_exposure_s,
-                ops_time=10.0,  # Additional time to account for rotation, is s
-            )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+            # yield from check_topup_and_wait_if_necessary(
+            #     composite.synchrotron,
+            #     motion_values.total_exposure_s,
+            #     ops_time=10.0,  # Additional time to account for rotation, is s
+            # )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
             # override_file_path(
             #     composite.jungfrau,
             #     f"{params.storage_directory}/{params.detector_params.full_filename}",
             # )
 
-            metadata_writer = JsonMetadataWriter()
+            # metadata_writer = JsonMetadataWriter(composite.jungfrau._writer)
 
-            @bpp.subs_decorator([metadata_writer])
-            @bpp.set_run_key_decorator(I24PlanNameConstants.ROTATION_META_READ)
-            @bpp.run_decorator(
-                md={
-                    "subplan_name": I24PlanNameConstants.ROTATION_META_READ,
-                    "scan_points": [params.scan_points],
-                    "rotation_scan_params": params.model_dump_json(),
-                }
-            )
-            # Write metadata json file
-            def _do_read():
-                yield from read_devices_for_metadata(composite)
+            # @bpp.subs_decorator([metadata_writer])
+            # @bpp.set_run_key_decorator(I24PlanNameConstants.ROTATION_META_READ)
+            # @bpp.run_decorator(
+            #     md={
+            #         "subplan_name": I24PlanNameConstants.ROTATION_META_READ,
+            #         "scan_points": [params.scan_points],
+            #         "rotation_scan_params": params.model_dump_json(),
+            #     }
+            # )
+            # # Write metadata json file
+            # def _do_read():
+            #     yield from read_devices_for_metadata(composite)
 
-            yield from _do_read()
+            # yield from _do_read()
             yield from bps.mv(
                 composite.jungfrau.drv.gain_mode,
                 GainMode.DYNAMIC,
@@ -233,6 +228,9 @@ def single_rotation_plan(
                 _jf_trigger_info,
                 wait=False,
                 log_on_percentage_prefix="Jungfrau rotation scan triggers received",
+                do_read=True,
+                params=params,
+                composite=composite,
             )
 
             LOGGER.info("Executing rotation scan")

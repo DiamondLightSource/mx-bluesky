@@ -1,7 +1,7 @@
 import json
-from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
+from dodal.devices.i24.commissioning_jungfrau import JunfrauCommissioningWriter
 
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
@@ -23,7 +23,8 @@ class JsonMetadataWriter(CallbackBase):
 
     """
 
-    def __init__(self):
+    def __init__(self, writer: JunfrauCommissioningWriter):
+        self.writer = writer
         self.beam_xy = None
         self.wavelength_in_a = None
         self.energy_in_kev = None
@@ -57,7 +58,7 @@ class JsonMetadataWriter(CallbackBase):
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_kev")
-            self.detector_distance_mm = data.get("det_stage-z")
+            self.detector_distance_mm = data.get("detector_motion-z")
 
             if self.detector_distance_mm:
                 self.beam_xy = self.parameters.detector_params.get_beam_position_mm(
@@ -74,8 +75,10 @@ class JsonMetadataWriter(CallbackBase):
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid
         ):
+            self.writer.final_path.parent.mkdir(exist_ok=True)
             with open(
-                Path(self.parameters.storage_directory) / READING_DUMP_FILENAME, "w"
+                self.writer.final_path.parent / READING_DUMP_FILENAME,
+                "w",
             ) as f:
                 f.write(
                     json.dumps(
@@ -83,7 +86,7 @@ class JsonMetadataWriter(CallbackBase):
                             "wavelength_in_a": self.wavelength_in_a,
                             "energy_kev": self.energy_in_kev,
                             "angular_increment_deg": self.parameters.rotation_increment_deg,
-                            "beam_xy_mm": self.beam_xy,
+                            # "beam_xy_mm": self.beam_xy,
                             "detector_distance_mm": self.detector_distance_mm,
                         }
                     )

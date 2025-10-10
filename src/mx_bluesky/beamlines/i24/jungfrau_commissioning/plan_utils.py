@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sys
 from logging import Logger
@@ -20,6 +22,15 @@ from ophyd_async.fastcs.jungfrau import (
     GainMode,
 )
 
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
+    JsonMetadataWriter,
+)
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
+    read_devices_for_metadata,
+)
+from mx_bluesky.beamlines.i24.parameters.constants import (
+    PlanNameConstants as I24PlanNameConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 JF_COMPLETE_GROUP = "JF complete"
@@ -31,6 +42,9 @@ def fly_jungfrau(
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers recieved",
     pedestals=False,
+    do_read=False,
+    params=None,  # set this if do read is true
+    composite=None,  # set this if do read is true
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -61,6 +75,26 @@ def fly_jungfrau(
                 GainMode.DYNAMIC,
             )
         yield from bps.prepare(jungfrau, trigger_info, wait=True)
+
+        # horrible hack to put metadata file at right place - needs to happen after prepare since that's when path provider works out its path
+        if do_read:
+            metadata_writer = JsonMetadataWriter(jungfrau._writer)
+
+            @bpp.subs_decorator([metadata_writer])
+            @bpp.set_run_key_decorator(I24PlanNameConstants.ROTATION_META_READ)
+            @bpp.run_decorator(
+                md={
+                    "subplan_name": I24PlanNameConstants.ROTATION_META_READ,
+                    "scan_points": [params.scan_points],
+                    "rotation_scan_params": params.model_dump_json(),
+                }
+            )
+            # Write metadata json file
+            def _do_read():
+                yield from read_devices_for_metadata(composite)
+
+            yield from _do_read()
+
         LOGGER.info("Detector prepared. Starting acquisition")
         LOGGER.info("doing a 1s sleep before kickoff")
         yield from bps.sleep(1)

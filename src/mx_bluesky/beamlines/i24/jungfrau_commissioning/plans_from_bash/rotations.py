@@ -1,6 +1,19 @@
+import asyncio
+import json
+from pathlib import PurePath
+
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i24
-from ophyd_async.core import init_devices
+from dodal.common.beamlines.beamline_utils import (
+    BL,
+    device_factory,
+)
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.utils import BeamlinePrefix, get_beamline_name
+from ophyd_async.core import (
+    AutoMaxIncrementingPathProvider,
+    init_devices,
+)
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
     RotationScanComposite,
@@ -13,26 +26,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
 )
 from mx_bluesky.beamlines.i24.parameters.rotation import (
     MultiRotationScanByTransmissions,
-)
-from mx_bluesky.common.utils.log import LOGGER, do_default_logging_setup
-
-do_default_logging_setup("i24-bluesky.log", 12231)  # Dodal graylog stream
-add_info_logs_to_stdout(LOGGER)
-import json
-from pathlib import PurePath
-
-from dodal.common.beamlines.beamline_utils import (
-    BL,
-    device_factory,
-)
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.utils import BeamlinePrefix, get_beamline_name
-from ophyd_async.core import (
-    AutoMaxIncrementingPathProvider,
-)
-
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
-    add_info_logs_to_stdout,
 )
 from mx_bluesky.common.utils.log import LOGGER, do_default_logging_setup
 
@@ -95,3 +88,6 @@ async def do_plan():
             params,
         )
     )
+
+
+asyncio.run(do_plan())
