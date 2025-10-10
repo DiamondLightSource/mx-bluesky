@@ -6,6 +6,9 @@
         {
             "path": "../../dodal"
         },
+        {
+            "path": "../../ophyd-async"
+        }
     ],
     "settings": {
         "python.languageServer": "Pylance",

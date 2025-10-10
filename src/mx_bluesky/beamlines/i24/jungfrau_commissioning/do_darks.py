@@ -7,6 +7,7 @@ from ophyd_async.core import WatchableAsyncStatus
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
+    create_jungfrau_internal_triggering_info,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -17,6 +18,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
 )
 
 PEDESTAL_DARKS_RUN = "PEDESTAL DARKS RUN"
+STANDARD_DARKS_RUN = "STANDARD DARKS RUN"
 
 
 def do_pedestal_darks(
@@ -75,3 +77,51 @@ def do_pedestal_darks(
         )
 
     return (yield from _do_decorated_plan())
+
+
+def do_standard_darks(
+    gain_mode: GainMode,
+    exp_time_s: float = 0.001,
+    triggers_per_dark_scan: PositiveInt = 1000,
+    jungfrau: CommissioningJungfrau = inject("jungfrau"),
+    path_of_output_file: str | None = None,
+) -> MsgGenerator:
+    """Internally take a set of images at a given gain mode.
+
+    Args:
+        gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
+        exp_time_s: Length of detector exposure for each frame.
+        triggers_per_dark_scan: Number of frames acquired for each of the 3 dark scans.
+        jungfrau: Jungfrau device
+        path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
+            set during Jungfrau device instantiation
+    """
+
+    @bpp.contingency_decorator(
+        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    )
+    @bpp.set_run_key_decorator(STANDARD_DARKS_RUN)
+    @bpp.run_decorator(md={"subplan_name": STANDARD_DARKS_RUN})
+    def _do_decorated_plan():
+        wait = True
+
+        if path_of_output_file:
+            override_file_path(jungfrau, path_of_output_file)
+
+        trigger_info = create_jungfrau_internal_triggering_info(
+            triggers_per_dark_scan, exp_time_s
+        )
+
+        yield from bps.mv(
+            jungfrau.drv.gain_mode,
+            gain_mode,
+        )
+
+        yield from fly_jungfrau(
+            jungfrau,
+            trigger_info,
+            wait,
+            log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers recieved",
+        )
+
+    yield from _do_decorated_plan()
