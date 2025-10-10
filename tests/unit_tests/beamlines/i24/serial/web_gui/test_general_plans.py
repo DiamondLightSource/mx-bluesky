@@ -5,7 +5,6 @@ import pytest
 from dodal.devices.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
@@ -41,9 +40,7 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
     fake_mv.assert_called_with(ANY, 0.0125, ANY, 0.025)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
 def test_gui_run_chip_collection_raises_error_for_empty_map(
-    mock_det_type,
     RE,
     pmac,
     zebra,
@@ -55,8 +52,8 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
     dcm,
     mirrors,
     eiger_beam_center,
+    attenuator,
 ):
-    mock_det_type.side_effect = [fake_generator(Eiger())]
     device_list = [
         pmac,
         zebra,
@@ -68,6 +65,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
         dcm,
         mirrors,
         eiger_beam_center,
+        attenuator,
     ]
     with pytest.raises(EmptyMapError):
         RE(
@@ -112,13 +110,11 @@ async def test_gui_move_backlight(mock_logger, position, backlight, RE):
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
 @patch(
     "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._read_visit_directory_from_file"
 )
 def test_setup_tasks_in_gui_run_chip_collection(
     mock_read_visit,
-    mock_det_type,
     mock_dcid,
     RE,
     pmac,
@@ -131,10 +127,10 @@ def test_setup_tasks_in_gui_run_chip_collection(
     dcm,
     mirrors,
     eiger_beam_center,
+    attenuator,
     dummy_params_without_pp,
 ):
     mock_read_visit.return_value = Path("/tmp/dls/i24/fixed/foo")
-    mock_det_type.side_effect = [fake_generator(Eiger())]
     device_list = [
         pmac,
         zebra,
@@ -146,6 +142,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
         dcm,
         mirrors,
         eiger_beam_center,
+        attenuator,
     ]
 
     expected_params = dummy_params_without_pp

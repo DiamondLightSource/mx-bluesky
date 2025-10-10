@@ -7,6 +7,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -142,6 +143,7 @@ def gui_run_chip_collection(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     """Set the parameter model and run the data collection.
 
@@ -171,7 +173,11 @@ def gui_run_chip_collection(
     """
     # NOTE still a work in progress, adding to it as the ui grows
     # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
+    # get_detector_type temporarily disabled as pilatus went away, and for now only eiger in use
+    # for this.
     # det_type = yield from get_detector_type(detector_stage)
+    # NOTE. For now setting attenuation here in place of the edms doing a caput
+    yield from bps.abs_set(attenuator, transmission, wait=True)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
     if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
@@ -253,11 +259,12 @@ def gui_run_extruder_collection(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    # attenuator: ReadOnlyAttenuator = inject("attenuator"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
 ):
     """Set parameter model for extruder and run the data collection."""
-    # NOTE. TRANSMISSION WILL HAVE TO BE SET THEN!
+    # NOTE. For now setting attenuation here in place of the edms doing a caput
+    yield from bps.abs_set(attenuator, transmission, wait=True)
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
