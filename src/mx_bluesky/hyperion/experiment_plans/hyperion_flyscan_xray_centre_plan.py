@@ -80,9 +80,6 @@ def construct_hyperion_specific_features(
     else:
         setup_trigger_plan = partial(
             setup_zebra_for_gridscan,
-            zebra_output_to_disconnect=xrc_composite.zebra.output.out_pvs[
-                xrc_composite.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
         tidy_plan = partial(
             tidy_up_zebra_after_gridscan,

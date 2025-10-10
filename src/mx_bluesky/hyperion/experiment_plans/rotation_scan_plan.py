@@ -252,9 +252,6 @@ def rotation_scan_plan(
             shutter_opening_deg=motion_values.shutter_opening_deg,
             shutter_opening_s=motion_values.shutter_time_s,
             group="setup_zebra",
-            zebra_output_to_disconnect=composite.zebra.output.out_pvs[
-                composite.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
 
         yield from setup_sample_environment(

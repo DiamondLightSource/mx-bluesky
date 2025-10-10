@@ -937,9 +937,6 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             shutter_opening_deg=ANY,
             shutter_opening_s=ANY,
             group="setup_zebra",
-            zebra_output_to_disconnect=fake_create_rotation_devices.zebra.output.out_pvs[
-                fake_create_rotation_devices.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
         rotation_outer_start_event = next(
             dropwhile(

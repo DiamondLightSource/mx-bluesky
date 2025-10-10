@@ -246,9 +246,6 @@ def construct_i04_specific_features(
     return construct_beamline_specific_FGS_features(
         partial(
             setup_zebra_for_gridscan,
-            zebra_output_to_disconnect=xrc_composite.zebra.output.out_pvs[
-                xrc_composite.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         ),
         tidy_plan,
         set_flyscan_params_plan,
