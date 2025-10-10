@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+from threading import Event
 from time import sleep
 from unittest.mock import MagicMock, patch
 
@@ -39,10 +40,15 @@ def test_main_function(
     setup_callbacks: MagicMock,
     parse_callback_dev_mode_arg: MagicMock,
 ):
+    proxy_started = Event()
+    dispatcher_started = Event()
+    mock_proxy.return_value.start.side_effect = proxy_started.set
+    mock_dispatcher.return_value.start.side_effect = dispatcher_started.set
+
     main()
 
-    mock_proxy.return_value.start.assert_called_once()
-    mock_dispatcher.return_value.start.assert_called_once()
+    mock_proxy.return_value.start.wait(0.5)
+    mock_dispatcher.return_value.start.wait(0.5)
     setup_logging.assert_called()
     setup_callbacks.assert_called()
     setup_alerting.assert_called_once()

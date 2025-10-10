@@ -1,9 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from time import sleep
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
+from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 
@@ -26,7 +27,7 @@ def patch_timer_expiry():
 
 
 def test_external_callbacks_waits_for_external_callback_ping(RE: RunEngine):
-    runner = PlanRunner(MagicMock(), True)
+    runner = PlanRunner(BlueskyContext(run_engine=RE), True)
     plan_started = Event()
 
     def execute_test():
@@ -48,7 +49,7 @@ def test_external_callbacks_waits_for_external_callback_ping(RE: RunEngine):
 def test_external_callbacks_not_running_raises_exception_for_plan_execution(
     RE: RunEngine,
 ):
-    runner = PlanRunner(MagicMock(), True)
+    runner = PlanRunner(BlueskyContext(run_engine=RE), True)
     plan_started = Event()
 
     def execute_test():
