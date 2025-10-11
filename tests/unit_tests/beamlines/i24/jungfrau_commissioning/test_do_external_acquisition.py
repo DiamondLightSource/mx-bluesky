@@ -33,7 +33,7 @@ def test_full_do_external_acquisition(
 
             # Let status update
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
-        yield from bps.wait("jf_complete")
+        yield from bps.wait(JF_COMPLETE_GROUP)
 
     jungfrau._controller.arm = AsyncMock()
     RE(test_plan())

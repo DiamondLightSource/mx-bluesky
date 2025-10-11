@@ -19,7 +19,10 @@ JF_COMPLETE_GROUP = "JF complete"
 
 
 def fly_jungfrau(
-    jungfrau: CommissioningJungfrau, trigger_info: TriggerInfo, wait: bool = False
+    jungfrau: CommissioningJungfrau,
+    trigger_info: TriggerInfo,
+    wait: bool = False,
+    log_on_percentage_prefix="Jungfrau data collection triggers recieved",
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -29,9 +32,10 @@ def fly_jungfrau(
 
     Args:
     jungfrau: Jungfrau device.
-    trigger_info: TriggerInfo which should be acquired using jungfrau util functions create_jungfrau_internal_triggering_info
+    trigger_info: TriggerInfo which should be acquired using jungfrau util functions create_jungfrau_internal_triggering_info.
         or create_jungfrau_external_triggering_info.
     wait: Optionally block until data collection is complete.
+    log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
     """
 
     @bpp.contingency_decorator(
