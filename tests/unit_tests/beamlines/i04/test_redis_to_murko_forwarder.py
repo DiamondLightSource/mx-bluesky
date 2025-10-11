@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
+from dodal.devices.i04.murko_results import MurkoMetadata, MurkoResult
 from PIL import Image
 
 from mx_bluesky.beamlines.i04.redis_to_murko_forwarder import (
@@ -80,19 +81,33 @@ def test_when_more_images_added_than_batch_size_then_murko_called(
 def test_when_results_sent_to_redis_then_set_on_multiple_keys_but_published_once(
     batch_forwarder: BatchMurkoForwarder,
 ):
-    results = [("uuid_1", {"result": 1}), ("uuid_2", {"result": 2})]
+    example_metadata = MurkoMetadata(  # fields dont matter
+        zoom_percentage=1,
+        microns_per_x_pixel=1,
+        microns_per_y_pixel=1,
+        beam_centre_i=1,
+        beam_centre_j=1,
+        sample_id="1",
+        omega_angle=0,
+        uuid="any",
+        used_for_centring=None,
+    )
+
+    result_1 = MurkoResult((0, 0), 0, 1, 2, "", example_metadata)
+    result_2 = MurkoResult((0, 0), 2, 3, 4, "", example_metadata)
+    results = [("uuid_1", result_1), ("uuid_2", result_2)]
     batch_forwarder._send_murko_results_to_redis("sample_id", results)
 
     assert batch_forwarder.redis_client.hset.call_args_list == [  # type:ignore
         call(
             "murko:sample_id:results",
             "uuid_1",
-            str(pickle.dumps({"result": 1})),
+            str(pickle.dumps(result_1)),
         ),
         call(
             "murko:sample_id:results",
             "uuid_2",
-            str(pickle.dumps({"result": 2})),
+            str(pickle.dumps(result_2)),
         ),
     ]
     batch_forwarder.redis_client.publish.assert_called_once_with(  # type:ignore

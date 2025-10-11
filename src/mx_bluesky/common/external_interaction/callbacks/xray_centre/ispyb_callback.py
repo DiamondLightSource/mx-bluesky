@@ -1,23 +1,28 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from enum import StrEnum
+from math import isclose
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
+from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
+    D,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloInfoGenerator,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -33,14 +38,21 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import (
-    GridCommon,
-)
+from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMade,
     SampleException,
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
+
+OMEGA_TOLERANCE = 1
+
+
+class GridscanPlane(StrEnum):
+    OMEGA_XY = "0"
+    OMEGA_XZ = "90"
+
 
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
@@ -89,10 +101,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     ) -> None:
         super().__init__(emit=emit)
         self.ispyb: StoreInIspyb
-        self.ispyb_ids: IspybIds = IspybIds()
         self.param_type = param_type
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
+        self._grid_plane_to_id_map: dict[GridscanPlane, int] = {}
+        self._grid_plane_to_width_map: dict[GridscanPlane, int] = {}
         self.data_collection_group_info: DataCollectionGroupInfo | None
 
     def activity_gated_start(self, doc: RunStart):
@@ -108,6 +121,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
             assert isinstance(mx_bluesky_parameters, str)
             self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
+            assert isinstance(self.params, DiffractionExperimentWithSample)
             self.ispyb = StoreInIspyb(self.ispyb_config)
             self.data_collection_group_info = populate_data_collection_group(
                 self.params
@@ -118,9 +132,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                     data_collection_info=populate_remaining_data_collection_info(
                         "MX-Bluesky: Xray centring 1 -",
                         None,
-                        populate_xy_data_collection_info(
-                            self.params.detector_params,
-                        ),
+                        DataCollectionInfo(),
                         self.params,
                     ),
                 ),
@@ -128,7 +140,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                     data_collection_info=populate_remaining_data_collection_info(
                         "MX-Bluesky: Xray centring 2 -",
                         None,
-                        populate_xz_data_collection_info(self.params.detector_params),
+                        DataCollectionInfo(),
                         self.params,
                     )
                 ),
@@ -175,7 +187,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.params, "ISPyB handler didn't receive parameters!"
         assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
-        data_collection_id = None
+        omega = doc["data"]["smargon-omega"]
+        grid_plane = _smargon_omega_to_xyxz_plane(omega)
+        ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            f"Generating dc info for gridplane {grid_plane}, omega {omega}"
+        )
+        data_collection_number = self.data_collection_number_from_gridplane(grid_plane)
+        file_template = (
+            f"{self.params.detector_params.prefix}_{data_collection_number}_master.h5"
+        )
         data_collection_info = DataCollectionInfo(
             xtal_snapshot1=data.get("oav-grid_snapshot-last_path_full_overlay"),
             xtal_snapshot2=data.get("oav-grid_snapshot-last_path_outer"),
@@ -184,6 +204,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 data["oav-grid_snapshot-num_boxes_x"]
                 * data["oav-grid_snapshot-num_boxes_y"]
             ),
+            data_collection_number=data_collection_number,
+            file_template=file_template,
         )
         microns_per_pixel_x = data["oav-microns_per_pixel_x"]
         microns_per_pixel_y = data["oav-microns_per_pixel_y"]
@@ -203,22 +225,22 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             data_collection_grid_info
         )
 
-        if self.data_collection_group_info.comments:
-            self.data_collection_group_info.comments += (
-                f"by {data_collection_grid_info.steps_y}."
-            )
-        else:
-            self.data_collection_group_info.comments = (
-                f"Diffraction grid scan of "
-                f"{data_collection_grid_info.steps_x} "
-                f"by {data_collection_grid_info.steps_y} "
-            )
+        # Snapshots may be triggered in a different order to gridscans, so save
+        # the mapping to the data collection id in order to trigger Zocalo correctly.
+        data_collection_id = self.ispyb_ids.data_collection_ids[
+            0 if grid_plane == GridscanPlane.OMEGA_XY else 1
+        ]
+        self._grid_plane_to_id_map[grid_plane] = data_collection_id
+        self._grid_plane_to_width_map[grid_plane] = data_collection_grid_info.steps_y
 
-        if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
-            data_collection_id = self.ispyb_ids.data_collection_ids[
-                self._oav_snapshot_event_idx
-            ]
-        self._populate_axis_info(data_collection_info, doc["data"]["smargon-omega"])
+        y_steps = self._grid_plane_to_width_map.get(GridscanPlane.OMEGA_XY, "_")
+        z_steps = self._grid_plane_to_width_map.get(GridscanPlane.OMEGA_XZ, "_")
+        self.data_collection_group_info.comments = (
+            f"Diffraction grid scan of {data_collection_grid_info.steps_x} by "
+            f"{y_steps} by {z_steps}."
+        )
+
+        self._populate_axis_info(data_collection_info, omega)
 
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
@@ -228,6 +250,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after oav snapshot."
         )
+
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
 
@@ -294,5 +317,49 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.ispyb_ids.data_collection_group_id,
             )
             self.data_collection_group_info = None
+            self._grid_plane_to_id_map.clear()
+            self._grid_plane_to_width_map.clear()
             return super().activity_gated_stop(doc)
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
+
+    def tag_doc(self, doc: D) -> D:
+        doc = super().tag_doc(doc)
+        assert isinstance(doc, dict)
+        if self._grid_plane_to_id_map:
+            doc["grid_plane_to_id_map"] = self._grid_plane_to_id_map
+        return doc  # type: ignore
+
+    def data_collection_number_from_gridplane(self, plane) -> int:
+        assert self.params
+        base_number = self.params.detector_params.run_number
+        return base_number if plane == GridscanPlane.OMEGA_XY else base_number + 1
+
+
+def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
+    """
+    Generate the zocalo trigger info from bluesky runs where the frame number is
+    computed using metadata added to the document by the ISPyB callback and the
+    run start which together can be used to determine the correct frame numbering.
+    """
+    doc = yield []
+    omega_to_scan_spec = doc["omega_to_scan_spec"]
+    start_frame = 0
+    infos = []
+    for i, omega in enumerate([GridscanPlane.OMEGA_XY, GridscanPlane.OMEGA_XZ]):
+        frames = number_of_frames_from_scan_spec(omega_to_scan_spec[omega])
+        infos.append(
+            ZocaloStartInfo(
+                doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
+            )
+        )
+        start_frame += frames
+    yield infos
+
+
+def _smargon_omega_to_xyxz_plane(smargon_omega: float) -> GridscanPlane:
+    modulo_180 = abs(smargon_omega) % 180
+    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE)
+    assert is_xy or isclose(modulo_180, 90, abs_tol=OMEGA_TOLERANCE), (
+        f"Smargon snapshot omega not in tolerance of compass point {smargon_omega}"
+    )
+    return GridscanPlane.OMEGA_XY if is_xy else GridscanPlane.OMEGA_XZ
