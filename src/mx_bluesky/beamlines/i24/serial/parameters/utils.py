@@ -7,7 +7,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, pv
 
-OXFORD_BLOCKS_PVS = [f"BL24I-MO-IOC-01:GP{i}" for i in range(11, 75)]
+OXFORD_BLOCKS_PVS = [f"BL24I-MO-IOC-13:GP{i}" for i in range(11, 75)]
 
 
 class EmptyMapError(Exception):
@@ -54,10 +54,10 @@ def get_chip_format(
             defaults["b2b_horz"] = defaults["b2b_vert"] = 0.0
         case ChipType.Custom:
             if origin == "edm":
-                defaults["x_num_steps"] = int(caget(pv.me14e_gp6))
-                defaults["y_num_steps"] = int(caget(pv.me14e_gp7))
-                defaults["x_step_size"] = float(caget(pv.me14e_gp8))
-                defaults["y_step_size"] = float(caget(pv.me14e_gp99))
+                defaults["x_num_steps"] = int(caget(pv.ioc13_gp6))
+                defaults["y_num_steps"] = int(caget(pv.ioc13_gp7))
+                defaults["x_step_size"] = float(caget(pv.ioc13_gp8))
+                defaults["y_step_size"] = float(caget(pv.ioc13_gp99))
             else:
                 # NOTE Test for WEB GUI
                 if not format:
