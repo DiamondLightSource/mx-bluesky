@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from bluesky.callbacks import CallbackBase
@@ -6,7 +6,6 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
-from dodal.beamlines.i03 import eiger
 from dodal.devices.fast_grid_scan import ZebraFastGridScanThreeD
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import (
@@ -31,18 +30,15 @@ from .....conftest import create_dummy_scan_spec
 
 
 @pytest.fixture
-def fgs_devices(RE):
+def fgs_devices(RE, eiger):
     with init_devices(mock=True):
         synchrotron = Synchrotron()
         grid_scan_device = ZebraFastGridScanThreeD("zebra_fgs")
 
-    # Eiger done separately as not ophyd-async yet
-    detector = eiger(mock=True)
-
     return {
         "synchrotron": synchrotron,
         "grid_scan_device": grid_scan_device,
-        "detector": detector,
+        "detector": eiger,
     }
 
 
@@ -130,8 +126,6 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.DEV)
     detector = fgs_devices["detector"]
     fgs_device: ZebraFastGridScanThreeD = fgs_devices["grid_scan_device"]
-
-    detector.unstage = MagicMock()
 
     set_mock_value(fgs_device.status, 1)
 

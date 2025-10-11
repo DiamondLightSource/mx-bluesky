@@ -1457,7 +1457,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     )
     eiger = fake_create_rotation_devices.eiger
     parent_mock = MagicMock()
-    parent_mock.eiger = MagicMock(return_value=Status(done=True, success=True))
+    parent_mock.eiger_unstage = MagicMock(return_value=Status(done=True, success=True))
     eiger.unstage = parent_mock.eiger_unstage
     _, ispyb_callback = create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb
