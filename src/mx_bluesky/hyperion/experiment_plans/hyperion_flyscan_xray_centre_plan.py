@@ -113,7 +113,7 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
         xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
     )
     yield from bps.wait(group, timeout=10)
-    yield from bps.unstage(xrc_composite.panda)
+    yield from bps.unstage(xrc_composite.panda, wait=True)
 
 
 def _panda_triggering_setup(
@@ -153,8 +153,8 @@ def _panda_triggering_setup(
         )
 
     yield from bps.mv(
-        xrc_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        xrc_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
     )
 
     directory_provider_root = Path(parameters.storage_directory)

@@ -38,7 +38,7 @@ def fly_jungfrau(
         except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
     )
     def _fly_with_unstage_contingency():
-        yield from bps.stage(jungfrau)
+        yield from bps.stage(jungfrau, wait=True)
         LOGGER.info("Setting up detector...")
         yield from bps.prepare(jungfrau, trigger_info, wait=True)
         LOGGER.info("Detector prepared. Starting acquisition")

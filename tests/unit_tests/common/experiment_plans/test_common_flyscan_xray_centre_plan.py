@@ -462,6 +462,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
         zebra_fast_grid_scan: ZebraFastGridScanThreeD,
+        done_status: Status,
     ):
         id_1, id_2 = 100, 200
 
@@ -475,8 +476,7 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
         mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
-
-        fake_fgs_composite.eiger.unstage = MagicMock()
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
 
         x_steps, y_steps, z_steps = 10, 20, 30
@@ -523,7 +523,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         beamline_specific.read_during_collection_plan = partial(
             read_hardware_plan,
-            [fake_fgs_composite.eiger.bit_depth],  # type: ignore # see https://github.com/bluesky/bluesky/issues/1809
+            [fake_fgs_composite.eiger.bit_depth],
             DocDescriptorNames.HARDWARE_READ_DURING,
         )
         sim_run_engine.add_handler(

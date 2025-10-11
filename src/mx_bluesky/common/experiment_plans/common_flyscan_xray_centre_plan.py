@@ -277,7 +277,7 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.stage(fgs_composite.eiger, wait=True)
 
     yield from kickoff_and_complete_gridscan(
         beamline_specific.fgs_motors,
