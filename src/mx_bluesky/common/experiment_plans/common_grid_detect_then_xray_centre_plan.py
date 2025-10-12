@@ -50,6 +50,11 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
+from dodal.plans.configure_arm_trigger_and_disarm_detector import set_cam_pvs, change_roi_mode
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
+
 TFlyScanEssentialDevices = TypeVar(
     "TFlyScanEssentialDevices", bound=FlyScanEssentialDevices, contravariant=True
 )
@@ -91,12 +96,17 @@ def grid_detect_then_xray_centre(
             parameters,
         )
 
+    if get_hyperion_config_client().get_feature_flags().USE_GRIDSCAN_FAST_CS_EIGER:
+        yield from set_cam_pvs(composite.fast_cs_eiger, parameters.detector_params, wait=True)
+        yield from change_roi_mode(composite.fast_cs_eiger, parameters.detector_params, wait=True)
+
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
         eiger,
         composite.detector_motion,
         parameters.detector_params.detector_distance,
         plan_to_perform(),
+        arm_eiger=not get_hyperion_config_client().get_feature_flags().USE_GRIDSCAN_FAST_CS_EIGER,
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
 

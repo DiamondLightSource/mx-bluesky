@@ -19,6 +19,7 @@ def start_preparing_data_collection_then_do_plan(
     detector_motion: DetectorMotion,
     detector_distance_mm: float | None,
     plan_to_run: Generator[Msg, None, None],
+    arm_eiger = True,
     group="ready_for_data_collection",
 ) -> Generator[Msg, None, None]:
     """Starts preparing for the next data collection and then runs the

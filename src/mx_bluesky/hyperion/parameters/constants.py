@@ -37,6 +37,7 @@ class HyperionFeatureSettingources(FeatureSettingources):
     USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
     SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
     PANDA_RUNUP_DISTANCE_MM = "gda.mx.hyperion.panda_runup_distance_mm"
+    USE_GRIDSCAN_FAST_CS_EIGER = "gda.mx.bluesky.gridscan.use_fastcs_eiger"
 
 
 # Use these defaults if we can't read from the config server
@@ -46,6 +47,7 @@ class HyperionFeatureSetting(FeatureSetting):
     USE_PANDA_FOR_GRIDSCAN: bool = False
     SET_STUB_OFFSETS: bool = False
     PANDA_RUNUP_DISTANCE_MM: float = 0.16
+    USE_GRIDSCAN_FAST_CS_EIGER:bool = False
 
 
 @dataclass(frozen=True)

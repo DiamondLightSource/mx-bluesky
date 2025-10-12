@@ -43,7 +43,9 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.xrc_result import XRayCentreResult
-
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
 
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures:
