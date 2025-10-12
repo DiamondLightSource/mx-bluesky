@@ -9,6 +9,7 @@ from dodal.devices.cryostream import CryoStream
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
+from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.testing import patch_all_motors
@@ -30,6 +31,7 @@ async def default_devices(aperture_scatterguard):
         beamstop = Beamstop("", MagicMock())
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
+        hutch_shutter = HutchShutter("")
 
     with (
         patch_all_motors(scintillator),
@@ -37,7 +39,13 @@ async def default_devices(aperture_scatterguard):
         patch_all_motors(beamstop),
     ):
         yield UDCDefaultDevices(
-            cryo, fluo, beamstop, scintillator, aperture_scatterguard, collimation_table
+            cryo,
+            fluo,
+            beamstop,
+            scintillator,
+            aperture_scatterguard,
+            collimation_table,
+            hutch_shutter,
         )
 
 
@@ -110,7 +118,7 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
 
     expected_group = "udc_default"
 
-    def assert_expected_set(signal: Signal | Motor, value):
+    def assert_expected_set(signal: Signal | Motor | HutchShutter, value):
         return assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
@@ -118,6 +126,8 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
             and msg.args[0] == value
             and msg.kwargs["group"] == expected_group,
         )
+
+    msgs = assert_expected_set(default_devices.hutch_shutter, ShutterDemand.OPEN)
 
     msgs = assert_expected_set(
         default_devices.fluorescence_det_motion.pos, FlouInOut.OUT
