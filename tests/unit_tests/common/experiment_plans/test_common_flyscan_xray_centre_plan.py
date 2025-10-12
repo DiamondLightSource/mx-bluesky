@@ -523,7 +523,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         beamline_specific.read_during_collection_plan = partial(
             read_hardware_plan,
-            [fake_fgs_composite.eiger.bit_depth],
+            [fake_fgs_composite.eiger.bit_depth],  # type:ignore
             DocDescriptorNames.HARDWARE_READ_DURING,
         )
         sim_run_engine.add_handler(
