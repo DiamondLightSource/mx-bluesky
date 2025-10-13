@@ -1,3 +1,4 @@
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import do_pedestal_darks
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
@@ -61,4 +62,6 @@ __all__ = [
     "gui_run_chip_collection",
     "gui_move_backlight",
     "gui_set_zoom_level",
+    # Jungfrau
+    "do_pedestal_darks",
 ]
