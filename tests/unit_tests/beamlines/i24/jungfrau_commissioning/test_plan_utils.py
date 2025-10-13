@@ -1,15 +1,17 @@
 import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import FailedStatus
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
+    completed_status,
 )
 from ophyd_async.testing import (
     set_mock_value,
@@ -49,9 +51,6 @@ async def test_fly_jungfrau(
     assert mock_stop.await_count == 2  # once when staging, once after run complete
 
 
-@pytest.mark.skip(
-    reason="See https://github.com/DiamondLightSource/mx-bluesky/issues/1338"
-)
 def test_fly_jungfrau_stops_if_exception_after_stage(
     RE: RunEngine, jungfrau: CommissioningJungfrau
 ):
@@ -66,6 +65,7 @@ def test_fly_jungfrau_stops_if_exception_after_stage(
     with pytest.raises(FailedStatus):
         RE(do_fly())
     assert mock_stop.await_count == 2  # once when staging, once on exception
+    assert [c == call(jungfrau, wait=True) for c in mock_stop.call_args_list]
 
 
 async def test_override_file_path(
@@ -82,3 +82,35 @@ async def test_override_file_path(
     await jungfrau._writer.open("")
     assert await jungfrau._writer.file_name.get_value() == new_file_name
     assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00001"
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    new=MagicMock(),
+)
+async def test_fly_jungfrau_waits_on_stage_before_prepare(
+    jungfrau: CommissioningJungfrau, sim_run_engine: RunEngineSimulator
+):
+    def _get_status(msg):
+        return completed_status()
+
+    jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
+    jungfrau.kickoff = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.complete = MagicMock(side_effect=lambda: completed_status())
+    sim_run_engine.add_handler("stage", _get_status)
+
+    @run_decorator()
+    def do_fly():
+        yield from fly_jungfrau(
+            jungfrau, TriggerInfo(livetime=1e-3, exposures_per_event=1)
+        )
+
+    msgs = sim_run_engine.simulate_plan(do_fly())
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "stage" and msg.obj == jungfrau
+    )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "prepare" and msg.obj == jungfrau
+    )

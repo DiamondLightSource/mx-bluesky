@@ -5,8 +5,6 @@ from dodal.common import inject
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import WatchableAsyncStatus
 from ophyd_async.fastcs.jungfrau import (
-    AcquisitionType,
-    GainMode,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -46,21 +44,14 @@ def do_pedestal_darks(
             set during Jungfrau device instantiation
     """
 
+    @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
+    @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
     @bpp.contingency_decorator(
         except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
     )
-    @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
-    @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
     def _do_decorated_plan():
         if path_of_output_file:
             override_file_path(jungfrau, path_of_output_file)
-
-        yield from bps.mv(
-            jungfrau.drv.acquisition_type,
-            AcquisitionType.PEDESTAL,
-            jungfrau.drv.gain_mode,
-            GainMode.DYNAMIC,
-        )
 
         trigger_info = create_jungfrau_pedestal_triggering_info(
             exp_time_s, pedestal_frames, pedestal_loops
@@ -69,6 +60,7 @@ def do_pedestal_darks(
             yield from fly_jungfrau(
                 jungfrau,
                 trigger_info,
+                trigger_in_pedestal_mode=True,
                 wait=True,
                 log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
             )
