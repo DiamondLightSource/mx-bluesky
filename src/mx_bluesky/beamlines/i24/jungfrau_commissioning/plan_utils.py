@@ -99,6 +99,12 @@ def fly_jungfrau(
         LOGGER.info("doing a 1s sleep before kickoff")
         yield from bps.sleep(1)
         yield from bps.kickoff(jungfrau, wait=True)
+
+        yield from bps.create("FILENAME")
+        yield from bps.read(jungfrau._writer.file_path)
+        yield from bps.read(jungfrau._writer.file_name)
+        yield from bps.save()
+
         LOGGER.info("Waiting for acquisition to complete...")
         status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 

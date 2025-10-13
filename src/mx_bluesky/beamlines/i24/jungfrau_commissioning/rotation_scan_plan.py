@@ -50,6 +50,7 @@ from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import RotationISPyBCallback
 
 READING_DUMP_FILENAME = "collection_info.json"
 JF_DET_STAGE_Y_POSITION_MM = 730
@@ -121,8 +122,17 @@ def single_rotation_plan(
 
     composite.jungfrau._writer._path_info.filename = "rotation_scan"  # type: ignore
 
-    @bpp.set_run_key_decorator(I24PlanNameConstants.SINGLE_ROTATION_SCAN)
-    @run_decorator()
+    @bpp.subs_decorator(RotationISPyBCallback())
+    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_OUTER)
+    @run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROTATION_OUTER,
+            "mx_bluesky_parameters": params.model_dump_json(),
+            "activate_callbacks": [
+                "RotationISPyBCallback"
+            ],
+        }
+    )
     def _plan_in_run_decorator():
         if not params.detector_distance_mm:
             LOGGER.info(

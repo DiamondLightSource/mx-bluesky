@@ -32,13 +32,13 @@ def populate_remaining_data_collection_info(
     data_collection_info.visit_string = params.visit
     data_collection_info.parent_id = data_collection_group_id
     data_collection_info.sample_id = params.sample_id
-    data_collection_info.detector_id = I03_EIGER_DETECTOR
+    data_collection_info.detector_id = 124
     data_collection_info.comments = comment
     data_collection_info.detector_distance = params.detector_params.detector_distance
     data_collection_info.exp_time = params.detector_params.exposure_time_s
-    data_collection_info.imgdir = params.detector_params.directory
-    data_collection_info.imgprefix = params.detector_params.prefix
-    data_collection_info.imgsuffix = EIGER_FILE_SUFFIX
+    #data_collection_info.imgdir = params.detector_params.directory
+    #data_collection_info.imgprefix = params.detector_params.prefix
+    #data_collection_info.imgsuffix = EIGER_FILE_SUFFIX
     # Both overlap and n_passes included for backwards compatibility,
     # planned to be removed later
     data_collection_info.n_passes = 1
@@ -52,7 +52,7 @@ def populate_remaining_data_collection_info(
     data_collection_info.start_time = get_current_time_string()
     # temporary file template until nxs filewriting is integrated and we can use
     # that file name
-    data_collection_info.file_template = f"{params.detector_params.prefix}_{data_collection_info.data_collection_number}_master.h5"
+    #data_collection_info.file_template = f"{params.detector_params.prefix}_{data_collection_info.data_collection_number}_master.h5"
     return data_collection_info
 
 

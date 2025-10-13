@@ -23,7 +23,7 @@ from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag, LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     populate_data_collection_info_for_rotation,
 )
@@ -57,10 +57,11 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
         self.ispyb = StoreInIspyb(self.ispyb_config)
+        LOGGER.info("ISPyB rotation callback initialised.")
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
-            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            LOGGER.info(
                 "ISPyB callback received start document with experiment parameters."
             )
             hyperion_params = doc.get("mx_bluesky_parameters")
@@ -85,7 +86,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
+            LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
                 cast(SingleRotationScan, self.params)
@@ -103,7 +104,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids = self.ispyb.begin_deposition(
                 data_collection_group_info, [scan_data_info]
             )
-        ISPYB_ZOCALO_CALLBACK_LOGGER.info("ISPYB handler received start document.")
+        LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
@@ -146,13 +147,27 @@ class RotationISPyBCallback(BaseISPyBCallback):
         doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
+        LOGGER.info(f"ispyb callback got event data {doc}")
+
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
         if descriptor_name == CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED:
             scan_data_infos = self._handle_oav_rotation_snapshot_triggered(doc)
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos
             )
-
+        elif descriptor_name == "FILENAME":
+            LOGGER.info(f"Got filename data {doc}")
+            data = doc["data"]
+            filepath = data.get("commissioning_jungfrau-_writer-file_path")
+            filename = data.get("commissioning_jungfrau-_writer-file_name")
+            updated_dc = DataCollectionInfo(
+                file_template = f"{filename}.nxs",
+                imgdir= f"{filepath}/",
+                imgprefix=f"{filename}",
+                imgsuffix="nxs",
+            )
+            scan_data_info = self.populate_info_for_update(updated_dc, None, self.params)
+            self.ispyb.update_deposition(self.ispyb_ids, scan_data_info)
         return doc
 
     def _handle_oav_rotation_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
