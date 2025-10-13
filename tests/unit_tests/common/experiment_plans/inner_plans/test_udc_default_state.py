@@ -13,7 +13,7 @@ from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.testing import patch_all_motors
-from ophyd_async.core import Signal, init_devices
+from ophyd_async.core import Signal, completed_status, init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.testing import set_mock_value
 
@@ -32,6 +32,8 @@ async def default_devices(aperture_scatterguard):
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
         hutch_shutter = HutchShutter("")
+
+    hutch_shutter.set = MagicMock(return_value=completed_status())
 
     with (
         patch_all_motors(scintillator),
