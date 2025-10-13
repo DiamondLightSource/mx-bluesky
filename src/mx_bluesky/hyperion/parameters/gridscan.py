@@ -31,17 +31,6 @@ class GridCommonWithHyperionDetectorParams(GridCommon):
 class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
     """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
 
-    # These detector params only exist so that we can properly select enable_dev_shm. Remove in
-    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
-
-    @property
-    def detector_params(self):
-        params = super().detector_params
-        params.enable_dev_shm = (
-            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
-        )
-        return params
-
     # Relative to common grid scan, stub offsets are defined by config server
     @property
     def FGS_params(self) -> ZebraGridScanParamsThreeD:
@@ -63,6 +52,19 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
         )
+
+    # These detector params only exist so that we can properly select enable_dev_shm. Remove in
+    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
+
+    @property
+    def detector_params(self):
+        params = super().detector_params
+        params.enable_dev_shm = (
+            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
+        )
+        params.num_images_per_trigger = self.FGS_params.x_steps
+        params.num_triggers = self.FGS_params.y_steps + self.FGS_params.z_steps
+        return params
 
     @property
     def panda_FGS_params(self) -> PandAGridScanParams:

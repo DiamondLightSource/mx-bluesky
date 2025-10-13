@@ -46,10 +46,10 @@ def _get_seq_table(
     SEQUENCER TABLE:
 
         1. Wait for physical trigger from motion script to mark start of scan / change of direction
-        2. Wait for POSA (X2) to be greater than X_START and send x_steps triggers every time_between_steps_ms
+        2. Wait for POSA (X2) to be greater than X_START and send a trigger to kickoff detector internal row of triggers
         3. Wait for physical trigger from motion script to mark change of direction
         4. Wait for POSA (X2) to be less than X_START + X_STEP_SIZE * x_steps + exposure distance, then
-            send x_steps triggers every time_between_steps_ms
+            send a trigger to kickoff detector internal row of triggers
         5. Go back to step one.
 
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
@@ -75,7 +75,7 @@ def _get_seq_table(
 
     exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
 
-    num_pulses = parameters.x_steps
+    num_pulses = 1
 
     # Integer precision here is 1e-6s, so casting is safe
     delay_between_pulses = int(time_between_steps_ms * TICKS_PER_MS)
