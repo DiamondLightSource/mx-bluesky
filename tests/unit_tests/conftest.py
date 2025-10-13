@@ -475,7 +475,7 @@ def jungfrau(tmp_path: Path, RE: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
         name = StaticFilenameProvider("jf_out")
         path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
-        detector = CommissioningJungfrau("", "", path, name="name")
+        detector = CommissioningJungfrau("", "", path)
     set_mock_value(detector._writer.writer_ready, 1)
 
     return detector

@@ -46,8 +46,8 @@ def do_pedestal_darks(
 
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
     @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
-    @bpp.contingency_decorator(
-        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    @bpp.finalize_decorator(
+        final_plan=lambda: (yield from bps.unstage(jungfrau, wait=True))
     )
     def _do_decorated_plan():
         if path_of_output_file:

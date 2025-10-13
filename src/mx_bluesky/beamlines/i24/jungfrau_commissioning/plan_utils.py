@@ -40,8 +40,8 @@ def fly_jungfrau(
     log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
     """
 
-    @bpp.contingency_decorator(
-        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    @bpp.finalize_decorator(
+        final_plan=lambda: (yield from bps.unstage(jungfrau, wait=True))
     )
     def _fly_with_unstage_contingency():
         LOGGER.info("Staging detector...")

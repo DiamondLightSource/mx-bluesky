@@ -1,5 +1,3 @@
-import asyncio
-from functools import partial
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
@@ -8,12 +6,12 @@ import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     PedestalMode,
 )
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
     do_pedestal_darks,
@@ -33,10 +31,28 @@ class CheckMonitor(CallbackBase):
 
     def event(self, doc):
         key, value = next(iter(doc["data"].items()))
-        self.signals_and_values[key].append(value)
+        # don't record a value changing to the same value
+        if (
+            not len(self.signals_and_values[key])
+            or not self.signals_and_values[key][-1] == value
+        ):
+            self.signals_and_values[key].append(value)
         return doc
 
 
+def fake_complete(_, group=None):
+    yield from bps.null()
+    return completed_status()
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    new=MagicMock,
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.bps.complete",
+    new=MagicMock(side_effect=fake_complete),
+)
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 async def test_full_do_pedestal_darks(
     mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
@@ -51,15 +67,10 @@ async def test_full_do_pedestal_darks(
         }
     )
     def test_plan():
-        yield from bps.monitor(jungfrau.drv.acquisition_type)
-        status = yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
-        assert not status.done
-        val = 0
-        while not status.done:
-            val += 1
-            set_mock_value(jungfrau._writer.frame_counter, val)
-            # Let status update
-            yield from bps.wait_for([partial(asyncio.sleep, 0)])
+        yield from bps.monitor(jungfrau.drv.acquisition_type, name="AT")
+        yield from bps.monitor(jungfrau.drv.pedestal_mode_state, name="PM")
+        yield from bps.monitor(jungfrau.drv.gain_mode, name="GM")
+        yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
 
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
@@ -74,16 +85,7 @@ async def test_full_do_pedestal_darks(
     )
     RE.subscribe(monitor_tracker)
     RE(test_plan())
-    # RE(
-    #     monitor_during_wrapper(
-    #         test_plan(),
-    #         [
-    #             jungfrau.drv.acquisition_type,
-    #             jungfrau.drv.pedestal_mode_state,
-    #             jungfrau.drv.gain_mode,
-    #         ],
-    #     )
-    # )
+
     assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
