@@ -31,6 +31,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
 from mx_bluesky.beamlines.i24.parameters.constants import (
     PlanNameConstants as I24PlanNameConstants,
 )
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.utils.log import LOGGER
 
 JF_COMPLETE_GROUP = "JF complete"
@@ -45,6 +46,7 @@ def fly_jungfrau(
     do_read=False,
     params=None,  # set this if do read is true
     composite=None,  # set this if do read is true
+    dcid: IspybIds=IspybIds()
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -87,6 +89,7 @@ def fly_jungfrau(
                     "subplan_name": I24PlanNameConstants.ROTATION_META_READ,
                     "scan_points": [params.scan_points],
                     "rotation_scan_params": params.model_dump_json(),
+                    "dcid": dcid,
                 }
             )
             # Write metadata json file

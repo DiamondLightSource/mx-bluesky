@@ -4,6 +4,7 @@ from bluesky.callbacks import CallbackBase
 from dodal.devices.i24.commissioning_jungfrau import JunfrauCommissioningWriter
 
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -45,6 +46,7 @@ class JsonMetadataWriter(CallbackBase):
             )
             self.parameters = SingleRotationScan(**json.loads(json_params))
             self.run_start_uid = doc.get("uid")
+            self.dcid = doc.get("dcid")
 
     def descriptor(self, doc: dict):  # type: ignore
         self.descriptors[doc["uid"]] = doc
@@ -88,6 +90,7 @@ class JsonMetadataWriter(CallbackBase):
                             "angular_increment_deg": self.parameters.rotation_increment_deg,
                             # "beam_xy_mm": self.beam_xy,
                             "detector_distance_mm": self.detector_distance_mm,
+                            "dcid": self.dcid.data_collection_ids[0]
                         }
                     )
                 )

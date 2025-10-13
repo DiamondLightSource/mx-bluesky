@@ -122,7 +122,9 @@ def single_rotation_plan(
 
     composite.jungfrau._writer._path_info.filename = "rotation_scan"  # type: ignore
 
-    @bpp.subs_decorator(RotationISPyBCallback())
+    ispyb_callback = RotationISPyBCallback()
+
+    @bpp.subs_decorator(ispyb_callback)
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_OUTER)
     @run_decorator(
         md={
@@ -241,6 +243,7 @@ def single_rotation_plan(
                 do_read=True,
                 params=params,
                 composite=composite,
+                dcid=ispyb_callback.ispyb_ids
             )
 
             LOGGER.info("Executing rotation scan")
