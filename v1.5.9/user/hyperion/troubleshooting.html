@@ -1,0 +1,730 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Troubleshooting &#8212; mx-bluesky 1.5.9 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=674ce552"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/hyperion/troubleshooting';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.5.9';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="Running Hyperion" href="running.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.5.9" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">mx-bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Topics</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="alerts.html">Alerts</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pvs.html">Special PVs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running Hyperion</a></li>
+
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Troubleshooting</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Hyperion User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Troubleshooting</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="troubleshooting">
+<h1><a class="toc-backref" href="#id2" role="doc-backlink">Troubleshooting</a><a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#troubleshooting" id="id2">Troubleshooting</a></p>
+<ul>
+<li><p><a class="reference internal" href="#logging" id="id3">Logging</a></p>
+<ul>
+<li><p><a class="reference internal" href="#graylog" id="id4">Graylog</a></p></li>
+<li><p><a class="reference internal" href="#startup-log" id="id5">Startup Log</a></p></li>
+<li><p><a class="reference internal" href="#log-files" id="id6">Log files</a></p></li>
+<li><p><a class="reference internal" href="#debug-log" id="id7">Debug Log</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#server-install" id="id8">Server Install</a></p>
+<ul>
+<li><p><a class="reference internal" href="#install-location" id="id9">Install Location</a></p></li>
+<li><p><a class="reference internal" href="#switching-versions" id="id10">Switching Versions</a></p></li>
+<li><p><a class="reference internal" href="#verifying-that-hyperion-is-running" id="id11">Verifying that Hyperion is running</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#kubernetes-install" id="id12">Kubernetes Install</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id13">Logging</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#known-issues" id="id14">Known Issues</a></p>
+<ul>
+<li><p><a class="reference internal" href="#odin-errors-when-there-are-filesystem-issues" id="id15">Odin Errors when there are filesystem issues</a></p></li>
+<li><p><a class="reference internal" href="#hyperion-restart-sometimes-times-out" id="id16">hyperion_restart() sometimes times out</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="logging">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Logging</a><a class="headerlink" href="#logging" title="Link to this heading">#</a></h2>
+<p>Hyperion logs to a number of different locations. The sections below describe the locations that are configured via
+environment variables for a standard server install.</p>
+<section id="graylog">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">Graylog</a><a class="headerlink" href="#graylog" title="Link to this heading">#</a></h3>
+<p>Graylog is the recommended way to view logs. It is used for more centralised logging which is also more easily
+searched and archived. Log messages are sent to the <a class="reference external" href="https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search">Hyperion graylog stream</a>.</p>
+<p>To find different severity of message you can search for <code class="docutils literal notranslate"><span class="pre">level:</span> <span class="pre">X</span></code>. Where X is:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: Errors messages - usually causing Hyperion to have stopped. Note that no diffraction is currently logged as an error but this doesn’t stop Hyperion, only skip the sample. This will be improved by <a class="github reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/427">DiamondLightSource/mx-bluesky#427</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">4</span></code>: Warnings - usually not a major problem</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">6</span></code>: Info - Just telling you what Hyperion is doing</p></li>
+</ul>
+</section>
+<section id="startup-log">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Startup Log</a><a class="headerlink" href="#startup-log" title="Link to this heading">#</a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">hyperion_restart()</span></code> is called by GDA, it will log the initial console output to a log file. This log file
+location is
+controlled by the <code class="docutils literal notranslate"><span class="pre">gda.logs.dir</span></code> property and is typically <code class="docutils literal notranslate"><span class="pre">/dls_sw/&lt;beamline&gt;/logs/bluesky</span></code>.</p>
+</section>
+<section id="log-files">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Log files</a><a class="headerlink" href="#log-files" title="Link to this heading">#</a></h3>
+<p>By default, Hyperion logs to the filesystem.</p>
+<p>The log file location is controlled by the <code class="docutils literal notranslate"><span class="pre">LOG_DIR</span></code> environment value. Typically this can be found in
+<code class="docutils literal notranslate"><span class="pre">/dls_sw/&lt;beamline&gt;/logs/bluesky</span></code></p>
+</section>
+<section id="debug-log">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Debug Log</a><a class="headerlink" href="#debug-log" title="Link to this heading">#</a></h3>
+<p>The standard logs files do not record all messages, only those at INFO level or higher, in order to keep storage
+requirements to a minimum.
+In the event of an error occurring, then trace-level logging for the most recent events (by default 5000) is flushed
+to a separate set of log files. Due to the size of these files, they are stored separately from the main log files
+. These logs are located in <code class="docutils literal notranslate"><span class="pre">/dls/tmp/&lt;beamline&gt;/logs/bluesky</span></code> by default, or
+otherwise as specified by the <code class="docutils literal notranslate"><span class="pre">DEBUG_LOG_DIR</span></code> environment variable.</p>
+</section>
+</section>
+<section id="server-install">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink">Server Install</a><a class="headerlink" href="#server-install" title="Link to this heading">#</a></h2>
+<section id="install-location">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Install Location</a><a class="headerlink" href="#install-location" title="Link to this heading">#</a></h3>
+<p>Hyperion is generally installed in the beamline software directory:</p>
+<p><code class="docutils literal notranslate"><span class="pre">/dls_sw/&lt;beamline&gt;/software/bluesky</span></code></p>
+<p>This directory contains versioned installation folders <code class="docutils literal notranslate"><span class="pre">mx-bluesky_vx.y.z</span></code> for each installed version. Within the
+directory there is a symlink <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> to the currently active version. This is generally a symlink to either
+<code class="docutils literal notranslate"><span class="pre">hyperion_stable</span></code> or <code class="docutils literal notranslate"><span class="pre">hyperion_latest</span></code> symlinks which then point to the latest stable and development releases
+respectively.</p>
+</section>
+<section id="switching-versions">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Switching Versions</a><a class="headerlink" href="#switching-versions" title="Link to this heading">#</a></h3>
+<p>For example to switch from the development to the stable release simply:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span> <span class="n">hyperion</span>
+<span class="n">ln</span> <span class="o">-</span><span class="n">s</span> <span class="n">hyperion_latest</span> <span class="n">hyperion</span>
+</pre></div>
+</div>
+<p>After this you will need to run <code class="docutils literal notranslate"><span class="pre">hyperion_restart()</span></code> in the GDA jython console to restart hyperion</p>
+</section>
+<section id="verifying-that-hyperion-is-running">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Verifying that Hyperion is running</a><a class="headerlink" href="#verifying-that-hyperion-is-running" title="Link to this heading">#</a></h3>
+<p>To verify that the correct version of Hyperion is running, you should be able to view the process on the control
+server, ssh into the control server, the output of <code class="docutils literal notranslate"><span class="pre">ps</span> <span class="pre">ax</span></code> should be something like the following, showing which
+deployment is currently running. You should see two processes, the main process and also the external callback process.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ps ax | grep hyperion
+1181420 ?        Sl     2:36 /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/python /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/hyperion
+1181422 ?        Sl     1:54 /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/python /dls_sw/i03/software/bluesky/mx-bluesky_v1.5.0/mx-bluesky/.venv/bin/hyperion-callbacks
+</pre></div>
+</div>
+</section>
+</section>
+<section id="kubernetes-install">
+<h2><a class="toc-backref" href="#id12" role="doc-backlink">Kubernetes Install</a><a class="headerlink" href="#kubernetes-install" title="Link to this heading">#</a></h2>
+<p>If Hyperion is deployed on Kubernetes (currently experimental) then it can be managed from the beamline kubernetes
+dashboard, e.g.
+<a class="reference external" href="https://k8s-i03-dashboard.diamond.ac.uk">https://k8s-i03-dashboard.diamond.ac.uk</a></p>
+<p>In the beamline namespace there will be a deployment <code class="docutils literal notranslate"><span class="pre">hyperion-deployment</span></code>, a <code class="docutils literal notranslate"><span class="pre">hyperion-svc</span></code> service and associated
+pods, ingress etc. through which the current state may be observed / managed.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">Logging</a><a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<p>On kubernetes deployments, the initial startup is sent to standard IO and is captured as part of the standard
+kubernetes logging facility.</p>
+<p>The configured logging locations are defined in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> for the specific deployment Helm chart.</p>
+</section>
+</section>
+<section id="known-issues">
+<h2><a class="toc-backref" href="#id14" role="doc-backlink">Known Issues</a><a class="headerlink" href="#known-issues" title="Link to this heading">#</a></h2>
+<section id="odin-errors-when-there-are-filesystem-issues">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">Odin Errors when there are filesystem issues</a><a class="headerlink" href="#odin-errors-when-there-are-filesystem-issues" title="Link to this heading">#</a></h3>
+<p><a class="github reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/1199">DiamondLightSource/mx-bluesky#1199</a></p>
+<p>On occasions where there are issues with the filesystem you may see errors similar to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ophyd</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">UnknownStatusFailure</span><span class="p">:</span> <span class="n">The</span> <span class="n">status</span> <span class="p">(</span><span class="n">Status</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">EpicsSignalWithRBV</span>
+<span class="p">(</span><span class="n">read_pv</span><span class="o">=</span><span class="s1">&#39;BL03I-EA-EIGER-01:OD:Capture_RBV&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;eiger_odin_file_writer_capture&#39;</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="s1">&#39;eiger_odin_file_writer&#39;</span><span class="p">,</span>
+<span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1754488753.208739</span><span class="p">,</span> <span class="n">auto_monitor</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_pv</span><span class="o">=</span><span class="s1">&#39;BL03I-EA-EIGER-01:OD:Capture&#39;</span><span class="p">,</span>
+<span class="n">limits</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">put_complete</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">done</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">SubscriptionStatus</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">eiger_odin_meta_ready</span><span class="p">,</span>
+<span class="n">done</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="n">has</span> <span class="n">failed</span><span class="o">.</span> <span class="n">To</span> <span class="n">obtain</span> <span class="n">more</span> <span class="n">specific</span><span class="p">,</span> <span class="n">helpful</span> <span class="n">errors</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">future</span><span class="p">,</span> <span class="n">update</span> <span class="n">the</span> <span class="n">Device</span>
+<span class="n">to</span> <span class="n">use</span> <span class="n">set_exception</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="n">instead</span> <span class="n">of</span> <span class="n">_finished</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="hyperion-restart-sometimes-times-out">
+<h3><a class="toc-backref" href="#id16" role="doc-backlink">hyperion_restart() sometimes times out</a><a class="headerlink" href="#hyperion-restart-sometimes-times-out" title="Link to this heading">#</a></h3>
+<p>Sometimes hyperion_restart() will time out waiting for Hyperion to start, in the Jython console you may see the
+following</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">InteractiveConsole</span> <span class="n">exception</span><span class="p">:</span> <span class="n">hyperion_utils</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HyperionFailedException</span><span class="p">:</span> <span class="n">Hyperion</span> <span class="n">failed</span> <span class="n">to</span> <span class="n">start</span><span class="p">,</span> <span class="n">see</span> <span class="o">/</span><span class="n">dls_sw</span><span class="o">/</span><span class="n">i03</span><span class="o">/</span><span class="n">logs</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">start_log</span><span class="o">.</span><span class="n">log</span> <span class="k">for</span> <span class="n">log</span>
+<span class="n">org</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">PyException</span><span class="p">:</span> <span class="n">hyperion_utils</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HyperionFailedException</span><span class="p">:</span> <span class="n">Hyperion</span> <span class="n">failed</span> <span class="n">to</span> <span class="n">start</span><span class="p">,</span> <span class="n">see</span> <span class="o">/</span><span class="n">dls_sw</span><span class="o">/</span><span class="n">i03</span><span class="o">/</span><span class="n">logs</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">start_log</span><span class="o">.</span><span class="n">log</span> <span class="k">for</span> <span class="n">log</span>
+    <span class="n">at</span> <span class="n">org</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">PyException</span><span class="o">.</span><span class="n">doRaise</span><span class="p">(</span><span class="n">PyException</span><span class="o">.</span><span class="n">java</span><span class="p">:</span><span class="mi">239</span><span class="p">)</span>
+    <span class="n">at</span> <span class="n">org</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Py</span><span class="o">.</span><span class="n">makeException</span><span class="p">(</span><span class="n">Py</span><span class="o">.</span><span class="n">java</span><span class="p">:</span><span class="mi">1654</span><span class="p">)</span>
+    <span class="n">at</span> <span class="n">org</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Py</span><span class="o">.</span><span class="n">makeException</span><span class="p">(</span><span class="n">Py</span><span class="o">.</span><span class="n">java</span><span class="p">:</span><span class="mi">1658</span><span class="p">)</span>
+    <span class="n">at</span> <span class="n">org</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Py</span><span class="o">.</span><span class="n">makeException</span><span class="p">(</span><span class="n">Py</span><span class="o">.</span><span class="n">java</span><span class="p">:</span><span class="mi">1662</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However on inspection the start log will not show any errors. Hyperion running can be verified as above <a class="reference internal" href="#verifying-that-hyperion-is-running">Verifying
+that Hyperion is running</a></p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="running.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Running Hyperion</p>
+      </div>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#logging">Logging</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#graylog">Graylog</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#startup-log">Startup Log</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#log-files">Log files</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#debug-log">Debug Log</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#server-install">Server Install</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#install-location">Install Location</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#switching-versions">Switching Versions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#verifying-that-hyperion-is-running">Verifying that Hyperion is running</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-install">Kubernetes Install</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Logging</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#known-issues">Known Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#odin-errors-when-there-are-filesystem-issues">Odin Errors when there are filesystem issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hyperion-restart-sometimes-times-out">hyperion_restart() sometimes times out</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/1.5.9/docs/user/hyperion/troubleshooting.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/user/hyperion/troubleshooting.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
