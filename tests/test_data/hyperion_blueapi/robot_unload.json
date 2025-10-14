@@ -1,0 +1,7 @@
+{
+  "name": "robot_unload",
+  "params": {
+    "visit": "cm12345-1"
+  },
+  "instrument_session": "cm12345-1"
+}
