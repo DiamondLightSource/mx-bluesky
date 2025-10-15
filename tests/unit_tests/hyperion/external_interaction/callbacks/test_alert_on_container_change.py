@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from dodal.devices.backlight import Backlight
 from dodal.devices.robot import BartRobot
@@ -23,8 +24,13 @@ TEST_VISIT = "cm1234-67"
 
 
 def wrap_plan(container: int, plan):
+    @bpp.set_run_key_decorator("inner_subplan")
+    @run_decorator(md={"metadata": {"some_other_metadata": 1234}})
+    def inner_subplan():
+        yield from plan()
+
     yield from bpp.run_wrapper(
-        plan(),
+        inner_subplan(),
         md={
             "metadata": {
                 "container": container,
@@ -86,7 +92,7 @@ def test_when_data_collected_on_new_container_then_alerts(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_robot_load"
 )
-def test_robot_load_and_snapshots_triggers_alert(
+def test_robot_load_and_snapshots_triggers_alert_and_resets_state_between_plans(
     patched_robot_load: MagicMock,
     RE: RunEngine,
     mock_alert_service: MagicMock,
@@ -94,7 +100,6 @@ def test_robot_load_and_snapshots_triggers_alert(
     backlight: Backlight,
 ):
     RE.subscribe(AlertOnContainerChange())
-    set_mock_value(robot.current_puck, 5)
 
     mock_composite = MagicMock()
     mock_composite.robot = robot
@@ -102,28 +107,33 @@ def test_robot_load_and_snapshots_triggers_alert(
 
     patched_robot_load.side_effect = NotImplementedError()
 
-    with pytest.raises(NotImplementedError):
-        RE(
-            wrap_plan(
-                10,
-                partial(
-                    robot_load_and_snapshots,
-                    mock_composite,
-                    MagicMock(),
-                    MagicMock(),
-                    1,
-                    2,
-                    None,
-                ),
+    old_container = 5
+    for container in range(1, 3):
+        set_mock_value(robot.current_puck, old_container)
+        with pytest.raises(NotImplementedError):
+            RE(
+                wrap_plan(
+                    container,
+                    partial(
+                        robot_load_and_snapshots,
+                        mock_composite,
+                        MagicMock(),
+                        MagicMock(),
+                        1,
+                        2,
+                        None,
+                    ),
+                )
             )
-        )
 
-    mock_alert_service.raise_alert.assert_called_once_with(
-        "UDC moved on to puck 10 on i03",
-        "Hyperion finished container 5 and moved on to 10",
-        {
-            Metadata.SAMPLE_ID: "10",
-            Metadata.VISIT: "cm1234-67",
-            Metadata.CONTAINER: "10",
-        },
-    )
+        mock_alert_service.raise_alert.assert_called_once_with(
+            f"UDC moved on to puck {container} on i03",
+            f"Hyperion finished container {old_container} and moved on to {container}",
+            {
+                Metadata.SAMPLE_ID: "10",
+                Metadata.VISIT: "cm1234-67",
+                Metadata.CONTAINER: str(container),
+            },
+        )
+        old_container = container
+        mock_alert_service.reset_mock()

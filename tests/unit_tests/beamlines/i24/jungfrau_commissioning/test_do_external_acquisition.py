@@ -3,7 +3,6 @@ from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -16,9 +15,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition imp
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
 
 
-@pytest.mark.skip(
-    reason="Waiting on ophyd-async PR https://github.com/bluesky/ophyd-async/pull/1038/files"
-)
 def test_full_do_external_acquisition(
     jungfrau: CommissioningJungfrau, RE: RunEngine, caplog
 ):

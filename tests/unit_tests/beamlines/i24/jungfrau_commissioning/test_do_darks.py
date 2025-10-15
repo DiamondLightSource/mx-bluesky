@@ -1,20 +1,18 @@
-import asyncio
-from functools import partial
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pytest
 from bluesky.callbacks import CallbackBase
-from bluesky.preprocessors import monitor_during_wrapper
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     PedestalMode,
     create_jungfrau_internal_triggering_info,
 )
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
     do_pedestal_darks,
@@ -35,10 +33,28 @@ class CheckMonitor(CallbackBase):
 
     def event(self, doc):
         key, value = next(iter(doc["data"].items()))
-        self.signals_and_values[key].append(value)
+        # don't record a value changing to the same value
+        if (
+            not len(self.signals_and_values[key])
+            or not self.signals_and_values[key][-1] == value
+        ):
+            self.signals_and_values[key].append(value)
         return doc
 
 
+def fake_complete(_, group=None):
+    yield from bps.null()
+    return completed_status()
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    new=MagicMock,
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.bps.complete",
+    new=MagicMock(side_effect=fake_complete),
+)
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 async def test_full_do_pedestal_darks(
     mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
@@ -46,15 +62,17 @@ async def test_full_do_pedestal_darks(
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
 
+    @bpp.run_decorator(
+        md={
+            "metadata": {"sample_id": "blah"},
+            "activate_callbacks": ["SampleHandlingCallback"],
+        }
+    )
     def test_plan():
-        status = yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
-        assert not status.done
-        val = 0
-        while not status.done:
-            val += 1
-            set_mock_value(jungfrau._writer.frame_counter, val)
-            # Let status update
-            yield from bps.wait_for([partial(asyncio.sleep, 0)])
+        yield from bps.monitor(jungfrau.drv.acquisition_type, name="AT")
+        yield from bps.monitor(jungfrau.drv.pedestal_mode_state, name="PM")
+        yield from bps.monitor(jungfrau.drv.gain_mode, name="GM")
+        yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
 
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
@@ -68,16 +86,8 @@ async def test_full_do_pedestal_darks(
         ]
     )
     RE.subscribe(monitor_tracker)
-    RE(
-        monitor_during_wrapper(
-            test_plan(),
-            [
-                jungfrau.drv.acquisition_type,
-                jungfrau.drv.pedestal_mode_state,
-                jungfrau.drv.gain_mode,
-            ],
-        )
-    )
+    RE(test_plan())
+
     assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
@@ -103,7 +113,7 @@ class FakeException(Exception): ...
 
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 @patch("bluesky.plan_stubs.unstage")
-async def test_jungfrau_unstage(
+async def test_pedestals_unstage_and_wait_on_exception(
     mock_unstage: MagicMock,
     mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,
@@ -117,6 +127,9 @@ async def test_jungfrau_unstage(
     with pytest.raises(FakeException):
         RE(test_plan())
     mock_unstage.assert_called_once_with(jungfrau, wait=True)
+
+    assert mock_unstage.call_count == 2  # Once on stage, once on unstage
+    assert [c == call(jungfrau, wait=True) for c in mock_unstage.call_args_list]
 
 
 @patch(
