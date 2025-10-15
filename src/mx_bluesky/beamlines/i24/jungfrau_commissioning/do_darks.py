@@ -90,14 +90,12 @@ def do_standard_darks(
             set during Jungfrau device instantiation
     """
 
-    @bpp.contingency_decorator(
-        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
+    @bpp.finalize_decorator(
+        final_plan=lambda: (yield from bps.unstage(jungfrau, wait=True))
     )
     @bpp.set_run_key_decorator(STANDARD_DARKS_RUN)
     @bpp.run_decorator(md={"subplan_name": STANDARD_DARKS_RUN})
     def _do_decorated_plan():
-        wait = True
-
         if path_of_output_file:
             override_file_path(jungfrau, path_of_output_file)
 
@@ -113,7 +111,7 @@ def do_standard_darks(
         yield from fly_jungfrau(
             jungfrau,
             trigger_info,
-            wait=wait,
+            wait=True,
             log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers recieved",
         )
 
