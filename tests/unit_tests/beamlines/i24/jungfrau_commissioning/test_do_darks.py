@@ -111,7 +111,7 @@ class FakeException(Exception): ...
 
 @patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
 @patch("bluesky.plan_stubs.unstage")
-async def test_pedestals_unstage_and_wait(
+async def test_pedestals_unstage_and_wait_on_exception(
     mock_unstage: MagicMock,
     mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,

@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -13,6 +13,7 @@ from ophyd_async.core import (
     TriggerInfo,
     completed_status,
 )
+from ophyd_async.fastcs.jungfrau import AcquisitionType, GainMode
 from ophyd_async.testing import (
     set_mock_value,
 )
@@ -82,6 +83,41 @@ async def test_override_file_path(
     await jungfrau._writer.open("")
     assert await jungfrau._writer.file_name.get_value() == new_file_name
     assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00001"
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    new=MagicMock(),
+)
+async def test_fly_jungfrau_pedestal_mode_changes_acquisition_type_before_prepare(
+    jungfrau: CommissioningJungfrau, RE: RunEngine
+):
+    parent_mock = MagicMock()
+    jungfrau.drv.acquisition_type.set = MagicMock(
+        side_effect=lambda _: completed_status()
+    )
+    jungfrau.drv.gain_mode.set = MagicMock(side_effect=lambda _: completed_status())
+    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
+    jungfrau.kickoff = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.complete = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
+    parent_mock.attach_mock(
+        jungfrau.drv.acquisition_type.set, "jungfrau_drv_acquisition_type_set"
+    )
+    parent_mock.attach_mock(jungfrau.prepare, "jungfrau_prepare")
+    parent_mock.attach_mock(jungfrau.drv.gain_mode.set, "jungfrau_drv_gain_mode_set")
+
+    @run_decorator()
+    def do_fly():
+        yield from fly_jungfrau(jungfrau, TriggerInfo(), trigger_in_pedestal_mode=True)
+
+    RE(do_fly())
+    assert parent_mock.mock_calls == [
+        call.jungfrau_drv_acquisition_type_set(AcquisitionType.PEDESTAL),
+        call.jungfrau_drv_gain_mode_set(GainMode.DYNAMIC),
+        call.jungfrau_prepare(ANY),
+    ]
 
 
 @patch(
