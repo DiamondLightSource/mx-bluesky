@@ -9,6 +9,7 @@ from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.baton import Baton
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -109,7 +110,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
                 baton, runner, current_visit
             )
         if current_visit:
-            yield from _perform_robot_unload(runner.context, current_visit)
+            yield from _clean_up_udc(runner.context, current_visit)
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -239,11 +240,17 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     return requested_user
 
 
-def _perform_robot_unload(context: BlueskyContext, visit: str) -> MsgGenerator:
+def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
+    cleanup_group = "cleanup"
     robot = find_device_in_context(context, "robot", BartRobot)
     smargon = find_device_in_context(context, "smargon", Smargon)
     aperture_scatterguard = find_device_in_context(
         context, "aperture_scatterguard", ApertureScatterguard
     )
     lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
+    detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
+    yield from bps.abs_set(
+        detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
+    )
     yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    yield from bps.wait(cleanup_group)

@@ -14,6 +14,7 @@ from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.baton import Baton
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.testing import get_mock_put, set_mock_value
 
@@ -103,6 +104,7 @@ def bluesky_context(
     robot,
     lower_gonio,
     baton,
+    detector_motion,
     use_beamline_t01,
 ):
     # Baton for real run engine
@@ -111,7 +113,14 @@ def bluesky_context(
     context = BlueskyContext(run_engine=RE)
 
     def mock_load_module(module, **kwargs):
-        for device in [smargon, aperture_scatterguard, robot, lower_gonio, baton]:
+        for device in [
+            smargon,
+            aperture_scatterguard,
+            robot,
+            lower_gonio,
+            baton,
+            detector_motion,
+        ]:
             context.register_device(device)
 
     context.with_dodal_module(
@@ -868,6 +877,16 @@ def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     )
 
 
+def _request_baton_from_hyperion_during_collection(
+    bluesky_context: BlueskyContext, mock_load_centre_collect: MagicMock
+):
+    def request_baton_away_from_hyperion(*args):
+        baton = find_device_in_context(bluesky_context, "baton", Baton)
+        yield from bps.abs_set(baton.requested_user, NO_USER)
+
+    mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
+
+
 @patch("mx_bluesky.hyperion.baton_handler.robot_unload")
 def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     mock_robot_unload,
@@ -876,22 +895,15 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     single_collection_agamemnon_request_then_wait_forever,
     dont_patch_clear_devices,
 ):
-    def request_baton_away_from_hyperion(*args):
-        baton = find_device_in_context(bluesky_context, "baton", Baton)
-        yield from bps.abs_set(baton.requested_user, NO_USER)
-
-    parent = MagicMock()
-    mock_load_centre_collect = single_collection_agamemnon_request_then_wait_forever
-    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
-    parent.attach_mock(mock_robot_unload, "robot_unload")
-    mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
+    _request_baton_from_hyperion_during_collection(
+        bluesky_context, single_collection_agamemnon_request_then_wait_forever
+    )
 
     run_udc_when_requested(bluesky_context, udc_runner)
 
-    parent.assert_has_calls(
+    mock_robot_unload.assert_has_calls(
         [
-            call.load_centre_collect_full(ANY, ANY),
-            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call(ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
@@ -934,3 +946,23 @@ def test_robot_unload_still_performed_when_sample_exception(
             call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
+
+
+@patch("mx_bluesky.hyperion.baton_handler.robot_unload")
+def test_detector_shutter_closed_when_baton_requested_away_from_hyperion(
+    mock_robot_unload,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    single_collection_agamemnon_request_then_wait_forever,
+    dont_patch_clear_devices,
+):
+    _request_baton_from_hyperion_during_collection(
+        bluesky_context, single_collection_agamemnon_request_then_wait_forever
+    )
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    detector_motion = find_device_in_context(
+        bluesky_context, "detector_motion", DetectorMotion
+    )
+    get_mock_put(detector_motion.shutter).assert_called_once()
