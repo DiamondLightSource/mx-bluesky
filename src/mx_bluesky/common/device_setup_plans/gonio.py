@@ -15,10 +15,12 @@ def move_gonio_warn_on_out_of_range(
     Throws a SampleException if the specified position is out of range for the
     gonio. Otherwise moves to that position. The check is from ophyd-async
     """
+    group = "move_warn_out_of_range"
     try:
-        yield from bps.mv(gonio.x, position[0])
-        yield from bps.mv(gonio.y, position[1])
-        yield from bps.mv(gonio.z, position[2])
+        yield from bps.abs_set(gonio.x, position[0], group=group, wait=True)
+        yield from bps.abs_set(gonio.y, position[1], group=group, wait=True)
+        yield from bps.abs_set(gonio.z, position[2], group=group, wait=True)
+        yield from bps.wait(group=group)
     except FailedStatus as fs:
         if isinstance(fs.__cause__, MotorLimitsException):
             raise SampleException(
