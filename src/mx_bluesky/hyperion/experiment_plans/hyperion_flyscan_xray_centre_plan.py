@@ -147,7 +147,7 @@ def _panda_triggering_setup(
         )
     else:
         LOGGER.info(
-            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f"Panda grid scan: Smargon speed set to {sample_velocity_mm_per_s} mm/s"
             f" and using a run-up distance of {run_up_distance_mm}"
         )
 

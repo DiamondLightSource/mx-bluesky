@@ -44,11 +44,10 @@ dependencies = [
     # as by default pip-install will not upgrade to a pre-release.
     #
     "daq-config-server>=v1.0.0-rc.2",
-    "blueapi >= 0.15.0",
+    "blueapi >= 1.5.0",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
