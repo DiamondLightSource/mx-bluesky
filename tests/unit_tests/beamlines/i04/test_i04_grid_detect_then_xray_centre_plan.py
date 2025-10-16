@@ -30,10 +30,6 @@ from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.testing import set_mock_value
-from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
-from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
-    CompleteException,
-)
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_BEAMSIZE_MICRONS,
@@ -42,6 +38,10 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
+from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
+from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
+    CompleteException,
+)
 
 
 class CustomException(Exception): ...
