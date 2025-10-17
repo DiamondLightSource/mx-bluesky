@@ -3,8 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
+from bluesky import FailedStatus
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
@@ -109,21 +111,57 @@ async def test_full_do_pedestal_darks(
 class FakeException(Exception): ...
 
 
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
-@patch("bluesky.plan_stubs.unstage")
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path",
+    new=MagicMock(),
+)
 async def test_pedestals_unstage_and_wait_on_exception(
-    mock_unstage: MagicMock,
-    mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,
     RE: RunEngine,
 ):
-    jungfrau.stage = MagicMock(side_effect=FakeException)
-
-    def test_plan():
-        yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
+    jungfrau.prepare = MagicMock(side_effect=FakeException)
+    jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
 
     with pytest.raises(FakeException):
-        RE(test_plan())
+        RE(do_pedestal_darks(0.001, 2, 2, jungfrau))
 
-    assert mock_unstage.call_count == 2  # Once on stage, once on unstage
-    assert [c == call(jungfrau, wait=True) for c in mock_unstage.call_args_list]
+    assert jungfrau.unstage.call_count == 1
+    assert [c == call(jungfrau, wait=True) for c in jungfrau.unstage.call_args_list]
+
+
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    new=MagicMock(),
+)
+async def test_do_pedestals_waits_on_stage_before_prepare(
+    jungfrau: CommissioningJungfrau, sim_run_engine: RunEngineSimulator
+):
+    def _get_status(msg):
+        return completed_status()
+
+    jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
+    jungfrau.kickoff = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.complete = MagicMock(side_effect=lambda: completed_status())
+    sim_run_engine.add_handler("stage", _get_status)
+
+    msgs = sim_run_engine.simulate_plan(do_pedestal_darks(0.001, 2, 2, jungfrau))
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "stage" and msg.obj == jungfrau
+    )
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "prepare" and msg.obj == jungfrau
+    )
+
+
+def test_do_darks_stops_if_exception_after_stage(
+    RE: RunEngine, jungfrau: CommissioningJungfrau
+):
+    mock_stop = AsyncMock()
+    jungfrau.drv.acquisition_stop.trigger = mock_stop
+
+    with pytest.raises(FailedStatus):
+        RE(do_pedestal_darks(0, 2, 2, jungfrau))
+    assert mock_stop.await_count == 2  # once when staging, once on exception
+    assert [c == call(jungfrau, wait=True) for c in mock_stop.call_args_list]

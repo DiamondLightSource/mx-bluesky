@@ -1,10 +1,12 @@
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import WatchableAsyncStatus
 from ophyd_async.fastcs.jungfrau import (
+    AcquisitionType,
+    GainMode,
     create_jungfrau_pedestal_triggering_info,
 )
 from pydantic import PositiveInt
@@ -13,6 +15,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
     fly_jungfrau,
     override_file_path,
 )
+from mx_bluesky.common.utils.log import LOGGER
 
 PEDESTAL_DARKS_RUN = "PEDESTAL DARKS RUN"
 
@@ -46,9 +49,7 @@ def do_pedestal_darks(
 
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
     @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
-    @bpp.finalize_decorator(
-        final_plan=lambda: (yield from bps.unstage(jungfrau, wait=True))
-    )
+    @bpp.stage_decorator([jungfrau])
     def _do_decorated_plan():
         if path_of_output_file:
             override_file_path(jungfrau, path_of_output_file)
@@ -56,11 +57,19 @@ def do_pedestal_darks(
         trigger_info = create_jungfrau_pedestal_triggering_info(
             exp_time_s, pedestal_frames, pedestal_loops
         )
+        LOGGER.info(
+            "Jungfrau will be triggered in pedestal mode and in dynamic gain mode"
+        )
+        yield from bps.mv(
+            jungfrau.drv.acquisition_type,
+            AcquisitionType.PEDESTAL,
+            jungfrau.drv.gain_mode,
+            GainMode.DYNAMIC,
+        )
         return (
             yield from fly_jungfrau(
                 jungfrau,
                 trigger_info,
-                trigger_in_pedestal_mode=True,
                 wait=True,
                 log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
             )
