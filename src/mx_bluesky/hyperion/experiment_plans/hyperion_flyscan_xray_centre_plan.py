@@ -112,8 +112,8 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
     yield from tidy_up_zebra_after_gridscan(
         xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
     )
+    yield from bps.unstage(xrc_composite.panda, group=group)
     yield from bps.wait(group, timeout=10)
-    yield from bps.unstage(xrc_composite.panda, wait=True)
 
 
 def _panda_triggering_setup(
