@@ -9,7 +9,7 @@ from ophyd_async.fastcs.jungfrau import (
 )
 from pydantic import PositiveInt
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
     override_file_path,
 )
@@ -25,7 +25,8 @@ def do_external_acquisition(
     """
     Kickoff external triggering on the Jungfrau, and optionally wait for completion.
 
-    Must be used within an open Bluesky run.
+    Any plan using this stub MUST stage the Jungfrau with the stage_decorator and open a run,
+    ideally using the run_decorator.
 
     Args:
         exp_time_s: Length of detector exposure for each frame.
