@@ -278,5 +278,13 @@ class TestFlyscanXrayCentrePlan:
             msgs, lambda msg: msg.command == "disarm_panda"
         )
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "unstage" and msg.obj.name == "panda"
+            msgs,
+            lambda msg: msg.command == "unstage"
+            and msg.obj.name == "panda"
+            and msg.kwargs["group"] == "panda_flyscan_tidy",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait"
+            and msg.kwargs["group"] == "panda_flyscan_tidy",
         )
