@@ -27,7 +27,12 @@ def clear_all_device_caches(context: BlueskyContext):
 
 
 def setup_devices(context: BlueskyContext, dev_mode: bool):
-    context.with_dodal_module(
+    _, exceptions = context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         mock=dev_mode,
     )
+    if exceptions:
+        raise ExceptionGroup(
+            f"Unable to connect to beamline devices {list(exceptions.keys())}",
+            list(exceptions.values()),
+        )

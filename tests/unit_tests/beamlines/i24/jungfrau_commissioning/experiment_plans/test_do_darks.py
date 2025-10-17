@@ -140,15 +140,6 @@ async def test_pedestals_unstage_and_wait_on_exception(
 async def test_do_pedestals_waits_on_stage_before_prepare(
     jungfrau: CommissioningJungfrau, sim_run_engine: RunEngineSimulator
 ):
-    def _get_status(msg):
-        return completed_status()
-
-    jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
-    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
-    jungfrau.kickoff = MagicMock(side_effect=lambda: completed_status())
-    jungfrau.complete = MagicMock(side_effect=lambda: completed_status())
-    sim_run_engine.add_handler("stage", _get_status)
-
     msgs = sim_run_engine.simulate_plan(do_pedestal_darks(0.001, 2, 2, jungfrau))
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "stage" and msg.obj == jungfrau
@@ -159,7 +150,7 @@ async def test_do_pedestals_waits_on_stage_before_prepare(
     )
 
 
-def test_do_pedestals_stops_if_exception_after_stage(
+def test_do_darks_stops_if_exception_after_stage(
     RE: RunEngine, jungfrau: CommissioningJungfrau
 ):
     mock_stop = AsyncMock()
