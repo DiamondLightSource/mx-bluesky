@@ -98,11 +98,9 @@ def do_standard_darks(
             set during Jungfrau device instantiation
     """
 
-    @bpp.finalize_decorator(
-        final_plan=lambda: (yield from bps.unstage(jungfrau, wait=True))
-    )
     @bpp.set_run_key_decorator(STANDARD_DARKS_RUN)
     @bpp.run_decorator(md={"subplan_name": STANDARD_DARKS_RUN})
+    @bpp.stage_decorator([jungfrau])
     def _do_decorated_plan():
         if path_of_output_file:
             override_file_path(jungfrau, path_of_output_file)
