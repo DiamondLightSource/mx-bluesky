@@ -9,7 +9,7 @@ from ophyd_async.fastcs.jungfrau import (
 )
 from pydantic import PositiveInt
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
     override_file_path,
 )

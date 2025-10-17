@@ -13,7 +13,7 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
     override_file_path,

@@ -15,7 +15,7 @@ from ophyd_async.fastcs.jungfrau import (
     PedestalMode,
 )
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
     do_pedestal_darks,
 )
 
@@ -48,14 +48,16 @@ def fake_complete(_, group=None):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.log_on_percentage_complete",
     new=MagicMock,
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.bps.complete",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.bps.complete",
     new=MagicMock(side_effect=fake_complete),
 )
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
+)
 async def test_full_do_pedestal_darks(
     mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
 ):
@@ -112,7 +114,7 @@ class FakeException(Exception): ...
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path",
     new=MagicMock(),
 )
 async def test_pedestals_unstage_and_wait_on_exception(
@@ -130,7 +132,7 @@ async def test_pedestals_unstage_and_wait_on_exception(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.log_on_percentage_complete",
     new=MagicMock(),
 )
 async def test_do_pedestals_waits_on_stage_before_prepare(
