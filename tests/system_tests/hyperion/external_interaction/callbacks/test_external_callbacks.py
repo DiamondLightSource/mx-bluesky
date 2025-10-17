@@ -6,6 +6,7 @@ import signal
 import subprocess
 import threading
 from genericpath import isfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from time import sleep
 from unittest.mock import MagicMock, patch
 
@@ -80,13 +81,8 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 
 
 @pytest.fixture
-def RE_with_external_callbacks(
-    zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
-):
-    RE = RunEngine()
-
+def external_callbacks():
     process_env = os.environ.copy()
-
     external_callbacks_process = subprocess.Popen(
         [
             "python",
@@ -95,6 +91,20 @@ def RE_with_external_callbacks(
         ],
         env=process_env,
     )
+    yield external_callbacks_process
+    external_callbacks_process.send_signal(signal.SIGINT)
+    sleep(0.01)
+    external_callbacks_process.kill()
+    external_callbacks_process.wait(10)
+
+
+@pytest.fixture
+def RE_with_external_callbacks(
+    external_callbacks,
+    zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
+):
+    RE = RunEngine()
+
     publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
     monitor = publisher._socket.get_monitor_socket()
 
@@ -116,10 +126,6 @@ def RE_with_external_callbacks(
     RE.unsubscribe(sub_id)
     publisher.close()
 
-    external_callbacks_process.send_signal(signal.SIGINT)
-    sleep(0.01)
-    external_callbacks_process.kill()
-    external_callbacks_process.wait(10)
     t.join()
 
 
@@ -248,3 +254,24 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     assert beamsize_x == test_bs_x
     assert beamsize_y == test_bs_y
     assert exposure == test_exp_time
+
+
+@pytest.mark.system_test
+def test_external_callbacks_ping(external_callbacks):
+    ping_received = threading.Event()
+
+    class PingHTTPRequestHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            assert self.path == "/callbackPing"
+            ping_received.set()
+
+    httpd = HTTPServer(("localhost", CONST.HYPERION_PORT), PingHTTPRequestHandler)
+    server_thread = threading.Thread(
+        group=None, target=httpd.serve_forever, daemon=True
+    )
+    try:
+        server_thread.start()
+        ping_received.wait(5)
+    finally:
+        httpd.shutdown()
+        server_thread.join()
