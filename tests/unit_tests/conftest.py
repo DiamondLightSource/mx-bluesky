@@ -213,7 +213,7 @@ def use_beamline_t01():
             patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
             patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
         ):
-            yield
+            yield tests.unit_tests.t01
 
 
 @pytest.fixture
