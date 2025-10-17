@@ -76,9 +76,9 @@ def fake_devices(
 
     with (
         patch(
-            "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
+            "dodal.devices.areadetector.plugins.mjpg.ClientSession.get", autospec=True
         ) as patch_get,
-        patch("dodal.devices.areadetector.plugins.MJPG.Image") as mock_image_class,
+        patch("dodal.devices.areadetector.plugins.mjpg.Image") as mock_image_class,
         patch(
             "dodal.devices.oav.snapshots.snapshot_with_grid.asyncio_save_image"
         ) as mock_save_image,
