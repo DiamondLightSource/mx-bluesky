@@ -279,6 +279,8 @@ def run_gridscan(
             raise SampleException(
                 "Scan invalid - gridscan not valid for detected pin position"
             ) from e
+        else:
+            raise e
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
