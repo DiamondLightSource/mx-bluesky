@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import json
 import os
+import signal
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -15,13 +16,18 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.baton import Baton
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
-from mx_bluesky.common.utils.context import device_composite_from_context
+from mx_bluesky.common.utils.context import (
+    device_composite_from_context,
+    find_device_in_context,
+)
 from mx_bluesky.common.utils.exceptions import WarningException
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
@@ -33,6 +39,7 @@ from mx_bluesky.hyperion.__main__ import (
     main,
     setup_context,
 )
+from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
@@ -45,6 +52,7 @@ from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import GDARunner
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
+from .conftest import AGAMEMNON_WAIT_INSTRUCTION
 
 FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -78,6 +86,12 @@ def test_params(tmp_path):
             tmp_path,
         )
     )
+
+
+@pytest.fixture(autouse=True)
+def patch_remote_graylog_endpoint():
+    with patch("dodal.log.get_graylog_configuration", return_value=("localhost", 5555)):
+        yield None
 
 
 class MockRunEngine:
@@ -137,6 +151,12 @@ TEST_EXPTS = {
         "param_type": HyperionSpecifiedThreeDGridScan,
     },
 }
+
+
+@pytest.fixture(autouse=True)
+def mock_create_udc_server():
+    with patch("mx_bluesky.hyperion.__main__.create_server_for_udc") as mock_udc_server:
+        yield mock_udc_server
 
 
 @pytest.fixture
@@ -520,7 +540,8 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         {"BEAMLINE": "i03"},
     ):
         with patch(
-            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module",
+            return_value=({}, {}),
         ) as mock_with_dodal_module:
             context = setup_context(dev_mode=dev_mode)
             mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
@@ -589,6 +610,18 @@ def test_hyperion_in_udc_mode_starts_logging(
 
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+def test_hyperion_in_udc_mode_starts_udc_api(
+    mock_create_udc_server: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+    mock_create_udc_server.assert_called_once()
+    assert isinstance(mock_create_udc_server.mock_calls[0].args[0], PlanRunner)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.setup_context")
 @patch("mx_bluesky.hyperion.__main__.run_forever")
 @patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
@@ -614,12 +647,6 @@ def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
     main()
 
     mock_gda_runner.assert_called_once()
-
-
-# TODO not currently a REST endpoint but required for hyperion_restart() in kubernetes
-# https://github.com/DiamondLightSource/mx-bluesky/issues/188
-def test_sending_a_shutdown_via_api_terminates_udc():
-    pass
 
 
 @patch("mx_bluesky.hyperion.__main__.Api")
@@ -650,3 +677,32 @@ def test_flush_logs(mock_flush_debug_handler: MagicMock, test_env: ClientAndRunE
     response = test_env.client.put(FLUSH_LOGS_ENDPOINT)
     check_status_in_response(response, Status.SUCCESS)
     mock_flush_debug_handler.assert_called_once()
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc", "--dev"])
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    return_value=[AGAMEMNON_WAIT_INSTRUCTION],
+)
+@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
+@patch("mx_bluesky.hyperion.baton_handler.setup_devices", MagicMock())
+def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown(
+    mock_create_parameters_from_agamemnon,
+    use_beamline_t01,
+    mock_create_udc_server,
+):
+    def wait_for_udc_to_start_then_send_sigterm():
+        while len(mock_create_udc_server.mock_calls) == 0:
+            sleep(0.2)
+
+        plan_runner = mock_create_udc_server.mock_calls[0].args[0]
+        context = plan_runner.context
+        baton = find_device_in_context(context, "baton", Baton)
+        set_mock_value(baton.requested_user, HYPERION_USER)
+        while len(mock_create_parameters_from_agamemnon.mock_calls) == 0:
+            sleep(0.2)
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    t = threading.Thread(None, wait_for_udc_to_start_then_send_sigterm, daemon=True)
+    t.start()
+    main()

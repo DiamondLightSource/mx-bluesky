@@ -10,6 +10,10 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 
+from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_FGS_features,
 )
@@ -29,10 +33,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
-    setup_zebra_for_gridscan,
-    tidy_up_zebra_after_gridscan,
-)
 
 
 class SmargonSpeedException(Exception):
@@ -78,7 +78,9 @@ def construct_hyperion_specific_features(
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
     else:
-        setup_trigger_plan = setup_zebra_for_gridscan
+        setup_trigger_plan = partial(
+            setup_zebra_for_gridscan,
+        )
         tidy_plan = partial(
             tidy_up_zebra_after_gridscan,
             xrc_composite.zebra,
@@ -124,10 +126,9 @@ def _panda_triggering_setup(
         xrc_composite.panda_fast_grid_scan.run_up_distance_mm
     )
 
-    # Set the time between x steps pv
-    DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
+    DETECTOR_DEADTIME_S = 1e-4  # This value was empirically found to be safer than the documented deadtime in the Eiger manual
 
-    time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
+    time_between_x_steps_ms = (DETECTOR_DEADTIME_S + parameters.exposure_time_s) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         xrc_composite.smargon.x.max_velocity
@@ -146,7 +147,7 @@ def _panda_triggering_setup(
         )
     else:
         LOGGER.info(
-            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f"Panda grid scan: Smargon speed set to {sample_velocity_mm_per_s} mm/s"
             f" and using a run-up distance of {run_up_distance_mm}"
         )
 

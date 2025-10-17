@@ -231,6 +231,7 @@ class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 class MultiXtalSelection(BaseModel):
     name: str
+    ignore_xtal_not_found: bool = False
 
 
 class TopNByMaxCountSelection(MultiXtalSelection):

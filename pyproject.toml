@@ -44,11 +44,10 @@ dependencies = [
     # as by default pip-install will not upgrade to a pre-release.
     #
     "daq-config-server>=v1.0.0-rc.2",
-    "blueapi >= 0.15.0",
+    "blueapi >= 1.5.0",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.10.0a2",
-    "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git",
+    "bluesky >= 1.14.6",
 ]
 
 
@@ -179,7 +178,7 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: pyright src tests {posargs}
-    tests: pytest --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 commands_pre =
     docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
@@ -218,6 +217,7 @@ lint.select = [
     "PT012",  # flake8-pytest-style rules - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/#pytest-raises-with-multiple-statements-pt012
     "RUF018", # walrus operators in asserts - https://docs.astral.sh/ruff/rules/assignment-in-assert/
     "TID251", # banned api - https://docs.astral.sh/ruff/rules/banned-api/
+    "INP001", # missing __init__.py - https://docs.astral.sh/ruff/rules/implicit-namespace-package/
 ]
 lint.extend-ignore = [
     "E501", # Line too long
@@ -228,6 +228,9 @@ lint.extend-ignore = [
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access, walrys operators in asserts, banned api in tests
 "tests/**/*" = ["SLF001", "B023", "RUF018", "TID251"]
+".github/**/*" = ["INP001"]
+"docs/**/*" = ["INP001"]
+"utility_scripts/**/*" = ["INP001"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "time.sleep".msg = "Use bps.sleep instead. # noqa will disable this rule for that line. See https://github.com/DiamondLightSource/mx-bluesky/issues/925"
@@ -254,13 +257,3 @@ name = "Beamlines do not import from hyperion"
 type = "forbidden"
 source_modules = "mx_bluesky.beamlines.**"
 forbidden_modules = "mx_bluesky.hyperion.**"
-
-[[tool.importlinter.contracts]]
-name = "Only Hyperion and i04 can import from phase1_zebra"
-type = "forbidden"
-source_modules = ["mx_bluesky.beamlines.**", "mx_bluesky.common.**"]
-forbidden_modules = ["mx_bluesky.phase1_zebra.**"]
-ignore_imports = [
-    "mx_bluesky.beamlines.i04.** -> mx_bluesky.phase1_zebra.**",
-    "mx_bluesky.hyperion.** -> mx_bluesky.phase1_zebra.**",
-]

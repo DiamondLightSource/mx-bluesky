@@ -23,6 +23,7 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -33,11 +34,15 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     tag_filter,
 )
+from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
+    AlertOnContainerChange,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+    generate_start_info_from_ordered_runs,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
@@ -63,7 +68,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams,
-            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
+            emit=ZocaloCallback(
+                CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV, generate_start_info_from_omega_map
+            ),
         ),
     )
 
@@ -74,7 +81,11 @@ def create_rotation_callbacks() -> tuple[
     return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
-            emit=ZocaloCallback(CONST.PLAN.ROTATION_MULTI, CONST.ZOCALO_ENV)
+            emit=ZocaloCallback(
+                CONST.PLAN.ROTATION_MULTI,
+                CONST.ZOCALO_ENV,
+                generate_start_info_from_ordered_runs,
+            )
         ),
     )
 
@@ -89,6 +100,7 @@ def setup_callbacks() -> list[CallbackBase]:
         LogUidTaggingCallback(),
         RobotLoadISPyBCallback(),
         SampleHandlingCallback(),
+        AlertOnContainerChange(),
     ]
 
 

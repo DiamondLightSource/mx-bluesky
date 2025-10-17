@@ -8,9 +8,12 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.protocols import Readable
-from bluesky.utils import MsgGenerator
+from bluesky.utils import FailedStatus, MsgGenerator
+from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
+    FastGridScanThreeD,
+    GridScanInvalidException,
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -226,9 +229,31 @@ def _fetch_xrc_results_from_zocalo(
             for xr in filtered_results
         ]
     else:
-        LOGGER.warning("No X-ray centre received")
-        raise CrystalNotFoundException()
+        commissioning_mode = yield from read_commissioning_mode()
+        if commissioning_mode:
+            LOGGER.info("Commissioning mode enabled, returning dummy result")
+            flyscan_results = [_generate_dummy_xrc_result(parameters)]
+        else:
+            LOGGER.warning("No X-ray centre received")
+            raise CrystalNotFoundException()
     yield from _fire_xray_centre_result_event(flyscan_results)
+
+
+def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreResult:
+    com = [params.x_steps / 2, params.y_steps / 2, params.z_steps / 2]
+    max_voxel = [round(p) for p in com]
+    return _xrc_result_in_boxes_to_result_in_mm(
+        XrcResult(
+            centre_of_mass=com,
+            max_voxel=max_voxel,
+            bounding_box=[max_voxel, [p + 1 for p in max_voxel]],
+            n_voxels=1,
+            max_count=10000,
+            total_count=100000,
+            sample_id=params.sample_id,
+        ),
+        params,
+    )
 
 
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
@@ -246,10 +271,14 @@ def run_gridscan(
         yield from beamline_specific.read_pre_flyscan_plan()
 
     LOGGER.info("Setting fgs params")
-    yield from beamline_specific.set_flyscan_params_plan()
 
-    LOGGER.info("Waiting for gridscan validity check")
-    yield from wait_for_gridscan_valid(beamline_specific.fgs_motors)
+    try:
+        yield from beamline_specific.set_flyscan_params_plan()
+    except FailedStatus as e:
+        if isinstance(e.__cause__, GridScanInvalidException):
+            raise SampleException(
+                "Scan invalid - gridscan not valid for detected pin position"
+            ) from e
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
@@ -260,30 +289,13 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
-        parameters.scan_indices,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
 
-    # GDA's gridscans requires Z steps to be at 0, so make sure we leave this device
+    # GDA's 3D gridscans requires Z steps to be at 0, so make sure we leave this device
     # in a GDA-happy state.
-    yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
-
-
-def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
-    LOGGER.info("Waiting for valid fgs_params")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
-        LOGGER.debug(
-            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
-        )
-        if not scan_invalid and pos_counter == 0:
-            LOGGER.info("Gridscan scan valid and position counter reset")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise SampleException("Scan invalid - pin too long/short/bent and out of range")
+    if isinstance(beamline_specific.fgs_motors, FastGridScanThreeD):
+        yield from bps.abs_set(beamline_specific.fgs_motors.z_steps, 0, wait=False)
 
 
 def _xrc_result_in_boxes_to_result_in_mm(
