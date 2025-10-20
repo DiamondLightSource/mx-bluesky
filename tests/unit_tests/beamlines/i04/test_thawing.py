@@ -192,8 +192,6 @@ async def test_thaw_and_stream_sets_sample_id_and_kicks_off_forwarder(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav_fs=oav,
-            oav_roi=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -220,8 +218,6 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav_fs=oav,
-            oav_roi=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -256,8 +252,6 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav_fs=oav,
-            oav_roi=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -302,9 +296,7 @@ def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
 ):
     _test_plan_will_switch_murko_source_half_way_through_thaw(
         sim_run_engine,
-        thaw_and_stream_to_redis(
-            10, 360, robot, thawer, smargon, oav, oav, oav_forwarder
-        ),
+        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav_forwarder),
     )
 
 
@@ -326,8 +318,6 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav_fs=oav,
-            oav_roi=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         ),
@@ -391,7 +381,7 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
 ):
     RE(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -417,7 +407,7 @@ def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
     with pytest.raises(ValueError):
         RE(
             thaw_and_murko_centre(
-                10, 360, robot, thawer, smargon, oav, oav, murko_results, oav_forwarder
+                10, 360, robot, thawer, smargon, murko_results, oav_forwarder
             ),
         )
 
@@ -437,7 +427,7 @@ def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
     _test_plan_will_switch_murko_source_half_way_through_thaw(
         sim_run_engine,
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -463,7 +453,7 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_half_way_throu
 
     RE(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -485,7 +475,7 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
 
     msgs = sim_run_engine.simulate_plan(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         )
     )
 

@@ -43,8 +43,6 @@ def thaw_and_stream_to_redis(
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
-    oav_fs: OAV = inject("oav_full_screen"),
-    oav_roi: OAV = inject("oav_roi"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
     """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
@@ -74,8 +72,6 @@ def thaw_and_stream_to_redis(
         robot,
         thawer,
         smargon,
-        oav_fs,
-        oav_roi,
         oav_to_redis_forwarder,
         switch_forwarder_to_ROI,
     )
@@ -87,8 +83,6 @@ def thaw_and_murko_centre(
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
     smargon: Smargon = inject("smargon"),
-    oav_fs: OAV = inject("oav_full_screen"),
-    oav_roi: OAV = inject("oav_roi"),
     murko_results: MurkoResultsDevice = inject("murko_results"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
@@ -144,8 +138,6 @@ def thaw_and_murko_centre(
             robot,
             thawer,
             smargon,
-            oav_fs,
-            oav_roi,
             oav_to_redis_forwarder,
             centre_then_switch_forwarder_to_ROI,
         ),
@@ -200,8 +192,6 @@ def _thaw_and_stream_to_redis(
     robot: BartRobot,
     thawer: Thawer,
     smargon: Smargon,
-    oav_fs: OAV,
-    oav_roi: OAV,
     oav_to_redis_forwarder: OAVToRedisForwarder,
     plan_between_rotations: Callable[[], MsgGenerator],
 ) -> MsgGenerator:
@@ -222,6 +212,9 @@ def _thaw_and_stream_to_redis(
             "zoom_percentage": zoom_percentage,
             "sample_id": sample_id,
         }
+
+    oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
+    oav_roi = oav_to_redis_forwarder.sources[Source.ROI].oav_ref()
 
     zoom_level_before_thawing = yield from bps.rd(oav_fs.zoom_controller.level)
     yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
