@@ -1,2 +1,2 @@
 source .venv/bin/activate
-jupyter-lab --matplotlib=qt5 ./src/mx_bluesky/jupyter_example.ipynb
+jupyter-lab --matplotlib=qt5 --allow-root ./src/mx_bluesky/jupyter_example.ipynb
