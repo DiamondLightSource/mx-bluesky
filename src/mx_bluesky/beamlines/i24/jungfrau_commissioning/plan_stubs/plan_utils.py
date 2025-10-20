@@ -11,6 +11,7 @@ from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
+from ophyd_async.fastcs.jungfrau import GainMode
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -20,6 +21,7 @@ JF_COMPLETE_GROUP = "JF complete"
 def fly_jungfrau(
     jungfrau: CommissioningJungfrau,
     trigger_info: TriggerInfo,
+    gain_mode: GainMode,
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers recieved",
 ) -> MsgGenerator[WatchableAsyncStatus]:
@@ -32,10 +34,13 @@ def fly_jungfrau(
     Args:
     jungfrau: Jungfrau device.
     trigger_info: TriggerInfo which should be acquired using jungfrau util functions.
+    gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
     wait: Optionally block until data collection is complete.
     log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
     """
 
+    LOGGER.info(f"Setting Jungfrau to gain mode {gain_mode}")
+    yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
     LOGGER.info("Preparing detector...")
     yield from bps.prepare(jungfrau, trigger_info, wait=True)
     LOGGER.info("Detector prepared. Starting acquisition")

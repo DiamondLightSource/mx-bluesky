@@ -10,7 +10,7 @@ from numpy.testing import assert_allclose
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     READING_DUMP_FILENAME,
     RotationScanComposite,
 )

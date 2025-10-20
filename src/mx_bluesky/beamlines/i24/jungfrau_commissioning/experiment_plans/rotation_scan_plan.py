@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from copy import deepcopy
 from functools import partial
 
@@ -25,7 +23,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer i
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
     RotationScanComposite,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
     override_file_path,

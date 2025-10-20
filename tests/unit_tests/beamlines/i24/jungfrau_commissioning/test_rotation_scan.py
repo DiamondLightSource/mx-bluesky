@@ -10,8 +10,7 @@ from dodal.devices.i24.beamstop import BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
     JF_DET_STAGE_Y_POSITION_MM,
     HutchClosedException,
@@ -20,6 +19,9 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
     multi_rotation_plan_varying_transmission,
     set_up_beamline_for_rotation,
     single_rotation_plan,
+)
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
+    JF_COMPLETE_GROUP,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
 from mx_bluesky.beamlines.i24.parameters.rotation import (

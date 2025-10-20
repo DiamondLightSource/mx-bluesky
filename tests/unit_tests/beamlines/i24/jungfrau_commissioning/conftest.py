@@ -15,7 +15,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.testing import patch_all_motors
 from ophyd_async.core import init_devices
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 
