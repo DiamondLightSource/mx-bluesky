@@ -150,14 +150,13 @@ class RotationScan(RotationExperiment, SplitScan):
         return rotation_scan
 
     @model_validator(mode="after")
-    @classmethod
-    def correct_start_vds(cls, values: Any) -> Any:
-        assert isinstance(values, RotationScan)
+    def correct_start_vds(self) -> Any:
+        # assert isinstance(values, RotationScan)
         start_img = 0.0
-        for scan in values.rotation_scans:
+        for scan in self.rotation_scans:
             scan.nexus_vds_start_img = int(start_img)
-            start_img += scan.scan_width_deg / values.rotation_increment_deg
-        return values
+            start_img += scan.scan_width_deg / self.rotation_increment_deg
+        return self
 
     @model_validator(mode="after")
     def _check_valid_for_single_arm_multiple_sweep(self) -> Self:
