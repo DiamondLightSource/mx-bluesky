@@ -112,8 +112,8 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
     yield from tidy_up_zebra_after_gridscan(
         xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
     )
+    yield from bps.unstage(xrc_composite.panda, group=group)
     yield from bps.wait(group, timeout=10)
-    yield from bps.unstage(xrc_composite.panda)
 
 
 def _panda_triggering_setup(
@@ -147,13 +147,13 @@ def _panda_triggering_setup(
         )
     else:
         LOGGER.info(
-            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f"Panda grid scan: Smargon speed set to {sample_velocity_mm_per_s} mm/s"
             f" and using a run-up distance of {run_up_distance_mm}"
         )
 
     yield from bps.mv(
-        xrc_composite.panda_fast_grid_scan.time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
-        time_between_x_steps_ms,  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+        xrc_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
     )
 
     directory_provider_root = Path(parameters.storage_directory)
