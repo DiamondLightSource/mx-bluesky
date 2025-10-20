@@ -56,6 +56,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+    generate_start_info_from_ordered_runs,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
@@ -807,7 +808,9 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    mock_zocalo_callback = ZocaloCallback(CONST.PLAN.ROTATION_MAIN, "env")
+    mock_zocalo_callback = ZocaloCallback(
+        CONST.PLAN.ROTATION_MAIN, "env", generate_start_info_from_ordered_runs
+    )
     mock_ispyb_callback = RotationISPyBCallback(emit=mock_zocalo_callback)
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)
@@ -938,9 +941,6 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             shutter_opening_deg=ANY,
             shutter_opening_s=ANY,
             group="setup_zebra",
-            zebra_output_to_disconnect=fake_create_rotation_devices.zebra.output.out_pvs[
-                fake_create_rotation_devices.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
         rotation_outer_start_event = next(
             dropwhile(
@@ -1458,7 +1458,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     )
     eiger = fake_create_rotation_devices.eiger
     parent_mock = MagicMock()
-    parent_mock.eiger = MagicMock(return_value=Status(done=True, success=True))
+    parent_mock.eiger_unstage = MagicMock(return_value=Status(done=True, success=True))
     eiger.unstage = parent_mock.eiger_unstage
     _, ispyb_callback = create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb

@@ -140,9 +140,6 @@ def rotation_scan_plan(
             shutter_opening_deg=motion_values.shutter_opening_deg,
             shutter_opening_s=motion_values.shutter_time_s,
             group="setup_zebra",
-            zebra_output_to_disconnect=composite.zebra.output.out_pvs[
-                composite.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
 
         yield from setup_sample_environment(
@@ -319,7 +316,7 @@ def rotation_scan_internal(
 
             yield from rotation_scan_core(single_scan)
 
-        yield from bps.unstage(eiger)
+        yield from bps.unstage(eiger, wait=True)
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(

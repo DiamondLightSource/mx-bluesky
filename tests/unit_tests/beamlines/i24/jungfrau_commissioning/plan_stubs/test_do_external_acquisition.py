@@ -10,10 +10,12 @@ from dodal.beamlines.i24 import CommissioningJungfrau
 from ophyd_async.fastcs.jungfrau import GainMode
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_external_acquisition import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.do_external_acquisition import (
     do_external_acquisition,
 )
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import JF_COMPLETE_GROUP
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
+    JF_COMPLETE_GROUP,
+)
 
 
 def test_full_do_external_acquisition(
@@ -41,7 +43,7 @@ def test_full_do_external_acquisition(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils.log_on_percentage_complete"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.log_on_percentage_complete"
 )
 def test_do_external_acquisition_does_wait(
     mock_log_on_percent_complete: MagicMock,

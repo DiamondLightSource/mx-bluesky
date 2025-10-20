@@ -2,7 +2,6 @@ from pathlib import PurePath
 from typing import cast
 
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
@@ -12,7 +11,6 @@ from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
-from ophyd_async.fastcs.jungfrau import GainMode
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -22,47 +20,36 @@ JF_COMPLETE_GROUP = "JF complete"
 def fly_jungfrau(
     jungfrau: CommissioningJungfrau,
     trigger_info: TriggerInfo,
-    gain_mode: GainMode,
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers recieved",
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
 
-    Note that this plan doesn't include unstaging of the Jungfrau, and a run must be open
-    before this plan is called.
+    Any plan using this stub MUST stage the Jungfrau with the stage_decorator and open a run,
+    ideally using the run_decorator.
 
     Args:
     jungfrau: Jungfrau device.
-    trigger_info: TriggerInfo which should be acquired using jungfrau util functions create_jungfrau_internal_triggering_info.
-        or create_jungfrau_external_triggering_info.
-    gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
+    trigger_info: TriggerInfo which should be acquired using jungfrau util functions.
     wait: Optionally block until data collection is complete.
     log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
     """
 
-    @bpp.contingency_decorator(
-        except_plan=lambda _: (yield from bps.unstage(jungfrau, wait=True))
-    )
-    def _fly_with_unstage_contingency():
-        LOGGER.info("Setting up Jungfrau...")
-        yield from bps.stage(jungfrau)
-        yield from bps.abs_set(jungfrau.drv.gain_mode, gain_mode, wait=True)
-        yield from bps.prepare(jungfrau, trigger_info, wait=True)
-        LOGGER.info("Jungfrau prepared. Starting acquisition")
-        yield from bps.kickoff(jungfrau, wait=True)
-        LOGGER.info("Waiting for acquisition to complete...")
-        status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
+    LOGGER.info("Preparing detector...")
+    yield from bps.prepare(jungfrau, trigger_info, wait=True)
+    LOGGER.info("Detector prepared. Starting acquisition")
+    yield from bps.kickoff(jungfrau, wait=True)
+    LOGGER.info("Waiting for acquisition to complete...")
+    status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
 
-        # StandardDetector.complete converts regular status to watchable status,
-        # but bluesky plan stubs can't see this currently
-        status = cast(WatchableAsyncStatus, status)
-        log_on_percentage_complete(status, log_on_percentage_prefix, 10)
-        if wait:
-            yield from bps.wait(JF_COMPLETE_GROUP)
-        return status
-
-    return (yield from _fly_with_unstage_contingency())
+    # StandardDetector.complete converts regular status to watchable status,
+    # but bluesky plan stubs can't see this currently
+    status = cast(WatchableAsyncStatus, status)
+    log_on_percentage_complete(status, log_on_percentage_prefix, 10)
+    if wait:
+        yield from bps.wait(JF_COMPLETE_GROUP)
+    return status
 
 
 def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str):

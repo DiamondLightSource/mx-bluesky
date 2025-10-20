@@ -2,7 +2,6 @@ import asyncio
 import pprint
 import sys
 import time
-from collections.abc import Callable
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast
@@ -26,7 +25,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from dodal.devices.zocalo import ZocaloResults
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
@@ -48,6 +47,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -192,7 +192,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanISPyBCallback(
             param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
-                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+                PlanNameConstants.DO_FGS,
+                EnvironmentConstants.ZOCALO_ENV,
+                generate_start_info_from_omega_map,
             ),
         ),
     )
@@ -211,7 +213,7 @@ def use_beamline_t01():
             patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
             patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
         ):
-            yield
+            yield tests.unit_tests.t01
 
 
 @pytest.fixture
@@ -219,34 +221,23 @@ def mock_subscriptions(test_fgs_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0), data_collection_group_id=0
-                )
-            ),
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0),
-                    data_collection_group_id=0,
-                    grid_ids=(0, 0),
-                )
-            ),
-        ),
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+        ) as mock_store_in_ispyb,
     ):
+        mock_store_in_ispyb.return_value.begin_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200), data_collection_group_id=0
+        )
+        mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200),
+            data_collection_group_id=0,
+            grid_ids=(0, 0),
+        )
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
-    return (nexus_callback, ispyb_callback)
+        yield (nexus_callback, ispyb_callback)
 
 
 @pytest.fixture
@@ -274,13 +265,6 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
@@ -342,7 +326,10 @@ def run_generic_ispyb_handler_setup(
 @pytest.fixture
 async def zebra_fast_grid_scan():
     zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
-    set_mock_value(zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
+    set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.z_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.position_counter, 0)
     return zebra_fast_grid_scan
 
