@@ -151,7 +151,6 @@ class RotationScan(RotationExperiment, SplitScan):
 
     @model_validator(mode="after")
     def correct_start_vds(self) -> Any:
-        # assert isinstance(values, RotationScan)
         start_img = 0.0
         for scan in self.rotation_scans:
             scan.nexus_vds_start_img = int(start_img)
