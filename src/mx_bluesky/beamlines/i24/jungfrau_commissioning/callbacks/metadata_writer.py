@@ -24,7 +24,6 @@ class JsonMetadataWriter(CallbackBase):
     """
 
     def __init__(self):
-        self.beam_xy = None
         self.wavelength_in_a = None
         self.energy_in_kev = None
         self.detector_distance_mm = None
@@ -57,15 +56,10 @@ class JsonMetadataWriter(CallbackBase):
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_kev")
-            self.detector_distance_mm = data.get("det_stage-z")
-
-            if self.detector_distance_mm:
-                self.beam_xy = self.parameters.detector_params.get_beam_position_mm(
-                    self.detector_distance_mm
-                )
+            self.detector_distance_mm = data.get("detector_motion-z")
 
             LOGGER.info(
-                f"Metadata writer received parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength_in_a}, det distance: {self.detector_distance_mm}, beam_xy: {self.beam_xy}"
+                f"Metadata writer received parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength_in_a}"
             )
 
     def stop(self, doc: dict):  # type: ignore
@@ -83,7 +77,6 @@ class JsonMetadataWriter(CallbackBase):
                             "wavelength_in_a": self.wavelength_in_a,
                             "energy_kev": self.energy_in_kev,
                             "angular_increment_deg": self.parameters.rotation_increment_deg,
-                            "beam_xy_mm": self.beam_xy,
                             "detector_distance_mm": self.detector_distance_mm,
                         }
                     )

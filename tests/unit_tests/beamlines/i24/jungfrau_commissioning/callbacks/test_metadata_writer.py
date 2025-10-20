@@ -51,14 +51,12 @@ async def test_metadata_writer_produces_correct_output(
     await rotation_composite.dcm.wavelength_in_a.set(wavelength)
     await rotation_composite.dcm.energy_in_kev.set(energy)
     await rotation_composite.det_stage.z.set(det_z)
-    beam_center = params.detector_params.get_beam_position_mm(det_z)
 
     expected_output = {
         "wavelength_in_a": wavelength,
         "energy_kev": energy,
         "detector_distance_mm": det_z,
         "angular_increment_deg": 0.1,
-        "beam_xy_mm": beam_center,
     }
     RE(_do_read())
 
