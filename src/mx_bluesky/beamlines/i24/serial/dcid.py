@@ -95,7 +95,7 @@ class DCID:
 
     Attributes:
         error:
-            If an error has occured. This will be set, even if emit_errors = True
+            If an error has occurred. This will be set, even if emit_errors = True
     """
 
     def __init__(

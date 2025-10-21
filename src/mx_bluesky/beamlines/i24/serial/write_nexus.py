@@ -37,7 +37,7 @@ def call_nexgen(
     Raises:
         ValueError: For a wrong experiment type passed (either unknown or not matched \
             to parameter model).
-        HTTPError: For a problem with reponse from server
+        HTTPError: For a problem with response from server
 
     """
     current_chip_map = None
@@ -109,7 +109,7 @@ def submit_to_server(
     Raises:
         ValueError: For a wrong experiment type passed (either unknown or not matched \
             to parameter model).
-        HTTPError: For a problem with reponse from server
+        HTTPError: For a problem with response from server
 
     """
     access_token = pathlib.Path("/scratch/ssx_nexgen.key").read_text().strip()

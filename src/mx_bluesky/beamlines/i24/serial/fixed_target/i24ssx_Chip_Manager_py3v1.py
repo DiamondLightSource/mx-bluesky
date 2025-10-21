@@ -459,7 +459,7 @@ def load_lite_map() -> MsgGenerator:
     SSX_LOGGER.debug("Run load stock map with 'clear' setting.")
     yield from load_stock_map("clear")
     # fmt: off
-    # Oxford_block_dict is wrong (columns and rows need to flip) added in script below to generate it automatically however kept this for backwards compatiability/reference
+    # Oxford_block_dict is wrong (columns and rows need to flip) added in script below to generate it automatically however kept this for backwards compatibility/reference
     oxford_block_dict = {   # noqa: F841
         'A1': '01', 'A2': '02', 'A3': '03', 'A4': '04', 'A5': '05', 'A6': '06', 'A7': '07', 'A8': '08',
         'B1': '16', 'B2': '15', 'B3': '14', 'B4': '13', 'B5': '12', 'B6': '11', 'B7': '10', 'B8': '09',

@@ -21,7 +21,7 @@ def fly_jungfrau(
     jungfrau: CommissioningJungfrau,
     trigger_info: TriggerInfo,
     wait: bool = False,
-    log_on_percentage_prefix="Jungfrau data collection triggers recieved",
+    log_on_percentage_prefix="Jungfrau data collection triggers received",
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
