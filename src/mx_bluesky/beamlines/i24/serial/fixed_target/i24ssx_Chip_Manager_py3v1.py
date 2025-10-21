@@ -523,7 +523,7 @@ def load_lite_map() -> MsgGenerator:
 def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
     SSX_LOGGER.info(f"Move to: {place}")
     if place == Fiducials.zero:
-        SSX_LOGGER.info("Chip aspecific move.")
+        SSX_LOGGER.info("Chip moving to zero")
         yield from bps.trigger(pmac.to_xyz_zero)
         return
 
@@ -705,7 +705,7 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
 
     Skew:
     Skew is the difference between the Sz1 and Sz2 after rotation is taken out.
-    This should be measured in situ prior to expriment, ie. measure by hand using
+    This should be measured in situ prior to experiment, ie. measure by hand using
     opposite and adjacent RBV after calibration of scale factors.
     """
     chip_type = int(caget(CHIPTYPE_PV))

@@ -23,6 +23,8 @@
             "aperturescatterguard",
             "beamstop",
             "blueapi",
+            "cryostream",
+            "deadtime",
             "dodal",
             "eiger",
             "Expeye",
@@ -37,8 +39,11 @@
             "scanspec",
             "scatterguard",
             "smargon",
+            "topup",
+            "Transfocator",
             "undulator",
-            "xbpm"
+            "xbpm",
+            "xspress"
         ]
     }
 }
