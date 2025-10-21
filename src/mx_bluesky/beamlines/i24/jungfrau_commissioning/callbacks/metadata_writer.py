@@ -28,7 +28,6 @@ class JsonMetadataWriter(CallbackBase):
         self.energy_in_kev = None
         self.detector_distance_mm = None
         self.descriptors: dict[str, dict] = {}
-        self.flux: float | None = None
         self.transmission: float | None = None
         self.parameters: SingleRotationScan | None = None
 
@@ -59,7 +58,7 @@ class JsonMetadataWriter(CallbackBase):
             self.detector_distance_mm = data.get("detector_motion-z")
 
             LOGGER.info(
-                f"Metadata writer received parameters, transmission: {self.transmission}, flux: {self.flux}, wavelength: {self.wavelength_in_a}"
+                f"Metadata writer received parameters, transmission: {self.transmission}, wavelength: {self.wavelength_in_a}"
             )
 
     def stop(self, doc: dict):  # type: ignore

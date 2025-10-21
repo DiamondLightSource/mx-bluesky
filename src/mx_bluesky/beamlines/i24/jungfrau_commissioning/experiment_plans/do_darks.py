@@ -71,6 +71,7 @@ def do_pedestal_darks(
         yield from fly_jungfrau(
             jungfrau,
             trigger_info,
+            GainMode.DYNAMIC,
             wait=True,
             log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers received",
         )
@@ -114,6 +115,7 @@ def do_non_pedestal_darks(
         yield from fly_jungfrau(
             jungfrau,
             trigger_info,
+            gain_mode,
             wait=True,
             log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers received",
         )
