@@ -1,0 +1,780 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Run a collection &#8212; mx-bluesky 1.5.10 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=6ea0bac2"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/serial-crystallography-on-i24/how-to/run-a-collection';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.5.10';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PMAC-run operations on I24 serial" href="pmac-docs.html" />
+    <link rel="prev" title="Set up for serial experiments on I24" href="environment-setup.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.5.10" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">mx-bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user/hyperion/index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user/hyperion/index.html">
+    Hyperion User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/mx-bluesky/releases">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/mx-bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/mx-bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../general/index.html">General MX-Bluesky Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../general/tutorials/profile-tests.html">Unit test performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/contribute.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/create-a-release.html">Create a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/deploy-a-release.html">Deploy a New Release</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/update-tools.html">Update the tools</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/callback_and_run_logic.html">Callbacks and Run Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../general/reference/standards.html">Standards</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../hyperion/index.html">Hyperion Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/readme.html">Hyperion Overview</a></li>
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/baton.html">Hyperion Baton</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/deploying-hyperion.html">Building a deployable Docker image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/system-tests.html">System Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Serial Crystallography on I24</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">I24 Serial Crystallography</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../project-planning/roadmap.html">Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environment-setup.html">Set up for serial experiments on I24</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Run a collection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pmac-docs.html">PMAC-run operations on I24 serial</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Murko Integration</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../murko-integration/index.html">Murko Integration</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../murko-integration/explanations/architecture.html">Murko Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../murko-integration/explanations/DrawioImages.html">Draw.io Images</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Code Map</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../code-map/index.html">Code Map</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../code-map/grid_detect_xrc.html">Grid Detect Then Xray Centre</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">I24 Serial Crystallography</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run a collection</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="run-a-collection">
+<h1>Run a collection<a class="headerlink" href="#run-a-collection" title="Link to this heading">#</a></h1>
+<section id="starting-the-edm-screens">
+<h2>Starting the EDM screens<a class="headerlink" href="#starting-the-edm-screens" title="Link to this heading">#</a></h2>
+<p>A couple of entry points have been set up so that:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">run_fixed_target</span></code> starts the edm screens for a fixed target
+collection</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_extruder</span></code> starts the edm screens for a serial jet collection</p></li>
+</ul>
+<p>Before opening the experiment specific edm, each of these entry points
+will start a <code class="docutils literal notranslate"><span class="pre">BlueAPI</span></code> server. The configuration used by <code class="docutils literal notranslate"><span class="pre">BlueAPI</span></code>
+is saved in <code class="docutils literal notranslate"><span class="pre">src/mx_bluesky/beamlines/i24/serial/blueapi_config.yaml</span></code>.</p>
+</section>
+<section id="detector-choice">
+<h2>Detector choice<a class="headerlink" href="#detector-choice" title="Link to this heading">#</a></h2>
+<p>The detector currently in use is identified by reading the position of
+the detector stage in the y direction. A different detector can be chose
+by opening the <code class="docutils literal notranslate"><span class="pre">Detector</span></code> tab in the main edm screen, selecting the
+detector name from the list and clicking the <code class="docutils literal notranslate"><span class="pre">Move</span> <span class="pre">Stage</span></code> button,
+which will move the detector stage to the correct height and update the
+relative PVs.</p>
+<p>Detectors available for serial: Eiger CdTe 9M.</p>
+</section>
+<section id="extruder-serial-jet">
+<h2>Extruder (Serial Jet)<a class="headerlink" href="#extruder-serial-jet" title="Link to this heading">#</a></h2>
+<p>On startup, once both the visit and the detector have been set up,
+<strong>always</strong> press the <code class="docutils literal notranslate"><span class="pre">initialise</span> <span class="pre">on</span> <span class="pre">start</span></code> button, which will autofill
+the general purpose PVs for an extruder collection with sensible default
+values, as well as the chosen visit directory and detector. Ensure that
+the visit shown on the edm screen is correct.</p>
+<p>I - <strong>Align Jet</strong></p>
+<p>Open the viewer and switch on the backlight to visualise the jet stream.
+You can use the positioners in the <code class="docutils literal notranslate"><span class="pre">Align</span> <span class="pre">Jet</span></code> panel on the edm screen
+to move the orizontal goniometer table and align the jet.</p>
+<p>II - <strong>Set experiment parameters</strong></p>
+<ol class="arabic simple">
+<li><p>Data collection set up</p></li>
+</ol>
+<p>In the edm screen fill the fields in <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Collation</span> <span class="pre">Setup</span></code> with
+information such as sub-directory, filename, number of images, exposure
+time and detector distance. It is recommended to not collect all data
+into a single sub-directory but split into multiple smaller collections.</p>
+<ol class="arabic simple" start="2">
+<li><p>Pump Probe</p></li>
+</ol>
+<p>For a pump-probe experiment, select <code class="docutils literal notranslate"><span class="pre">True</span></code> on the dropdown menu in
+<code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Collection</span> <span class="pre">Setup</span></code> and then set the laser dwell and delay times
+in the <code class="docutils literal notranslate"><span class="pre">Pump</span> <span class="pre">Probe</span></code> panel.</p>
+<p><strong>WARNING</strong> This setting requires a
+hardware change, as there are only 4 outputs on the zebra and they are
+all in use. When using the Eiger the ex-Pilatus trigger cable should be
+used to trigger the light source.</p>
+<p>III - <strong>Run collection</strong></p>
+<p>Once all parameters have been set, press <code class="docutils literal notranslate"><span class="pre">Start</span></code> to run the
+collection. A stream log will show what is going on in the terminal.</p>
+</section>
+<section id="fixed-target-serial-fixed">
+<h2>Fixed-Target (Serial Fixed)<a class="headerlink" href="#fixed-target-serial-fixed" title="Link to this heading">#</a></h2>
+<p>I - <strong>Make coordinate system</strong></p>
+<p>Generally the first thing to do before running a chip collection is to
+set up the coordinate system.</p>
+<p>Before this step remember to reset the scale and skew factors as well as
+the motor directions as needed. Current values are saved in
+<code class="docutils literal notranslate"><span class="pre">src/mx_bluesky/beamlines/i24/serial/parameters/fixed_target</span></code> in the
+<code class="docutils literal notranslate"><span class="pre">cs_maker.json</span></code> and <code class="docutils literal notranslate"><span class="pre">motor_direction.txt</span></code> files.</p>
+<ol class="arabic simple">
+<li><p>From the main edm screen open the <code class="docutils literal notranslate"><span class="pre">viewer</span></code> and <code class="docutils literal notranslate"><span class="pre">moveonclick</span></code>.</p></li>
+<li><p>Find the first fiducial in the top left corner, centre it and press
+<code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">fiducial</span> <span class="pre">0</span></code>.</p></li>
+<li><p>Move to Fiducial 1 and 2 and repeat the process.</p></li>
+<li><p>Once all fiducials have been set, press <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">coordianates</span> <span class="pre">system</span></code>.
+If all worked correctly it will find the first window in the first
+block.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">block</span> <span class="pre">check</span></code> to check that all blocks are correctly aligned.
+WARNING: <code class="docutils literal notranslate"><span class="pre">block</span> <span class="pre">check</span></code> is not available for a custom chip.</p></li>
+</ol>
+<p>II - <strong>Select experiment parameters</strong></p>
+<ol class="arabic simple">
+<li><p>In the edm screen fill the fields in
+<code class="docutils literal notranslate"><span class="pre">Chip</span> <span class="pre">and</span> <span class="pre">Data</span> <span class="pre">Collation</span> <span class="pre">Setup</span></code> with information such as
+sub-directory, filename, exposure time and detector distance.</p></li>
+<li><p>Select chip and map type</p></li>
+</ol>
+<p>Select the <code class="docutils literal notranslate"><span class="pre">Chip</span> <span class="pre">Type</span></code> from the drop-down menu on the edm screen.
+Currently available chips: 0. Oxford 1. Oxford Inner 2. Custom 3.
+Minichip</p>
+<p>When using a non-custom chip <code class="docutils literal notranslate"><span class="pre">Map</span> <span class="pre">Type</span></code> should always be selected, for
+other chips it’s only necessary when wanting to collect only on selected
+blocks.</p>
+<ul class="simple">
+<li><p>For a full-chip collection on an Oxford-type chip, <code class="docutils literal notranslate"><span class="pre">Map</span> <span class="pre">Type</span></code>
+should simply be set to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p>For a Custom Chip, click on the <code class="docutils literal notranslate"><span class="pre">Custom</span> <span class="pre">Chip</span></code> button, which will
+bring up the relative edm. Here, the steps are the following:</p>
+<ol class="arabic simple">
+<li><p>Clear Coordinate System. This will reset the coordinates.</p></li>
+<li><p>Fill in the fields for number of windows and step size in x/y
+direction.</p></li>
+<li><p>Press <code class="docutils literal notranslate"><span class="pre">Set</span> <span class="pre">current</span> <span class="pre">position</span> <span class="pre">as</span> <span class="pre">start</span></code>.</p></li>
+<li><p>Once finished, close and return to main screen.</p></li>
+</ol>
+</li>
+<li><p>For collecting only on specific windows on an Oxford chip:</p>
+<ol class="arabic simple">
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">Mapping</span> <span class="pre">Type</span></code> to <code class="docutils literal notranslate"><span class="pre">Lite</span></code>. This will make the Lite
+launchers button visible.</p></li>
+<li><p>On the launcher, select the blocks to collect - either manually or
+using a preset set.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">Save</span> <span class="pre">Screen</span> <span class="pre">Map</span></code>. This will create a <code class="docutils literal notranslate"><span class="pre">currentchip.map</span></code>
+file which will be copied to the data directory at collection
+time.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">Upload</span> <span class="pre">Parameters</span></code>.</p></li>
+<li><p>Once finished, close and return to main screen.</p></li>
+</ol>
+</li>
+</ul>
+<ol class="arabic simple" start="3">
+<li><p>Select pump probe</p></li>
+</ol>
+<p>After setting the exposure time, open <code class="docutils literal notranslate"><span class="pre">Pump</span> <span class="pre">Probe</span></code> screen from main
+edm. The box will appear by selecting one of the settings from the drop
+down menu.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Short1</span></code> and <code class="docutils literal notranslate"><span class="pre">Short2</span></code>: once opened set the laser dwell and delay
+times.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Repeat#</span></code>: Set laser dwell and press calculate to get the delay
+times for each repeat mode.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Medium1</span></code>: open and close fast shutter between exposures, long
+delays between each one.</p></li>
+</ul>
+<p>Select the most appropriate pump probe setting for your collection and
+set the laser dwell and delay times accordingly.</p>
+<p>For more details on the pump probe settings see <a class="reference external" href="https://confluence.diamond.ac.uk/display/MXTech/Dynamics+and+fixed+targets">Dynamics and fixed
+targets</a></p>
+<p>III - <strong>Run a collection</strong></p>
+<p>Once all parameters have been set, press <code class="docutils literal notranslate"><span class="pre">Start</span></code> to run the
+collection. A stream log will show what is going on in the terminal.</p>
+<p><strong>NOTE</strong> As of version <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>, the <code class="docutils literal notranslate"><span class="pre">Set</span> <span class="pre">parameters</span></code> button has been removed and
+the parameters will now be read from the edm and applied to the collection directly
+once the <code class="docutils literal notranslate"><span class="pre">Start</span></code> button is pressed. For previous versions however, the button must
+still be pressed before starting the collection. A copy of the parameter file and chip
+map (if applicable) will still be saved in the data directory at collection time.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="environment-setup.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Set up for serial experiments on I24</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="pmac-docs.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">PMAC-run operations on I24 serial</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-edm-screens">Starting the EDM screens</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#detector-choice">Detector choice</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extruder-serial-jet">Extruder (Serial Jet)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fixed-target-serial-fixed">Fixed-Target (Serial Fixed)</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/1.5.10/docs/developer/serial-crystallography-on-i24/how-to/run-a-collection.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/developer/serial-crystallography-on-i24/how-to/run-a-collection.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
