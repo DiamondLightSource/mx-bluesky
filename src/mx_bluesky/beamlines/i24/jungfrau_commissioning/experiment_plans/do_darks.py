@@ -71,7 +71,7 @@ def do_pedestal_darks(
                 jungfrau,
                 trigger_info,
                 wait=True,
-                log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers recieved",
+                log_on_percentage_prefix="Jungfrau pedestal dynamic gain mode darks triggers received",
             )
         )
 
