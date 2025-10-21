@@ -6,7 +6,7 @@ from dodal.devices.zebra.zebra import (
     RotationDirection,
     Zebra,
 )
-from dodal.devices.zebra.zebra_constants_mapping import UnmappedZebraException
+from dodal.devices.zebra.zebra_constants_mapping import UnmappedZebraError
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
@@ -111,7 +111,7 @@ def setup_zebra_for_rotation(
             zebra.mapping.sources.DISCONNECT,
             group=group,
         )
-    except UnmappedZebraException:
+    except UnmappedZebraError:
         ...
     yield from bps.abs_set(
         zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
