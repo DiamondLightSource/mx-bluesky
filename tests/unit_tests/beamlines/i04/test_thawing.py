@@ -77,10 +77,10 @@ async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
 
 
 @pytest.fixture
-async def oav_forwarder(RE: RunEngine) -> OAVToRedisForwarder:
+async def oav_forwarder(RE: RunEngine, oav: OAV) -> OAVToRedisForwarder:
     with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
-            "prefix", "host", "password", name="oav_to_redis_forwarder"
+            "prefix", oav, oav, "host", "password", name="oav_to_redis_forwarder"
         )
     set_mock_value(oav_forwarder.uuid, "test")
 
@@ -192,7 +192,6 @@ async def test_thaw_and_stream_sets_sample_id_and_kicks_off_forwarder(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -219,7 +218,6 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -228,8 +226,8 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     docs = patch_murko_instance.call_args_list
     start_params = [c.args[1] for c in docs if c.args[0] == "start"]
     event_params = [c.args[1] for c in docs if c.args[0] == "event"]
-    assert len(start_params) == 1
-    assert len(event_params) == 4
+    assert len(start_params) == 2
+    assert len(event_params) == 6
     oav_updates = [
         e for e in event_params if "oav_to_redis_forwarder-uuid" in e["data"].keys()
     ]
@@ -254,7 +252,6 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         )
@@ -299,7 +296,7 @@ def test_thaw_and_stream_will_switch_murko_source_half_way_through_thaw(
 ):
     _test_plan_will_switch_murko_source_half_way_through_thaw(
         sim_run_engine,
-        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav, oav_forwarder),
+        thaw_and_stream_to_redis(10, 360, robot, thawer, smargon, oav_forwarder),
     )
 
 
@@ -321,7 +318,6 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
             360,
             thawer=thawer,
             smargon=smargon,
-            oav=oav,
             robot=robot,
             oav_to_redis_forwarder=oav_forwarder,
         ),
@@ -353,7 +349,7 @@ def test_given_thaw_succeeds_then_thaw_and_stream_sets_zoom_to_1_and_back(
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
-@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
+@patch("mx_bluesky.beamlines.i04.thawing_plan.bps.monitor")
 def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
     mock__thaw,
     patch_murko_callback,
@@ -385,7 +381,7 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
 ):
     RE(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -394,7 +390,7 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
-@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
+@patch("mx_bluesky.beamlines.i04.thawing_plan.bps.monitor")
 def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
     mock__thaw,
     patch_murko_callback,
@@ -411,7 +407,7 @@ def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
     with pytest.raises(ValueError):
         RE(
             thaw_and_murko_centre(
-                10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+                10, 360, robot, thawer, smargon, murko_results, oav_forwarder
             ),
         )
 
@@ -431,7 +427,7 @@ def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
     _test_plan_will_switch_murko_source_half_way_through_thaw(
         sim_run_engine,
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -457,7 +453,7 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_half_way_throu
 
     RE(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
 
@@ -479,7 +475,7 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
 
     msgs = sim_run_engine.simulate_plan(
         thaw_and_murko_centre(
-            10, 360, robot, thawer, smargon, oav, murko_results, oav_forwarder
+            10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         )
     )
 
