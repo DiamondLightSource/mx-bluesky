@@ -12,5 +12,4 @@ def get_i04_config_client() -> MXConfigClient[I04FeatureSettings]:
     return MXConfigClient(
         feature_sources=I04FeatureSettingsSources,
         feature_dc=I04FeatureSettings,
-        url="https://daq-config.diamond.ac.uk",
     )
