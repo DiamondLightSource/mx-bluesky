@@ -9,7 +9,7 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.preprocessors import run_decorator, set_run_key_decorator
 from bluesky.run_engine import RunEngine
-from dodal.devices.areadetector.plugins.MJPG import MJPG
+from dodal.devices.areadetector.plugins.mjpg import MJPG
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import AsyncStatus
