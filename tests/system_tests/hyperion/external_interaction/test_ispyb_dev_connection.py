@@ -475,8 +475,8 @@ def test_ispyb_deposition_in_gridscan(
         "dy_mm": 0.02,
         "steps_x": 20,
         "steps_y": 6,
-        "snapshotOffsetXPixel": 130,
-        "snapshotOffsetYPixel": 130,
+        "snapshot_offsetXPixel": 130,
+        "snapshot_offsetYPixel": 130,
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
@@ -528,7 +528,7 @@ def test_ispyb_deposition_in_gridscan(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
             "steps_y": 6.0,
-            "snapshotOffsetYPixel": 130.0,
+            "snapshot_offsetYPixel": 130.0,
             "dataCollectionId": ispyb_ids.data_collection_ids[1],
         }
     )
