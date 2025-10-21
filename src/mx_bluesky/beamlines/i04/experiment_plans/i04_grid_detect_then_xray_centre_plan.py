@@ -205,7 +205,9 @@ def i04_grid_detect_then_xray_centre(
 
 
 def _fix_transmission_and_exposure_time_for_current_wavelength(
-    original_trans_frac: float, exposure_time_s: float, current_wavelength_a: float
+    original_trans_frac: float,
+    original_exposure_time_s: float,
+    current_wavelength_a: float,
 ):
     """
     The transmission and exposure time sent when GDA triggers their plan through the
@@ -219,25 +221,26 @@ def _fix_transmission_and_exposure_time_for_current_wavelength(
     )
     wavelength_scale = (assumed_wavelength_a / current_wavelength_a) ** 2
 
-    # Amount of transmission needed to get ideal signal
-    ideal_transmission_frac = original_trans_frac * wavelength_scale
-    if ideal_transmission_frac <= 1:
-        new_trans_frac = ideal_transmission_frac
+    # Transmission frac needed to get ideal signal
+    ideal_trans_frac = original_trans_frac * wavelength_scale
+    if ideal_trans_frac <= 1:
+        new_trans_frac = ideal_trans_frac
+        new_exposure_time_s = original_exposure_time_s
     else:
         # If the scaling would result in transmission fraction > 1,
         # cap it to 1, find remaining scaling needed, and apply it
         # to exposure time instead.
         new_trans_frac = 1
-        scaling_applied_to_trans = new_trans_frac / ideal_transmission_frac
+        scaling_applied_to_trans = new_trans_frac / ideal_trans_frac
         remaining_scaling_needed = wavelength_scale / scaling_applied_to_trans
-        exposure_time_s *= remaining_scaling_needed
+        new_exposure_time_s = original_exposure_time_s * remaining_scaling_needed
 
     LOGGER.info(
-        f"Fixing transmission fraction to {new_trans_frac} and exposure time to {exposure_time_s}s"
+        f"Fixing transmission fraction to {new_trans_frac} and exposure time to {new_exposure_time_s}s"
     )
 
     # Exposure time in FGS IOC is in ms, and must be an integer, so round it here
-    return new_trans_frac, round(exposure_time_s, 3)
+    return new_trans_frac, round(new_exposure_time_s, 3)
 
 
 def get_ready_for_oav_and_close_shutter(
