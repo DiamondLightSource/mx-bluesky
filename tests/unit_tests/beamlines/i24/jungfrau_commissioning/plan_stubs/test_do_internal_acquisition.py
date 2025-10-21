@@ -36,7 +36,7 @@ def test_full_do_internal_acquisition(
 
     jungfrau._controller.arm = AsyncMock()
     RE(test_plan())
-    assert "Jungfrau data collection triggers recieved: 100%" in caplog.messages
+    assert "Jungfrau data collection triggers received: 100%" in caplog.messages
 
 
 @patch(

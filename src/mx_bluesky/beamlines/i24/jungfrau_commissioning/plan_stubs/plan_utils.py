@@ -23,7 +23,7 @@ def fly_jungfrau(
     trigger_info: TriggerInfo,
     gain_mode: GainMode,
     wait: bool = False,
-    log_on_percentage_prefix="Jungfrau data collection triggers recieved",
+    log_on_percentage_prefix="Jungfrau data collection triggers received",
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
