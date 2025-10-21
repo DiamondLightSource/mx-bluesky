@@ -61,6 +61,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
+    DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
@@ -68,7 +69,6 @@ from ....conftest import (
     DocumentCapturer,
     extract_metafile,
     fake_read,
-    mx_acquisition_from_conn,
     raw_params_from_file,
 )
 
@@ -1368,7 +1368,6 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         [callback],
         oav_parameters_for_rotation,
     )
-    mx = mx_acquisition_from_conn(mock_ispyb_conn_multiscan)
     assert (
         len(mock_ispyb_conn_multiscan.calls_for(DCGS_RE))
         + len(mock_ispyb_conn_multiscan.calls_for(DCG_RE))
@@ -1397,14 +1396,13 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         assert create_data["numberOfImages"] == rotation_params.num_images
 
         dc_id = int(mock_ispyb_conn_multiscan.match(update_dcs[0], DC_RE, 2))
-        append_comment_call = next(
-            dropwhile(
-                lambda c: c.args[0] != dc_id,
-                mx.update_data_collection_append_comments.mock_calls,
-            )
-        )
-        comment = append_comment_call.args[1]
-        assert comment.startswith("Sample position")
+        append_comment_call = [
+            rq
+            for rq in mock_ispyb_conn_multiscan.dc_calls_for(DC_COMMENT_RE)
+            if rq.dcid == dc_id
+        ][0]
+        comment = append_comment_call.body["comments"]
+        assert comment.startswith(" Sample position")
         position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
         assert position_string in comment
 

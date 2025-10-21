@@ -14,6 +14,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 
 from ......conftest import (
+    DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
@@ -24,7 +25,6 @@ from ......conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
-    mx_acquisition_from_conn,
 )
 from ...xray_centre.test_ispyb_handler import DCG_ID
 from .test_gridscan_ispyb_store_3d import TEST_PROPOSAL_REF, TEST_VISIT_NUMBER
@@ -405,18 +405,19 @@ def test_end_deposition_happy_path(
         ispyb_ids,
         [scan_data_info_for_update],
     )
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert len(mock_ispyb_conn.calls_for(DC_RE)) == 1
 
     get_current_time.return_value = EXPECTED_END_TIME
     dummy_ispyb.end_deposition(ispyb_ids, "success", "Test succeeded")
-    assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
-        (
-            TEST_DATA_COLLECTION_IDS[0],
-            "DataCollection Successful reason: Test succeeded",
-            " ",
-        ),
-    )
+    dcids_to_append_comment_reqs = {
+        int(DC_COMMENT_RE.match(c.request.url)[2]): c.request
+        for c in mock_ispyb_conn.calls_for(DC_COMMENT_RE)
+    }
+    assert json.loads(
+        dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body
+    ) == {
+        "comments": " DataCollection Successful reason: Test succeeded",
+    }
     assert len(mock_ispyb_conn.calls_for(DC_RE)) == 2
     update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[1].request
     assert (

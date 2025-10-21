@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import gzip
 import json
 import logging
@@ -1658,8 +1659,16 @@ DCGS_RE = re.compile(URL_PREFIX + r"/proposals/([a-z]+\d+)/sessions/(\d+)/data-g
 DCG_RE = re.compile(URL_PREFIX + r"/data-groups/(\d+)$")
 DCS_RE = re.compile(URL_PREFIX + r"/data-groups/(\d+)/data-collections$")
 DC_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)$")
+DC_COMMENT_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)\?appendComment=true$")
 POSITION_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)/position$")
 GRID_RE = re.compile(URL_PREFIX + r"/data-collections/(\d+)/grids$")
+
+
+@dataclasses.dataclass
+class ExpeyeDCRequestInfo:
+    dcid: int
+    url: str
+    body: dict
 
 
 def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
@@ -1716,8 +1725,8 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             ),
         )
 
-    def update_dc_response(request):
-        requested_dc_id = int(DC_RE.match(request.path_url)[2])  # type: ignore
+    def update_dc_response(pattern, request):
+        requested_dc_id = int(pattern.match(request.path_url)[2])  # type: ignore
         assert requested_dc_id in dcids
         return (
             200,
@@ -1743,6 +1752,16 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
         else:
             return [c for c in mock_req.calls if pattern.match(c.request.url)]
 
+    def dc_calls_for(mock_req: responses.RequestsMock, pattern: str | re.Pattern):
+        return [
+            ExpeyeDCRequestInfo(
+                dcid=int(pattern.match(c.request.url)[2]),
+                url=c.request.url,
+                body=json.loads(c.request.body),
+            )
+            for c in calls_for(mock_req, pattern)
+        ]
+
     def match(mock_req: PreparedRequest, pattern: re.Pattern, idx: int) -> str:
         matcher = pattern.match(mock_req.url)
         assert matcher
@@ -1763,7 +1782,8 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             )
 
         for pattern, callback in {
-            DC_RE: update_dc_response,
+            DC_RE: partial(update_dc_response, DC_RE),
+            DC_COMMENT_RE: partial(update_dc_response, DC_COMMENT_RE),
             DCG_RE: partial(create_or_update_dcg_response, 200),
         }.items():
             rq_mock.add_callback(
@@ -1774,6 +1794,7 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             )
 
         base_ispyb_conn.calls_for = partial(calls_for, rq_mock)
+        base_ispyb_conn.dc_calls_for = partial(dc_calls_for, rq_mock)
         base_ispyb_conn.match = match
         yield base_ispyb_conn
 

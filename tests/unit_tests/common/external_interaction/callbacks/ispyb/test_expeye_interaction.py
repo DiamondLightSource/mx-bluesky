@@ -161,7 +161,7 @@ def test_update_sample_status(
     expected_json = {"blSampleStatus": "LOADED"}
     expeye.update_sample_status(12345, BLSampleStatus.LOADED)
     mock_patch.assert_called_with(
-        "http://blah/samples/12345", auth=ANY, json=expected_json
+        "http://blah/samples/12345", auth=ANY, json=expected_json, params=None
     )
 
 

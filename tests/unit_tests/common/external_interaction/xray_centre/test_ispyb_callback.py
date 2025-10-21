@@ -19,6 +19,7 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
+    DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
@@ -29,7 +30,6 @@ from .....conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
-    mx_acquisition_from_conn,
     replace_all_tmp_paths,
 )
 from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
@@ -119,17 +119,15 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             TestEventData.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_stop(
             TestEventData.test_grid_detect_and_gridscan_stop_document_with_crystal_exception
         )
-        assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
-            (
-                TEST_DATA_COLLECTION_IDS[0],
-                "DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
-                " ",
-            ),
-        )
+        dcids_to_comment_requests = {
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+        }
+        assert dcids_to_comment_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "comments": " DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
+        }
         assert (
             mock_update_data_collection_group_table.call_args_list[0][0][0].comments
             == "Diffraction not found, skipping sample."
@@ -214,21 +212,31 @@ class TestXrayCentreISPyBCallback:
         assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 0
 
     @pytest.mark.parametrize(
-        "snapshot_events",
+        "snapshot_events, first_comment",
         [
             [
-                "test_event_document_oav_snapshot_xy",
-                "test_event_document_oav_snapshot_xz",
+                [
+                    "test_event_document_oav_snapshot_xy",
+                    "test_event_document_oav_snapshot_xz",
+                ],
+                "Diffraction grid scan of 40 by 20 by _.",
             ],
             [
-                "test_event_document_oav_snapshot_xz",
-                "test_event_document_oav_snapshot_xy",
+                [
+                    "test_event_document_oav_snapshot_xz",
+                    "test_event_document_oav_snapshot_xy",
+                ],
+                "Diffraction grid scan of 40 by _ by 10.",
             ],
         ],
         ids=["xy-then-xz", "xz-then-xy"],
     )
     def test_activity_gated_event_oav_snapshot_triggered(
-        self, mock_ispyb_conn, TestEventData, snapshot_events: list[str]
+        self,
+        mock_ispyb_conn,
+        TestEventData,
+        snapshot_events: list[str],
+        first_comment: str,
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -236,9 +244,6 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             TestEventData.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
             TestEventData.test_descriptor_document_oav_snapshot
@@ -248,13 +253,10 @@ class TestXrayCentreISPyBCallback:
         ]:
             callback.activity_gated_event(event)
 
-        update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)]
         ids_to_dc_upsert_requests = {
-            int(DC_RE.match(rq.url)[2]): rq for rq in update_dc_requests
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_RE)
         }
-        assert json.loads(
-            ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body
-        ) == {
+        assert ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
             "numberOfImages": 40 * 20,
             "xtalSnapshotFullPath1": "test_1_y",
             "xtalSnapshotFullPath2": "test_2_y",
@@ -266,16 +268,15 @@ class TestXrayCentreISPyBCallback:
             "dataCollectionNumber": 1,
             "fileTemplate": "file_name_1_master.h5",
         }
-        mx_acq.update_data_collection_append_comments.assert_any_call(
-            TEST_DATA_COLLECTION_IDS[0],
-            "Diffraction grid scan of 40 by 20 "
+        dcids_to_append_comment_reqs = {
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+        }
+        assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "comments": " Diffraction grid scan of 40 by 20 "
             "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            " ",
-        )
-        assert json.loads(
-            ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body
-        ) == {
+        }
+        assert ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body == {
             "numberOfImages": 40 * 10,
             "xtalSnapshotFullPath1": "test_1_z",
             "xtalSnapshotFullPath2": "test_2_z",
@@ -287,13 +288,11 @@ class TestXrayCentreISPyBCallback:
             "dataCollectionNumber": 2,
             "fileTemplate": "file_name_2_master.h5",
         }
-        mx_acq.update_data_collection_append_comments.assert_any_call(
-            TEST_DATA_COLLECTION_IDS[1],
-            "Diffraction grid scan of 40 by 10 "
+        assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[1]].body == {
+            "comments": " Diffraction grid scan of 40 by 10 "
             "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
             "bottom right (px): [3250,800].",
-            " ",
-        )
+        }
         update_grid_requests = [c.request for c in mock_ispyb_conn.calls_for(GRID_RE)]
         ids_to_grid_upsert_requests = {
             int(GRID_RE.match(rq.url)[2]): rq for rq in update_grid_requests
@@ -332,10 +331,7 @@ class TestXrayCentreISPyBCallback:
             int(mock_ispyb_conn.match(update_dcg_requests[0], DCG_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID
         )
-        assert (
-            json.loads(update_dcg_requests[0].body)["comments"]
-            == "Diffraction grid scan of 40 by 20 "
-        )
+        assert json.loads(update_dcg_requests[0].body)["comments"] == first_comment
         assert (
             int(mock_ispyb_conn.match(update_dcg_requests[1], DCG_RE, 2))
             == TEST_DATA_COLLECTION_GROUP_ID

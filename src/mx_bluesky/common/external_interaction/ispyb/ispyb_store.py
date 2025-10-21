@@ -3,9 +3,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-import ispyb
-import ispyb.sqlalchemy
-from ispyb.sp.mxacquisition import MXAcquisition
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
@@ -20,6 +17,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import ExpeyeInt
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
 )
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 if TYPE_CHECKING:
@@ -129,18 +127,16 @@ class StoreInIspyb:
                 current_time, run_status, reason, id_
             )
 
-    # TODO need to find replacement for appending to comment
     def append_to_comment(
         self, data_collection_id: int, comment: str, delimiter: str = " "
     ) -> None:
         try:
-            with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-                assert conn is not None, "Failed to connect to ISPyB!"
-                mx_acquisition: MXAcquisition = conn.mx_acquisition
-                mx_acquisition.update_data_collection_append_comments(
-                    data_collection_id, comment, delimiter
-                )
-        except ispyb.ReadWriteError as e:
+            self._expeye.update_data_collection(
+                data_collection_id,
+                DataCollectionInfo(comments=delimiter + comment),
+                True,
+            )
+        except ISPyBDepositionNotMade as e:
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Unable to log comment, comment probably exceeded column length: {comment}",
                 exc_info=e,

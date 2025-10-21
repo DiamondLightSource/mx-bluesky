@@ -39,8 +39,8 @@ def _get_base_url_and_token() -> tuple[str, str]:
     return expeye_config["url"], expeye_config["token"]
 
 
-def _send_and_get_response(auth, url, data, send_func) -> dict:
-    response = send_func(url, auth=auth, json=data)
+def _send_and_get_response(auth, url, data, send_func, query_params=None) -> dict:
+    response = send_func(url, auth=auth, json=data, params=query_params)
     if not response.ok:
         try:
             resp_txt = str(response.json())
@@ -215,12 +215,18 @@ class ExpeyeInteraction:
         )
         return response["dataCollectionId"]
 
-    def update_data_collection(self, data_collection_id: int, data: DataCollectionInfo):
+    def update_data_collection(
+        self,
+        data_collection_id: int,
+        data: DataCollectionInfo,
+        append_comment: bool = False,
+    ):
         _send_and_get_response(
             self._auth,
             self._base_url + f"/data-collections/{data_collection_id}",
             _data_collection_info_to_json(data),
             patch,
+            {"appendComment": "true"} if append_comment else None,
         )
 
     def create_position(
