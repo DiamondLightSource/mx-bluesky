@@ -36,7 +36,7 @@ def test_full_do_external_acquisition(
     jungfrau._controller.arm = AsyncMock()
     RE(test_plan())
     for i in range(20, 120, 20):
-        assert f"Jungfrau data collection triggers recieved: {i}%" in caplog.messages
+        assert f"Jungfrau data collection triggers received: {i}%" in caplog.messages
 
 
 @patch(

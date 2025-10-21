@@ -17,8 +17,8 @@ from ophyd_async.fastcs.jungfrau import (
 )
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
+    do_non_pedestal_darks,
     do_pedestal_darks,
-    do_standard_darks,
 )
 
 
@@ -166,12 +166,12 @@ def test_do_darks_stops_if_exception_after_stage(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.fly_jungfrau",
     new=MagicMock(side_effect=FakeException),
 )
-def test_do_standard_darks_unstages_jf_on_exception(
+def test_do_non_pedestal_darks_unstages_jf_on_exception(
     RE: RunEngine, jungfrau: CommissioningJungfrau
 ):
     jungfrau.unstage = MagicMock()
     with pytest.raises(FakeException):
-        RE(do_standard_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
+        RE(do_non_pedestal_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
 
     assert jungfrau.unstage.call_count == 1
     assert [c == call(jungfrau, wait=True) for c in jungfrau.unstage.call_args_list]
@@ -185,7 +185,7 @@ def test_do_standard_darks_unstages_jf_on_exception(
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.fly_jungfrau"
 )
-def test_do_standard_darks_triggers_correct_plans(
+def test_do_non_pedestal_darks_triggers_correct_plans(
     mock_fly_jf: MagicMock,
     mock_move: MagicMock,
     RE: RunEngine,
@@ -200,7 +200,7 @@ def test_do_standard_darks_triggers_correct_plans(
     parent_mock.attach_mock(jungfrau.unstage, "jungfrau_unstage")
     parent_mock.attach_mock(jungfrau.stage, "jungfrau_stage")
     expected_trigger_info = create_jungfrau_internal_triggering_info(1000, 0.001)
-    RE(do_standard_darks(gain_mode=gain_mode, jungfrau=jungfrau))
+    RE(do_non_pedestal_darks(gain_mode=gain_mode, jungfrau=jungfrau))
 
     assert parent_mock.method_calls == [
         call.jungfrau_stage(),
@@ -209,7 +209,7 @@ def test_do_standard_darks_triggers_correct_plans(
             jungfrau,
             expected_trigger_info,
             wait=True,
-            log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers recieved",
+            log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers received",
         ),
         call.jungfrau_unstage(),
     ]
