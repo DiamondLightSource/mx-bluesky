@@ -25,7 +25,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks i
 class CheckMonitor(CallbackBase):
     """Store the order and values of updates to specified signals
 
-    Usage: Instantiate this callback with list of signals to track, and subscribe the RE to this
+    Usage: Instantiate this callback with list of signals to track, and subscribe the run_engine to this
     callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifing the same signals
     in the monitor.
     """
@@ -61,7 +61,9 @@ def fake_complete(_, group=None):
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
 )
 async def test_full_do_pedestal_darks(
-    mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
+    mock_override_path: MagicMock,
+    jungfrau: CommissioningJungfrau,
+    run_engine: RunEngine,
 ):
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
@@ -89,8 +91,8 @@ async def test_full_do_pedestal_darks(
             "detector-drv-gain_mode",
         ]
     )
-    RE.subscribe(monitor_tracker)
-    RE(test_plan())
+    run_engine.subscribe(monitor_tracker)
+    run_engine(test_plan())
 
     assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
         AcquisitionType.STANDARD,
@@ -112,7 +114,7 @@ async def test_full_do_pedestal_darks(
     mock_override_path.assert_called_once_with(jungfrau, test_path)
 
 
-class FakeException(Exception): ...
+class FakeError(Exception): ...
 
 
 @patch(
@@ -121,13 +123,13 @@ class FakeException(Exception): ...
 )
 async def test_pedestals_unstage_and_wait_on_exception(
     jungfrau: CommissioningJungfrau,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
-    jungfrau.prepare = MagicMock(side_effect=FakeException)
+    jungfrau.prepare = MagicMock(side_effect=FakeError)
     jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
 
-    with pytest.raises(FakeException):
-        RE(do_pedestal_darks(0.001, 2, 2, jungfrau))
+    with pytest.raises(FakeError):
+        run_engine(do_pedestal_darks(0.001, 2, 2, jungfrau))
 
     assert jungfrau.unstage.call_count == 1
     assert [c == call(jungfrau, wait=True) for c in jungfrau.unstage.call_args_list]
@@ -151,13 +153,13 @@ async def test_do_pedestals_waits_on_stage_before_prepare(
 
 
 def test_do_darks_stops_if_exception_after_stage(
-    RE: RunEngine, jungfrau: CommissioningJungfrau
+    run_engine: RunEngine, jungfrau: CommissioningJungfrau
 ):
     mock_stop = AsyncMock()
     jungfrau.drv.acquisition_stop.trigger = mock_stop
 
     with pytest.raises(FailedStatus):
-        RE(do_pedestal_darks(0, 2, 2, jungfrau))
+        run_engine(do_pedestal_darks(0, 2, 2, jungfrau))
     assert mock_stop.await_count == 2  # once when staging, once on exception
     assert [c == call(jungfrau, wait=True) for c in mock_stop.call_args_list]
 

@@ -6,7 +6,7 @@ import bluesky.preprocessors as bpp
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.common.utils.exceptions import SampleException
+from mx_bluesky.common.utils.exceptions import SampleError
 
 
 class SampleStatusExceptionType(StrEnum):
@@ -27,7 +27,7 @@ def deposit_sample_error(exception_type: SampleStatusExceptionType, sample_id: i
         if exception_type == SampleStatusExceptionType.BEAMLINE:
             raise AssertionError()
         elif exception_type == SampleStatusExceptionType.SAMPLE:
-            raise SampleException
+            raise SampleError
 
     yield from _inner()
 

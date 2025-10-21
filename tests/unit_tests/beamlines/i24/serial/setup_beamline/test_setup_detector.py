@@ -16,9 +16,9 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
 )
 
 
-def test_get_detector_type(RE, detector_stage: YZStage):
+def test_get_detector_type(run_engine, detector_stage: YZStage):
     set_mock_value(detector_stage.y.user_readback, -59)
-    det_type = RE(get_detector_type(detector_stage)).plan_result
+    det_type = run_engine(get_detector_type(detector_stage)).plan_result
     assert det_type.name == "eiger"
 
 
@@ -50,10 +50,10 @@ async def test_setup_detector_stage(
     serial_type,
     detector_target,
     detector_stage: YZStage,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     fake_caget.return_value = requested_detector_value
-    RE(setup_detector_stage(serial_type, detector_stage))
+    run_engine(setup_detector_stage(serial_type, detector_stage))
     fake_caput.assert_called_once_with(
         EXPT_TYPE_DETECTOR_PVS[serial_type],
         _get_requested_detector(requested_detector_value),

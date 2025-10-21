@@ -23,8 +23,8 @@ from mx_bluesky.common.parameters.components import (
     TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
-    WarningException,
+    CrystalNotFoundError,
+    WarningError,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -449,7 +449,7 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
         composite.pin_tip_detection.triggered_tip, PinTipDetection.INVALID_POSITION
     )
 
-    with pytest.raises(WarningException, match="Pin tip centring failed"):
+    with pytest.raises(WarningError, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
             load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
@@ -475,7 +475,7 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     sim_run_engine: RunEngineSimulator,
     grid_detection_callback_with_detected_grid,
 ):
-    with pytest.raises(CrystalNotFoundException):
+    with pytest.raises(CrystalNotFoundError):
         sim_run_engine.simulate_plan(
             load_centre_collect_full(
                 composite, load_centre_collect_params, oav_parameters_for_rotation
@@ -1047,11 +1047,11 @@ def test_box_size_passed_through_to_gridscan(
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     load_centre_collect_params.robot_load_then_centre.box_size_um = 25
 
-    RE(
+    run_engine(
         load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )

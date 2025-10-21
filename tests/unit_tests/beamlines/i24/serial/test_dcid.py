@@ -20,13 +20,16 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
 
 def test_read_beam_info_from_hardware(
-    dcm: DCM, mirrors: FocusMirrorsMode, eiger_beam_center: DetectorBeamCenter, RE
+    dcm: DCM,
+    mirrors: FocusMirrorsMode,
+    eiger_beam_center: DetectorBeamCenter,
+    run_engine,
 ):
     set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     expected_beam_x = 1605 * 0.075
     expected_beam_y = 1702 * 0.075
 
-    res = RE(
+    res = run_engine(
         read_beam_info_from_hardware(
             dcm, mirrors, eiger_beam_center, DetectorName.EIGER
         )
@@ -50,7 +53,7 @@ def test_get_resolution():
 @patch("mx_bluesky.beamlines.i24.serial.dcid.SSX_LOGGER")
 @patch("mx_bluesky.beamlines.i24.serial.dcid.json")
 def test_generate_dcid_for_eiger(
-    fake_json, fake_log, patch_resolution, dummy_params_ex, RE
+    fake_json, fake_log, patch_resolution, dummy_params_ex, run_engine
 ):
     test_dcid = DCID(
         server="fake_server",

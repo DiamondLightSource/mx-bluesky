@@ -12,12 +12,12 @@ from mx_bluesky.beamlines.aithre_lasershaping import (
 
 
 @pytest.fixture
-def goniometer(RE: RunEngine) -> Goniometer:
+def goniometer(run_engine: RunEngine) -> Goniometer:
     return aithre.goniometer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def robot(RE: RunEngine) -> LaserRobot:
+def robot(run_engine: RunEngine) -> LaserRobot:
     return aithre.robot(connect_immediately=True, mock=True)
 
 

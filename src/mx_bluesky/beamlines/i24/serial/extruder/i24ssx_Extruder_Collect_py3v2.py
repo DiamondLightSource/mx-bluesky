@@ -46,7 +46,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import (
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
-    UnknownDetectorType,
+    UnknownDetectorTypeError,
     get_detector_type,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -113,17 +113,17 @@ def laser_check(
     """
     SSX_LOGGER.debug(f"Laser check: {mode}")
 
-    LASER_TTL = zebra.mapping.outputs.TTL_PILATUS  # Update with dodal changes
+    laser_ttl = zebra.mapping.outputs.TTL_PILATUS  # Update with dodal changes
 
     if mode == "laseron":
         yield from bps.abs_set(
-            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.SOFT_IN3
+            zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.SOFT_IN3
         )
         yield from set_shutter_mode(zebra, "auto")
 
     if mode == "laseroff":
         yield from bps.abs_set(
-            zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.DISCONNECT
+            zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.DISCONNECT
         )
         yield from set_shutter_mode(zebra, "manual")
 
@@ -230,7 +230,7 @@ def main_extruder_plan(
 
         SSX_LOGGER.debug(f"Creating the directory for the collection in {filepath}.")
 
-        caput(pv.eiger_seqID, int(caget(pv.eiger_seqID)) + 1)
+        caput(pv.eiger_seq_id, int(caget(pv.eiger_seq_id)) + 1)
         SSX_LOGGER.info(f"Eiger quickshot setup: filepath {filepath}")
         SSX_LOGGER.info(f"Eiger quickshot setup: filepath {parameters.filename}")
         SSX_LOGGER.info(
@@ -282,7 +282,7 @@ def main_extruder_plan(
     else:
         err = f"Unknown Detector Type, det_type = {parameters.detector_name}"
         SSX_LOGGER.error(err)
-        raise UnknownDetectorType(err)
+        raise UnknownDetectorTypeError(err)
 
     beam_settings = yield from read_beam_info_from_hardware(
         dcm, mirrors, beam_center_device, parameters.detector_name
@@ -291,7 +291,7 @@ def main_extruder_plan(
     # Do DCID creation BEFORE arming the detector
     filetemplate = f"{parameters.filename}.nxs"
     if parameters.detector_name == "eiger":
-        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)
+        complete_filename = cagetstring(pv.eiger_od_filename_rbv)
         filetemplate = f"{complete_filename}.nxs"
     dcid.generate_dcid(
         beam_settings=beam_settings,
@@ -387,7 +387,7 @@ def tidy_up_at_collection_end_plan(
     # Clean Up
     if parameters.detector_name == "eiger":
         yield from sup.eiger("return-to-normal", None, dcm)
-        SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seqID)}")
+        SSX_LOGGER.debug(f"{parameters.filename}_{caget(pv.eiger_seq_id)}")
     SSX_LOGGER.debug("End of Run")
     SSX_LOGGER.info("Close hutch shutter")
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
@@ -402,7 +402,7 @@ def collection_complete_plan(
     if detector_name == "eiger":
         SSX_LOGGER.info("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
-        caput(pv.eiger_ODcapture, "Done")
+        caput(pv.eiger_od_capture, "Done")
 
     yield from bps.sleep(0.5)
 

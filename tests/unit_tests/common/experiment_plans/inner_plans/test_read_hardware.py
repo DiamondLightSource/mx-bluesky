@@ -61,7 +61,7 @@ class FakeComposite:
 
 @pytest.fixture
 async def fake_composite(
-    RE: RunEngine,
+    run_engine: RunEngine,
     attenuator,
     aperture_scatterguard,
     dcm,
@@ -84,12 +84,14 @@ async def fake_composite(
     return fake_composite
 
 
-def test_read_hardware_for_zocalo_in_RE(fake_composite: FakeComposite, RE: RunEngine):
+def test_read_hardware_for_zocalo_in_run_engine(
+    fake_composite: FakeComposite, run_engine: RunEngine
+):
     def open_run_and_read_hardware():
         yield from bps.open_run()
         yield from read_hardware_for_zocalo(fake_composite.eiger)
 
-    RE(open_run_and_read_hardware())
+    run_engine(open_run_and_read_hardware())
 
 
 def test_read_hardware_correct_messages(

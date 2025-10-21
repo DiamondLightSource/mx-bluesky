@@ -22,7 +22,7 @@ from mx_bluesky.common.utils.log import (
 from mx_bluesky.hyperion.baton_handler import run_forever
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
-    PlanNotFound,
+    PlanNotFoundError,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
@@ -48,16 +48,16 @@ from mx_bluesky.hyperion.utils.context import setup_context
 def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):
     experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
     if experiment_registry_entry is None:
-        raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
+        raise PlanNotFoundError(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
     plan = context.plan_functions.get(plan_name)
     if experiment_internal_param_type is None:
-        raise PlanNotFound(
+        raise PlanNotFoundError(
             f"Corresponding internal param type for '{plan_name}' not found in registry."
         )
     if plan is None:
-        raise PlanNotFound(
+        raise PlanNotFoundError(
             f"Experiment plan '{plan_name}' not found in context. Context has {context.plan_functions.keys()}"
         )
     try:
@@ -115,7 +115,7 @@ class StopOrStatus(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
             LOGGER.debug(
-                f"Runner received status request - state of the runner object is: {self.runner.__dict__} - state of the RE is: {self.runner.RE.__dict__}"
+                f"Runner received status request - state of the runner object is: {self.runner.__dict__} - state of the run_engine is: {self.runner.run_engine.__dict__}"
             )
             status_and_message = self.runner.current_status
         return asdict(status_and_message)

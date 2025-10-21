@@ -23,7 +23,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -222,7 +222,7 @@ def _get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any
         first_collection: dict = parameters["collection"][0]
         wavelength = first_collection.get("wavelength")
         assert isinstance(wavelength, float)
-        demand_energy_ev = convert_angstrom_to_eV(wavelength)
+        demand_energy_ev = convert_angstrom_to_ev(wavelength)
         return {"demand_energy_ev": demand_energy_ev}
     except (KeyError, IndexError, AttributeError, TypeError):
         return {"demand_energy_ev": None}

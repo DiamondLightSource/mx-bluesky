@@ -55,7 +55,7 @@ def call_nexgen(
             total_numb_imgs = parameters.num_images
             pump_status = parameters.pump_status
 
-    filename_prefix = cagetstring(Eiger.pv.filenameRBV)
+    filename_prefix = cagetstring(Eiger.PV.filename_rbv)
     meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()
     max_wait = 60  # seconds
@@ -71,7 +71,7 @@ def call_nexgen(
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return
 
-    bit_depth = int(caget(Eiger.pv.bit_depth))
+    bit_depth = int(caget(Eiger.PV.bit_depth))
     SSX_LOGGER.debug(
         f"Call to nexgen server with the following chip definition: \n{chip_prog_dict}"
     )

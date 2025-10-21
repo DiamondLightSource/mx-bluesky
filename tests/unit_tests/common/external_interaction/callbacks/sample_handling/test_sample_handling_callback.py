@@ -11,8 +11,8 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 )
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
-    SampleException,
+    CrystalNotFoundError,
+    SampleError,
 )
 
 TEST_SAMPLE_ID = 123456
@@ -47,7 +47,7 @@ def plan_with_general_exception(exception_type: type, msg: str):
 def plan_for_sample_id(sample_id):
     def plan_with_exception():
         yield from []
-        raise SampleException(f"Test exception for sample_id {sample_id}")
+        raise SampleError(f"Test exception for sample_id {sample_id}")
 
     yield from bpp.run_wrapper(
         plan_with_exception(),
@@ -66,7 +66,7 @@ def plan_with_exception_from_inner_plan():
     )
     def inner_plan():
         yield from []
-        raise SampleException("Exception from inner plan")
+        raise SampleError("Exception from inner plan")
 
     @run_decorator(
         md={
@@ -102,7 +102,7 @@ def plan_with_rethrown_exception():
         try:
             yield from inner_plan()
         except AssertionError as e:
-            raise SampleException("Exception from outer plan") from e
+            raise SampleError("Exception from outer plan") from e
 
     yield from outer_plan()
 
@@ -121,85 +121,85 @@ def plan_with_normal_completion():
     "exception_type, expected_sample_status, message",
     [
         [AssertionError, BLSampleStatus.ERROR_BEAMLINE, "Test failure"],
-        [SampleException, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
-        [CrystalNotFoundException, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
+        [SampleError, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
+        [CrystalNotFoundError, BLSampleStatus.ERROR_SAMPLE, "Test failure"],
         [AssertionError, BLSampleStatus.ERROR_BEAMLINE, None],
     ],
 )
 def test_sample_handling_callback_intercepts_general_exception(
-    RE: RunEngine,
+    run_engine: RunEngine,
     exception_type: type,
     expected_sample_status: BLSampleStatus,
     message: str,
     mock_expeye_cls: MagicMock,
 ):
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
     with pytest.raises(exception_type):
-        RE(plan_with_general_exception(exception_type, message))
+        run_engine(plan_with_general_exception(exception_type, message))
     mock_expeye_cls.return_value.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, expected_sample_status
     )
 
 
 def test_sample_handling_callback_closes_run_normally(
-    RE: RunEngine, mock_expeye_cls: MagicMock
+    run_engine: RunEngine, mock_expeye_cls: MagicMock
 ):
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
     with (
         patch.object(callback, "_record_exception") as record_exception,
     ):
-        RE(plan_with_normal_completion())
+        run_engine(plan_with_normal_completion())
 
     record_exception.assert_not_called()
 
 
 def test_sample_handling_callback_resets_sample_id(
-    mock_expeye_cls: MagicMock, RE: RunEngine
+    mock_expeye_cls: MagicMock, run_engine: RunEngine
 ):
     mock_expeye = mock_expeye_cls.return_value
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
-    with pytest.raises(SampleException):
-        RE(plan_for_sample_id(TEST_SAMPLE_ID))
+    with pytest.raises(SampleError):
+        run_engine(plan_for_sample_id(TEST_SAMPLE_ID))
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
     mock_expeye.reset_mock()
 
-    with pytest.raises(SampleException):
-        RE(plan_for_sample_id(TEST_SAMPLE_ID + 1))
+    with pytest.raises(SampleError):
+        run_engine(plan_for_sample_id(TEST_SAMPLE_ID + 1))
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID + 1, BLSampleStatus.ERROR_SAMPLE
     )
 
 
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_thrown_in_inner_plan(
-    mock_expeye_cls: MagicMock, RE: RunEngine
+    mock_expeye_cls: MagicMock, run_engine: RunEngine
 ):
     mock_expeye = mock_expeye_cls.return_value
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
-    with pytest.raises(SampleException):
-        RE(plan_with_exception_from_inner_plan())
+    with pytest.raises(SampleError):
+        run_engine(plan_with_exception_from_inner_plan())
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
 
 
 def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exception_rethrown_from_outermost_plan(
-    mock_expeye_cls: MagicMock, RE: RunEngine
+    mock_expeye_cls: MagicMock, run_engine: RunEngine
 ):
     mock_expeye = mock_expeye_cls.return_value
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
-    with pytest.raises(SampleException):
-        RE(plan_with_rethrown_exception())
+    with pytest.raises(SampleError):
+        run_engine(plan_with_rethrown_exception())
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, BLSampleStatus.ERROR_SAMPLE
     )
@@ -210,8 +210,8 @@ def test_sample_handling_callback_triggered_only_by_outermost_plan_when_exceptio
     "exception_type, expect_alert, message",
     [
         [AssertionError, True, "Test failure"],
-        [SampleException, False, "Test failure"],
-        [CrystalNotFoundException, False, "Test failure"],
+        [SampleError, False, "Test failure"],
+        [CrystalNotFoundError, False, "Test failure"],
         [AssertionError, True, None],
     ],
 )
@@ -221,13 +221,13 @@ def test_sample_handling_callback_raises_an_alert_when_beamline_error_occurs(
     message: str,
     mock_expeye_cls: MagicMock,
     mock_alert_service: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     callback = SampleHandlingCallback()
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
     with pytest.raises(exception_type):
-        RE(plan_with_general_exception(exception_type, message))
+        run_engine(plan_with_general_exception(exception_type, message))
 
     if expect_alert:
         mock_alert_service.raise_alert.assert_called_once_with(

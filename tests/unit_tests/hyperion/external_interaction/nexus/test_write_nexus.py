@@ -152,7 +152,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: ZebraGridScanParamsThreeD = test_fgs_params.FGS_params
+    grid_scan_params: ZebraGridScanParamsThreeD = test_fgs_params.fast_gridscan_params
     nexus_writer_1.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
@@ -390,7 +390,7 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
 
 
 @pytest.mark.skip("Requires #87 of nexgen")
-def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
+def test_given_some_datafiles_outside_of_virtual_dataset_range_then_they_are_not_in_nexus_file(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
