@@ -9,7 +9,7 @@ from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -100,7 +100,7 @@ def i04_grid_detect_then_xray_centre(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    dcm: BaseDCM = inject("dcm"),
+    dcm: DoubleCrystalMonochromator = inject("dcm"),
     zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
     oav: OAV = inject("oav"),
