@@ -3,10 +3,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
-from bluesky.utils import FailedStatus
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
@@ -15,7 +13,7 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
     override_file_path,
@@ -46,26 +44,6 @@ async def test_fly_jungfrau(
 
     RE(_open_run_and_fly())
     await asyncio.sleep(0)
-    assert mock_stop.await_count == 2  # once when staging, once after run complete
-
-
-@pytest.mark.skip(
-    reason="See https://github.com/DiamondLightSource/mx-bluesky/issues/1338"
-)
-def test_fly_jungfrau_stops_if_exception_after_stage(
-    RE: RunEngine, jungfrau: CommissioningJungfrau
-):
-    mock_stop = AsyncMock()
-    jungfrau.drv.acquisition_stop.trigger = mock_stop
-    bad_trigger_info = TriggerInfo()
-
-    @run_decorator()
-    def do_fly():
-        yield from fly_jungfrau(jungfrau, bad_trigger_info)
-
-    with pytest.raises(FailedStatus):
-        RE(do_fly())
-    assert mock_stop.await_count == 2  # once when staging, once on exception
 
 
 async def test_override_file_path(

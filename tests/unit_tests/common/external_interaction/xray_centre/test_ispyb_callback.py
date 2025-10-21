@@ -35,7 +35,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "sampleid": TEST_SAMPLE_ID,
     "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorid": 78,
-    "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
     "imgdir": "{tmp_data}/",
@@ -50,13 +49,10 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "synchrotron_mode": None,
     "undulator_gap1": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_1_master.h5",
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "comments": "MX-Bluesky: Xray centring 2 -",
-    "data_collection_number": 2,
-    "filetemplate": "file_name_2_master.h5",
 }
 
 
@@ -225,8 +221,22 @@ class TestXrayCentreISPyBCallback:
         mx_acq.update_dc_position.assert_not_called()
         mx_acq.upsert_dc_grid.assert_not_called()
 
+    @pytest.mark.parametrize(
+        "snapshot_events",
+        [
+            [
+                "test_event_document_oav_snapshot_xy",
+                "test_event_document_oav_snapshot_xz",
+            ],
+            [
+                "test_event_document_oav_snapshot_xz",
+                "test_event_document_oav_snapshot_xy",
+            ],
+        ],
+        ids=["xy-then-xz", "xz-then-xy"],
+    )
     def test_activity_gated_event_oav_snapshot_triggered(
-        self, mock_ispyb_conn, TestEventData
+        self, mock_ispyb_conn, TestEventData, snapshot_events: list[str]
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -241,12 +251,18 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_descriptor(
             TestEventData.test_descriptor_document_oav_snapshot
         )
-        callback.activity_gated_event(TestEventData.test_event_document_oav_snapshot_xy)
-        callback.activity_gated_event(TestEventData.test_event_document_oav_snapshot_xz)
+        for event in [
+            getattr(TestEventData, event_name) for event_name in snapshot_events
+        ]:
+            callback.activity_gated_event(event)
 
+        dc_params = mx_acq.get_data_collection_params()
+        ids_to_dc_upsert_calls = {
+            c.args[0][0]: c for c in mx_acq.upsert_data_collection.mock_calls[0:2]
+        }
         assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
+            ids_to_dc_upsert_calls[TEST_DATA_COLLECTION_IDS[0]],
+            dc_params,
             {
                 "id": TEST_DATA_COLLECTION_IDS[0],
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
@@ -258,6 +274,8 @@ class TestXrayCentreISPyBCallback:
                 "omegastart": 0,
                 "axisend": 0,
                 "axisrange": 0,
+                "datacollectionnumber": 1,
+                "filetemplate": "file_name_1_master.h5",
             },
         )
         mx_acq.update_data_collection_append_comments.assert_any_call(
@@ -268,8 +286,8 @@ class TestXrayCentreISPyBCallback:
             " ",
         )
         assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[1],
-            mx_acq.get_data_collection_params(),
+            ids_to_dc_upsert_calls[TEST_DATA_COLLECTION_IDS[1]],
+            dc_params,
             {
                 "id": TEST_DATA_COLLECTION_IDS[1],
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
@@ -281,6 +299,8 @@ class TestXrayCentreISPyBCallback:
                 "omegastart": 90,
                 "axisend": 90,
                 "axisrange": 0,
+                "datacollectionnumber": 2,
+                "filetemplate": "file_name_2_master.h5",
             },
         )
         mx_acq.update_data_collection_append_comments.assert_any_call(
@@ -290,8 +310,11 @@ class TestXrayCentreISPyBCallback:
             "bottom right (px): [3250,800].",
             " ",
         )
+        ids_to_grid_upsert_calls = {
+            c.args[0][1]: c for c in mx_acq.upsert_dc_grid.mock_calls[0:2]
+        }
         assert_upsert_call_with(
-            mx_acq.upsert_dc_grid.mock_calls[0],
+            ids_to_grid_upsert_calls[TEST_DATA_COLLECTION_IDS[0]],
             mx_acq.get_dc_grid_params(),
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[0],
@@ -308,7 +331,7 @@ class TestXrayCentreISPyBCallback:
             },
         )
         assert_upsert_call_with(
-            mx_acq.upsert_dc_grid.mock_calls[1],
+            ids_to_grid_upsert_calls[TEST_DATA_COLLECTION_IDS[1]],
             mx_acq.get_dc_grid_params(),
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[1],

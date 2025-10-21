@@ -1,7 +1,7 @@
 from functools import partial
 
 import bluesky.plan_stubs as bps
-from dodal.devices.areadetector.plugins.CAM import ColorMode
+from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection

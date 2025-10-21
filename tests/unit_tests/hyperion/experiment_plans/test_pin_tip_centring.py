@@ -11,7 +11,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
-from dodal.devices.oav.utils import PinNotFoundException
+from dodal.devices.oav.utils import PinNotFoundError
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 from ophyd_async.epics.motor import MotorLimitsException
@@ -471,7 +471,7 @@ def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
 
     def raise_exception(*args):
         yield from bps.null()
-        raise PinNotFoundException()
+        raise PinNotFoundError()
 
     mock_wait_for_tip.side_effect = raise_exception
     mock_move_into_view.side_effect = partial(return_pixel, (100, 100))

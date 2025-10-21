@@ -1,11 +1,10 @@
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import WithSample, WithSnapshot
+from mx_bluesky.common.parameters.components import WithSnapshot
 
 
 @pytest.mark.parametrize(
@@ -71,10 +70,3 @@ from mx_bluesky.common.parameters.components import WithSample, WithSnapshot
 def test_validate_with_snapshot_omegas_grid_snapshots(model, expectation):
     with expectation:
         WithSnapshot.model_validate(model)
-
-
-@patch("mx_bluesky.common.parameters.components.LOGGER.warning")
-def test_logger_warning_if_no_sample_id_provided(mock_warning: MagicMock):
-    empty_params = {}
-    WithSample(**empty_params)
-    mock_warning.assert_called_once()

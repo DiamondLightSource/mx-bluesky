@@ -213,7 +213,7 @@ def use_beamline_t01():
             patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
             patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
         ):
-            yield
+            yield tests.unit_tests.t01
 
 
 @pytest.fixture
@@ -326,7 +326,10 @@ def run_generic_ispyb_handler_setup(
 @pytest.fixture
 async def zebra_fast_grid_scan():
     zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
-    set_mock_value(zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
+    set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.z_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.position_counter, 0)
     return zebra_fast_grid_scan
 
