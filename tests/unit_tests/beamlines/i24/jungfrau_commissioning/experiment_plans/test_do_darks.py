@@ -163,13 +163,14 @@ def test_do_darks_stops_if_exception_after_stage(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.fly_jungfrau",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.create_jungfrau_internal_triggering_info",
     new=MagicMock(side_effect=FakeException),
 )
 def test_do_non_pedestal_darks_unstages_jf_on_exception(
     RE: RunEngine, jungfrau: CommissioningJungfrau
 ):
-    jungfrau.unstage = MagicMock()
+    jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
     with pytest.raises(FakeException):
         RE(do_non_pedestal_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
 
