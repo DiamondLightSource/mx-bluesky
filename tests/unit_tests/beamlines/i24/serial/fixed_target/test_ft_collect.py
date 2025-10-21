@@ -14,7 +14,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1 import (
     finish_i24,
     get_chip_prog_values,
     get_prog_num,
@@ -41,14 +41,14 @@ chipmap_str = """01status    P3011       1
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.Path.mkdir"
 )
 def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.open",
         mock_open(),
     ):
         write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
@@ -56,9 +56,9 @@ def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
 def test_set_datasize_for_one_block_and_two_exposures(
     fake_caput, fake_log, dummy_params_without_pp
 ):
@@ -125,7 +125,7 @@ def test_get_prog_number(chip_type, map_type, pump_repeat, expected_prog):
     ],
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 def test_load_motion_program_data(
     mock_sleep,
@@ -147,18 +147,18 @@ def test_load_motion_program_data(
     mock_pmac_str.assert_has_calls(call_list)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.cagetstring"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.sup")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.datetime"
 )
 def test_start_i24_with_eiger(
     fake_datetime,
@@ -231,20 +231,20 @@ def test_start_i24_with_eiger(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.write_userlog"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.cagetstring"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.sup")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.reset_zebra_when_collection_done_plan"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.reset_zebra_when_collection_done_plan"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.rd")
 def test_finish_i24(
     fake_read,
     fake_reset_zebra,
@@ -278,9 +278,9 @@ def test_finish_i24(
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
 def test_run_aborted_plan(
     mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, run_engine, done_status
@@ -294,13 +294,13 @@ def test_run_aborted_plan(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.finish_i24"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.finish_i24"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
 async def test_tidy_up_after_collection_plan(
     fake_caput,
     fake_dcid,
@@ -363,26 +363,26 @@ async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.kickoff_and_complete_collection"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.kickoff_and_complete_collection"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.start_i24"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.start_i24"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.set_datasize"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.set_datasize"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.load_motion_program_data"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.load_motion_program_data"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.get_chip_prog_values"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.get_chip_prog_values"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.call_nexgen"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.call_nexgen"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 async def test_main_fixed_target_plan(
     fake_sleep,
@@ -410,11 +410,11 @@ async def test_main_fixed_target_plan(
     set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     fake_datasize.return_value = 400
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
         with patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
         ):
             run_engine(
                 main_fixed_target_plan(
@@ -464,13 +464,13 @@ async def test_main_fixed_target_plan(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.Path.mkdir"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.read_parameters"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.read_parameters"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 def test_setup_tasks_in_run_fixed_target_plan(
     fake_sleep,
@@ -493,10 +493,10 @@ def test_setup_tasks_in_run_fixed_target_plan(
     fake_read.side_effect = [fake_generator(dummy_params_without_pp)]
     with (
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.run_plan_in_wrapper"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.run_plan_in_wrapper"
         ) as patch_wrapped_plan,
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.upload_chip_map_to_geobrick"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.upload_chip_map_to_geobrick"
         ) as patch_upload,
     ):
         run_engine(

@@ -3,7 +3,7 @@
     "scaley": 10011.9,
     "scalez": 10000.0,
     "skew": 0.025,
-    "Sx_dir": 1,
-    "Sy_dir": 1,
-    "Sz_dir": 1
+    "sx_dir": 1,
+    "sy_dir": 1,
+    "sz_dir": 1
 }
