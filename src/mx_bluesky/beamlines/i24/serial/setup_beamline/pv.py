@@ -8,7 +8,7 @@ import os
 import sys
 
 
-def __show__(name):
+def __show(name):
     """Checks available variables given a string, uses first two letters"""
     for things in globals():
         if name[:2].lower() in things.lower():
@@ -16,7 +16,7 @@ def __show__(name):
     print()
 
 
-def __which__():
+def __which():
     """Return script directory, used for finding which pv.py you are running"""
     pathname, scriptname = os.path.split(sys.argv[0])
     print("Current dir: " + os.path.abspath(pathname))
