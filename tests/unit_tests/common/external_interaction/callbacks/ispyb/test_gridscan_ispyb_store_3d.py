@@ -127,7 +127,7 @@ EXPECTED_BASE_UPSERT = {
     "beamSizeAtSampleX": 0.1,
     "beamSizeAtSampleY": 0.1,
     "transmission": 100.0,
-    # "dataCollectionNumber": 1, TODO
+    "dataCollectionNumber": 1,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "/tmp/",

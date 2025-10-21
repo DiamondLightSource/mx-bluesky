@@ -264,7 +264,7 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
     return _none_to_absent(
         {
             "omegaStart": data.omega_start,
-            # TODO "data_collection_number": _,
+            "data_collection_number": data.data_collection_number,
             "xtalSnapshotFullPath1": data.xtal_snapshot1,
             "xtalSnapshotFullPath2": data.xtal_snapshot2,
             "xtalSnapshotFullPath3": data.xtal_snapshot3,

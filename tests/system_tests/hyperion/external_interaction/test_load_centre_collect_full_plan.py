@@ -187,7 +187,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "beamsizeatsamplex": 0.02,
     "beamsizeatsampley": 0.02,
     "transmission": 100,
-    # "datacollectionnumber": 1,  # TODO
+    "datacollectionnumber": 1,
     "detectordistance": 255.0,
     "exposuretime": 0.002,
     "imagedirectory": "{tmp_data}/123457/xraycentring/",
@@ -214,7 +214,7 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
     "axisstart": 90,
     "axisend": 90,
     "omegastart": 90,
-    # "datacollectionnumber": 2,  # TODO
+    "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
     "numberofimages": 180,
     "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots"

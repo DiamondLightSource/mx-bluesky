@@ -438,8 +438,7 @@ def test_ispyb_deposition_in_gridscan(
         "beamsizeatsamplex": 0.02,
         "beamsizeatsampley": 0.02,
         "transmission": 49.118,
-        # TODO
-        # "datacollectionnumber": 1,
+        "datacollectionnumber": 1,
         "detectordistance": 100.0,
         "exposuretime": 0.12,
         "imagedirectory": f"{storage_directory}/",
@@ -502,8 +501,7 @@ def test_ispyb_deposition_in_gridscan(
         {
             "axisstart": 90.0,
             "axisend": 90.0,
-            # TODO
-            # "datacollectionnumber": 2,
+            "datacollectionnumber": 2,
             "omegastart": 90.0,
             "filetemplate": "file_name_2_master.h5",
             "xtalsnapshotfullpath1": f"{storage_directory}/snapshots/file_name_1_90_grid_overlay.png",

@@ -40,7 +40,7 @@ from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorId": 78,
-    # "dataCollectionNumber": 1,  # TODO
+    "dataCollectionNumber": 1,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "{tmp_data}/",
@@ -57,7 +57,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "comments": "MX-Bluesky: Xray centring 2 -",
-    # "dataCollectionNumber": 2,  # TODO
+    "dataCollectionNumber": 2,
     "fileTemplate": "file_name_2_master.h5",
 }
 

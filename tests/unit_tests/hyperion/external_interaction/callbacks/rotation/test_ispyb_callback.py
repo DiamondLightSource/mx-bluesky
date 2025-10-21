@@ -31,7 +31,7 @@ EXPECTED_DATA_COLLECTION = {
     "axisRange": 0.1,
     "axisEnd": -180,
     "comments": "test",
-    # "dataCollectionNumber": 1,  # TODO
+    "dataCollectionNumber": 1,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "{tmp_data}/123456/",
