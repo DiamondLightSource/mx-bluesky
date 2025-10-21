@@ -70,10 +70,10 @@ def pathli(l_in=None, way="typewriter", reverse=False):
 def zippum(list_1_args, list_2_args):
     list_1, type_1, reverse_1 = list_1_args
     list_2, type_2, reverse_2 = list_2_args
-    A_path = pathli(list_1, type_1, reverse_1)
-    B_path = pathli(list_2, type_2, reverse_2)
+    a_path = pathli(list_1, type_1, reverse_1)
+    b_path = pathli(list_2, type_2, reverse_2)
     zipped_list = []
-    for a, b in zip(A_path, B_path, strict=False):
+    for a, b in zip(a_path, b_path, strict=False):
         zipped_list.append(a + b)
     return zipped_list
 

@@ -61,7 +61,7 @@ def test_read_parameters(
     fake_caget,
     fake_det,
     detector_stage,
-    RE,
+    run_engine,
 ):
     mock_attenuator = MagicMock()
     fake_det.side_effect = [fake_generator(Eiger())]
@@ -69,7 +69,7 @@ def test_read_parameters(
     with patch(
         "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.ExtruderParameters",
     ):
-        RE(read_parameters(detector_stage, mock_attenuator))
+        run_engine(read_parameters(detector_stage, mock_attenuator))
 
     assert fake_caget.call_count == 8
     fake_log.warning.assert_called_once()
@@ -90,17 +90,17 @@ def test_initialise_extruder(
     fake_caput,
     fake_caget,
     detector_stage,
-    RE,
+    run_engine,
 ):
     fake_caget.return_value = "/path/to/visit"
     fake_det.side_effect = [fake_generator(Eiger())]
-    RE(initialise_extruder(detector_stage))
+    run_engine(initialise_extruder(detector_stage))
     assert fake_caput.call_count == 9
     assert fake_caget.call_count == 1
 
 
-async def test_enterhutch(detector_stage, RE):
-    RE(enter_hutch(detector_stage))
+async def test_enterhutch(detector_stage, run_engine):
+    run_engine(enter_hutch(detector_stage))
     assert await detector_stage.z.user_setpoint.get_value() == 1480
 
 
@@ -122,16 +122,16 @@ async def test_laser_check(
     det_type,
     zebra,
     detector_stage,
-    RE,
+    run_engine,
 ):
     fake_det.side_effect = [fake_generator(det_type)]
-    RE(laser_check(laser_mode, zebra, detector_stage))
+    run_engine(laser_check(laser_mode, zebra, detector_stage))
 
     # update with corresponding dodal change:
-    TTL = I24_ZEBRA_MAPPING.outputs.TTL_PILATUS
+    ttl = I24_ZEBRA_MAPPING.outputs.TTL_PILATUS
 
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
-    assert await zebra.output.out_pvs[TTL].get_value() == expected_out
+    assert await zebra.output.out_pvs[ttl].get_value() == expected_out
 
 
 @patch(
@@ -165,7 +165,7 @@ def test_run_extruder_quickshot_with_eiger(
     fake_nexgen,
     fake_dcid,
     fake_sleep,
-    RE,
+    run_engine,
     zebra,
     shutter,
     aperture,
@@ -191,7 +191,7 @@ def test_run_extruder_quickshot_with_eiger(
         "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
-        RE(
+        run_engine(
             main_extruder_plan(
                 zebra,
                 aperture,
@@ -230,13 +230,15 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     fake_caput,
     fake_dcid,
     mock_reset_zebra_plan,
-    RE,
+    run_engine,
     zebra,
     shutter,
     dummy_params,
     dcm,
 ):
-    RE(tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid, dcm))
+    run_engine(
+        tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid, dcm)
+    )
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
@@ -254,9 +256,9 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
 )
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
 def test_collection_complete_plan_with_eiger(
-    fake_caput, fake_sleep, fake_dcid, dummy_params, RE
+    fake_caput, fake_sleep, fake_dcid, dummy_params, run_engine
 ):
-    RE(
+    run_engine(
         collection_complete_plan(
             dummy_params.collection_directory, dummy_params.detector_name, fake_dcid
         )
@@ -287,14 +289,14 @@ def test_setup_tasks_in_run_extruder_plan(
     mirrors,
     attenuator,
     eiger_beam_center,
-    RE,
+    run_engine,
     dummy_params,
 ):
     fake_read.side_effect = [fake_generator(dummy_params)]
     with patch(
         "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bpp.contingency_wrapper"
     ):
-        RE(
+        run_engine(
             run_extruder_plan(
                 zebra,
                 aperture,

@@ -13,7 +13,7 @@ from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 
 
-class AttenuationOptimisationFailedException(Exception):
+class AttenuationOptimisationFailedError(Exception):
     pass
 
 
@@ -111,7 +111,7 @@ def deadtime_calc_new_transmission(
         Minimum expected transmission. Raise an error if transmission goes lower.
 
     Raises:
-        AttenuationOptimisationFailedException:
+        AttenuationOptimisationFailedError:
         This error is thrown if the transmission goes below the expected value or if the maximum cycles are reached
 
     Returns:
@@ -124,7 +124,7 @@ def deadtime_calc_new_transmission(
     else:
         transmission /= increment
     if transmission < lower_transmission_limit:
-        raise AttenuationOptimisationFailedException(
+        raise AttenuationOptimisationFailedError(
             "Calculated transmission is below expected limit"
         )
     return transmission
@@ -218,7 +218,7 @@ def deadtime_optimisation(
         Minimum expected transmission. Raise an error if transmission goes lower.
 
     Raises:
-        AttenuationOptimisationFailedException:
+        AttenuationOptimisationFailedError:
         This error is thrown if the transmission goes below the expected value or the maximum cycles are reached
 
     Returns:
@@ -262,7 +262,7 @@ def deadtime_optimisation(
             break
 
         if cycle == max_cycles - 1:
-            raise AttenuationOptimisationFailedException(
+            raise AttenuationOptimisationFailedError(
                 f"Unable to optimise attenuation after maximum cycles.\
                                                             Deadtime did not get lower than threshold: {deadtime_threshold} in maximum cycles {max_cycles}"
             )
@@ -367,12 +367,12 @@ def total_counts_optimisation(
             if transmission > upper_transmission_limit:
                 transmission = upper_transmission_limit
             elif transmission < lower_transmission_limit:
-                raise AttenuationOptimisationFailedException(
+                raise AttenuationOptimisationFailedError(
                     f"Transmission has gone below lower threshold {lower_transmission_limit}"
                 )
 
         if cycle == max_cycles - 1:
-            raise AttenuationOptimisationFailedException(
+            raise AttenuationOptimisationFailedError(
                 f"Unable to optimise attenuation after maximum cycles.\
                                                             Total count is not within limits: {lower_count_limit} <= {total_count}\
                                                                 <= {upper_count_limit}"

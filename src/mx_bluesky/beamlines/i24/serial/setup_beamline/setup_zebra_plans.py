@@ -209,13 +209,13 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     yield from set_logic_gates_for_porto_triggering(zebra)
 
     # Set TTL out depending on detector type
-    DET_TTL = TTL_EIGER
-    LASER_TTL = TTL_LASER  # may change with additional detectors
+    det_ttl = TTL_EIGER
+    laser_ttl = TTL_LASER  # may change with additional detectors
     yield from bps.abs_set(
-        zebra.output.out_pvs[DET_TTL], zebra.mapping.sources.AND4, group=group
+        zebra.output.out_pvs[det_ttl], zebra.mapping.sources.AND4, group=group
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[LASER_TTL], zebra.mapping.sources.AND3, group=group
+        zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.AND3, group=group
     )
 
     yield from bps.abs_set(

@@ -18,7 +18,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 
 
 def test_full_do_external_acquisition(
-    jungfrau: CommissioningJungfrau, RE: RunEngine, caplog
+    jungfrau: CommissioningJungfrau, run_engine: RunEngine, caplog
 ):
     @run_decorator()
     def test_plan():
@@ -34,7 +34,7 @@ def test_full_do_external_acquisition(
         yield from bps.wait(JF_COMPLETE_GROUP)
 
     jungfrau._controller.arm = AsyncMock()
-    RE(test_plan())
+    run_engine(test_plan())
     for i in range(20, 120, 20):
         assert f"Jungfrau data collection triggers received: {i}%" in caplog.messages
 
@@ -45,7 +45,7 @@ def test_full_do_external_acquisition(
 def test_do_external_acquisition_does_wait(
     mock_log_on_percent_complete: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    RE: RunEngine,
+    run_engine: RunEngine,
     jungfrau: CommissioningJungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(

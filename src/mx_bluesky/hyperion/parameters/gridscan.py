@@ -44,7 +44,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
 
     # Relative to common grid scan, stub offsets are defined by config server
     @property
-    def FGS_params(self) -> ZebraGridScanParamsThreeD:
+    def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
         return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
@@ -65,10 +65,10 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
         )
 
     @property
-    def panda_FGS_params(self) -> PandAGridScanParams:
+    def panda_fast_gridscan_params(self) -> PandAGridScanParams:
         if self.y_steps % 2 and self.z_steps > 0:
             # See https://github.com/DiamondLightSource/hyperion/issues/1118 for explanation
-            raise OddYStepsException(
+            raise OddYStepsError(
                 "The number of Y steps must be even for a PandA gridscan"
             )
         return PandAGridScanParams(
@@ -93,7 +93,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
         )
 
 
-class OddYStepsException(Exception): ...
+class OddYStepsError(Exception): ...
 
 
 class PinTipCentreThenXrayCentre(GridCommonWithHyperionDetectorParams):

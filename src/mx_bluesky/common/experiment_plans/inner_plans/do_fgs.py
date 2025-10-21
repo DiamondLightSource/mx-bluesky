@@ -46,7 +46,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
-    # Triggers Zocalo if RE is subscribed to ZocaloCallback
+    # Triggers Zocalo if run_engine is subscribed to ZocaloCallback
     yield from read_hardware_for_zocalo(detector)
     LOGGER.info("Wait for all moves with no assigned group")
     yield from bps.wait()

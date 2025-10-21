@@ -18,7 +18,7 @@ from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.device_setup_plans.setup_oav import pre_centring_setup_oav
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.common.utils.exceptions import SampleException, catch_exception_and_warn
+from mx_bluesky.common.utils.exceptions import SampleError, catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.smargon import (
     move_smargon_warn_on_out_of_range,
@@ -69,7 +69,7 @@ def move_pin_into_view(
         max_steps (int, optional): The number of steps to search with. Defaults to 2.
 
     Raises:
-        SampleException: Error if the pin tip is never found
+        SampleError: Error if the pin tip is never found
 
     Returns:
         Tuple[int, int]: The location of the pin tip in pixels
@@ -106,7 +106,7 @@ def move_pin_into_view(
     tip_xy_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
     if not pin_tip_valid(tip_xy_px):
-        raise SampleException(
+        raise SampleError(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
     else:

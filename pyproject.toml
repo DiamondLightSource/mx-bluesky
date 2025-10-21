@@ -131,7 +131,7 @@ filterwarnings = [
     "error",
     # Ophyd status objects in tests
     "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
-    # Ignore nondeterministic closing of log, RE, etc. before test end
+    # Ignore nondeterministic closing of log, run_engine, etc. before test end
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",

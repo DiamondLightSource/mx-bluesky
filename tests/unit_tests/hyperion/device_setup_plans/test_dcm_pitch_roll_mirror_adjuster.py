@@ -68,7 +68,7 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
     ],
 )
 def test_adjust_mirror_stripe(
-    RE: RunEngine,
+    run_engine: RunEngine,
     mirror_voltages: MirrorVoltages,
     vfm: FocusingMirrorWithStripes,
     energy_kev,
@@ -87,7 +87,7 @@ def test_adjust_mirror_stripe(
     parent.attach_mock(get_mock_put(vfm.x_mm.user_setpoint), "lat_set")
     parent.attach_mock(get_mock_put(vfm.yaw_mrad.user_setpoint), "yaw_mrad")
 
-    RE(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
+    run_engine(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
 
     expected_calls = [
         call.stripe_set(expected_stripe, wait=True),
@@ -112,7 +112,7 @@ def test_adjust_mirror_stripe(
     ],
 )
 def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
-    RE: RunEngine,
+    run_engine: RunEngine,
     mirror_voltages: MirrorVoltages,
     vfm: FocusingMirrorWithStripes,
     energy_kev: float,
@@ -120,7 +120,7 @@ def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
 ):
     set_mock_value(vfm.stripe, expected_stripe)
 
-    RE(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
+    run_engine(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
 
     get_mock_put(vfm.stripe).assert_not_called()
     get_mock_put(vfm.apply_stripe).assert_not_called()

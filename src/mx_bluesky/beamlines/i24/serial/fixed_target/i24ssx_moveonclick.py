@@ -52,12 +52,12 @@ def _move_on_mouse_click_plan(
         position coordinates.
     """
     zoomcalibrator = yield from _calculate_zoom_calibrator(oav)
-    beamX, beamY = yield from _get_beam_centre(oav)
+    beam_x, beam_y = yield from _get_beam_centre(oav)
     x, y = clicked_position
-    xmove = -10 * (beamX - x) * zoomcalibrator
-    ymove = 10 * (beamY - y) * zoomcalibrator
+    xmove = -10 * (beam_x - x) * zoomcalibrator
+    ymove = 10 * (beam_y - y) * zoomcalibrator
     SSX_LOGGER.info(f"Zoom calibrator {zoomcalibrator}")
-    SSX_LOGGER.info(f"Beam centre {beamX} {beamY}")
+    SSX_LOGGER.info(f"Beam centre {beam_x} {beam_y}")
     SSX_LOGGER.info(f"Moving X and Y {xmove} {ymove}")
     xmovepmacstring = "&2#5J:" + str(xmove)
     ymovepmacstring = "&2#6J:" + str(ymove)
@@ -66,22 +66,22 @@ def _move_on_mouse_click_plan(
 
 
 # Register clicks and move chip stages
-def onMouse(event, x, y, flags, param):
+def on_mouse(event, x, y, flags, param):
     if event == cv.EVENT_LBUTTONUP:
-        RE = param[0]
+        run_engine = param[0]
         pmac = param[1]
         oav = param[2]
         SSX_LOGGER.info(f"Clicked X and Y {x} {y}")
-        RE(_move_on_mouse_click_plan(oav, pmac, (x, y)))
+        run_engine(_move_on_mouse_click_plan(oav, pmac, (x, y)))
 
 
-def update_ui(oav, frame, RE):
+def update_ui(oav, frame, run_engine):
     # Get beam x and y values
-    beamX, beamY = RE(_get_beam_centre(oav)).plan_result
+    beam_x, beam_y = run_engine(_get_beam_centre(oav)).plan_result
 
     # Overlay text and beam centre
     cv.ellipse(
-        frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0, 255, 255), thickness=2
+        frame, (beam_x, beam_y), (12, 8), 0.0, 0.0, 360, (0, 255, 255), thickness=2
     )
     cv.putText(
         frame,
@@ -156,13 +156,13 @@ def update_ui(oav, frame, RE):
     cv.imshow("OAV1view", frame)
 
 
-def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
+def start_viewer(oav: OAV, pmac: PMAC, run_engine: RunEngine, oav1: str = OAV1_CAM):
     # Create a video capture from OAV1
     cap = cv.VideoCapture(oav1)
 
     # Create window named OAV1view and set onmouse to this
     cv.namedWindow("OAV1view")
-    cv.setMouseCallback("OAV1view", onMouse, param=[RE, pmac, oav])  # type: ignore
+    cv.setMouseCallback("OAV1view", on_mouse, param=[run_engine, pmac, oav])  # type: ignore
 
     SSX_LOGGER.info("Showing camera feed. Press escape to close")
     # Read captured video and store them in success and frame
@@ -172,44 +172,44 @@ def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
     while success:
         success, frame = cap.read()
 
-        update_ui(oav, frame, RE)
+        update_ui(oav, frame, run_engine)
 
         k = cv.waitKey(1)
         if k == 113:  # Q
-            RE(manager.moveto(Fiducials.zero, pmac))
+            run_engine(manager.moveto(Fiducials.zero, pmac))
         if k == 119:  # W
-            RE(manager.moveto(Fiducials.fid1, pmac))
+            run_engine(manager.moveto(Fiducials.fid1, pmac))
         if k == 101:  # E
-            RE(manager.moveto(Fiducials.fid2, pmac))
+            run_engine(manager.moveto(Fiducials.fid2, pmac))
         if k == 97:  # A
-            RE(bps.trigger(pmac.home, wait=True))
+            run_engine(bps.trigger(pmac.home, wait=True))
             print("Current position set as origin")
         if k == 115:  # S
-            RE(manager.fiducial(1))
+            run_engine(manager.fiducial(1))
         if k == 100:  # D
-            RE(manager.fiducial(2))
+            run_engine(manager.fiducial(2))
         if k == 99:  # C
-            RE(manager.cs_maker(pmac))
+            run_engine(manager.cs_maker(pmac))
         if k == 98:  # B
-            RE(
+            run_engine(
                 manager.block_check()
             )  # doesn't work well for blockcheck as image doesn't update
         if k == 104:  # H
-            RE(bps.abs_set(pmac.pmac_string, "&2#6J:-10", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#6J:-10", wait=True))
         if k == 110:  # N
-            RE(bps.abs_set(pmac.pmac_string, "&2#6J:10", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#6J:10", wait=True))
         if k == 109:  # M
-            RE(bps.abs_set(pmac.pmac_string, "&2#5J:-10", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#5J:-10", wait=True))
         if k == 98:  # B
-            RE(bps.abs_set(pmac.pmac_string, "&2#5J:10", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#5J:10", wait=True))
         if k == 105:  # I
-            RE(bps.abs_set(pmac.pmac_string, "&2#7J:-150", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#7J:-150", wait=True))
         if k == 111:  # O
-            RE(bps.abs_set(pmac.pmac_string, "&2#7J:150", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#7J:150", wait=True))
         if k == 117:  # U
-            RE(bps.abs_set(pmac.pmac_string, "&2#7J:-1000", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#7J:-1000", wait=True))
         if k == 112:  # P
-            RE(bps.abs_set(pmac.pmac_string, "&2#7J:1000", wait=True))
+            run_engine(bps.abs_set(pmac.pmac_string, "&2#7J:1000", wait=True))
         if k == 0x1B:  # esc
             cv.destroyWindow("OAV1view")
             print("Pressed escape. Closing window")
@@ -220,8 +220,8 @@ def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
 
 
 if __name__ == "__main__":
-    RE = RunEngine(call_returns_result=True)
+    run_engine = RunEngine(call_returns_result=True)
     # Get devices out of dodal
     oav: OAV = i24.oav(connect_immediately=True)
     pmac: PMAC = i24.pmac(connect_immediately=True)
-    start_viewer(oav, pmac, RE)
+    start_viewer(oav, pmac, run_engine)

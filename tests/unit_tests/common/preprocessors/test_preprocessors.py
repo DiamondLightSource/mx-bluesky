@@ -130,7 +130,7 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     mock_unpause_xbpm: MagicMock,
     mock_pause: MagicMock,
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     @transmission_and_xbpm_feedback_for_collection_decorator(
         devices=xbpm_and_transmission_wrapper_composite, desired_transmission_fraction=1
@@ -148,14 +148,14 @@ def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     def second_plan():
         yield from bps.null()
 
-    RE(first_plan())
+    run_engine(first_plan())
     mock_pause.assert_called_once()
     mock_unpause_xbpm.assert_called_once()
 
 
 def test_xbpm_preprocessor_cant_unpause_on_wrong_run(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     # Logic in the preprocessor relies on the assumption that Bluesky doesn't let us have
     # multiple unnamed runs open, or multiple runs with the same name
@@ -186,7 +186,7 @@ def test_xbpm_preprocessor_cant_unpause_on_wrong_run(
         yield from bps.null()
 
     with pytest.raises(IllegalMessageSequence):
-        RE(first_unnamed_run())
+        run_engine(first_unnamed_run())
 
     with pytest.raises(IllegalMessageSequence):
-        RE(first_named_run())
+        run_engine(first_named_run())
