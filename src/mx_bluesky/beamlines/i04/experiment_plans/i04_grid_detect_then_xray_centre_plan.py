@@ -231,7 +231,7 @@ def _fix_transmission_and_exposure_time_for_current_wavelength(
         # cap it to 1, find remaining scaling needed, and apply it
         # to exposure time instead.
         new_trans_frac = 1
-        scaling_applied_to_trans = new_trans_frac / ideal_trans_frac
+        scaling_applied_to_trans = new_trans_frac / original_trans_frac
         remaining_scaling_needed = wavelength_scale / scaling_applied_to_trans
         new_exposure_time_s = original_exposure_time_s * remaining_scaling_needed
 
