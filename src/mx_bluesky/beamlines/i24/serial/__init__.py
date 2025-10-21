@@ -8,14 +8,14 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_stage_move_on_click,
 )
 
-from .extruder.i24ssx_Extruder_Collect_py3v2 import (
+from .extruder.i24ssx_extruder_collect_py3v2 import (
     enter_hutch,
     initialise_extruder,
     laser_check,
     run_extruder_plan,
 )
-from .fixed_target.i24ssx_Chip_Collect_py3v1 import run_fixed_target_plan
-from .fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from .fixed_target.i24ssx_chip_collect_py3v1 import run_fixed_target_plan
+from .fixed_target.i24ssx_chip_manager_py3v1 import (
     block_check,
     cs_maker,
     cs_reset,

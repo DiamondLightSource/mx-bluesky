@@ -4,7 +4,7 @@ import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from ophyd_async.testing import get_mock_put
 
-from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
+from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,
     enter_hutch,
     initialise_extruder,
@@ -44,16 +44,16 @@ def dummy_beam_settings():
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.get_detector_type"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2._read_visit_directory_from_file"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2._read_visit_directory_from_file"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.SSX_LOGGER"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.rd")
 def test_read_parameters(
     fake_rd,
     fake_log,
@@ -67,7 +67,7 @@ def test_read_parameters(
     fake_det.side_effect = [fake_generator(Eiger())]
     fake_rd.side_effect = [fake_generator(0.3)]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.ExtruderParameters",
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.ExtruderParameters",
     ):
         run_engine(read_parameters(detector_stage, mock_attenuator))
 
@@ -76,13 +76,13 @@ def test_read_parameters(
     assert fake_log.info.call_count == 3
 
 
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caget")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caput")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.get_detector_type"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.SSX_LOGGER"
 )
 def test_initialise_extruder(
     fake_log,
@@ -112,7 +112,7 @@ async def test_enterhutch(detector_stage, run_engine):
     ],
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.get_detector_type"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.get_detector_type"
 )
 async def test_laser_check(
     fake_det,
@@ -135,24 +135,24 @@ async def test_laser_check(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.sleep"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.call_nexgen"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.call_nexgen"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caput")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.cagetstring"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.cagetstring"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sup")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.sup")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.setup_zebra_for_quickshot_plan"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.setup_zebra_for_quickshot_plan"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_beam_info_from_hardware"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.read_beam_info_from_hardware"
 )
 def test_run_extruder_quickshot_with_eiger(
     mock_read_beam_info,
@@ -188,7 +188,7 @@ def test_run_extruder_quickshot_with_eiger(
     ]
     fake_cagetstring.return_value = "filename"
     with patch(
-        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.BEAM_CENTER_LUT_FILES",
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
         run_engine(
@@ -218,12 +218,12 @@ def test_run_extruder_quickshot_with_eiger(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.reset_zebra_when_collection_done_plan"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.reset_zebra_when_collection_done_plan"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caget")
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.sup")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caput")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caget")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.sup")
 def test_tidy_up_at_collection_end_plan_with_eiger(
     fake_sup,
     fake_caget,
@@ -250,11 +250,11 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.sleep"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.caput")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.caput")
 def test_collection_complete_plan_with_eiger(
     fake_caput, fake_sleep, fake_dcid, dummy_params, run_engine
 ):
@@ -271,10 +271,10 @@ def test_collection_complete_plan_with_eiger(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.Path.mkdir"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.Path.mkdir"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.read_parameters"
+    "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.read_parameters"
 )
 def test_setup_tasks_in_run_extruder_plan(
     fake_read,
@@ -294,7 +294,7 @@ def test_setup_tasks_in_run_extruder_plan(
 ):
     fake_read.side_effect = [fake_generator(dummy_params)]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bpp.contingency_wrapper"
+        "mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bpp.contingency_wrapper"
     ):
         run_engine(
             run_extruder_plan(

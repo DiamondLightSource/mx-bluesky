@@ -13,7 +13,7 @@ from dodal.devices.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
 
 from mx_bluesky.beamlines.i24.serial.fixed_target import (
-    i24ssx_Chip_Manager_py3v1 as manager,
+    i24ssx_chip_manager_py3v1 as manager,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
