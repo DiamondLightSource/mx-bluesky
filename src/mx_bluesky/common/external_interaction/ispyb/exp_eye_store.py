@@ -264,7 +264,7 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
     return _none_to_absent(
         {
             "omegaStart": data.omega_start,
-            "data_collection_number": data.data_collection_number,
+            "dataCollectionNumber": data.data_collection_number,
             "xtalSnapshotFullPath1": data.xtal_snapshot1,
             "xtalSnapshotFullPath2": data.xtal_snapshot2,
             "xtalSnapshotFullPath3": data.xtal_snapshot3,
@@ -276,8 +276,6 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
             "kappaStart": data.kappa_start,
             "detectorId": data.detector_id,
             "axisStart": data.axis_start,
-            # TODO "focal_spot_size_at_samplex": data.focal_spot_size_at_samplex
-            # TODO "focal_spot_size_at_sampley": data.focal_spot_size_at_sampley
             "slitGapVertical": data.slitgap_vertical,
             "slitGapHorizontal": data.slitgap_horizontal,
             "beamSizeAtSampleX": data.beamsize_at_samplex,

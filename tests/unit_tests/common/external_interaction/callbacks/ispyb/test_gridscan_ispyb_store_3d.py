@@ -60,11 +60,8 @@ DC_INFO_FOR_BEGIN_XY = DataCollectionInfo(
     kappa_start=None,
     parent_id=None,
     visit_string="cm31105-4",
-    sample_id=364758,
     detector_id=78,
     axis_start=0.0,
-    focal_spot_size_at_samplex=0.0,
-    focal_spot_size_at_sampley=0.0,
     slitgap_vertical=0.1,
     slitgap_horizontal=0.1,
     beamsize_at_samplex=0.1,
@@ -120,8 +117,6 @@ DC_INFO_FOR_UPDATE_XZ = replace(
 EXPECTED_BASE_UPSERT = {
     "detectorId": 78,
     "axisRange": 0,
-    # "focalSpotSizeAtSampleX": 0.0, TODO
-    # "focalSpotSizeAtSampleY": 0.0, TODO
     "slitGapVertical": 0.1,
     "slitGapHorizontal": 0.1,
     "beamSizeAtSampleX": 0.1,

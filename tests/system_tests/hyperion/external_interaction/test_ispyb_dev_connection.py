@@ -430,9 +430,6 @@ def test_ispyb_deposition_in_gridscan(
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        # TODO
-        # "focalspotsizeatsamplex": 0.02,
-        # "focalspotsizeatsampley": 0.02,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
         "beamsizeatsamplex": 0.02,
@@ -478,8 +475,8 @@ def test_ispyb_deposition_in_gridscan(
         "dy_mm": 0.02,
         "steps_x": 20,
         "steps_y": 6,
-        # "snapshotOffsetXPixel": 130,  # TODO
-        # "snapshotOffsetYPixel": 130,  # TODO
+        "snapshotOffsetXPixel": 130,
+        "snapshotOffsetYPixel": 130,
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
@@ -531,7 +528,7 @@ def test_ispyb_deposition_in_gridscan(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
             "steps_y": 6.0,
-            # "snapshotOffsetYPixel": 130.0,  # TODO
+            "snapshotOffsetYPixel": 130.0,
             "dataCollectionId": ispyb_ids.data_collection_ids[1],
         }
     )

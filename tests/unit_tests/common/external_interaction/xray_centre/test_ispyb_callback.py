@@ -40,7 +40,6 @@ from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "comments": "MX-Bluesky: Xray centring 1 -",
     "detectorId": 78,
-    "dataCollectionNumber": 1,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "{tmp_data}/",
@@ -52,13 +51,10 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "xBeam": 150.0,
     "yBeam": 160.0,
     "startTime": EXPECTED_START_TIME,
-    "fileTemplate": "file_name_1_master.h5",
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "comments": "MX-Bluesky: Xray centring 2 -",
-    "dataCollectionNumber": 2,
-    "fileTemplate": "file_name_2_master.h5",
 }
 
 
@@ -201,8 +197,6 @@ class TestXrayCentreISPyBCallback:
             "transmission": 100,
             "flux": 10,
             "resolution": 1.1830593331191241,
-            # "focalSpotSizeAtSampleX": 0.05,  # TODO
-            # "focalSpotSizeAtSampleY": 0.02,  # TODO
             "beamSizeAtSampleX": 0.05,
             "beamSizeAtSampleY": 0.02,
         }
@@ -258,7 +252,9 @@ class TestXrayCentreISPyBCallback:
         ids_to_dc_upsert_requests = {
             int(DC_RE.match(rq.url)[2]): rq for rq in update_dc_requests
         }
-        assert json.loads(ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body) == {
+        assert json.loads(
+            ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body
+        ) == {
             "numberOfImages": 40 * 20,
             "xtalSnapshotFullPath1": "test_1_y",
             "xtalSnapshotFullPath2": "test_2_y",
@@ -268,7 +264,7 @@ class TestXrayCentreISPyBCallback:
             "axisEnd": 0,
             "axisRange": 0,
             "dataCollectionNumber": 1,
-            "fileTemplate": "file_name_1_master.h5"
+            "fileTemplate": "file_name_1_master.h5",
         }
         mx_acq.update_data_collection_append_comments.assert_any_call(
             TEST_DATA_COLLECTION_IDS[0],
@@ -277,7 +273,9 @@ class TestXrayCentreISPyBCallback:
             "bottom right (px): [3250,1700].",
             " ",
         )
-        assert json.loads(ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body) == {
+        assert json.loads(
+            ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body
+        ) == {
             "numberOfImages": 40 * 10,
             "xtalSnapshotFullPath1": "test_1_z",
             "xtalSnapshotFullPath2": "test_2_z",
@@ -287,7 +285,7 @@ class TestXrayCentreISPyBCallback:
             "axisEnd": 90,
             "axisRange": 0,
             "dataCollectionNumber": 2,
-            "fileTemplate": "file_name_2_master.h5"
+            "fileTemplate": "file_name_2_master.h5",
         }
         mx_acq.update_data_collection_append_comments.assert_any_call(
             TEST_DATA_COLLECTION_IDS[1],
@@ -300,7 +298,9 @@ class TestXrayCentreISPyBCallback:
         ids_to_grid_upsert_requests = {
             int(GRID_RE.match(rq.url)[2]): rq for rq in update_grid_requests
         }
-        assert json.loads(ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body) == {
+        assert json.loads(
+            ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body
+        ) == {
             "dx": 0.1264,
             "dy": 0.1264,
             "stepsX": 40,
@@ -312,7 +312,9 @@ class TestXrayCentreISPyBCallback:
             "orientation": "horizontal",
             "snaked": True,
         }
-        assert json.loads(ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body) == {
+        assert json.loads(
+            ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body
+        ) == {
             "dx": 0.1264,
             "dy": 0.1264,
             "stepsX": 40,

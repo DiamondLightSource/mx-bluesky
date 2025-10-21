@@ -180,8 +180,6 @@ GRID_DC_1_EXPECTED_VALUES = {
     "axisstart": 0.0,
     "axisrange": 0,
     "axisend": 0,
-    # "focalspotsizeatsamplex": 0.02,  # TODO
-    # "focalspotsizeatsampley": 0.02,  # TODO
     "slitgapvertical": 0.234,
     "slitgaphorizontal": 0.123,
     "beamsizeatsamplex": 0.02,

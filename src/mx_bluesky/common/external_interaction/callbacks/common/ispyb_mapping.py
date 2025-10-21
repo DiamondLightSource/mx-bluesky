@@ -30,7 +30,6 @@ def populate_remaining_data_collection_info(
 ):
     data_collection_info.visit_string = params.visit
     data_collection_info.parent_id = data_collection_group_id
-    data_collection_info.sample_id = params.sample_id
     data_collection_info.detector_id = I03_EIGER_DETECTOR
     data_collection_info.comments = comment
     data_collection_info.detector_distance = params.detector_params.detector_distance

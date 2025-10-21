@@ -1410,7 +1410,6 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
 
         second_update_data = json.loads(update_dcs[1].body)
         assert second_update_data["resolution"] > 0  # resolution
-        # assert second_update_data["focalSpotSizeAtSampleX"] > 0  # beam size  # TODO
 
         third_update_data = json.loads(update_dcs[2].body)
         assert third_update_data["endTime"]  # timestamp
@@ -1636,9 +1635,9 @@ def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_us
         [ispyb_callback],
         oav_parameters_for_rotation,
     )
-    assert deposition.mock_calls[0].args[1][0].data_collection_info.sample_id == 123
-    assert deposition.mock_calls[1].args[1][0].data_collection_info.sample_id == 456
-    assert deposition.mock_calls[2].args[1][0].data_collection_info.sample_id == 789
+    assert deposition.mock_calls[0].args[0].sample_id == 123
+    assert deposition.mock_calls[1].args[0].sample_id == 456
+    assert deposition.mock_calls[2].args[0].sample_id == 789
 
 
 def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(

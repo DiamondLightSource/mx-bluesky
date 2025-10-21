@@ -157,8 +157,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
-            focal_spot_size_at_samplex=beamsize_x_mm,
-            focal_spot_size_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux-flux_reading"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:

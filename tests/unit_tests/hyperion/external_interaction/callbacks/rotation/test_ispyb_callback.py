@@ -157,8 +157,6 @@ def test_flux_read_events(
         == TEST_DATA_COLLECTION_IDS[0]
     )
     assert json.loads(update_dc_request.body) == {
-        # "focal_spot_size_at_samplex": 0.05,  # TODO
-        # "focal_spot_size_at_sampley": 0.02,  # TODO
         "beamSizeAtSampleX": 0.05,
         "beamSizeAtSampleY": 0.02,
         "wavelength": 1.11647184541378,

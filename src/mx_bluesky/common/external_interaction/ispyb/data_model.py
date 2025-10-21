@@ -18,6 +18,9 @@ class DataCollectionGroupInfo:
 
 @dataclass(kw_only=True)
 class DataCollectionInfo:
+    # This is used internally to keep track of the DataCollectionGroup ID
+    parent_id: int | None = None
+
     omega_start: float | None = None
     data_collection_number: int | None = None
     xtal_snapshot1: str | None = None
@@ -31,13 +34,9 @@ class DataCollectionInfo:
     chi_start: float | None = None
     kappa_start: float | None = None
 
-    parent_id: int | None = None  # TODO remove this
     visit_string: str | None = None
-    sample_id: int | None = None  # TODO remove this
     detector_id: int | None = None
     axis_start: float | None = None
-    focal_spot_size_at_samplex: float | None = None
-    focal_spot_size_at_sampley: float | None = None
     slitgap_vertical: float | None = None
     slitgap_horizontal: float | None = None
     beamsize_at_samplex: float | None = None
