@@ -19,31 +19,5 @@
         "python.analysis.autoImportCompletions": true,
         "terminal.integrated.gpuAcceleration": "off",
         "esbonio.sphinx.confDir": "",
-        "cSpell.words": [
-            "aperturescatterguard",
-            "beamstop",
-            "blueapi",
-            "cryostream",
-            "deadtime",
-            "dodal",
-            "eiger",
-            "Expeye",
-            "fastcs",
-            "flyscan",
-            "gonio",
-            "gridscan",
-            "mrad",
-            "murko",
-            "ophyd",
-            "readback",
-            "scanspec",
-            "scatterguard",
-            "smargon",
-            "topup",
-            "Transfocator",
-            "undulator",
-            "xbpm",
-            "xspress"
-        ]
     }
 }
