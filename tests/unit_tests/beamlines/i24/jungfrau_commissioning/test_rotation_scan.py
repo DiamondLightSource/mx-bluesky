@@ -8,6 +8,7 @@ from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.aperture import AperturePositions
 from dodal.devices.i24.beamstop import BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions
+from ophyd_async.core import completed_status
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
@@ -48,33 +49,31 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.read_devices_for_metadata"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.read_devices_for_metadata"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan._cleanup_plan"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan._cleanup_plan"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.check_topup_and_wait_if_necessary"
-)
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.arm_zebra")
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.setup_zebra_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.calculate_motion_profile"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.calculate_motion_profile"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.fly_jungfrau"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
 )
 async def test_single_rotation_plan_in_re(
     mock_fly: MagicMock,
     mock_setup_beamline: MagicMock,
     mock_calc_motion_profile: MagicMock,
     mock_setup_zebra: MagicMock,
-    mock_arm_zebra: MagicMock,
     mock_check_topup: MagicMock,
     mock_cleanup: MagicMock,
     mock_metadata_read: MagicMock,
@@ -83,6 +82,8 @@ async def test_single_rotation_plan_in_re(
     rotation_composite: RotationScanComposite,
 ):
     # Test correct functions are called, but don't test bluesky messages
+    mock_zebra_arm = MagicMock(side_effect=lambda _: completed_status())
+    rotation_composite.zebra.pc.arm.set = mock_zebra_arm
     params = get_good_single_rotation_params(tmp_path)
     mock_calc_motion_profile.return_value = calculate_motion_profile(params, 1, 1)
     RE(single_rotation_plan(rotation_composite, params))
@@ -93,7 +94,7 @@ async def test_single_rotation_plan_in_re(
         params, 1, await rotation_composite.gonio.omega.max_velocity.get_value()
     )
     mock_setup_zebra.assert_called_once()
-    mock_arm_zebra.assert_called_once()
+    mock_zebra_arm.assert_called_once()
     mock_check_topup.assert_called_once()
     mock_metadata_read.assert_called_once()
     mock_fly.assert_called_once()
@@ -101,13 +102,13 @@ async def test_single_rotation_plan_in_re(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.check_topup_and_wait_if_necessary"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.fly_jungfrau"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
 )
 def test_single_rotation_plan_in_simulator(
     _mock_fly: MagicMock,
@@ -164,7 +165,7 @@ def test_single_rotation_plan_in_simulator(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.single_rotation_plan"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.single_rotation_plan"
 )
 def test_multi_rotation_plan_in_re(
     mock_single_rotation: MagicMock,
@@ -225,11 +226,11 @@ class FakeException(Exception): ...
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.check_topup_and_wait_if_necessary",
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
     new=MagicMock(side_effect=FakeException),  # Exit test early by inserting exception
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
 )
 def test_single_rotation_plan_uses_default_if_no_det_distance(
     mock_set_up_beamline: MagicMock,
@@ -247,7 +248,7 @@ def test_single_rotation_plan_uses_default_if_no_det_distance(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.rotation_scan_plan.tidy_up_zebra_after_rotation_scan"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.tidy_up_zebra_after_rotation_scan"
 )
 def test_cleanup_plan(
     mock_tidy_zebra: MagicMock, rotation_composite: RotationScanComposite, RE: RunEngine

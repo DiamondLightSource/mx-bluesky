@@ -9,7 +9,7 @@ from dodal.devices.i24.aperture import AperturePositions
 from dodal.devices.i24.beamstop import BeamstopPositions
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.i24.dual_backlight import BacklightPositions
-from dodal.devices.zebra.zebra import I24Axes, Zebra
+from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
@@ -38,15 +38,12 @@ from mx_bluesky.beamlines.i24.parameters.rotation import (
     MultiRotationScanByTransmissions,
 )
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+    setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
 )
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
-)
-from mx_bluesky.common.experiment_plans.setup_zebra import (
-    arm_zebra,
-    setup_zebra_for_rotation,
 )
 from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
@@ -187,7 +184,6 @@ def single_rotation_plan(
                 direction=motion_values.direction,
                 shutter_opening_deg=motion_values.shutter_opening_deg,
                 shutter_opening_s=motion_values.shutter_time_s,
-                group=PlanGroupCheckpointConstants.SETUP_ZEBRA_FOR_ROTATION,
             )
 
             yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)
@@ -196,7 +192,7 @@ def single_rotation_plan(
             yield from bps.abs_set(
                 axis.velocity, motion_values.speed_for_rotation_deg_s, wait=True
             )
-            yield from arm_zebra(composite.zebra)
+            yield from bps.abs_set(composite.zebra.pc.arm, ArmDemand.ARM, wait=True)
 
             # Check topup gate
             yield from check_topup_and_wait_if_necessary(
