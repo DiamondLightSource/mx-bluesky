@@ -3,7 +3,7 @@ Deploy a New Release
 
 **Remember to discuss any new deployments with the appropriate beamline scientist.**
 
-The ``utility_scripts/deploy/deploy_mx_bluesky.py`` script will deploy the latest mx-bluesky version to a specified beamline. Deployments live in ``/dls_sw/ixx/software/bluesky/mx-bluesky_vX.X.X``. To do a new deployment you should run the deploy script from your mx-bluesky dev environment with e.g.
+The ``utility_scripts/deploy/deploy_mx_bluesky.py`` script will deploy the latest mx-bluesky version to a specified beamline. Deployments live in ``/dls_sw/ixx/software/bluesky/mx-bluesky_X.X.X``. To do a new deployment you should run the deploy script from your mx-bluesky dev environment with e.g.
 If you have just created a new release, you may need to run git fetch --tags to get the newest release.
 
 .. code:: console

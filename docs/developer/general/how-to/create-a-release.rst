@@ -9,7 +9,7 @@ Make sure that dodal has an up-to-date release. If not, create one (see `dodal r
 Release
 =======
 
-1. Create a new branch from main named pre followed by the release version e.g. pre_v0.1.0. The release versions should look like ``v{major}.{minor}.{patch}``.
+1. Create a new branch from main named pre followed by the release version e.g. pre_0.1.0. The release versions should look like ``{major}.{minor}.{patch}``.
 2. On this branch pin the up-to-date version of dodal and the latest release of nexgen if necessary, then push to GitHub.
 3. Make sure the CI is passing for this new pre-release branch.
 4. Go `here <https://github.com/DiamondLightSource/mx-bluesky/releases/new>`_.
