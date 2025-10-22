@@ -5,7 +5,6 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 import ispyb
-import ispyb.sqlalchemy
 import numpy as np
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition

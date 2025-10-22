@@ -9,6 +9,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 description = "Bluesky tools for MX Beamlines at DLS"
 dependencies = [
@@ -109,7 +110,24 @@ name = "Dominic Oram"
 version_file = "src/mx_bluesky/_version.py"
 
 [tool.pyright]
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownLambdaType = false
+reportUnknownParameterType = false
+reportUnknownArgumentType = false
+reportMissingParameterType = false
+reportMissingTypeArgument = false
+reportPrivateUsage = false
+reportUnknownVariableType = false
+reportUnusedVariable = false
+reportUnusedFunction = false
+reportArgumentType = false
+reportUnnecessaryComparison = false
+reportUnnecessaryCast = false
+reportMatchNotExhaustive = false
+reportUnnecessaryIsInstance = false
+
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
@@ -151,6 +169,7 @@ filterwarnings = [
 testpaths = "docs src tests/unit_tests"
 
 [tool.coverage.run]
+patch = ["subprocess"]
 data_file = "/tmp/mx_bluesky.coverage"
 
 [tool.coverage.paths]

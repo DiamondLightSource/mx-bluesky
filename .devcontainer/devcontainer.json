@@ -53,7 +53,6 @@
         }
     },
     "features": {
-        // Some default things like git config
         // add in eternal history and other bash features
         "ghcr.io/diamondlightsource/devcontainer-features/bash-config:1": {}
     },

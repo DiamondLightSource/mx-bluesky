@@ -41,9 +41,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
-from ..conftest import (  # noqa
-    fetch_comment,
-)
+from ..conftest import fetch_comment  # noqa  # type: ignore
 
 """
 Note that because these tests use the external processes some of the errors coming from
