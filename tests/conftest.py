@@ -1753,12 +1753,12 @@ def _mock_ispyb_conn(dcgid, dcids, giids):
             else:
                 return [c for c in self.mock_req.calls if pattern.match(c.request.url)]
 
-        def dc_calls_for(self, pattern: str | re.Pattern):
+        def dc_calls_for(self, pattern: re.Pattern):
             return [
                 ExpeyeDCRequestInfo(
-                    dcid=int(pattern.match(c.request.url)[2]),
-                    url=c.request.url,
-                    body=json.loads(c.request.body),
+                    dcid=int(pattern.match(c.request.url)[2]),  # type: ignore
+                    url=c.request.url,  # type: ignore
+                    body=json.loads(c.request.body),  # type: ignore
                 )
                 for c in self.calls_for(pattern)
             ]
