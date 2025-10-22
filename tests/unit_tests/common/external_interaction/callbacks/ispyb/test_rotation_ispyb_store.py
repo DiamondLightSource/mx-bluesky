@@ -228,12 +228,12 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,
     }
-    update_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
+    create_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
     assert (
-        int(mock_ispyb_conn.match(update_dc_request, DCS_RE, 2))
+        int(mock_ispyb_conn.match(create_dc_request, DCS_RE, 2))
         == TEST_DATA_COLLECTION_GROUP_ID
     )
-    assert json.loads(update_dc_request.body) == EXPECTED_BEGIN_DATA_COLLECTION
+    assert json.loads(create_dc_request.body) == EXPECTED_BEGIN_DATA_COLLECTION
 
 
 @patch(
@@ -296,24 +296,18 @@ def test_update_deposition(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
     assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
-    update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert (
-        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(update_dc_request.body) == EXPECTED_UPDATE_DATA_COLLECTION | {
+    update_dc_request = mock_ispyb_conn.dc_calls_for(DC_RE)[0]
+    assert update_dc_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_request.body == EXPECTED_UPDATE_DATA_COLLECTION | {
         "synchrotronMode": "test",
         "slitGapVertical": 1,
         "slitGapHorizontal": 1,
         "flux": 10,
     }
 
-    create_pos_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
-    assert (
-        int(mock_ispyb_conn.match(create_pos_request, POSITION_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(create_pos_request.body) == {
+    create_pos_request = mock_ispyb_conn.dc_calls_for(POSITION_RE)[0]
+    assert create_pos_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert create_pos_request.body == {
         "posX": 10,
         "posY": 20,
         "posZ": 30,
@@ -355,24 +349,18 @@ def test_update_deposition_with_group_id_updates(
     )
     assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 0
     assert len(mock_ispyb_conn.calls_for(DCG_ID)) == 0
-    update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[0].request
-    assert (
-        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(update_dc_request.body) == EXPECTED_UPDATE_DATA_COLLECTION | {
+    update_dc_request = mock_ispyb_conn.dc_calls_for(DC_RE)[0]
+    assert update_dc_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_request.body == EXPECTED_UPDATE_DATA_COLLECTION | {
         "synchrotronMode": "test",
         "slitGapVertical": 1,
         "slitGapHorizontal": 1,
         "flux": 10,
     }
 
-    update_position_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
-    assert (
-        int(mock_ispyb_conn.match(update_position_request, POSITION_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(update_position_request.body) == {
+    update_position_request = mock_ispyb_conn.dc_calls_for(POSITION_RE)[0]
+    assert update_position_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_position_request.body == {
         "posX": 10,
         "posY": 20,
         "posZ": 30,
@@ -410,21 +398,15 @@ def test_end_deposition_happy_path(
     get_current_time.return_value = EXPECTED_END_TIME
     dummy_ispyb.end_deposition(ispyb_ids, "success", "Test succeeded")
     dcids_to_append_comment_reqs = {
-        int(DC_COMMENT_RE.match(c.request.url)[2]): c.request
-        for c in mock_ispyb_conn.calls_for(DC_COMMENT_RE)
+        rq.dcid: rq for rq in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
     }
-    assert json.loads(
-        dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body
-    ) == {
+    assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body == {
         "comments": " DataCollection Successful reason: Test succeeded",
     }
     assert len(mock_ispyb_conn.calls_for(DC_RE)) == 2
-    update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[1].request
-    assert (
-        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(update_dc_request.body) == {
+    update_dc_request = mock_ispyb_conn.dc_calls_for(DC_RE)[1]
+    assert update_dc_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_request.body == {
         "endTime": EXPECTED_END_TIME,
         "runStatus": "DataCollection Successful",
     }

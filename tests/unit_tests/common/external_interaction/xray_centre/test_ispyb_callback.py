@@ -156,17 +156,11 @@ class TestXrayCentreISPyBCallback:
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         }
-        update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)]
-        assert (
-            int(mock_ispyb_conn.match(update_dc_requests[0], DC_RE, 2))
-            == TEST_DATA_COLLECTION_IDS[0]
-        )
-        assert (
-            int(mock_ispyb_conn.match(update_dc_requests[1], DC_RE, 2))
-            == TEST_DATA_COLLECTION_IDS[1]
-        )
-        assert json.loads(update_dc_requests[0].body) == expected_upsert
-        assert json.loads(update_dc_requests[1].body) == expected_upsert
+        update_dc_requests = mock_ispyb_conn.dc_calls_for(DC_RE)
+        assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+        assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+        assert update_dc_requests[0].body == expected_upsert
+        assert update_dc_requests[1].body == expected_upsert
 
     def test_flux_read_events_3d(self, mock_ispyb_conn, TestEventData):
         callback = GridscanISPyBCallback(
@@ -189,7 +183,7 @@ class TestXrayCentreISPyBCallback:
             TestEventData.test_event_document_during_data_collection
         )
 
-        update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)[2:]]
+        update_dc_requests = mock_ispyb_conn.dc_calls_for(DC_RE)[2:]
         expected_payload = {
             "wavelength": 1.11647184541378,
             "transmission": 100,
@@ -198,16 +192,10 @@ class TestXrayCentreISPyBCallback:
             "beamSizeAtSampleX": 0.05,
             "beamSizeAtSampleY": 0.02,
         }
-        assert (
-            int(mock_ispyb_conn.match(update_dc_requests[0], DC_RE, 2))
-            == TEST_DATA_COLLECTION_IDS[0]
-        )
-        assert (
-            int(mock_ispyb_conn.match(update_dc_requests[1], DC_RE, 2))
-            == TEST_DATA_COLLECTION_IDS[1]
-        )
-        assert json.loads(update_dc_requests[0].body) == expected_payload
-        assert json.loads(update_dc_requests[1].body) == expected_payload
+        assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+        assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+        assert update_dc_requests[0].body == expected_payload
+        assert update_dc_requests[1].body == expected_payload
         assert len(mock_ispyb_conn.calls_for(POSITION_RE)) == 0
         assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 0
 
@@ -293,13 +281,10 @@ class TestXrayCentreISPyBCallback:
             "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
             "bottom right (px): [3250,800].",
         }
-        update_grid_requests = [c.request for c in mock_ispyb_conn.calls_for(GRID_RE)]
         ids_to_grid_upsert_requests = {
-            int(GRID_RE.match(rq.url)[2]): rq for rq in update_grid_requests
+            rq.dcid: rq for rq in (mock_ispyb_conn.dc_calls_for(GRID_RE))
         }
-        assert json.loads(
-            ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body
-        ) == {
+        assert ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
             "dx": 0.1264,
             "dy": 0.1264,
             "stepsX": 40,
@@ -311,9 +296,7 @@ class TestXrayCentreISPyBCallback:
             "orientation": "horizontal",
             "snaked": True,
         }
-        assert json.loads(
-            ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body
-        ) == {
+        assert ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body == {
             "dx": 0.1264,
             "dy": 0.1264,
             "stepsX": 40,

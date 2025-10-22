@@ -1375,7 +1375,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     create_dc_requests = [
         c.request for c in mock_ispyb_conn_multiscan.calls_for(DCS_RE)
     ]
-    update_dc_requests = [c.request for c in mock_ispyb_conn_multiscan.calls_for(DC_RE)]
+    update_dc_requests = mock_ispyb_conn_multiscan.dc_calls_for(DC_RE)
     assert len(create_dc_requests) == number_of_scans
     assert len(update_dc_requests) == number_of_scans * 3
     for create_dc, update_dcs, rotation_params in zip(
@@ -1395,7 +1395,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         )
         assert create_data["numberOfImages"] == rotation_params.num_images
 
-        dc_id = int(mock_ispyb_conn_multiscan.match(update_dcs[0], DC_RE, 2))
+        dc_id = update_dcs[0].dcid
         append_comment_call = [
             rq
             for rq in mock_ispyb_conn_multiscan.dc_calls_for(DC_COMMENT_RE)
@@ -1406,10 +1406,10 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
         position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
         assert position_string in comment
 
-        second_update_data = json.loads(update_dcs[1].body)
+        second_update_data = update_dcs[1].body
         assert second_update_data["resolution"] > 0  # resolution
 
-        third_update_data = json.loads(update_dcs[2].body)
+        third_update_data = update_dcs[2].body
         assert third_update_data["endTime"]  # timestamp
         assert third_update_data["runStatus"] == "DataCollection Successful"
 

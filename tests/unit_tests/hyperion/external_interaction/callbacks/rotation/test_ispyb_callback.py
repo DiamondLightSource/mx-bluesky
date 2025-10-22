@@ -68,12 +68,12 @@ def test_activity_gated_start(
         "experimentType": "SAD",
         "sampleId": TEST_SAMPLE_ID,
     }
-    update_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
+    create_dc_request = mock_ispyb_conn.calls_for(DCS_RE)[0].request
     assert (
-        int(mock_ispyb_conn.match(update_dc_request, DCS_RE, 2))
+        int(mock_ispyb_conn.match(create_dc_request, DCS_RE, 2))
         == TEST_DATA_COLLECTION_GROUP_ID
     )
-    assert json.loads(update_dc_request.body) == replace_all_tmp_paths(
+    assert json.loads(create_dc_request.body) == replace_all_tmp_paths(
         EXPECTED_DATA_COLLECTION, tmp_path
     )
 
@@ -113,12 +113,9 @@ def test_hardware_read_events(
     }
 
     expected_data = TestEventData.test_event_document_pre_data_collection["data"]
-    create_position_request = mock_ispyb_conn.calls_for(POSITION_RE)[0].request
-    assert (
-        int(mock_ispyb_conn.match(create_position_request, POSITION_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(create_position_request.body) == {
+    create_position_request = mock_ispyb_conn.dc_calls_for(POSITION_RE)[0]
+    assert create_position_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert create_position_request.body == {
         "posX": expected_data["smargon-x"],
         "posY": expected_data["smargon-y"],
         "posZ": expected_data["smargon-z"],
@@ -150,12 +147,9 @@ def test_flux_read_events(
     )
 
     assert len(mock_ispyb_conn.calls_for(DCG_RE)) == 0
-    update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[1].request
-    assert (
-        int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
-        == TEST_DATA_COLLECTION_IDS[0]
-    )
-    assert json.loads(update_dc_request.body) == {
+    update_dc_request = mock_ispyb_conn.dc_calls_for(DC_RE)[1]
+    assert update_dc_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_request.body == {
         "beamSizeAtSampleX": 0.05,
         "beamSizeAtSampleY": 0.02,
         "wavelength": 1.11647184541378,
@@ -192,12 +186,9 @@ def test_oav_rotation_snapshot_triggered_event(
         event_doc = dict(TestEventData.test_event_document_oav_rotation_snapshot)
         event_doc["data"]["oav-snapshot-last_saved_path"] = snapshot["filename"]  # type: ignore
         callback.activity_gated_event(event_doc)  # type: ignore
-        update_dc_request = mock_ispyb_conn.calls_for(DC_RE)[i].request
-        assert (
-            int(mock_ispyb_conn.match(update_dc_request, DC_RE, 2))
-            == TEST_DATA_COLLECTION_IDS[0]
-        )
-        assert json.loads(update_dc_request.body) == {
+        update_dc_request = mock_ispyb_conn.dc_calls_for(DC_RE)[i]
+        assert update_dc_request.dcid == TEST_DATA_COLLECTION_IDS[0]
+        assert update_dc_request.body == {
             snapshot["colname"]: snapshot["filename"],
         }
         i += 1
