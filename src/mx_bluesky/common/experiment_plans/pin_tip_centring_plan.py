@@ -115,6 +115,9 @@ def move_pin_into_view(
 def pin_tip_centre_plan(
     composite: PinTipCentringComposite,
     tip_offset_microns: float,
+    x_direction: int = -1,
+    y_direction: int = -1,
+    z_direction: int = 1,
     oav_config_file: str = OAV_CONFIG_JSON,
 ):
     """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
@@ -124,6 +127,11 @@ def pin_tip_centre_plan(
     Args:
         tip_offset_microns (float): The x offset from the tip where the centre is assumed
                                     to be.
+        x_direction, y_direction, z_direction (int): The direction of motor relative to
+                                                     oav screen. Positive (1) means they
+                                                     are the same direction. This should
+                                                     only be 1 or -1. Default setting is
+                                                     set to follow hyperion.
     """
     oav: OAV = composite.oav
     gonio: XYZOmegaStage = composite.gonio
@@ -138,7 +146,7 @@ def pin_tip_centre_plan(
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
-            gonio, pixel_to_move_to, oav
+            gonio, pixel_to_move_to, oav, x_direction, y_direction, z_direction
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
         yield from move_gonio_warn_on_out_of_range(gonio, position_mm)
