@@ -9,12 +9,11 @@ import sys
 import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
-from copy import deepcopy
 from functools import partial
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
 import pydantic
@@ -66,7 +65,6 @@ from dodal.log import set_up_all_logging_handlers
 from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
@@ -1280,7 +1278,6 @@ EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
 TEST_DATA_COLLECTION_IDS = (12, 13)
 TEST_DATA_COLLECTION_GROUP_ID = 34
-TEST_POSITION_ID = 78
 TEST_GRID_INFO_IDS = (56, 57)
 TEST_SAMPLE_ID = 364758
 TEST_BARCODE = "12345A"
@@ -1671,35 +1668,7 @@ class ExpeyeDCRequestInfo:
     body: dict
 
 
-def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
-    def upsert_data_collection(values):
-        kvpairs = remap_upsert_columns(
-            list(MXAcquisition.get_data_collection_params()), values
-        )
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_data_collection.i)  # pyright: ignore
-
-    mx_acq = base_ispyb_conn.return_value.mx_acquisition
-    mx_acq.upsert_data_collection.side_effect = upsert_data_collection
-    mx_acq.update_dc_position.return_value = position_id
-    mx_acq.upsert_data_collection_group.return_value = dcgid
-
-    def upsert_dc_grid(values):
-        kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_dc_grid.i)  # pyright: ignore
-
-    upsert_data_collection.i = iter(dcids)  # pyright: ignore
-    upsert_dc_grid.i = iter(giids)  # pyright: ignore
-
-    mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
-
-    # Simulate exp-eye functionality as per above
-
+def _mock_ispyb_conn(dcgid, dcids, giids):
     def create_or_update_dcg_response(status, request):
         return (
             status,
@@ -1711,6 +1680,8 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             ),
         )
 
+    it_dc_id = iter(dcids)
+
     def create_dc_response(request):
         requested_dcg_id = int(DCS_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dcg_id == dcgid
@@ -1719,7 +1690,7 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
             {},
             json.dumps(
                 {
-                    "dataCollectionId": next(upsert_data_collection.i),  # type: ignore
+                    "dataCollectionId": next(it_dc_id),  # type: ignore
                     "dataCollectionGroupId": dcgid,
                 }
             ),
@@ -1741,70 +1712,70 @@ def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
         assert requested_dc_id in dcids
         return (201, {}, json.dumps({}))
 
+    it_grid_info_id = iter(giids)
+
     def create_grid_response(request):
         requested_dc_id = int(GRID_RE.match(request.path_url)[2])  # type: ignore
         assert requested_dc_id in dcids
-        return (201, {}, json.dumps({"gridInfoId": next(upsert_dc_grid.i)}))  # type: ignore
+        return (201, {}, json.dumps({"gridInfoId": next(it_grid_info_id)}))  # type: ignore
 
-    def calls_for(mock_req: responses.RequestsMock, pattern: str | re.Pattern):
-        if not isinstance(pattern, re.Pattern):
-            return [c for c in mock_req.calls if c.request.url == pattern]
-        else:
-            return [c for c in mock_req.calls if pattern.match(c.request.url)]
+    class ExpeyeRequestsUtil:
+        def __init__(self, mock_req: responses.RequestsMock):
+            self.mock_req = mock_req
+            for pattern, callback in {
+                DCGS_RE: partial(create_or_update_dcg_response, 201),
+                DCS_RE: create_dc_response,
+                POSITION_RE: create_position_response,
+                GRID_RE: create_grid_response,
+            }.items():
+                self.mock_req.add_callback(
+                    responses.POST,
+                    pattern,
+                    callback=callback,
+                    content_type="application/json",
+                )
 
-    def dc_calls_for(mock_req: responses.RequestsMock, pattern: str | re.Pattern):
-        return [
-            ExpeyeDCRequestInfo(
-                dcid=int(pattern.match(c.request.url)[2]),
-                url=c.request.url,
-                body=json.loads(c.request.body),
-            )
-            for c in calls_for(mock_req, pattern)
-        ]
+            for pattern, callback in {
+                DC_RE: partial(update_dc_response, DC_RE),
+                DC_COMMENT_RE: partial(update_dc_response, DC_COMMENT_RE),
+                DCG_RE: partial(create_or_update_dcg_response, 200),
+            }.items():
+                self.mock_req.add_callback(
+                    responses.PATCH,
+                    pattern,
+                    callback=callback,
+                    content_type="application/json",
+                )
 
-    def match(mock_req: PreparedRequest, pattern: re.Pattern, idx: int) -> str:
-        matcher = pattern.match(mock_req.url)
-        assert matcher
-        return matcher[idx]
+        def calls_for(self, pattern: str | re.Pattern):
+            if not isinstance(pattern, re.Pattern):
+                return [c for c in self.mock_req.calls if c.request.url == pattern]
+            else:
+                return [c for c in self.mock_req.calls if pattern.match(c.request.url)]
+
+        def dc_calls_for(self, pattern: str | re.Pattern):
+            return [
+                ExpeyeDCRequestInfo(
+                    dcid=int(pattern.match(c.request.url)[2]),
+                    url=c.request.url,
+                    body=json.loads(c.request.body),
+                )
+                for c in self.calls_for(pattern)
+            ]
+
+        def match(self, req: PreparedRequest, pattern: re.Pattern, idx: int) -> str:
+            matcher = pattern.match(req.url)
+            assert matcher
+            return matcher[idx]
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rq_mock:
-        for pattern, callback in {
-            DCGS_RE: partial(create_or_update_dcg_response, 201),
-            DCS_RE: create_dc_response,
-            POSITION_RE: create_position_response,
-            GRID_RE: create_grid_response,
-        }.items():
-            rq_mock.add_callback(
-                responses.POST,
-                pattern,
-                callback=callback,
-                content_type="application/json",
-            )
-
-        for pattern, callback in {
-            DC_RE: partial(update_dc_response, DC_RE),
-            DC_COMMENT_RE: partial(update_dc_response, DC_COMMENT_RE),
-            DCG_RE: partial(create_or_update_dcg_response, 200),
-        }.items():
-            rq_mock.add_callback(
-                responses.PATCH,
-                pattern,
-                callback=callback,
-                content_type="application/json",
-            )
-
-        base_ispyb_conn.calls_for = partial(calls_for, rq_mock)
-        base_ispyb_conn.dc_calls_for = partial(dc_calls_for, rq_mock)
-        base_ispyb_conn.match = match
-        yield base_ispyb_conn
+        yield ExpeyeRequestsUtil(rq_mock)
 
 
 @pytest.fixture
-def mock_ispyb_conn(base_ispyb_conn, request):
+def mock_ispyb_conn(request):
     dcg_id = getattr(request, "param", {}).get("dcg_id", TEST_DATA_COLLECTION_GROUP_ID)
     yield from _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
         dcg_id,
         TEST_DATA_COLLECTION_IDS,
         TEST_GRID_INFO_IDS,
@@ -1812,39 +1783,8 @@ def mock_ispyb_conn(base_ispyb_conn, request):
 
 
 @pytest.fixture
-def base_ispyb_conn():
-    with patch("ispyb.open", mock_open()) as ispyb_connection:
-        mock_mx_acquisition = MagicMock()
-        mock_mx_acquisition.get_data_collection_group_params.side_effect = (
-            lambda: deepcopy(MXAcquisition.get_data_collection_group_params())
-        )
-
-        mock_mx_acquisition.get_data_collection_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_data_collection_params()
-        )
-        mock_mx_acquisition.get_dc_position_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_position_params()
-        )
-        mock_mx_acquisition.get_dc_grid_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_grid_params()
-        )
-        ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
-        mock_core = MagicMock()
-
-        def mock_retrieve_visit(visit_str):
-            assert visit_str, "No visit id supplied"
-            return TEST_SESSION_ID
-
-        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
-        ispyb_connection.return_value.core = mock_core
-        yield ispyb_connection
-
-
-@pytest.fixture
-def mock_ispyb_conn_multiscan(base_ispyb_conn):
+def mock_ispyb_conn_multiscan():
     yield from _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
         TEST_DATA_COLLECTION_GROUP_ID,
         list(range(12, 24)),
         list(range(56, 68)),

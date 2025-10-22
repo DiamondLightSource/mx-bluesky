@@ -32,7 +32,6 @@ from ......conftest import (
     TEST_DATA_COLLECTION_IDS,
     TEST_GRID_INFO_IDS,
     TEST_SAMPLE_ID,
-    mx_acquisition_from_conn,
 )
 
 TEST_PROPOSAL_REF = "cm31105"
@@ -655,5 +654,4 @@ def test_update_data_collection_no_comment(
     )
     dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
 
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    mx_acq.update_data_collection_append_comments.assert_not_called()
+    assert len(mock_ispyb_conn.calls_for(DC_COMMENT_RE)) == 0
