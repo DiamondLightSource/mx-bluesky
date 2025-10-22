@@ -56,3 +56,14 @@ For building and deploying a Docker image please see :doc:`../../hyperion/deploy
         . ./.venv/bin/activate
         pip install -e .
         pip install -e ../dodal
+
+.. _deploying-to-i04-blueapi:
+
+Deploying to I04 BlueAPI
+------------------------
+
+To deploy to I04 BlueAPI, update the Chart.yaml and values.yaml in the i04-services repository to match the release version. It's a good idea to bump BlueAPI to the latest version too.
+
+Look at this `example <https://gitlab.diamond.ac.uk/controls/containers/beamline/i04-services/-/commit/f0ea7432ae996834001bbe50a07ba86d23534749>`_ as a guide. Note that mx-bluesky has recently dropped the ``v`` from it's version numbers.
+
+Once this change has been merged into main and the CI has completed successfully, press synchronise on the I04 ArgoCD page. This will update the version deployed in Kubernetes.
