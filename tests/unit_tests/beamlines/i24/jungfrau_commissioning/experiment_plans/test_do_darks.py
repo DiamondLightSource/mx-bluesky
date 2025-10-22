@@ -166,15 +166,15 @@ def test_do_darks_stops_if_exception_after_stage(
 
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.create_jungfrau_internal_triggering_info",
-    new=MagicMock(side_effect=FakeException),
+    new=MagicMock(side_effect=FakeError),
 )
 def test_do_non_pedestal_darks_unstages_jf_on_exception(
-    RE: RunEngine, jungfrau: CommissioningJungfrau
+    run_engine: RunEngine, jungfrau: CommissioningJungfrau
 ):
     jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
     jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
-    with pytest.raises(FakeException):
-        RE(do_non_pedestal_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
+    with pytest.raises(FakeError):
+        run_engine(do_non_pedestal_darks(GainMode.DYNAMIC, jungfrau=jungfrau))
 
     assert jungfrau.unstage.call_count == 1
     assert [c == call(jungfrau, wait=True) for c in jungfrau.unstage.call_args_list]
@@ -191,7 +191,7 @@ def test_do_non_pedestal_darks_unstages_jf_on_exception(
 def test_do_non_pedestal_darks_triggers_correct_plans(
     mock_fly_jf: MagicMock,
     mock_move: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     jungfrau: CommissioningJungfrau,
 ):
     gain_mode = GainMode.FORCE_SWITCH_G1
@@ -203,7 +203,7 @@ def test_do_non_pedestal_darks_triggers_correct_plans(
     parent_mock.attach_mock(jungfrau.unstage, "jungfrau_unstage")
     parent_mock.attach_mock(jungfrau.stage, "jungfrau_stage")
     expected_trigger_info = create_jungfrau_internal_triggering_info(1000, 0.001)
-    RE(do_non_pedestal_darks(gain_mode=gain_mode, jungfrau=jungfrau))
+    run_engine(do_non_pedestal_darks(gain_mode=gain_mode, jungfrau=jungfrau))
 
     assert parent_mock.method_calls == [
         call.jungfrau_stage(),
