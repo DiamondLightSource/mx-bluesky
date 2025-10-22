@@ -10,7 +10,7 @@ Release
 =======
 
 1. Create a new branch from main named pre followed by the release version e.g. pre_0.1.0. The release versions should look like ``{major}.{minor}.{patch}``.
-2. On this branch pin the up-to-date version of dodal and the latest release of nexgen if necessary, then push to GitHub.
+2. On this branch pin the latest release of dodal, and nexgen if necessary, then push to GitHub. (e.g "dls-dodal == 1.63.0")
 3. Make sure the CI is passing for this new pre-release branch.
 4. Go `here <https://github.com/DiamondLightSource/mx-bluesky/releases/new>`_.
 5. Select Choose a new tag and type the version of the release, then select the branch created in step 1 as the target.
