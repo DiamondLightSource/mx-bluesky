@@ -15,19 +15,8 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterState,
 )
 
-"""
-Check with the robot that there is no pin mounted. If there is raise an exception with a nice error message.
-Move the beamstop to data collection position
-Move the scintillator in
-Wait for the above to finish
-Set transmission to 100%
-Open the fast shutter
-Take an OAV image
-"""
 
-
-# need to make sure you return the MsgGenerator type and read up on this
-def take_image(
+def take_oav_image_with_scintillator_in(
     image_name: str = f"{time.time_ns()}",
     # check if there is a default path we can use
     image_path: str = "/dls/mx-scratch/OAV_Images",
@@ -39,6 +28,20 @@ def take_image(
     oav: OAV = inject("oav"),
     feedback: XBPMFeedback = inject("xbpm_feedback"),
 ) -> MsgGenerator:
+    """
+    Takes an OAV image after necessary checks and preparation steps.
+    Necessary checks include making sure the pin is NOT mounted and the beam is on (feedback check).
+    Preparation steps include moving the scintillator in, setting the transmission of the beam
+    and opening the fast shutter.
+
+    Args:
+    NEED to change this
+        time_to_thaw (float): Time to thaw for, in seconds.
+        rotation (float, optional): How much to rotate by whilst thawing, in degrees.
+                                    Defaults to 360.
+        ... devices: These are the specific ophyd-devices used for the plan, the
+                     defaults are always correct.
+    """
     initial_wait = "Wait for scint to move in"
     # check pin is mounted
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
