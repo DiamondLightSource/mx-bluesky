@@ -16,6 +16,9 @@ def aithre_pin_tip_centre(
     gonio: Goniometer = inject("gonio"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
     tip_offset_microns: float = 0,
+    x_direction: int = -1,
+    y_direction: int = -1,
+    z_direction: int = -1,
     oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ) -> MsgGenerator:
     """
@@ -27,5 +30,8 @@ def aithre_pin_tip_centre(
     yield from pin_tip_centre_plan(
         composite=composite,
         tip_offset_microns=tip_offset_microns,
+        x_direction=x_direction,
+        y_direction=y_direction,
+        z_direction=z_direction,
         oav_config_file=oav_config_file,
     )
