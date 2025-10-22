@@ -3,12 +3,17 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
+from dodal.devices.zocalo import ZocaloStartInfo
+
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloInfoGenerator,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
@@ -21,6 +26,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     populate_data_collection_info_for_rotation,
 )
@@ -175,4 +181,34 @@ class RotationISPyBCallback(BaseISPyBCallback):
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
             return super().activity_gated_stop(doc)
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
+
+
+def generate_start_info_from_ordered_runs() -> ZocaloInfoGenerator:
+    """
+    Generate the zocalo trigger info from bluesky runs where the frame number is
+    computed using the order in which the run start docs are received.
+    Yields:
+        A list of the ZocaloStartInfo objects extracted from the event
+    Send:
+        A dict containing the run start document
+    """
+    start_frame = 0
+    doc = yield []
+    while doc:
+        zocalo_info = []
+        if (
+            isinstance(scan_points := doc.get("scan_points"), list)
+            and isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple)
+            and len(ispyb_ids) > 0
+        ):
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Zocalo triggering for {ispyb_ids}")
+            ids_and_shape = list(zip(ispyb_ids, scan_points, strict=False))
+            for idx, id_and_shape in enumerate(ids_and_shape):
+                id, shape = id_and_shape
+                num_frames = number_of_frames_from_scan_spec(shape)
+                zocalo_info.append(
+                    ZocaloStartInfo(id, None, start_frame, num_frames, idx)
+                )
+                start_frame += num_frames
+        doc = yield zocalo_info

@@ -54,7 +54,9 @@ class TestXrayCentreIspybHandler:
         ispyb_handler = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        ispyb_handler.activity_gated_start(TestEventData.test_gridscan3d_start_document)
+        ispyb_handler.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )
         ispyb_handler.activity_gated_descriptor(
             TestEventData.test_descriptor_document_pre_data_collection
         )
@@ -68,7 +70,7 @@ class TestXrayCentreIspybHandler:
             TestEventData.test_event_document_during_data_collection  # pyright: ignore
         )
         ispyb_handler.activity_gated_stop(
-            TestEventData.test_run_gridscan_failed_stop_document
+            TestEventData.test_grid_detect_and_gridscan_failed_stop_document
         )
 
         ispyb_handler.ispyb.end_deposition.assert_called_once_with(  # type: ignore
@@ -87,7 +89,10 @@ class TestXrayCentreIspybHandler:
         ispyb_handler = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        ispyb_handler.activity_gated_start(TestEventData.test_gridscan3d_start_document)
+        ispyb_handler.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )
+        ispyb_handler.activity_gated_start(TestEventData.test_do_fgs_start_document)
         ispyb_handler.activity_gated_descriptor(
             TestEventData.test_descriptor_document_pre_data_collection
         )
@@ -100,10 +105,10 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.activity_gated_event(
             TestEventData.test_event_document_during_data_collection
         )
+        ispyb_handler.activity_gated_stop(TestEventData.test_do_fgs_stop_document)
         ispyb_handler.activity_gated_stop(
-            TestEventData.test_do_fgs_gridscan_stop_document
+            TestEventData.test_grid_detect_and_gridscan_stop_document
         )
-
         ispyb_handler.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(
                 data_collection_group_id=DCG_ID,
@@ -130,7 +135,9 @@ class TestXrayCentreIspybHandler:
         ispyb_handler = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        ispyb_handler.activity_gated_start(TestEventData.test_gridscan3d_start_document)
+        ispyb_handler.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )
         ispyb_handler.activity_gated_descriptor(
             TestEventData.test_descriptor_document_pre_data_collection
         )
@@ -164,7 +171,9 @@ class TestXrayCentreIspybHandler:
         ispyb_handler = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
-        ispyb_handler.activity_gated_start(TestEventData.test_gridscan3d_start_document)
+        ispyb_handler.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )
         ispyb_handler.activity_gated_descriptor(
             TestEventData.test_descriptor_document_pre_data_collection
         )
@@ -178,7 +187,7 @@ class TestXrayCentreIspybHandler:
             TestEventData.test_event_document_during_data_collection
         )
         ispyb_handler.activity_gated_stop(
-            TestEventData.test_run_gridscan_failed_stop_document
+            TestEventData.test_grid_detect_and_gridscan_failed_stop_document
         )
 
         ISPYB_ZOCALO_CALLBACK_LOGGER.info("test")
@@ -196,11 +205,14 @@ class TestXrayCentreIspybHandler:
             param_type=GridCommonWithHyperionDetectorParams,
         )
 
-        ispyb_handler.activity_gated_start(TestEventData.test_gridscan3d_start_document)  # type:ignore
+        ispyb_handler.activity_gated_start(
+            TestEventData.test_grid_detect_and_gridscan_start_document
+        )  # type:ignore
 
         ispyb_handler.activity_gated_start(TestEventData.test_do_fgs_start_document)  # type:ignore
+        ispyb_handler.activity_gated_stop(TestEventData.test_do_fgs_stop_document)
         ispyb_handler.activity_gated_stop(
-            TestEventData.test_do_fgs_gridscan_stop_document
+            TestEventData.test_grid_detect_and_gridscan_stop_document
         )
 
         ispyb_handler.data_collection_group_info = (
