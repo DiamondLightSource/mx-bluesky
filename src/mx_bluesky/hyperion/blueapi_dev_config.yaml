@@ -1,0 +1,17 @@
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.i03
+      mock: true
+    - kind: planFunctions
+      module: mx_bluesky.hyperion.blueapi_plans
+  events:
+    broadcast_status_events: false
+api:
+  url: http://localhost:5005
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
+logging:
+  level: DEBUG
