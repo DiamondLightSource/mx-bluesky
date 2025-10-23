@@ -113,7 +113,7 @@ def modechange(action):
         caput(pv.cstrm_mp_select, "Out")
         SSX_LOGGER.debug("Pin Hand Mount Done")
 
-    # Pin Room Tempreature Hand Mount
+    # Pin Room Temperature Hand Mount
     elif action == "Pin_rt_hand_mount":
         caput(pv.cstrm_p1701, 0)
         caput(pv.cstrm_mp_select, "Away")
@@ -147,7 +147,7 @@ def modechange(action):
         caput(pv.bl_mp_select, "In")
         SSX_LOGGER.debug("Pin Data Collection Done")
 
-    # Pin Room Tempreature Data Collection
+    # Pin Room Temperature Data Collection
     elif action == "Pin_rt_data_collection":
         SSX_LOGGER.debug("RT Mode")
         caput(pv.cstrm_p1701, 0)

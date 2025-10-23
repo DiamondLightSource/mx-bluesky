@@ -538,7 +538,7 @@ def collection_complete_plan(
     SSX_LOGGER.debug(f"Collection end time {end_time}")
     dcid.collection_complete(end_time, aborted=False)
 
-    # NOTE no files to copy anymore but shoud write userlog here
+    # NOTE no files to copy anymore but should write userlog here
     yield from bps.null()
 
 

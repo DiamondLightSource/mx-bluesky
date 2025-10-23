@@ -59,7 +59,7 @@ def check_parameters(
 
     if upper_transmission < lower_transmission:
         raise ValueError(
-            f"Upper transmission limit {upper_transmission} must be greater than lower tranmission limit {lower_transmission}"
+            f"Upper transmission limit {upper_transmission} must be greater than lower transmission limit {lower_transmission}"
         )
 
     if not upper_transmission >= initial_transmission >= lower_transmission:
@@ -80,7 +80,7 @@ def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
         if deadtime > deadtime_threshold:
             direction = Direction.NEGATIVE
             LOGGER.info(
-                "Found tranmission to go above deadtime threshold. Reducing transmission..."
+                "Found transmission to go above deadtime threshold. Reducing transmission..."
             )
     return direction
 
