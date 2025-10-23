@@ -113,7 +113,14 @@ def bluesky_context(
     context = BlueskyContext(run_engine=RE)
 
     def mock_load_module(module, **kwargs):
-        devices = [smargon, aperture_scatterguard, robot, lower_gonio, baton, detector_motion]
+        devices = [
+            smargon,
+            aperture_scatterguard,
+            robot,
+            lower_gonio,
+            baton,
+            detector_motion,
+        ]
         for device in devices:
             context.register_device(device)
         return {d.name: d for d in devices}, {}
