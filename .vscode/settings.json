@@ -52,6 +52,7 @@
         "pmac",
         "beamlines",
         "caget",
-        "thawer"
+        "thawer",
+        "beamline",
     ],
 }
