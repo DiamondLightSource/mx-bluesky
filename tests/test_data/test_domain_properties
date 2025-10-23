@@ -1,6 +1,8 @@
 
 gda.px.oav.centring.pinTip=True
 
+gda.px.expttable.default.wavelength=0.95373
+
 # Main Hyperion settings
 
 #####################################################
