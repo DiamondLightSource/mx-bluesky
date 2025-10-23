@@ -109,7 +109,7 @@ class SpecifiedGrid(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType])
 
     @property
     @abstractmethod
-    def FGS_params(self) -> GridScanParamType: ...
+    def fast_gridscan_params(self) -> GridScanParamType: ...
 
     def do_set_stub_offsets(self, value: bool):
         self._set_stub_offsets = value
@@ -167,7 +167,7 @@ class SpecifiedThreeDGridScan(
     grid2_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_2)
 
     @property
-    def FGS_params(self) -> ZebraGridScanParamsThreeD:
+    def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
         return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,
             y_steps=self.y_steps,

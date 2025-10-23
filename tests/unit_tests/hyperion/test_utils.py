@@ -3,8 +3,8 @@ import math
 import pytest
 
 from mx_bluesky.common.utils.utils import (
-    convert_angstrom_to_eV,
-    convert_eV_to_angstrom,
+    convert_angstrom_to_ev,
+    convert_ev_to_angstrom,
     energy_to_bragg_angle,
 )
 
@@ -19,7 +19,7 @@ test_energies = [7650, 10000, 12700, 15000, 18000]
     list(zip(test_wavelengths, test_energies, strict=False)),
 )
 def test_ev_to_a_converter(test_wavelength, test_energy):
-    assert convert_eV_to_angstrom(test_energy) == pytest.approx(test_wavelength)
+    assert convert_ev_to_angstrom(test_energy) == pytest.approx(test_wavelength)
 
 
 @pytest.mark.parametrize(
@@ -27,7 +27,7 @@ def test_ev_to_a_converter(test_wavelength, test_energy):
     list(zip(test_wavelengths, test_energies, strict=False)),
 )
 def test_a_to_ev_converter(test_wavelength, test_energy):
-    assert convert_angstrom_to_eV(test_wavelength) == pytest.approx(test_energy)
+    assert convert_angstrom_to_ev(test_wavelength) == pytest.approx(test_energy)
 
 
 @pytest.mark.parametrize(

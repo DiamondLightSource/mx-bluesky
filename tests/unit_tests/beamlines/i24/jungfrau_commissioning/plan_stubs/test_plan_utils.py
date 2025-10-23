@@ -21,7 +21,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 
 
 async def test_fly_jungfrau(
-    RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path
+    run_engine: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path
 ):
     set_mock_value(jungfrau._writer.frame_counter, 10)
     mock_stop = AsyncMock()
@@ -42,12 +42,12 @@ async def test_fly_jungfrau(
         assert val == frames
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
-    RE(_open_run_and_fly())
+    run_engine(_open_run_and_fly())
     await asyncio.sleep(0)
 
 
 async def test_override_file_path(
-    jungfrau: CommissioningJungfrau, RE: RunEngine, tmp_path: Path
+    jungfrau: CommissioningJungfrau, run_engine: RunEngine, tmp_path: Path
 ):
     new_file_name = "test_file_name"
     new_path = f"{tmp_path}/{new_file_name}"

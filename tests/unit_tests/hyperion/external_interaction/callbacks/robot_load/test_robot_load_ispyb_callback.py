@@ -49,16 +49,16 @@ update_doc_data = {
     autospec=True,
 )
 def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
-    expeye: MagicMock, RE: RunEngine
+    expeye: MagicMock, run_engine: RunEngine
 ):
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
     @bpp.run_decorator(md=metadata)
     def my_plan():
         yield from bps.null()
 
-    RE(my_plan())
+    run_engine(my_plan())
 
     expeye.return_value.start_robot_action.assert_called_once_with(
         "LOAD", "cm31105", 4, 231412
@@ -72,19 +72,21 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
     autospec=True,
 )
-def test_given_failing_plan_then_exception_detail(expeye: MagicMock, RE: RunEngine):
-    RE.subscribe(RobotLoadISPyBCallback())
+def test_given_failing_plan_then_exception_detail(
+    expeye: MagicMock, run_engine: RunEngine
+):
+    run_engine.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
-    class _Exception(Exception): ...
+    class _Error(Exception): ...
 
     @bpp.run_decorator(md=metadata)
     def my_plan():
-        raise _Exception("BAD")
+        raise _Error("BAD")
         yield from bps.null()
 
-    with pytest.raises(_Exception):
-        RE(my_plan())
+    with pytest.raises(_Error):
+        run_engine(my_plan())
 
     expeye.return_value.start_robot_action.assert_called_once_with(
         "LOAD", "cm31105", 4, 231412
@@ -130,9 +132,9 @@ def unsuccessful_robot_load_plan():
     autospec=True,
 )
 def test_given_plan_reads_robot_then_data_put_in_ispyb(
-    expeye: MagicMock, robot: BartRobot, oav: OAV, webcam: Webcam, RE: RunEngine
+    expeye: MagicMock, robot: BartRobot, oav: OAV, webcam: Webcam, run_engine: RunEngine
 ):
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
     expeye.return_value.start_robot_action.return_value = ACTION_ID
 
     set_mock_value(oav.snapshot.last_saved_path, "test_oav_snapshot")
@@ -141,7 +143,7 @@ def test_given_plan_reads_robot_then_data_put_in_ispyb(
     set_mock_value(robot.current_pin, SAMPLE_PIN)
     set_mock_value(robot.current_puck, SAMPLE_PUCK)
 
-    RE(successful_robot_load_plan(robot, oav, webcam))
+    run_engine(successful_robot_load_plan(robot, oav, webcam))
 
     expeye.return_value.start_robot_action.assert_called_once_with(
         "LOAD", "cm31105", 4, 231412
@@ -160,14 +162,14 @@ def test_given_plan_reads_robot_then_data_put_in_ispyb(
 )
 def test_robot_load_complete_triggers_bl_sample_status_loaded(
     mock_sample_handling,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     oav: OAV,
     webcam: Webcam,
 ):
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
 
-    RE(successful_robot_load_plan(robot, oav, webcam))
+    run_engine(successful_robot_load_plan(robot, oav, webcam))
 
     mock_sample_handling.return_value.update_sample_status.assert_called_with(
         SAMPLE_ID, BLSampleStatus.LOADED
@@ -180,15 +182,15 @@ def test_robot_load_complete_triggers_bl_sample_status_loaded(
 )
 def test_robot_load_fails_triggers_bl_sample_status_error(
     mock_sample_handling,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     oav: OAV,
     webcam: Webcam,
 ):
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
 
     with pytest.raises(AssertionError, match="Test failure"):
-        RE(unsuccessful_robot_load_plan())
+        run_engine(unsuccessful_robot_load_plan())
 
     mock_sample_handling.return_value.update_sample_status.assert_called_with(
         SAMPLE_ID, BLSampleStatus.ERROR_BEAMLINE

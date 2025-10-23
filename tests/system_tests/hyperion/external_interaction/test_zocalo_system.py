@@ -63,7 +63,7 @@ def fake_fgs_plan(eiger: EigerDetector):
 def run_zocalo_with_dev_ispyb(
     dummy_params: HyperionSpecifiedThreeDGridScan,
     dummy_ispyb,
-    RE: RunEngine,
+    run_engine: RunEngine,
     zocalo_for_fake_zocalo: ZocaloResults,
     eiger: EigerDetector,
     oav_for_system_test: OAV,
@@ -73,7 +73,7 @@ def run_zocalo_with_dev_ispyb(
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.file_name = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
-        RE.subscribe(ispyb_callback)
+        run_engine.subscribe(ispyb_callback)
 
         def trigger_zocalo_after_fast_grid_scan():
             yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
@@ -92,7 +92,7 @@ def run_zocalo_with_dev_ispyb(
 
             yield from inner_plan()
 
-        RE(
+        run_engine(
             ispyb_activation_wrapper(
                 trigger_zocalo_after_fast_grid_scan(), dummy_params
             )

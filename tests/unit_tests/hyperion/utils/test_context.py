@@ -77,8 +77,8 @@ def test_device_composite_from_context():
     assert isinstance(composite.device2, _DeviceType2)
 
 
-def test_setup_devices_raises_on_exception(use_beamline_t01, RE: RunEngine):
-    context = BlueskyContext(run_engine=RE)
+def test_setup_devices_raises_on_exception(use_beamline_t01, run_engine: RunEngine):
+    context = BlueskyContext(run_engine=run_engine)
 
     with patch.object(
         use_beamline_t01.baton(),

@@ -67,12 +67,12 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 class TestXrayCentreISPyBCallback:
-    def test_activity_gated_start_3d(self, mock_ispyb_conn, TestEventData, tmp_path):
+    def test_activity_gated_start_3d(self, mock_ispyb_conn, test_event_data, tmp_path):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_start(
-            TestEventData.test_grid_detect_and_gridscan_start_document
+            test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
@@ -101,17 +101,17 @@ class TestXrayCentreISPyBCallback:
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
     )
     def test_reason_provided_if_crystal_not_found_error(
-        self, mock_update_data_collection_group_table, mock_ispyb_conn, TestEventData
+        self, mock_update_data_collection_group_table, mock_ispyb_conn, test_event_data
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_start(
-            TestEventData.test_grid_detect_and_gridscan_start_document
+            test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_stop(
-            TestEventData.test_grid_detect_and_gridscan_stop_document_with_crystal_exception
+            test_event_data.test_grid_detect_and_gridscan_stop_document_with_crystal_exception
         )
         assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
             (
@@ -125,21 +125,21 @@ class TestXrayCentreISPyBCallback:
             == "Diffraction not found, skipping sample."
         )
 
-    def test_hardware_read_event_3d(self, mock_ispyb_conn, TestEventData):
+    def test_hardware_read_event_3d(self, mock_ispyb_conn, test_event_data):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_start(
-            TestEventData.test_grid_detect_and_gridscan_start_document
+            test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
         callback.activity_gated_descriptor(
-            TestEventData.test_descriptor_document_pre_data_collection
+            test_event_data.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(
-            TestEventData.test_event_document_pre_data_collection
+            test_event_data.test_event_document_pre_data_collection
         )
         mx_acq.upsert_data_collection_group.assert_called_once()
         expected_upsert = {
@@ -162,28 +162,28 @@ class TestXrayCentreISPyBCallback:
             {"id": TEST_DATA_COLLECTION_IDS[1], **expected_upsert},
         )
 
-    def test_flux_read_events_3d(self, mock_ispyb_conn, TestEventData):
+    def test_flux_read_events_3d(self, mock_ispyb_conn, test_event_data):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_start(
-            TestEventData.test_grid_detect_and_gridscan_start_document
+            test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
-            TestEventData.test_descriptor_document_pre_data_collection
+            test_event_data.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(
-            TestEventData.test_event_document_pre_data_collection
+            test_event_data.test_event_document_pre_data_collection
         )
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
-            TestEventData.test_descriptor_document_during_data_collection
+            test_event_data.test_descriptor_document_during_data_collection
         )
         callback.activity_gated_event(
-            TestEventData.test_event_document_during_data_collection
+            test_event_data.test_event_document_during_data_collection
         )
 
         assert_upsert_call_with(
@@ -236,23 +236,23 @@ class TestXrayCentreISPyBCallback:
         ids=["xy-then-xz", "xz-then-xy"],
     )
     def test_activity_gated_event_oav_snapshot_triggered(
-        self, mock_ispyb_conn, TestEventData, snapshot_events: list[str]
+        self, mock_ispyb_conn, test_event_data, snapshot_events: list[str]
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_start(
-            TestEventData.test_grid_detect_and_gridscan_start_document
+            test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
-            TestEventData.test_descriptor_document_oav_snapshot
+            test_event_data.test_descriptor_document_oav_snapshot
         )
         for event in [
-            getattr(TestEventData, event_name) for event_name in snapshot_events
+            getattr(test_event_data, event_name) for event_name in snapshot_events
         ]:
             callback.activity_gated_event(event)
 
@@ -355,7 +355,7 @@ class TestXrayCentreISPyBCallback:
         assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
 
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
-        self, RE, mock_ispyb_conn, dummy_rotation_data_collection_group_info
+        self, run_engine, mock_ispyb_conn, dummy_rotation_data_collection_group_info
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -383,7 +383,7 @@ class TestXrayCentreISPyBCallback:
                 [test_readable], DocDescriptorNames.HARDWARE_READ_DURING
             )
 
-        RE(test_plan())
+        run_engine(test_plan())
 
         callback._handle_ispyb_hardware_read.assert_called_once()
         callback._handle_ispyb_transmission_flux_read.assert_called_once()
@@ -402,48 +402,50 @@ class TestXrayCentreISPyBCallback:
         mock_update_data_collection_group_table,
         mock_update_deposition,
         mock__handle_oav_grid_snapshot_triggered,
-        TestEventData,
+        test_event_data,
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.activity_gated_descriptor(
-            TestEventData.test_descriptor_document_oav_snapshot
+            test_event_data.test_descriptor_document_oav_snapshot
         )
         callback.ispyb = MagicMock()
         callback.params = MagicMock()
         callback.data_collection_group_info = None
         with pytest.raises(AssertionError) as e:
             callback.activity_gated_event(
-                TestEventData.test_event_document_oav_snapshot_xy
+                test_event_data.test_event_document_oav_snapshot_xy
             )
 
         assert "No data collection group info" in str(e.value)
 
     def test_ispyb_callback_clears_state_after_run_stop(
-        self, TestEventData, mock_ispyb_conn
+        self, test_event_data, mock_ispyb_conn
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
         )
         callback.active = True
-        callback.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
-        callback.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
-        callback.event(TestEventData.test_event_document_oav_snapshot_xy)
-        callback.event(TestEventData.test_event_document_oav_snapshot_xz)
-        callback.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
-        callback.start(TestEventData.test_do_fgs_start_document)  # type: ignore
-        callback.descriptor(TestEventData.test_descriptor_document_pre_data_collection)  # type: ignore
-        callback.event(TestEventData.test_event_document_pre_data_collection)
-        callback.descriptor(TestEventData.test_descriptor_document_zocalo_hardware)
-        callback.event(TestEventData.test_event_document_zocalo_hardware)
+        callback.start(test_event_data.test_grid_detect_and_gridscan_start_document)  # type: ignore
+        callback.descriptor(test_event_data.test_descriptor_document_oav_snapshot)
+        callback.event(test_event_data.test_event_document_oav_snapshot_xy)
+        callback.event(test_event_data.test_event_document_oav_snapshot_xz)
+        callback.start(test_event_data.test_gridscan_outer_start_document)  # type: ignore
+        callback.start(test_event_data.test_do_fgs_start_document)  # type: ignore
         callback.descriptor(
-            TestEventData.test_descriptor_document_during_data_collection  # type: ignore
+            test_event_data.test_descriptor_document_pre_data_collection
+        )  # type: ignore
+        callback.event(test_event_data.test_event_document_pre_data_collection)
+        callback.descriptor(test_event_data.test_descriptor_document_zocalo_hardware)
+        callback.event(test_event_data.test_event_document_zocalo_hardware)
+        callback.descriptor(
+            test_event_data.test_descriptor_document_during_data_collection  # type: ignore
         )
         assert callback._grid_plane_to_id_map
-        callback.stop(TestEventData.test_do_fgs_stop_document)
-        callback.stop(TestEventData.test_gridscan_outer_stop_document)  # type: ignore
-        callback.stop(TestEventData.test_grid_detect_and_gridscan_stop_document)
+        callback.stop(test_event_data.test_do_fgs_stop_document)
+        callback.stop(test_event_data.test_gridscan_outer_stop_document)  # type: ignore
+        callback.stop(test_event_data.test_grid_detect_and_gridscan_stop_document)
         assert not callback._grid_plane_to_id_map
 
 

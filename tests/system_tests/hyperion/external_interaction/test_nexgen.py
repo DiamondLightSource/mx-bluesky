@@ -84,8 +84,8 @@ def test_rotation_nexgen(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    RE = RunEngine({})
-    RE(
+    run_engine = RunEngine({})
+    run_engine(
         _fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )

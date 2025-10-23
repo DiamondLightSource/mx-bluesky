@@ -5,7 +5,7 @@ from time import sleep  # noqa
 
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
 from mx_bluesky.common.external_interaction.alerting import set_alerting_service
@@ -124,7 +124,7 @@ def setup_logging(dev_mode: bool):
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
-    dodal_logger.parent = ISPYB_ZOCALO_CALLBACK_LOGGER
+    DODAL_LOGGER.parent = ISPYB_ZOCALO_CALLBACK_LOGGER
     log_debug("nexgen logger added to nexus logger")
 
 

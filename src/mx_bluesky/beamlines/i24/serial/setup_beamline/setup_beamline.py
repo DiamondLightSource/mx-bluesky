@@ -292,7 +292,7 @@ def eiger(action, args_list, dcm: DCM):
     caput(pv.eiger_monitor, "No")
     # caput(pv.eiger_datasource, 'None')
     caput(pv.eiger_statuspoll, "1 second")
-    caput(pv.eiger_ROImode, "Disabled")
+    caput(pv.eiger_roi_mode, "Disabled")
     caput(pv.eiger_ff, "Enabled")
     caput(pv.eiger_compresstype, "bslz4")
     caput(pv.eiger_countmode, "Retrigger")
@@ -304,10 +304,10 @@ def eiger(action, args_list, dcm: DCM):
         # Sends a single trigger to start data collection
         SSX_LOGGER.debug("Eiger quickshot")
         [filepath, filename, num_imgs, exptime] = args_list
-        filename = filename + "_" + str(caget(pv.eiger_seqID))
-        caput(pv.eiger_ODfilepath, filepath)
+        filename = filename + "_" + str(caget(pv.eiger_seq_id))
+        caput(pv.eiger_od_filepath, filepath)
         yield from bps.sleep(0.1)
-        caput(pv.eiger_ODfilename, filename)
+        caput(pv.eiger_od_filename, filename)
         yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
@@ -325,17 +325,17 @@ def eiger(action, args_list, dcm: DCM):
         yield from bps.sleep(1.0)
         # ODIN setup
         SSX_LOGGER.info("Setting up Odin")
-        caput(pv.eiger_ODfilename, filename)
-        caput(pv.eiger_ODfilepath, filepath)
-        caput(pv.eiger_ODnumcapture, str(num_imgs))
-        caput(pv.eiger_ODfilepath, filepath)
+        caput(pv.eiger_od_filename, filename)
+        caput(pv.eiger_od_filepath, filepath)
+        caput(pv.eiger_od_num_capture, str(num_imgs))
+        caput(pv.eiger_od_filepath, filepath)
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
-        caput(pv.eiger_ODdatatype, eigerbdrbv)
-        caput(pv.eiger_ODcompress, "BSL24")
+        caput(pv.eiger_od_datatype, eigerbdrbv)
+        caput(pv.eiger_od_compress, "BSL24")
         yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
-        caput(pv.eiger_ODcapture, "Capture")
+        caput(pv.eiger_od_capture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
         SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
@@ -346,10 +346,10 @@ def eiger(action, args_list, dcm: DCM):
         # Send a trigger for every image. Records while TTL is high
         SSX_LOGGER.info("Eiger triggered")
         [filepath, filename, num_imgs, exptime] = args_list
-        filename = filename + "_" + str(caget(pv.eiger_seqID))
-        caput(pv.eiger_ODfilepath, filepath)
+        filename = filename + "_" + str(caget(pv.eiger_seq_id))
+        caput(pv.eiger_od_filepath, filepath)
         yield from bps.sleep(0.1)
-        caput(pv.eiger_ODfilename, filename)
+        caput(pv.eiger_od_filename, filename)
         yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
@@ -367,17 +367,17 @@ def eiger(action, args_list, dcm: DCM):
         yield from bps.sleep(1.0)
         # ODIN setup #
         SSX_LOGGER.info("Setting up Odin")
-        caput(pv.eiger_ODfilename, filename)
-        caput(pv.eiger_ODfilepath, filepath)
-        caput(pv.eiger_ODnumcapture, str(num_imgs))
-        caput(pv.eiger_ODfilepath, filepath)
+        caput(pv.eiger_od_filename, filename)
+        caput(pv.eiger_od_filepath, filepath)
+        caput(pv.eiger_od_num_capture, str(num_imgs))
+        caput(pv.eiger_od_filepath, filepath)
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
-        caput(pv.eiger_ODdatatype, eigerbdrbv)
-        caput(pv.eiger_ODcompress, "BSL24")
+        caput(pv.eiger_od_datatype, eigerbdrbv)
+        caput(pv.eiger_od_compress, "BSL24")
         yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
-        caput(pv.eiger_ODcapture, "Capture")
+        caput(pv.eiger_od_capture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
         SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
@@ -387,7 +387,7 @@ def eiger(action, args_list, dcm: DCM):
     # Put it all back to GDA acceptable defaults
     elif action == "return-to-normal":
         caput(pv.eiger_manualtrigger, "No")
-        # caput(pv.eiger_seqID, int(caget(pv.eiger_seqID))+1)
+        # caput(pv.eiger_seq_id, int(caget(pv.eiger_seq_id))+1)
     SSX_LOGGER.debug("***** leaving Eiger")
     yield from bps.sleep(0.1)
     return 0

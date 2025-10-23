@@ -54,8 +54,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
-    WarningException,
+    CrystalNotFoundError,
+    WarningError,
 )
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from tests.conftest import (
@@ -73,7 +73,7 @@ from ...conftest import (
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
-class CompleteException(Exception):
+class CompleteError(Exception):
     # To avoid having to run through the entire plan during tests
     pass
 
@@ -83,22 +83,22 @@ def mock_plan():
 
 
 @pytest.fixture
-def RE_with_subs_snapshots_already_taken(RE_with_subs, TestEventData):
-    RE, subscriptions = RE_with_subs
+def run_engine_with_subs_snapshots_already_taken(run_engine_with_subs, test_event_data):
+    run_engine, subscriptions = run_engine_with_subs
     ispyb_gridscan_callback = [
         sub for sub in subscriptions if isinstance(sub, GridscanISPyBCallback)
     ][0]
     ispyb_gridscan_callback.active = True
     ispyb_gridscan_callback.start(
-        TestEventData.test_grid_detect_and_gridscan_start_document
+        test_event_data.test_grid_detect_and_gridscan_start_document
     )  # type: ignore
-    ispyb_gridscan_callback.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
+    ispyb_gridscan_callback.start(test_event_data.test_gridscan_outer_start_document)  # type: ignore
     ispyb_gridscan_callback.descriptor(
-        TestEventData.test_descriptor_document_oav_snapshot
+        test_event_data.test_descriptor_document_oav_snapshot
     )
-    ispyb_gridscan_callback.event(TestEventData.test_event_document_oav_snapshot_xy)
-    ispyb_gridscan_callback.event(TestEventData.test_event_document_oav_snapshot_xz)
-    return RE, subscriptions
+    ispyb_gridscan_callback.event(test_event_data.test_event_document_oav_snapshot_xy)
+    ispyb_gridscan_callback.event(test_event_data.test_event_document_oav_snapshot_xz)
+    return run_engine, subscriptions
 
 
 @patch(
@@ -125,20 +125,20 @@ class TestFlyscanXrayCentrePlan:
 
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
-        RE: RunEngine,
+        run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
-        RE.subscribe(ispyb_callback)
+        run_engine.subscribe(ispyb_callback)
 
         error = None
         with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
             error = AssertionError("Test Exception")
             mock_set.return_value = FailedStatus(error)
             with pytest.raises(FailedStatus) as exc:
-                RE(
+                run_engine(
                     ispyb_activation_wrapper(
                         common_flyscan_xray_centre(
                             fake_fgs_composite, test_fgs_params, beamline_specific
@@ -160,14 +160,16 @@ class TestFlyscanXrayCentrePlan:
         bps_abs_set: MagicMock,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
-        RE: RunEngine,
+        run_engine: RunEngine,
     ):
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
-        motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
-            np.array([1, 2, 3])
+        motor_position = (
+            test_fgs_params.fast_gridscan_params.grid_position_to_motor_position(
+                np.array([1, 2, 3])
+            )
         )
-        RE(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
+        run_engine(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
         bps_abs_set.assert_called_with(
             fake_fgs_composite.smargon,
             CombinedMove(x=motor_position[0], y=motor_position[1], z=motor_position[2]),
@@ -184,12 +186,12 @@ class TestFlyscanXrayCentrePlan:
         self,
         zoc_trigger: MagicMock,
         run_gridscan: MagicMock,
-        RE_with_subs: ReWithSubs,
+        run_engine_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, _ = RE_with_subs
+        run_engine, _ = run_engine_with_subs
 
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
@@ -198,7 +200,7 @@ class TestFlyscanXrayCentrePlan:
                 beamline_specific,
             )
 
-        RE(wrapped_gridscan_and_move())
+        run_engine(wrapped_gridscan_and_move())
         run_gridscan.assert_called_once()
         beamline_specific.setup_trigger_plan.assert_called_once()  # type: ignore
         beamline_specific.tidy_plan.assert_called_once()  # type: ignore
@@ -209,7 +211,7 @@ class TestFlyscanXrayCentrePlan:
     def test_waits_for_motion_program(
         self,
         check_topup_and_wait,
-        RE: RunEngine,
+        run_engine: RunEngine,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         done_status: Status,
@@ -232,18 +234,18 @@ class TestFlyscanXrayCentrePlan:
             )
 
         with pytest.raises(FailedStatus):
-            RE(test_plan())
+            run_engine(test_plan())
         fgs.KICKOFF_TIMEOUT = 1
         set_mock_value(fgs.motion_program.running, 0)
         set_mock_value(fgs.status, 1)
-        res = RE(test_plan())
+        res = run_engine(test_plan())
 
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
 
     def test_if_gridscan_prepare_fails_then_sample_exception_raised(
         self,
-        RE: RunEngine,
+        run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         test_fgs_params: SpecifiedThreeDGridScan,
@@ -251,13 +253,15 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific.set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             beamline_specific.fgs_motors,
-            test_fgs_params.FGS_params,
+            test_fgs_params.fast_gridscan_params,
         )
 
         set_mock_value(beamline_specific.fgs_motors.device_scan_invalid, 1.0)  # type: ignore
 
-        with pytest.raises(WarningException):
-            RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
+        with pytest.raises(WarningError):
+            run_engine(
+                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+            )
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.abs_set",
@@ -294,13 +298,13 @@ class TestFlyscanXrayCentrePlan:
         mock_abs_set,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        RE_with_subs_snapshots_already_taken: ReWithSubs,
+        run_engine_with_subs_snapshots_already_taken: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         test_fgs_params.x_steps = 9
         test_fgs_params.y_steps = 10
         test_fgs_params.z_steps = 12
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs_snapshots_already_taken
+        run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs_snapshots_already_taken
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
@@ -320,8 +324,8 @@ class TestFlyscanXrayCentrePlan:
             "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ):
-            [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
-            RE(
+            [run_engine.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
+            run_engine(
                 ispyb_activation_wrapper(
                     common_flyscan_xray_centre(
                         fake_fgs_composite, test_fgs_params, beamline_specific
@@ -358,12 +362,12 @@ class TestFlyscanXrayCentrePlan:
         mock_wait,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        RE: RunEngine,
+        run_engine: RunEngine,
         done_status: Status,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
+        run_engine(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
@@ -391,7 +395,7 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        RE: RunEngine,
+        run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         beamline_specific.read_pre_flyscan_plan = partial(
@@ -400,7 +404,7 @@ class TestFlyscanXrayCentrePlan:
             DocDescriptorNames.HARDWARE_READ_DURING,
         )
 
-        mock_complete.side_effect = CompleteException()
+        mock_complete.side_effect = CompleteError()
 
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
@@ -413,8 +417,10 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector = MagicMock()
         fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
-        with pytest.raises(CompleteException):
-            RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
+        with pytest.raises(CompleteError):
+            run_engine(
+                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+            )
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
@@ -436,7 +442,7 @@ class TestFlyscanXrayCentrePlan:
         mock_topup,
         mock_complete: MagicMock,
         mock_kickoff: MagicMock,
-        RE_with_subs_snapshots_already_taken,
+        run_engine_with_subs_snapshots_already_taken,
         fake_fgs_composite: FlyScanEssentialDevices,
         dummy_rotation_data_collection_group_info,
         zebra_fast_grid_scan: ZebraFastGridScanThreeD,
@@ -444,7 +450,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         id_1, id_2 = 100, 200
 
-        RE, subs = RE_with_subs_snapshots_already_taken
+        run_engine, subs = run_engine_with_subs_snapshots_already_taken
         _, ispyb_cb = subs
         ispyb_cb.active = True
         ispyb_cb.ispyb = MagicMock()
@@ -459,9 +465,9 @@ class TestFlyscanXrayCentrePlan:
 
         x_steps, y_steps, z_steps = 10, 20, 30
 
-        RE.subscribe(ispyb_cb)
+        run_engine.subscribe(ispyb_cb)
 
-        RE(
+        run_engine(
             kickoff_and_complete_gridscan(
                 zebra_fast_grid_scan,
                 fake_fgs_composite.eiger,
@@ -538,12 +544,12 @@ class TestFlyscanXrayCentrePlan:
     def test_when_gridscan_succeeds_and_results_fetched_ispyb_comment_appended_to(
         self,
         run_gridscan: MagicMock,
-        RE_with_subs: ReWithSubs,
+        run_engine_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
 
         def _wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
@@ -553,9 +559,11 @@ class TestFlyscanXrayCentrePlan:
                 beamline_specific,
             )
 
-        RE.subscribe(VerbosePlanExecutionLoggingCallback())
+        run_engine.subscribe(VerbosePlanExecutionLoggingCallback())
         beamline_specific.get_xrc_results_from_zocalo = True
-        RE(ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params))
+        run_engine(
+            ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params)
+        )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         append_aperture_call = app_to_comment.call_args_list[0].args[1]
@@ -571,12 +579,12 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        RE_with_subs: ReWithSubs,
+        run_engine_with_subs: ReWithSubs,
     ):
-        RE, _ = RE_with_subs
+        run_engine, _ = run_engine_with_subs
         beamline_specific.get_xrc_results_from_zocalo = True
         x_ray_centre_event_handler = XRayCentreEventHandler()
-        RE.subscribe(x_ray_centre_event_handler)
+        run_engine.subscribe(x_ray_centre_event_handler)
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TestData.test_result_large)
 
         def plan():
@@ -584,7 +592,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.zocalo, test_fgs_params
             )
 
-        RE(plan())
+        run_engine(plan())
 
         actual = x_ray_centre_event_handler.xray_centre_results
         expected = XRayCentreResult(
@@ -611,11 +619,11 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        RE: RunEngine,
+        run_engine: RunEngine,
     ):
         beamline_specific.get_xrc_results_from_zocalo = True
         callback = XRayCentreEventHandler()
-        RE.subscribe(callback)
+        run_engine.subscribe(callback)
 
         mock_zocalo_trigger(
             fake_fgs_composite.zocalo,
@@ -623,7 +631,9 @@ class TestFlyscanXrayCentrePlan:
             + TestData.test_result_below_threshold
             + TestData.test_result_small,
         )
-        RE(_fetch_xrc_results_from_zocalo(fake_fgs_composite.zocalo, test_fgs_params))
+        run_engine(
+            _fetch_xrc_results_from_zocalo(fake_fgs_composite.zocalo, test_fgs_params)
+        )
 
         assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
         assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
@@ -635,12 +645,12 @@ class TestFlyscanXrayCentrePlan:
     def test_when_gridscan_finds_no_xtal_exception_is_raised(
         self,
         run_gridscan: MagicMock,
-        RE_with_subs: ReWithSubs,
+        run_engine_with_subs: ReWithSubs,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
         beamline_specific.get_xrc_results_from_zocalo = True
 
         def wrapped_gridscan_and_move():
@@ -652,8 +662,10 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        with pytest.raises(CrystalNotFoundException):
-            RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
+        with pytest.raises(CrystalNotFoundError):
+            run_engine(
+                ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params)
+            )
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
@@ -661,18 +673,18 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_dummy_result_returned_when_gridscan_finds_no_xtal_and_commissioning_mode_enabled(
         self,
-        RE: RunEngine,
+        run_engine: RunEngine,
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         baton_in_commissioning_mode,
     ):
         xrc_event_handler = XRayCentreEventHandler()
-        RE.subscribe(xrc_event_handler)
+        run_engine.subscribe(xrc_event_handler)
         beamline_specific.get_xrc_results_from_zocalo = True
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        RE(
+        run_engine(
             common_flyscan_xray_centre(
                 fake_fgs_composite,
                 test_fgs_params,

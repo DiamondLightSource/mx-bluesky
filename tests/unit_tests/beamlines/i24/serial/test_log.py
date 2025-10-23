@@ -65,7 +65,7 @@ def test_integrate_bluesky_logs():
 def test_logging_config_with_filehandler(
     mock_integrate_logs, mock_default, mock_dir, dummy_logger
 ):
-    with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
+    with patch("mx_bluesky.beamlines.i24.serial.log.DODAL_LOGGER") as mock_dodal_logger:
         log.config("dummy.log", delayed=True, dev_mode=True)
         assert len(dummy_logger.handlers) == 2
         mock_default.assert_called_once()
@@ -79,26 +79,26 @@ def test_logging_config_with_filehandler(
 
 
 @patch("mx_bluesky.beamlines.i24.serial.log.config")
-def test_setup_collection_logs_in_dev_mode(mock_config, RE):
+def test_setup_collection_logs_in_dev_mode(mock_config, run_engine):
     # Fixed target, dev mode
     fake_filename = time.strftime("i24fixedtarget_%d%B%y.log").lower()
-    RE(log.setup_collection_logs("Serial Fixed", True))
+    run_engine(log.setup_collection_logs("Serial Fixed", True))
 
     mock_config.assert_called_once_with(fake_filename, dev_mode=True)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.log.config")
-def test_setup_collection_logs(mock_config, RE):
+def test_setup_collection_logs(mock_config, run_engine):
     # Extruder, non dev mode
     fake_filename = time.strftime("i24extruder_%d%B%y.log").lower()
-    RE(log.setup_collection_logs("Serial Jet"))
+    run_engine(log.setup_collection_logs("Serial Jet"))
 
     mock_config.assert_called_once_with(fake_filename, dev_mode=False)
 
 
-def test_clean_up_log(dummy_logger, RE):
-    with patch("mx_bluesky.beamlines.i24.serial.log.dodal_logger") as mock_dodal_logger:
-        RE(log.clean_up_log_config_at_end())
+def test_clean_up_log(dummy_logger, run_engine):
+    with patch("mx_bluesky.beamlines.i24.serial.log.DODAL_LOGGER") as mock_dodal_logger:
+        run_engine(log.clean_up_log_config_at_end())
 
         assert len(dummy_logger.handlers) == 0
         assert len(mock_dodal_logger.handlers) == 0

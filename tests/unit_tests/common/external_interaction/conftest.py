@@ -33,9 +33,9 @@ def mocked_test_callback():
 
 
 @pytest.fixture
-def RE_with_mock_callback(mocked_test_callback, RE):
-    RE.subscribe(mocked_test_callback)
-    yield RE, mocked_test_callback
+def run_engine_with_mock_callback(mocked_test_callback, run_engine):
+    run_engine.subscribe(mocked_test_callback)
+    yield run_engine, mocked_test_callback
 
 
 def get_test_plan(callback_name):

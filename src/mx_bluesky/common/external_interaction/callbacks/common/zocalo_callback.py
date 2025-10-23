@@ -9,7 +9,7 @@ from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ class ZocaloCallback(CallbackBase):
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if not self._started_zocalo_collections:
-                raise ISPyBDepositionNotMade(
+                raise ISPyBDepositionNotMadeError(
                     f"No ISPyB IDs received by the end of {self.triggering_plan=}"
                 )
             for info in self._started_zocalo_collections:

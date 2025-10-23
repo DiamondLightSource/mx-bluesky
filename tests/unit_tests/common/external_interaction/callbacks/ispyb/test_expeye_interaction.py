@@ -12,7 +12,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     _get_base_url_and_token,
     create_update_data_from_event_doc,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 
 
 def test_get_url_and_token_returns_expected_data():
@@ -55,7 +55,7 @@ def test_when_bad_response_no_json_handled_correctly(mock_post):
     mock_post.return_value.json.side_effect = JSONDecodeError("Unable to decode", "", 0)
 
     expeye_interactor = ExpeyeInteraction()
-    with pytest.raises(ISPyBDepositionNotMade):
+    with pytest.raises(ISPyBDepositionNotMadeError):
         expeye_interactor.start_robot_action("LOAD", "test", 3, 700)
 
 
@@ -75,7 +75,7 @@ def test_given_server_does_not_respond_when_start_load_called_then_error(mock_po
     mock_post.return_value.ok = False
 
     expeye_interactor = ExpeyeInteraction()
-    with pytest.raises(ISPyBDepositionNotMade):
+    with pytest.raises(ISPyBDepositionNotMadeError):
         expeye_interactor.start_robot_action("LOAD", "test", 3, 700)
 
 
@@ -132,7 +132,7 @@ def test_given_server_does_not_respond_when_end_robot_action_called_then_error(
     mock_patch.return_value.ok = False
 
     expeye_interactor = ExpeyeInteraction()
-    with pytest.raises(ISPyBDepositionNotMade):
+    with pytest.raises(ISPyBDepositionNotMadeError):
         expeye_interactor.end_robot_action(1, "", "")
 
 

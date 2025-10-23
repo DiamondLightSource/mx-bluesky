@@ -31,7 +31,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1 import (
     read_parameters,
     upload_chip_map_to_geobrick,
 )
@@ -335,7 +335,7 @@ def start_i24(
 
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
-        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)
+        complete_filename = cagetstring(pv.eiger_od_filename_rbv)
         filetemplate = f"{complete_filename}.nxs"
         dcid.generate_dcid(
             beam_settings=beam_settings,
@@ -401,7 +401,7 @@ def finish_i24(
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         yield from sup.eiger("return-to-normal", None, dcm)
-        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
+        complete_filename = cagetstring(pv.eiger_od_filename_rbv)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name} unrecognised")
 
@@ -562,7 +562,7 @@ def tidy_up_after_collection_plan(
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Eiger Acquire STOP")
         caput(pv.eiger_acquire, 0)
-        caput(pv.eiger_ODcapture, "Done")
+        caput(pv.eiger_od_capture, "Done")
         yield from bps.sleep(0.5)
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)

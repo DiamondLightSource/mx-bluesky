@@ -19,16 +19,16 @@ from ..conftest import fake_generator
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.sleep")
-def test_gui_sleep(fake_sleep, RE):
-    RE(gui_sleep(3))
+def test_gui_sleep(fake_sleep, run_engine):
+    run_engine(gui_sleep(3))
 
     assert fake_sleep.call_count == 3
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.SSX_LOGGER")
-async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, RE):
-    RE(gui_move_detector("eiger", detector_stage))
+async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, run_engine):
+    run_engine(gui_move_detector("eiger", detector_stage))
     fake_caput.assert_called_once_with("BL24I-MO-IOC-13:GP101", "eiger")
 
     assert await detector_stage.y.user_readback.get_value() == 59.0
@@ -37,14 +37,14 @@ async def test_gui_move_detector(mock_logger, fake_caput, detector_stage, RE):
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.rd")
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.mv")
-def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
+def test_gui_gonio_move_on_click(fake_mv, fake_rd, run_engine):
     fake_rd.side_effect = [fake_generator(1.25), fake_generator(1.25)]
 
     with (
         patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.oav"),
         patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.i24.vgonio"),
     ):
-        RE(gui_gonio_move_on_click((10, 20)))
+        run_engine(gui_gonio_move_on_click((10, 20)))
 
     fake_mv.assert_called_with(ANY, 0.0125, ANY, 0.025)
 
@@ -52,7 +52,7 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
 def test_gui_run_chip_collection_raises_error_for_empty_map(
     mock_det_type,
-    RE,
+    run_engine,
     pmac,
     zebra,
     aperture,
@@ -78,7 +78,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
         eiger_beam_center,
     ]
     with pytest.raises(EmptyMapError):
-        RE(
+        run_engine(
             gui_run_chip_collection(
                 "/path/",
                 "chip",
@@ -102,15 +102,15 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
 @patch(
     "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._move_on_mouse_click_plan"
 )
-def test_gui_stage_move_on_click(fake_move_plan, oav, pmac, RE):
-    RE(gui_stage_move_on_click((200, 200), oav, pmac))
+def test_gui_stage_move_on_click(fake_move_plan, oav, pmac, run_engine):
+    run_engine(gui_stage_move_on_click((200, 200), oav, pmac))
     fake_move_plan.assert_called_once_with(oav, pmac, (200, 200))
 
 
 @pytest.mark.parametrize("position", ["In", "Out", "White In"])
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.SSX_LOGGER")
-async def test_gui_move_backlight(mock_logger, position, backlight, RE):
-    RE(gui_move_backlight(position, backlight))
+async def test_gui_move_backlight(mock_logger, position, backlight, run_engine):
+    run_engine(gui_move_backlight(position, backlight))
 
     assert (
         await backlight.backlight_position.pos_level.get_value()
@@ -128,7 +128,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
     mock_read_visit,
     mock_det_type,
     mock_dcid,
-    RE,
+    run_engine,
     pmac,
     zebra,
     aperture,
@@ -166,7 +166,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
         with patch(
             "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
         ) as patch_upload:
-            RE(
+            run_engine(
                 gui_run_chip_collection(
                     "bar",
                     "chip",
