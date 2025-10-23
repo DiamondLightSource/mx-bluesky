@@ -48,6 +48,10 @@
         "Transfocator",
         "undulator",
         "xbpm",
-        "xspress"
+        "xspress",
+        "pmac",
+        "beamlines",
+        "caget",
+        "thawer"
     ],
 }
