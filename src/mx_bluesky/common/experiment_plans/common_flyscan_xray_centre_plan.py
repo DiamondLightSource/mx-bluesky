@@ -13,7 +13,7 @@ from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
-    GridScanInvalidException,
+    GridScanInvalidError,
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
@@ -275,14 +275,14 @@ def run_gridscan(
     try:
         yield from beamline_specific.set_flyscan_params_plan()
     except FailedStatus as e:
-        if isinstance(e.__cause__, GridScanInvalidException):
+        if isinstance(e.__cause__, GridScanInvalidError):
             raise SampleException(
                 "Scan invalid - gridscan not valid for detected pin position"
             ) from e
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger)  # type: ignore # See: https://github.com/bluesky/bluesky/issues/1809
+    yield from bps.stage(fgs_composite.eiger, wait=True)
 
     yield from kickoff_and_complete_gridscan(
         beamline_specific.fgs_motors,

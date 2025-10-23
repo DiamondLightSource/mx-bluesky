@@ -180,7 +180,7 @@ async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, RE):
     assert await pmac.y.user_setpoint.get_value() == 0.0
 
 
-async def test_moveto_chip_aspecific(pmac: PMAC, RE):
+async def test_moveto_chip_zero(pmac: PMAC, RE):
     RE(moveto("zero", pmac))
     assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 

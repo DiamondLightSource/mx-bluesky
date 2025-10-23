@@ -166,6 +166,6 @@ class Status(Enum):
 class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
-class FeatureSettingources(
+class FeatureSettingSources(
     StrEnum
 ): ...  # List of features and the name of that property in domain.properties
