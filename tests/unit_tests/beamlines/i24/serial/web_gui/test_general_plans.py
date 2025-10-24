@@ -1,28 +1,33 @@
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from dodal.beamlines import i24
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
     gui_move_detector,
     gui_run_chip_collection,
-    gui_sleep,
+    gui_run_extruder_collection,
+    gui_set_fiducial_0,
     gui_stage_move_on_click,
 )
 
 from ..conftest import fake_generator
 
 
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.sleep")
-def test_gui_sleep(fake_sleep, RE):
-    RE(gui_sleep(3))
-
-    assert fake_sleep.call_count == 3
+@pytest.fixture
+def enum_attenuator(RE) -> EnumFilterAttenuator:
+    attenuator: EnumFilterAttenuator = i24.attenuator(
+        connect_immediately=True, mock=True
+    )
+    # set_mock_value(attenuator.actual_transmission, 1.0)
+    return attenuator
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
@@ -49,9 +54,7 @@ def test_gui_gonio_move_on_click(fake_mv, fake_rd, RE):
     fake_mv.assert_called_with(ANY, 0.0125, ANY, 0.025)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
 def test_gui_run_chip_collection_raises_error_for_empty_map(
-    mock_det_type,
     RE,
     pmac,
     zebra,
@@ -63,8 +66,8 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
     dcm,
     mirrors,
     eiger_beam_center,
+    enum_attenuator,
 ):
-    mock_det_type.side_effect = [fake_generator(Eiger())]
     device_list = [
         pmac,
         zebra,
@@ -76,6 +79,7 @@ def test_gui_run_chip_collection_raises_error_for_empty_map(
         dcm,
         mirrors,
         eiger_beam_center,
+        enum_attenuator,
     ]
     with pytest.raises(EmptyMapError):
         RE(
@@ -119,14 +123,18 @@ async def test_gui_move_backlight(mock_logger, position, backlight, RE):
     mock_logger.debug.assert_called_with(f"Backlight moved to {position}")
 
 
+async def test_gui_set_fiducial_0(pmac, RE):
+    RE(gui_set_fiducial_0(pmac))
+
+    assert await pmac.pmac_string.get_value() == r"&2\#5hmz\#6hmz\#7hmz"
+
+
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.get_detector_type")
 @patch(
     "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._read_visit_directory_from_file"
 )
 def test_setup_tasks_in_gui_run_chip_collection(
     mock_read_visit,
-    mock_det_type,
     mock_dcid,
     RE,
     pmac,
@@ -139,10 +147,10 @@ def test_setup_tasks_in_gui_run_chip_collection(
     dcm,
     mirrors,
     eiger_beam_center,
+    enum_attenuator,
     dummy_params_without_pp,
 ):
     mock_read_visit.return_value = Path("/tmp/dls/i24/fixed/foo")
-    mock_det_type.side_effect = [fake_generator(Eiger())]
     device_list = [
         pmac,
         zebra,
@@ -154,18 +162,24 @@ def test_setup_tasks_in_gui_run_chip_collection(
         dcm,
         mirrors,
         eiger_beam_center,
+        enum_attenuator,
     ]
 
     expected_params = dummy_params_without_pp
     expected_params.pre_pump_exposure_s = 0.0
 
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_plan_in_wrapper",
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_ft_collection_plan",
         MagicMock(return_value=iter([])),
     ) as patch_wrapped_plan:
-        with patch(
-            "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
-        ) as patch_upload:
+        with (
+            patch(
+                "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.upload_chip_map_to_geobrick"
+            ) as patch_upload,
+            patch(
+                "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set"
+            ) as patch_set,
+        ):
             RE(
                 gui_run_chip_collection(
                     "bar",
@@ -187,6 +201,7 @@ def test_setup_tasks_in_gui_run_chip_collection(
             )
 
             patch_upload.assert_called_once_with(pmac, [1])
+            patch_set.assert_called_once_with(enum_attenuator, 1.0, wait=True)
             mock_dcid.assert_called_once()
             patch_wrapped_plan.assert_called_once_with(
                 zebra,
@@ -201,4 +216,74 @@ def test_setup_tasks_in_gui_run_chip_collection(
                 eiger_beam_center,
                 expected_params,
                 mock_dcid(),
+            )
+
+
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.DCID")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans._read_visit_directory_from_file"
+)
+@patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.datetime")
+def test_gui_run_extruder_collection(
+    mock_datetime,
+    mock_read_visit,
+    mock_dcid,
+    RE,
+    dummy_params_ex,
+    zebra,
+    aperture,
+    backlight,
+    beamstop,
+    detector_stage,
+    shutter,
+    dcm,
+    mirrors,
+    enum_attenuator,
+    eiger_beam_center,
+):
+    fake_start = datetime.now()
+    mock_datetime.now.return_value = fake_start
+    mock_read_visit.return_value = Path("/tmp/dls/i24/extruder/foo")
+
+    device_list = [
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        enum_attenuator,
+        eiger_beam_center,
+    ]
+
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.run_ex_collection_plan",
+        MagicMock(return_value=iter([])),
+    ) as patch_wrapped_plan:
+        with patch(
+            "mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.bps.abs_set"
+        ) as patch_set:
+            RE(
+                gui_run_extruder_collection(
+                    "bar", "protein", 0.1, 100, 1.0, 10, False, 0.0, 0.0, *device_list
+                )
+            )
+
+            patch_set.assert_called_once_with(enum_attenuator, 1.0, wait=True)
+            mock_dcid.assert_called_once()
+            patch_wrapped_plan.assert_called_once_with(
+                zebra,
+                aperture,
+                backlight,
+                beamstop,
+                detector_stage,
+                shutter,
+                dcm,
+                mirrors,
+                eiger_beam_center,
+                dummy_params_ex,
+                mock_dcid(),
+                fake_start,
             )
