@@ -1129,7 +1129,7 @@ def test_full_multi_rotation_plan_docs_emitted(
                 [
                     "attenuator-actual_transmission",
                     "flux-flux_reading",
-                    "dcm-energy_in_kev",
+                    "dcm-energy_in_keV",
                     "eiger_bit_depth",
                 ],
             ],

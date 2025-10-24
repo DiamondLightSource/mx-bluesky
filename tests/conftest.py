@@ -637,7 +637,7 @@ def xbpm_feedback(done_status, RE: RunEngine):
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     patch_all_motors(dcm)
-    set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_mock_value(dcm.energy_in_keV.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
@@ -1426,7 +1426,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-radius": 50,
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1514,7 +1514,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "smargon-x": 0.158435435,
                 "smargon-y": 0.023547354,
                 "smargon-z": 0.00345684712,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1537,7 +1537,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-radius": 50,
                 "attenuator-actual_transmission": 1,
                 "flux-flux_reading": 10,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
             },
             "timestamps": {

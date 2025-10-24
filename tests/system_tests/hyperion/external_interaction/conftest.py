@@ -457,7 +457,7 @@ def composite_for_rotation_scan(
 
     energy_ev = convert_angstrom_to_eV(0.71)
     set_mock_value(
-        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
+        fake_create_rotation_devices.dcm.energy_in_keV.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
     set_mock_value(

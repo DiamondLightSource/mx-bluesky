@@ -43,7 +43,7 @@ def _update_based_on_energy(
 ):
     """If energy has been read as part of this reading then add it into the data
     collection info along with the other fields that depend on it."""
-    if energy_kev := doc["data"].get("dcm-energy_in_kev", None):
+    if energy_kev := doc["data"].get("dcm-energy_in_keV", None):
         energy_ev = energy_kev * 1000
         wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
         data_collection_info.wavelength = wavelength_angstroms
