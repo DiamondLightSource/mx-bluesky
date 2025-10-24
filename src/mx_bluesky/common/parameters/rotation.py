@@ -28,9 +28,9 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
     WithScan,
 )
-from mx_bluesky.hyperion.parameters.constants import (
-    CONST,
-    I03Constants,
+from mx_bluesky.common.parameters.constants import (
+    DetectorParamConstants,
+    RotationParamConstants,
 )
 
 
@@ -56,7 +56,9 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts, WithSamp
 
 
 class RotationExperiment(DiffractionExperiment):
-    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
+    shutter_opening_time_s: float = Field(
+        default=RotationParamConstants.DEFAULT_SHUTTER_TIME_S
+    )
     rotation_increment_deg: float = Field(default=0.1, gt=0)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.ROTATION
@@ -67,7 +69,7 @@ class RotationExperiment(DiffractionExperiment):
     ) -> DetectorParams:
         self.det_dist_to_beam_converter_path = (
             self.det_dist_to_beam_converter_path
-            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+            or DetectorParamConstants.BEAM_XY_LUT_PATH
         )
         optional_args = {}
         if self.run_number:
@@ -75,7 +77,7 @@ class RotationExperiment(DiffractionExperiment):
         assert self.detector_distance_mm is not None
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
-            detector_size_constants=I03Constants.DETECTOR,
+            detector_size_constants=DetectorParamConstants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,
@@ -97,7 +99,7 @@ class RotationExperiment(DiffractionExperiment):
     @classmethod
     def _set_default_aperture_position(cls, aperture_position: ApertureValue | None):
         if not aperture_position:
-            default_aperture = CONST.PARAM.ROTATION.DEFAULT_APERTURE_POSITION
+            default_aperture = RotationParamConstants.DEFAULT_APERTURE_POSITION
             LOGGER.warning(
                 f"No aperture position selected. Defaulting to {default_aperture}"
             )

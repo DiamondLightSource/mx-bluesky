@@ -108,6 +108,8 @@ class GridscanParamConstants:
 @dataclass(frozen=True)
 class RotationParamConstants:
     DEFAULT_APERTURE_POSITION = ApertureValue.LARGE
+    DEFAULT_SHUTTER_TIME_S = 0.06
+    OMEGA_FLIP = True  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1223 to make beamline-specific
 
 
 @dataclass(frozen=True)
@@ -135,6 +137,7 @@ class PlanGroupCheckpointConstants:
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
+    SETUP_ZEBRA_FOR_ROTATION = "setup_zebra_for_rotation"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

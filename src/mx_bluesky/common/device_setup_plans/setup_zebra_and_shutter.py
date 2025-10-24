@@ -14,7 +14,10 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
 )
 
-from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
+from mx_bluesky.common.parameters.constants import (
+    ZEBRA_STATUS_TIMEOUT,
+    PlanGroupCheckpointConstants,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 """Plans in this file will work as intended if the zebra has the following configuration:
@@ -154,7 +157,7 @@ def setup_zebra_for_rotation(
     shutter_opening_deg: float = 2.5,
     shutter_opening_s: float = 0.04,
     direction: RotationDirection = RotationDirection.POSITIVE,
-    group: str = "setup_zebra_for_rotation",
+    group: str = PlanGroupCheckpointConstants.SETUP_ZEBRA_FOR_ROTATION,
     wait: bool = True,
     ttl_input_for_detector_to_use: int | None = None,
 ):

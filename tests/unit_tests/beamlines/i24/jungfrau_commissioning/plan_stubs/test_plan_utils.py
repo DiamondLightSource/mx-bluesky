@@ -9,6 +9,7 @@ from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
 )
+from ophyd_async.fastcs.jungfrau import GainMode
 from ophyd_async.testing import (
     set_mock_value,
 )
@@ -31,7 +32,9 @@ async def test_fly_jungfrau(
     def _open_run_and_fly():
         frames = 5
         status = yield from fly_jungfrau(
-            jungfrau, TriggerInfo(livetime=1e-3, exposures_per_event=frames)
+            jungfrau,
+            TriggerInfo(livetime=1e-3, exposures_per_event=frames),
+            GainMode.DYNAMIC,
         )
         val = 0
         while not status.done:
