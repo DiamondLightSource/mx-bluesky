@@ -19,6 +19,8 @@ from ophyd_async.core import InOut as core_INOUT
 
 from mx_bluesky.common.utils.exceptions import BeamlineStateException
 
+group = "path setting"
+
 
 def take_oav_image_with_scintillator_in(
     image_name: str | None = None,
@@ -34,7 +36,8 @@ def take_oav_image_with_scintillator_in(
     Args:
         image_name: Name of the OAV image to be saved
         image_path: Path where the image should be saved
-        transmission: Set the transmission of the beam, takes a value from 0 to 1 where 1 lets all the beam through and 0 lets none of the beam through.
+        transmission: Set the transmission of the beam, takes a value from 0 to 1 where
+        1 lets all the beam through and 0 lets none of the beam through.
         devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct.
     """
@@ -52,7 +55,6 @@ def take_oav_image_with_scintillator_in(
     yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
 
-    # take image
     take_and_save_oav_image(file_path=image_path, file_name=image_name, oav=oav)
 
 
@@ -65,7 +67,8 @@ def _prepare_beamline_for_scintillator_images(
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
 ) -> MsgGenerator:
     """
-    Prepares the beamline for oav image by making sure the pin is NOT mounted and the beam is on (feedback check). Finally, the scintillator is moved in.
+    Prepares the beamline for oav image by making sure the pin is NOT mounted and
+    the beam is on (feedback check). Finally, the scintillator is moved in.
     """
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.PIN_MOUNTED:
@@ -84,12 +87,18 @@ def _prepare_beamline_for_scintillator_images(
 
 
 def take_and_save_oav_image(
-    file_path: str,
     file_name: str,
+    file_path: str,
     oav: OAV,
 ) -> MsgGenerator:
-    """docstring to explain function"""
-    group = "path setting"
+    """
+    Plan which takes and saves an OAV image to the specified path.
+     Args:
+        file_name: Filename specifying the name of the image,
+        file_path: Path as a string specifying where the image should be saved,
+        devices: These are the specific ophyd-devices used for the plan, the
+                     defaults are always correct.
+    """
     yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
     yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
     yield from bps.wait(group)
