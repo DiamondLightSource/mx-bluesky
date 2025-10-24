@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -167,3 +168,32 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
         msgs,
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == expected_group,
     )
+
+
+@pytest.mark.parametrize(
+    "expected_raise, cryostream_selection, cryostream_selected",
+    [
+        [nullcontext(), CryoStreamSelection.CRYOJET, 1],
+        [pytest.raises(ValueError), CryoStreamSelection.HC1, 1],
+        [pytest.raises(ValueError), CryoStreamSelection.CRYOJET, 0],
+    ],
+)
+def test_udc_default_state_checks_cryostream_selection(
+    RE: RunEngine,
+    default_devices,
+    expected_raise,
+    cryostream_selection: CryoStreamSelection,
+    cryostream_selected: int,
+):
+    default_devices.scintillator._aperture_scatterguard().selected_aperture.get_value = MagicMock(
+        return_value=ApertureValue.PARKED
+    )
+    set_mock_value(
+        default_devices.cryostream_gantry.cryostream_selector, cryostream_selection
+    )
+    set_mock_value(
+        default_devices.cryostream_gantry.cryostream_selected, cryostream_selected
+    )
+
+    with expected_raise:
+        RE(move_to_udc_default_state(default_devices))
