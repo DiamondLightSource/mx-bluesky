@@ -4,6 +4,8 @@ from collections.abc import Callable
 from typing import TypedDict
 
 import mx_bluesky.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
+from mx_bluesky.hyperion import blueapi_plans
+from mx_bluesky.hyperion.blueapi_plans import RobotUnloadComposite
 from mx_bluesky.hyperion.experiment_plans import (
     hyperion_grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
@@ -54,6 +56,10 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": load_centre_collect_full_plan.create_devices,
         "param_type": LoadCentreCollect,
     },
+    "robot_unload": {
+        "setup": blueapi_plans.create_robot_unload_devices,
+        "param_type": RobotUnloadComposite
+    }
 }
 
 
