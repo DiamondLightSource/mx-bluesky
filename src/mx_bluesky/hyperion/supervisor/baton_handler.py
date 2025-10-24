@@ -99,7 +99,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             runner: The runner
         """
         _raise_udc_start_alert(get_alerting_service())
-        yield from _move_to_udc_default_state(context)
+        yield from _move_to_udc_default_state(runner)
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
@@ -109,7 +109,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
                 baton, runner, current_visit
             )
         if current_visit:
-            yield from _perform_robot_unload(runner.context, current_visit)
+            yield from _perform_robot_unload(runner, current_visit)
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -215,9 +215,13 @@ def _is_requesting_baton(baton: Baton) -> MsgGenerator:
     return requested_user == HYPERION_USER
 
 
-def _move_to_udc_default_state(context: BlueskyContext):
-    udc_default_devices = device_composite_from_context(context, UDCDefaultDevices)
-    yield from move_to_udc_default_state(udc_default_devices)
+def _move_to_udc_default_state(runner: PlanRunner):
+    udc_default_devices = device_composite_from_context(
+        runner.context, UDCDefaultDevices
+    )
+    yield from runner.execute_plan(
+        partial(move_to_udc_default_state, udc_default_devices)
+    )
 
 
 def _get_baton(context: BlueskyContext) -> Baton:
@@ -239,11 +243,13 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     return requested_user
 
 
-def _perform_robot_unload(context: BlueskyContext, visit: str) -> MsgGenerator:
-    robot = find_device_in_context(context, "robot", BartRobot)
-    smargon = find_device_in_context(context, "smargon", Smargon)
+def _perform_robot_unload(runner: PlanRunner, visit: str) -> MsgGenerator:
+    robot = find_device_in_context(runner.context, "robot", BartRobot)
+    smargon = find_device_in_context(runner.context, "smargon", Smargon)
     aperture_scatterguard = find_device_in_context(
-        context, "aperture_scatterguard", ApertureScatterguard
+        runner.context, "aperture_scatterguard", ApertureScatterguard
     )
-    lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
-    yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    lower_gonio = find_device_in_context(runner.context, "lower_gonio", XYZStage)
+    yield from runner.execute_plan(
+        partial(robot_unload, robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    )

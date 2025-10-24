@@ -11,10 +11,10 @@ from ophyd_async.core import Device
 from ophyd_async.plan_stubs import ensure_connected
 
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.hyperion.baton_handler import _initialise_udc
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+from mx_bluesky.hyperion.supervisor.baton_handler import _initialise_udc
 from mx_bluesky.hyperion.utils.context import setup_context
 
 weak_ids_to_devices = WeakValueDictionary()

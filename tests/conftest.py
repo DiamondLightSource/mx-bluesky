@@ -102,7 +102,6 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -114,6 +113,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from mx_bluesky.hyperion.supervisor.baton_handler import HYPERION_USER
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 

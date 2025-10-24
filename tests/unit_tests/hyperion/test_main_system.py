@@ -39,7 +39,6 @@ from mx_bluesky.hyperion.__main__ import (
     main,
     setup_context,
 )
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
@@ -50,6 +49,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import GDARunner
+from mx_bluesky.hyperion.supervisor.baton_handler import HYPERION_USER
 
 from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
 from .conftest import AGAMEMNON_WAIT_INSTRUCTION
@@ -623,7 +623,9 @@ def test_hyperion_in_udc_mode_starts_udc_api(
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.setup_context")
 @patch("mx_bluesky.hyperion.__main__.run_forever")
-@patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", autospec=True)
+@patch(
+    "mx_bluesky.hyperion.supervisor.baton_handler.find_device_in_context", autospec=True
+)
 def test_hyperion_in_udc_mode_starts_udc_loop(
     mock_find_device_in_context: MagicMock,
     mock_run_forever: MagicMock,
@@ -650,7 +652,9 @@ def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
 
 @patch("mx_bluesky.hyperion.__main__.Api")
 @patch("mx_bluesky.hyperion.__main__.setup_context", MagicMock())
-@patch("mx_bluesky.hyperion.baton_handler.find_device_in_context", MagicMock())
+@patch(
+    "mx_bluesky.hyperion.supervisor.baton_handler.find_device_in_context", MagicMock()
+)
 @patch("mx_bluesky.hyperion.runner.GDARunner.wait_on_queue", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
 @pytest.mark.parametrize("mode", ["gda", "udc"])
@@ -680,11 +684,13 @@ def test_flush_logs(mock_flush_debug_handler: MagicMock, test_env: ClientAndRunE
 
 @patch("sys.argv", new=["hyperion", "--mode", "udc", "--dev"])
 @patch(
-    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    "mx_bluesky.hyperion.supervisor.baton_handler.create_parameters_from_agamemnon",
     return_value=[AGAMEMNON_WAIT_INSTRUCTION],
 )
-@patch("mx_bluesky.hyperion.baton_handler.clear_all_device_caches", MagicMock())
-@patch("mx_bluesky.hyperion.baton_handler.setup_devices", MagicMock())
+@patch(
+    "mx_bluesky.hyperion.supervisor.baton_handler.clear_all_device_caches", MagicMock()
+)
+@patch("mx_bluesky.hyperion.supervisor.baton_handler.setup_devices", MagicMock())
 def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown(
     mock_create_parameters_from_agamemnon,
     use_beamline_t01,

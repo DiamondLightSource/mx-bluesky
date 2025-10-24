@@ -7,7 +7,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.utils.context import find_device_in_context
 from mx_bluesky.hyperion.__main__ import main
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
+from mx_bluesky.hyperion.supervisor.baton_handler import HYPERION_USER
 
 
 @pytest.fixture(autouse=True)

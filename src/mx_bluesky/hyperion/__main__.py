@@ -19,7 +19,6 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
     flush_debug_handler,
 )
-from mx_bluesky.hyperion.baton_handler import run_forever
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,
@@ -42,6 +41,7 @@ from mx_bluesky.hyperion.runner import (
     StatusAndMessage,
     make_error_status_and_message,
 )
+from mx_bluesky.hyperion.supervisor.baton_handler import run_forever
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
