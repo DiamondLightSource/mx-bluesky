@@ -480,6 +480,7 @@ def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
         ]
     ),
 )
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", MagicMock())
 def test_baton_handler_loop_waits_if_wait_instruction_received(
     bluesky_context_with_sim_run_engine: tuple[list[Msg], BlueskyContext],
     sim_run_engine: RunEngineSimulator,
@@ -493,6 +494,7 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     )
 
 
+@patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state", MagicMock())
 def test_main_loop_rejects_unrecognised_instruction_when_received(
     bluesky_context_with_sim_run_engine: tuple[list[Msg], BlueskyContext],
     sim_run_engine: RunEngineSimulator,
