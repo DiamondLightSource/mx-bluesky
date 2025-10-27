@@ -370,7 +370,6 @@ def run_engine():
 
         run_engine.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
-        # run_engine.loop.close()
     del run_engine
 
 

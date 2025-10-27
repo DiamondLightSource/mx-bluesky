@@ -7,7 +7,9 @@ from bluesky.preprocessors import contingency_wrapper
 from bluesky.utils import Msg
 
 
-class WarningError(Exception):
+class WarningError(
+    Exception
+):  # see https://github.com/DiamondLightSource/mx-bluesky/issues/1394 on naming
     """An exception used when we want to warn GDA of a
     problem but continue with UDC anyway"""
 
