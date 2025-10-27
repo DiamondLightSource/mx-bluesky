@@ -44,11 +44,11 @@ dependencies = [
     # as by default pip-install will not upgrade to a pre-release.
     #
     "daq-config-server>=v1.0.0-rc.2",
-    "blueapi >= 0.15.0",
+    "blueapi >= 1.5.0",
     "ophyd >= 1.10.5",
-    "ophyd-async >= 0.10.0a2",
-    "bluesky >= 1.13.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@ec98eac36922886baae42470b5835562cb0e747c",
+    "ophyd-async >= 0.13.4",
+    "bluesky >= 1.14.6",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -131,7 +131,7 @@ filterwarnings = [
     "error",
     # Ophyd status objects in tests
     "ignore:.*The 'done' and 'success' parameters will be removed.*:DeprecationWarning",
-    # Ignore nondeterministic closing of log, RE, etc. before test end
+    # Ignore nondeterministic closing of log, run_engine, etc. before test end
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
@@ -211,6 +211,7 @@ lint.select = [
     "C4",     # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "E",      # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
     "F",      # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "N",      # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
     "W",      # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",      # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",     # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up

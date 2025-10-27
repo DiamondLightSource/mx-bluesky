@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -14,7 +14,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 import mx_bluesky.common.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
@@ -93,47 +93,18 @@ def load_centre_collect_full(
                 ),
                 flyscan_event_handler,
             )
-        except CrystalNotFoundException:
+        except CrystalNotFoundError:
             if parameters.select_centres.ignore_xtal_not_found:
                 LOGGER.info("Ignoring crystal not found due to parameter settings.")
             else:
                 raise
 
-        locations_to_collect_um: list[np.ndarray]
-        samples_to_collect: list[int]
-
-        if flyscan_event_handler.xray_centre_results:
-            selection_func = flyscan_result.resolve_selection_fn(
-                parameters.selection_params
+        sample_ids_and_locations = yield from (
+            _samples_and_locations_to_collect(
+                flyscan_event_handler.xray_centre_results, parameters, composite
             )
-            hits = selection_func(flyscan_event_handler.xray_centre_results)
-            hits_to_collect = []
-            for hit in hits:
-                if hit.sample_id is None:
-                    LOGGER.warning(
-                        f"Diffracting centre {hit} not collected because no sample id was assigned."
-                    )
-                else:
-                    hits_to_collect.append(hit)
-
-            locations_to_collect_um = [
-                hit.centre_of_mass_mm * 1000 for hit in hits_to_collect
-            ]
-            samples_to_collect = [hit.sample_id for hit in hits_to_collect]
-            LOGGER.info(
-                f"Selected hits {hits_to_collect} using {selection_func}, args={parameters.selection_params}"
-            )
-        else:
-            # If the xray centring hasn't found a result but has not thrown an error it
-            # means that we do not need to recentre and can collect where we are
-            initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
-            initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
-            initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
-
-            locations_to_collect_um = [
-                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000
-            ]
-            samples_to_collect = [parameters.sample_id]
+        )
+        sample_ids_and_locations.sort(key=_x_coordinate)
 
         multi_rotation = parameters.multi_rotation_scan
         rotation_template = multi_rotation.rotation_scans.copy()
@@ -144,9 +115,7 @@ def load_centre_collect_full(
 
         generator = rotation_scan_generator(is_alternating)
         next(generator)
-        for location, sample_id in zip(
-            locations_to_collect_um, samples_to_collect, strict=True
-        ):
+        for sample_id, location in sample_ids_and_locations:
             for rot in rotation_template:
                 combination = generator.send((rot, location, sample_id))
                 multi_rotation.rotation_scans.append(combination)
@@ -159,6 +128,51 @@ def load_centre_collect_full(
         yield from rotation_scan_internal(composite, multi_rotation, oav_params)
 
     yield from plan_with_callback_subs()
+
+
+def _samples_and_locations_to_collect(
+    xrc_results: Sequence[flyscan_result.XRayCentreResult] | None,
+    parameters: LoadCentreCollect,
+    composite: LoadCentreCollectComposite,
+) -> MsgGenerator[list[tuple[int, np.ndarray]]]:
+    if xrc_results:
+        selection_func = flyscan_result.resolve_selection_fn(
+            parameters.selection_params
+        )
+        hits = selection_func(xrc_results)
+        hits_to_collect = []
+        for hit in hits:
+            if hit.sample_id is None:
+                LOGGER.warning(
+                    f"Diffracting centre {hit} not collected because no sample id was assigned."
+                )
+            else:
+                hits_to_collect.append(hit)
+
+        samples_and_locations = [
+            (hit.sample_id, hit.centre_of_mass_mm * 1000) for hit in hits_to_collect
+        ]
+        LOGGER.info(
+            f"Selected hits {hits_to_collect} using {selection_func}, args={parameters.selection_params}"
+        )
+        return samples_and_locations
+    else:
+        # If the xray centring hasn't found a result but has not thrown an error it
+        # means that we do not need to recentre and can collect where we are
+        initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
+        initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
+        initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
+
+        return [
+            (
+                parameters.sample_id,
+                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000,
+            )
+        ]
+
+
+def _x_coordinate(sample_and_location: tuple[int, np.ndarray]) -> float:
+    return sample_and_location[1][0]  # type: ignore
 
 
 def rotation_scan_generator(

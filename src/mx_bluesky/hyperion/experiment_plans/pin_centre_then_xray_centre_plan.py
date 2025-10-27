@@ -19,7 +19,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
     detect_grid_and_do_gridscan,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
@@ -84,7 +84,7 @@ def pin_centre_then_flyscan_plan(
     )
 
     def _pin_centre_then_flyscan_plan():
-        yield from setup_beamline_for_OAV(
+        yield from setup_beamline_for_oav(
             composite.smargon, composite.backlight, composite.aperture_scatterguard
         )
 

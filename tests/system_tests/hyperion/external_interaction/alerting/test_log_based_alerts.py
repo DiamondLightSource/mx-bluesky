@@ -69,9 +69,9 @@ def test_alert_to_graylog():
 @pytest.mark.requires(external="graylog")
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_alert_from_plan_exception(
-    RE: RunEngine, patch_raise_alert_to_disable_ehc_notifications
+    run_engine: RunEngine, patch_raise_alert_to_disable_ehc_notifications
 ):
-    RE.subscribe(SampleHandlingCallback())
+    run_engine.subscribe(SampleHandlingCallback())
     set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
     @run_decorator(
@@ -89,7 +89,7 @@ def test_alert_from_plan_exception(
         raise RuntimeError("Test exception.")
 
     with pytest.raises(RuntimeError):
-        RE(plan_with_exception())
+        run_engine(plan_with_exception())
 
 
 @pytest.mark.requires(external="graylog")

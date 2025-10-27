@@ -39,7 +39,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard: ApertureScatterguard,
     smargon: Smargon,
     done_status,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     smargon.stub_offsets.set = MagicMock(return_value=done_status)
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
@@ -48,7 +48,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     set_mock_value(smargon.z.user_setpoint, 5)
     set_mock_value(smargon.omega.user_setpoint, 90)
 
-    RE(prepare_for_robot_load(aperture_scatterguard, smargon))
+    run_engine(prepare_for_robot_load(aperture_scatterguard, smargon))
 
     assert await smargon.x.user_setpoint.get_value() == 0
     assert await smargon.z.user_setpoint.get_value() == 0
@@ -146,7 +146,7 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
 
 
 def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -154,11 +154,13 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
 ):
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
     set_mock_value(robot.sample_id, expected_sample_id := 1234)
 
-    RE(robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"))
+    run_engine(
+        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2")
+    )
 
     mock_expeye.start_robot_action.assert_called_once_with(
         "UNLOAD", "cm37235", 2, expected_sample_id
@@ -166,7 +168,7 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
 
 
 def test_when_unload_plan_run_then_full_ispyb_deposition_made(
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -174,7 +176,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 ):
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
-    RE.subscribe(callback)
+    run_engine.subscribe(callback)
 
     set_mock_value(robot.sample_id, expected_sample_id := 1234)
     set_mock_value(robot.current_pin, expected_pin := 12)
@@ -184,7 +186,9 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id
 
-    RE(robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"))
+    run_engine(
+        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2")
+    )
 
     mock_expeye.start_robot_action.assert_called_once_with(
         "UNLOAD", "cm37235", 2, expected_sample_id
@@ -205,24 +209,24 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 )
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     mock_wait_for_smargon: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     lower_gonio: XYZStage,
 ):
-    class TestException(Exception): ...
+    class TestError(Exception): ...
 
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
-    RE.subscribe(callback)
-    mock_wait_for_smargon.side_effect = TestException("Bad Error")
+    run_engine.subscribe(callback)
+    mock_wait_for_smargon.side_effect = TestError("Bad Error")
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id
 
-    with pytest.raises(TestException):
-        RE(
+    with pytest.raises(TestError):
+        run_engine(
             robot_unload(
                 robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"
             )

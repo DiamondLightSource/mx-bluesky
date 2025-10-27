@@ -60,7 +60,7 @@ def do_rotation_scan(
 def test_nexus_handler_gets_documents_in_plan(
     nexus_writer: MagicMock,
     do_rotation_scan,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     nexus_writer.return_value.data_filename = "test_full_filename"
     nexus_callback, _ = create_rotation_callbacks()
@@ -68,8 +68,8 @@ def test_nexus_handler_gets_documents_in_plan(
     nexus_callback.activity_gated_start = MagicMock(
         side_effect=nexus_callback.activity_gated_start
     )
-    RE.subscribe(nexus_callback)
-    RE(do_rotation_scan)
+    run_engine.subscribe(nexus_callback)
+    run_engine(do_rotation_scan)
 
     subplans = []
     for call in nexus_callback.activity_gated_start.call_args_list:  #  type: ignore
@@ -84,13 +84,13 @@ def test_nexus_handler_gets_documents_in_plan(
     autospec=True,
 )
 def test_nexus_handler_only_writes_once(
-    nexus_writer: MagicMock, RE: RunEngine, do_rotation_scan
+    nexus_writer: MagicMock, run_engine: RunEngine, do_rotation_scan
 ):
     nexus_writer.return_value.data_filename = "test_full_filename"
     cb = RotationNexusFileCallback()
     cb.active = True
-    RE.subscribe(cb)
-    RE(do_rotation_scan)
+    run_engine.subscribe(cb)
+    run_engine(do_rotation_scan)
     nexus_writer.assert_called_once()
     assert cb.writer is not None
     cb.writer.create_nexus_file.assert_called_once()  # type: ignore
@@ -101,7 +101,7 @@ def test_nexus_handler_only_writes_once(
     autospec=True,
 )
 def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
-    ispyb_store, zocalo, RE: RunEngine, do_rotation_scan
+    ispyb_store, zocalo, run_engine: RunEngine, do_rotation_scan
 ):
     _, ispyb_callback = create_rotation_callbacks()
     ispyb_callback.emit_cb = None
@@ -117,8 +117,8 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     parent_mock.attach_mock(ispyb_store.end_deposition, "end_deposition")
     parent_mock.attach_mock(ispyb_callback.activity_gated_stop, "callback_stopped")
 
-    RE.subscribe(ispyb_callback)
-    RE(do_rotation_scan)
+    run_engine.subscribe(ispyb_callback)
+    run_engine(do_rotation_scan)
 
     assert ispyb_callback.activity_gated_stop.call_count == 3
     assert parent_mock.method_calls[1][0] == "end_deposition"
@@ -128,8 +128,8 @@ def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan._move_and_rotation",
     MagicMock(),
 )
-def test_ispyb_reuses_dcgid_on_same_sampleID(
-    RE: RunEngine,
+def test_ispyb_reuses_dcgid_on_same_sample_id(
+    run_engine: RunEngine,
     params: RotationScan,
     fake_create_rotation_devices,
     oav_parameters_for_rotation,
@@ -149,13 +149,13 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 
     last_dcgid = None
 
-    RE.subscribe(ispyb_cb)
+    run_engine.subscribe(ispyb_cb)
 
     for sample_id, same_dcgid in test_cases:
         for sweep in params.rotation_scans:
             sweep.sample_id = sample_id
 
-        RE(
+        run_engine(
             rotation_scan(
                 fake_create_rotation_devices, params, oav_parameters_for_rotation
             )

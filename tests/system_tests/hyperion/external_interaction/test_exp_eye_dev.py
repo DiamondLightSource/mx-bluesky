@@ -33,7 +33,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     proposal, session = get_proposal_and_session_from_visit_string(
         SimConstants.ST_VISIT
     )
-    BARCODE = "test_barcode"
+    barcode = "test_barcode"
 
     expeye = ExpeyeInteraction()
 
@@ -51,7 +51,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     expeye.update_robot_action(
         robot_action_id,
         {
-            "sampleBarcode": BARCODE,
+            "sampleBarcode": barcode,
             "xtalSnapshotBefore": oav_snapshot,
             "xtalSnapshotAfter": webcam_snapshot,
         },
@@ -69,7 +69,7 @@ def test_start_and_end_robot_load(message: str, expected_message: str):
     assert response["robotActionId"] == robot_action_id
     assert response["status"] == "ERROR"
     assert response["sampleId"] == SimConstants.ST_SAMPLE_ID
-    assert response["sampleBarcode"] == BARCODE
+    assert response["sampleBarcode"] == barcode
     assert response["message"] == expected_message
 
 

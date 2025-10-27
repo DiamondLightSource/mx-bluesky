@@ -21,7 +21,7 @@ from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
-from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2 import (
+from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     run_plan_in_wrapper as run_ex_collection_plan,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
@@ -29,10 +29,10 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1 import (
     run_plan_in_wrapper as run_ft_collection_plan,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1 import (
     upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
@@ -189,7 +189,7 @@ def gui_run_chip_collection(
         chip_map = []
 
     # NOTE. For now setting attenuation here in place of the edms doing a caput
-    yield from bps.abs_set(attenuator, transmission, wait=True)
+    yield from bps.abs_set(attenuator, transmission, wait=True)  # type: ignore
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -277,7 +277,7 @@ def gui_run_extruder_collection(
         laser_delay (float): delay between laser exposure and collection, in s.
     """
     # NOTE. For now setting attenuation here in place of the edms doing a caput
-    yield from bps.abs_set(attenuator, transmission, wait=True)
+    yield from bps.abs_set(attenuator, transmission, wait=True)  # type: ignore
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 

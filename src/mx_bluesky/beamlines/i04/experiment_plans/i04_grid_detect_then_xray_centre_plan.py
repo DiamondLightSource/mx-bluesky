@@ -9,7 +9,7 @@ from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -40,13 +40,13 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    construct_beamline_specific_FGS_features,
+    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -97,7 +97,7 @@ def i04_grid_detect_then_xray_centre(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
-    dcm: BaseDCM = inject("dcm"),
+    dcm: DoubleCrystalMonochromator = inject("dcm"),
     zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
     oav: OAV = inject("oav"),
@@ -200,7 +200,7 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     LOGGER.info("Non-udc tidy: Setting up beamline for OAV")
-    yield from setup_beamline_for_OAV(
+    yield from setup_beamline_for_oav(
         smargon, backlight, aperture_scatterguard, group=group
     )
     LOGGER.info("Non-udc tidy: Closing detector shutter")
@@ -243,14 +243,14 @@ def construct_i04_specific_features(
         xrc_composite.smargon.x,
         xrc_composite.smargon.y,
         xrc_composite.smargon.z,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
     ]
 
     signals_to_read_during_collection = [
         xrc_composite.aperture_scatterguard,
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
         xrc_composite.eiger.bit_depth,
     ]
 
@@ -264,10 +264,10 @@ def construct_i04_specific_features(
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,
-        xrc_parameters.FGS_params,
+        xrc_parameters.fast_gridscan_params,
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
-    return construct_beamline_specific_FGS_features(
+    return construct_beamline_specific_fast_gridscan_features(
         partial(
             setup_zebra_for_gridscan,
         ),
