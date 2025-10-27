@@ -132,7 +132,7 @@ def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": 11.105},
-        "dcm-energy_in_kev",
+        "dcm-energy_in_keV",
     )
     sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
@@ -160,7 +160,7 @@ def run_simulating_smargon_wait(
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": 11.105},
-        "dcm-energy_in_kev",
+        "dcm-energy_in_keV",
     )
     sim_run_engine.add_handler(
         "read", return_not_disabled_after_reads, "smargon-disabled"

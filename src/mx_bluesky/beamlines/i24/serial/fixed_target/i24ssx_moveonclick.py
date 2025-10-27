@@ -157,7 +157,7 @@ def update_ui(oav, frame, RE):
 
 
 def start_viewer(oav: OAV, pmac: PMAC, RE: RunEngine, oav1: str = OAV1_CAM):
-    # Create a video caputure from OAV1
+    # Create a video capture from OAV1
     cap = cv.VideoCapture(oav1)
 
     # Create window named OAV1view and set onmouse to this

@@ -168,7 +168,7 @@ def _thaw(
         plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
                                     of the smargon. Defaults to no plan.
     """
-    inital_velocity = yield from bps.rd(smargon.omega.velocity)
+    initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
 
     def do_thaw():
@@ -180,7 +180,7 @@ def _thaw(
         yield from bps.rel_set(smargon.omega, -rotation, wait=True)
 
     def cleanup():
-        yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
+        yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
     # Always cleanup even if there is a failure

@@ -65,7 +65,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.writer.beam,
                 self.writer.attenuator,
             ) = create_beam_and_attenuator_parameters(
-                data["dcm-energy_in_kev"],
+                data["dcm-energy_in_keV"],
                 data["flux-flux_reading"],
                 data["attenuator-actual_transmission"],
             )

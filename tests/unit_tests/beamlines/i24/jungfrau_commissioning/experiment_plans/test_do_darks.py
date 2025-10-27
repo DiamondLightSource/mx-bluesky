@@ -26,7 +26,7 @@ class CheckMonitor(CallbackBase):
     """Store the order and values of updates to specified signals
 
     Usage: Instantiate this callback with list of signals to track, and subscribe the RE to this
-    callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifing the same signals
+    callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifying the same signals
     in the monitor.
     """
 

@@ -55,8 +55,8 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 ):
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
@@ -84,7 +84,7 @@ def run_simulating_smargon_wait(
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": 11.105},
-        "dcm-energy_in_kev",
+        "dcm-energy_in_keV",
     )
     sim_run_engine.add_handler(
         "read", return_not_disabled_after_reads, "smargon-disabled"
@@ -325,8 +325,8 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
 
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
 
     messages = sim_run_engine.simulate_plan(
@@ -359,8 +359,8 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
 ):
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
 
     messages = sim_run_engine.simulate_plan(

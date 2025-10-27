@@ -172,7 +172,7 @@ BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
-    "dcm-energy_in_kev": 11.105,
+    "dcm-energy_in_keV": 11.105,
 }
 
 

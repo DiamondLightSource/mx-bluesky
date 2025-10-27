@@ -103,7 +103,7 @@ BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
-    "dcm-energy_in_kev": 11.105,
+    "dcm-energy_in_keV": 11.105,
 }
 
 
@@ -249,7 +249,7 @@ def robot_load_composite(
     panda,
     panda_fast_grid_scan,
 ) -> RobotLoadThenCentreComposite:
-    set_mock_value(dcm.energy_in_kev.user_readback, 11.105)
+    set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     aperture_scatterguard.set = MagicMock(return_value=NullStatus())
     set_mock_value(smargon.omega.max_velocity, 131)
@@ -320,7 +320,7 @@ def robot_load_and_energy_change_composite(
     )
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
-    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
+    set_mock_value(composite.dcm.energy_in_keV.user_readback, 11.105)
 
     return composite
 

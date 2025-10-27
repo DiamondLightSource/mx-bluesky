@@ -243,14 +243,14 @@ def construct_i04_specific_features(
         xrc_composite.smargon.x,
         xrc_composite.smargon.y,
         xrc_composite.smargon.z,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
     ]
 
     signals_to_read_during_collection = [
         xrc_composite.aperture_scatterguard,
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
         xrc_composite.eiger.bit_depth,
     ]
 
