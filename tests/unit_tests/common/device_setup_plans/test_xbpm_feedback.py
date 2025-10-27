@@ -32,9 +32,9 @@ def composite(
 async def test_xbpm_decorator_with_undulator_check_decorators(
     run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
-    energy_in_keV = 11.3
+    energy_in_kev = 11.3
     composite.dcm.energy_in_keV.user_readback.read = MagicMock(
-        return_value={"value": {"value": energy_in_keV}}
+        return_value={"value": {"value": energy_in_kev}}
     )
 
     @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
@@ -57,7 +57,7 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
     # Assert Undulator is finally set
     composite.undulator.set.assert_called_once()
     # Assert energy passed to the Undulator is the same as read from the DCM
-    assert composite.undulator.set.call_args.args[0] == energy_in_keV
+    assert composite.undulator.set.call_args.args[0] == energy_in_kev
 
 
 async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
