@@ -32,7 +32,7 @@ class DetRequest(IntEnum):
         return self.name
 
 
-class UnknownDetectorType(Exception):
+class UnknownDetectorTypeError(Exception):
     pass
 
 
@@ -45,7 +45,7 @@ def get_detector_type(detector_stage: YZStage) -> Generator[Msg, None, Detector]
         return Eiger()
     else:
         SSX_LOGGER.error("Detector not found.")
-        raise UnknownDetectorType("Detector not found.")
+        raise UnknownDetectorTypeError("Detector not found.")
 
 
 def _move_detector_stage(detector_stage: YZStage, target: float) -> MsgGenerator:

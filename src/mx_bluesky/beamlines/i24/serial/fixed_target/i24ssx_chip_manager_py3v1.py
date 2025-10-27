@@ -459,7 +459,7 @@ def load_lite_map() -> MsgGenerator:
     SSX_LOGGER.debug("Run load stock map with 'clear' setting.")
     yield from load_stock_map("clear")
     # fmt: off
-    # Oxford_block_dict is wrong (columns and rows need to flip) added in script below to generate it automatically however kept this for backwards compatiability/reference
+    # Oxford_block_dict is wrong (columns and rows need to flip) added in script below to generate it automatically however kept this for backwards compatibility/reference
     oxford_block_dict = {   # noqa: F841
         'A1': '01', 'A2': '02', 'A3': '03', 'A4': '04', 'A5': '05', 'A6': '06', 'A7': '07', 'A8': '08',
         'B1': '16', 'B2': '15', 'B3': '14', 'B4': '13', 'B5': '12', 'B6': '11', 'B7': '10', 'B8': '09',
@@ -523,7 +523,7 @@ def load_lite_map() -> MsgGenerator:
 def moveto(place: str = "origin", pmac: PMAC = inject("pmac")) -> MsgGenerator:
     SSX_LOGGER.info(f"Move to: {place}")
     if place == Fiducials.zero:
-        SSX_LOGGER.info("Chip aspecific move.")
+        SSX_LOGGER.info("Chip moving to zero")
         yield from bps.trigger(pmac.to_xyz_zero)
         return
 
@@ -705,7 +705,7 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
 
     Skew:
     Skew is the difference between the Sz1 and Sz2 after rotation is taken out.
-    This should be measured in situ prior to expriment, ie. measure by hand using
+    This should be measured in situ prior to experiment, ie. measure by hand using
     opposite and adjacent RBV after calibration of scale factors.
     """
     chip_type = int(caget(CHIPTYPE_PV))
@@ -738,10 +738,10 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
             float(cs_info["scalez"]),
         )
         skew = float(cs_info["skew"])
-        Sx_dir, Sy_dir, Sz_dir = (
-            int(cs_info["Sx_dir"]),
-            int(cs_info["Sy_dir"]),
-            int(cs_info["Sz_dir"]),
+        sx_dir, sy_dir, sz_dir = (
+            int(cs_info["sx_dir"]),
+            int(cs_info["sy_dir"]),
+            int(cs_info["sz_dir"]),
         )
     except KeyError:
         SSX_LOGGER.error("Wrong or missing key in the cs json file.")
@@ -751,60 +751,60 @@ def cs_maker(pmac: PMAC = inject("pmac")) -> MsgGenerator:
         if val not in [1, -1]:
             raise ValueError("Wrong value for direction. Please set to either -1 or 1.")
 
-    check_dir(Sx_dir)
-    check_dir(Sy_dir)
-    check_dir(Sz_dir)
+    check_dir(sx_dir)
+    check_dir(sy_dir)
+    check_dir(sz_dir)
 
     # Rotation Around Z
-    # If stages upsidedown (I24) change sign of Sz
-    Sz1 = -1 * f1_y / fiducial_dict[chip_type][0]
-    Sz2 = f2_x / fiducial_dict[chip_type][1]
-    Sz = Sz_dir * ((Sz1 + Sz2) / 2)
-    Cz = np.sqrt(1 - Sz**2)
-    SSX_LOGGER.info(f"Sz1 , {Sz1:1.4f}, {np.degrees(np.arcsin(Sz1)):1.4f}")
-    SSX_LOGGER.info(f"Sz2 , {Sz2:1.4f}, {np.degrees(np.arcsin(Sz2)):1.4f}")
-    SSX_LOGGER.info(f"Sz , {Sz:1.4f}, {np.degrees(np.arcsin(Sz)):1.4f}")
-    SSX_LOGGER.info(f"Cz , {Cz:1.4f}, {np.degrees(np.arcsin(Cz)):1.4f}")
+    # If stages upsidedown (I24) change sign of sz
+    sz1 = -1 * f1_y / fiducial_dict[chip_type][0]
+    sz2 = f2_x / fiducial_dict[chip_type][1]
+    sz = sz_dir * ((sz1 + sz2) / 2)
+    cz = np.sqrt(1 - sz**2)
+    SSX_LOGGER.info(f"sz1 , {sz1:1.4f}, {np.degrees(np.arcsin(sz1)):1.4f}")
+    SSX_LOGGER.info(f"sz2 , {sz2:1.4f}, {np.degrees(np.arcsin(sz2)):1.4f}")
+    SSX_LOGGER.info(f"sz , {sz:1.4f}, {np.degrees(np.arcsin(sz)):1.4f}")
+    SSX_LOGGER.info(f"cz , {cz:1.4f}, {np.degrees(np.arcsin(cz)):1.4f}")
     # Rotation Around Y
-    Sy = Sy_dir * f1_z / fiducial_dict[chip_type][0]
-    Cy = np.sqrt(1 - Sy**2)
-    SSX_LOGGER.info(f"Sy , {Sy:1.4f}, {np.degrees(np.arcsin(Sy)):1.4f}")
-    SSX_LOGGER.info(f"Cy , {Cy:1.4f}, {np.degrees(np.arcsin(Cy)):1.4f}")
+    sy = sy_dir * f1_z / fiducial_dict[chip_type][0]
+    cy = np.sqrt(1 - sy**2)
+    SSX_LOGGER.info(f"sy , {sy:1.4f}, {np.degrees(np.arcsin(sy)):1.4f}")
+    SSX_LOGGER.info(f"cy , {cy:1.4f}, {np.degrees(np.arcsin(cy)):1.4f}")
     # Rotation Around X
-    # If stages upsidedown (I24) change sign of Sx
-    Sx = Sx_dir * f2_z / fiducial_dict[chip_type][1]
-    Cx = np.sqrt(1 - Sx**2)
-    SSX_LOGGER.info(f"Sx , {Sx:1.4f}, {np.degrees(np.arcsin(Sx)):1.4f}")
-    SSX_LOGGER.info(f"Cx , {Cx:1.4f}, {np.degrees(np.arcsin(Cx)):1.4f}")
+    # If stages upsidedown (I24) change sign of sx
+    sx = sx_dir * f2_z / fiducial_dict[chip_type][1]
+    cx = np.sqrt(1 - sx**2)
+    SSX_LOGGER.info(f"sx , {sx:1.4f}, {np.degrees(np.arcsin(sx)):1.4f}")
+    SSX_LOGGER.info(f"cx , {cx:1.4f}, {np.degrees(np.arcsin(cx)):1.4f}")
 
-    x1factor = mtr1_dir * scalex * (Cy * Cz)
-    y1factor = mtr2_dir * scaley * (-1.0 * Cx * Sz)
-    z1factor = mtr3_dir * scalez * Sy
+    x1factor = mtr1_dir * scalex * (cy * cz)
+    y1factor = mtr2_dir * scaley * (-1.0 * cx * sz)
+    z1factor = mtr3_dir * scalez * sy
 
-    x2factor = mtr1_dir * scalex * ((Sx * Sy * Cz) + (Cx * Sz))
-    y2factor = mtr2_dir * scaley * ((Cx * Cz) - (Sx * Sy * Sz))
-    z2factor = mtr3_dir * scalez * (-1.0 * Sx * Cy)
+    x2factor = mtr1_dir * scalex * ((sx * sy * cz) + (cx * sz))
+    y2factor = mtr2_dir * scaley * ((cx * cz) - (sx * sy * sz))
+    z2factor = mtr3_dir * scalez * (-1.0 * sx * cy)
 
-    x3factor = mtr1_dir * scalex * ((Sx * Sz) - (Cx * Sy * Cz))
-    y3factor = mtr2_dir * scaley * ((Cx * Sy * Sz) + (Sx * Cz))
-    z3factor = mtr3_dir * scalez * (Cx * Cy)
+    x3factor = mtr1_dir * scalex * ((sx * sz) - (cx * sy * cz))
+    y3factor = mtr2_dir * scaley * ((cx * sy * sz) + (sx * cz))
+    z3factor = mtr3_dir * scalez * (cx * cy)
 
     SSX_LOGGER.info(f"Skew being used is: {skew:1.4f}")
-    s1 = np.degrees(np.arcsin(Sz1))
-    s2 = np.degrees(np.arcsin(Sz2))
-    rot = np.degrees(np.arcsin((Sz1 + Sz2) / 2))
+    s1 = np.degrees(np.arcsin(sz1))
+    s2 = np.degrees(np.arcsin(sz2))
+    rot = np.degrees(np.arcsin((sz1 + sz2) / 2))
     calc_skew = (s1 - rot) - (s2 - rot)
     SSX_LOGGER.info(f"s1:{s1:1.4f} s2:{s2:1.4f} rot:{rot:1.4f}")
     SSX_LOGGER.info(f"Calculated rotation from current fiducials is: {rot:1.4f}")
     SSX_LOGGER.info(f"Calculated Skew from current fiducials is: {calc_skew:1.4f}")
     SSX_LOGGER.info("Calculated Skew has been known to have the wrong sign")
 
-    sinD = np.sin((skew / 2) * (np.pi / 180))
-    cosD = np.cos((skew / 2) * (np.pi / 180))
-    new_x1factor = (x1factor * cosD) + (y1factor * sinD)
-    new_y1factor = (x1factor * sinD) + (y1factor * cosD)
-    new_x2factor = (x2factor * cosD) + (y2factor * sinD)
-    new_y2factor = (x2factor * sinD) + (y2factor * cosD)
+    sin_d = np.sin((skew / 2) * (np.pi / 180))
+    cod_d = np.cos((skew / 2) * (np.pi / 180))
+    new_x1factor = (x1factor * cod_d) + (y1factor * sin_d)
+    new_y1factor = (x1factor * sin_d) + (y1factor * cod_d)
+    new_x2factor = (x2factor * cod_d) + (y2factor * sin_d)
+    new_y2factor = (x2factor * sin_d) + (y2factor * cod_d)
 
     cs1 = f"#1->{new_x1factor:+1.3f}X{new_y1factor:+1.3f}Y{z1factor:+1.3f}Z"
     cs2 = f"#2->{new_x2factor:+1.3f}X{new_y2factor:+1.3f}Y{z2factor:+1.3f}Z"

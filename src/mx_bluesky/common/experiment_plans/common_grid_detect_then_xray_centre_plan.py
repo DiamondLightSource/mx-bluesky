@@ -29,7 +29,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     grid_detection_plan,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -123,7 +123,7 @@ def detect_grid_and_do_gridscan(
 
     grid_params_callback = GridDetectionCallback()
 
-    yield from setup_beamline_for_OAV(
+    yield from setup_beamline_for_oav(
         composite.smargon,
         composite.backlight,
         composite.aperture_scatterguard,

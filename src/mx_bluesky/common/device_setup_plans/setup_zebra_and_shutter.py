@@ -13,7 +13,6 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
 )
-from ophyd_async.core import SignalRW
 
 from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
 from mx_bluesky.common.utils.log import LOGGER
@@ -36,7 +35,6 @@ def setup_zebra_for_gridscan(
     group="setup_zebra_for_gridscan",
     wait=True,
     ttl_input_for_detector_to_use: None | int = None,
-    zebra_output_to_disconnect: None | SignalRW = None,
 ) -> MsgGenerator:
     """
     Configure the zebra for an MX XRC gridscan by allowing the zebra to trigger the fast shutter and detector via signals
@@ -48,8 +46,6 @@ def setup_zebra_for_gridscan(
         wait: If true, block until completion
         ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
         specify which TTL input is being used for the desired detector
-        zebra_output_to_disconnect: Optionally specify a TTL output which should be unmapped (disconnected) from the Zebras inputs
-        before the gridscan begins.
 
     This plan assumes that the motion controller, as part of its gridscan PLC, will send triggers as required to the zebra's
     IN4_TTL and IN3_TTL to control the fast_shutter and detector respectively
@@ -66,15 +62,6 @@ def setup_zebra_for_gridscan(
         zebra.output.out_pvs[ttl_detector],
         zebra.mapping.sources.IN3_TTL,
         group=group,
-    )
-
-    if zebra_output_to_disconnect:
-        yield from bps.abs_set(
-            zebra_output_to_disconnect, zebra.mapping.sources.DISCONNECT, group
-        )
-
-    yield from bps.abs_set(
-        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
     )
 
     if wait:
@@ -132,12 +119,12 @@ def tidy_up_zebra_after_gridscan(
     Set the zebra back to a state which is expected by GDA.
 
     Args:
-        zebra: Zebra device
-        zebra_shutter: Zebra shutter device
-        group: Bluesky group to use when waiting on completion
-        wait: If true, block until completion
+        zebra: Zebra device.
+        zebra_shutter: Zebra shutter device.
+        group: Bluesky group to use when waiting on completion.
+        wait: If true, block until completion.
         ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
-        specify which TTL input is being used for the desired detector
+        specify which TTL input is being used for the desired detector.
     """
 
     LOGGER.info("Tidying up Zebra")
@@ -158,20 +145,6 @@ def tidy_up_zebra_after_gridscan(
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-def tidy_up_zebra_after_rotation_scan(
-    zebra: Zebra,
-    zebra_shutter: ZebraShutter,
-    group="tidy_up_zebra_after_rotation",
-    wait=True,
-):
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
-    )
-    if wait:
-        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
-
-
 def setup_zebra_for_rotation(
     zebra: Zebra,
     zebra_shutter: ZebraShutter,
@@ -184,7 +157,6 @@ def setup_zebra_for_rotation(
     group: str = "setup_zebra_for_rotation",
     wait: bool = True,
     ttl_input_for_detector_to_use: int | None = None,
-    zebra_output_to_disconnect: None | SignalRW = None,
 ):
     """Set up the Zebra to collect a rotation dataset. Any plan using this is
     responsible for setting the smargon velocity appropriately so that the desired
@@ -207,8 +179,6 @@ def setup_zebra_for_rotation(
         wait:               Block until all the settings have completed
         ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input,
                             manually specify which TTL input is being used for the desired detector
-        zebra_output_to_disconnect: Optionally specify a TTL output which should be unmapped
-                            (disconnected) from the Zebras inputs before the gridscan begins.
     """
 
     ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
@@ -245,13 +215,31 @@ def setup_zebra_for_rotation(
         zebra.mapping.sources.PC_PULSE,
         group=group,
     )
-    if zebra_output_to_disconnect:
-        yield from bps.abs_set(
-            zebra_output_to_disconnect, zebra.mapping.sources.DISCONNECT, group
-        )
-    yield from bps.abs_set(
-        zebra.output.pulse_1.input, zebra.mapping.sources.DISCONNECT, group=group
-    )
+
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
+    if wait:
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
+
+
+def tidy_up_zebra_after_rotation_scan(
+    zebra: Zebra,
+    zebra_shutter: ZebraShutter,
+    group="tidy_up_zebra_after_rotation",
+    wait=True,
+):
+    """
+    Set the zebra back to a state which is expected by GDA.
+
+    Args:
+        zebra: Zebra device.
+        zebra_shutter: Zebra shutter device.
+        group: Bluesky group to use when waiting on completion.
+        wait: If true, block until completion.
+    """
+
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
+    yield from bps.abs_set(
+        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
+    )
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)

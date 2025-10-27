@@ -1,11 +1,10 @@
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
-from bluesky.utils import FailedStatus
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
@@ -15,7 +14,7 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
     override_file_path,
@@ -23,7 +22,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
 
 
 async def test_fly_jungfrau(
-    RE: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path
+    run_engine: RunEngine, jungfrau: CommissioningJungfrau, tmp_path: Path
 ):
     set_mock_value(jungfrau._writer.frame_counter, 10)
     mock_stop = AsyncMock()
@@ -46,29 +45,12 @@ async def test_fly_jungfrau(
         assert val == frames
         assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
 
-    RE(_open_run_and_fly())
-    assert mock_stop.await_count == 2  # once when staging, once after run complete
-    assert await jungfrau.drv.gain_mode.get_value() == GainMode.DYNAMIC
-
-
-def test_fly_jungfrau_stops_if_exception_after_stage(
-    RE: RunEngine, jungfrau: CommissioningJungfrau
-):
-    mock_stop = AsyncMock()
-    jungfrau.drv.acquisition_stop.trigger = mock_stop
-    bad_trigger_info = TriggerInfo()
-
-    @run_decorator()
-    def do_fly():
-        yield from fly_jungfrau(jungfrau, bad_trigger_info, GainMode.DYNAMIC)
-
-    with pytest.raises(FailedStatus):
-        RE(do_fly())
-    assert mock_stop.await_count == 2  # once when staging, once on exception
+    run_engine(_open_run_and_fly())
+    await asyncio.sleep(0)
 
 
 async def test_override_file_path(
-    jungfrau: CommissioningJungfrau, RE: RunEngine, tmp_path: Path
+    jungfrau: CommissioningJungfrau, run_engine: RunEngine, tmp_path: Path
 ):
     new_file_name = "test_file_name"
     new_path = f"{tmp_path}/{new_file_name}"

@@ -118,7 +118,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     test_params.chi_start_deg = 0
     test_params.phi_start_deg = 0
@@ -129,7 +129,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    RE(
+    run_engine(
         fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
@@ -235,7 +235,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     run_number = test_params.run_number or test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
@@ -243,7 +243,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    RE(
+    run_engine(
         fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
@@ -352,13 +352,13 @@ def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     fake_create_rotation_devices: RotationScanComposite,
     bit_depth,
     expected_type,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     write_vds_mock = mock_nexus_writer.return_value.write_vds
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(bit_depth)  # type: ignore
 
-    RE(
+    run_engine(
         fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )

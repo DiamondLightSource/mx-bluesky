@@ -23,19 +23,19 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
 )
 async def test_move_aperture_goes_to_correct_position(
     aperture_scatterguard: ApertureScatterguard,
-    RE: RunEngine,
+    run_engine: RunEngine,
     set_position,
 ):
-    RE(move_aperture_if_required(aperture_scatterguard, set_position))
+    run_engine(move_aperture_if_required(aperture_scatterguard, set_position))
     last_pos = get_mock_put(aperture_scatterguard.selected_aperture).call_args[0]
     assert last_pos == (set_position,)
 
 
 async def test_move_aperture_does_nothing_when_none_selected(
-    aperture_scatterguard: ApertureScatterguard, RE: RunEngine
+    aperture_scatterguard: ApertureScatterguard, run_engine: RunEngine
 ):
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
-    RE(move_aperture_if_required(aperture_scatterguard, None))
+    run_engine(move_aperture_if_required(aperture_scatterguard, None))
     mock_put = get_mock_put(aperture_scatterguard.selected_aperture)
     mock_put.assert_not_called()
 

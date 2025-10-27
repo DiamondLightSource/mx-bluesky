@@ -29,7 +29,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_c
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
-from mx_bluesky.common.utils.utils import convert_eV_to_angstrom
+from mx_bluesky.common.utils.utils import convert_ev_to_angstrom
 
 D = TypeVar("D")
 if TYPE_CHECKING:
@@ -43,9 +43,9 @@ def _update_based_on_energy(
 ):
     """If energy has been read as part of this reading then add it into the data
     collection info along with the other fields that depend on it."""
-    if energy_kev := doc["data"].get("dcm-energy_in_kev", None):
+    if energy_kev := doc["data"].get("dcm-energy_in_keV", None):
         energy_ev = energy_kev * 1000
-        wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
+        wavelength_angstroms = convert_ev_to_angstrom(energy_ev)
         data_collection_info.wavelength = wavelength_angstroms
         data_collection_info.resolution = resolution(
             detector_params,
@@ -86,11 +86,11 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def activity_gated_event(self, doc: Event) -> Event:
         """Subclasses should extend this to add a call to set_dcig_tag from
@@ -112,10 +112,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
             case DocDescriptorNames.HARDWARE_READ_DURING:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
-                return self._tag_doc(doc)
+                return self.tag_doc(doc)
         self.ispyb_ids = self.ispyb.update_deposition(self.ispyb_ids, scan_data_infos)
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(f"Received ISPYB IDs: {self.ispyb_ids}")
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params, "Event handled before activity_gated_start received params"
@@ -203,7 +203,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {format_doc_for_log(doc)} with exception: {e}"
             )
-        return self._tag_doc(doc)
+        return self.tag_doc(doc)
 
     def _append_to_comment(self, id: int, comment: str) -> None:
         assert self.ispyb is not None
@@ -218,7 +218,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         for id in self.ispyb_ids.data_collection_ids:
             self._append_to_comment(id, comment)
 
-    def _tag_doc(self, doc: D) -> D:
+    def tag_doc(self, doc: D) -> D:
         assert isinstance(doc, dict)
         if self.ispyb_ids:
             doc["ispyb_dcids"] = self.ispyb_ids.data_collection_ids

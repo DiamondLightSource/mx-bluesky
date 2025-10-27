@@ -9,7 +9,7 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.preprocessors import run_decorator, set_run_key_decorator
 from bluesky.run_engine import RunEngine
-from dodal.devices.areadetector.plugins.MJPG import MJPG
+from dodal.devices.areadetector.plugins.mjpg import MJPG
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import AsyncStatus
@@ -232,7 +232,7 @@ class TestGeneratedSnapshots:
     def test_snapshot_callback_generate_snapshot_from_gridscan(
         self,
         tmp_path: Path,
-        RE: RunEngine,
+        run_engine: RunEngine,
         snapshot_oav_with_1x_zoom: OAV,
         smargon: Smargon,
         chis: Sequence[int],
@@ -244,8 +244,8 @@ class TestGeneratedSnapshots:
         downstream_cb = Mock()
         callback = BeamDrawingCallback(emit=downstream_cb)
 
-        RE.subscribe(callback)
-        RE(
+        run_engine.subscribe(callback)
+        run_engine(
             simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
                 snapshot_oav_with_1x_zoom,
                 smargon,
@@ -317,7 +317,7 @@ class TestGeneratedSnapshots:
         snapshot_oav_with_1x_zoom,
         smargon,
         tmp_path,
-        RE,
+        run_engine,
         expected_px_1,
         expected_px_2,
         grid_smargon_mm,
@@ -325,8 +325,8 @@ class TestGeneratedSnapshots:
     ):
         callback = BeamDrawingCallback()
 
-        RE.subscribe(callback)
-        RE(
+        run_engine.subscribe(callback)
+        run_engine(
             simple_take_grid_snapshot_and_generate_rotation_snapshot_plan(
                 snapshot_oav_with_1x_zoom,
                 smargon,
@@ -347,7 +347,7 @@ class TestGeneratedSnapshots:
 
 def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
     tmp_path: Path,
-    RE: RunEngine,
+    run_engine: RunEngine,
     oav_with_snapshots: OAV,
     params_take_snapshots: SingleRotationScan,
 ):
@@ -355,8 +355,8 @@ def test_snapshot_callback_loads_and_saves_updated_snapshot_propagates_event(
     downstream_cb = Mock()
     callback = BeamDrawingCallback(emit=downstream_cb)
 
-    RE.subscribe(callback)
-    RE(simple_rotation_snapshot_plan(oav, tmp_path, params_take_snapshots))
+    run_engine.subscribe(callback)
+    run_engine(simple_rotation_snapshot_plan(oav, tmp_path, params_take_snapshots))
 
     generated_image_path = str(tmp_path / "test_filename_with_beam_centre.png")
     assert_images_pixelwise_equal(

@@ -19,15 +19,17 @@ def nexus_writer():
         yield nw
 
 
-def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
+def test_writers_not_called_on_plan_start_doc(
     nexus_writer: MagicMock,
-    TestEventData,
+    test_event_data,
 ):
     nexus_handler = GridscanNexusFileCallback(
         param_type=HyperionSpecifiedThreeDGridScan
     )
     nexus_writer.assert_not_called()
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
+    nexus_handler.activity_gated_start(
+        test_event_data.test_gridscan_outer_start_document
+    )
     nexus_writer.assert_not_called()
 
 
@@ -36,7 +38,7 @@ def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
 )
 def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
-    TestEventData,
+    test_event_data,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
@@ -46,13 +48,15 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
 
-    nexus_handler.activity_gated_start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
+    nexus_handler.activity_gated_start(
+        test_event_data.test_gridscan_outer_start_document
+    )  # type: ignore
     nexus_handler.activity_gated_descriptor(
-        TestEventData.test_descriptor_document_during_data_collection
+        test_event_data.test_descriptor_document_during_data_collection
     )
 
     nexus_handler.activity_gated_event(
-        TestEventData.test_event_document_during_data_collection
+        test_event_data.test_event_document_during_data_collection
     )
 
     assert nexus_handler.nexus_writer_1 is not None
@@ -72,22 +76,24 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
 )
-def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
+def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dataset_size(
     mock_nexus_writer: MagicMock,
     bit_depth: int,
     vds_type: DTypeLike,
-    TestEventData,
+    test_event_data,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
-    nexus_handler.activity_gated_descriptor(
-        TestEventData.test_descriptor_document_during_data_collection
+    nexus_handler.activity_gated_start(
+        test_event_data.test_gridscan_outer_start_document
     )
-    event_doc = deepcopy(TestEventData.test_event_document_during_data_collection)
+    nexus_handler.activity_gated_descriptor(
+        test_event_data.test_descriptor_document_during_data_collection
+    )
+    event_doc = deepcopy(test_event_data.test_event_document_during_data_collection)
     event_doc["data"]["eiger_bit_depth"] = bit_depth
 
     nexus_handler.activity_gated_event(event_doc)
@@ -107,19 +113,21 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
 )
 def test_beam_and_attenuator_set_on_ispyb_transmission_event(
     mock_nexus_writer: MagicMock,
-    TestEventData,
+    test_event_data,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    nexus_handler.activity_gated_start(TestEventData.test_start_document)
+    nexus_handler.activity_gated_start(
+        test_event_data.test_gridscan_outer_start_document
+    )
     nexus_handler.activity_gated_descriptor(
-        TestEventData.test_descriptor_document_during_data_collection
+        test_event_data.test_descriptor_document_during_data_collection
     )
     nexus_handler.activity_gated_event(
-        TestEventData.test_event_document_during_data_collection
+        test_event_data.test_event_document_during_data_collection
     )
 
     for writer in [nexus_handler.nexus_writer_1, nexus_handler.nexus_writer_2]:
@@ -130,17 +138,17 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
 
 def test_sensible_error_if_writing_triggered_before_params_received(
     nexus_writer: MagicMock,
-    TestEventData,
+    test_event_data,
 ):
     nexus_handler = GridscanNexusFileCallback(
         param_type=HyperionSpecifiedThreeDGridScan
     )
     nexus_handler.activity_gated_descriptor(
-        TestEventData.test_descriptor_document_during_data_collection
+        test_event_data.test_descriptor_document_during_data_collection
     )
     with pytest.raises(AssertionError) as excinfo:
         nexus_handler.activity_gated_event(
-            TestEventData.test_event_document_during_data_collection
+            test_event_data.test_event_document_during_data_collection
         )
 
     assert "Nexus callback did not receive start doc" in excinfo.value.args[0]

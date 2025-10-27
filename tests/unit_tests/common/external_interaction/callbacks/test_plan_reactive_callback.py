@@ -70,10 +70,10 @@ def test_doesnt_deactivate_on_inappropriate_stop_doc_uid(mocked_test_callback):
 
 
 def test_activates_on_metadata(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
+    run_engine_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
-    RE, callback = RE_with_mock_callback
-    RE(get_test_plan("MockReactiveCallback")[0]())
+    run_engine, callback = run_engine_with_mock_callback
+    run_engine(get_test_plan("MockReactiveCallback")[0]())
     callback.activity_gated_start.assert_called_once()
     callback.activity_gated_descriptor.assert_called_once()
     callback.activity_gated_event.assert_called_once()
@@ -81,19 +81,19 @@ def test_activates_on_metadata(
 
 
 def test_deactivates_after_closing(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
+    run_engine_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
-    RE, callback = RE_with_mock_callback
+    run_engine, callback = run_engine_with_mock_callback
     assert callback.active is False
-    RE(get_test_plan("MockReactiveCallback")[0]())
+    run_engine(get_test_plan("MockReactiveCallback")[0]())
     assert callback.active is False
 
 
 def test_doesnt_activate_on_wrong_metadata(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
+    run_engine_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
-    RE, callback = RE_with_mock_callback
-    RE(get_test_plan("TestNotCallback")[0]())
+    run_engine, callback = run_engine_with_mock_callback
+    run_engine(get_test_plan("TestNotCallback")[0]())
     callback.activity_gated_start.assert_not_called()  # type: ignore
     callback.activity_gated_descriptor.assert_not_called()  # type: ignore
     callback.activity_gated_event.assert_not_called()  # type: ignore
@@ -104,16 +104,16 @@ def test_cb_logs_and_raises_exception():
     cb = MockReactiveCallback()
     cb.active = True
 
-    class MockTestException(Exception): ...
+    class MockTestError(Exception): ...
 
-    e = MockTestException()
+    e = MockTestError()
 
     def mock_excepting_func(_):
         raise e
 
     cb.log = MagicMock()
 
-    with pytest.raises(MockTestException):
+    with pytest.raises(MockTestError):
         cb._run_activity_gated("start", mock_excepting_func, {"start": "test"})
 
     cb.log.exception.assert_called_with(e)
@@ -166,7 +166,7 @@ class InnerCallback(PlanReactiveCallback):
     pass
 
 
-def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(RE: RunEngine):
+def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(run_engine: RunEngine):
     @bpp.set_run_key_decorator("inner_plan")
     @bpp.run_decorator(md={"activate_callbacks": ["InnerCallback"]})
     def inner_plan():
@@ -180,8 +180,8 @@ def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(RE: RunEngine):
     outer_callback = OuterCallback(MagicMock())
     inner_callback = InnerCallback(MagicMock())
 
-    RE.subscribe(outer_callback)
-    RE.subscribe(inner_callback)
+    run_engine.subscribe(outer_callback)
+    run_engine.subscribe(inner_callback)
 
     with patch.multiple(
         outer_callback, activity_gated_start=DEFAULT, activity_gated_stop=DEFAULT
@@ -196,7 +196,7 @@ def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(RE: RunEngine):
             root_mock.attach_mock(inner_callback.activity_gated_start, "inner_start")  # pyright: ignore
             root_mock.attach_mock(inner_callback.activity_gated_stop, "inner_stop")  # pyright: ignore
             # fmt: on
-            RE(outer_plan())
+            run_engine(outer_plan())
 
             assert [call[0] for call in root_mock.mock_calls] == [
                 "outer_start",

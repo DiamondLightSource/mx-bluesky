@@ -47,7 +47,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
@@ -140,9 +140,6 @@ def rotation_scan_plan(
             shutter_opening_deg=motion_values.shutter_opening_deg,
             shutter_opening_s=motion_values.shutter_time_s,
             group="setup_zebra",
-            zebra_output_to_disconnect=composite.zebra.output.out_pvs[
-                composite.zebra.mapping.outputs.TTL_XSPRESS3
-            ],
         )
 
         yield from setup_sample_environment(
@@ -237,7 +234,7 @@ def _move_and_rotation(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         if not params.use_grid_snapshots:
-            yield from setup_beamline_for_OAV(
+            yield from setup_beamline_for_oav(
                 composite.smargon,
                 composite.backlight,
                 composite.aperture_scatterguard,
@@ -319,7 +316,7 @@ def rotation_scan_internal(
 
             yield from rotation_scan_core(single_scan)
 
-        yield from bps.unstage(eiger)
+        yield from bps.unstage(eiger, wait=True)
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(

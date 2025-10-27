@@ -10,7 +10,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
-from dodal.devices.oav.utils import PinNotFoundException, wait_for_tip_to_be_found
+from dodal.devices.oav.utils import PinNotFoundError, wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.device_setup_plans.setup_oav import (
@@ -108,7 +108,7 @@ def grid_detection_plan(
         yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from catch_exception_and_warn(
-            PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detection
+            PinNotFoundError, wait_for_tip_to_be_found, pin_tip_detection
         )
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")

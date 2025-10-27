@@ -49,6 +49,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -64,7 +65,7 @@ from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
@@ -75,6 +76,7 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    completed_status,
     init_devices,
 )
 from ophyd_async.epics.core import epics_signal_rw
@@ -89,6 +91,9 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanPlane,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -98,7 +103,7 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
-from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
     ISPYB_ZOCALO_CALLBACK_LOGGER,
@@ -289,7 +294,7 @@ def raw_params_from_file(filename, tmp_path):
         return loads
 
 
-def create_dummy_scan_spec(x_steps, y_steps, z_steps):
+def create_dummy_scan_spec():
     x_line = Line("sam_x", 0, 10, 10)
     y_line = Line("sam_y", 10, 20, 20)
     z_line = Line("sam_z", 30, 50, 30)
@@ -319,7 +324,7 @@ def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
     if item.config.getoption("logging") and "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
-            if dodal_logger.handlers == []:
+            if DODAL_LOGGER.handlers == []:
                 print("Initialising Hyperion logger for tests")
                 do_default_logging_setup("dev_log.py", TEST_GRAYLOG_PORT, dev_mode=True)
         logging_path, _ = _get_logging_dirs(True)
@@ -343,7 +348,7 @@ def pytest_runtest_setup(item):
             )
     else:
         print("Skipping log setup for log test - deleting existing handlers")
-        _reset_loggers([*ALL_LOGGERS, dodal_logger])
+        _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
 
 
 def pytest_runtest_teardown(item):
@@ -351,31 +356,30 @@ def pytest_runtest_teardown(item):
         sys.modules["dodal.common.beamlines.beamline_utils"].clear_devices()
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
-        _reset_loggers([*ALL_LOGGERS, dodal_logger])
+        _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
 
 
 @pytest.fixture
-def RE():
-    RE = RunEngine({}, call_returns_result=True)
-    RE.subscribe(
+def run_engine():
+    run_engine = RunEngine({}, call_returns_result=True)
+    run_engine.subscribe(
         VerbosePlanExecutionLoggingCallback()
     )  # log all events at INFO for easier debugging
-    yield RE
+    yield run_engine
     try:
-        RE.halt()
+        run_engine.halt()
     except Exception as e:
         print(f"Got exception while halting RunEngine {e}")
     finally:
         stopped_event = threading.Event()
 
         def stop_event_loop():
-            RE.loop.stop()  # noqa: F821
+            run_engine.loop.stop()  # noqa: F821
             stopped_event.set()
 
-        RE.loop.call_soon_threadsafe(stop_event_loop)
+        run_engine.loop.call_soon_threadsafe(stop_event_loop)
         stopped_event.wait(10)
-        # RE.loop.close()
-    del RE
+    del run_engine
 
 
 def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
@@ -428,7 +432,7 @@ def done_status():
 
 
 @pytest.fixture
-def eiger(done_status, RE: RunEngine):
+def eiger(done_status, run_engine: RunEngine):
     eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
@@ -437,7 +441,7 @@ def eiger(done_status, RE: RunEngine):
 
 
 @pytest.fixture
-def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
+def smargon(run_engine: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
@@ -449,7 +453,7 @@ def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
-def zebra(RE: RunEngine):
+def zebra(run_engine: RunEngine):
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
@@ -461,19 +465,19 @@ def zebra(RE: RunEngine):
 
 
 @pytest.fixture
-def zebra_shutter(RE: RunEngine):
+def zebra_shutter(run_engine: RunEngine):
     return i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def backlight(RE: RunEngine):
+def backlight(run_engine: RunEngine):
     backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
-def baton(RE: RunEngine):
+def baton(run_engine: RunEngine):
     baton = i03.baton(connect_immediately=True, mock=True)
     set_mock_value(baton.requested_user, HYPERION_USER)
     set_mock_value(baton.current_user, HYPERION_USER)
@@ -481,7 +485,7 @@ def baton(RE: RunEngine):
 
 
 @pytest.fixture
-def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
+def baton_in_commissioning_mode(run_engine: RunEngine, baton: Baton):
     set_commissioning_signal(baton.commissioning)
     set_mock_value(baton.commissioning, True)
     yield baton
@@ -489,19 +493,22 @@ def baton_in_commissioning_mode(RE: RunEngine, baton: Baton):
 
 
 @pytest.fixture
-def fast_grid_scan(RE: RunEngine):
-    return i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+def fast_grid_scan(run_engine: RunEngine):
+    scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
+        set_mock_value(signal, 1)
+    return scan
 
 
 @pytest.fixture
-def detector_motion(RE: RunEngine):
+def detector_motion(run_engine: RunEngine):
     det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_all_motors(det):
         yield det
 
 
 @pytest.fixture
-def undulator(RE: RunEngine):
+def undulator(run_engine: RunEngine):
     undulator = i03.undulator(connect_immediately=True, mock=True)
     # force the child baton to be connected
     i03.baton(connect_immediately=True, mock=True)
@@ -510,12 +517,12 @@ def undulator(RE: RunEngine):
 
 
 @pytest.fixture
-def s4_slit_gaps(RE: RunEngine):
+def s4_slit_gaps(run_engine: RunEngine):
     return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def synchrotron(RE: RunEngine):
+def synchrotron(run_engine: RunEngine):
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -523,7 +530,7 @@ def synchrotron(RE: RunEngine):
 
 
 @pytest.fixture
-def oav(test_config_files, RE: RunEngine):
+def oav(test_config_files, run_engine: RunEngine):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -545,22 +552,30 @@ def oav(test_config_files, RE: RunEngine):
 
 
 @pytest.fixture
-def flux(RE: RunEngine):
+def flux(run_engine: RunEngine):
     return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def pin_tip(RE: RunEngine):
+def pin_tip(run_engine: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def ophyd_pin_tip_detection(RE: RunEngine):
+def ophyd_pin_tip_detection(run_engine: RunEngine):
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
+@pytest.fixture()
+def transfocator(run_engine: RunEngine):
+    with init_devices(mock=True):
+        transfocator = Transfocator("", "")
+    transfocator.set = MagicMock(side_effect=lambda _: completed_status())
+    return transfocator
+
+
 @pytest.fixture
-def robot(done_status, RE: RunEngine):
+def robot(done_status, run_engine: RunEngine):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
 
@@ -575,7 +590,7 @@ def robot(done_status, RE: RunEngine):
 
 
 @pytest.fixture
-def attenuator(RE: RunEngine):
+def attenuator(run_engine: RunEngine):
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
@@ -592,7 +607,7 @@ def attenuator(RE: RunEngine):
 def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters",
@@ -621,7 +636,7 @@ def beamstop_phase1(
 
 
 @pytest.fixture
-def xbpm_feedback(done_status, RE: RunEngine):
+def xbpm_feedback(done_status, run_engine: RunEngine):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
@@ -630,7 +645,7 @@ def xbpm_feedback(done_status, RE: RunEngine):
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
     patch_all_motors(dcm)
-    set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_mock_value(dcm.energy_in_keV.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
     sim_run_engine.add_read_handler_for(dcm.crystal_metadata_d_spacing_a, 3.13475)
@@ -638,14 +653,14 @@ def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
 
 
 @pytest.fixture
-def dcm(RE: RunEngine, sim_run_engine):
+def dcm(run_engine: RunEngine, sim_run_engine):
     dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
 @pytest.fixture
-def vfm(RE: RunEngine):
+def vfm(run_engine: RunEngine):
     vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -656,7 +671,7 @@ def vfm(RE: RunEngine):
 
 @pytest.fixture
 def lower_gonio(
-    RE: RunEngine,
+    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
 ):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
@@ -673,7 +688,7 @@ def lower_gonio(
 
 
 @pytest.fixture
-def mirror_voltages(RE: RunEngine):
+def mirror_voltages(run_engine: RunEngine):
     voltages = i03.mirror_voltages(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
@@ -685,7 +700,7 @@ def mirror_voltages(RE: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(RE: RunEngine, sim_run_engine, undulator, dcm):
+def undulator_dcm(run_engine: RunEngine, sim_run_engine, undulator, dcm):
     # This depends on the undulator and dcm as they must be connected as mocks first
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
@@ -698,24 +713,24 @@ def undulator_dcm(RE: RunEngine, sim_run_engine, undulator, dcm):
 
 
 @pytest.fixture
-def webcam(RE: RunEngine) -> Generator[Webcam, Any, Any]:
+def webcam(run_engine: RunEngine) -> Generator[Webcam, Any, Any]:
     webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
-def thawer(RE: RunEngine) -> Generator[Thawer, Any, Any]:
+def thawer(run_engine: RunEngine) -> Generator[Thawer, Any, Any]:
     yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def sample_shutter(RE: RunEngine) -> Generator[ZebraShutter, Any, Any]:
+def sample_shutter(run_engine: RunEngine) -> Generator[ZebraShutter, Any, Any]:
     yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-async def aperture_scatterguard(RE: RunEngine):
+async def aperture_scatterguard(run_engine: RunEngine):
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -865,7 +880,7 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def zocalo(done_status, RE: RunEngine):
+def zocalo(done_status, run_engine: RunEngine):
     zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
@@ -873,7 +888,7 @@ def zocalo(done_status, RE: RunEngine):
 
 
 @pytest.fixture
-async def enum_attenuator(RE: RunEngine) -> EnumFilterAttenuator:
+async def enum_attenuator(run_engine: RunEngine) -> EnumFilterAttenuator:
     with init_devices(mock=True):
         attenuator = EnumFilterAttenuator(
             "", filter_selection=(I24_FilterOneSelections, I24_FilterTwoSelections)
@@ -888,7 +903,7 @@ async def enum_attenuator(RE: RunEngine) -> EnumFilterAttenuator:
 
 
 @pytest.fixture
-async def panda(RE: RunEngine):
+async def panda(run_engine: RunEngine):
     class MockBlock(Device):
         def __init__(
             self,
@@ -960,15 +975,18 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 
 @pytest.fixture
-def panda_fast_grid_scan(RE: RunEngine):
-    return i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+def panda_fast_grid_scan(run_engine: RunEngine):
+    scan = i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
+    for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
+        set_mock_value(signal, 1)
+    return scan
 
 
 @pytest.fixture
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    RE: RunEngine,
+    run_engine: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -979,6 +997,8 @@ async def hyperion_flyscan_xrc_composite(
     panda,
     backlight,
     s4_slit_gaps,
+    fast_grid_scan,
+    panda_fast_grid_scan,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -987,9 +1007,7 @@ async def hyperion_flyscan_xrc_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(connect_immediately=True, mock=True),
-        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
+        zebra_fast_grid_scan=fast_grid_scan,
         flux=i03.flux(connect_immediately=True, mock=True),
         s4_slit_gaps=s4_slit_gaps,
         smargon=smargon,
@@ -999,9 +1017,7 @@ async def hyperion_flyscan_xrc_composite(
         zebra=i03.zebra(connect_immediately=True, mock=True),
         zocalo=zocalo,
         panda=panda,
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(
-            connect_immediately=True, mock=True
-        ),
+        panda_fast_grid_scan=panda_fast_grid_scan,
         robot=i03.robot(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
     )
@@ -1029,8 +1045,6 @@ async def hyperion_flyscan_xrc_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
-    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
@@ -1183,6 +1197,16 @@ def pin_tip_edge_data():
     ] * grid_width_px
     top_edge_array = numpy.array(top_edge_data, dtype=numpy.uint32)
     bottom_edge_array = numpy.array(bottom_edge_data, dtype=numpy.uint32)
+    return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+def thin_pin_edges():
+    return pin_tip_edge_data()
+
+
+def fat_pin_edges():
+    tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+    bottom_edge_array += 60
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
 
 
@@ -1349,8 +1373,14 @@ class OavGridSnapshotTestEvents:
 
 
 @pytest.fixture()
-def TestEventData(tmp_path):
+def test_event_data(tmp_path):
     return _TestEventData(tmp_path)
+
+
+_UID_GRIDSCAN_OUTER = "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3"
+_UID_GRID_DETECT_AND_DO_GRIDSCAN = "41b82023-c271-449d-9543-260da8d85641"
+_UID_ROTATION_MAIN = "2093c941-ded1-42c4-ab74-ea99980fbbfd"
+_UID_DO_FGS = "636490db-83da-462c-a537-70e6fe416843"
 
 
 class _TestEventData(OavGridSnapshotTestEvents):
@@ -1358,22 +1388,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         self._tmp_path = tmp_path
 
     @property
-    def test_start_document(self) -> RunStart:
+    def test_grid_detect_and_gridscan_start_document(self) -> RunStart:
         return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
-        }
-
-    @property
-    def test_gridscan3d_start_document(self) -> RunStart:
-        return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
@@ -1384,32 +1401,21 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_gridscan3d_stop_document_with_crystal_exception(self) -> RunStop:
+    def test_grid_detect_and_gridscan_stop_document_with_crystal_exception(
+        self,
+    ) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604299.6149616,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "fail",
-            "reason": f"{CrystalNotFoundException()}",
-        }
-
-    @property
-    def test_gridscan2d_start_document(self):
-        return {
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": "test",
-            "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "mx_bluesky_parameters": _dummy_params_2d(self._tmp_path).model_dump_json(),
+            "reason": f"{CrystalNotFoundError()}",
         }
 
     @property
     def test_rotation_start_main_document(self):
         return {
-            "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "uid": _UID_ROTATION_MAIN,
             "subplan_name": PlanNameConstants.ROTATION_MAIN,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
         }
@@ -1417,7 +1423,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
     @property
     def test_gridscan_outer_start_document(self):
         return {
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_GRIDSCAN_OUTER,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
@@ -1443,7 +1449,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-radius": 50,
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1454,7 +1460,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
     @property
     def test_rotation_stop_main_document(self) -> RunStop:
         return {
-            "run_start": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+            "run_start": _UID_ROTATION_MAIN,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1463,35 +1469,26 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_run_gridscan_start_document(self) -> RunStart:
-        return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604299.6149616,
-            "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-            "scan_id": 1,
-            "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
-            "subplan_name": PlanNameConstants.GRIDSCAN_MAIN,
-        }
-
-    @property
     def test_do_fgs_start_document(self) -> RunStart:
+        specs = create_dummy_scan_spec()
         return {  # type: ignore
-            "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "uid": _UID_DO_FGS,
             "time": 1666604299.6149616,
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
             "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
             "subplan_name": PlanNameConstants.DO_FGS,
-            "scan_points": create_dummy_scan_spec(10, 20, 30),
+            "omega_to_scan_spec": {
+                GridscanPlane.OMEGA_XY: specs[0],
+                GridscanPlane.OMEGA_XZ: specs[1],
+            },
         }
 
     @property
     def test_descriptor_document_oav_rotation_snapshot(self) -> EventDescriptor:
         return {
             "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         }  # type: ignore
 
@@ -1499,7 +1496,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_pre_data_collection(self) -> EventDescriptor:
         return {
             "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.HARDWARE_READ_PRE,
         }  # type: ignore
 
@@ -1507,7 +1503,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_during_data_collection(self) -> EventDescriptor:
         return {
             "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.HARDWARE_READ_DURING,
         }  # type: ignore
 
@@ -1515,7 +1510,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
     def test_descriptor_document_zocalo_hardware(self) -> EventDescriptor:
         return {
             "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
             "name": DocDescriptorNames.ZOCALO_HW_READ,
         }  # type: ignore
 
@@ -1543,7 +1537,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "smargon-x": 0.158435435,
                 "smargon-y": 0.023547354,
                 "smargon-z": 0.00345684712,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1566,7 +1560,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-radius": 50,
                 "attenuator-actual_transmission": 1,
                 "flux-flux_reading": 10,
-                "dcm-energy_in_kev": 11.105,
+                "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
             },
             "timestamps": {
@@ -1592,9 +1586,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_stop_document(self) -> RunStop:
+    def test_gridscan_outer_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRIDSCAN_OUTER,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1603,9 +1597,19 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_run_gridscan_stop_document(self) -> RunStop:
+    def test_grid_detect_and_gridscan_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
+            "time": 1666604300.0310638,
+            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+            "exit_status": "success",
+            "reason": "",
+        }
+
+    @property
+    def test_do_fgs_stop_document(self) -> RunStop:
+        return {
+            "run_start": _UID_DO_FGS,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "success",
@@ -1614,31 +1618,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
         }
 
     @property
-    def test_do_fgs_gridscan_stop_document(self) -> RunStop:
+    def test_grid_detect_and_gridscan_failed_stop_document(self) -> RunStop:
         return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604300.0310638,
-            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-            "exit_status": "success",
-            "reason": "",
-            "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        }
-
-    @property
-    def test_failed_stop_document(self) -> RunStop:
-        return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-            "time": 1666604300.0310638,
-            "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
-            "exit_status": "fail",
-            "reason": "could not connect to devices",
-            "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        }
-
-    @property
-    def test_run_gridscan_failed_stop_document(self) -> RunStop:
-        return {
-            "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+            "run_start": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604300.0310638,
             "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
             "exit_status": "fail",

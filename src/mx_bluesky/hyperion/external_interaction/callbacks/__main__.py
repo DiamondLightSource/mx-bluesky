@@ -5,7 +5,7 @@ from time import sleep  # noqa
 
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
 from mx_bluesky.common.external_interaction.alerting import set_alerting_service
@@ -23,6 +23,7 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -41,6 +42,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_call
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+    generate_start_info_from_ordered_runs,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
@@ -66,7 +68,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams,
-            emit=ZocaloCallback(CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV),
+            emit=ZocaloCallback(
+                CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV, generate_start_info_from_omega_map
+            ),
         ),
     )
 
@@ -77,7 +81,11 @@ def create_rotation_callbacks() -> tuple[
     return (
         RotationNexusFileCallback(),
         RotationISPyBCallback(
-            emit=ZocaloCallback(CONST.PLAN.ROTATION_MULTI, CONST.ZOCALO_ENV)
+            emit=ZocaloCallback(
+                CONST.PLAN.ROTATION_MULTI,
+                CONST.ZOCALO_ENV,
+                generate_start_info_from_ordered_runs,
+            )
         ),
     )
 
@@ -116,7 +124,7 @@ def setup_logging(dev_mode: bool):
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
-    dodal_logger.parent = ISPYB_ZOCALO_CALLBACK_LOGGER
+    DODAL_LOGGER.parent = ISPYB_ZOCALO_CALLBACK_LOGGER
     log_debug("nexgen logger added to nexus logger")
 
 

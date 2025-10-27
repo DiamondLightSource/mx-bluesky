@@ -25,7 +25,7 @@ def test_call_nexgen_for_extruder(
     fake_caget_str,
     fake_caget,
     dummy_params_ex: ExtruderParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     fake_caget_str.return_value = f"{dummy_params_ex.filename}_5001"
     fake_caget.return_value = 32
@@ -33,7 +33,7 @@ def test_call_nexgen_for_extruder(
     fake_read_text.return_value = ""
     fake_start_time = datetime(2000, 1, 1)
 
-    RE(call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200), fake_start_time))
+    run_engine(call_nexgen(None, dummy_params_ex, 0.6, (1000, 1200), fake_start_time))
     patch_request.post.assert_called_once()
 
     nexgen_args = patch_request.post.call_args.kwargs["json"]
@@ -54,7 +54,7 @@ def test_call_nexgen_for_fixed_target(
     fake_caget_str,
     fake_caget,
     dummy_params_without_pp: FixedTargetParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     expected_filename = f"{dummy_params_without_pp.filename}_5002"
     fake_caget_str.return_value = expected_filename
@@ -62,7 +62,9 @@ def test_call_nexgen_for_fixed_target(
     fake_path.return_value = True
     fake_read_text.return_value = ""
     fake_start_time = datetime(2000, 1, 1)
-    RE(call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200), fake_start_time))
+    run_engine(
+        call_nexgen(None, dummy_params_without_pp, 0.6, (1000, 1200), fake_start_time)
+    )
     patch_request.post.assert_called_once()
 
     nexgen_args = patch_request.post.call_args.kwargs["json"]

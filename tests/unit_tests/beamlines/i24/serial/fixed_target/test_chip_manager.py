@@ -10,7 +10,7 @@ from dodal.devices.motors import YZStage
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import Fiducials
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1 import (
     _is_checker_pattern,
     cs_maker,
     cs_reset,
@@ -45,14 +45,14 @@ MTR1 0 1
 MTR2 1 -1
 MTR3 0 -1"""
 
-cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "Sx_dir":1, "Sy_dir":-1, "Sz_dir":0}'
+cs_json = '{"scalex":1, "scaley":2, "scalez":3, "skew":-0.5, "sx_dir":1, "sy_dir":-1, "sz_dir":0}'
 
 
 @pytest.mark.parametrize(
     "input_value, checker_pattern",
     [("0", False), ("1", True)],
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 def test_is_checker_pattern(fake_caget, input_value, checker_pattern):
     fake_caget.return_value = input_value
 
@@ -61,21 +61,21 @@ def test_is_checker_pattern(fake_caget, input_value, checker_pattern):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_detector_type"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.get_detector_type"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_chip_format"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.get_chip_format"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._read_visit_directory_from_file"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1._read_visit_directory_from_file"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.SSX_LOGGER"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1._is_checker_pattern"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1._is_checker_pattern"
 )
 def test_read_parameters(
     fake_check,
@@ -86,7 +86,7 @@ def test_read_parameters(
     fake_chip,
     fake_det,
     detector_stage,
-    RE,
+    run_engine,
 ):
     fake_check.return_value = False
     mock_attenuator = MagicMock()
@@ -94,28 +94,28 @@ def test_read_parameters(
     fake_rd.side_effect = [fake_generator(0.3)]
     mock_read_visit.return_value = Path("/path/to/fake/visit")
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.FixedTargetParameters",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.FixedTargetParameters",
     ):
-        RE(read_parameters(detector_stage, mock_attenuator))
+        run_engine(read_parameters(detector_stage, mock_attenuator))
 
     assert fake_caget.call_count == 11
     fake_check.assert_called_once()
     assert fake_log.info.call_count == 3
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.sys")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.sys")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.get_detector_type"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.get_detector_type"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caput")
 async def test_initialise(
     fake_caput: MagicMock,
     fake_det: MagicMock,
     fake_sys: MagicMock,
     pmac: PMAC,
-    RE,
+    run_engine,
 ):
-    RE(initialise_stages(pmac))
+    run_engine(initialise_stages(pmac))
 
     assert await pmac.x.velocity.get_value() == 20
     assert await pmac.y.acceleration_time.get_value() == 0.01
@@ -138,13 +138,13 @@ async def test_initialise(
     [[10], [1, 2, 15, 16], list(range(33, 65))],  # 1 block, 1 corner, half chip
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.sleep"
 )
 def test_upload_chip_map_to_geobrick(
-    fake_sleep: MagicMock, fake_chip_map: list[int], pmac: PMAC, RE
+    fake_sleep: MagicMock, fake_chip_map: list[int], pmac: PMAC, run_engine
 ):
     tot_blocks = 64
-    RE(upload_chip_map_to_geobrick(pmac, fake_chip_map))
+    run_engine(upload_chip_map_to_geobrick(pmac, fake_chip_map))
 
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     assert mock_pmac_str.call_count == tot_blocks
@@ -162,42 +162,44 @@ def test_upload_chip_map_to_geobrick(
     mock_pmac_str.assert_has_calls(pvar_zero_calls, any_order=True)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
-async def test_moveto_oxford_origin(fake_caget: MagicMock, pmac: PMAC, RE):
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
+async def test_moveto_oxford_origin(fake_caget: MagicMock, pmac: PMAC, run_engine):
     fake_caget.return_value = 0
-    RE(moveto(Fiducials.origin, pmac))
+    run_engine(moveto(Fiducials.origin, pmac))
     assert fake_caget.call_count == 1
     assert await pmac.x.user_setpoint.get_value() == 0.0
     assert await pmac.y.user_setpoint.get_value() == 0.0
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
-async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, RE):
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
+async def test_moveto_oxford_inner_f1(fake_caget: MagicMock, pmac: PMAC, run_engine):
     fake_caget.return_value = 1
-    RE(moveto(Fiducials.fid1, pmac))
+    run_engine(moveto(Fiducials.fid1, pmac))
     assert fake_caget.call_count == 1
     assert await pmac.x.user_setpoint.get_value() == 24.60
     assert await pmac.y.user_setpoint.get_value() == 0.0
 
 
-async def test_moveto_chip_aspecific(pmac: PMAC, RE):
-    RE(moveto("zero", pmac))
+async def test_moveto_chip_zero(pmac: PMAC, run_engine):
+    run_engine(moveto("zero", pmac))
     assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caput")
 async def test_moveto_preset(
     fake_caput: MagicMock,
     pmac: PMAC,
     beamstop: Beamstop,
     backlight: DualBacklight,
     detector_stage: YZStage,
-    RE,
+    run_engine,
 ):
-    RE(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
+    run_engine(moveto_preset("zero", pmac, beamstop, backlight, detector_stage))
     assert await pmac.pmac_string.get_value() == "&2!x0y0z0"
 
-    RE(moveto_preset("load_position", pmac, beamstop, backlight, detector_stage))
+    run_engine(
+        moveto_preset("load_position", pmac, beamstop, backlight, detector_stage)
+    )
     assert await beamstop.pos_select.get_value() == "Robot"
     assert await backlight.backlight_position.pos_level.get_value() == "Out"
     assert await detector_stage.z.user_setpoint.get_value() == 1300
@@ -210,7 +212,7 @@ async def test_moveto_preset(
         ("microdrop_position", 0, [6.0, -7.8, 0.0], False),
     ],
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caput")
 async def test_moveto_preset_with_pmac_move(
     fake_caput: MagicMock,
     pos_request: str,
@@ -221,9 +223,9 @@ async def test_moveto_preset_with_pmac_move(
     beamstop: Beamstop,
     backlight: DualBacklight,
     detector_stage: YZStage,
-    RE,
+    run_engine,
 ):
-    RE(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))
+    run_engine(moveto_preset(pos_request, pmac, beamstop, backlight, detector_stage))
     assert fake_caput.call_count == expected_num_caput
 
     assert await pmac.x.user_setpoint.get_value() == expected_pmac_move[0]
@@ -245,22 +247,22 @@ async def test_moveto_preset_with_pmac_move(
     ],
 )
 async def test_laser_control_on_and_off(
-    laser_setting: str, expected_pmac_string: str, pmac: PMAC, RE
+    laser_setting: str, expected_pmac_string: str, pmac: PMAC, run_engine
 ):
-    RE(laser_control(laser_setting, pmac))
+    run_engine(laser_control(laser_setting, pmac))
 
     assert await pmac.pmac_string.get_value() == expected_pmac_string
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.sleep"
 )
 def test_laser_control_burn_setting(
-    fake_sleep: MagicMock, fake_caget: MagicMock, pmac: PMAC, RE
+    fake_sleep: MagicMock, fake_caget: MagicMock, pmac: PMAC, run_engine
 ):
     fake_caget.return_value = 0.1
-    RE(laser_control("laser1burn", pmac))
+    run_engine(laser_control("laser1burn", pmac))
 
     fake_sleep.assert_called_once_with(0.1)
     mock_pmac_str = get_mock_put(pmac.pmac_string)
@@ -273,7 +275,7 @@ def test_laser_control_burn_setting(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
     mock_open(read_data=mtr_dir_str),
 )
 def test_scrape_mtr_directions():
@@ -283,14 +285,14 @@ def test_scrape_mtr_directions():
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_directions"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_directions"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.rd")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.PARAM_FILE_PATH_FT"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.PARAM_FILE_PATH_FT"
 )
 def test_fiducial_writes_correct_values_to_file(
-    fake_param_path, patch_read, patch_mtr, pmac, RE
+    fake_param_path, patch_read, patch_mtr, pmac, run_engine
 ):
     fake_param_path.return_value = Path("/tmp/params")
     mtr_values = (1.0, -1.0, -1.0)
@@ -312,17 +314,17 @@ def test_fiducial_writes_correct_values_to_file(
         call().write(f"MTR3\t{pos[2]:1.4f}\t{mtr_values[2]:f}"),
     ]
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
         mock_open(),
     ) as mock_file:
-        RE(fiducial(1, pmac))
+        run_engine(fiducial(1, pmac))
 
         mock_file.assert_has_calls(expected_write_calls, any_order=True)
         fake_param_path.mkdir.assert_called_once()
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
     mock_open(read_data=fiducial_1_str),
 )
 def test_scrape_mtr_fiducials():
@@ -331,8 +333,8 @@ def test_scrape_mtr_fiducials():
     assert res == (0.0, 1.0, 0.0)
 
 
-def test_cs_pmac_str_set(pmac: PMAC, RE):
-    RE(
+def test_cs_pmac_str_set(pmac: PMAC, run_engine):
+    run_engine(
         set_pmac_strings_for_cs(
             pmac,
             {
@@ -354,90 +356,90 @@ def test_cs_pmac_str_set(pmac: PMAC, RE):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.set_pmac_strings_for_cs"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.set_pmac_strings_for_cs"
 )
-def test_cs_reset(mock_set_pmac_str: MagicMock, pmac: PMAC, RE):
-    RE(cs_reset(pmac))
+def test_cs_reset(mock_set_pmac_str: MagicMock, pmac: PMAC, run_engine):
+    run_engine(cs_reset(pmac))
     mock_set_pmac_str.assert_called_once()
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
     mock_open(read_data='{"a":11, "b":12,}'),
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_directions"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_directions"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_fiducials"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_fiducials"
 )
 def test_cs_maker_raises_error_for_invalid_json(
     fake_fid: MagicMock,
     fake_dir: MagicMock,
     fake_caget: MagicMock,
     pmac: PMAC,
-    RE,
+    run_engine,
 ):
     fake_dir.return_value = (1, 1, 1)
     fake_fid.return_value = (0, 0, 0)
     with pytest.raises(json.JSONDecodeError):
-        RE(cs_maker(pmac))
+        run_engine(cs_maker(pmac))
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
     mock_open(read_data='{"scalex":11, "skew":12}'),
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_directions"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_directions"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_fiducials"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_fiducials"
 )
 def test_cs_maker_raises_error_for_missing_key_in_json(
     fake_fid: MagicMock,
     fake_dir: MagicMock,
     fake_caget: MagicMock,
     pmac: PMAC,
-    RE,
+    run_engine,
 ):
     fake_dir.return_value = (1, 1, 1)
     fake_fid.return_value = (0, 0, 0)
     with pytest.raises(KeyError):
-        RE(cs_maker(pmac))
+        run_engine(cs_maker(pmac))
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.open",
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.open",
     mock_open(read_data=cs_json),
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_directions"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_directions"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.scrape_mtr_fiducials"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.scrape_mtr_fiducials"
 )
 def test_cs_maker_raises_error_for_wrong_direction_in_json(
     fake_fid: MagicMock,
     fake_dir: MagicMock,
     fake_caget: MagicMock,
     pmac: PMAC,
-    RE,
+    run_engine,
 ):
     fake_dir.return_value = (1, 1, 1)
     fake_fid.return_value = (0, 0, 0)
     with pytest.raises(ValueError):
-        RE(cs_maker(pmac))
+        run_engine(cs_maker(pmac))
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caput")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1.caget")
-def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, RE):
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
+def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, run_engine):
     fake_caget.side_effect = [0.01, 0.005]
-    RE(pumpprobe_calc())
+    run_engine(pumpprobe_calc())
     assert fake_caget.call_count == 2
     assert fake_caput.call_count == 5
     fake_caput.assert_has_calls(

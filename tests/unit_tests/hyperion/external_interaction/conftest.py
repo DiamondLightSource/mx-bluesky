@@ -5,7 +5,7 @@ import pytest
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
-from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import (
@@ -36,7 +36,7 @@ def test_rotation_params(tmp_path):
 def test_fgs_params(request, tmp_path):
     assert request.param % 25 == 0, "Please use a multiple of 25 images"
     params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params(tmp_path))
-    params.demand_energy_ev = convert_angstrom_to_eV(1.0)
+    params.demand_energy_ev = convert_angstrom_to_ev(1.0)
     params.use_roi_mode = True
     first_scan_img = (request.param // 10) * 6
     second_scan_img = (request.param // 10) * 4

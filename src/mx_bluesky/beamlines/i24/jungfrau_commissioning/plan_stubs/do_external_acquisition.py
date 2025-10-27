@@ -10,7 +10,7 @@ from ophyd_async.fastcs.jungfrau import (
 )
 from pydantic import PositiveInt
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_utils import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
     override_file_path,
 )
@@ -27,12 +27,12 @@ def do_external_acquisition(
     """
     Kickoff external triggering on the Jungfrau, and optionally wait for completion.
 
-    Must be used within an open Bluesky run.
+    Any plan using this stub MUST stage the Jungfrau with the stage_decorator and open a run,
+    ideally using the run_decorator.
 
     Args:
         exp_time_s: Length of detector exposure for each frame.
-        gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
-        total_triggers: Number of external triggers recieved before acquisition is marked as complete.
+        total_triggers: Number of external triggers received before acquisition is marked as complete.
         jungfrau: Jungfrau device
         output_file_name: Absolute path of the detector file output, including file name. If None, then use the PathProvider
             set during jungfrau device instantiation
@@ -43,5 +43,5 @@ def do_external_acquisition(
         override_file_path(jungfrau, output_file_path)
 
     trigger_info = create_jungfrau_external_triggering_info(total_triggers, exp_time_s)
-    status = yield from fly_jungfrau(jungfrau, trigger_info, gain_mode, wait)
+    status = yield from fly_jungfrau(jungfrau, trigger_info, wait=wait)
     return status
