@@ -73,7 +73,8 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyright",
+    # Pin to previous pyright until https://github.com/microsoft/pyright/issues/11060 is fixed
+    "pyright==1.1.406", 
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
