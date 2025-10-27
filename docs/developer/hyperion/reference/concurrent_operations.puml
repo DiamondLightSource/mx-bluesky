@@ -1,0 +1,87 @@
+@startuml
+!pragma teoz true
+participant "BlueSky RunEngine" as RE
+box "Opyhd Async Devices"
+participant "Aperture\nScatterguard" as ap_sg
+participant "Smargon" as smargon
+participant "Robot" as robot
+participant "Undulator" as undulator
+participant "DCM" as dcm
+participant "Transmission\nand Feedback" as feedback
+participant "Mirrors" as mirrors
+participant "Mirror\nVoltages" as voltages
+participant "Backlight" as backlight
+participant "OAV" as oav
+end box
+box "Callbacks"
+participant "Robot Load\nISPyB" as RobotLoadISPyB
+participant "Gridscan\nISPyB" as GridscanISPyB
+participant "Grid\nDetection" as GridDetection
+end box
+
+RE -> RE:robot_load_then_xray_centre
+activate RE #ffeeee
+    opt pin not already loaded
+        RE -> RE: robot_load_and_change_energy_plan
+        activate RE  #ffdddd
+            RE -> RE: prepare_for_robot_load
+            activate RE  #ffcccc
+                RE -> ap_sg: Move Aperture Scatterguard out of beam
+                activate ap_sg
+                    RE -> smargon: Home smargon
+                    activate smargon
+                deactivate ap_sg
+            deactivate RE /' prepare_for_robot_load '/
+            RE -> RE: robot_load_and_snapshots
+            activate RE #ffcccc
+                activate RobotLoadISPyB
+                RE -> RobotLoadISPyB: send parameters to robot load callback
+                RE -> backlight: move backlight in
+                RE -> RE: do_robot_load
+                activate RE  #ffbbbb
+                    RE -> robot: trigger robot load
+                    activate robot
+                    RE -> RE: set_energy_plan
+                    note right of RE: (see below)
+                    deactivate robot
+                deactivate RE /' do_robot_load '/
+                RE -> smargon: Restore motor positions
+                deactivate smargon
+                RE -> oav: trigger snapshots
+                RE -> RobotLoadISPyB: read hardware
+                RE -> RobotLoadISPyB: record snapshots
+            deactivate RE /'robot_load_and_snapshots'/
+        return /'robot_load_and_change_energy_plan'/
+    end /'pin not already loaded'/
+    alt pin is loaded
+        RE -> RE: set_energy_plan
+    end /'pin is loaded'/
+    RE -> GridscanISPyB ++ : send parameters to grdscan callback
+        RE -> RE ++ #ffdddd : pin_centre_then_flyscan_plan
+            RE -> RE: setup_beamline_for_oav
+            RE -> RE: pin_tip_centre_plan
+            ...do pin tip centring...
+            RE -> RE ++ #ffcccc: detect_grid_and_do_gridscan
+                RE -> RE: setup_beamline_for_oav
+                RE -> ap_sg ++: prepare aperture scatterguard\nfor gridscan in background
+                activate GridDetection
+                    RE -> RE ++ #ffbbbb: grid_detection_plan
+                        loop xy and xz grids
+                            RE -> smargon: rotate omega
+                            RE -> oav: trigger OAV snapshot
+                            RE -> GridscanISPyB: trigger snapshot generation and/or deposition
+                        end
+                    deactivate RE /'grid_detection_plan'/
+                deactivate GridDetection
+                RE -> RE ++
+                ...grid detection...
+                return
+                RE -> backlight: move backlight out 
+                ap_sg -> RE --: aperture scatterguard completes
+                RE -> RE ++ : common_flycan_xray_centre
+            deactivate RE /' detect_grid_and_do_gridscan'/
+        return /' pin_centre_then_flyscan_plan'/
+    deactivate GridscanISPyB
+deactivate RE /'robot_load_then_xray_centre'/
+
+@enduml
