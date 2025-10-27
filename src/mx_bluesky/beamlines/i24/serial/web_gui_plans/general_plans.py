@@ -189,7 +189,7 @@ def gui_run_chip_collection(
         chip_map = []
 
     # NOTE. For now setting attenuation here in place of the edms doing a caput
-    yield from bps.abs_set(attenuator, transmission, wait=True)  # type: ignore
+    yield from bps.abs_set(attenuator, transmission, wait=True)
 
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
@@ -277,7 +277,7 @@ def gui_run_extruder_collection(
         laser_delay (float): delay between laser exposure and collection, in s.
     """
     # NOTE. For now setting attenuation here in place of the edms doing a caput
-    yield from bps.abs_set(attenuator, transmission, wait=True)  # type: ignore
+    yield from bps.abs_set(attenuator, transmission, wait=True)
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
