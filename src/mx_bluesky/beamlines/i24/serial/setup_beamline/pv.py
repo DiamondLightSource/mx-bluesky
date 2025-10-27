@@ -4,25 +4,6 @@ PVs
 # Now with Eiger goodness
 """
 
-import os
-import sys
-
-
-def __show(name):
-    """Checks available variables given a string, uses first two letters"""
-    for things in globals():
-        if name[:2].lower() in things.lower():
-            print("Available:", things)
-    print()
-
-
-def __which():
-    """Return script directory, used for finding which pv.py you are running"""
-    pathname, scriptname = os.path.split(sys.argv[0])
-    print("Current dir: " + os.path.abspath(pathname))
-    print("path to pv.py: ")
-
-
 requested_transmission = "BL24I-OP-ATTN-01:T2A:SETVAL1"
 
 
