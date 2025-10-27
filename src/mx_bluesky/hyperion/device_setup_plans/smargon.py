@@ -2,7 +2,7 @@ import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
 from dodal.devices.smargon import CombinedMove, Smargon
-from ophyd_async.epics.motor import MotorLimitsException
+from ophyd_async.epics.motor import MotorLimitsError
 
 from mx_bluesky.common.utils.exceptions import SampleError
 
@@ -17,7 +17,7 @@ def move_smargon_warn_on_out_of_range(
             smargon, CombinedMove(x=position[0], y=position[1], z=position[2])
         )
     except FailedStatus as fs:
-        if isinstance(fs.__cause__, MotorLimitsException):
+        if isinstance(fs.__cause__, MotorLimitsError):
             raise SampleError(
                 "Pin tip centring failed - pin too long/short/bent and out of range"
             ) from fs.__cause__

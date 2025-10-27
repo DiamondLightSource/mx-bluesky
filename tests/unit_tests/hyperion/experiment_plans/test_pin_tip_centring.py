@@ -14,7 +14,7 @@ from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundError
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
-from ophyd_async.epics.motor import MotorLimitsException
+from ophyd_async.epics.motor import MotorLimitsError
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.utils.exceptions import SampleError, WarningError
@@ -288,7 +288,7 @@ def test_re_raise_failed_status_that_is_not_motor_limits_exception(
         run_engine(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
-    assert not isinstance(fs.value.args[0], MotorLimitsException)
+    assert not isinstance(fs.value.args[0], MotorLimitsError)
     assert isinstance(fs.value.args[0], RuntimeError)
 
 
