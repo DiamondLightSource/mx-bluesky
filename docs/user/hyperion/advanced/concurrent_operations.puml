@@ -18,6 +18,8 @@ participant "Gridscan\nISPyB" as GridscanISPyB
 participant "Grid\nDetection" as GridDetection
 participant "GridScan\nNexus" as GridScanNexus
 participant "Zocalo\nTrigger" as ZocaloCallback
+participant "XRC\nResults" as XRayCentreEventHandler
+participant "Snapshot\nBeam Centre\nAnnotation" as BeamDrawingCallback 
 end box
 
 RE -> RE:robot_load_then_xray_centre
@@ -73,7 +75,11 @@ activate RE #ffeeee
                             loop xy and xz grids
                                 RE -> smargon: rotate omega
                                 RE -> oav: trigger OAV snapshot
-                                RE -> GridscanISPyB: trigger snapshot generation and/or deposition
+                                RE -> GridscanISPyB: snapshot event with oav + smargon state
+                                & RE -> BeamDrawingCallback ++
+                                BeamDrawingCallback -> BeamDrawingCallback : save snapshot details\n\
+to generate rotation\n\
+snapshots later
                             end
                         deactivate RE /'grid_detection_plan'/
                     deactivate GridDetection
@@ -109,6 +115,7 @@ activate RE #ffeeee
                         RE -> zocalo ++: fetch results from zocalo
                         ...wait for Zocalo processing...
                         zocalo -> RE -- : detected xtal centres
+                        RE -> XRayCentreEventHandler ++ : post detected centres to callback
                         zocalo -> RE -- : unstage zocalo
                         panda -> RE -- : unstage panda
                         RE -> zebra : tidy zebra
@@ -118,5 +125,7 @@ activate RE #ffeeee
         deactivate GridscanISPyB
     deactivate RE /' start_preparing_data_collection_then_do_plan '/
 deactivate RE /'robot_load_then_xray_centre'/
-
+note over XRayCentreEventHandler
+Results collected later by rotation
+end note
 @enduml
