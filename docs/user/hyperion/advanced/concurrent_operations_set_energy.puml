@@ -9,7 +9,6 @@ participant "Mirrors" as mirrors
 participant "Mirror\nVoltages" as voltages
 end box
 
-== Set Energy Plan ==
 group set_energy_plan
     RE -> RE: set_energy_plan
     activate RE

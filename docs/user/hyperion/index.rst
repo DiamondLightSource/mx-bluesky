@@ -53,5 +53,7 @@ For a more detailed breakdown of the operation, it may be helpful to browse the 
     :caption: Topics
     :maxdepth: 1
     :glob:
+    
 
     *
+    advanced/index
