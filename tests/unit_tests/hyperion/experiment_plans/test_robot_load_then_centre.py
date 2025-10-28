@@ -71,9 +71,11 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
-    RE(robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params))
+    run_engine(
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+    )
     composite_passed = mock_centring_plan.call_args[0][0]
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
 
@@ -471,10 +473,10 @@ def test_box_size_passed_through_to_gridscan(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     robot_load_then_centre_params.box_size_um = 25
-    RE(
+    run_engine(
         robot_load_then_xray_centre(
             robot_load_composite,
             robot_load_then_centre_params,

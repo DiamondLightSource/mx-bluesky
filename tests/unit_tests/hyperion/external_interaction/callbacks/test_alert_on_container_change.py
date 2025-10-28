@@ -53,29 +53,29 @@ def dummy_plan_with_container(robot: BartRobot, container: int):
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
 def test_when_data_collected_on_the_same_container_then_does_not_alert_multiple_times(
-    RE: RunEngine, mock_alert_service: MagicMock, robot: BartRobot
+    run_engine: RunEngine, mock_alert_service: MagicMock, robot: BartRobot
 ):
-    RE.subscribe(AlertOnContainerChange())
+    run_engine.subscribe(AlertOnContainerChange())
 
     set_mock_value(robot.current_puck, 5)
 
-    RE(dummy_plan_with_container(robot, 5))
-    RE(dummy_plan_with_container(robot, 5))
-    RE(dummy_plan_with_container(robot, 5))
+    run_engine(dummy_plan_with_container(robot, 5))
+    run_engine(dummy_plan_with_container(robot, 5))
+    run_engine(dummy_plan_with_container(robot, 5))
 
     mock_alert_service.raise_alert.assert_not_called()
 
 
 @patch.dict("os.environ", {"BEAMLINE": "i03"})
 def test_when_data_collected_on_new_container_then_alerts(
-    RE: RunEngine,
+    run_engine: RunEngine,
     mock_alert_service: MagicMock,
     robot: BartRobot,
 ):
-    RE.subscribe(AlertOnContainerChange())
+    run_engine.subscribe(AlertOnContainerChange())
     set_mock_value(robot.current_puck, 5)
 
-    RE(dummy_plan_with_container(robot, 10))
+    run_engine(dummy_plan_with_container(robot, 10))
 
     mock_alert_service.raise_alert.assert_called_once_with(
         "UDC moved on to puck 10 on i03",
@@ -94,12 +94,12 @@ def test_when_data_collected_on_new_container_then_alerts(
 )
 def test_robot_load_and_snapshots_triggers_alert_and_resets_state_between_plans(
     patched_robot_load: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     mock_alert_service: MagicMock,
     robot: BartRobot,
     backlight: Backlight,
 ):
-    RE.subscribe(AlertOnContainerChange())
+    run_engine.subscribe(AlertOnContainerChange())
 
     mock_composite = MagicMock()
     mock_composite.robot = robot
@@ -111,7 +111,7 @@ def test_robot_load_and_snapshots_triggers_alert_and_resets_state_between_plans(
     for container in range(1, 3):
         set_mock_value(robot.current_puck, old_container)
         with pytest.raises(NotImplementedError):
-            RE(
+            run_engine(
                 wrap_plan(
                     container,
                     partial(

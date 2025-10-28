@@ -90,7 +90,7 @@ def fake_generator(value):
 
 
 @pytest.fixture
-def zebra(RE) -> Zebra:
+def zebra(run_engine) -> Zebra:
     zebra = i24.zebra(connect_immediately=True, mock=True)
 
     def mock_disarm(_, wait):
@@ -105,7 +105,7 @@ def zebra(RE) -> Zebra:
 
 
 @pytest.fixture
-def shutter(RE) -> HutchShutter:
+def shutter(run_engine) -> HutchShutter:
     shutter = i24.shutter(connect_immediately=True, mock=True)
     set_mock_value(shutter.interlock.status, HUTCH_SAFE_FOR_OPERATIONS)
 
@@ -118,7 +118,7 @@ def shutter(RE) -> HutchShutter:
 
 
 @pytest.fixture
-def detector_stage(RE):
+def detector_stage(run_engine):
     detector_motion = i24.detector_motion(connect_immediately=True, mock=True)
 
     with patch_all_motors(detector_motion):
@@ -126,20 +126,20 @@ def detector_stage(RE):
 
 
 @pytest.fixture
-def aperture(RE):
+def aperture(run_engine):
     aperture: Aperture = i24.aperture(connect_immediately=True, mock=True)
     with patch_all_motors(aperture):
         yield aperture
 
 
 @pytest.fixture
-def backlight(RE) -> DualBacklight:
+def backlight(run_engine) -> DualBacklight:
     backlight = i24.backlight(connect_immediately=True, mock=True)
     return backlight
 
 
 @pytest.fixture
-def beamstop(RE):
+def beamstop(run_engine):
     beamstop: Beamstop = i24.beamstop(connect_immediately=True, mock=True)
 
     with patch_all_motors(beamstop):
@@ -147,20 +147,20 @@ def beamstop(RE):
 
 
 @pytest.fixture
-def pmac(RE):
+def pmac(run_engine):
     pmac: PMAC = i24.pmac(connect_immediately=True, mock=True)
     with patch_all_motors(pmac):
         yield pmac
 
 
 @pytest.fixture
-def dcm(RE) -> DCM:
+def dcm(run_engine) -> DCM:
     dcm = i24.dcm(connect_immediately=True, mock=True)
     return dcm
 
 
 @pytest.fixture
-def eiger_beam_center(RE) -> DetectorBeamCenter:
+def eiger_beam_center(run_engine) -> DetectorBeamCenter:
     bc: DetectorBeamCenter = i24.eiger_beam_center(connect_immediately=True, mock=True)
     set_mock_value(bc.beam_x, 1605)
     set_mock_value(bc.beam_y, 1702)
@@ -168,7 +168,7 @@ def eiger_beam_center(RE) -> DetectorBeamCenter:
 
 
 @pytest.fixture
-def mirrors(RE) -> FocusMirrorsMode:
+def mirrors(run_engine) -> FocusMirrorsMode:
     mirrors: FocusMirrorsMode = i24.focus_mirrors(connect_immediately=True, mock=True)
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
@@ -176,7 +176,7 @@ def mirrors(RE) -> FocusMirrorsMode:
 
 
 @pytest.fixture
-def attenuator(RE) -> ReadOnlyAttenuator:
+def attenuator(run_engine) -> ReadOnlyAttenuator:
     attenuator: ReadOnlyAttenuator = i24.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 1.0)
     return attenuator

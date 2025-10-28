@@ -158,7 +158,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     exp_eye: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     robot = robot_load_and_energy_change_composite.robot
     webcam = robot_load_and_energy_change_composite.webcam
@@ -170,12 +170,12 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     webcam.trigger = MagicMock(return_value=NullStatus())
     set_mock_value(robot.barcode, "BARCODE")
 
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
     exp_eye.return_value.start_robot_action.return_value = action_id
 
-    RE(
+    run_engine(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite, robot_load_and_energy_change_params
         )
@@ -201,24 +201,24 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")
 async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
-    mock_datetime: MagicMock, oav: OAV, webcam: Webcam, RE: RunEngine
+    mock_datetime: MagicMock, oav: OAV, webcam: Webcam, run_engine: RunEngine
 ):
-    TEST_DIRECTORY = "TEST"
+    test_directory = "TEST"
 
     mock_datetime.now.return_value.strftime.return_value = "TIME"
 
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
-    RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
+    run_engine(take_robot_snapshots(oav, webcam, Path(test_directory)))
 
     oav.snapshot.trigger.assert_called_once()
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"
-    assert await oav.snapshot.directory.get_value() == TEST_DIRECTORY
+    assert await oav.snapshot.directory.get_value() == test_directory
 
     webcam.trigger.assert_called_once()
     assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"
-    assert (await webcam.directory.get_value()) == TEST_DIRECTORY
+    assert (await webcam.directory.get_value()) == test_directory
 
 
 def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_and_back(

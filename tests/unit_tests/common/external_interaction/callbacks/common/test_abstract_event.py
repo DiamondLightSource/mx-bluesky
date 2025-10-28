@@ -17,7 +17,7 @@ class MyEvent(AbstractEvent):
     my_bool: bool
 
 
-def test_can_create_and_raise_an_event(RE: RunEngine):
+def test_can_create_and_raise_an_event(run_engine: RunEngine):
     @bpp.run_decorator()
     def fire_an_event():
         yield from bps.create("MY_EVENT")
@@ -32,8 +32,8 @@ def test_can_create_and_raise_an_event(RE: RunEngine):
         nonlocal the_event
         the_event = doc
 
-    RE.subscribe(my_event_handler, "event")
-    RE(fire_an_event())
+    run_engine.subscribe(my_event_handler, "event")
+    run_engine(fire_an_event())
 
     assert the_event
     assert the_event["data"] == {

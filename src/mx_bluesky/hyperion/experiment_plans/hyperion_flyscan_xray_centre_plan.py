@@ -15,7 +15,7 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    construct_beamline_specific_FGS_features,
+    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
@@ -35,7 +35,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 
-class SmargonSpeedException(Exception):
+class SmargonSpeedError(Exception):
     pass
 
 
@@ -73,7 +73,7 @@ def construct_hyperion_specific_features(
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.panda_fast_grid_scan,
-            xrc_parameters.panda_FGS_params,
+            xrc_parameters.panda_fast_gridscan_params,
         )
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
@@ -91,10 +91,10 @@ def construct_hyperion_specific_features(
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.zebra_fast_grid_scan,
-            xrc_parameters.FGS_params,
+            xrc_parameters.fast_gridscan_params,
         )
         fgs_motors = xrc_composite.zebra_fast_grid_scan
-    return construct_beamline_specific_FGS_features(
+    return construct_beamline_specific_fast_gridscan_features(
         setup_trigger_plan,
         tidy_plan,
         set_flyscan_params_plan,
@@ -126,21 +126,23 @@ def _panda_triggering_setup(
         xrc_composite.panda_fast_grid_scan.run_up_distance_mm
     )
 
-    DETECTOR_DEADTIME_S = 1e-4  # This value was empirically found to be safer than the documented deadtime in the Eiger manual
+    detector_deadtime_s = 1e-4  # This value was empirically found to be safer than the documented deadtime in the Eiger manual
 
-    time_between_x_steps_ms = (DETECTOR_DEADTIME_S + parameters.exposure_time_s) * 1e3
+    time_between_x_steps_ms = (detector_deadtime_s + parameters.exposure_time_s) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         xrc_composite.smargon.x.max_velocity
     )
 
     sample_velocity_mm_per_s = (
-        parameters.panda_FGS_params.x_step_size_mm * 1e3 / time_between_x_steps_ms
+        parameters.panda_fast_gridscan_params.x_step_size_mm
+        * 1e3
+        / time_between_x_steps_ms
     )
     if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
-        raise SmargonSpeedException(
+        raise SmargonSpeedError(
             f"Smargon speed was calculated from x step size\
-            {parameters.panda_FGS_params.x_step_size_mm}mm and\
+            {parameters.panda_fast_gridscan_params.x_step_size_mm}mm and\
             time_between_x_steps_ms {time_between_x_steps_ms} as\
             {sample_velocity_mm_per_s}mm/s. The smargon's speed limit is\
             {smargon_speed_limit_mm_per_s}mm/s."
@@ -161,7 +163,7 @@ def _panda_triggering_setup(
 
     yield from setup_panda_for_flyscan(
         xrc_composite.panda,
-        parameters.panda_FGS_params,
+        parameters.panda_fast_gridscan_params,
         xrc_composite.smargon,
         parameters.exposure_time_s,
         time_between_x_steps_ms,

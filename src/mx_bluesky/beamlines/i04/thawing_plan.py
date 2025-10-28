@@ -62,7 +62,7 @@ def thaw_and_stream_to_redis(
                      defaults are always correct
     """
 
-    def switch_forwarder_to_ROI() -> MsgGenerator:
+    def switch_forwarder_to_roi() -> MsgGenerator:
         yield from bps.complete(oav_to_redis_forwarder, wait=True)
         yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
         yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
@@ -75,7 +75,7 @@ def thaw_and_stream_to_redis(
         smargon,
         oav,
         oav_to_redis_forwarder,
-        switch_forwarder_to_ROI,
+        switch_forwarder_to_roi,
     )
 
 
@@ -110,14 +110,14 @@ def thaw_and_murko_centre(
                      defaults are always correct
     """
 
-    MURKO_RESULTS_GROUP = "get_results"
+    murko_results_group = "get_results"
 
-    def centre_then_switch_forwarder_to_ROI() -> MsgGenerator:
+    def centre_then_switch_forwarder_to_roi() -> MsgGenerator:
         yield from bps.complete(oav_to_redis_forwarder, wait=True)
 
         yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
 
-        yield from bps.wait(MURKO_RESULTS_GROUP)
+        yield from bps.wait(murko_results_group)
         x_predict = yield from bps.rd(murko_results.x_mm)
         y_predict = yield from bps.rd(murko_results.y_mm)
         z_predict = yield from bps.rd(murko_results.z_mm)
@@ -132,7 +132,7 @@ def thaw_and_murko_centre(
     yield from bps.mv(murko_results.sample_id, str(sample_id))
 
     yield from bps.stage(murko_results, wait=True)
-    yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+    yield from bps.trigger(murko_results, group=murko_results_group)
 
     yield from bpp.contingency_wrapper(
         _thaw_and_stream_to_redis(
@@ -143,7 +143,7 @@ def thaw_and_murko_centre(
             smargon,
             oav,
             oav_to_redis_forwarder,
-            centre_then_switch_forwarder_to_ROI,
+            centre_then_switch_forwarder_to_roi,
         ),
         final_plan=partial(bps.unstage, murko_results, wait=True),
     )

@@ -20,7 +20,7 @@ class SpecifiedTwoDGridScan(
         return self.grid_1_spec
 
     @property
-    def FGS_params(self) -> ZebraGridScanParamsTwoD:
+    def fast_gridscan_params(self) -> ZebraGridScanParamsTwoD:
         return ZebraGridScanParamsTwoD(
             x_steps=self.x_steps,
             y_steps=self.y_steps,

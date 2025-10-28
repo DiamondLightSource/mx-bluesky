@@ -21,13 +21,13 @@ def test_load_panda_from_yaml(
     mock_settings_provider: MagicMock,
     panda: HDFPanda,
     tmpdir,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     test_file = "test"
     mock_settings_provider.return_value = (mock_settings_return := MagicMock())
     mock_retrieve_settings.side_effect = get_test_plan
 
-    RE(
+    run_engine(
         load_panda_from_yaml(
             tmpdir,
             test_file,

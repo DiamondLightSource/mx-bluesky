@@ -59,12 +59,12 @@ def test_pin_tip_centre_then_xray_centre_moves_to_centre_of_first_flyscan_result
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     mock_detect_and_do_gridscan.side_effect = lambda *_: _fire_xray_centre_result_event(
         [FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW]
     )
-    RE(
+    run_engine(
         pin_tip_centre_then_xray_centre(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
@@ -105,9 +105,9 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
-    RE(
+    run_engine(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,

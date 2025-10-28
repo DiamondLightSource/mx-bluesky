@@ -157,7 +157,7 @@ class DCID:
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
             if isinstance(self.detector, Eiger):
-                startImageNumber = 1
+                start_image_number = 1
             else:
                 raise ValueError("Unknown detector:", self.detector)
 
@@ -201,7 +201,7 @@ class DCID:
                 "imageDirectory": image_dir,
                 "numberOfImages": num_images,
                 "resolution": resolution,
-                "startImageNumber": startImageNumber,
+                "startImageNumber": start_image_number,
                 "startTime": start_time.isoformat(),
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,

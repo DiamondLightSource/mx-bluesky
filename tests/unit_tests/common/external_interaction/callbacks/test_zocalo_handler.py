@@ -11,7 +11,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
@@ -96,7 +96,7 @@ class TestZocaloHandler:
         ispyb_store: MagicMock,
         nexus_writer: MagicMock,
         zocalo_trigger,
-        TestEventData,
+        test_event_data,
     ):
         dc_ids = (1, 2)
         dcg_id = 4
@@ -113,20 +113,22 @@ class TestZocaloHandler:
         ispyb_store.return_value.begin_deposition.return_value = mock_ids
         ispyb_store.return_value.update_deposition.return_value = mock_ids
 
-        ispyb_cb.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
-        ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xy)
-        ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xz)
-        ispyb_cb.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
-        ispyb_cb.start(TestEventData.test_do_fgs_start_document)  # type: ignore
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_pre_data_collection)  # type: ignore
-        ispyb_cb.event(TestEventData.test_event_document_pre_data_collection)
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_zocalo_hardware)
-        ispyb_cb.event(TestEventData.test_event_document_zocalo_hardware)
+        ispyb_cb.start(test_event_data.test_grid_detect_and_gridscan_start_document)  # type: ignore
+        ispyb_cb.descriptor(test_event_data.test_descriptor_document_oav_snapshot)
+        ispyb_cb.event(test_event_data.test_event_document_oav_snapshot_xy)
+        ispyb_cb.event(test_event_data.test_event_document_oav_snapshot_xz)
+        ispyb_cb.start(test_event_data.test_gridscan_outer_start_document)  # type: ignore
+        ispyb_cb.start(test_event_data.test_do_fgs_start_document)  # type: ignore
         ispyb_cb.descriptor(
-            TestEventData.test_descriptor_document_during_data_collection  # type: ignore
+            test_event_data.test_descriptor_document_pre_data_collection
+        )  # type: ignore
+        ispyb_cb.event(test_event_data.test_event_document_pre_data_collection)
+        ispyb_cb.descriptor(test_event_data.test_descriptor_document_zocalo_hardware)
+        ispyb_cb.event(test_event_data.test_event_document_zocalo_hardware)
+        ispyb_cb.descriptor(
+            test_event_data.test_descriptor_document_during_data_collection  # type: ignore
         )
-        ispyb_cb.event(TestEventData.test_event_document_during_data_collection)
+        ispyb_cb.event(test_event_data.test_event_document_during_data_collection)
         assert zocalo_handler.zocalo_interactor is not None
 
         expected_start_calls = [
@@ -139,8 +141,8 @@ class TestZocaloHandler:
         )
         assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
 
-        ispyb_cb.stop(TestEventData.test_do_fgs_stop_document)
-        ispyb_cb.stop(TestEventData.test_gridscan_outer_stop_document)
+        ispyb_cb.stop(test_event_data.test_do_fgs_stop_document)
+        ispyb_cb.stop(test_event_data.test_gridscan_outer_stop_document)
 
         zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
             [call(x) for x in dc_ids]
@@ -164,7 +166,7 @@ class TestZocaloHandler:
         ispyb_store: MagicMock,
         nexus_writer: MagicMock,
         zocalo_trigger,
-        TestEventData,
+        test_event_data,
     ):
         dc_ids = (1, 2)
         dcg_id = 4
@@ -181,20 +183,22 @@ class TestZocaloHandler:
         ispyb_store.return_value.begin_deposition.return_value = mock_ids
         ispyb_store.return_value.update_deposition.return_value = mock_ids
 
-        ispyb_cb.start(TestEventData.test_grid_detect_and_gridscan_start_document)  # type: ignore
-        ispyb_cb.start(TestEventData.test_gridscan_outer_start_document)  # type: ignore
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_oav_snapshot)
-        ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xz)
-        ispyb_cb.event(TestEventData.test_event_document_oav_snapshot_xy)
-        ispyb_cb.start(TestEventData.test_do_fgs_start_document)  # type: ignore
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_pre_data_collection)  # type: ignore
-        ispyb_cb.event(TestEventData.test_event_document_pre_data_collection)
-        ispyb_cb.descriptor(TestEventData.test_descriptor_document_zocalo_hardware)
-        ispyb_cb.event(TestEventData.test_event_document_zocalo_hardware)
+        ispyb_cb.start(test_event_data.test_grid_detect_and_gridscan_start_document)  # type: ignore
+        ispyb_cb.start(test_event_data.test_gridscan_outer_start_document)  # type: ignore
+        ispyb_cb.descriptor(test_event_data.test_descriptor_document_oav_snapshot)
+        ispyb_cb.event(test_event_data.test_event_document_oav_snapshot_xz)
+        ispyb_cb.event(test_event_data.test_event_document_oav_snapshot_xy)
+        ispyb_cb.start(test_event_data.test_do_fgs_start_document)  # type: ignore
         ispyb_cb.descriptor(
-            TestEventData.test_descriptor_document_during_data_collection  # type: ignore
+            test_event_data.test_descriptor_document_pre_data_collection
+        )  # type: ignore
+        ispyb_cb.event(test_event_data.test_event_document_pre_data_collection)
+        ispyb_cb.descriptor(test_event_data.test_descriptor_document_zocalo_hardware)
+        ispyb_cb.event(test_event_data.test_event_document_zocalo_hardware)
+        ispyb_cb.descriptor(
+            test_event_data.test_descriptor_document_during_data_collection  # type: ignore
         )
-        ispyb_cb.event(TestEventData.test_event_document_during_data_collection)
+        ispyb_cb.event(test_event_data.test_event_document_during_data_collection)
         assert zocalo_handler.zocalo_interactor is not None
 
         expected_start_calls = [
@@ -206,8 +210,8 @@ class TestZocaloHandler:
             expected_start_calls
         )
         assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
-        ispyb_cb.stop(TestEventData.test_do_fgs_stop_document)
-        ispyb_cb.stop(TestEventData.test_gridscan_outer_stop_document)
+        ispyb_cb.stop(test_event_data.test_do_fgs_stop_document)
+        ispyb_cb.stop(test_event_data.test_gridscan_outer_stop_document)
 
         zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
             [call(dc_ids[0]), call(dc_ids[1])]
@@ -223,5 +227,5 @@ class TestZocaloHandler:
     ):
         zocalo_handler = self._setup_handler()
         zocalo_handler.start(EXPECTED_RUN_START_MESSAGE)  # type: ignore
-        with pytest.raises(ISPyBDepositionNotMade):
+        with pytest.raises(ISPyBDepositionNotMadeError):
             zocalo_handler.stop(EXPECTED_RUN_END_MESSAGE)  # type: ignore

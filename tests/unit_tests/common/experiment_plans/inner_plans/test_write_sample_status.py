@@ -9,7 +9,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.write_sample_status import (
     deposit_sample_error,
 )
 from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import BLSampleStatus
-from mx_bluesky.common.utils.exceptions import SampleException
+from mx_bluesky.common.utils.exceptions import SampleError
 
 TEST_SAMPLE_ID = 123456
 
@@ -25,12 +25,12 @@ TEST_SAMPLE_ID = 123456
         [
             SampleStatusExceptionType.SAMPLE,
             BLSampleStatus.ERROR_SAMPLE,
-            SampleException,
+            SampleError,
         ],
     ],
 )
 def test_depositing_sample_error_with_sample_or_beamline_exception(
-    RE: RunEngine,
+    run_engine: RunEngine,
     exception_type: SampleStatusExceptionType,
     expected_sample_status: BLSampleStatus,
     expected_raised_exception: type,
@@ -44,14 +44,14 @@ def test_depositing_sample_error_with_sample_or_beamline_exception(
         ),
         pytest.raises(expected_raised_exception),
     ):
-        RE(deposit_sample_error(exception_type, TEST_SAMPLE_ID))
+        run_engine(deposit_sample_error(exception_type, TEST_SAMPLE_ID))
     mock_expeye.update_sample_status.assert_called_once_with(
         TEST_SAMPLE_ID, expected_sample_status
     )
 
 
 def test_depositing_sample_loaded(
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     mock_expeye = MagicMock()
     with patch(
@@ -59,7 +59,7 @@ def test_depositing_sample_loaded(
         ".ExpeyeInteraction",
         return_value=mock_expeye,
     ):
-        RE(deposit_loaded_sample(TEST_SAMPLE_ID))
+        run_engine(deposit_loaded_sample(TEST_SAMPLE_ID))
         mock_expeye.update_sample_status.assert_called_once_with(
             TEST_SAMPLE_ID, BLSampleStatus.LOADED
         )
