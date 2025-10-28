@@ -111,6 +111,7 @@ version_file = "src/mx_bluesky/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+# Issue to remove some of these exceptions: https://github.com/DiamondLightSource/mx-bluesky/issues/1403
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownLambdaType = false
