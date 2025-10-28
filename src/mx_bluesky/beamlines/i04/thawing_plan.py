@@ -16,6 +16,7 @@ from dodal.devices.thawer import OnOff, Thawer
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
 
+from dodal.log import LOGGER
 
 def thaw(
     time_to_thaw: float,
@@ -76,6 +77,7 @@ def thaw_and_stream_to_redis(
         switch_forwarder_to_ROI,
     )
 
+MURKO_RESULTS_GROUP = "get_results"
 
 def thaw_and_murko_centre(
     time_to_thaw: float,
@@ -107,41 +109,135 @@ def thaw_and_murko_centre(
                      defaults are always correct
     """
 
-    MURKO_RESULTS_GROUP = "get_results"
+    sample_id = yield from bps.rd(robot.sample_id)
+    yield from bps.mv(murko_results.sample_id, str(sample_id))
 
-    def centre_then_switch_forwarder_to_ROI() -> MsgGenerator:
+    yield from bps.mv(murko_results.stop_angle, 350, murko_results.invert_stop_angle, False)
+    yield from bps.stage(murko_results, wait=True)
+    yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+
+    sample_id = yield from bps.rd(robot.sample_id)
+    sample_id = int(sample_id)
+
+    def get_metadata_from_oav(oav: OAV):
+        zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
+        microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
+        microns_per_pixel_y = yield from bps.rd(oav.microns_per_pixel_y)
+        beam_centre_i = yield from bps.rd(oav.beam_centre_i)
+        beam_centre_j = yield from bps.rd(oav.beam_centre_j)
+        return {
+            "microns_per_x_pixel": microns_per_pixel_x,
+            "microns_per_y_pixel": microns_per_pixel_y,
+            "beam_centre_i": beam_centre_i,
+            "beam_centre_j": beam_centre_j,
+            "zoom_percentage": zoom_percentage,
+            "sample_id": sample_id,
+        }
+
+    oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
+    oav_roi = oav_to_redis_forwarder.sources[Source.ROI].oav_ref()
+
+    zoom_level_before_thawing = yield from bps.rd(oav_fs.zoom_controller.level)
+    yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
+
+    md_fs = yield from get_metadata_from_oav(oav_fs)
+    md_roi = yield from get_metadata_from_oav(oav_roi)
+
+    LOGGER.info(f"FS metadata: {md_fs}")
+    LOGGER.info(f"ROI metadata: {md_roi}")
+
+    def centre_from_murko():
         yield from bps.complete(oav_to_redis_forwarder, wait=True)
 
-        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
-
         yield from bps.wait(MURKO_RESULTS_GROUP)
+        
         x_predict = yield from bps.rd(murko_results.x_mm)
         y_predict = yield from bps.rd(murko_results.y_mm)
         z_predict = yield from bps.rd(murko_results.z_mm)
+
+        LOGGER.info(f"Got results: {x_predict, y_predict, z_predict}")
 
         yield from bps.rel_set(smargon.x, x_predict)
         yield from bps.rel_set(smargon.y, y_predict)
         yield from bps.rel_set(smargon.z, z_predict)
 
-        yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
+    def _main_plan():
+        inital_velocity = yield from bps.rd(smargon.omega.velocity)
+        new_velocity = abs(rotation / time_to_thaw) * 2.0
 
-    sample_id = yield from bps.rd(robot.sample_id)
-    yield from bps.mv(murko_results.sample_id, str(sample_id))
+        def cleanup():
+            yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
+            yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
-    yield from bps.stage(murko_results, wait=True)
-    yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+        @subs_decorator(
+            MurkoCallback(
+                RedisConstants.REDIS_HOST,
+                RedisConstants.REDIS_PASSWORD,
+                RedisConstants.MURKO_REDIS_DB,
+            )
+        )
+        @run_decorator(md=md_fs)
+        def thaw_part_1():
+            yield from bps.mv(
+                oav_to_redis_forwarder.sample_id,
+                sample_id,
+                oav_to_redis_forwarder.selected_source,
+                Source.FULL_SCREEN.value,
+            )
+
+            yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
+            yield from bps.monitor(smargon.omega.user_readback, name="smargon")
+            yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
+
+            yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
+            yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+            yield from bps.rel_set(smargon.omega, rotation, wait=True)
+
+
+            yield from centre_from_murko()
+            yield from bps.unstage(murko_results, wait=True)
+
+
+            yield from bps.mv(murko_results.stop_angle, 10, murko_results.invert_stop_angle, True)
+            yield from bps.stage(murko_results, wait=True)
+            yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+
+            yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
+            yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
+
+        @subs_decorator(
+            MurkoCallback(
+                RedisConstants.REDIS_HOST,
+                RedisConstants.REDIS_PASSWORD,
+                RedisConstants.MURKO_REDIS_DB,
+            )
+        )
+        @run_decorator(md=md_roi)
+        def thaw_part_2():
+            yield from bps.monitor(smargon.omega.user_readback, name="smargon")
+            yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
+
+            yield from bps.rel_set(smargon.omega, -rotation, wait=True)
+            yield from centre_from_murko()
+
+            yield from bps.unstage(murko_results, wait=True)
+
+        def do_thaw():
+            yield from thaw_part_1()
+            yield from thaw_part_2()
+
+        # Always cleanup even if there is a failure
+        yield from bpp.contingency_wrapper(
+            do_thaw(),
+            final_plan=cleanup,
+        )
+
+    def cleanup():
+        yield from bps.mv(oav_fs.zoom_controller.level, zoom_level_before_thawing)
 
     yield from bpp.contingency_wrapper(
-        _thaw_and_stream_to_redis(
-            time_to_thaw,
-            rotation,
-            robot,
-            thawer,
-            smargon,
-            oav_to_redis_forwarder,
-            centre_then_switch_forwarder_to_ROI,
-        ),
-        final_plan=partial(bps.unstage, murko_results, wait=True),
+        _main_plan(),
+        final_plan=cleanup,
     )
 
 
@@ -195,97 +291,4 @@ def _thaw_and_stream_to_redis(
     oav_to_redis_forwarder: OAVToRedisForwarder,
     plan_between_rotations: Callable[[], MsgGenerator],
 ) -> MsgGenerator:
-    sample_id = yield from bps.rd(robot.sample_id)
-    sample_id = int(sample_id)
-
-    def get_metadata_from_oav(oav: OAV):
-        zoom_percentage = yield from bps.rd(oav.zoom_controller.percentage)
-        microns_per_pixel_x = yield from bps.rd(oav.microns_per_pixel_x)
-        microns_per_pixel_y = yield from bps.rd(oav.microns_per_pixel_y)
-        beam_centre_i = yield from bps.rd(oav.beam_centre_i)
-        beam_centre_j = yield from bps.rd(oav.beam_centre_j)
-        return {
-            "microns_per_x_pixel": microns_per_pixel_x,
-            "microns_per_y_pixel": microns_per_pixel_y,
-            "beam_centre_i": beam_centre_i,
-            "beam_centre_j": beam_centre_j,
-            "zoom_percentage": zoom_percentage,
-            "sample_id": sample_id,
-        }
-
-    oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
-    oav_roi = oav_to_redis_forwarder.sources[Source.ROI].oav_ref()
-
-    zoom_level_before_thawing = yield from bps.rd(oav_fs.zoom_controller.level)
-    yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
-
-    md_fs = yield from get_metadata_from_oav(oav_fs)
-    md_roi = yield from get_metadata_from_oav(oav_roi)
-
-    def _main_plan():
-        inital_velocity = yield from bps.rd(smargon.omega.velocity)
-        new_velocity = abs(rotation / time_to_thaw) * 2.0
-
-        def cleanup():
-            yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
-            yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
-
-        @subs_decorator(
-            MurkoCallback(
-                RedisConstants.REDIS_HOST,
-                RedisConstants.REDIS_PASSWORD,
-                RedisConstants.MURKO_REDIS_DB,
-            )
-        )
-        @run_decorator(md=md_fs)
-        def thaw_part_1():
-            yield from bps.mv(
-                oav_to_redis_forwarder.sample_id,
-                sample_id,
-                oav_to_redis_forwarder.selected_source,
-                Source.FULL_SCREEN.value,
-            )
-
-            yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
-            yield from bps.monitor(smargon.omega.user_readback, name="smargon")
-            yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-
-            yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-            yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
-            yield from bps.rel_set(smargon.omega, rotation, wait=True)
-            yield from plan_between_rotations()
-
-            yield from bps.complete(oav_to_redis_forwarder)
-
-        @subs_decorator(
-            MurkoCallback(
-                RedisConstants.REDIS_HOST,
-                RedisConstants.REDIS_PASSWORD,
-                RedisConstants.MURKO_REDIS_DB,
-            )
-        )
-        @run_decorator(md=md_roi)
-        def thaw_part_2():
-            yield from bps.monitor(smargon.omega.user_readback, name="smargon")
-            yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-
-            yield from bps.rel_set(smargon.omega, -rotation, wait=True)
-            yield from bps.complete(oav_to_redis_forwarder)
-
-        def do_thaw():
-            yield from thaw_part_1()
-            yield from thaw_part_2()
-
-        # Always cleanup even if there is a failure
-        yield from bpp.contingency_wrapper(
-            do_thaw(),
-            final_plan=cleanup,
-        )
-
-    def cleanup():
-        yield from bps.mv(oav_fs.zoom_controller.level, zoom_level_before_thawing)
-
-    yield from bpp.contingency_wrapper(
-        _main_plan(),
-        final_plan=cleanup,
-    )
+    pass
