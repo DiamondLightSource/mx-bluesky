@@ -28,6 +28,11 @@ def setup_pin_tip_detection_params(
         pin_tip_detect_device.preprocess_ksize, parameters.preprocess_K_size
     )
 
+    # sets iteration for blur
+    yield from set_using_group(
+        pin_tip_detect_device.preprocess_iterations, parameters.preprocess_iter
+    )
+
     # Canny edge detect - lower
     yield from set_using_group(
         pin_tip_detect_device.canny_lower_threshold,
