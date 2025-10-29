@@ -17,14 +17,7 @@ from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
-
-"""
-Check if pin is mounted exception is raised
-Check code continues if pin isn't mounted
-Check you wait on beamstop to be in before opening the shutter
-Check each stub plan is called once and in correct order
-Check that a mock image is created in the correct place
-"""
+from mx_bluesky.common.utils.exceptions import BeamlineStateException
 
 
 async def test_check_exception_raised_if_pin_mounted(
@@ -38,7 +31,7 @@ async def test_check_exception_raised_if_pin_mounted(
 ):
     set_mock_value(robot.gonio_pin_sensor, PinMounted.NO_PIN_MOUNTED)
 
-    with pytest.raises(ValueError, match="Pin should not be mounted!"):
+    with pytest.raises(BeamlineStateException, match="Pin should not be mounted!"):
         RE(
             take_oav_image_with_scintillator_in(
                 robot=robot,

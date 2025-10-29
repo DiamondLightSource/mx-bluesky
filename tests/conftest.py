@@ -588,6 +588,18 @@ def beamstop(RE: RunEngine):
     return beamstop
 
 
+# from dodal.devices.mx_phase1.beamstop import Beamstop
+
+
+# @pytest.fixture
+# def beamstop(run_engine: RunEngine) -> Beamstop:
+#     with init_devices(mock=True):
+#         beamstop = Beamstop(
+#             "", beamline_parameters=GDABeamlineParameters, name="beamstop"
+#         )
+#     return beamstop
+
+
 @pytest.fixture
 def scintillator(RE: RunEngine):
     scintillator = i03.scintillator(connect_immediately=True, mock=True)
@@ -595,10 +607,23 @@ def scintillator(RE: RunEngine):
     return scintillator
 
 
-@pytest.fixture
-def shutter(RE: RunEngine):
-    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+# from dodal.devices.scintillator import Scintillator
+# from dodal.devices.aperturescatterguard import ApertureScatterguard
+# from ophyd_async.core import Reference
 
+# @pytest.fixture
+# def scintillator(RE: RunEngine):
+#     scintillator = Scintillator(
+#         "", aperture_scatterguard=Reference[ApertureScatterguard], beamline_parameters=GDABeamlineParameters, name="scintillator"
+#     )
+
+#     return scintillator
+
+
+@pytest.fixture
+def shutter(run_engine: RunEngine) -> ZebraShutter:
+    with init_devices(mock=True):
+        shutter = ZebraShutter("", name="sample_shutter")
     return shutter
 
 
