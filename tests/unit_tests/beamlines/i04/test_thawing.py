@@ -487,7 +487,7 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "murko_results-sample_id"
-        and msg.args[0] == 1234,
+        and msg.args[0] == "1234",
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "murko_results"

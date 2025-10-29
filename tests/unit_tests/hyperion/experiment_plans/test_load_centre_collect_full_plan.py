@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
+import numpy as np
 import pytest
 from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
@@ -64,6 +65,25 @@ POS_MED = {
     "y_start_um": 500,
     "z_start_um": 600,
 }
+
+(
+    FLYSCAN_RESULT_POS_1,
+    FLYSCAN_RESULT_POS_2,
+    FLYSCAN_RESULT_POS_3,
+    FLYSCAN_RESULT_POS_4,
+    FLYSCAN_RESULT_POS_5,
+) = [
+    dataclasses.replace(
+        FLYSCAN_RESULT_MED, centre_of_mass_mm=np.array(coords), sample_id=sample_id
+    )
+    for (coords, sample_id) in [
+        ([0.01, 0.02, 0.03], 1),
+        ([0.02, 0.02, 0.03], 2),
+        ([0.03, 0.02, 0.03], 3),
+        ([0.04, 0.02, 0.03], 4),
+        ([0.05, 0.02, 0.03], 5),
+    ]
+]
 
 
 @pytest.fixture
@@ -666,6 +686,73 @@ def test_load_centre_collect_full_plan_multiple_centres(
         expected_rotation_scans, rotation_scan_params.rotation_scans
     )
     assert rotation_scan_params.transmission_frac == 0.05
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    new=MagicMock(
+        return_value=iter(
+            [
+                Msg(
+                    "open_run",
+                    xray_centre_results=[
+                        dataclasses.asdict(r)
+                        for r in [
+                            FLYSCAN_RESULT_POS_2,
+                            FLYSCAN_RESULT_POS_3,
+                            FLYSCAN_RESULT_POS_1,
+                            FLYSCAN_RESULT_POS_5,
+                            FLYSCAN_RESULT_POS_4,
+                        ]
+                    ],
+                    run=CONST.PLAN.FLYSCAN_RESULTS,
+                ),
+                Msg("close_run"),
+            ]
+        )
+    ),
+)
+def test_load_centre_collect_full_sorts_collections_by_distance_from_pin_tip(
+    mock_multi_rotation_scan: MagicMock,
+    sim_run_engine: RunEngineSimulator,
+    load_centre_collect_with_top_n_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    composite: LoadCentreCollectComposite,
+):
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite,
+            load_centre_collect_with_top_n_params,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    expected_xyz = [
+        (10.0, 20.0, 30.0, 0.0),
+        (10.0, 20.0, 30.0, 30.0),
+        (20.0, 20.0, 30.0, 0.0),
+        (20.0, 20.0, 30.0, 30.0),
+        (30.0, 20.0, 30.0, 0.0),
+        (30.0, 20.0, 30.0, 30.0),
+        (40.0, 20.0, 30.0, 0.0),
+        (40.0, 20.0, 30.0, 30.0),
+        (50.0, 20.0, 30.0, 0.0),
+        (50.0, 20.0, 30.0, 30.0),
+    ]
+
+    expected_sample_ids = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
+
+    mock_multi_rotation_scan.assert_called_once()
+    params: RotationScan = mock_multi_rotation_scan.mock_calls[0].args[1]
+    actual_coords = [
+        (scan.x_start_um, scan.y_start_um, scan.z_start_um, scan.chi_start_deg)
+        for scan in list(params.single_rotation_scans)
+    ]
+    assert actual_coords == expected_xyz
+    actual_ids = [scan.sample_id for scan in list(params.single_rotation_scans)]
+    assert actual_ids == expected_sample_ids
 
 
 def _rotation_at(

@@ -1,8 +1,4 @@
-import dataclasses
-
-import pytest
 from dodal.devices.zebra.zebra import (
-    I03Axes,
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
@@ -12,12 +8,6 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_panda_flyscan,
-    setup_zebra_for_rotation,
-)
-from mx_bluesky.phase1_zebra.device_setup_plans.setup_zebra import (
-    configure_zebra_and_shutter_for_auto_shutter,
-    setup_zebra_for_gridscan,
-    tidy_up_zebra_after_gridscan,
 )
 
 
@@ -52,54 +42,3 @@ async def test_zebra_set_up_for_panda_gridscan(
     assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
     assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
-
-
-async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    @dataclasses.dataclass
-    class Composite:
-        zebra: Zebra
-        sample_shutter: ZebraShutter
-
-    composite = Composite(zebra, zebra_shutter)
-    RE(setup_zebra_for_gridscan(composite, wait=True))
-    assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
-        == zebra.mapping.sources.IN3_TTL
-    )
-    assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
-    assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
-    assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
-
-
-async def test_zebra_set_up_for_rotation(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    RE(setup_zebra_for_rotation(zebra, zebra_shutter, wait=True))
-    assert await zebra.pc.gate_trigger.get_value() == I03Axes.OMEGA.value
-    assert await zebra.pc.gate_width.get_value() == pytest.approx(360, 0.01)
-    assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
-    assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
-
-
-async def test_zebra_cleanup(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    RE(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
-    assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
-        == zebra.mapping.sources.PC_PULSE
-    )
-    assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.PC_GATE
-
-
-class MyException(Exception):
-    pass
-
-
-async def test_configure_zebra_and_shutter_for_auto(
-    RE, zebra: Zebra, zebra_shutter: ZebraShutter
-):
-    RE(
-        configure_zebra_and_shutter_for_auto_shutter(
-            zebra, zebra_shutter, zebra.mapping.sources.IN4_TTL
-        )
-    )
-    assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO
-    assert await _get_shutter_input_1(zebra) == zebra.mapping.sources.SOFT_IN1
-    assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL

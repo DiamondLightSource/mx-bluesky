@@ -183,7 +183,7 @@ def oav_for_system_test(RE: RunEngine, test_config_files, next_oav_system_test_i
 
     with (
         patch(
-            "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
+            "dodal.devices.areadetector.plugins.mjpg.ClientSession.get", autospec=True
         ) as mock_get,
     ):
         mock_get.return_value.__aenter__.return_value = empty_response

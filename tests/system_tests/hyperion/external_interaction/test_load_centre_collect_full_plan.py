@@ -178,9 +178,9 @@ def robot_load_cb() -> RobotLoadISPyBCallback:
 GRID_DC_1_EXPECTED_VALUES = {
     "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
-    "axisstart": 90.0,
+    "axisstart": 0.0,
     "axisrange": 0,
-    "axisend": 90,
+    "axisend": 0,
     "focalspotsizeatsamplex": 0.02,
     "focalspotsizeatsampley": 0.02,
     "slitgapvertical": 0.234,
@@ -196,15 +196,15 @@ GRID_DC_1_EXPECTED_VALUES = {
     "imagesuffix": "h5",
     "numberofpasses": 1,
     "overlap": 0,
-    "omegastart": 90,
+    "omegastart": 0,
     "startimagenumber": 1,
     "wavelength": 1.11697,
     "xbeam": 75.6027,
     "ybeam": 79.4935,
-    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90_grid_overlay.png",
+    "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_90_outer_overlay.png",
-    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_90.png",
+    "/robot_load_centring_file_1_0_outer_overlay.png",
+    "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots/robot_load_centring_file_1_0.png",
     "synchrotronmode": "User",
     "undulatorgap1": 1.11,
     "filetemplate": "robot_load_centring_file_1_master.h5",
@@ -212,18 +212,18 @@ GRID_DC_1_EXPECTED_VALUES = {
 }
 
 GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
-    "axisstart": 0,
-    "axisend": 0,
-    "omegastart": 0,
+    "axisstart": 90,
+    "axisend": 90,
+    "omegastart": 90,
     "datacollectionnumber": 2,
     "filetemplate": "robot_load_centring_file_2_master.h5",
     "numberofimages": 180,
     "xtalsnapshotfullpath1": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_0_grid_overlay.png",
+    "/robot_load_centring_file_1_90_grid_overlay.png",
     "xtalsnapshotfullpath2": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_0_outer_overlay.png",
+    "/robot_load_centring_file_1_90_outer_overlay.png",
     "xtalsnapshotfullpath3": "{tmp_data}/123457/xraycentring/snapshots"
-    "/robot_load_centring_file_1_0.png",
+    "/robot_load_centring_file_1_90.png",
 }
 
 ROTATION_DC_EXPECTED_VALUES = {
@@ -406,40 +406,31 @@ def fat_then_thin_pin_tip_edges():
         # grid detection and grid snapshots are performed
         # at -90 (thin, 6 rows), 0 (fat, 10 rows ) degrees.
         # gridscans are performed in the sequence 0, -90 degrees
-        # The first DataCollection contains the -90 degree snapshot and gridscan
-        # The second DataCollection contains the 0 degree snapshot and gridscan
+        # The first DataCollection contains the 0 degree snapshot and gridscan
+        # The second DataCollection contains the -90 degree snapshot and gridscan
         [
             thin_then_fat_pin_tip_edges,
             0,
-            GRID_DC_1_EXPECTED_VALUES,  # 90 degrees xz
-            GRID_DC_2_EXPECTED_VALUES.copy() | {"numberofimages": 300},  # 0 degrees xy
-            "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 6 "
-            "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
-            "bottom right (px): [874,278]. Aperture: Small. ",
-            "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 10 "
+            GRID_DC_1_EXPECTED_VALUES.copy() | {"numberofimages": 300},  # 0 degrees xy
+            GRID_DC_2_EXPECTED_VALUES,  # 90 degrees xz
+            "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 10 "
             "images in 20.0 um by 20.0 um steps. Top left (px): [130,117], "
             "bottom right (px): [874,365]. Aperture: Small. ",
+            "MX-Bluesky: Xray centring 2 - Diffraction grid scan of 30 by 6 "
+            "images in 20.0 um by 20.0 um steps. Top left (px): [130,130], "
+            "bottom right (px): [874,278]. Aperture: Small. ",
         ],
         # After pin-tip detection, omega == 90 - 90 == 0
         # grid detection and grid snapshots are performed
         # at 0 (fat, 10 rows), -90 (thin, 6 rows ) degrees.
         # gridscans are performed in the sequence 0, -90 degrees
-        # The first DataCollection contains the 0 degree snapshot and gridscan
-        # The second DataCollection contains the -90 degree snapshot and gridscan
+        # The first DataCollection contains the -90 degree snapshot and gridscan
+        # The second DataCollection contains the 0 degree snapshot and gridscan
         [
             fat_then_thin_pin_tip_edges,
             90,
-            GRID_DC_2_EXPECTED_VALUES.copy()
-            | {
-                "numberofimages": 300,
-                "datacollectionnumber": 1,
-                "filetemplate": "robot_load_centring_file_1_master.h5",
-            },  # 0 degrees xy
-            GRID_DC_1_EXPECTED_VALUES.copy()
-            | {
-                "datacollectionnumber": 2,
-                "filetemplate": "robot_load_centring_file_2_master.h5",
-            },  # 90 degrees xz
+            GRID_DC_1_EXPECTED_VALUES.copy() | {"numberofimages": 300},  # 0 degrees xy
+            GRID_DC_2_EXPECTED_VALUES,  # 90 degrees xz
             "MX-Bluesky: Xray centring 1 - Diffraction grid scan of 30 by 10 "
             "images in 20.0 um by 20.0 um steps. Top left (px): [130,117], "
             "bottom right (px): [874,365]. Aperture: Small. ",
@@ -1217,14 +1208,14 @@ class TestGenerateSnapshot:
         )
 
         EXPECTED_GRID_SNAPSHOT_VALUES_0 = {
-            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
-            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
-            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
-        }
-        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
             "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
+        }
+        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
+            "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
+            "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
+            "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
         }
         grid_dcg_id = ispyb_gridscan_cb.ispyb_ids.data_collection_group_id
         grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)

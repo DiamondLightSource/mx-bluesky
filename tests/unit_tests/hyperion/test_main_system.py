@@ -88,6 +88,12 @@ def test_params(tmp_path):
     )
 
 
+@pytest.fixture(autouse=True)
+def patch_remote_graylog_endpoint():
+    with patch("dodal.log.get_graylog_configuration", return_value=("localhost", 5555)):
+        yield None
+
+
 class MockRunEngine:
     def __init__(self, test_name):
         self.RE_takes_time = True
@@ -534,7 +540,8 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         {"BEAMLINE": "i03"},
     ):
         with patch(
-            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module",
+            return_value=({}, {}),
         ) as mock_with_dodal_module:
             context = setup_context(dev_mode=dev_mode)
             mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)

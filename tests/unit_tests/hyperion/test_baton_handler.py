@@ -111,8 +111,10 @@ def bluesky_context(
     context = BlueskyContext(run_engine=RE)
 
     def mock_load_module(module, **kwargs):
-        for device in [smargon, aperture_scatterguard, robot, lower_gonio, baton]:
+        devices = [smargon, aperture_scatterguard, robot, lower_gonio, baton]
+        for device in devices:
             context.register_device(device)
+        return {d.name: d for d in devices}, {}
 
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),

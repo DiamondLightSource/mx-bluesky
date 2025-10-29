@@ -94,14 +94,16 @@ def kickoff_and_complete_gridscan(
         md={
             "subplan_name": plan_name,
             "omega_to_scan_spec": {
-                GridscanPlane.OMEGA_XY: scan_points[0],
-                GridscanPlane.OMEGA_XZ: scan_points[1],
+                # These have to be cast to strings due to a bug in orsjon. See
+                # https://github.com/ijl/orjson/issues/414
+                str(GridscanPlane.OMEGA_XY): scan_points[0],
+                str(GridscanPlane.OMEGA_XZ): scan_points[1],
             },
         }
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from bps.unstage(detector)),
+        else_plan=lambda: (yield from bps.unstage(detector, wait=True)),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(

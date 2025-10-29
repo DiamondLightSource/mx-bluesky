@@ -1,5 +1,5 @@
 from dodal.utils import get_beamline_name
-from event_model import Event, EventDescriptor, RunStart
+from event_model import Event, EventDescriptor, RunStart, RunStop
 
 from mx_bluesky.common.external_interaction.alerting import (
     Metadata,
@@ -48,7 +48,16 @@ class AlertOnContainerChange(PlanReactiveCallback):
         return doc
 
     def activity_gated_start(self, doc: RunStart):
-        metadata = doc.get("metadata", {})
-        self._new_container = metadata.get("container")
-        self._sample_id = metadata.get("sample_id")
-        self._visit = metadata.get("visit")
+        if not self._sample_id:
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info("Capturing container info for alerts")
+            metadata = doc.get("metadata", {})
+            self._new_container = metadata.get("container")
+            self._sample_id = metadata.get("sample_id")
+            self._visit = metadata.get("visit")
+
+    def activity_gated_stop(self, doc: RunStop):
+        if not self.active:
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info("Resetting state")
+            self._new_container = None
+            self._sample_id = None
+            self._visit = None
