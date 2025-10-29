@@ -572,9 +572,10 @@ def robot(done_status, run_engine: RunEngine):
 
     @AsyncStatus.wrap
     async def fake_load(val: SampleLocation):
-        set_mock_value(robot.current_pin, val.pin)
-        set_mock_value(robot.current_puck, val.puck)
-        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+        if val is not None:
+            set_mock_value(robot.current_pin, val.pin)
+            set_mock_value(robot.current_puck, val.puck)
+            set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
 
     robot.set = MagicMock(side_effect=fake_load)
     return robot
