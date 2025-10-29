@@ -69,7 +69,6 @@ class MurkoCallback(CallbackBase):
         for prefix in ("oav", "oav_full_screen"):
             if f"{prefix}-beam_centre_j" in doc["data"]:
                 self.murko_metadata = {
-                    # "zoom_percentage": doc["data"]["{prefix}zoom_percentage"],
                     "microns_per_x_pixel": doc["data"][f"{prefix}-microns_per_pixel_x"],
                     "microns_per_y_pixel": doc["data"][f"{prefix}-microns_per_pixel_y"],
                     "beam_centre_i": doc["data"][f"{prefix}-beam_centre_i"],
