@@ -117,8 +117,8 @@ def thaw_and_murko_centre(
     yield from bps.mv(murko_results.sample_id, str(sample_id))
 
     oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
-    initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
 
+    initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
 
@@ -201,35 +201,6 @@ def thaw_and_murko_centre(
         )
         yield from rotate_in_one_direction_then_murko_centre(-rotation, 10, Source.ROI)
 
-        # @subs_decorator(murko_callback)
-        # @run_decorator(md={"sample_id": sample_id})
-        # def thaw_part_2(rotation):
-        #     yield from bps.mv(
-        #         murko_results.stop_angle, 10, murko_results.invert_stop_angle, True
-        #     )
-        #     yield from get_metadata_from_current_oav()
-
-        #     yield from bps.stage(murko_results, wait=True)
-        #     yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
-
-        #     yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
-
-        #     yield from bps.monitor(smargon.omega.user_readback, name="smargon")
-        #     yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-
-        #     yield from bps.mv(
-        #         oav_to_redis_forwarder.sample_id,
-        #         sample_id,
-        #         oav_to_redis_forwarder.selected_source,
-        #         Source.ROI.value,
-        #     )
-
-        #     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
-        #     yield from bps.rel_set(smargon.omega, rotation, wait=True)
-        #     yield from centre_from_murko()
-
-        #     yield from bps.unstage(murko_results, wait=True)
-
     yield from bpp.contingency_wrapper(
         _main_plan(),
         final_plan=cleanup,
@@ -275,15 +246,3 @@ def _thaw(
         do_thaw(),
         final_plan=cleanup,
     )
-
-
-# def _thaw_and_stream_to_redis(
-#     time_to_thaw: float,
-#     rotation: float,
-#     robot: BartRobot,
-#     thawer: Thawer,
-#     smargon: Smargon,
-#     oav_to_redis_forwarder: OAVToRedisForwarder,
-#     plan_between_rotations: Callable[[], MsgGenerator],
-# ) -> MsgGenerator:
-#     pass
