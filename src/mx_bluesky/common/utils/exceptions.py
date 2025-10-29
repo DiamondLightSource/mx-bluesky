@@ -23,8 +23,8 @@ class ISPyBDepositionNotMade(Exception):
 class BeamlineStateException(Exception):
     """Exception raised when the beamline is in the incorrect state"""
 
-    def __init__(self, message: str):
-        return message
+    def __init__(self, message: str = "Beamline is in incorrect state"):
+        super().__init__(message)
 
 
 class SampleException(WarningException):

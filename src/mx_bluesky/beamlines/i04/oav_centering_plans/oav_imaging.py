@@ -36,7 +36,7 @@ def take_oav_image_with_scintillator_in(
     Args:
         image_name: Name of the OAV image to be saved
         image_path: Path where the image should be saved
-        transmission: Set the transmission of the beam, takes a value from 0 to 1 where
+        transmission: Transmission of the beam, takes a value from 0 to 1 where
         1 lets all the beam through and 0 lets none of the beam through.
         devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct.
