@@ -119,7 +119,6 @@ def thaw_and_murko_centre(
 
     sample_id = yield from bps.rd(robot.sample_id)
     sample_id = int(sample_id)
-    yield from bps.mv(murko_results.sample_id, str(sample_id))
 
     oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
 
@@ -146,7 +145,8 @@ def thaw_and_murko_centre(
         yield from bps.rel_set(smargon.y, y_predict)
         yield from bps.rel_set(smargon.z, z_predict)
 
-    def _main_plan():
+    def do_thaw_and_murko_centre():
+        yield from bps.mv(murko_results.sample_id, str(sample_id))
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
@@ -186,7 +186,7 @@ def thaw_and_murko_centre(
         yield from rotate_in_one_direction_then_murko_centre(-rotation, 10, Source.ROI)
 
     yield from bpp.contingency_wrapper(
-        _main_plan(),
+        do_thaw_and_murko_centre(),
         final_plan=cleanup,
     )
 
@@ -228,7 +228,7 @@ def thaw_and_stream_to_redis(
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
-    def _main_plan():
+    def do_thaw_and_stream_to_redis():
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
@@ -254,7 +254,7 @@ def thaw_and_stream_to_redis(
         yield from rotate_in_one_direction_and_stream_to_redis(-rotation, Source.ROI)
 
     yield from bpp.contingency_wrapper(
-        _main_plan(),
+        do_thaw_and_stream_to_redis(),
         final_plan=cleanup,
     )
 
