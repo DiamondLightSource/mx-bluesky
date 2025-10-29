@@ -14,8 +14,8 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
-    take_image,
-    take_OAV_image,
+    take_and_save_oav_image,
+    take_oav_image_with_scintillator_in,
 )
 
 """
@@ -40,7 +40,7 @@ async def test_check_exception_raised_if_pin_mounted(
 
     with pytest.raises(ValueError, match="Pin should not be mounted!"):
         RE(
-            take_image(
+            take_oav_image_with_scintillator_in(
                 robot=robot,
                 beamstop=beamstop,
                 scintillator=scintillator,
@@ -61,7 +61,7 @@ def test_plan_stubs_called_in_correct_order(
     oav: OAV,
 ):
     messages = sim_run_engine.simulate_plan(
-        take_image(
+        take_oav_image_with_scintillator_in(
             robot=robot,
             beamstop=beamstop,
             scintillator=scintillator,
@@ -125,7 +125,7 @@ def test_oav_image(
     sim_run_engine: RunEngineSimulator, oav: OAV, path=".", name="mock-name"
 ):
     messages = sim_run_engine.simulate_plan(
-        take_OAV_image(oav=oav, file_path=path, file_name=name)
+        take_and_save_oav_image(oav=oav, file_path=path, file_name=name)
     )
 
     messages = assert_message_and_return_remaining(

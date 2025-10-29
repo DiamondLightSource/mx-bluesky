@@ -19,7 +19,8 @@ from ophyd_async.core import InOut as core_INOUT
 
 from mx_bluesky.common.utils.exceptions import BeamlineStateException
 
-group = "path setting"
+initial_wait = "Wait for scint to move in"
+group = "oav image path setting"
 
 
 def take_oav_image_with_scintillator_in(
@@ -29,6 +30,11 @@ def take_oav_image_with_scintillator_in(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     shutter: ZebraShutter = inject("sample_shutter"),
     oav: OAV = inject("oav"),
+    robot: BartRobot = inject("robot"),
+    beamstop: Beamstop = inject("beamstop"),
+    backlight: Backlight = inject("backlight"),
+    scintillator: Scintillator = inject("scintillator"),
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
 ) -> MsgGenerator:
     """
     Takes an OAV image at specified transmission after necessary checks and preparation steps.
@@ -41,9 +47,15 @@ def take_oav_image_with_scintillator_in(
         devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct.
     """
-    initial_wait = "Wait for scint to move in"
 
-    _prepare_beamline_for_scintillator_images(initial_wait=initial_wait)
+    _prepare_beamline_for_scintillator_images(
+        initial_wait=initial_wait,
+        robot=robot,
+        beamstop=beamstop,
+        backlight=backlight,
+        scintillator=scintillator,
+        xbpm_feedback=xbpm_feedback,
+    )
 
     yield from bps.abs_set(attenuator, transmission, group=initial_wait)
 
