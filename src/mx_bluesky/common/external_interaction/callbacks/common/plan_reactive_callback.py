@@ -40,7 +40,7 @@ class PlanReactiveCallback(CallbackBase):
         self.log = log
 
     def _run_activity_gated(self, name: str, func, doc, override=False):
-        # Runs `func` if self.active is True or overide is true. Override can be used
+        # Runs `func` if self.active is True or override is true. Override can be used
         # to run the function even after setting self.active to False, i.e. in the last
         # handler of a run.
 

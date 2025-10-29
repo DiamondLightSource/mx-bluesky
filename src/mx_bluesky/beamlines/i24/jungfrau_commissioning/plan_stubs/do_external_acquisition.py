@@ -30,7 +30,7 @@ def do_external_acquisition(
 
     Args:
         exp_time_s: Length of detector exposure for each frame.
-        total_triggers: Number of external triggers recieved before acquisition is marked as complete.
+        total_triggers: Number of external triggers received before acquisition is marked as complete.
         jungfrau: Jungfrau device
         output_file_name: Absolute path of the detector file output, including file name. If None, then use the PathProvider
             set during jungfrau device instantiation

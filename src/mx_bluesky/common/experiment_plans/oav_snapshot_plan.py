@@ -27,7 +27,7 @@ class OavSnapshotComposite(Protocol):
     backlight: Backlight
 
 
-def setup_beamline_for_OAV(
+def setup_beamline_for_oav(
     smargon: Smargon,
     backlight: Backlight,
     aperture_scatterguard: ApertureScatterguard,
