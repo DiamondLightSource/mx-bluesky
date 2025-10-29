@@ -39,14 +39,13 @@ def thaw(
     yield from _thaw(time_to_thaw, rotation, thawer, smargon)
 
 
-def thaw_and_stream_to_redis(
+def _thaw(
     time_to_thaw: float,
-    rotation: float = 360,
-    robot: BartRobot = inject("robot"),
-    thawer: Thawer = inject("thawer"),
-    smargon: Smargon = inject("smargon"),
-    oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
-):  # -> MsgGenerator:
+    rotation: float,
+    thawer: Thawer,
+    smargon: Smargon,
+    plan_between_rotations: Callable[[], MsgGenerator] | None = None,
+) -> MsgGenerator:
     """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
     rotates {rotation} degrees back and turns the thawer off. The speed of the goniometer
     is set such that the process takes whole process will take {time_to_thaw} time.
@@ -57,29 +56,39 @@ def thaw_and_stream_to_redis(
 
     Args:
         time_to_thaw (float): Time to thaw for, in seconds.
-        rotation (float, optional): How much to rotate by whilst thawing, in degrees.
-                                    Defaults to 360.
-        ... devices: These are the specific ophyd-devices used for the plan, the
-                     defaults are always correct
+        rotation (float): How much to rotate by whilst thawing, in degrees.
+        thawer (Thawer): The thawing device.
+        smargon (Smargon): The smargon used to rotate.
+        plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
+                                    of the smargon. Defaults to no plan.
     """
+    inital_velocity = yield from bps.rd(smargon.omega.velocity)
+    new_velocity = abs(rotation / time_to_thaw) * 2.0
 
-    def switch_forwarder_to_ROI() -> MsgGenerator:
-        yield from bps.complete(oav_to_redis_forwarder, wait=True)
-        yield from bps.mv(oav_to_redis_forwarder.selected_source, Source.ROI.value)
-        yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
+    def do_thaw():
+        yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+        yield from bps.rel_set(smargon.omega, rotation, wait=True)
+        if plan_between_rotations:
+            yield from plan_between_rotations()
+        yield from bps.rel_set(smargon.omega, -rotation, wait=True)
 
-    # yield from _thaw_and_stream_to_redis(
-    #     time_to_thaw,
-    #     rotation,
-    #     robot,
-    #     thawer,
-    #     smargon,
-    #     oav_to_redis_forwarder,
-    #     switch_forwarder_to_ROI,
-    # )
+    def cleanup():
+        yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
+
+    # Always cleanup even if there is a failure
+    yield from bpp.contingency_wrapper(
+        do_thaw(),
+        final_plan=cleanup,
+    )
 
 
 MURKO_RESULTS_GROUP = "get_results"
+
+
+def thaw_and_stream_to_redis():
+    pass
 
 
 def thaw_and_murko_centre(
@@ -127,34 +136,32 @@ def thaw_and_murko_centre(
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
+    def centre_from_murko():
+        yield from bps.complete(oav_to_redis_forwarder, wait=True)
+        yield from bps.wait(MURKO_RESULTS_GROUP)
+
+        x_predict = yield from bps.rd(murko_results.x_mm)
+        y_predict = yield from bps.rd(murko_results.y_mm)
+        z_predict = yield from bps.rd(murko_results.z_mm)
+
+        LOGGER.info(f"Got results: {x_predict, y_predict, z_predict}")
+
+        yield from bps.rel_set(smargon.x, x_predict)
+        yield from bps.rel_set(smargon.y, y_predict)
+        yield from bps.rel_set(smargon.z, z_predict)
+
+    def get_metadata_from_current_oav():
+        current_source_idx = yield from bps.rd(oav_to_redis_forwarder.selected_source)
+        oav = oav_to_redis_forwarder.sources[current_source_idx].oav_ref()
+        yield from bps.create()
+        oav_info = yield from bps.read(oav)
+        LOGGER.info(f"Got oav information: {oav_info}")
+        yield from bps.save()
+
     def _main_plan():
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
-
-        def centre_from_murko():
-            yield from bps.complete(oav_to_redis_forwarder, wait=True)
-            yield from bps.wait(MURKO_RESULTS_GROUP)
-
-            x_predict = yield from bps.rd(murko_results.x_mm)
-            y_predict = yield from bps.rd(murko_results.y_mm)
-            z_predict = yield from bps.rd(murko_results.z_mm)
-
-            LOGGER.info(f"Got results: {x_predict, y_predict, z_predict}")
-
-            yield from bps.rel_set(smargon.x, x_predict)
-            yield from bps.rel_set(smargon.y, y_predict)
-            yield from bps.rel_set(smargon.z, z_predict)
-
-        def get_metadata_from_current_oav():
-            current_source_idx = yield from bps.rd(
-                oav_to_redis_forwarder.selected_source
-            )
-            oav = oav_to_redis_forwarder.sources[current_source_idx].oav_ref()
-            yield from bps.create()
-            oav_info = yield from bps.read(oav)
-            LOGGER.info(f"Got oav information: {oav_info}")
-            yield from bps.save()
 
         @subs_decorator(
             MurkoCallback(
@@ -165,7 +172,7 @@ def thaw_and_murko_centre(
         )
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_then_murko_centre(
-            rotation: float, stop_angle: float, oav_source: Source
+            rotation: float, stop_angle: float, source: Source
         ):
             inverted = rotation < 0
             yield from bps.mv(
@@ -179,19 +186,9 @@ def thaw_and_murko_centre(
             yield from bps.stage(murko_results, wait=True)
             yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
 
-            yield from bps.monitor(smargon.omega.user_readback, name="smargon")
-            yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-
-            yield from bps.mv(
-                oav_to_redis_forwarder.sample_id,
-                sample_id,
-                oav_to_redis_forwarder.selected_source,
-                oav_source.value,
+            yield from _rotate_in_once_direction_and_stream_to_redis(
+                smargon, oav_to_redis_forwarder, source, sample_id, rotation
             )
-
-            yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
-
-            yield from bps.rel_set(smargon.omega, rotation, wait=True)
 
             yield from centre_from_murko()
             yield from bps.unstage(murko_results, wait=True)
@@ -207,42 +204,23 @@ def thaw_and_murko_centre(
     )
 
 
-def _thaw(
-    time_to_thaw: float,
-    rotation: float,
-    thawer: Thawer,
+def _rotate_in_once_direction_and_stream_to_redis(
     smargon: Smargon,
-    plan_between_rotations: Callable[[], MsgGenerator] | None = None,
-) -> MsgGenerator:
-    """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
-    rotates {rotation} degrees back and turns the thawer off. The speed of the goniometer
-    is set such that the process takes whole process will take {time_to_thaw} time.
+    oav_to_redis_forwarder: OAVToRedisForwarder,
+    source: Source,
+    sample_id: int,
+    rotation: float,
+):
+    yield from bps.monitor(smargon.omega.user_readback, name="smargon")
+    yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
 
-    Args:
-        time_to_thaw (float): Time to thaw for, in seconds.
-        rotation (float): How much to rotate by whilst thawing, in degrees.
-        thawer (Thawer): The thawing device.
-        smargon (Smargon): The smargon used to rotate.
-        plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
-                                    of the smargon. Defaults to no plan.
-    """
-    inital_velocity = yield from bps.rd(smargon.omega.velocity)
-    new_velocity = abs(rotation / time_to_thaw) * 2.0
-
-    def do_thaw():
-        yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
-        yield from bps.rel_set(smargon.omega, rotation, wait=True)
-        if plan_between_rotations:
-            yield from plan_between_rotations()
-        yield from bps.rel_set(smargon.omega, -rotation, wait=True)
-
-    def cleanup():
-        yield from bps.abs_set(smargon.omega.velocity, inital_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
-
-    # Always cleanup even if there is a failure
-    yield from bpp.contingency_wrapper(
-        do_thaw(),
-        final_plan=cleanup,
+    yield from bps.mv(
+        oav_to_redis_forwarder.sample_id,
+        sample_id,
+        oav_to_redis_forwarder.selected_source,
+        source.value,
     )
+
+    yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
+
+    yield from bps.rel_set(smargon.omega, rotation, wait=True)
