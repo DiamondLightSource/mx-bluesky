@@ -87,10 +87,6 @@ def _thaw(
 MURKO_RESULTS_GROUP = "get_results"
 
 
-def thaw_and_stream_to_redis():
-    pass
-
-
 def thaw_and_murko_centre(
     time_to_thaw: float,
     rotation: float = 360,
@@ -150,14 +146,6 @@ def thaw_and_murko_centre(
         yield from bps.rel_set(smargon.y, y_predict)
         yield from bps.rel_set(smargon.z, z_predict)
 
-    def get_metadata_from_current_oav():
-        current_source_idx = yield from bps.rd(oav_to_redis_forwarder.selected_source)
-        oav = oav_to_redis_forwarder.sources[current_source_idx].oav_ref()
-        yield from bps.create()
-        oav_info = yield from bps.read(oav)
-        LOGGER.info(f"Got oav information: {oav_info}")
-        yield from bps.save()
-
     def _main_plan():
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
@@ -181,12 +169,11 @@ def thaw_and_murko_centre(
                 murko_results.invert_stop_angle,
                 inverted,
             )
-            yield from get_metadata_from_current_oav()
 
             yield from bps.stage(murko_results, wait=True)
             yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
 
-            yield from _rotate_in_once_direction_and_stream_to_redis(
+            yield from _rotate_in_one_direction_and_stream_to_redis(
                 smargon, oav_to_redis_forwarder, source, sample_id, rotation
             )
 
@@ -204,13 +191,90 @@ def thaw_and_murko_centre(
     )
 
 
-def _rotate_in_once_direction_and_stream_to_redis(
+def thaw_and_stream_to_redis(
+    time_to_thaw: float,
+    rotation: float = 360,
+    robot: BartRobot = inject("robot"),
+    thawer: Thawer = inject("thawer"),
+    smargon: Smargon = inject("smargon"),
+    oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
+) -> MsgGenerator:
+    """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
+    rotates {rotation} degrees back and turns the thawer off. The speed of the goniometer
+    is set such that the process takes whole process will take {time_to_thaw} time.
+
+    At the same time streams OAV images to redis for later processing (e.g. by murko).
+    On the first rotation the images from the large ROI are streamed, on the second the
+    smaller ROI is used.
+
+    Args:
+        time_to_thaw (float): Time to thaw for, in seconds.
+        rotation (float, optional): How much to rotate by whilst thawing, in degrees.
+                                    Defaults to 360.
+        ... devices: These are the specific ophyd-devices used for the plan, the
+                     defaults are always correct
+    """
+    sample_id = yield from bps.rd(robot.sample_id)
+    sample_id = int(sample_id)
+
+    oav_fs = oav_to_redis_forwarder.sources[Source.FULL_SCREEN].oav_ref()
+
+    initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
+    initial_velocity = yield from bps.rd(smargon.omega.velocity)
+    new_velocity = abs(rotation / time_to_thaw) * 2.0
+
+    def cleanup():
+        yield from bps.mv(oav_fs.zoom_controller.level, initial_zoom_level)
+        yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
+
+    def _main_plan():
+        yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
+        yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
+        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+
+        @subs_decorator(
+            MurkoCallback(
+                RedisConstants.REDIS_HOST,
+                RedisConstants.REDIS_PASSWORD,
+                RedisConstants.MURKO_REDIS_DB,
+            )
+        )
+        @run_decorator(md={"sample_id": sample_id})
+        def rotate_in_one_direction_and_stream_to_redis(
+            rotation: float, source: Source
+        ):
+            yield from _rotate_in_one_direction_and_stream_to_redis(
+                smargon, oav_to_redis_forwarder, source, sample_id, rotation
+            )
+
+        yield from rotate_in_one_direction_and_stream_to_redis(
+            rotation, Source.FULL_SCREEN
+        )
+        yield from rotate_in_one_direction_and_stream_to_redis(-rotation, Source.ROI)
+
+    yield from bpp.contingency_wrapper(
+        _main_plan(),
+        final_plan=cleanup,
+    )
+
+
+def _rotate_in_one_direction_and_stream_to_redis(
     smargon: Smargon,
     oav_to_redis_forwarder: OAVToRedisForwarder,
     source: Source,
     sample_id: int,
     rotation: float,
 ):
+    def get_metadata_from_current_oav():
+        current_source_idx = yield from bps.rd(oav_to_redis_forwarder.selected_source)
+        oav = oav_to_redis_forwarder.sources[current_source_idx].oav_ref()
+        yield from bps.create()
+        oav_info = yield from bps.read(oav)
+        LOGGER.info(f"Got oav information: {oav_info}")
+        yield from bps.save()
+
+    yield from get_metadata_from_current_oav()
     yield from bps.monitor(smargon.omega.user_readback, name="smargon")
     yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
 
@@ -222,5 +286,4 @@ def _rotate_in_once_direction_and_stream_to_redis(
     )
 
     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
-
     yield from bps.rel_set(smargon.omega, rotation, wait=True)
