@@ -137,7 +137,6 @@ def thaw_and_murko_centre(
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
     def centre_from_murko():
-        yield from bps.complete(oav_to_redis_forwarder, wait=True)
         yield from bps.wait(MURKO_RESULTS_GROUP)
 
         x_predict = yield from bps.rd(murko_results.x_mm)
@@ -286,3 +285,4 @@ def _rotate_in_one_direction_and_stream_to_redis(
 
     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
     yield from bps.rel_set(smargon.omega, rotation, wait=True)
+    yield from bps.complete(oav_to_redis_forwarder, wait=True)

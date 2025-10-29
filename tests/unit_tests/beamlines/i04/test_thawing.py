@@ -227,7 +227,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     start_params = [c.args[1] for c in docs if c.args[0] == "start"]
     event_params = [c.args[1] for c in docs if c.args[0] == "event"]
     assert len(start_params) == 2
-    assert len(event_params) == 6
+    assert len(event_params) == 8
     oav_updates = [
         e for e in event_params if "oav_to_redis_forwarder-uuid" in e["data"].keys()
     ]
@@ -368,7 +368,7 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
 @patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
-def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
+def test_thaw_and_murko_centre_stages_and_unstages_murko_results_twice(
     mock__thaw,
     patch_murko_callback,
     smargon: Smargon,
@@ -384,9 +384,8 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results(
             10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
-
-    murko_results.stage.assert_called_once()  # type: ignore
-    murko_results.unstage.assert_called_once()  # type: ignore
+    assert murko_results.stage.call_count == 2  # type: ignore
+    assert murko_results.unstage.call_count == 2  # type: ignore
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
