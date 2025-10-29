@@ -125,6 +125,11 @@ def thaw_and_murko_centre(
     initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
+    murko_callback = MurkoCallback(
+        RedisConstants.REDIS_HOST,
+        RedisConstants.REDIS_PASSWORD,
+        RedisConstants.MURKO_REDIS_DB,
+    )
 
     def cleanup():
         yield from bps.mv(oav_fs.zoom_controller.level, initial_zoom_level)
@@ -151,13 +156,7 @@ def thaw_and_murko_centre(
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
-        @subs_decorator(
-            MurkoCallback(
-                RedisConstants.REDIS_HOST,
-                RedisConstants.REDIS_PASSWORD,
-                RedisConstants.MURKO_REDIS_DB,
-            )
-        )
+        @subs_decorator(murko_callback)
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_then_murko_centre(
             rotation: float, stop_angle: float, source: Source
@@ -223,6 +222,12 @@ def thaw_and_stream_to_redis(
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
 
+    murko_callback = MurkoCallback(
+        RedisConstants.REDIS_HOST,
+        RedisConstants.REDIS_PASSWORD,
+        RedisConstants.MURKO_REDIS_DB,
+    )
+
     def cleanup():
         yield from bps.mv(oav_fs.zoom_controller.level, initial_zoom_level)
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
@@ -233,13 +238,7 @@ def thaw_and_stream_to_redis(
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
-        @subs_decorator(
-            MurkoCallback(
-                RedisConstants.REDIS_HOST,
-                RedisConstants.REDIS_PASSWORD,
-                RedisConstants.MURKO_REDIS_DB,
-            )
-        )
+        @subs_decorator(murko_callback)
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_and_stream_to_redis(
             rotation: float, source: Source
