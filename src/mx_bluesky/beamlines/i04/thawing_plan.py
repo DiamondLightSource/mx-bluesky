@@ -150,13 +150,13 @@ def thaw_and_murko_centre(
         yield from bps.rel_set(smargon.y, y_predict)
         yield from bps.rel_set(smargon.z, z_predict)
 
+    @subs_decorator(murko_callback)
     def do_thaw_and_murko_centre():
         yield from bps.mv(murko_results.sample_id, str(sample_id))
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
-        @subs_decorator(murko_callback)
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_then_murko_centre(
             rotation: float, stop_angle: float, source: Source
@@ -233,12 +233,12 @@ def thaw_and_stream_to_redis(
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
+    @subs_decorator(murko_callback)
     def do_thaw_and_stream_to_redis():
         yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
-        @subs_decorator(murko_callback)
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_and_stream_to_redis(
             rotation: float, source: Source
