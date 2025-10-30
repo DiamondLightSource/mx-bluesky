@@ -118,14 +118,19 @@ def take_and_save_oav_image(
 
 
 def get_max_pixel_value_from_transmission(transmission):
-    # now you can mock out this function
+    # yields from the dodal device which needs to be made
     pass
 
 
 def optimise_oav_transmission_binary_search(
-    target_pixel_l, upper_bound, lower_bound, tolerance=10, max_iterations=20
+    target_pixel_l,
+    upper_bound,
+    lower_bound,
+    tolerance: int = 10,
+    max_iterations: int = 20,
 ):
     while max_iterations > tolerance:
+        # may need to add logic to limit the amount of decimal points
         mid = (upper_bound + lower_bound) / 2
         max_iterations -= 1
         brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)

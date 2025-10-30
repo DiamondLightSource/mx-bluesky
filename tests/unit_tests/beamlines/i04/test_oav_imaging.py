@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -14,6 +16,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
+    optimise_oav_transmission_binary_search,
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
@@ -146,3 +149,25 @@ def test_oav_image(
         messages,
         lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot",
     )
+
+
+def test_optimise_oav_transmission_binary_search():
+    # Simulated transmission-to-pixel mapping
+    # expecting transmission 18.75 to be correct
+    transmission_map = {100: 255, 50: 180, 25: 160, 18.75: 130, 12.5: 118, 0: 0}
+
+    # now defining a mock function
+    def mock_get_max_pixel_value_from_transmission(transmission):
+        pixel_val = transmission_map.get(transmission)
+
+        if pixel_val is None:
+            raise KeyError(f"Transmission {transmission} is not in the mock dictionary")
+
+        return pixel_val
+
+    with patch(
+        "oav_imaging.get_max_pixel_value_from_transmission",
+        side_effect=mock_get_max_pixel_value_from_transmission,
+    ):
+        result = optimise_oav_transmission_binary_search(255 / 2, 100, 0, 5, 10)
+        assert result == 18.75
