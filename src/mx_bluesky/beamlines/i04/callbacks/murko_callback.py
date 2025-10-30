@@ -56,21 +56,32 @@ class MurkoCallback(CallbackBase):
         self.previous_omegas: list[OmegaReading] = []
 
     def start(self, doc: RunStart) -> RunStart | None:
-        self.sample_id = doc.get("sample_id")
-        self.murko_metadata = {
-            "zoom_percentage": doc.get("zoom_percentage"),
-            "microns_per_x_pixel": doc.get("microns_per_x_pixel"),
-            "microns_per_y_pixel": doc.get("microns_per_y_pixel"),
-            "beam_centre_i": doc.get("beam_centre_i"),
-            "beam_centre_j": doc.get("beam_centre_j"),
-            "sample_id": self.sample_id,
-        }
+        self.murko_metadata: dict = {"sample_id": doc.get("sample_id")}
         self.last_uuid = None
         self.previous_omegas = []
-        LOGGER.info(f"Starting to stream metadata to murko under {self.sample_id}")
+        LOGGER.info(
+            f"Starting to stream metadata to murko under {self.murko_metadata['sample_id']}"
+        )
         return doc
 
     def event(self, doc: Event) -> Event:
+        LOGGER.info(f"Got data: {doc['data']}")
+
+        for prefix in ("oav", "oav_full_screen"):
+            if f"{prefix}-beam_centre_j" in doc["data"]:
+                self.murko_metadata.update(
+                    {
+                        "microns_per_x_pixel": doc["data"][
+                            f"{prefix}-microns_per_pixel_x"
+                        ],
+                        "microns_per_y_pixel": doc["data"][
+                            f"{prefix}-microns_per_pixel_y"
+                        ],
+                        "beam_centre_i": doc["data"][f"{prefix}-beam_centre_i"],
+                        "beam_centre_j": doc["data"][f"{prefix}-beam_centre_j"],
+                    }
+                )
+
         if latest_omega := doc["data"].get("smargon-omega"):
             if len(self.previous_omegas) <= 2 and self.last_uuid:
                 # For the first few images there's not enough data to extrapolate so we
@@ -106,5 +117,5 @@ class MurkoCallback(CallbackBase):
         self.redis_client.publish("murko", json.dumps(metadata))
 
     def stop(self, doc: RunStop) -> RunStop | None:
-        LOGGER.info(f"Finished streaming {self.sample_id} to murko")
+        LOGGER.info(f"Finished streaming {self.murko_metadata['sample_id']} to murko")
         return doc
