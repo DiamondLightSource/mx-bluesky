@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import sys
-import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
@@ -81,9 +80,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -348,29 +344,6 @@ def pytest_runtest_teardown(item):
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
-
-
-@pytest.fixture
-def run_engine():
-    run_engine = RunEngine({}, call_returns_result=True)
-    run_engine.subscribe(
-        VerbosePlanExecutionLoggingCallback()
-    )  # log all events at INFO for easier debugging
-    yield run_engine
-    try:
-        run_engine.halt()
-    except Exception as e:
-        print(f"Got exception while halting RunEngine {e}")
-    finally:
-        stopped_event = threading.Event()
-
-        def stop_event_loop():
-            run_engine.loop.stop()  # noqa: F821
-            stopped_event.set()
-
-        run_engine.loop.call_soon_threadsafe(stop_event_loop)
-        stopped_event.wait(10)
-    del run_engine
 
 
 def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):

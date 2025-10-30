@@ -7,6 +7,9 @@ import pytest
 environ["HYPERION_TEST_MODE"] = "true"
 
 
+pytest_plugins = ["dodal.testing.fixtures.run_engine"]
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--logging",
