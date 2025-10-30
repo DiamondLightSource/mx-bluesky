@@ -352,6 +352,12 @@ def pytest_runtest_teardown(item):
 
 @pytest.fixture
 async def run_engine():
+    """
+    Obtain a run engine, with its own event loop and thread.
+
+    On completion of the test, the run engine is stopped and the event loop closed
+    in order to release all resources it consumes.
+    """
     run_engine = RunEngine({}, call_returns_result=True)
     run_engine.subscribe(
         VerbosePlanExecutionLoggingCallback()
@@ -363,10 +369,11 @@ async def run_engine():
         print(f"Got exception while halting RunEngine {e}")
     finally:
 
-        async def stop_event_loop():
+        async def get_event_loop_thread():
+            """Get the thread which the run engine created for the event loop."""
             return threading.current_thread()
 
-        fut = asyncio.run_coroutine_threadsafe(stop_event_loop(), run_engine.loop)
+        fut = asyncio.run_coroutine_threadsafe(get_event_loop_thread(), run_engine.loop)
         while not fut.done():
             # It's not clear why this is necessary, given we are
             # on a completely different thread and event loop
