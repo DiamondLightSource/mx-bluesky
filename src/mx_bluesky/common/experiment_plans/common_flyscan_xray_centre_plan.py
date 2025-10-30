@@ -37,8 +37,8 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
-    SampleException,
+    CrystalNotFoundError,
+    SampleError,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
@@ -77,7 +77,7 @@ def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenera
     yield from bps.wait(group)
 
 
-def construct_beamline_specific_FGS_features(
+def construct_beamline_specific_fast_gridscan_features(
     setup_trigger_plan: Callable[..., MsgGenerator],
     tidy_plan: Callable[..., MsgGenerator],
     set_flyscan_params_plan: Callable[..., MsgGenerator],
@@ -235,7 +235,7 @@ def _fetch_xrc_results_from_zocalo(
             flyscan_results = [_generate_dummy_xrc_result(parameters)]
         else:
             LOGGER.warning("No X-ray centre received")
-            raise CrystalNotFoundException()
+            raise CrystalNotFoundError()
     yield from _fire_xray_centre_result_event(flyscan_results)
 
 
@@ -276,7 +276,7 @@ def run_gridscan(
         yield from beamline_specific.set_flyscan_params_plan()
     except FailedStatus as e:
         if isinstance(e.__cause__, GridScanInvalidError):
-            raise SampleException(
+            raise SampleError(
                 "Scan invalid - gridscan not valid for detected pin position"
             ) from e
 
@@ -301,7 +301,7 @@ def run_gridscan(
 def _xrc_result_in_boxes_to_result_in_mm(
     xrc_result: XrcResult, parameters: SpecifiedThreeDGridScan
 ) -> XRayCentreResult:
-    fgs_params = parameters.FGS_params
+    fgs_params = parameters.fast_gridscan_params
     xray_centre = fgs_params.grid_position_to_motor_position(
         np.array(xrc_result["centre_of_mass"])
     )

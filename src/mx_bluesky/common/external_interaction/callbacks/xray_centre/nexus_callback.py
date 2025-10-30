@@ -33,7 +33,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         nexus_file_handler_callback = NexusFileCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
+        run_engine.subscribe(nexus_file_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks

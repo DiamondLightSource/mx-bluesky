@@ -63,7 +63,7 @@ async def default_devices(aperture_scatterguard, cryostream_gantry):
 
 
 async def test_given_cryostream_temp_is_too_high_then_exception_raised(
-    RE: RunEngine,
+    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -76,7 +76,7 @@ async def test_given_cryostream_temp_is_too_high_then_exception_raised(
 
 
 async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
-    RE: RunEngine,
+    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -89,7 +89,7 @@ async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
 
 
 async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
-    RE: RunEngine,
+    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -110,8 +110,8 @@ async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
     )
 
 
-def test_udc_default_state_runs_in_real_RE(
-    RE: RunEngine, default_devices: UDCDefaultDevices
+def test_udc_default_state_runs_in_real_run_engine(
+    run_engine: RunEngine, default_devices: UDCDefaultDevices
 ):
     set_mock_value(default_devices.cryostream.temperature_k, 100)
     set_mock_value(default_devices.cryostream.back_pressure_bar, 0.01)
@@ -119,11 +119,11 @@ def test_udc_default_state_runs_in_real_RE(
         return_value=ApertureValue.PARKED
     )
 
-    RE(move_to_udc_default_state(default_devices))
+    run_engine(move_to_udc_default_state(default_devices))
 
 
 def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
-    RE: RunEngine,
+    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
