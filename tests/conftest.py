@@ -351,7 +351,7 @@ def pytest_runtest_teardown(item):
 
 
 @pytest.fixture
-def run_engine():
+async def run_engine():
     run_engine = RunEngine({}, call_returns_result=True)
     run_engine.subscribe(
         VerbosePlanExecutionLoggingCallback()
@@ -362,14 +362,24 @@ def run_engine():
     except Exception as e:
         print(f"Got exception while halting RunEngine {e}")
     finally:
-        stopped_event = threading.Event()
 
-        def stop_event_loop():
-            run_engine.loop.stop()  # noqa: F821
-            stopped_event.set()
+        async def stop_event_loop():
+            return threading.current_thread()
 
-        run_engine.loop.call_soon_threadsafe(stop_event_loop)
-        stopped_event.wait(10)
+        fut = asyncio.run_coroutine_threadsafe(stop_event_loop(), run_engine.loop)
+        while not fut.done():
+            # It's not clear why this is necessary, given we are
+            # on a completely different thread and event loop
+            # but without it our future never seems to be populated with a result
+            # despite the coro getting executed
+            await asyncio.sleep(0)
+        # Terminate the event loop so that we can join() the thread
+        run_engine.loop.call_soon_threadsafe(run_engine.loop.stop)
+        run_engine_thread = fut.result()
+        run_engine_thread.join()
+        # This closes the filehandle in the event loop.
+        # This cannot be called while the event loop is running
+        run_engine.loop.close()
     del run_engine
 
 

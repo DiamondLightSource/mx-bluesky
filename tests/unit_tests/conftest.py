@@ -1,7 +1,6 @@
 import asyncio
 import pprint
 import sys
-import time
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast
@@ -72,23 +71,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import raw_params_from_file
-
-
-@pytest.fixture
-async def run_engine():
-    run_engine = RunEngine(call_returns_result=True)
-    # make sure the event loop is thoroughly up and running before we try to create
-    # any ophyd_async devices which might need it
-    timeout = time.monotonic() + 1
-    while not run_engine.loop.is_running():
-        await asyncio.sleep(0)
-        if time.monotonic() > timeout:
-            raise TimeoutError("This really shouldn't happen but just in case...")
-    yield run_engine
-    # RunEngine creates its own loop if we did not supply it, we must terminate it
-    run_engine.loop.call_soon_threadsafe(run_engine.loop.stop)
-    run_engine._th.join()
-
 
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
