@@ -117,5 +117,27 @@ def take_and_save_oav_image(
     yield from bps.trigger(oav.snapshot, wait=True)
 
 
-def optimise_oav_transmission():
+def get_max_pixel_value_from_transmission(transmission):
+    # now you can mock out this function
     pass
+
+
+def optimise_oav_transmission_binary_search(
+    target_pixel_l, upper_bound, lower_bound, tolerance=10, max_iterations=20
+):
+    while max_iterations > tolerance:
+        mid = (upper_bound + lower_bound) / 2
+        max_iterations -= 1
+        brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+
+        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+            return mid
+
+        # condition for too low so want to try higher
+        elif brightest_pixel < target_pixel_l - tolerance:
+            lower_bound = mid
+
+        # condition for too high so want to try lower
+        elif brightest_pixel > target_pixel_l + tolerance:
+            upper_bound = mid
+    return "Max iterations reached"
