@@ -7,6 +7,9 @@ START=1
 IN_DEV=false
 MODE=gda
 
+CONFIG_DIR=`dirname $0`/src/mx_bluesky/hyperion
+BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_config.yaml
+
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -22,9 +25,13 @@ for option in "$@"; do
             ;;
         --dev)
             IN_DEV=true
+            BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_dev_config.yaml
             ;;
         --udc)
             MODE=udc
+            ;;
+        --blueapi)
+            MODE=blueapi
             ;;
         --help|--info|--h)
             source .venv/bin/activate
@@ -38,10 +45,9 @@ Options:
   --stop                  Used to stop a currently running instance of Hyperion. Will override any other operations
                           options.
   --no-start              Used to specify that the script should be run without starting the server.
-  --skip-startup-connection
-                          Do not connect to devices at startup
   --dev                   Enable dev mode to run from a local workspace on a development machine.
   --udc                   Start hyperion in UDC mode instead of taking commands from GDA
+  --blueapi               Start hyperion in blueapi mode instead of taking commands from GDA
   --help                  This help
 
 By default this script will start an Hyperion server unless the --no-start flag is specified.
@@ -59,6 +65,7 @@ kill_active_apps () {
     echo "Killing active instances of hyperion and hyperion-callbacks..."
     pkill -e -f "python.*hyperion"
     pkill -e -f "SCREEN.*hyperion"
+    blueapi controller stop 2>/dev/null
     echo "done."
 }
 
@@ -120,8 +127,6 @@ if [[ $START == 1 ]]; then
 
     source .venv/bin/activate
 
-    #Add future arguments here
-
     declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
     declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
@@ -136,8 +141,15 @@ if [[ $START == 1 ]]; then
     done
 
     unset PYEPICS_LIBCA
-    echo "Starting hyperion with hyperion $h_commands, start_log is $start_log_path"
-    hyperion `echo $h_commands;`>$start_log_path  2>&1 &
+    if [ $MODE = "blueapi" ]; then 
+      echo "Starting hyperion in blueapi mode, start log is $start_log_path"
+      blueapi --config $BLUEAPI_CONFIG serve > $start_log_path 2>&1 &
+      HEALTHCHECK_ENDPOINT="healthz"
+    else
+      echo "Starting hyperion with hyperion $h_commands, start_log is $start_log_path"
+      hyperion `echo $h_commands;`>$start_log_path  2>&1 &
+      HEALTHCHECK_ENDPOINT="status"
+    fi
     echo "Starting hyperion-callbacks with hyperion-callbacks $cb_commands, start_log is $callback_start_log_path"
     hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     echo "$(date) Waiting for Hyperion to start"
@@ -145,7 +157,7 @@ if [[ $START == 1 ]]; then
     for i in {1..30}
     do
         echo "$(date)"
-        curl --head -X GET http://localhost:5005/status >/dev/null
+        curl --head -X GET http://localhost:5005/$HEALTHCHECK_ENDPOINT >/dev/null
         ret_value=$?
         if [ $ret_value -ne 0 ]; then
             sleep 1
