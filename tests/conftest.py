@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import numpy
 import pydantic
 import pytest
+import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
@@ -351,11 +352,19 @@ def pytest_runtest_teardown(item):
 
 
 @pytest.fixture
-async def run_engine():
+async def run_engine(_global_run_engine: RunEngine):
+    try:
+        yield _global_run_engine
+    finally:
+        _global_run_engine.reset()
+
+
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def _global_run_engine():
     """
     Obtain a run engine, with its own event loop and thread.
 
-    On completion of the test, the run engine is stopped and the event loop closed
+    On closure of the scope, the run engine is stopped and the event loop closed
     in order to release all resources it consumes.
     """
     run_engine = RunEngine({}, call_returns_result=True)
