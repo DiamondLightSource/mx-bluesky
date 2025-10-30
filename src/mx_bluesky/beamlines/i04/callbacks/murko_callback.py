@@ -65,24 +65,19 @@ class MurkoCallback(CallbackBase):
         return doc
 
     def event(self, doc: Event) -> Event:
-        LOGGER.info(f"Got data: {doc['data']}")
-
+        data = doc["data"]
         for prefix in ("oav", "oav_full_screen"):
-            if f"{prefix}-beam_centre_j" in doc["data"]:
+            if f"{prefix}-beam_centre_j" in data:
                 self.murko_metadata.update(
                     {
-                        "microns_per_x_pixel": doc["data"][
-                            f"{prefix}-microns_per_pixel_x"
-                        ],
-                        "microns_per_y_pixel": doc["data"][
-                            f"{prefix}-microns_per_pixel_y"
-                        ],
-                        "beam_centre_i": doc["data"][f"{prefix}-beam_centre_i"],
-                        "beam_centre_j": doc["data"][f"{prefix}-beam_centre_j"],
+                        "microns_per_x_pixel": data[f"{prefix}-microns_per_pixel_x"],
+                        "microns_per_y_pixel": data[f"{prefix}-microns_per_pixel_y"],
+                        "beam_centre_i": data[f"{prefix}-beam_centre_i"],
+                        "beam_centre_j": data[f"{prefix}-beam_centre_j"],
                     }
                 )
 
-        if latest_omega := doc["data"].get("smargon-omega"):
+        if latest_omega := data.get("smargon-omega"):
             if len(self.previous_omegas) <= 2 and self.last_uuid:
                 # For the first few images there's not enough data to extrapolate so we
                 # match them one to one

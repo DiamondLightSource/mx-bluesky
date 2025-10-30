@@ -1,11 +1,6 @@
-from collections.abc import Callable
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky.preprocessors import (
-    run_decorator,
-    subs_decorator,
-)
+from bluesky.preprocessors import contingency_decorator, run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i04.constants import RedisConstants
@@ -31,36 +26,9 @@ def thaw(
 
     Args:
         time_to_thaw (float): Time to thaw for, in seconds.
-        rotation (float, optional): How much to rotate by whilst thawing, in degrees.
-                                    Defaults to 360.
-        ... devices: These are the specific ophyd-devices used for the plan, the
-                     defaults are always correct.
-    """
-    yield from _thaw(time_to_thaw, rotation, thawer, smargon)
-
-
-def _thaw(
-    time_to_thaw: float,
-    rotation: float,
-    thawer: Thawer,
-    smargon: Smargon,
-    plan_between_rotations: Callable[[], MsgGenerator] | None = None,
-) -> MsgGenerator:
-    """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
-    rotates {rotation} degrees back and turns the thawer off. The speed of the goniometer
-    is set such that the process takes whole process will take {time_to_thaw} time.
-
-    At the same time streams OAV images to redis for later processing (e.g. by murko).
-    On the first rotation the images from the large ROI are streamed, on the second the
-    smaller ROI is used.
-
-    Args:
-        time_to_thaw (float): Time to thaw for, in seconds.
         rotation (float): How much to rotate by whilst thawing, in degrees.
         thawer (Thawer): The thawing device.
         smargon (Smargon): The smargon used to rotate.
-        plan_between_rotations (MsgGenerator, optional): A plan to run between rotations
-                                    of the smargon. Defaults to no plan.
     """
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
@@ -69,22 +37,16 @@ def _thaw(
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
         yield from bps.rel_set(smargon.omega, rotation, wait=True)
-        if plan_between_rotations:
-            yield from plan_between_rotations()
         yield from bps.rel_set(smargon.omega, -rotation, wait=True)
 
     def cleanup():
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
-    # Always cleanup even if there is a failure
     yield from bpp.contingency_wrapper(
         do_thaw(),
         final_plan=cleanup,
     )
-
-
-MURKO_RESULTS_GROUP = "get_results"
 
 
 def thaw_and_murko_centre(
@@ -116,6 +78,7 @@ def thaw_and_murko_centre(
         ... devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct
     """
+    murko_results_group = "get_results"
 
     sample_id = yield from bps.rd(robot.sample_id)
     sample_id = int(sample_id)
@@ -137,7 +100,7 @@ def thaw_and_murko_centre(
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
     def centre_from_murko():
-        yield from bps.wait(MURKO_RESULTS_GROUP)
+        yield from bps.wait(murko_results_group)
 
         x_predict = yield from bps.rd(murko_results.x_mm)
         y_predict = yield from bps.rd(murko_results.y_mm)
@@ -150,15 +113,22 @@ def thaw_and_murko_centre(
         yield from bps.rel_set(smargon.z, z_predict)
 
     @subs_decorator(murko_callback)
+    @contingency_decorator(final_plan=cleanup)
     def do_thaw_and_murko_centre():
-        yield from bps.mv(murko_results.sample_id, str(sample_id))
-        yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
+        yield from bps.mv(
+            murko_results.sample_id,
+            str(sample_id),
+            oav_to_redis_forwarder.sample_id,
+            sample_id,
+            oav_fs.zoom_controller.level,
+            "1.0x",
+        )
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_then_murko_centre(
-            rotation: float, stop_angle: float, source: Source
+            rotation: float, stop_angle: float, oav_mode: Source
         ):
             inverted = rotation < 0
             yield from bps.mv(
@@ -169,10 +139,10 @@ def thaw_and_murko_centre(
             )
 
             yield from bps.stage(murko_results, wait=True)
-            yield from bps.trigger(murko_results, group=MURKO_RESULTS_GROUP)
+            yield from bps.trigger(murko_results, group=murko_results_group)
 
             yield from _rotate_in_one_direction_and_stream_to_redis(
-                smargon, oav_to_redis_forwarder, source, sample_id, rotation
+                smargon, oav_to_redis_forwarder, oav_mode, rotation
             )
 
             yield from centre_from_murko()
@@ -183,10 +153,7 @@ def thaw_and_murko_centre(
         )
         yield from rotate_in_one_direction_then_murko_centre(-rotation, 10, Source.ROI)
 
-    yield from bpp.contingency_wrapper(
-        do_thaw_and_murko_centre(),
-        final_plan=cleanup,
-    )
+    yield from do_thaw_and_murko_centre()
 
 
 def thaw_and_stream_to_redis(
@@ -233,17 +200,23 @@ def thaw_and_stream_to_redis(
         yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
 
     @subs_decorator(murko_callback)
+    @contingency_decorator(final_plan=cleanup)
     def do_thaw_and_stream_to_redis():
-        yield from bps.mv(oav_fs.zoom_controller.level, "1.0x")
+        yield from bps.mv(
+            oav_to_redis_forwarder.sample_id,
+            sample_id,
+            oav_fs.zoom_controller.level,
+            "1.0x",
+        )
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_and_stream_to_redis(
-            rotation: float, source: Source
+            rotation: float, oav_mode: Source
         ):
             yield from _rotate_in_one_direction_and_stream_to_redis(
-                smargon, oav_to_redis_forwarder, source, sample_id, rotation
+                smargon, oav_to_redis_forwarder, oav_mode, rotation
             )
 
         yield from rotate_in_one_direction_and_stream_to_redis(
@@ -251,17 +224,13 @@ def thaw_and_stream_to_redis(
         )
         yield from rotate_in_one_direction_and_stream_to_redis(-rotation, Source.ROI)
 
-    yield from bpp.contingency_wrapper(
-        do_thaw_and_stream_to_redis(),
-        final_plan=cleanup,
-    )
+    yield from do_thaw_and_stream_to_redis()
 
 
 def _rotate_in_one_direction_and_stream_to_redis(
     smargon: Smargon,
     oav_to_redis_forwarder: OAVToRedisForwarder,
-    source: Source,
-    sample_id: int,
+    oav_mode: Source,
     rotation: float,
 ):
     def get_metadata_from_current_oav():
@@ -277,10 +246,8 @@ def _rotate_in_one_direction_and_stream_to_redis(
     yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
 
     yield from bps.mv(
-        oav_to_redis_forwarder.sample_id,
-        sample_id,
         oav_to_redis_forwarder.selected_source,
-        source.value,
+        oav_mode.value,
     )
 
     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)

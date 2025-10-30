@@ -367,9 +367,11 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
-@patch("mx_bluesky.beamlines.i04.thawing_plan._thaw")
+@patch(
+    "mx_bluesky.beamlines.i04.thawing_plan._rotate_in_one_direction_and_stream_to_redis"
+)
 def test_thaw_and_murko_centre_stages_and_unstages_murko_results_twice(
-    mock__thaw,
+    mock_rotate_and_stream,
     patch_murko_callback,
     smargon: Smargon,
     thawer: Thawer,

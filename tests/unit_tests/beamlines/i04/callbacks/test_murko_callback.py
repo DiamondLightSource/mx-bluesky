@@ -25,13 +25,23 @@ def event_template(data_dict: dict, timestamp=1666604299.0) -> Event:
     }
 
 
-test_oav_event = event_template(
+test_oav_full_screen_event = event_template(
     {
         "oav_to_redis_forwarder-uuid": test_oav_uuid,
         "oav_full_screen-microns_per_pixel_x": 1.2,
         "oav_full_screen-microns_per_pixel_y": 2.5,
         "oav_full_screen-beam_centre_i": 158,
         "oav_full_screen-beam_centre_j": 452,
+    }
+)
+
+test_oav_roi_event = event_template(
+    {
+        "oav_to_redis_forwarder-uuid": test_oav_uuid,
+        "oav-microns_per_pixel_x": 3.2,
+        "oav-microns_per_pixel_y": 4.1,
+        "oav-beam_centre_i": 201,
+        "oav-beam_centre_j": 342,
     }
 )
 test_smargon_event = event_template({"smargon-omega": test_smargon_data})
@@ -59,7 +69,7 @@ def murko_with_mock_call(murko_callback) -> MurkoCallback:
 def test_when_oav_data_arrives_then_murko_not_called(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(test_oav_full_screen_event)
     murko_with_mock_call.call_murko.assert_not_called()  # type: ignore
 
 
@@ -74,14 +84,14 @@ def test_when_smargon_data_arrives_then_image_data_then_murko_not_called(
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_smargon_event)
-    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(test_oav_full_screen_event)
     murko_with_mock_call.call_murko.assert_not_called()  # type: ignore
 
 
 def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_called_with_latest_image_and_omega(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(test_oav_full_screen_event)
     murko_with_mock_call.event(test_smargon_event)
     murko_with_mock_call.call_murko.assert_called_once_with(  # type: ignore
         test_oav_uuid, test_smargon_data
@@ -98,7 +108,7 @@ def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_
 def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(test_oav_full_screen_event)
     murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
     murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
 
@@ -114,7 +124,7 @@ def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapo
 def test_given_three_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega_from_last_two(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(test_oav_full_screen_event)
     murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
     murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
     murko_with_mock_call.event(event_template({"smargon-omega": 17}, 6))
@@ -132,7 +142,7 @@ def test_when_murko_called_with_event_data_then_meta_data_put_in_redis(
     murko_callback: MurkoCallback,
 ):
     murko_callback.start(test_start_document)  # type: ignore
-    murko_callback.event(test_oav_event)
+    murko_callback.event(test_oav_full_screen_event)
     murko_callback.event(test_smargon_event)
 
     expected_metadata = {
