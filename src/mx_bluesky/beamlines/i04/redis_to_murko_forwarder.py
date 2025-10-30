@@ -8,6 +8,7 @@ import numpy as np
 import zmq
 from dodal.devices.i04.constants import RedisConstants
 from dodal.devices.i04.murko_results import MurkoResult
+from dodal.devices.oav.oav_to_redis_forwarder import FORWARDING_COMPLETE_MESSAGE
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
@@ -15,6 +16,7 @@ from redis import StrictRedis
 from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
+
 
 FullMurkoResults = dict[str, list[MurkoResult]]
 
@@ -159,6 +161,9 @@ class RedisListener:
         if message and message["type"] == "message":
             data = json.loads(message["data"])
             LOGGER.info(f"Received from redis: {data}")
+            if data == FORWARDING_COMPLETE_MESSAGE:
+                self.forwarder.flush()
+                return
             uuid = data["uuid"]
             sample_id = data["sample_id"]
 
