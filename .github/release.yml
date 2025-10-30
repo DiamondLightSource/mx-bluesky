@@ -1,0 +1,44 @@
+# .github/release.yml
+
+changelog:
+  categories:
+    - title: Hyperion
+      labels:
+        - hyperion
+    - title: Jungfrau
+      labels:
+        - jungfrau
+    - title: Murko
+      labels:
+        - murko
+    - title: I03
+      labels:
+        - i03
+    - title: I04
+      labels:
+        - i04
+    - title: I04-1
+      labels:
+        - i04-1
+    - title: I23
+      labels:
+        - i23
+    - title: I24
+      labels:
+        - i24
+    - title: VMXm
+      labels:
+        - vmxm
+    - title: VMXi
+      labels:
+        - vmxi
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Dev Experience / Refactors
+      labels:
+        - dev experience
+        - refactor
+    - title: Other Changes
+      labels:
+        - "*"
