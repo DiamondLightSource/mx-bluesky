@@ -17,6 +17,9 @@ changelog:
     - title: I04
       labels:
         - i04
+    - title: I04-1
+      labels:
+        - i04-1
     - title: I23
       labels:
         - i23
