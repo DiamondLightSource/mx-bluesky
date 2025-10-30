@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import sys
-import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
 from copy import deepcopy
@@ -17,7 +16,6 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import numpy
 import pydantic
 import pytest
-import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
@@ -82,9 +80,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -349,54 +344,6 @@ def pytest_runtest_teardown(item):
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
-
-
-@pytest.fixture
-async def run_engine(_global_run_engine: RunEngine):
-    try:
-        yield _global_run_engine
-    finally:
-        _global_run_engine.reset()
-
-
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
-async def _global_run_engine():
-    """
-    Obtain a run engine, with its own event loop and thread.
-
-    On closure of the scope, the run engine is stopped and the event loop closed
-    in order to release all resources it consumes.
-    """
-    run_engine = RunEngine({}, call_returns_result=True)
-    run_engine.subscribe(
-        VerbosePlanExecutionLoggingCallback()
-    )  # log all events at INFO for easier debugging
-    yield run_engine
-    try:
-        run_engine.halt()
-    except Exception as e:
-        print(f"Got exception while halting RunEngine {e}")
-    finally:
-
-        async def get_event_loop_thread():
-            """Get the thread which the run engine created for the event loop."""
-            return threading.current_thread()
-
-        fut = asyncio.run_coroutine_threadsafe(get_event_loop_thread(), run_engine.loop)
-        while not fut.done():
-            # It's not clear why this is necessary, given we are
-            # on a completely different thread and event loop
-            # but without it our future never seems to be populated with a result
-            # despite the coro getting executed
-            await asyncio.sleep(0)
-        # Terminate the event loop so that we can join() the thread
-        run_engine.loop.call_soon_threadsafe(run_engine.loop.stop)
-        run_engine_thread = fut.result()
-        run_engine_thread.join()
-        # This closes the filehandle in the event loop.
-        # This cannot be called while the event loop is running
-        run_engine.loop.close()
-    del run_engine
 
 
 def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
