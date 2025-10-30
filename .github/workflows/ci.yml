@@ -10,6 +10,10 @@ on:
 
 jobs:
 
+  require-label:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/_label.yml
+
   lint:
     uses: ./.github/workflows/_tox.yml
     with:
