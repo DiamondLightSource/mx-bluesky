@@ -103,3 +103,6 @@ def move_phi_chi_omega(
     )
     if wait:
         yield from bps.wait(group)
+
+
+_PARAMS_GONIO_IN_BEAM_XYZ = ""
