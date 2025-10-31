@@ -31,7 +31,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningError
 
 from ...conftest import assert_event
 
@@ -52,7 +52,7 @@ X_Z_EDGE_DATA = SampleLocation(
 
 @pytest.fixture
 def fake_devices(
-    RE: RunEngine,
+    run_engine: RunEngine,
     smargon: Smargon,
     backlight: Backlight,
     test_config_files: dict[str, str],
@@ -76,9 +76,9 @@ def fake_devices(
 
     with (
         patch(
-            "dodal.devices.areadetector.plugins.MJPG.ClientSession.get", autospec=True
+            "dodal.devices.areadetector.plugins.mjpg.ClientSession.get", autospec=True
         ) as patch_get,
-        patch("dodal.devices.areadetector.plugins.MJPG.Image") as mock_image_class,
+        patch("dodal.devices.areadetector.plugins.mjpg.Image") as mock_image_class,
         patch(
             "dodal.devices.oav.snapshots.snapshot_with_grid.asyncio_save_image"
         ) as mock_save_image,
@@ -115,7 +115,7 @@ def do_grid_and_edge_detect(composite, parameters, tmp_dir):
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     tmp_path: Path,
@@ -125,7 +125,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
 
-    RE(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
+    run_engine(bpp.run_wrapper(do_grid_and_edge_detect(composite, params, tmp_path)))
 
     assert image_save.await_count == 4
     assert mock_save.call_count == 2
@@ -137,7 +137,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     tmp_path: Path,
@@ -156,8 +156,8 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
 
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
-    with pytest.raises(WarningException) as excinfo:
-        RE(do_grid_and_edge_detect(composite, params, tmp_path))
+    with pytest.raises(WarningError) as excinfo:
+        run_engine(do_grid_and_edge_detect(composite, params, tmp_path))
 
     assert "No pin found" in excinfo.value.args[0]
 
@@ -169,7 +169,7 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     tmp_path: Path,
 ):
@@ -180,7 +180,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     box_size_y_pixels = box_size_um / microns_per_pixel_y
 
     grid_param_cb = GridDetectionCallback()
-    RE.subscribe(grid_param_cb)
+    run_engine.subscribe(grid_param_cb)
 
     @bpp.run_decorator()
     def decorated():
@@ -193,7 +193,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
             box_size_um=box_size_um,
         )
 
-    RE(decorated())
+    run_engine(decorated())
 
     gridscan_params = grid_param_cb.get_grid_parameters()
 
@@ -211,7 +211,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
@@ -221,10 +221,10 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     composite, _ = fake_devices
     cb = GridscanISPyBCallback(param_type=GridCommon)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
-    RE.subscribe(cb)
+    run_engine.subscribe(cb)
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
-        RE(
+        run_engine(
             ispyb_activation_wrapper(
                 do_grid_and_edge_detect(composite, params, tmp_path),
                 test_fgs_params,
@@ -274,7 +274,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
@@ -283,9 +283,9 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     composite, _ = fake_devices
     box_size_um = 20
     cb = GridDetectionCallback()
-    RE.subscribe(cb)
+    run_engine.subscribe(cb)
 
-    RE(
+    run_engine(
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
         )
@@ -314,7 +314,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_config_files: dict[str, str],
     test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
@@ -330,9 +330,9 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
 
     box_size_um = 20
     cb = GridDetectionCallback()
-    RE.subscribe(cb)
+    run_engine.subscribe(cb)
 
-    RE(
+    run_engine(
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
         )

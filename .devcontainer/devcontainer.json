@@ -23,7 +23,8 @@
                 "redhat.vscode-yaml",
                 "ryanluker.vscode-coverage-gutters",
                 "charliermarsh.ruff",
-                "ms-azuretools.vscode-docker"
+                "ms-azuretools.vscode-docker",
+                "streetsidesoftware.code-spell-checker"
             ],
             "python.testing.pytestArgs": [
                 "--cov=mx_bluesky",
@@ -53,7 +54,6 @@
         }
     },
     "features": {
-        // Some default things like git config
         // add in eternal history and other bash features
         "ghcr.io/diamondlightsource/devcontainer-features/bash-config:1": {}
     },

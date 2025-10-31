@@ -6,7 +6,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.common_dcm import DoubleCrystalMonochromatorWithDSpacing
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     PandAFastGridScan,
@@ -37,7 +37,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
 
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
-    dcm: BaseDCM
+    dcm: DoubleCrystalMonochromatorWithDSpacing
     eiger: EigerDetector
     flux: Flux
     s4_slit_gaps: S4SlitGaps

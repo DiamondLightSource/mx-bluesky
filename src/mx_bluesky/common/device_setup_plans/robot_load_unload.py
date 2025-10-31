@@ -7,7 +7,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
-from dodal.plan_stubs.motor_utils import MoveTooLarge, home_and_reset_wrapper
+from dodal.plan_stubs.motor_utils import MoveTooLargeError, home_and_reset_wrapper
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -39,7 +39,7 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
 
 def _raise_exception_if_moved_out_of_cryojet(exception):
     yield from bps.null()
-    if isinstance(exception, MoveTooLarge):
+    if isinstance(exception, MoveTooLargeError):
         raise Exception(
             f"Moving {exception.axis} back to {exception.position} after \
                         robot load would move it out of the cryojet. The max safe \

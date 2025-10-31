@@ -246,7 +246,7 @@ def scan_data_infos_for_update():
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
 
-def test_ispyb_deposition_comment_for_3D_correct(
+def test_ispyb_deposition_comment_for_3d_correct(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: StoreInIspyb,
     dummy_collection_group_info,
