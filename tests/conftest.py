@@ -40,14 +40,15 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
+from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -582,42 +583,22 @@ def robot(done_status, RE: RunEngine):
 
 
 @pytest.fixture
-def beamstop(RE: RunEngine):
-    beamstop = i03.beamstop(connect_immediately=True, mock=True)
-
+def beamstop(run_engine: RunEngine) -> Beamstop:
+    with init_devices(mock=True):
+        beamstop = Beamstop("", beamline_parameters=MagicMock(), name="beamstop")
     return beamstop
-
-
-# from dodal.devices.mx_phase1.beamstop import Beamstop
-
-
-# @pytest.fixture
-# def beamstop(run_engine: RunEngine) -> Beamstop:
-#     with init_devices(mock=True):
-#         beamstop = Beamstop(
-#             "", beamline_parameters=GDABeamlineParameters, name="beamstop"
-#         )
-#     return beamstop
 
 
 @pytest.fixture
 def scintillator(RE: RunEngine):
-    scintillator = i03.scintillator(connect_immediately=True, mock=True)
+    scintillator = Scintillator(
+        "",
+        aperture_scatterguard=MagicMock(),
+        beamline_parameters=MagicMock(),
+        name="scintillator",
+    )
 
     return scintillator
-
-
-# from dodal.devices.scintillator import Scintillator
-# from dodal.devices.aperturescatterguard import ApertureScatterguard
-# from ophyd_async.core import Reference
-
-# @pytest.fixture
-# def scintillator(RE: RunEngine):
-#     scintillator = Scintillator(
-#         "", aperture_scatterguard=Reference[ApertureScatterguard], beamline_parameters=GDABeamlineParameters, name="scintillator"
-#     )
-
-#     return scintillator
 
 
 @pytest.fixture
