@@ -37,6 +37,8 @@ class HyperionFeatureSettingSources(FeatureSettingSources):
     USE_PANDA_FOR_GRIDSCAN = "gda.mx.hyperion.use_panda_for_gridscans"
     SET_STUB_OFFSETS = "gda.mx.hyperion.do_stub_offsets"
     PANDA_RUNUP_DISTANCE_MM = "gda.mx.hyperion.panda_runup_distance_mm"
+    DETECTOR_DISTANCE_LIMIT_MAX_MM = "gda.detector.distance.limit.max"
+    DETECTOR_DISTANCE_LIMIT_MIN_MM = "gda.detector.distance.limit.min"
 
 
 # Use these defaults if we can't read from the config server
@@ -46,6 +48,9 @@ class HyperionFeatureSetting(FeatureSetting):
     USE_PANDA_FOR_GRIDSCAN: bool = False
     SET_STUB_OFFSETS: bool = False
     PANDA_RUNUP_DISTANCE_MM: float = 0.16
+    # From GDA mx-config hutch_utilities.py default values
+    DETECTOR_DISTANCE_LIMIT_MAX_MM: float = 700
+    DETECTOR_DISTANCE_LIMIT_MIN_MM: float = 250
 
 
 @dataclass(frozen=True)
