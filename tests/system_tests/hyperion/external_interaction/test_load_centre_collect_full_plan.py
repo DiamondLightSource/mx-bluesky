@@ -36,8 +36,8 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundException,
-    WarningException,
+    CrystalNotFoundError,
+    WarningError,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -278,7 +278,7 @@ def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
@@ -294,10 +294,10 @@ def test_execute_load_centre_collect_full(
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
-    RE(
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
@@ -449,7 +449,7 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
@@ -464,7 +464,7 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     def move_to_initial_omega():
         yield from bps.mv(load_centre_collect_composite.smargon.omega, initial_omega)
 
-    RE(move_to_initial_omega())
+    run_engine(move_to_initial_omega())
     ispyb_gridscan_cb = GridscanISPyBCallback(
         param_type=GridCommonWithHyperionDetectorParams
     )
@@ -473,10 +473,10 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
-    RE(
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
@@ -521,13 +521,13 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(sample_handling_cb)
 
     with (
         patch(
@@ -536,7 +536,7 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
         ),
         pytest.raises(TimeoutError, match="Simulated timeout"),
     ):
-        RE(
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -556,7 +556,7 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     pin_tip_no_pin_found: PinTipDetection,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
@@ -564,14 +564,14 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
         param_type=GridCommonWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(sample_handling_cb)
 
     with pytest.raises(
-        WarningException, match="Pin tip centring failed - pin too long/short.*"
+        WarningError, match="Pin tip centring failed - pin too long/short.*"
     ):
-        RE(
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -590,7 +590,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
@@ -598,9 +598,9 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
         param_type=GridCommonWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(sample_handling_cb)
 
     descriptor = None
 
@@ -621,10 +621,10 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
             trigger.return_value = NullStatus()  # type:ignore
             trigger.side_effect = None  # type: ignore
 
-    RE.subscribe(wait_for_first_oav_grid)
+    run_engine.subscribe(wait_for_first_oav_grid)
 
-    with pytest.raises(WarningException, match="No pin found after 5.0 seconds"):
-        RE(
+    with pytest.raises(WarningError, match="No pin found after 5.0 seconds"):
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -643,7 +643,7 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     composite_with_no_diffraction: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
@@ -651,12 +651,12 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
         param_type=GridCommonWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(sample_handling_cb)
 
-    with pytest.raises(CrystalNotFoundException):
-        RE(
+    with pytest.raises(CrystalNotFoundError):
+        run_engine(
             load_centre_collect_full(
                 composite_with_no_diffraction,
                 load_centre_collect_params,
@@ -675,7 +675,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
@@ -683,9 +683,9 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         param_type=GridCommonWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(sample_handling_cb)
 
     with (
         patch(
@@ -694,7 +694,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         ),
         pytest.raises(TimeoutError, match="Simulated timeout"),
     ):
-        RE(
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -732,7 +732,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     robot_load_cb: RobotLoadISPyBCallback,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = _with_sample_ids(
         zocalo_result, [SimConstants.ST_SAMPLE_ID]
@@ -744,11 +744,11 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(ispyb_rotation_cb)
-    RE.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(ispyb_rotation_cb)
+    run_engine.subscribe(robot_load_cb)
     with expected_exception:
-        RE(
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -762,7 +762,7 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
@@ -779,9 +779,9 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_callback)
-    RE(
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_callback)
+    run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
@@ -789,7 +789,7 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
         )
     )
 
-    EXPECTED_SNAPSHOT_VALUES = {
+    expected_snapshot_values = {
         "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_0_with_beam_centre\\.png",
         "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_90_with_beam_centre\\.png",
         "xtalSnapshotFullPath3": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_180_with_beam_centre\\.png",
@@ -800,12 +800,12 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
     rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
     compare_actual_and_expected(
         rotation_dc_ids[0],
-        EXPECTED_SNAPSHOT_VALUES,
+        expected_snapshot_values,
         fetch_datacollection_attribute,
     )
     compare_actual_and_expected(
         rotation_dc_ids[1],
-        EXPECTED_SNAPSHOT_VALUES,
+        expected_snapshot_values,
         fetch_datacollection_attribute,
     )
 
@@ -847,7 +847,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_msp_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot_load_cb: RobotLoadISPyBCallback,
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
@@ -859,11 +859,11 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
 
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
 
-    RE(
+    run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_msp_params,
@@ -899,7 +899,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_msp_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot_load_cb: RobotLoadISPyBCallback,
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
@@ -911,9 +911,9 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
 
     original_upsert_dcg = ispyb_rotation_cb.ispyb._store_data_collection_group_table
     captured_upsert_dcg_ids = []
@@ -930,7 +930,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
         "_store_data_collection_group_table",
         side_effect=intercept_upserts,
     ):
-        RE(
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_msp_params,
@@ -968,7 +968,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_msp_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
@@ -977,11 +977,11 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
 
-    RE(
+    run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_msp_params,
@@ -1024,7 +1024,7 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
     load_centre_collect_composite: LoadCentreCollectComposite,
     load_centre_collect_msp_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot_load_cb: RobotLoadISPyBCallback,
     fetch_blsample: Callable[..., Any],
 ):
@@ -1035,10 +1035,10 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     sample_handling_cb = SampleHandlingCallback()
-    RE.subscribe(ispyb_gridscan_cb)
-    RE.subscribe(snapshot_cb)
-    RE.subscribe(robot_load_cb)
-    RE.subscribe(sample_handling_cb)
+    run_engine.subscribe(ispyb_gridscan_cb)
+    run_engine.subscribe(snapshot_cb)
+    run_engine.subscribe(robot_load_cb)
+    run_engine.subscribe(sample_handling_cb)
 
     unpatched_move_and_rotation = _move_and_rotation
     num_calls = 0
@@ -1055,7 +1055,7 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
         partial(throw_on_third_call_wrapper, unpatched_move_and_rotation),
     ):
         with pytest.raises(AssertionError, match="Simulated error in rotation"):
-            RE(
+            run_engine(
                 load_centre_collect_full(
                     load_centre_collect_composite,
                     load_centre_collect_msp_params,
@@ -1135,7 +1135,7 @@ class TestGenerateSnapshot:
         grid_detect_for_snapshot_generation: GridParamUpdate,
         patch_detect_grid_and_do_gridscan_with_detected_pin_position: MagicMock,
         next_oav_system_test_image: MagicMock,
-        RE: RunEngine,
+        run_engine: RunEngine,
         tmp_path: Path,
         test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
@@ -1172,9 +1172,9 @@ class TestGenerateSnapshot:
         )
         ispyb_rotation_cb = RotationISPyBCallback()
         snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
-        RE.subscribe(ispyb_gridscan_cb)
-        RE.subscribe(snapshot_callback)
-        RE(
+        run_engine.subscribe(ispyb_gridscan_cb)
+        run_engine.subscribe(snapshot_callback)
+        run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
                 load_centre_collect_params,
@@ -1182,12 +1182,12 @@ class TestGenerateSnapshot:
             )
         )
 
-        EXPECTED_GRID_SNAPSHOT_VALUES_0 = {
+        expected_grid_snapshot_values_0 = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_grid_overlay.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0_outer_overlay.png",
             "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_0.png",
         }
-        EXPECTED_GRID_SNAPSHOT_VALUES_1 = {
+        expected_grid_snapshot_values_1 = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_grid_overlay.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90_outer_overlay.png",
             "xtalSnapshotFullPath3": f"regex:{tmp_path}/grid_snapshots/robot_load_centring_file_1_90.png",
@@ -1196,16 +1196,16 @@ class TestGenerateSnapshot:
         grid_dc_ids = fetch_datacollection_ids_for_group_id(grid_dcg_id)
         compare_actual_and_expected(
             grid_dc_ids[0],
-            EXPECTED_GRID_SNAPSHOT_VALUES_0,
+            expected_grid_snapshot_values_0,
             fetch_datacollection_attribute,
         )
         compare_actual_and_expected(
             grid_dc_ids[1],
-            EXPECTED_GRID_SNAPSHOT_VALUES_1,
+            expected_grid_snapshot_values_1,
             fetch_datacollection_attribute,
         )
 
-        EXPECTED_ROTATION_SNAPSHOT_VALUES = {
+        expected_rotation_snapshot_values = {
             "xtalSnapshotFullPath1": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_90\\.png",
             "xtalSnapshotFullPath2": f"regex:{tmp_path}/\\d{{8}}_oav_snapshot_robot_load_centring_file_1_0\\.png",
         }
@@ -1214,12 +1214,12 @@ class TestGenerateSnapshot:
         rotation_dc_ids = fetch_datacollection_ids_for_group_id(rotation_dcg_id)
         compare_actual_and_expected(
             rotation_dc_ids[0],
-            EXPECTED_ROTATION_SNAPSHOT_VALUES,
+            expected_rotation_snapshot_values,
             fetch_datacollection_attribute,
         )
         compare_actual_and_expected(
             rotation_dc_ids[1],
-            EXPECTED_ROTATION_SNAPSHOT_VALUES,
+            expected_rotation_snapshot_values,
             fetch_datacollection_attribute,
         )
 

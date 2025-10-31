@@ -53,9 +53,9 @@ def go_to_furthest_maximum(
 ) -> MsgGenerator:
     """Rotate to positive or negative maximum, whichever is further away"""
 
-    LIMIT_OF_TRAVEL = 3600
+    limit_of_travel = 3600
     current_value: float = yield from bps.rd(goniometer.omega.user_readback)
 
     yield from bps.mv(
-        goniometer.omega, -LIMIT_OF_TRAVEL if current_value > 0 else LIMIT_OF_TRAVEL
+        goniometer.omega, -limit_of_travel if current_value > 0 else limit_of_travel
     )

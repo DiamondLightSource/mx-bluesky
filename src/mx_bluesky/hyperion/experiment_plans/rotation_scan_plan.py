@@ -49,7 +49,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -346,7 +346,7 @@ def _move_and_rotation(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         if not params.use_grid_snapshots:
-            yield from setup_beamline_for_OAV(
+            yield from setup_beamline_for_oav(
                 composite.smargon,
                 composite.backlight,
                 composite.aperture_scatterguard,

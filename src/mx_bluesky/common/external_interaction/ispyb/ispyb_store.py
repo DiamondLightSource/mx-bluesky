@@ -17,7 +17,7 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import ExpeyeInt
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class StoreInIspyb:
                 DataCollectionInfo(comments=delimiter + comment),
                 True,
             )
-        except ISPyBDepositionNotMade as e:
+        except ISPyBDepositionNotMadeError as e:
             ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                 f"Unable to log comment, comment probably exceeded column length: {comment}",
                 exc_info=e,

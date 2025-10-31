@@ -18,7 +18,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 
 
 def test_full_do_internal_acquisition(
-    RE: RunEngine, jungfrau: CommissioningJungfrau, caplog
+    run_engine: RunEngine, jungfrau: CommissioningJungfrau, caplog
 ):
     @run_decorator()
     def test_plan():
@@ -32,7 +32,7 @@ def test_full_do_internal_acquisition(
         yield from bps.wait(JF_COMPLETE_GROUP)
 
     jungfrau._controller.arm = AsyncMock()
-    RE(test_plan())
+    run_engine(test_plan())
     assert "Jungfrau data collection triggers received: 100%" in caplog.messages
 
 

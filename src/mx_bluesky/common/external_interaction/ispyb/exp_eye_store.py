@@ -17,7 +17,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
     get_ispyb_config,
 )
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 
 RobotActionID = int
 
@@ -46,7 +46,9 @@ def _send_and_get_response(auth, url, data, send_func, query_params=None) -> dic
             resp_txt = str(response.json())
         except JSONDecodeError:
             resp_txt = str(response)
-        raise ISPyBDepositionNotMade(f"Could not write {data} to {url}: {resp_txt}")
+        raise ISPyBDepositionNotMadeError(
+            f"Could not write {data} to {url}: {resp_txt}"
+        )
     return response.json()
 
 

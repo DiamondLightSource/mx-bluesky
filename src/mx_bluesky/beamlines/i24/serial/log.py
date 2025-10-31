@@ -9,7 +9,7 @@ import bluesky.plan_stubs as bps
 from bluesky.log import logger as bluesky_logger
 from bluesky.utils import MsgGenerator
 from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 
 from mx_bluesky.common.utils.log import do_default_logging_setup
 
@@ -19,7 +19,7 @@ VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
 # Logging set up
 SSX_LOGGER = logging.getLogger("I24serial")
 SSX_LOGGER.addHandler(logging.NullHandler())
-SSX_LOGGER.parent = dodal_logger
+SSX_LOGGER.parent = DODAL_LOGGER
 
 
 logging_config = {
@@ -101,14 +101,14 @@ def config(
     """
     if logfile:
         logs = _get_logging_file_path() / logfile
-        fileFormatter = logging.Formatter(
+        file_formatter = logging.Formatter(
             "%(asctime)s %(levelname)s: \t(%(name)s) %(message)s",
             datefmt="%d-%m-%Y %I:%M:%S",
         )
-        FH = logging.FileHandler(logs, mode=write_mode, encoding="utf-8", delay=delayed)
-        FH.setLevel(logging.DEBUG)
-        FH.setFormatter(fileFormatter)
-        SSX_LOGGER.addHandler(FH)
+        fh = logging.FileHandler(logs, mode=write_mode, encoding="utf-8", delay=delayed)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(file_formatter)
+        SSX_LOGGER.addHandler(fh)
     do_default_logging_setup(
         "mx-bluesky.log",
         DEFAULT_GRAYLOG_PORT,
@@ -116,8 +116,8 @@ def config(
         integrate_all_logs=False,
     )
     # Remove dodal StreamHandler to avoid duplication of messages above debug
-    dodal_logger.removeHandler(dodal_logger.handlers[0])
-    _integrate_bluesky_logs(dodal_logger)
+    DODAL_LOGGER.removeHandler(DODAL_LOGGER.handlers[0])
+    _integrate_bluesky_logs(DODAL_LOGGER)
 
 
 def log_on_entry(func):
@@ -151,6 +151,6 @@ def clean_up_log_config_at_end() -> MsgGenerator:
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
     for handler in SSX_LOGGER.handlers:
         SSX_LOGGER.removeHandler(handler)
-    for handler in dodal_logger.handlers:
-        dodal_logger.removeHandler(handler)
+    for handler in DODAL_LOGGER.handlers:
+        DODAL_LOGGER.removeHandler(handler)
     yield from bps.null()
