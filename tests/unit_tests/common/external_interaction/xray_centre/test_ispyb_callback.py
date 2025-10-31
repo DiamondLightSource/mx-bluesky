@@ -19,18 +19,20 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
 
 from .....conftest import (
+    EXPECTED_START_TIME,
+    TEST_SAMPLE_ID,
+    replace_all_tmp_paths,
+)
+from .....expeye_helpers import (
     DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
     DCS_RE,
-    EXPECTED_START_TIME,
     GRID_RE,
     POSITION_RE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_SAMPLE_ID,
-    replace_all_tmp_paths,
 )
 from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
     TEST_PROPOSAL_REF,

@@ -18,20 +18,22 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 
 from ......conftest import (
+    EXPECTED_END_TIME,
+    EXPECTED_START_TIME,
+    TEST_BARCODE,
+    TEST_SAMPLE_ID,
+)
+from ......expeye_helpers import (
     DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
     DCS_RE,
-    EXPECTED_END_TIME,
-    EXPECTED_START_TIME,
     GRID_RE,
     POSITION_RE,
-    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_GRID_INFO_IDS,
-    TEST_SAMPLE_ID,
 )
 
 TEST_PROPOSAL_REF = "cm31105"

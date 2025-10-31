@@ -113,7 +113,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
-pytest_plugins = ["expeye_helpers"]
+pytest_plugins = ["tests.expeye_helpers"]
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 

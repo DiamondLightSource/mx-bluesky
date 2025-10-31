@@ -14,17 +14,19 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 
 from ......conftest import (
+    EXPECTED_END_TIME,
+    EXPECTED_START_TIME,
+    TEST_SAMPLE_ID,
+)
+from ......expeye_helpers import (
     DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
     DCS_RE,
-    EXPECTED_END_TIME,
-    EXPECTED_START_TIME,
     POSITION_RE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_SAMPLE_ID,
 )
 from ...xray_centre.test_ispyb_handler import DCG_ID
 from .test_gridscan_ispyb_store_3d import TEST_PROPOSAL_REF, TEST_VISIT_NUMBER

@@ -6,17 +6,19 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 )
 
 from ......conftest import (
+    EXPECTED_END_TIME,
+    EXPECTED_START_TIME,
+    replace_all_tmp_paths,
+)
+from ......expeye_helpers import (
     DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
     DCS_RE,
-    EXPECTED_END_TIME,
-    EXPECTED_START_TIME,
     POSITION_RE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    replace_all_tmp_paths,
 )
 from .....common.external_interaction.callbacks.ispyb.test_gridscan_ispyb_store_3d import (
     TEST_PROPOSAL_REF,

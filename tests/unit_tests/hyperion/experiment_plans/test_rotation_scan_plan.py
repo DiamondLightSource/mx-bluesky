@@ -61,15 +61,17 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
+    DocumentCapturer,
+    extract_metafile,
+    fake_read,
+    raw_params_from_file,
+)
+from ....expeye_helpers import (
     DC_COMMENT_RE,
     DC_RE,
     DCG_RE,
     DCGS_RE,
     DCS_RE,
-    DocumentCapturer,
-    extract_metafile,
-    fake_read,
-    raw_params_from_file,
 )
 
 TEST_OFFSET = 1
