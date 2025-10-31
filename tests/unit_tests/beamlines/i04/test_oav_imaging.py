@@ -166,7 +166,7 @@ def test_optimise_oav_transmission_binary_search():
         return pixel_val
 
     with patch(
-        "oav_imaging.get_max_pixel_value_from_transmission",
+        "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.get_max_pixel_value_from_transmission",
         side_effect=mock_get_max_pixel_value_from_transmission,
     ):
         result = optimise_oav_transmission_binary_search(255 / 2, 100, 0, 5, 10)
