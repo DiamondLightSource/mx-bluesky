@@ -179,7 +179,7 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
     ],
 )
 def test_udc_default_state_checks_cryostream_selection(
-    RE: RunEngine,
+    run_engine: RunEngine,
     default_devices,
     expected_raise,
     cryostream_selection: CryoStreamSelection,
@@ -196,4 +196,4 @@ def test_udc_default_state_checks_cryostream_selection(
     )
 
     with expected_raise:
-        RE(move_to_udc_default_state(default_devices))
+        run_engine(move_to_udc_default_state(default_devices))
