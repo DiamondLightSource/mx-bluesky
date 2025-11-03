@@ -551,7 +551,7 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
         "microns_per_y_pixel": 2.8699999999999997,
         "beam_centre_i": 0,
         "beam_centre_j": 0,
-        "omega_angle": True,
+        "omega_angle": 360.0,
         "uuid": "test",
     }
     expected_roi_md = {
@@ -560,11 +560,16 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
         "microns_per_y_pixel": 3.16,
         "beam_centre_i": 0,
         "beam_centre_j": 0,
-        "omega_angle": True,
+        "omega_angle": 0.0,
         "uuid": "test",
     }
 
-    call_args_list = murko_callback.redis_client.hset.call_args_list  # type: ignore
-    assert len(call_args_list) == 2
-    assert call_args_list[0].args[2] == json.dumps(expected_full_screen_md)
-    assert call_args_list[1].args[2] == json.dumps(expected_roi_md)
+    hset_call_args_list = murko_callback.redis_client.hset.call_args_list  # type: ignore
+    assert len(hset_call_args_list) == 2
+    assert hset_call_args_list[0].args[2] == json.dumps(expected_full_screen_md)
+    assert hset_call_args_list[1].args[2] == json.dumps(expected_roi_md)
+
+    publish_call_args_list = murko_callback.redis_client.publish.call_args_list  # type: ignore
+    assert len(publish_call_args_list) == 2
+    assert publish_call_args_list[0].args[1] == json.dumps(expected_full_screen_md)
+    assert publish_call_args_list[1].args[1] == json.dumps(expected_roi_md)
