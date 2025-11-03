@@ -34,6 +34,10 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     setup_sample_environment,
 )
+from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+    setup_zebra_for_rotation,
+    tidy_up_zebra_after_rotation_scan,
+)
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -45,7 +49,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -55,8 +59,6 @@ from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
-    setup_zebra_for_rotation,
-    tidy_up_zebra_after_rotation_scan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.rotation import (
@@ -344,7 +346,7 @@ def _move_and_rotation(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         if not params.use_grid_snapshots:
-            yield from setup_beamline_for_OAV(
+            yield from setup_beamline_for_oav(
                 composite.smargon,
                 composite.backlight,
                 composite.aperture_scatterguard,
@@ -426,7 +428,7 @@ def rotation_scan_internal(
 
             yield from rotation_scan_core(single_scan)
 
-        yield from bps.unstage(eiger)
+        yield from bps.unstage(eiger, wait=True)
 
     LOGGER.info("setting up and staging eiger...")
     yield from start_preparing_data_collection_then_do_plan(

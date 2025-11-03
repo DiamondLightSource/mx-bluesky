@@ -9,8 +9,8 @@ from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import CombinedMove, Smargon
 
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.parameters.constants import CONST
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
@@ -48,7 +48,7 @@ def move_aperture_if_required(
 
     else:
         LOGGER.info(f"Setting aperture position to {aperture_value}")
-        yield from bps.wait(CONST.WAIT.PREPARE_APERTURE)
+        yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
         yield from bps.abs_set(
             aperture_scatterguard.selected_aperture,
             aperture_value,

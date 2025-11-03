@@ -1,13 +1,13 @@
 import pytest
-from tests.unit_tests.hyperion.experiment_plans.conftest import (
-    FLYSCAN_RESULT_HIGH,
-    FLYSCAN_RESULT_LOW,
-    FLYSCAN_RESULT_MED,
-)
 
 from mx_bluesky.common.xrc_result import (
     top_n_by_max_count,
     top_n_by_max_count_for_each_sample,
+)
+from tests.unit_tests.hyperion.experiment_plans.conftest import (
+    FLYSCAN_RESULT_HIGH,
+    FLYSCAN_RESULT_LOW,
+    FLYSCAN_RESULT_MED,
 )
 
 

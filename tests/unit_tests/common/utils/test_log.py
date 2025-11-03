@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
 import mx_bluesky.common.utils.log as log
@@ -22,7 +22,7 @@ TEST_GRAYLOG_PORT = 5555
 
 @pytest.fixture(scope="function")
 def clear_and_mock_loggers():
-    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*log.ALL_LOGGERS, DODAL_LOGGER])
     mock_open_with_tell = MagicMock()
     mock_open_with_tell.tell.return_value = 0
     with (
@@ -33,7 +33,7 @@ def clear_and_mock_loggers():
         graylog_emit.reset_mock()
         filehandler_emit.reset_mock()
         yield filehandler_emit, graylog_emit
-    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*log.ALL_LOGGERS, DODAL_LOGGER])
 
 
 @pytest.mark.skip_log_setup
@@ -42,7 +42,7 @@ def test_no_env_variable_sets_correct_file_handler(
 ) -> None:
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
     file_handlers: FileHandler = next(
-        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
+        filter(lambda h: isinstance(h, FileHandler), DODAL_LOGGER.handlers)  # type: ignore
     )
 
     assert file_handlers.baseFilename.endswith("/tmp/logs/bluesky/hyperion.log")
@@ -60,7 +60,7 @@ def test_set_env_variable_sets_correct_file_handler(
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     file_handlers: FileHandler = next(
-        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
+        filter(lambda h: isinstance(h, FileHandler), DODAL_LOGGER.handlers)  # type: ignore
     )
 
     assert file_handlers.baseFilename.endswith("/dls_sw/s03/logs/bluesky/hyperion.log")
@@ -70,27 +70,27 @@ def test_set_env_variable_sets_correct_file_handler(
 def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     clear_and_mock_loggers,
 ):
-    _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    _, mock_gelf_tcp_handler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     log.set_dcgid_tag(100)
 
     logger = log.LOGGER
     logger.info("test_hyperion")
-    dodal_logger.info("test_dodal")
+    DODAL_LOGGER.info("test_dodal")
 
-    graylog_calls = mock_GELFTCPHandler_emit.mock_calls[1:]
+    graylog_calls = mock_gelf_tcp_handler_emit.mock_calls[1:]
 
     dc_group_id_correct = [c.args[0].dc_group_id == 100 for c in graylog_calls]
     assert all(dc_group_id_correct)
 
 
 @pytest.mark.skip_log_setup
-def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
-    _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, run_engine):
+    _, mock_gelf_tcp_handler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
-    RE.subscribe(LogUidTaggingCallback())
+    run_engine.subscribe(LogUidTaggingCallback())
     test_run_uid = None
     logger = log.LOGGER
 
@@ -105,12 +105,12 @@ def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
         yield from bps.sleep(0)
 
     assert log.tag_filter.run_uid is None
-    RE(test_plan())
+    run_engine(test_plan())
     assert log.tag_filter.run_uid is None
 
     graylog_calls_in_plan = [
         c.args[0]
-        for c in mock_GELFTCPHandler_emit.mock_calls
+        for c in mock_gelf_tcp_handler_emit.mock_calls
         if c.args[0].msg == "test_hyperion"
     ]
 
@@ -126,14 +126,14 @@ def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
 def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     clear_and_mock_loggers,
 ):
-    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    mock_filehandler_emit, mock_gelf_tcp_handler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
     logger = log.LOGGER
     logger.info("test MX_Bluesky")
-    dodal_logger.info("test_dodal")
+    DODAL_LOGGER.info("test_dodal")
 
     filehandler_calls = mock_filehandler_emit.mock_calls
-    graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+    graylog_calls = mock_gelf_tcp_handler_emit.mock_calls
 
     assert len(filehandler_calls) >= 2
     assert len(graylog_calls) >= 2
@@ -150,32 +150,32 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
 @pytest.mark.parametrize("dev_mode", [True, False])
 @pytest.mark.skip_log_setup
 def test_callback_loggers_log_to_own_files(clear_and_mock_loggers, dev_mode: bool):
-    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    mock_filehandler_emit, mock_gelf_tcp_handler_emit = clear_and_mock_loggers
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
 
     hyperion_logger = log.LOGGER
-    ISPYB_ZOCALO_CALLBACK_LOGGER = log.ISPYB_ZOCALO_CALLBACK_LOGGER
+    ispyb_zocalo_callback_logger = log.ISPYB_ZOCALO_CALLBACK_LOGGER
     nexus_logger = log.NEXUS_LOGGER
     logging_path, _ = log._get_logging_dirs(dev_mode)
-    for logger in [ISPYB_ZOCALO_CALLBACK_LOGGER, nexus_logger]:
+    for logger in [ispyb_zocalo_callback_logger, nexus_logger]:
         set_up_all_logging_handlers(logger, logging_path, logger.name, True, 10000)
 
     hyperion_logger.info("test_hyperion")
-    ISPYB_ZOCALO_CALLBACK_LOGGER.info("test_ispyb")
+    ispyb_zocalo_callback_logger.info("test_ispyb")
     nexus_logger.info("test_nexus")
 
     total_filehandler_calls = mock_filehandler_emit.mock_calls
-    total_graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+    total_graylog_calls = mock_gelf_tcp_handler_emit.mock_calls
 
     assert len(total_filehandler_calls) == len(total_graylog_calls)
 
     hyperion_filehandler = next(
-        filter(lambda h: isinstance(h, TimedRotatingFileHandler), dodal_logger.handlers)  # type: ignore
+        filter(lambda h: isinstance(h, TimedRotatingFileHandler), DODAL_LOGGER.handlers)  # type: ignore
     )
     ispyb_filehandler = next(
         filter(
             lambda h: isinstance(h, TimedRotatingFileHandler),
-            ISPYB_ZOCALO_CALLBACK_LOGGER.handlers,
+            ispyb_zocalo_callback_logger.handlers,
         )  # type: ignore
     )
     nexus_filehandler = next(

@@ -14,9 +14,11 @@ from ..conftest import TEST_LUT
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
 async def test_setup_beamline_for_collection_plan(
-    _, aperture: Aperture, backlight: DualBacklight, beamstop: Beamstop, RE
+    _, aperture: Aperture, backlight: DualBacklight, beamstop: Beamstop, run_engine
 ):
-    RE(setup_beamline.setup_beamline_for_collection_plan(aperture, backlight, beamstop))
+    run_engine(
+        setup_beamline.setup_beamline_for_collection_plan(aperture, backlight, beamstop)
+    )
 
     assert await aperture.position.get_value() == "In"
     assert await beamstop.pos_select.get_value() == "Data Collection"
@@ -25,9 +27,13 @@ async def test_setup_beamline_for_collection_plan(
     assert await backlight.backlight_position.pos_level.get_value() == "Out"
 
 
-async def test_move_detector_stage_to_position_plan(detector_stage: YZStage, RE):
+async def test_move_detector_stage_to_position_plan(
+    detector_stage: YZStage, run_engine
+):
     det_dist = 100
-    RE(setup_beamline.move_detector_stage_to_position_plan(detector_stage, det_dist))
+    run_engine(
+        setup_beamline.move_detector_stage_to_position_plan(detector_stage, det_dist)
+    )
 
     assert await detector_stage.z.user_setpoint.get_value() == det_dist
 
@@ -48,7 +54,7 @@ def test_compute_beam_center_position_from_lut(dummy_params_ex):
 
 
 async def test_set_detector_beam_center_plan(
-    eiger_beam_center: DetectorBeamCenter, dummy_params_ex, RE
+    eiger_beam_center: DetectorBeamCenter, dummy_params_ex, run_engine
 ):
     beam_center_pos = setup_beamline.compute_beam_center_position_from_lut(
         TEST_LUT[dummy_params_ex.detector_name],
@@ -57,7 +63,7 @@ async def test_set_detector_beam_center_plan(
     )
     # test_detector_distance = 100
     # test_detector_params = dummy_params_ex.detector_params
-    RE(
+    run_engine(
         setup_beamline.set_detector_beam_center_plan(
             eiger_beam_center,
             beam_center_pos,  # test_detector_params, test_detector_distance
@@ -71,17 +77,17 @@ async def test_set_detector_beam_center_plan(
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 def test_eiger_raises_error_if_quickshot_and_no_args_list(
-    fake_caget, fake_caput, RE, dcm
+    fake_caget, fake_caput, run_engine, dcm
 ):
     with pytest.raises(TypeError):
-        RE(setup_beamline.eiger("quickshot", None, dcm))
+        run_engine(setup_beamline.eiger("quickshot", None, dcm))
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_eiger_quickshot(_, fake_caget, fake_caput, RE, dcm):
-    RE(setup_beamline.eiger("quickshot", ["", "", "1", "0.1"], dcm))
+def test_eiger_quickshot(_, fake_caget, fake_caput, run_engine, dcm):
+    run_engine(setup_beamline.eiger("quickshot", ["", "", "1", "0.1"], dcm))
     assert fake_caput.call_count == 30
 
 
@@ -89,8 +95,8 @@ def test_eiger_quickshot(_, fake_caget, fake_caput, RE, dcm):
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_eiger_triggered(_, fake_caget, fake_caput, fake_read, RE, dcm):
-    RE(setup_beamline.eiger("triggered", ["", "", "10", "0.1"], dcm))
+def test_eiger_triggered(_, fake_caget, fake_caput, fake_read, run_engine, dcm):
+    run_engine(setup_beamline.eiger("triggered", ["", "", "10", "0.1"], dcm))
     assert fake_caget.call_count == 3
     assert fake_caput.call_count == 30
     assert fake_read.call_count == 1
@@ -108,8 +114,8 @@ def test_eiger_triggered(_, fake_caget, fake_caput, fake_read, RE, dcm):
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
 def test_mode_change(
-    fake_sleep, fake_caput, action, expected_caputs, expected_sleeps, RE
+    fake_sleep, fake_caput, action, expected_caputs, expected_sleeps, run_engine
 ):
-    RE(setup_beamline.modechange(action))
+    run_engine(setup_beamline.modechange(action))
     assert fake_caput.call_count == expected_caputs
     assert fake_sleep.call_count == expected_sleeps

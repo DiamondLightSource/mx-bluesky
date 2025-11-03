@@ -1,13 +1,16 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pydantic
 import pytest
+from blueapi.core import BlueskyContext
+from bluesky import RunEngine
 from ophyd.device import Device
 
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
+from mx_bluesky.hyperion.utils.context import setup_devices
 
 
 class _DeviceType1(Device):
@@ -72,3 +75,15 @@ def test_device_composite_from_context():
 
     assert composite.device2 == device2_instance
     assert isinstance(composite.device2, _DeviceType2)
+
+
+def test_setup_devices_raises_on_exception(use_beamline_t01, run_engine: RunEngine):
+    context = BlueskyContext(run_engine=run_engine)
+
+    with patch.object(
+        use_beamline_t01.baton(),
+        "connect",
+        AsyncMock(side_effect=RuntimeError("Simulated exception")),
+    ):
+        with pytest.raises(ExceptionGroup):
+            setup_devices(context, True)

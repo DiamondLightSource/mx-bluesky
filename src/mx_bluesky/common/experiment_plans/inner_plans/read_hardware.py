@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -43,7 +43,7 @@ def standard_read_hardware_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    dcm: BaseDCM,
+    dcm: DoubleCrystalMonochromator,
     smargon: Smargon,
 ):
     LOGGER.info("Reading status of beamline for callbacks, pre collection.")
@@ -52,7 +52,7 @@ def standard_read_hardware_pre_collection(
         synchrotron.synchrotron_mode,
         s4_slit_gaps,
         smargon,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
     ]
     yield from read_hardware_plan(
         signals_to_read_pre_flyscan, DocDescriptorNames.HARDWARE_READ_PRE
@@ -63,14 +63,14 @@ def standard_read_hardware_during_collection(
     aperture_scatterguard: ApertureScatterguard,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    dcm: BaseDCM,
+    dcm: DoubleCrystalMonochromator,
     detector: EigerDetector,
 ):
     signals_to_read_during_collection = [
         aperture_scatterguard,
         attenuator.actual_transmission,
         flux.flux_reading,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
         detector.bit_depth,
     ]
     yield from read_hardware_plan(

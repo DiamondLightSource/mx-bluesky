@@ -33,7 +33,7 @@ from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    SmargonSpeedException,
+    SmargonSpeedError,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -54,7 +54,7 @@ from ...conftest import (
 ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
-class CompleteException(Exception):
+class CompleteError(Exception):
     # To avoid having to run through the entire plan during tests
     pass
 
@@ -100,11 +100,11 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-        RE_with_subs: ReWithSubs,
+        run_engine_with_subs: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        RE, _ = RE_with_subs
-        RE.subscribe(VerbosePlanExecutionLoggingCallback())
+        run_engine, _ = run_engine_with_subs
+        run_engine.subscribe(VerbosePlanExecutionLoggingCallback())
 
         for result in [
             TestData.test_result_large,
@@ -112,7 +112,7 @@ class TestFlyscanXrayCentrePlan:
             TestData.test_result_small,
         ]:
             mock_zocalo_trigger(hyperion_flyscan_xrc_composite.zocalo, result)
-            RE(
+            run_engine(
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
                     hyperion_fgs_params,
@@ -198,14 +198,14 @@ class TestFlyscanXrayCentrePlan:
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        RE: RunEngine,
+        run_engine: RunEngine,
     ):
         fgs_params_use_panda.x_step_size_um = 10000
         fgs_params_use_panda.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
-        with pytest.raises(SmargonSpeedException):
-            RE(
+        with pytest.raises(SmargonSpeedError):
+            run_engine(
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
                     fgs_params_use_panda,
@@ -278,5 +278,13 @@ class TestFlyscanXrayCentrePlan:
             msgs, lambda msg: msg.command == "disarm_panda"
         )
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "unstage" and msg.obj.name == "panda"
+            msgs,
+            lambda msg: msg.command == "unstage"
+            and msg.obj.name == "panda"
+            and msg.kwargs["group"] == "panda_flyscan_tidy",
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait"
+            and msg.kwargs["group"] == "panda_flyscan_tidy",
         )

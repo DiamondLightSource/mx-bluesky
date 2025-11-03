@@ -46,7 +46,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         ispyb_handler_callback = RotationISPyBCallback(parameters)
-        RE.subscribe(ispyb_handler_callback)
+        run_engine.subscribe(ispyb_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks

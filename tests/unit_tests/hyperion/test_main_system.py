@@ -28,7 +28,7 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.__main__ import (
     Actions,
@@ -67,7 +67,7 @@ RUNENGINE_TAKES_TIME_TIMEOUT = 15
 
 """
 Every test in this file which uses the test_env fixture should either:
-    - set RE_takes_time to false
+    - set run_engine_takes_time to false
     or
     - set an error on the mock run engine
 In order to avoid threads which get left alive forever after test completion
@@ -88,23 +88,29 @@ def test_params(tmp_path):
     )
 
 
+@pytest.fixture(autouse=True)
+def patch_remote_graylog_endpoint():
+    with patch("dodal.log.get_graylog_configuration", return_value=("localhost", 5555)):
+        yield None
+
+
 class MockRunEngine:
     def __init__(self, test_name):
-        self.RE_takes_time = True
+        self.run_engine_takes_time = True
         self.aborting_takes_time = False
         self.error: Exception | None = None
         self.test_name = test_name
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
-        while self.RE_takes_time:
+        while self.run_engine_takes_time:
             if self.error:
                 raise self.error
             if time > RUNENGINE_TAKES_TIME_TIMEOUT:
                 raise TimeoutError(
                     f'Mock RunEngine thread for test "{self.test_name}" spun too long'
                     "without an error. Most likely you should initialise with "
-                    "RE_takes_time=false, or set RE.error from another thread."
+                    "run_engine_takes_time=false, or set run_engine.error from another thread."
                 )
             sleep(SECS_PER_RUNENGINE_LOOP)
             time += SECS_PER_RUNENGINE_LOOP
@@ -116,7 +122,7 @@ class MockRunEngine:
             if self.error:
                 raise self.error
             sleep(SECS_PER_RUNENGINE_LOOP)
-        self.RE_takes_time = False
+        self.run_engine_takes_time = False
 
     def subscribe(self, *args):
         pass
@@ -265,7 +271,7 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine, test_params):
     assert response.get("status") == Status.FAILED.value
     assert (
         response.get("message")
-        == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
+        == "PlanNotFoundError(\"Experiment plan 'bad_plan' not found in registry.\")"
     )
     test_env.mock_run_engine.abort()
 
@@ -311,16 +317,16 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 ):
     test_env.client.put(START_ENDPOINT, data=test_params)
     test_env.client.put(STOP_ENDPOINT)
-    test_env.mock_run_engine.RE_takes_time = True
+    test_env.mock_run_engine.run_engine_takes_time = True
     response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
-    test_env.mock_run_engine.RE_takes_time = False
+    test_env.mock_run_engine.run_engine_takes_time = False
 
 
 @pytest.mark.timeout(5)
-def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
+def test_when_started_n_returnstatus_interrupted_bc_run_engine_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine, test_params
 ):
     test_env.mock_run_engine.aborting_takes_time = True
@@ -364,7 +370,7 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
 def test_start_with_json_file_gives_success(
     test_env: ClientAndRunEngine, endpoint: str, test_file: str, tmp_path: Path
 ):
-    test_env.mock_run_engine.RE_takes_time = False
+    test_env.mock_run_engine.run_engine_takes_time = False
 
     test_params = raw_params_from_file(test_file, tmp_path)
     response = test_env.client.put(endpoint, json=test_params)
@@ -375,7 +381,7 @@ def test_start_with_json_file_gives_success(
 def test_start_with_json_file_with_extras_gives_error(
     test_env: ClientAndRunEngine, tmp_path: Path
 ):
-    test_env.mock_run_engine.RE_takes_time = False
+    test_env.mock_run_engine.run_engine_takes_time = False
 
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
@@ -470,7 +476,7 @@ def test_when_blueskyrunner_initiated_then_setup_called_upon_start(
 
 
 def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
-    test_env.mock_run_engine.RE_takes_time = False
+    test_env.mock_run_engine.run_engine_takes_time = False
     response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
@@ -486,11 +492,11 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     caplog: pytest.LogCaptureFixture, test_env: ClientAndRunEngine, test_params
 ):
     test_env.client.put(START_ENDPOINT, data=test_params)
-    test_env.mock_run_engine.error = WarningException(_MULTILINE_MESSAGE)
+    test_env.mock_run_engine.error = WarningError(_MULTILINE_MESSAGE)
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
     assert response_json["message"] == repr(test_env.mock_run_engine.error)
-    assert response_json["exception_type"] == "WarningException"
+    assert response_json["exception_type"] == "WarningError"
     log_record = [r for r in caplog.records if r.funcName == "wait_on_queue"][0]
     assert log_record.levelname == "WARNING" and _MULTILINE_MESSAGE in getattr(
         log_record, "exc_text", ""
@@ -498,7 +504,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 def _raise_exception(*args, **kwargs):
-    raise WarningException(_MULTILINE_MESSAGE)
+    raise WarningError(_MULTILINE_MESSAGE)
 
 
 @patch.dict(
@@ -534,7 +540,8 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         {"BEAMLINE": "i03"},
     ):
         with patch(
-            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module"
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module",
+            return_value=({}, {}),
         ) as mock_with_dodal_module:
             context = setup_context(dev_mode=dev_mode)
             mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)

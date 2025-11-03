@@ -7,20 +7,22 @@ from bluesky.preprocessors import contingency_wrapper
 from bluesky.utils import Msg
 
 
-class WarningException(Exception):
+class WarningError(
+    Exception
+):  # see https://github.com/DiamondLightSource/mx-bluesky/issues/1394 on naming
     """An exception used when we want to warn GDA of a
     problem but continue with UDC anyway"""
 
     pass
 
 
-class ISPyBDepositionNotMade(Exception):
+class ISPyBDepositionNotMadeError(Exception):
     """Raised when the ISPyB or Zocalo callbacks can't access ISPyB deposition numbers."""
 
     pass
 
 
-class SampleException(WarningException):
+class SampleError(WarningError):
     """An exception which identifies an issue relating to the sample."""
 
     def __str__(self):
@@ -36,7 +38,7 @@ class SampleException(WarningException):
 T = TypeVar("T")
 
 
-class CrystalNotFoundException(SampleException):
+class CrystalNotFoundError(SampleError):
     """Raised if grid detection completed normally but no crystal was found."""
 
     def __init__(self, *args):
@@ -49,7 +51,7 @@ def catch_exception_and_warn(
     *args,
     **kwargs,
 ) -> Generator[Msg, None, T]:
-    """A plan wrapper to catch a specific exception and instead raise a WarningException,
+    """A plan wrapper to catch a specific exception and instead raise a WarningError,
     so that UDC is not halted
 
     Example usage:
@@ -58,12 +60,12 @@ def catch_exception_and_warn(
         ...
     yield from catch_exception_and_warn(ExceptionA, plan_which_can_raise_exception_a, **args, **kwargs)'
 
-    This will catch ExceptionA raised by the plan and instead raise a WarningException
+    This will catch ExceptionA raised by the plan and instead raise a WarningError
     """
 
     def warn_if_exception_matches(exception: Exception):
         if isinstance(exception, exception_to_catch):
-            raise SampleException(str(exception)) from exception
+            raise SampleError(str(exception)) from exception
         yield from null()
 
     return (

@@ -6,16 +6,17 @@ from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.common_dcm import BaseDCM
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -28,20 +29,22 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
-from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
-    CompleteException,
-)
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+    DEFAULT_BEAMSIZE_MICRONS,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
+from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
+from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
+    CompleteError,
+)
 
 
-class CustomException(Exception): ...
+class CustomError(Exception): ...
 
 
 @pytest.fixture
@@ -50,7 +53,7 @@ def i04_grid_detect_then_xrc_default_params(
     attenuator: BinaryFilterAttenuator,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
-    dcm: BaseDCM,
+    dcm: DoubleCrystalMonochromator,
     zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     flux: Flux,
     oav: OAV,
@@ -67,6 +70,7 @@ def i04_grid_detect_then_xrc_default_params(
     smargon: Smargon,
     detector_motion: DetectorMotion,
     test_full_grid_scan_params: GridCommon,
+    transfocator: Transfocator,
 ):
     return partial(
         i04_grid_detect_then_xray_centre,
@@ -91,11 +95,12 @@ def i04_grid_detect_then_xrc_default_params(
         zocalo=zocalo,
         smargon=smargon,
         detector_motion=detector_motion,
+        transfocator=transfocator,
     )
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_OAV",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
 def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_oav_plan(
@@ -144,7 +149,7 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_OAV",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
 @patch(
@@ -156,11 +161,11 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     udc: bool,
 ):
-    RE(
+    run_engine(
         i04_grid_detect_then_xrc_default_params(
             udc=udc,
         )
@@ -209,13 +214,14 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     mock_unpause_and_set_transmission: MagicMock,
     mock_check_and_pause: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    transfocator: Transfocator,
 ):
-    mock_common_flyscan_xray_centre.side_effect = CustomException
+    mock_common_flyscan_xray_centre.side_effect = CustomError
 
-    with pytest.raises(CustomException):  # noqa: B017
-        RE(i04_grid_detect_then_xrc_default_params())
+    with pytest.raises(CustomError):  # noqa: B017
+        run_engine(i04_grid_detect_then_xrc_default_params())
 
     # Called once on exception and once on close_run
     mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
@@ -326,14 +332,14 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
     mock_move_aperture_if_required: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     hyperion_fgs_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     mock_create_parameters.return_value = hyperion_fgs_params
-    mock_run_gridscan.side_effect = CompleteException
-    with pytest.raises(CompleteException):
-        RE(i04_grid_detect_then_xrc_default_params())
+    mock_run_gridscan.side_effect = CompleteError
+    with pytest.raises(CompleteError):
+        run_engine(i04_grid_detect_then_xrc_default_params())
 
     mock_verify_gap.assert_called_once()
 
@@ -349,15 +355,64 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
 def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
     mock_create_gridscan_callbacks: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params,
 ):
-    mock_create_gridscan_callbacks.side_effect = CustomException
-    with pytest.raises(CustomException):
-        RE(
+    mock_create_gridscan_callbacks.side_effect = CustomError
+    with pytest.raises(CustomError):
+        run_engine(
             i04_grid_detect_then_xrc_default_params(
                 udc=False,
             )
         )
 
     assert mock_get_ready_for_oav_and_close_shutter.call_count == 1
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    autospec=True,
+)
+async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_reverts(
+    mock_create_gridscan_callbacks: MagicMock,
+    mock_setup_beamline_for_oav: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
+    mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    run_engine: RunEngine,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    transfocator: Transfocator,
+    done_status,
+):
+    initial_beamsize = 5.6
+    set_mock_value(transfocator.beamsize_set_microns, initial_beamsize)
+    transfocator.set = MagicMock(return_value=done_status)
+    parent_mock = MagicMock()
+    parent_mock.attach_mock(transfocator.set, "transfocator_set")
+    parent_mock.attach_mock(
+        mock_create_gridscan_callbacks, "mock_create_gridscan_callbacks"
+    )
+    run_engine(i04_grid_detect_then_xrc_default_params())
+
+    assert (
+        mock_grid_detect_then_xray_centre.call_args.kwargs[
+            "parameters"
+        ].selected_aperture
+        == ApertureValue.LARGE
+    )
+    assert parent_mock.method_calls == [
+        call.transfocator_set(DEFAULT_BEAMSIZE_MICRONS),
+        call.mock_create_gridscan_callbacks(),
+        call.transfocator_set(initial_beamsize),
+    ]

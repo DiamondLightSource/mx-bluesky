@@ -6,7 +6,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.areadetector.plugins.CAM import ColorMode
+from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters

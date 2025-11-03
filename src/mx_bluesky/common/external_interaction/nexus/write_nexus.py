@@ -87,7 +87,7 @@ class NexusWriter:
         vds_shape = self.data_shape
 
         for filename in [self.nexus_file, self.master_file]:
-            NXmx_Writer = NXmxFileWriter(
+            nxmx_writer = NXmxFileWriter(
                 filename,
                 self.goniometer,
                 self.detector,
@@ -96,12 +96,12 @@ class NexusWriter:
                 self.attenuator,
                 self.full_num_of_images,
             )
-            NXmx_Writer.write(
+            nxmx_writer.write(
                 image_filename=f"{self.data_filename}",
                 start_time=start_time,
                 est_end_time=est_end_time,
             )
-            NXmx_Writer.write_vds(
+            nxmx_writer.write_vds(
                 vds_offset=self.start_index, vds_shape=vds_shape, vds_dtype=bit_depth
             )
 
