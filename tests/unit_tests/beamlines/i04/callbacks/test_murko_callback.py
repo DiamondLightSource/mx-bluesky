@@ -51,12 +51,25 @@ test_start_document = {
     "sample_id": 12345,
 }
 
+metadata_based_on_test_events_full_screen = {
+    "sample_id": 12345,
+    "microns_per_x_pixel": 1.2,
+    "microns_per_y_pixel": 2.5,
+    "beam_centre_i": 158,
+    "beam_centre_j": 452,
+    "omega_angle": test_smargon_data,
+    "uuid": test_oav_uuid,
+}
 
-@pytest.fixture
-def murko_callback() -> MurkoCallback:
-    callback = MurkoCallback("", "")
-    callback.redis_client = MagicMock()
-    return callback
+metadata_based_on_test_events_roi = {
+    "sample_id": 12345,
+    "microns_per_x_pixel": 3.2,
+    "microns_per_y_pixel": 4.1,
+    "beam_centre_i": 201,
+    "beam_centre_j": 342,
+    "omega_angle": test_smargon_data,
+    "uuid": test_oav_uuid,
+}
 
 
 @pytest.fixture
@@ -145,21 +158,65 @@ def test_when_murko_called_with_event_data_then_meta_data_put_in_redis(
     murko_callback.event(test_oav_full_screen_event)
     murko_callback.event(test_smargon_event)
 
-    expected_metadata = {
-        "sample_id": 12345,
-        "microns_per_x_pixel": 1.2,
-        "microns_per_y_pixel": 2.5,
-        "beam_centre_i": 158,
-        "beam_centre_j": 452,
-        "omega_angle": test_smargon_data,
-        "uuid": test_oav_uuid,
-    }
+    expected_metadata = metadata_based_on_test_events_full_screen
 
     murko_callback.redis_client.hset.assert_called_once_with(  # type: ignore
         "murko:12345:metadata", test_oav_uuid, json.dumps(expected_metadata)
     )
     murko_callback.redis_client.publish.assert_called_once_with(  # type: ignore
         "murko", json.dumps(expected_metadata)
+    )
+
+
+@pytest.mark.parametrize(
+    "first_event, second_event, expected_md_after_first, expected_md_after_second",
+    [
+        (
+            test_oav_full_screen_event,
+            test_oav_roi_event,
+            metadata_based_on_test_events_full_screen,
+            metadata_based_on_test_events_roi,
+        ),
+        (
+            test_oav_roi_event,
+            test_oav_full_screen_event,
+            metadata_based_on_test_events_roi,
+            metadata_based_on_test_events_full_screen,
+        ),
+    ],
+)
+def test_when_murko_called_with_full_screen_and_roi_event_then_metadata_updates_correctly(
+    first_event,
+    second_event,
+    expected_md_after_first,
+    expected_md_after_second,
+    murko_callback: MurkoCallback,
+):
+    murko_callback.start(test_start_document)  # type: ignore
+    murko_callback.event(first_event)
+    murko_callback.event(test_smargon_event)
+
+    murko_callback.redis_client.hset.assert_called_once_with(  # type: ignore
+        "murko:12345:metadata",
+        test_oav_uuid,
+        json.dumps(expected_md_after_first),
+    )
+    murko_callback.redis_client.publish.assert_called_once_with(  # type: ignore
+        "murko",
+        json.dumps(expected_md_after_first),
+    )
+
+    murko_callback.event(second_event)
+    murko_callback.event(test_smargon_event)
+
+    assert murko_callback.redis_client.hset.call_args[0] == (  # type: ignore
+        "murko:12345:metadata",
+        test_oav_uuid,
+        json.dumps(expected_md_after_second),
+    )
+    assert murko_callback.redis_client.publish.call_args[0] == (  # type: ignore
+        "murko",
+        json.dumps(expected_md_after_second),
     )
 
 
