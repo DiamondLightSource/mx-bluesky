@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncGenerator
 from functools import partial
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
@@ -544,4 +545,26 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
             ),
         )
 
-    assert murko_callback.redis_client.hset
+    expected_full_screen_md = {
+        "sample_id": 0,
+        "microns_per_x_pixel": 2.87,
+        "microns_per_y_pixel": 2.8699999999999997,
+        "beam_centre_i": 0,
+        "beam_centre_j": 0,
+        "omega_angle": True,
+        "uuid": "test",
+    }
+    expected_roi_md = {
+        "sample_id": 0,
+        "microns_per_x_pixel": 3.16,
+        "microns_per_y_pixel": 3.16,
+        "beam_centre_i": 0,
+        "beam_centre_j": 0,
+        "omega_angle": True,
+        "uuid": "test",
+    }
+
+    call_args_list = murko_callback.redis_client.hset.call_args_list  # type: ignore
+    assert len(call_args_list) == 2
+    assert call_args_list[0].args[2] == json.dumps(expected_full_screen_md)
+    assert call_args_list[1].args[2] == json.dumps(expected_roi_md)
