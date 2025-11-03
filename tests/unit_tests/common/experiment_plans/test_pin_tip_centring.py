@@ -29,7 +29,6 @@ from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
 from mx_bluesky.common.utils.exceptions import (
     SampleError,
     WarningError,
-    WarningException,
 )
 
 
@@ -302,7 +301,7 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     set_mock_value(smargon.z.high_limit_travel, z_high)
     set_mock_value(smargon.z.low_limit_travel, z_low)
 
-    with pytest.raises(WarningException):
+    with pytest.raises(WarningError):
         run_engine(move_gonio_warn_on_out_of_range(smargon, (test_x, test_y, test_z)))
 
 
