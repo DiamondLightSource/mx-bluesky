@@ -1,5 +1,4 @@
 import pytest
-from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
@@ -7,7 +6,6 @@ from dodal.devices.smargon import CombinedMove, Smargon
 from ophyd_async.testing import get_mock_put
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
-    do_plan_with_sample_out_for_beamstop_check,
     move_aperture_if_required,
     move_phi_chi_omega,
     move_x_y_z,
@@ -105,19 +103,4 @@ def test_move_phi_chi_omega_wait(
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == group,
-    )
-
-
-def test_do_plan_with_sample_out_for_beamstop_check(
-    smargon: Smargon, sim_run_engine: RunEngineSimulator
-):
-    def test_plan():
-        yield from bps.null()
-
-    msgs = sim_run_engine.simulate_plan(
-        do_plan_with_sample_out_for_beamstop_check(smargon, test_plan)
-    )
-
-    msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "set" and msg.obj is smargon
     )
