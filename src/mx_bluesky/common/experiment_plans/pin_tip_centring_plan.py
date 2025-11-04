@@ -124,11 +124,6 @@ def pin_tip_centre_plan(
     Args:
         tip_offset_microns (float): The x offset from the tip where the centre is assumed
                                     to be.
-        x_direction, y_direction, z_direction (int): The direction of motor relative to
-                                                     oav screen. Positive (1) means they
-                                                     are the same direction. This should
-                                                     only be 1 or -1. Default setting is
-                                                     set to follow hyperion.
     """
     oav: OAV = composite.oav
     gonio: XYZOmegaStage = composite.gonio
