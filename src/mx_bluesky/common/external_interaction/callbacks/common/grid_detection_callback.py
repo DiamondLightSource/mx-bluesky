@@ -83,12 +83,17 @@ class GridDetectionCallback(CallbackBase):
         beam_x = data["oav-beam_centre_i"]
         beam_y = data["oav-beam_centre_j"]
 
+        x_direction = data["oav-x_direction"]
+        y_direction = data["oav-y_direction"]
+        z_direction = data["oav-z_direction"]
+
         position_grid_start_mm = calculate_x_y_z_of_pixel(
             current_xyz,
             smargon_omega,
             centre_of_first_box,
             (beam_x, beam_y),
             (microns_per_pixel_x, microns_per_pixel_y),
+            (x_direction, y_direction, z_direction),
         )
         LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
