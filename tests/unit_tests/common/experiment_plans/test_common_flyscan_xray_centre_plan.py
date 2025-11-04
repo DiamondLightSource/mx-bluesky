@@ -269,7 +269,7 @@ class TestFlyscanXrayCentrePlan:
     def test_if_gridscan_prepare_fails_with_other_exception_then_plan_re_raised(
         self,
         mock_kickoff_and_complete,
-        RE: RunEngine,
+        run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         test_fgs_params: SpecifiedThreeDGridScan,
@@ -280,7 +280,9 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific.set_flyscan_params_plan = MagicMock(side_effect=exception)
 
         with pytest.raises(FailedStatus) as e:
-            RE(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
+            run_engine(
+                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+            )
 
         mock_kickoff_and_complete.assert_not_called()
 
