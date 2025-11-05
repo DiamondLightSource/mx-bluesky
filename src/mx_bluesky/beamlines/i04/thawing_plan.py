@@ -241,15 +241,14 @@ def _rotate_in_one_direction_and_stream_to_redis(
         LOGGER.info(f"Got oav information: {oav_info}")
         yield from bps.save()
 
-    yield from bps.monitor(smargon.omega.user_readback, name="smargon")
-    yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
-
     yield from bps.mv(
         oav_to_redis_forwarder.selected_source,
         oav_mode.value,
     )
 
     yield from get_metadata_from_current_oav()
+    yield from bps.monitor(smargon.omega.user_readback, name="smargon")
+    yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
 
     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)
     yield from bps.rel_set(smargon.omega, rotation, wait=True)
