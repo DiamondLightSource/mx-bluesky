@@ -306,7 +306,7 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
 
 
 @patch(
-    "mx_bluesky.common.device_setup_plans.gonio.bps.mv",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.abs_set",
     new=MagicMock(side_effect=FailedStatus(RuntimeError("RuntimeError"))),
 )
 def test_re_raise_failed_status_that_is_not_motor_limits_exception(
@@ -321,7 +321,7 @@ def test_re_raise_failed_status_that_is_not_motor_limits_exception(
 
 
 @patch(
-    "mx_bluesky.common.device_setup_plans.gonio.bps.mv",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.abs_set",
     new=MagicMock(side_effect=RuntimeError("RuntimeError")),
 )
 def test_does_not_catch_exception_that_is_not_motor_limits_exception(
