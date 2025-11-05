@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -5,7 +6,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
-from dodal.devices.cryostream import CryoStream
+from dodal.devices.cryostream import CryoStream, CryoStreamGantry, CryoStreamSelection
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
@@ -23,7 +24,21 @@ from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
 
 
 @pytest.fixture
-async def default_devices(aperture_scatterguard):
+async def cryostream_gantry(sim_run_engine: RunEngineSimulator):
+    async with init_devices(mock=True):
+        cryostream_gantry = CryoStreamGantry("")
+
+    set_mock_value(cryostream_gantry.cryostream_selector, CryoStreamSelection.CRYOJET)
+    set_mock_value(cryostream_gantry.cryostream_selected, 1)
+    sim_run_engine.add_read_handler_for(
+        cryostream_gantry.cryostream_selector, CryoStreamSelection.CRYOJET
+    )
+    sim_run_engine.add_read_handler_for(cryostream_gantry.cryostream_selected, 1)
+    yield cryostream_gantry
+
+
+@pytest.fixture
+async def default_devices(aperture_scatterguard, cryostream_gantry):
     async with init_devices(mock=True):
         cryo = CryoStream("")
         fluo = FluorescenceDetector("")
@@ -37,7 +52,13 @@ async def default_devices(aperture_scatterguard):
         patch_all_motors(beamstop),
     ):
         yield UDCDefaultDevices(
-            cryo, fluo, beamstop, scintillator, aperture_scatterguard, collimation_table
+            cryo,
+            cryostream_gantry,
+            fluo,
+            beamstop,
+            scintillator,
+            aperture_scatterguard,
+            collimation_table,
         )
 
 
@@ -147,3 +168,32 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
         msgs,
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == expected_group,
     )
+
+
+@pytest.mark.parametrize(
+    "expected_raise, cryostream_selection, cryostream_selected",
+    [
+        [nullcontext(), CryoStreamSelection.CRYOJET, 1],
+        [pytest.raises(ValueError), CryoStreamSelection.HC1, 1],
+        [pytest.raises(ValueError), CryoStreamSelection.CRYOJET, 0],
+    ],
+)
+def test_udc_default_state_checks_cryostream_selection(
+    run_engine: RunEngine,
+    default_devices,
+    expected_raise,
+    cryostream_selection: CryoStreamSelection,
+    cryostream_selected: int,
+):
+    default_devices.scintillator._aperture_scatterguard().selected_aperture.get_value = MagicMock(
+        return_value=ApertureValue.PARKED
+    )
+    set_mock_value(
+        default_devices.cryostream_gantry.cryostream_selector, cryostream_selection
+    )
+    set_mock_value(
+        default_devices.cryostream_gantry.cryostream_selected, cryostream_selected
+    )
+
+    with expected_raise:
+        run_engine(move_to_udc_default_state(default_devices))
