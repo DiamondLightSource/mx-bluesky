@@ -8,6 +8,8 @@ from dodal.log import LOGGER
 from event_model.documents import Event, RunStart, RunStop
 from redis import StrictRedis
 
+FORWARDING_COMPLETE_MESSAGE = "image_forwarding_complete"
+
 
 class OmegaReading(TypedDict):
     value: float
@@ -113,4 +115,11 @@ class MurkoCallback(CallbackBase):
 
     def stop(self, doc: RunStop) -> RunStop | None:
         LOGGER.info(f"Finished streaming {self.murko_metadata['sample_id']} to murko")
+        LOGGER.info(
+            f"Publishing forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"
+        )
+        self.redis_client.publish(
+            "murko",
+            json.dumps(FORWARDING_COMPLETE_MESSAGE),
+        )
         return doc
