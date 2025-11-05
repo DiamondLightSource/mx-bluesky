@@ -127,17 +127,10 @@ def thaw_and_murko_centre(
         yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
 
         def rotate_in_one_direction_then_murko_centre(
-            rotation: float, stop_angle: float, oav_mode: Source
+            rotation: float, oav_mode: Source
         ):
             @run_decorator(md={"sample_id": sample_id})
             def rotate_in_one_direction_and_start_murko_and_stream_to_redis():
-                inverted = rotation < 0
-                yield from bps.mv(
-                    murko_results.stop_angle,
-                    stop_angle,
-                    murko_results.invert_stop_angle,
-                    inverted,
-                )
                 yield from bps.stage(murko_results, wait=True)
                 yield from bps.trigger(murko_results, group=murko_results_group)
 
@@ -151,9 +144,9 @@ def thaw_and_murko_centre(
             yield from bps.unstage(murko_results, wait=True)
 
         yield from rotate_in_one_direction_then_murko_centre(
-            rotation, 350, Source.FULL_SCREEN
+            rotation, Source.FULL_SCREEN
         )
-        yield from rotate_in_one_direction_then_murko_centre(-rotation, 10, Source.ROI)
+        yield from rotate_in_one_direction_then_murko_centre(-rotation, Source.ROI)
 
     yield from do_thaw_and_murko_centre()
 
