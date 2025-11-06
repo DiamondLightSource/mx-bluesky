@@ -396,7 +396,7 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
     done_status,
 ):
     initial_beamsize = 5.6
-    set_mock_value(transfocator.beamsize_set_microns, initial_beamsize)
+    set_mock_value(transfocator.current_vertical_size_rbv, initial_beamsize)
     transfocator.set = MagicMock(return_value=done_status)
     parent_mock = MagicMock()
     parent_mock.attach_mock(transfocator.set, "transfocator_set")

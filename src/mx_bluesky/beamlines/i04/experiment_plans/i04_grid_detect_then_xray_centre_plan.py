@@ -73,7 +73,7 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 
-DEFAULT_BEAMSIZE_MICRONS = 20
+DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
 
 def _change_beamsize(
@@ -152,9 +152,11 @@ def i04_grid_detect_then_xray_centre(
         robot,
         sample_shutter,
     )
-    initial_beamsize = yield from bps.rd(transfocator.beamsize_set_microns)
+    initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
 
     def tidy_beamline():
+        yield from bps.mv(transfocator, initial_beamsize)
+
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
                 composite.smargon,
@@ -162,7 +164,6 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
-        yield from bps.mv(transfocator, initial_beamsize)
 
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
@@ -187,7 +188,7 @@ def i04_grid_detect_then_xray_centre(
 
         yield from grid_detect_then_xray_centre_with_callbacks()
 
-    yield from _change_beamsize(transfocator, DEFAULT_BEAMSIZE_MICRONS, parameters)
+    yield from _change_beamsize(transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, parameters)
     yield from _inner_grid_detect_then_xrc()
 
 
