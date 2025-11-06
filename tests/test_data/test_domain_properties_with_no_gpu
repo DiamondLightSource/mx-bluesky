@@ -71,3 +71,6 @@ gda.mx.hyperion.xrc.use_roi_mode=true
 
 
 #####################################################
+
+gda.detector.distance.limit.min = 150
+gda.detector.distance.limit.max = 800
