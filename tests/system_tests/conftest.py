@@ -127,7 +127,7 @@ DATA_COLLECTION_COLUMN_MAP = {
 
 
 def _system_test_env_error_message(env_var: str):
-    raise RuntimeError(
+    return RuntimeError(
         f"Environment variable {env_var} is not set, please ensure that the system test container "
         f"images are running and the system tests are invoked via tox -e localsystemtests - see "
         f"https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing for details."
@@ -138,7 +138,7 @@ def _system_test_env_error_message(env_var: str):
 def ispyb_config_path() -> Generator[str, Any, Any]:
     ispyb_config_path = os.environ.get("ISPYB_CONFIG_PATH")
     if ispyb_config_path is None:
-        _system_test_env_error_message("ISPYB_CONFIG_PATH")
+        raise _system_test_env_error_message("ISPYB_CONFIG_PATH")
     yield ispyb_config_path
 
 
@@ -146,7 +146,7 @@ def ispyb_config_path() -> Generator[str, Any, Any]:
 def zocalo_env():
     zocalo_config = os.environ["ZOCALO_CONFIG"]
     if zocalo_config is None:
-        _system_test_env_error_message("ZOCALO_CONFIG")
+        raise _system_test_env_error_message("ZOCALO_CONFIG")
     yield zocalo_config
 
 
