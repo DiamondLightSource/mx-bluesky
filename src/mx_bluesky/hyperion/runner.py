@@ -14,7 +14,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 )
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
-from mx_bluesky.common.utils.exceptions import WarningException
+from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
@@ -65,15 +65,15 @@ class BaseRunner:
 
     def __init__(self, context: BlueskyContext):
         self.context: BlueskyContext = context
-        self.RE = context.run_engine
-        # These references are necessary to maintain liveness of callbacks because RE
+        self.run_engine = context.run_engine
+        # These references are necessary to maintain liveness of callbacks because run_engine
         # only keeps a weakref
         self._logging_uid_tag_callback = LogUidTaggingCallback()
         self._publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
 
-        self.RE.subscribe(self._logging_uid_tag_callback)
+        self.run_engine.subscribe(self._logging_uid_tag_callback)
         LOGGER.info("Connecting to external callback ZMQ proxy...")
-        self.RE.subscribe(self._publisher)
+        self.run_engine.subscribe(self._publisher)
 
 
 class GDARunner(BaseRunner):
@@ -145,7 +145,7 @@ class GDARunner(BaseRunner):
             # abort() causes the run engine to throw a RequestAbort exception
             # inside the plan, which will propagate through the contingency wrappers.
             # When the plan returns, the run engine will raise RunEngineInterrupted
-            self.RE.abort()
+            self.run_engine.abort()
             self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
             self.current_status = make_error_status_and_message(e)
@@ -171,12 +171,14 @@ class GDARunner(BaseRunner):
                     raise ValueError("No experiment provided for START")
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.devices, command.parameters))
+                        self.run_engine(
+                            command.experiment(command.devices, command.parameters)
+                        )
 
                     self.current_status = StatusAndMessage(Status.IDLE)
 
                     self._last_run_aborted = False
-                except WarningException as exception:
+                except WarningError as exception:
                     LOGGER.warning("Warning Exception", exc_info=True)
                     self.current_status = make_error_status_and_message(exception)
                 except Exception as exception:

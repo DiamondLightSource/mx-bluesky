@@ -96,185 +96,6 @@ def set_detector_beam_center_plan(
         yield from bps.wait(group=group)
 
 
-def modechange(action):
-    """Mode Change"""
-    # Pin Hand Mount
-    if action == "Pin_hand_mount":
-        caput(pv.bl_mp_select, "Out")
-        caput(pv.aptr1_mp_select, "Manual Mounting")
-        caput(pv.bs_mp_select, "Robot")
-        caput(pv.vgon_omega, 0)
-        caput(pv.vgon_kappa, 0)
-        caput(pv.vgon_phi, 0)
-        caput(pv.vgon_pinxs, 0)
-        caput(pv.vgon_pinzs, 0)
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.cstrm_p1701, 0)
-        caput(pv.cstrm_mp_select, "Out")
-        SSX_LOGGER.debug("Pin Hand Mount Done")
-
-    # Pin Room Temperature Hand Mount
-    elif action == "Pin_rt_hand_mount":
-        caput(pv.cstrm_p1701, 0)
-        caput(pv.cstrm_mp_select, "Away")
-        caput(pv.bl_mp_select, "Out")
-        caput(pv.aptr1_mp_select, "Manual Mounting")
-        caput(pv.bs_mp_select, "Robot")
-        caput(pv.vgon_omega, 0)
-        caput(pv.vgon_kappa, 0)
-        caput(pv.vgon_phi, 0)
-        caput(pv.vgon_pinxs, 0)
-        caput(pv.vgon_pinzs, 0)
-        caput(pv.fluo_trans, "OUT")
-        SSX_LOGGER.debug("RT Pin Hand Mount Done")
-
-    # Pin Data Collection
-    elif action == "Pin_data_collection":
-        caput(pv.cstrm_p1701, 0)
-        caput(pv.cstrm_mp_select, "In")
-        caput(pv.aptr1_mp_select, "In")
-        caput(pv.vgon_omega, 0)
-        caput(pv.vgon_kappa, 0)
-        caput(pv.vgon_phi, 0)
-        caput(pv.vgon_pinxs, 0)
-        # caput(pv.vgon_pinyh, 0)
-        caput(pv.vgon_pinzs, 0)
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(0.5)
-        caput(pv.bs_mp_select, "Data Collection")
-        yield from bps.sleep(2.3)
-        caput(pv.bl_mp_select, "In")
-        SSX_LOGGER.debug("Pin Data Collection Done")
-
-    # Pin Room Temperature Data Collection
-    elif action == "Pin_rt_data_collection":
-        SSX_LOGGER.debug("RT Mode")
-        caput(pv.cstrm_p1701, 0)
-        caput(pv.cstrm_mp_select, "Away")
-        caput(pv.aptr1_mp_select, "In")
-        caput(pv.vgon_omega, 0)
-        caput(pv.vgon_kappa, 0)
-        caput(pv.vgon_phi, 0)
-        caput(pv.vgon_pinxs, 0)
-        caput(pv.vgon_pinyh, 0)
-        caput(pv.vgon_pinzs, 0)
-        caput(pv.fluo_trans, "OUT")
-        yield from bps.sleep(0.1)
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(2.6)
-        caput(pv.bl_mp_select, "In")
-        caput(pv.bs_mp_select, "Data Collection")
-        SSX_LOGGER.debug("RT Data Collection Done")
-
-    # Tray Hand Mount
-    elif action == "Tray_hand_mount":
-        caput(pv.ttab_x, 2.0)
-        caput(pv.hgon_trayys, 0.0)
-        caput(pv.hgon_omega, 0.0)
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.bl_mp_select, "Out")
-        yield from bps.sleep(1)
-        caput(pv.aptr1_mp_select, "Manual Mounting")
-        caput(pv.bs_mp_select, "Tray Mount")
-        while float(caget(pv.ttab_x + ".RBV")) > 3:
-            yield from bps.sleep(1)
-        SSX_LOGGER.debug("Tray Hand Mount Done")
-
-    # Tray Robot Load. This action needs to be reviewed and revised
-    elif action == "Tray_robot_load":
-        # Middle of black circle
-        caput(pv.ttab_x, 79.2)
-        caput(pv.hgon_trayys, -7.00)
-        caput(pv.hgon_trayzs, -1.10)
-        caput(pv.hgon_omega, 0.0)
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.aptr1_mp_select, "In")
-        caput(pv.bl_mp_select, "Out")
-        yield from bps.sleep(1)
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(1)
-        caput(pv.bs_mp_select, "Robot")
-        yield from bps.sleep(1)
-        caput(pv.bs_mp_select, "Data Collection Far")
-        yield from bps.sleep(1)
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(4)
-        caput(pv.bl_mp_select, "In")
-        SSX_LOGGER.debug("Tray Robot Mount Done")
-
-    # Tray Data Collection
-    elif action == "Tray_data_collection":
-        SSX_LOGGER.debug("This should be E11 on the test tray (CrystalQuickX)")
-        caput(pv.ttab_x, 37.4)
-        caput(pv.hgon_trayys, -8.0)
-        caput(pv.hgon_trayzs, -2.1)
-        caput(pv.aptr1_mp_select, "In")
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.bl_mp_select, "Out")
-        yield from bps.sleep(1)
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(1)
-        caput(pv.bs_mp_select, "Robot")
-        yield from bps.sleep(1)
-        caput(pv.bs_mp_select, "Data Collection")
-        yield from bps.sleep(1)
-        caput(pv.bs_roty, 0)
-        yield from bps.sleep(4)
-        caput(pv.bl_mp_select, "In")
-        SSX_LOGGER.debug("Tray Data Collection Done")
-
-    # Pin Switch to Tray
-    elif action == "Pin_switch2tray":
-        caput(pv.cstrm_p1701, 0)
-        caput(pv.cstrm_mp_select, "Away")
-        caput(pv.aptr1_mp_select, "Manual Mounting")
-        caput(pv.bl_mp_select, "Out")
-        caput(pv.hgon_omega, 0.0)
-        caput(pv.ttab_x, 0)
-        caput(pv.hgon_trayys, 0.0)
-        caput(pv.hgon_trayzs, 0.0)
-        caput(pv.ptab_y, -90)
-        caput(pv.fluo_trans, "OUT")
-        caput(pv.vgon_omega, 0)
-        caput(pv.vgon_kappa, 0)
-        caput(pv.vgon_phi, 0)
-        caput(pv.vgon_pinxs, 0)
-        caput(pv.vgon_pinyh, 0)
-        caput(pv.vgon_pinzs, 0)
-        while float(caget(pv.ttab_x + ".RBV")) > 1:
-            SSX_LOGGER.debug(f"moving ttab_x {caget(pv.ttab_x)}")
-            yield from bps.sleep(0.1)
-        while caget(pv.fluo_out_limit) == "OFF":
-            SSX_LOGGER.debug("waiting on fluorescence detector")
-            yield from bps.sleep(0.1)
-        while caget(pv.bl_mp_select) != "Out":
-            SSX_LOGGER.debug("waiting on back light to move to out")
-            yield from bps.sleep(0.1)
-        caput(pv.bs_mp_select, "Robot")
-        caput(pv.bs_roty, 0)
-        while float(caget(pv.ptab_y + ".RBV")) > -89.0:
-            yield from bps.sleep(1)
-        SSX_LOGGER.debug("Switch To Tray Done")
-
-    # Tray Switch to Pin
-    elif action == "Tray_switch2pin":
-        caput(pv.ttab_x, 0.0)
-        # Supposed to absorb pin laser
-        caput(pv.hgon_trayys, 0.0)
-        caput(pv.hgon_trayzs, 0.0)
-        while float(caget(pv.ttab_x + ".RBV")) > 1.0:
-            yield from bps.sleep(1)
-        caput(pv.ptab_y, 0)
-        while float(caget(pv.ptab_y + ".RBV")) < -1.0:
-            yield from bps.sleep(1)
-        yield from modechange("Pin_data_collection")
-        SSX_LOGGER.debug("Switch To Pin Done")
-    else:
-        SSX_LOGGER.debug(f"Unknown action: {action}")
-    return 1
-
-
 def eiger(action, args_list, dcm: DCM):
     SSX_LOGGER.debug("***** Entering Eiger")
     SSX_LOGGER.info(f"Setup eiger - {action}")
@@ -292,7 +113,7 @@ def eiger(action, args_list, dcm: DCM):
     caput(pv.eiger_monitor, "No")
     # caput(pv.eiger_datasource, 'None')
     caput(pv.eiger_statuspoll, "1 second")
-    caput(pv.eiger_ROImode, "Disabled")
+    caput(pv.eiger_roi_mode, "Disabled")
     caput(pv.eiger_ff, "Enabled")
     caput(pv.eiger_compresstype, "bslz4")
     caput(pv.eiger_countmode, "Retrigger")
@@ -304,10 +125,10 @@ def eiger(action, args_list, dcm: DCM):
         # Sends a single trigger to start data collection
         SSX_LOGGER.debug("Eiger quickshot")
         [filepath, filename, num_imgs, exptime] = args_list
-        filename = filename + "_" + str(caget(pv.eiger_seqID))
-        caput(pv.eiger_ODfilepath, filepath)
+        filename = filename + "_" + str(caget(pv.eiger_seq_id))
+        caput(pv.eiger_od_filepath, filepath)
         yield from bps.sleep(0.1)
-        caput(pv.eiger_ODfilename, filename)
+        caput(pv.eiger_od_filename, filename)
         yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
@@ -325,17 +146,17 @@ def eiger(action, args_list, dcm: DCM):
         yield from bps.sleep(1.0)
         # ODIN setup
         SSX_LOGGER.info("Setting up Odin")
-        caput(pv.eiger_ODfilename, filename)
-        caput(pv.eiger_ODfilepath, filepath)
-        caput(pv.eiger_ODnumcapture, str(num_imgs))
-        caput(pv.eiger_ODfilepath, filepath)
+        caput(pv.eiger_od_filename, filename)
+        caput(pv.eiger_od_filepath, filepath)
+        caput(pv.eiger_od_num_capture, str(num_imgs))
+        caput(pv.eiger_od_filepath, filepath)
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
-        caput(pv.eiger_ODdatatype, eigerbdrbv)
-        caput(pv.eiger_ODcompress, "BSL24")
+        caput(pv.eiger_od_datatype, eigerbdrbv)
+        caput(pv.eiger_od_compress, "BSL24")
         yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
-        caput(pv.eiger_ODcapture, "Capture")
+        caput(pv.eiger_od_capture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
         SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
@@ -346,10 +167,10 @@ def eiger(action, args_list, dcm: DCM):
         # Send a trigger for every image. Records while TTL is high
         SSX_LOGGER.info("Eiger triggered")
         [filepath, filename, num_imgs, exptime] = args_list
-        filename = filename + "_" + str(caget(pv.eiger_seqID))
-        caput(pv.eiger_ODfilepath, filepath)
+        filename = filename + "_" + str(caget(pv.eiger_seq_id))
+        caput(pv.eiger_od_filepath, filepath)
         yield from bps.sleep(0.1)
-        caput(pv.eiger_ODfilename, filename)
+        caput(pv.eiger_od_filename, filename)
         yield from bps.sleep(0.1)
         acqtime = float(exptime) - 0.0000001
         caput(pv.eiger_acquiretime, str(acqtime))
@@ -367,17 +188,17 @@ def eiger(action, args_list, dcm: DCM):
         yield from bps.sleep(1.0)
         # ODIN setup #
         SSX_LOGGER.info("Setting up Odin")
-        caput(pv.eiger_ODfilename, filename)
-        caput(pv.eiger_ODfilepath, filepath)
-        caput(pv.eiger_ODnumcapture, str(num_imgs))
-        caput(pv.eiger_ODfilepath, filepath)
+        caput(pv.eiger_od_filename, filename)
+        caput(pv.eiger_od_filepath, filepath)
+        caput(pv.eiger_od_num_capture, str(num_imgs))
+        caput(pv.eiger_od_filepath, filepath)
         eigerbdrbv = "UInt" + str(caget(pv.eiger_bitdepthrbv))
-        caput(pv.eiger_ODdatatype, eigerbdrbv)
-        caput(pv.eiger_ODcompress, "BSL24")
+        caput(pv.eiger_od_datatype, eigerbdrbv)
+        caput(pv.eiger_od_compress, "BSL24")
         yield from bps.sleep(1.0)
         # All done. Now get Odin to wait for data and start Eiger
         SSX_LOGGER.info("Done: Odin waiting for data")
-        caput(pv.eiger_ODcapture, "Capture")
+        caput(pv.eiger_od_capture, "Capture")
         # If detector fails to arm first time can try twice with a sleep inbetween
         SSX_LOGGER.info("Arming Eiger")
         caput(pv.eiger_acquire, "1")
@@ -387,55 +208,7 @@ def eiger(action, args_list, dcm: DCM):
     # Put it all back to GDA acceptable defaults
     elif action == "return-to-normal":
         caput(pv.eiger_manualtrigger, "No")
-        # caput(pv.eiger_seqID, int(caget(pv.eiger_seqID))+1)
+        # caput(pv.eiger_seq_id, int(caget(pv.eiger_seq_id))+1)
     SSX_LOGGER.debug("***** leaving Eiger")
     yield from bps.sleep(0.1)
     return 0
-
-
-def xspress3(action, args_list):
-    SSX_LOGGER.debug("***** Entering xspress3")
-    SSX_LOGGER.info(f"xspress3 - {action}")
-    if args_list:
-        for arg in args_list:
-            SSX_LOGGER.debug(f"Argument: {arg}")
-
-    if action == "stop-and-start":
-        [exp_time, lo, hi] = args_list
-        caput(pv.xsp3_triggermode, "Internal")
-        caput(pv.xsp3_numimages, 1)
-        caput(pv.xsp3_acquiretime, exp_time)
-        caput(pv.xsp3_c1_mca_roi1_llm, lo)
-        caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        yield from bps.sleep(0.2)
-        caput(pv.xsp3_c1_mca_roi1_llm, lo)
-        caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        yield from bps.sleep(0.2)
-        caput(pv.xsp3_erase, 0)
-
-    elif action == "on-the-fly":
-        [num_frms, lo, hi] = args_list
-        caput(pv.xsp3_triggermode, "TTL Veto Only")
-        caput(pv.xsp3_numimages, num_frms)
-        caput(pv.xsp3_c1_mca_roi1_llm, lo)
-        caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        yield from bps.sleep(0.2)
-        caput(pv.xsp3_c1_mca_roi1_llm, lo)
-        caput(pv.xsp3_c1_mca_roi1_hlm, hi)
-        yield from bps.sleep(0.2)
-        caput(pv.xsp3_erase, 0)
-
-    elif action == "return-to-normal":
-        caput(pv.xsp3_triggermode, "TTL Veto Only")
-        caput(pv.xsp3_numimages, 1)
-        caput(pv.xsp3_acquiretime, 1)
-        caput(pv.xsp3_c1_mca_roi1_llm, 0)
-        caput(pv.xsp3_c1_mca_roi1_hlm, 0)
-        caput(pv.xsp3_erase, 0)
-
-    else:
-        SSX_LOGGER.error("Unknown action for xspress3 method:", action)
-
-    yield from bps.sleep(0.1)
-    SSX_LOGGER.debug("***** leaving xspress3")
-    return 1

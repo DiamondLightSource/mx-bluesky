@@ -22,15 +22,15 @@ class Eiger:
     det_y_threshold = 70.0
     det_y_target = 59.0
 
-    class pv:
+    class PV:
         detector_distance = pv.eiger_detdist
         wavelength = pv.eiger_wavelength
         transmission = "BL24I-EA-PILAT-01:cam1:FilterTransm"
-        filenameRBV = pv.eiger_ODfilenameRBV
-        file_name = pv.eiger_ODfilename
-        file_path = pv.eiger_ODfilepath
+        filename_rbv = pv.eiger_od_filename_rbv
+        file_name = pv.eiger_od_filename
+        file_path = pv.eiger_od_filepath
         file_template = None
-        sequence_id = pv.eiger_seqID
+        sequence_id = pv.eiger_seq_id
         beamx = pv.eiger_beamx
         beamy = pv.eiger_beamy
         bit_depth = pv.eiger_bitdepthrbv

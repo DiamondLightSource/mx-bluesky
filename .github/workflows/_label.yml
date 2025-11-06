@@ -1,0 +1,19 @@
+on:
+  workflow_call:
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        with:
+          labels: |
+            .*
+          use_regex: true
+          mode: minimum
+          count: 1
+          add_comment: true
+          message: "Please add a label to this PR. This helps with generating helpful release notes."

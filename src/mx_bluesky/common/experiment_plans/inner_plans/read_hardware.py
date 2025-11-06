@@ -52,7 +52,7 @@ def standard_read_hardware_pre_collection(
         synchrotron.synchrotron_mode,
         s4_slit_gaps,
         smargon,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
     ]
     yield from read_hardware_plan(
         signals_to_read_pre_flyscan, DocDescriptorNames.HARDWARE_READ_PRE
@@ -70,7 +70,7 @@ def standard_read_hardware_during_collection(
         aperture_scatterguard,
         attenuator.actual_transmission,
         flux.flux_reading,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
         detector.bit_depth,
     ]
     yield from read_hardware_plan(
