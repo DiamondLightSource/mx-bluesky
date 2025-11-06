@@ -1,4 +1,3 @@
-import os
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
 from functools import partial
@@ -202,13 +201,6 @@ def dummy_params(tmp_path):
 @pytest.fixture
 def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
     return StoreInIspyb(ispyb_config_path)
-
-
-@pytest.fixture
-def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = os.environ.get(
-        "ZOCALO_CONFIG", "/dls_sw/apps/zocalo/live/configuration.yaml"
-    )
 
 
 @pytest_asyncio.fixture
