@@ -22,7 +22,10 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
-from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
+from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
+    FORWARDING_COMPLETE_MESSAGE,
+    MurkoCallback,
+)
 from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw,
     thaw_and_murko_centre,
@@ -260,25 +263,37 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     assert len(smargon_updates) > 0
 
 
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback.stop")
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback.call_murko")
 def test_thaw_and_stream_will_produce_events_that_call_murko(
     patch_murko_call: MagicMock,
+    patch_stop_call: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
     robot: BartRobot,
     oav_forwarder: OAVToRedisForwarder,
     run_engine: RunEngine,
 ):
-    run_engine(
-        thaw_and_stream_to_redis(
-            10,
-            360,
-            thawer=thawer,
-            smargon=smargon,
-            robot=robot,
-            oav_to_redis_forwarder=oav_forwarder,
+    class StopPlanError(Exception):
+        pass
+
+    def stop_plan(_):
+        raise StopPlanError
+
+    patch_stop_call.side_effect = stop_plan
+
+    with pytest.raises(StopPlanError):
+        run_engine(
+            thaw_and_stream_to_redis(
+                10,
+                360,
+                thawer=thawer,
+                smargon=smargon,
+                robot=robot,
+                oav_to_redis_forwarder=oav_forwarder,
+            )
         )
-    )
+
     patch_murko_call.assert_called()
 
 
@@ -568,6 +583,8 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
     assert hset_call_args_list[1].args[2] == json.dumps(expected_roi_md)
 
     publish_call_args_list = murko_callback.redis_client.publish.call_args_list  # type: ignore
-    assert len(publish_call_args_list) == 2
+    assert len(publish_call_args_list) == 4
     assert publish_call_args_list[0].args[1] == json.dumps(expected_full_screen_md)
-    assert publish_call_args_list[1].args[1] == json.dumps(expected_roi_md)
+    assert publish_call_args_list[1].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
+    assert publish_call_args_list[2].args[1] == json.dumps(expected_roi_md)
+    assert publish_call_args_list[3].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
