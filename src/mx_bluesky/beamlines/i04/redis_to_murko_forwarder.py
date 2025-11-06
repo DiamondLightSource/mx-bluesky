@@ -1,7 +1,9 @@
 import io
 import json
+import logging
 import pickle
 from datetime import timedelta
+from logging import StreamHandler
 from typing import TypedDict
 
 import numpy as np
@@ -115,6 +117,7 @@ class BatchMurkoForwarder:
         self.redis_client.publish("murko-results", pickle.dumps(results))
 
     def send_stop_message_to_redis(self):
+        LOGGER.info(f"Publishing results complete message: {RESULTS_COMPLETE_MESSAGE}")
         self.redis_client.publish(
             "murko-results", pickle.dumps(RESULTS_COMPLETE_MESSAGE)
         )
@@ -167,6 +170,9 @@ class RedisListener:
             data = json.loads(message["data"])
             LOGGER.info(f"Received from redis: {data}")
             if data == FORWARDING_COMPLETE_MESSAGE:
+                LOGGER.info(
+                    f"Received forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"
+                )
                 self.forwarder.flush()
                 self.forwarder.send_stop_message_to_redis()
                 return
@@ -199,6 +205,10 @@ class RedisListener:
 
 
 def main():
+    stream_handler = StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    LOGGER.addHandler(stream_handler)
+
     client = RedisListener()
     client.listen_for_image_data_forever()
 
