@@ -32,6 +32,7 @@ from ophyd_async.core import (
     StaticFilenameProvider,
     init_devices,
 )
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 from ophyd_async.testing import (
     set_mock_value,
@@ -449,6 +450,17 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
     composite.panda = MagicMock(spec=HDFPanda)
     composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    return composite
+
+
+@pytest.fixture
+async def hyperion_grid_detect_xrc_devices_with_fastcs_eiger(
+    grid_detect_xrc_devices, fastcs_eiger: FastCSEiger
+):
+    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
+    composite.panda = MagicMock(spec=HDFPanda)
+    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    composite.fastcs_eiger = fastcs_eiger
     return composite
 
 
