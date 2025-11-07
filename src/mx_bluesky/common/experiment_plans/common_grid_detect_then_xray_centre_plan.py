@@ -10,6 +10,14 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.plans.configure_arm_trigger_and_disarm_detector import (
+    configure_and_arm_detector,
+)
+from ophyd_async.core import (
+    DetectorTrigger,
+    TriggerInfo,
+)
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -69,10 +77,20 @@ def grid_detect_then_xray_centre(
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
-
-    eiger: EigerDetector = composite.eiger
-
-    eiger.set_detector_parameters(parameters.detector_params)
+    eiger: EigerDetector | FastCSEiger = composite.eiger
+    if isinstance(eiger, FastCSEiger):
+        yield from configure_and_arm_detector(
+            eiger=eiger,
+            detector_params=parameters.detector_params,
+            trigger_info=TriggerInfo(
+                number_of_events=parameters.detector_params.num_images_per_trigger,
+                trigger=DetectorTrigger.EDGE_TRIGGER,
+                deadtime=0.0001,
+            ),
+            # group=data_collection_group
+        )
+    else:
+        eiger.set_detector_parameters(parameters.detector_params)
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
