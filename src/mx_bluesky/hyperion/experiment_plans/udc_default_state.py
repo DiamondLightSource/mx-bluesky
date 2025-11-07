@@ -39,6 +39,8 @@ from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 _GROUP_PRE_BACKGROUND_CHECK = "pre_background_check"
 _GROUP_POST_BACKGROUND_CHECK = "post_background_check"
+_GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
+_GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 
 _PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT = "dataCollectionMinSampleCurrent"
 _PARAM_IPIN_THRESHOLD = "ipin_threshold"
@@ -56,6 +58,7 @@ class UDCDefaultDevices:
     cryostream_gantry: CryoStreamGantry
     detector_motion: DetectorMotion
     fluorescence_det_motion: FluorescenceDetector
+    hutch_shutter: HutchShutter
     ipin: IPin
     qbpm3: QBPM
     robot: BartRobot
@@ -92,23 +95,42 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
 
     yield from _verify_no_sample_present(devices.robot)
 
+    # XXX check hutch open state
+
+    # Close fast shutter before opening hutch shutter
+    yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
+    yield from bps.abs_set(
+        devices.hutch_shutter, ShutterDemand.OPEN, group=_GROUP_PRE_BEAMSTOP_CHECK
+    )
+
     yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
 
     yield from bps.abs_set(
-        devices.fluorescence_det_motion.pos, FlouInOut.OUT, group="udc_default"
+        devices.fluorescence_det_motion.pos,
+        FlouInOut.OUT,
+        group=_GROUP_PRE_BEAMSTOP_CHECK,
     )
 
-    yield from bps.abs_set(devices.collimation_table.inboard_y, 0, group="udc_default")
-    yield from bps.abs_set(devices.collimation_table.outboard_y, 0, group="udc_default")
-    yield from bps.abs_set(devices.collimation_table.upstream_y, 0, group="udc_default")
-    yield from bps.abs_set(devices.collimation_table.upstream_x, 0, group="udc_default")
     yield from bps.abs_set(
-        devices.collimation_table.downstream_x, 0, group="udc_default"
+        devices.collimation_table.inboard_y, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
     )
+    yield from bps.abs_set(
+        devices.collimation_table.outboard_y, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
+    )
+    yield from bps.abs_set(
+        devices.collimation_table.upstream_y, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
+    )
+    yield from bps.abs_set(
+        devices.collimation_table.upstream_x, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
+    )
+    yield from bps.abs_set(
+        devices.collimation_table.downstream_x, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
+    )
+
+    # Wait for all of the above to complete
+    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK)
 
     beamline_parameters = get_beamline_parameters()
-    # XXX Are the above movements compatible with the beamstop check or should they
-    # be completed first instead of executing in parallel?
     yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
 
     yield from bps.abs_set(
@@ -149,6 +171,8 @@ def move_beamstop_in_and_verify_using_diode(
     """
     LOGGER.info("Performing beamstop check...")
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
+    # disable for commissioning mode ???
+    # xbpm1 > 1e-8
     sample_current_uA = yield from bps.rd(devices.qbpm3.intensity_uA)  # noqa: N806
     minimum_threshold_current_uA = beamline_parameters[  # noqa: N806
         _PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT
@@ -251,6 +275,7 @@ def _beamstop_check_actions_with_sample_out(
             "Unable to proceed with beamstop background check, shutters did not close"
         )
 
+    # XXX Do first check with beamstop out, check for high current
     yield from bps.sleep(1)  # wait for reading to settle
     ipin_background_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
     LOGGER.info(f"Background ipin = {ipin_background_uA}uA")
@@ -263,6 +288,8 @@ def _beamstop_check_actions_with_sample_out(
 
     yield from bps.sleep(1)  # wait for reading to settle
     ipin_in_beam_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
+    # XXX Do this check as an absolute check instead of relative vs background
+
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
     ipin_threshold_uA = beamline_parameters[_PARAM_IPIN_THRESHOLD]  # noqa: N806
     if ipin_in_beam_uA - ipin_background_uA > ipin_threshold_uA:
