@@ -38,11 +38,16 @@ def hyperion_grid_detect_then_xray_centre(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetect,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
+    use_fastcs_eiger: bool = False,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
+    if use_fastcs_eiger:
+        if composite.fastcs_eiger is None:
+            raise ValueError("No fastcs_eiger device present to use")
+        composite.eiger = composite.fastcs_eiger
 
     @verify_undulator_gap_before_run_decorator(composite)
     @transmission_and_xbpm_feedback_for_collection_decorator(

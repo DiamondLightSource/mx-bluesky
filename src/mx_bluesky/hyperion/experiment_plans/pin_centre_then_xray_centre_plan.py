@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
@@ -120,7 +121,7 @@ def pin_tip_centre_then_xray_centre(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    eiger: EigerDetector = composite.eiger
+    eiger: EigerDetector = cast(EigerDetector, composite.eiger)
 
     eiger.set_detector_parameters(parameters.detector_params)
 

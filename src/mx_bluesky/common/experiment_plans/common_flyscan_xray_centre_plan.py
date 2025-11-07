@@ -10,6 +10,7 @@ import numpy as np
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
 from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
@@ -70,7 +71,11 @@ def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenera
     LOGGER.info("Turning off Eiger dev/shm streaming")
     # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     yield from bps.abs_set(
-        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
+        (
+            xrc_composite.eiger.odin.fan.dev_shm_enable  # old eiger
+            if isinstance(xrc_composite.eiger, EigerDetector)
+            else xrc_composite.eiger.odin.fan_dev_shm_enable  # fastcs_eiger, requires https://github.com/bluesky/ophyd-async/pull/1127
+        ),
         0,
         group=group,
     )
@@ -193,7 +198,8 @@ def common_flyscan_xray_centre(
 
         yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
 
-    composite.eiger.set_detector_parameters(parameters.detector_params)
+    if isinstance(composite.eiger, EigerDetector):
+        composite.eiger.set_detector_parameters(parameters.detector_params)
     yield from _decorated_flyscan()
 
 
@@ -284,7 +290,10 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger, wait=True)
+    if isinstance(fgs_composite.eiger, EigerDetector):
+        yield from bps.stage(fgs_composite.eiger, wait=True)  # old eiger
+    else:
+        yield from bps.kickoff(fgs_composite.eiger, wait=True)  # fastcs eiger
 
     yield from kickoff_and_complete_gridscan(
         beamline_specific.fgs_motors,

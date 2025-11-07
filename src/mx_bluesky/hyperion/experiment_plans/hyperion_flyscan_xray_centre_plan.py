@@ -6,6 +6,7 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
@@ -59,10 +60,12 @@ def construct_hyperion_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.eiger.bit_depth,
         xrc_composite.beamsize,
         xrc_composite.eiger.cam.roi_mode,
         xrc_composite.eiger.ispyb_detector_id,
+        xrc_composite.eiger.bit_depth
+        if isinstance(xrc_composite.eiger, EigerDetector)  # old eiger
+        else xrc_composite.eiger.drv.detector.bit_depth_image,  # fastcs eiger
     ]
 
     setup_trigger_plan: Callable[..., MsgGenerator]
