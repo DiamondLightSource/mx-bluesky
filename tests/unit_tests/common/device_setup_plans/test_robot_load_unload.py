@@ -86,7 +86,13 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
     )
 
     assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == robot.unload.name
+        msgs,
+        lambda msg: msg.command == "set" and msg.obj is robot and msg.args[0] is None,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs.get("group") == msgs[0].kwargs["group"],
     )
 
 
@@ -127,7 +133,8 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
     )
 
     msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == robot.unload.name
+        msgs,
+        lambda msg: msg.command == "set" and msg.obj is robot and msg.args[0] is None,
     )
 
     msgs = assert_message_and_return_remaining(
