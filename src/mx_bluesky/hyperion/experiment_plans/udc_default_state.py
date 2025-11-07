@@ -8,6 +8,7 @@ from dodal.common.beamlines.beamline_parameters import (
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.baton import Baton
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import CryoStream, CryoStreamGantry, CryoStreamSelection
 from dodal.devices.cryostream import InOut as CryoInOut
@@ -19,11 +20,11 @@ from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.ipin import IPin, IPinGain
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.qbpm import QBPM
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
+from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 from ophyd_async.core import InOut
@@ -37,13 +38,15 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 )
 from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
-_GROUP_PRE_BACKGROUND_CHECK = "pre_background_check"
-_GROUP_POST_BACKGROUND_CHECK = "post_background_check"
+_GROUP_PRE_BEAMSTOP_OUT_CHECK = "pre_background_check"
+_GROUP_POST_BEAMSTOP_OUT_CHECK = "post_background_check"
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 
 _PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT = "dataCollectionMinSampleCurrent"
 _PARAM_IPIN_THRESHOLD = "ipin_threshold"
+
+_FEEDBACK_TIMEOUT_S = 10
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -51,6 +54,7 @@ class UDCDefaultDevices:
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    baton: Baton
     beamstop: Beamstop
     collimation_table: CollimationTable
     hutch_shutter: HutchShutter
@@ -60,15 +64,18 @@ class UDCDefaultDevices:
     fluorescence_det_motion: FluorescenceDetector
     hutch_shutter: HutchShutter
     ipin: IPin
-    qbpm3: QBPM
     robot: BartRobot
     sample_shutter: ZebraShutter
     scintillator: Scintillator
     smargon: Smargon
     xbpm_feedback: XBPMFeedback
+    xbpm1: TetrammDetector
 
 
 class SampleCurrentBelowThresholdError(RuntimeError): ...
+
+
+class BeamObstructedError(RuntimeError): ...
 
 
 class BeamstopNotInPositionError(RuntimeError): ...
@@ -95,8 +102,6 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
 
     yield from _verify_no_sample_present(devices.robot)
 
-    # XXX check hutch open state
-
     # Close fast shutter before opening hutch shutter
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
     yield from bps.abs_set(
@@ -112,7 +117,9 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     yield from bps.abs_set(
-        devices.collimation_table.inboard_y, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
+        devices.collimation_table.inboard_y,
+        0,
+        group=_GROUP_PRE_BEAMSTOP_CHECK,
     )
     yield from bps.abs_set(
         devices.collimation_table.outboard_y, 0, group=_GROUP_PRE_BEAMSTOP_CHECK
@@ -136,13 +143,17 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     yield from bps.abs_set(
         devices.aperture_scatterguard.selected_aperture,
         ApertureValue.SMALL,
-        group="udc_default",
+        group=_GROUP_POST_BEAMSTOP_CHECK,
     )
 
-    yield from bps.abs_set(devices.cryostream.course, CryoInOut.IN, group="udc_default")
-    yield from bps.abs_set(devices.cryostream.fine, CryoInOut.IN, group="udc_default")
+    yield from bps.abs_set(
+        devices.cryostream.course, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
+    )
+    yield from bps.abs_set(
+        devices.cryostream.fine, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
+    )
 
-    yield from bps.wait("udc_default")
+    yield from bps.wait(_GROUP_POST_BEAMSTOP_CHECK)
 
 
 def move_beamstop_in_and_verify_using_diode(
@@ -160,6 +171,14 @@ def move_beamstop_in_and_verify_using_diode(
         * Sets xmission to 100%
         * Sets IPin gain to 10^4 low noise
         * Moves aperture scatterguard to OUT_OF_BEAM if it is currently in beam
+
+    Implementation note:
+        Some checks are repeated here such as closing the sample shutter, so that at a
+        future point this plan may be run independently of the udc default state script
+        if desired.
+    Note on commissioning mode:
+        When commissioning mode is enabled, normally the beamstop check will execute albeit
+        where it expects beam to be present, the absence of beam will be ignored.
     Args:
         devices: The device composite containing the necessary devices
         beamline_parameters: A mapping containing the beamlineParameters
@@ -170,22 +189,28 @@ def move_beamstop_in_and_verify_using_diode(
             beamstop is not in the correct position.
     """
     LOGGER.info("Performing beamstop check...")
+    commissioning_mode_enabled = yield from bps.rd(devices.baton.commissioning)
+
+    # Re-verify that the sample shutter is closed
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
-    # disable for commissioning mode ???
     # xbpm1 > 1e-8
-    sample_current_uA = yield from bps.rd(devices.qbpm3.intensity_uA)  # noqa: N806
-    minimum_threshold_current_uA = beamline_parameters[  # noqa: N806
-        _PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT
-    ]  # noqa: N806
-    if sample_current_uA < minimum_threshold_current_uA:
-        raise SampleCurrentBelowThresholdError(
-            f"Unable to perform beamstop check - "
-            f"Sample current {sample_current_uA}uA below threshold "
-            f"{minimum_threshold_current_uA}uA."
+    LOGGER.info("Unpausing feedback, transmission to 100%, wait for feedback stable...")
+    if commissioning_mode_enabled:
+        LOGGER.warn("Not waiting for feedback - commissioning mode is enabled.")
+    try:
+        yield from unpause_xbpm_feedback_and_set_transmission_to_1(
+            devices.xbpm_feedback,
+            devices.attenuator,
+            0 if commissioning_mode_enabled else _FEEDBACK_TIMEOUT_S,
         )
+    except TimeoutError as e:
+        raise SampleCurrentBelowThresholdError(
+            "Unable to perform beamstop check - xbpm feedback did not become stable "
+            " - check if beam present?"
+        ) from e
 
     yield from bps.abs_set(
-        devices.backlight, InOut.OUT, group=_GROUP_PRE_BACKGROUND_CHECK
+        devices.backlight, InOut.OUT, group=_GROUP_PRE_BEAMSTOP_OUT_CHECK
     )
 
     config_client = get_hyperion_config_client()
@@ -200,15 +225,11 @@ def move_beamstop_in_and_verify_using_diode(
             f" {detector_max_z}, moving it."
         )
         yield from bps.abs_set(
-            devices.detector_motion.z, target_z, group=_GROUP_POST_BACKGROUND_CHECK
+            devices.detector_motion.z, target_z, group=_GROUP_POST_BEAMSTOP_OUT_CHECK
         )
 
-    LOGGER.info("Unpausing feedback, transmission to 100%, wait for feedback stable...")
-    yield from unpause_xbpm_feedback_and_set_transmission_to_1(
-        devices.xbpm_feedback, devices.attenuator
-    )
     yield from bps.trigger(
-        devices.xbpm_feedback, group=_GROUP_PRE_BACKGROUND_CHECK, wait=True
+        devices.xbpm_feedback, group=_GROUP_PRE_BEAMSTOP_OUT_CHECK, wait=True
     )
 
     yield from _beamstop_check_actions_with_sample_out(devices, beamline_parameters)
@@ -240,30 +261,32 @@ def _verify_no_sample_present(robot: BartRobot):
 def _beamstop_check_actions_with_sample_out(
     devices: UDCDefaultDevices, beamline_parameters: GDABeamlineParameters
 ) -> MsgGenerator:
+    commissioning_mode_enabled = yield from bps.rd(devices.baton.commissioning)
+
     yield from bps.abs_set(
         devices.aperture_scatterguard.selected_aperture,
         ApertureValue.OUT_OF_BEAM,
-        group=_GROUP_PRE_BACKGROUND_CHECK,
+        group=_GROUP_PRE_BEAMSTOP_OUT_CHECK,
     )
 
     yield from bps.abs_set(
-        devices.beamstop.selected_pos,
-        BeamstopPositions.DATA_COLLECTION,
-        group=_GROUP_PRE_BACKGROUND_CHECK,
-    )
-    yield from bps.abs_set(
         devices.ipin.gain,
         IPinGain.GAIN_10E4_LOW_NOISE,
-        group=_GROUP_PRE_BACKGROUND_CHECK,
+        group=_GROUP_PRE_BEAMSTOP_OUT_CHECK,
     )
     yield from bps.abs_set(
         devices.detector_motion.shutter,
         ShutterState.CLOSED,
-        group=_GROUP_PRE_BACKGROUND_CHECK,
+        group=_GROUP_PRE_BEAMSTOP_OUT_CHECK,
+    )
+    yield from bps.abs_set(
+        devices.beamstop.selected_pos,
+        BeamstopPositions.OUT,
+        group=_GROUP_PRE_BEAMSTOP_OUT_CHECK,
     )
 
     LOGGER.info("Waiting for pre-background-check motions to complete...")
-    yield from bps.wait(group=_GROUP_PRE_BACKGROUND_CHECK)
+    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_OUT_CHECK)
 
     # Check sample shutter is closed and detector shutter is closed
     shutter_ = yield from bps.rd(devices.sample_shutter)
@@ -275,24 +298,40 @@ def _beamstop_check_actions_with_sample_out(
             "Unable to proceed with beamstop background check, shutters did not close"
         )
 
-    # XXX Do first check with beamstop out, check for high current
     yield from bps.sleep(1)  # wait for reading to settle
-    ipin_background_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
-    LOGGER.info(f"Background ipin = {ipin_background_uA}uA")
+
+    ipin_beamstop_out_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
+    LOGGER.info(f"Beamstop out ipin = {ipin_beamstop_out_uA}uA")
+
+    yield from bps.abs_set(
+        devices.beamstop.selected_pos,
+        BeamstopPositions.DATA_COLLECTION,
+        group=_GROUP_POST_BEAMSTOP_OUT_CHECK,
+    )
+
+    beamstop_threshold_uA = beamline_parameters[_PARAM_IPIN_THRESHOLD]  # noqa: N806
+    if ipin_beamstop_out_uA < beamstop_threshold_uA:
+        msg = (
+            f"IPin current {ipin_beamstop_out_uA}uA below threshold "
+            f"{beamstop_threshold_uA} with beamstop out - check "
+            f"that beam is not obstructed."
+        )
+        if commissioning_mode_enabled:
+            LOGGER.warn(msg + " - commissioning mode enabled - ignoring this")
+        else:
+            raise BeamObstructedError(msg)
 
     LOGGER.info("Waiting for detector motion to complete...")
-    yield from bps.wait(group=_GROUP_POST_BACKGROUND_CHECK)
+    yield from bps.wait(group=_GROUP_POST_BEAMSTOP_OUT_CHECK)
 
     LOGGER.info("Opening sample shutter...")
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.OPEN, wait=True)
 
     yield from bps.sleep(1)  # wait for reading to settle
     ipin_in_beam_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
-    # XXX Do this check as an absolute check instead of relative vs background
 
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
-    ipin_threshold_uA = beamline_parameters[_PARAM_IPIN_THRESHOLD]  # noqa: N806
-    if ipin_in_beam_uA - ipin_background_uA > ipin_threshold_uA:
+    if ipin_in_beam_uA < beamstop_threshold_uA:
         raise BeamstopNotInPositionError(
             f"Ipin is too high at {ipin_in_beam_uA} - check that beamstop is "
             f"in the correct position."
