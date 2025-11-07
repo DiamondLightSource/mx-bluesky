@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import cast
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -275,6 +276,7 @@ def construct_i04_specific_features(
     """
     Get all the information needed to do the i04 XRC flyscan.
     """
+    xrc_composite.eiger = cast(EigerDetector, xrc_composite.eiger)
     signals_to_read_pre_flyscan = [
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,

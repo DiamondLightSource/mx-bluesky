@@ -22,6 +22,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -39,7 +40,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     dcm: DoubleCrystalMonochromatorWithDSpacing
-    eiger: EigerDetector
+    eiger: EigerDetector | FastCSEiger
     flux: Flux
     s4_slit_gaps: S4SlitGaps
     undulator: UndulatorInKeV
@@ -62,3 +63,4 @@ class HyperionGridDetectThenXRayCentreComposite(GridDetectThenXRayCentreComposit
 
     panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
+    fastcs_eiger: FastCSEiger | None = None
