@@ -57,9 +57,7 @@ def check_redis_connection(redis_host, redis_password, redis_db) -> bool:
         redis_client.ping()
         return True
     except ConnectionError:
-        LOGGER.warning(
-            f"Failed to connect to redis with \nhost: {redis_host}, password: {redis_password}, db: {redis_db}"
-        )
+        LOGGER.warning(f"Failed to connect to redis host: {redis_host}")
         return False
 
 
