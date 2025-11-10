@@ -47,12 +47,7 @@ dependencies = [
     "daq-config-server>=v1.0.0-rc.2",
     "blueapi >= 1.6.3",
     "ophyd >= 1.10.5",
-    #
-    # temporary changes for the DLLM and DHLM check for testing in ophyd-async
-    # Issue 1121: https://github.com/bluesky/ophyd-async/issues/1121
-    # PR 1124: https://github.com/bluesky/ophyd-async/pull/1124
-    #
-    "ophyd-async >= @ git+https://github.com/teoching0705/ophyd-async.git",
+    "ophyd-async >= 0.13.5",
     "bluesky >= 1.14.6",
     "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@aithre-get_move_required_so_that_beam_is_at_pixel_non_smargon",
 ]
