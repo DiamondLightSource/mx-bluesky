@@ -10,6 +10,8 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
 from dodal.log import LOGGER
+from redis import StrictRedis
+from redis.exceptions import ConnectionError
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import MurkoCallback
 
@@ -49,6 +51,18 @@ def thaw(
     )
 
 
+def check_redis_connection(redis_host, redis_password, redis_db) -> bool:
+    redis_client = StrictRedis(host=redis_host, password=redis_password, db=redis_db)
+    try:
+        redis_client.ping()
+        return True
+    except ConnectionError:
+        LOGGER.warning(
+            f"Failed to connect to redis with \nhost: {redis_host}, password: {redis_password}, db: {redis_db}"
+        )
+        return False
+
+
 def thaw_and_murko_centre(
     time_to_thaw: float,
     rotation: float = 360,
@@ -78,6 +92,17 @@ def thaw_and_murko_centre(
         ... devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct
     """
+
+    if not check_redis_connection(
+        RedisConstants.REDIS_HOST,
+        RedisConstants.REDIS_PASSWORD,
+        RedisConstants.MURKO_REDIS_DB,
+    ):
+        yield from thaw(
+            time_to_thaw=time_to_thaw, rotation=rotation, thawer=thawer, smargon=smargon
+        )
+        return
+
     murko_results_group = "get_results"
 
     sample_id = yield from bps.rd(robot.sample_id)
@@ -88,6 +113,7 @@ def thaw_and_murko_centre(
     initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
+
     murko_callback = MurkoCallback(
         RedisConstants.REDIS_HOST,
         RedisConstants.REDIS_PASSWORD,
@@ -174,6 +200,17 @@ def thaw_and_stream_to_redis(
         ... devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct
     """
+
+    if not check_redis_connection(
+        RedisConstants.REDIS_HOST,
+        RedisConstants.REDIS_PASSWORD,
+        RedisConstants.MURKO_REDIS_DB,
+    ):
+        yield from thaw(
+            time_to_thaw=time_to_thaw, rotation=rotation, thawer=thawer, smargon=smargon
+        )
+        return
+
     sample_id = yield from bps.rd(robot.sample_id)
     sample_id = int(sample_id)
 
