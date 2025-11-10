@@ -117,6 +117,15 @@ async def oav_forwarder(oav_full_screen: OAV, oav_roi: OAV) -> OAVToRedisForward
 
 
 @pytest.fixture
+def thaw_and_murko_centre_with_mock_check_redis_connection():
+    with patch(
+        "mx_bluesky.beamlines.i04.thawing_plan.check_redis_connection"
+    ) as mock_check_redis_connection:
+        mock_check_redis_connection.return_value = True
+        yield thaw_and_murko_centre
+
+
+@pytest.fixture
 def robot() -> BartRobot:
     return i04.robot(connect_immediately=True, mock=True)
 
@@ -405,6 +414,7 @@ def test_given_thaw_fails_then_thaw_and_stream_sets_zoom_to_1_and_back(
 def test_thaw_and_murko_centre_stages_and_unstages_murko_results_twice(
     mock_rotate_and_stream,
     patch_murko_callback,
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     smargon: Smargon,
     thawer: Thawer,
     oav_forwarder: OAVToRedisForwarder,
@@ -413,7 +423,7 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results_twice(
     run_engine: RunEngine,
 ):
     run_engine(
-        thaw_and_murko_centre(
+        thaw_and_murko_centre_with_mock_check_redis_connection(
             10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
@@ -426,6 +436,7 @@ def test_thaw_and_murko_centre_stages_and_unstages_murko_results_twice(
 def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
     mock__thaw,
     patch_murko_callback,
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     smargon: Smargon,
     thawer: Thawer,
     oav_forwarder: OAVToRedisForwarder,
@@ -437,7 +448,7 @@ def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
 
     with pytest.raises(ValueError):
         run_engine(
-            thaw_and_murko_centre(
+            thaw_and_murko_centre_with_mock_check_redis_connection(
                 10, 360, robot, thawer, smargon, murko_results, oav_forwarder
             ),
         )
@@ -447,6 +458,7 @@ def test_given_thaw_and_murko_centre_errors_then_murko_results_still_unstaged(
 
 
 def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     sim_run_engine,
     smargon: Smargon,
     thawer: Thawer,
@@ -456,7 +468,7 @@ def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
 ):
     _test_plan_will_switch_murko_source_half_way_through_thaw(
         sim_run_engine,
-        thaw_and_murko_centre(
+        thaw_and_murko_centre_with_mock_check_redis_connection(
             10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
@@ -465,6 +477,7 @@ def test_thaw_and_murko_centre_will_switch_murko_source_half_way_through_thaw(
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
 def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rotations(
     patch_murko_callback,
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     run_engine,
     smargon: Smargon,
     thawer: Thawer,
@@ -494,7 +507,7 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rot
     mock_trigger.side_effect = side_effect
 
     run_engine(
-        thaw_and_murko_centre(
+        thaw_and_murko_centre_with_mock_check_redis_connection(
             10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         ),
     )
@@ -508,6 +521,7 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rot
 
 
 def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     sim_run_engine,
     smargon: Smargon,
     thawer: Thawer,
@@ -518,7 +532,7 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
     sim_run_engine.add_read_handler_for(robot.sample_id, "1234")
 
     msgs = sim_run_engine.simulate_plan(
-        thaw_and_murko_centre(
+        thaw_and_murko_centre_with_mock_check_redis_connection(
             10, 360, robot, thawer, smargon, murko_results, oav_forwarder
         )
     )
@@ -535,6 +549,7 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
 
 
 def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
+    thaw_and_murko_centre_with_mock_check_redis_connection,
     run_engine,
     smargon: Smargon,
     thawer: Thawer,
@@ -548,7 +563,7 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
     ) as mock_murko_callback:
         mock_murko_callback.return_value = murko_callback
         run_engine(
-            thaw_and_murko_centre(
+            thaw_and_murko_centre_with_mock_check_redis_connection(
                 10, 360, robot, thawer, smargon, murko_results, oav_forwarder
             ),
         )
@@ -583,3 +598,32 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
     assert publish_call_args_list[1].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
     assert publish_call_args_list[2].args[1] == json.dumps(expected_roi_md)
     assert publish_call_args_list[3].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.RedisConstants")
+@patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
+def test_plans_do_thaw_if_redis_connection_check_fails(
+    patch_thaw: MagicMock,
+    patch_redis_constants: MagicMock,
+    smargon: Smargon,
+    thawer: Thawer,
+    robot: BartRobot,
+    oav_forwarder: OAVToRedisForwarder,
+    run_engine: RunEngine,
+):
+    for plan in (thaw_and_murko_centre, thaw_and_stream_to_redis):
+        run_engine(
+            plan(
+                10,
+                360,
+                thawer=thawer,
+                smargon=smargon,
+                robot=robot,
+                oav_to_redis_forwarder=oav_forwarder,
+            )
+        )
+
+        patch_thaw.assert_called_once_with(
+            time_to_thaw=10, rotation=360, thawer=thawer, smargon=smargon
+        )
+        patch_thaw.reset_mock()
