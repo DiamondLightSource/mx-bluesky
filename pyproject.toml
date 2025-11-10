@@ -125,7 +125,6 @@ reportUnknownVariableType = false
 reportUnusedVariable = false
 reportArgumentType = false
 reportUnnecessaryComparison = false
-reportUnnecessaryCast = false
 reportMatchNotExhaustive = false
 reportUnnecessaryIsInstance = false
 
