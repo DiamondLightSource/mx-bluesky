@@ -20,7 +20,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -441,6 +441,18 @@ def smargon(run_engine: RunEngine) -> Generator[Smargon, None, None]:
         set_mock_value(smargon.omega.max_velocity, 1)
         yield smargon
     clear_devices()
+
+
+@pytest.fixture
+def aithre_gonio(
+    run_engine: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
+    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
+
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    with patch_all_motors(aithre_gonio):
+        yield aithre_gonio
 
 
 @pytest.fixture
