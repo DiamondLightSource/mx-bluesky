@@ -149,7 +149,6 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     # Wait for all of the above to complete
     yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK)
 
-    raise RuntimeError("Planned stop at beamstop test checkpoint")
     beamline_parameters = get_beamline_parameters()
     yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
 
@@ -208,8 +207,8 @@ def move_beamstop_in_and_verify_using_diode(
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
     # xbpm1 > 1e-8
     LOGGER.info("Unpausing feedback, transmission to 100%, wait for feedback stable...")
-    if commissioning_mode_enabled:
-        LOGGER.warning("Not waiting for feedback - commissioning mode is enabled.")
+    # if commissioning_mode_enabled:
+        # LOGGER.warning("Not waiting for feedback - commissioning mode is enabled.")
     try:
         yield from unpause_xbpm_feedback_and_set_transmission_to_1(
             devices.xbpm_feedback,
@@ -311,16 +310,14 @@ def _beamstop_check_actions_with_sample_out(
             "Unable to proceed with beamstop background check, shutters did not close"
         )
 
+    # raise DefaultStateCheckFailureError("Reached planned stop point for testing.")
+
+    yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.OPEN, wait=True)
     yield from bps.sleep(1)  # wait for reading to settle
 
     ipin_beamstop_out_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
+    yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
     LOGGER.info(f"Beamstop out ipin = {ipin_beamstop_out_uA}uA")
-
-    yield from bps.abs_set(
-        devices.beamstop.selected_pos,
-        BeamstopPositions.DATA_COLLECTION,
-        group=_GROUP_POST_BEAMSTOP_OUT_CHECK,
-    )
 
     beamstop_threshold_uA = beamline_parameters[_PARAM_IPIN_THRESHOLD]  # noqa: N806
     if ipin_beamstop_out_uA < beamstop_threshold_uA:
@@ -334,6 +331,12 @@ def _beamstop_check_actions_with_sample_out(
         else:
             raise BeamObstructedError(msg)
 
+    yield from bps.abs_set(
+        devices.beamstop.selected_pos,
+        BeamstopPositions.DATA_COLLECTION,
+        group=_GROUP_POST_BEAMSTOP_OUT_CHECK,
+    )
+
     LOGGER.info("Waiting for detector motion to complete...")
     yield from bps.wait(group=_GROUP_POST_BEAMSTOP_OUT_CHECK)
 
@@ -344,7 +347,7 @@ def _beamstop_check_actions_with_sample_out(
     ipin_in_beam_uA = yield from bps.rd(devices.ipin.pin_readback)  # noqa: N806
 
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
-    if ipin_in_beam_uA < beamstop_threshold_uA:
+    if ipin_in_beam_uA > beamstop_threshold_uA:
         raise BeamstopNotInPositionError(
             f"Ipin is too high at {ipin_in_beam_uA} - check that beamstop is "
             f"in the correct position."
