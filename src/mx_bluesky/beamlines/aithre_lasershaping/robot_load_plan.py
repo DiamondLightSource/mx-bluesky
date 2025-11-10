@@ -87,6 +87,7 @@ def do_robot_load(
     yield from bps.wait(gonio_in_position)
 
 
+
 def pin_already_loaded(
     robot: BartRobot, sample_location: SampleLocation
 ) -> Generator[Msg, None, bool]:
@@ -105,14 +106,31 @@ def robot_unload(
     loaded location is stored on the robot and so need not be provided.
     """
     yield from move_gonio_to_home_position(composite)
+    sample_id = yield from bps.rd (robot.sample_id)
 
-    def _unload():
-        yield from bps.trigger(composite.robot.unload, wait=True)
-
-    gonio_finished = yield from do_plan_while_lower_gonio_at_home(
-        _unload(), composite.lower_gonio
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
+            "metadata": {"visit": visit, "sample_id": sample_id},
+            "activate_callbacks":[
+                "RobotLoadISpyBCallback",
+            ],
+        },
     )
-    yield from bps.wait(gonio_finished)
+    def do_robot_unload_and_send_to_ispyb():
+        yield from bps.create(name=DocDescriptorNames.Robot_UPDATE)
+        yield from bps.read(robot)
+        yield from bps.save()
+
+        def _unload():
+            yield from bps.trigger(composite.robot.unload, wait=True)
+
+        gonio_finished = yield from do_plan_while_lower_gonio_at_home(
+            _unload(), composite.lower_gonio
+        )
+         yield from bps.wait(gonio_finished)
+
+    yield from do_robot_unload_and_send_to_ispyb()
 
 
 def robot_load_and_snapshots(
@@ -144,3 +162,33 @@ def robot_load_and_snapshots(
     yield from bps.save()
 
     yield from bps.wait(gonio_finished)
+
+
+def robot_load_and_snapshots_plan(
+    composite: RobotLoadComposite,
+    params: AithreRobotLoad,
+):
+    assert params.sample_puck is not None
+    assert params.sample_pin is not None
+
+    sample_location = SampleLocation(params.sample_pick, params.sample_pin)
+
+    yield from move_gonio_to_home_position(composite)
+
+    yield from bpp.set_run_key_wrapper(
+        bpp.run_wrapper(
+            robot_load_and_snapshots(
+                composite,
+                sample_location,
+                params.snapeshot_directory,
+                params.sample_id,
+            ),
+            md={
+                "subplan_name": PlanNameConstants.ROBOT_LOAD,
+                "metadata": {"visit" params.visit, "sample_id": params.sample_id},
+                "activate_callbacks": [
+                    "RobotLoadISPyBCallback",
+                ],
+            },
+        ),
+    )
