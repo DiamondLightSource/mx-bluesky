@@ -45,6 +45,9 @@ def setup_pin_tip_detection_params(
         parameters.canny_edge_upper_threshold,
     )
 
+    # "Open" morphological operation
+    yield from set_using_group(pin_tip_detect_device.open_ksize, parameters.open_ksize)
+
     # "Close" morphological operation
     yield from set_using_group(
         pin_tip_detect_device.close_ksize, parameters.close_ksize
