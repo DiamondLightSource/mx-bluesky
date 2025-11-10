@@ -9,6 +9,7 @@ from dodal.devices.fluorescence_detector_motion import (
     FluorescenceDetector,
 )
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
+from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
@@ -23,6 +24,7 @@ class UDCDefaultDevices:
     scintillator: Scintillator
     aperture_scatterguard: ApertureScatterguard
     collimation_table: CollimationTable
+    hutch_shutter: HutchShutter
 
 
 def move_to_udc_default_state(devices: UDCDefaultDevices):
@@ -35,6 +37,10 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         raise ValueError("Cryostream temperature is too high, not starting UDC")
     if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
         raise ValueError("Cryostream back pressure is too high, not starting UDC")
+
+    yield from bps.abs_set(
+        devices.hutch_shutter, ShutterDemand.OPEN, group="udc_default"
+    )
 
     yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
 
