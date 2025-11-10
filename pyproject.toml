@@ -123,7 +123,6 @@ reportMissingTypeArgument = false
 reportPrivateUsage = false
 reportUnknownVariableType = false
 reportUnusedVariable = false
-reportUnusedFunction = false
 reportArgumentType = false
 reportUnnecessaryComparison = false
 reportUnnecessaryCast = false
