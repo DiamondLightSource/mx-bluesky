@@ -24,7 +24,7 @@ from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
-from dodal.devices.tetramm import TetrammDetector
+from dodal.devices.tetramm import BasicTetrammDetector
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 from ophyd_async.core import InOut
@@ -69,19 +69,24 @@ class UDCDefaultDevices:
     scintillator: Scintillator
     smargon: Smargon
     xbpm_feedback: XBPMFeedback
-    xbpm1: TetrammDetector
+    xbpm1: BasicTetrammDetector
 
 
-class SampleCurrentBelowThresholdError(RuntimeError): ...
+class DefaultStateCheckFailureError(RuntimeError): ...
+
+class SampleCurrentBelowThresholdError(DefaultStateCheckFailureError): ...
 
 
-class BeamObstructedError(RuntimeError): ...
+class BeamObstructedError(DefaultStateCheckFailureError): ...
 
 
-class BeamstopNotInPositionError(RuntimeError): ...
+class BeamstopNotInPositionError(DefaultStateCheckFailureError): ...
 
 
-class UnexpectedSampleError(RuntimeError): ...
+class UnexpectedSampleError(DefaultStateCheckFailureError): ...
+
+
+class CryostreamError(DefaultStateCheckFailureError): ...
 
 
 def move_to_udc_default_state(devices: UDCDefaultDevices):
@@ -91,9 +96,9 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     cryostream_temp = yield from bps.rd(devices.cryostream.temperature_k)
     cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure_bar)
     if cryostream_temp > devices.cryostream.MAX_TEMP_K:
-        raise ValueError("Cryostream temperature is too high, not starting UDC")
+        raise CryostreamError("Cryostream temperature is too high, not starting UDC")
     if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
-        raise ValueError("Cryostream back pressure is too high, not starting UDC")
+        raise CryostreamError("Cryostream back pressure is too high, not starting UDC")
 
     yield from bps.abs_set(
         devices.hutch_shutter, ShutterDemand.OPEN, group="udc_default"
@@ -104,9 +109,16 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
 
     # Close fast shutter before opening hutch shutter
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
-    yield from bps.abs_set(
-        devices.hutch_shutter, ShutterDemand.OPEN, group=_GROUP_PRE_BEAMSTOP_CHECK
-    )
+
+    commissioning_mode_enabled = yield from bps.rd(devices.baton.commissioning)
+
+
+    if commissioning_mode_enabled:
+        LOGGER.warning("Not opening hutch shutter - commissioning mode is enabled.")
+    else:
+        yield from bps.abs_set(
+            devices.hutch_shutter, ShutterDemand.OPEN, group=_GROUP_PRE_BEAMSTOP_CHECK
+        )
 
     yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
 
@@ -137,6 +149,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     # Wait for all of the above to complete
     yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK)
 
+    raise RuntimeError("Planned stop at beamstop test checkpoint")
     beamline_parameters = get_beamline_parameters()
     yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
 
@@ -196,7 +209,7 @@ def move_beamstop_in_and_verify_using_diode(
     # xbpm1 > 1e-8
     LOGGER.info("Unpausing feedback, transmission to 100%, wait for feedback stable...")
     if commissioning_mode_enabled:
-        LOGGER.warn("Not waiting for feedback - commissioning mode is enabled.")
+        LOGGER.warning("Not waiting for feedback - commissioning mode is enabled.")
     try:
         yield from unpause_xbpm_feedback_and_set_transmission_to_1(
             devices.xbpm_feedback,
@@ -241,7 +254,7 @@ def _verify_correct_cryostream_selected(
     cryostream_selection = yield from bps.rd(cryostream_gantry.cryostream_selector)
     cryostream_selected = yield from bps.rd(cryostream_gantry.cryostream_selected)
     if cryostream_selection != CryoStreamSelection.CRYOJET or cryostream_selected != 1:
-        raise ValueError(
+        raise CryostreamError(
             f"Cryostream is not selected for use, control PV selection = {cryostream_selection}, "
             f"current status {cryostream_selected}"
         )
@@ -317,7 +330,7 @@ def _beamstop_check_actions_with_sample_out(
             f"that beam is not obstructed."
         )
         if commissioning_mode_enabled:
-            LOGGER.warn(msg + " - commissioning mode enabled - ignoring this")
+            LOGGER.warning(msg + " - commissioning mode enabled - ignoring this")
         else:
             raise BeamObstructedError(msg)
 
