@@ -32,7 +32,7 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
-    DEFAULT_BEAMSIZE_MICRONS,
+    DEFAULT_XRC_BEAMSIZE_MICRONS,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
@@ -392,7 +392,7 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
     done_status,
 ):
     initial_beamsize = 5.6
-    set_mock_value(transfocator.beamsize_set_microns, initial_beamsize)
+    set_mock_value(transfocator.current_vertical_size_rbv, initial_beamsize)
     transfocator.set = MagicMock(return_value=done_status)
     parent_mock = MagicMock()
     parent_mock.attach_mock(transfocator.set, "transfocator_set")
@@ -408,7 +408,7 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
         == ApertureValue.LARGE
     )
     assert parent_mock.method_calls == [
-        call.transfocator_set(DEFAULT_BEAMSIZE_MICRONS),
+        call.transfocator_set(DEFAULT_XRC_BEAMSIZE_MICRONS),
         call.mock_create_gridscan_callbacks(),
         call.transfocator_set(initial_beamsize),
     ]
