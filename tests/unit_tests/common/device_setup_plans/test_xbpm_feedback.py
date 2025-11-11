@@ -30,10 +30,10 @@ def composite(
 
 
 async def test_xbpm_decorator_with_undulator_check_decorators(
-    RE, composite: XBPMAndTransmissionWrapperComposite
+    run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
     energy_in_kev = 11.3
-    composite.dcm.energy_in_kev.user_readback.read = MagicMock(
+    composite.dcm.energy_in_keV.user_readback.read = MagicMock(
         return_value={"value": {"value": energy_in_kev}}
     )
 
@@ -44,7 +44,7 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
         yield from bps.null()
 
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
-    RE(my_collection_plan())
+    run_engine(my_collection_plan())
 
     # Stop pyright from complaining
     assert isinstance(composite.xbpm_feedback.trigger, MagicMock)
@@ -53,7 +53,7 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
     # Assert XBPM is stable
     composite.xbpm_feedback.trigger.assert_called_once()
     # Assert DCM energy is read after XBPM is stable
-    composite.dcm.energy_in_kev.user_readback.read.assert_called_once()
+    composite.dcm.energy_in_keV.user_readback.read.assert_called_once()
     # Assert Undulator is finally set
     composite.undulator.set.assert_called_once()
     # Assert energy passed to the Undulator is the same as read from the DCM
@@ -61,7 +61,7 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
 
 
 async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
-    RE, composite: XBPMAndTransmissionWrapperComposite
+    run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
     expected_transmission = 0.3
 
@@ -77,14 +77,14 @@ async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_e
 
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
 
-    RE(my_collection_plan())
+    run_engine(my_collection_plan())
 
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
     assert await composite.xbpm_feedback.pause_feedback.get_value() == Pause.RUN
 
 
 async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
-    RE, composite: XBPMAndTransmissionWrapperComposite
+    run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
     mock = MagicMock()
 
@@ -99,7 +99,7 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
     composite.xbpm_feedback.trigger = MagicMock(side_effect=lambda: status)
 
     with pytest.raises(FailedStatus):
-        RE(my_collection_plan())
+        run_engine(my_collection_plan())
 
     mock.assert_not_called()
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
@@ -107,21 +107,21 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
 
 
 async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then_cleaned_up(
-    RE, composite: XBPMAndTransmissionWrapperComposite
+    run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
     set_mock_value(composite.xbpm_feedback.pos_stable, 1)
 
-    class MyException(Exception):
+    class MyError(Exception):
         pass
 
     @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
     @bpp.run_decorator()
     def my_collection_plan():
         yield from bps.null()
-        raise MyException()
+        raise MyError()
 
-    with pytest.raises(MyException):
-        RE(my_collection_plan())
+    with pytest.raises(MyError):
+        run_engine(my_collection_plan())
 
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
     assert await composite.xbpm_feedback.pause_feedback.get_value() == Pause.RUN

@@ -57,5 +57,5 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
 }
 
 
-class PlanNotFound(Exception):
+class PlanNotFoundError(Exception):
     pass

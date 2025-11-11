@@ -32,9 +32,9 @@ async def _get_shutter_input_1(zebra: Zebra):
 
 
 async def test_configure_zebra_and_shutter_for_auto(
-    RE, zebra: Zebra, zebra_shutter: ZebraShutter
+    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
 ):
-    RE(
+    run_engine(
         configure_zebra_and_shutter_for_auto_shutter(
             zebra, zebra_shutter, zebra.mapping.sources.IN4_TTL
         )
@@ -44,8 +44,8 @@ async def test_configure_zebra_and_shutter_for_auto(
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
 
 
-async def test_zebra_cleanup(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
-    RE(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
+async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: ZebraShutter):
+    run_engine(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.PC_PULSE
@@ -53,14 +53,16 @@ async def test_zebra_cleanup(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.PC_GATE
 
 
-async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraShutter):
+async def test_zebra_set_up_for_gridscan(
+    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
+):
     @dataclasses.dataclass
     class Composite:
         zebra: Zebra
         sample_shutter: ZebraShutter
 
     composite = Composite(zebra, zebra_shutter)
-    RE(setup_zebra_for_gridscan(composite, wait=True))
+    run_engine(setup_zebra_for_gridscan(composite, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN3_TTL
@@ -71,7 +73,7 @@ async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra, zebra_shutter: ZebraS
 
 
 async def test_zebra_set_up_for_rotation(
-    RE,
+    run_engine,
     zebra: Zebra,
     zebra_shutter: ZebraShutter,
 ):
@@ -82,7 +84,7 @@ async def test_zebra_set_up_for_rotation(
     shutter_opening_s: float = 0.08
     direction = RotationDirection.NEGATIVE
     ttl_input_for_detector_to_use = 3
-    RE(
+    run_engine(
         setup_zebra_for_rotation(
             zebra,
             zebra_shutter,

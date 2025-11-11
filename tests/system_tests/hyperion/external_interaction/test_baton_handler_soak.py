@@ -62,7 +62,7 @@ def patch_ensure_connected():
 @pytest.mark.system_test
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_udc_reloads_all_devices_soak_test_dev_mode(
-    RE: RunEngine, i: int, patch_setup_devices
+    run_engine: RunEngine, i: int, patch_setup_devices
 ):
     reinitialise_beamline(True, i)
 
@@ -76,7 +76,7 @@ def test_udc_reloads_all_devices_soak_test_dev_mode(
 @patch("ophyd_async.plan_stubs._ensure_connected.DEFAULT_TIMEOUT", 1)
 @pytest.mark.timeout(10)
 def test_udc_reloads_all_devices_soak_test_real(
-    RE: RunEngine, i: int, patch_setup_devices, patch_ensure_connected
+    run_engine: RunEngine, i: int, patch_setup_devices, patch_ensure_connected
 ):
     """
     Deliberately not part of main system tests because this is SLOW and requires

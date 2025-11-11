@@ -10,11 +10,11 @@ from dodal.log import (
     integrate_bluesky_and_ophyd_logging,
     set_up_all_logging_handlers,
 )
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 
 LOGGER = logging.getLogger("MX-Bluesky")
 LOGGER.setLevel("DEBUG")
-LOGGER.parent = dodal_logger
+LOGGER.parent = DODAL_LOGGER
 
 ISPYB_ZOCALO_CALLBACK_LOGGER = logging.getLogger("ISPyB and Zocalo callbacks")
 ISPYB_ZOCALO_CALLBACK_LOGGER.setLevel(logging.DEBUG)
@@ -68,7 +68,7 @@ def do_default_logging_setup(
     and bluesky and ophyd-async are optionally included."""
     logging_path, debug_logging_path = _get_logging_dirs(dev_mode)
     handlers = set_up_all_logging_handlers(
-        dodal_logger,
+        DODAL_LOGGER,
         logging_path,
         file_name,
         dev_mode,
@@ -78,7 +78,7 @@ def do_default_logging_setup(
     )
 
     if integrate_all_logs:
-        integrate_bluesky_and_ophyd_logging(dodal_logger)
+        integrate_bluesky_and_ophyd_logging(DODAL_LOGGER)
 
     handlers["graylog_handler"].addFilter(tag_filter)
 

@@ -14,7 +14,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1 import (
     finish_i24,
     get_chip_prog_values,
     get_prog_num,
@@ -41,14 +41,14 @@ chipmap_str = """01status    P3011       1
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.Path.mkdir"
 )
 def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.open",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.open",
         mock_open(),
     ):
         write_userlog(dummy_params_without_pp, "some_file", 1.0, 0.6)
@@ -56,9 +56,9 @@ def test_write_userlog(fake_mkdir, fake_log, dummy_params_without_pp):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
 def test_set_datasize_for_one_block_and_two_exposures(
     fake_caput, fake_log, dummy_params_without_pp
 ):
@@ -125,7 +125,7 @@ def test_get_prog_number(chip_type, map_type, pump_repeat, expected_prog):
     ],
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 def test_load_motion_program_data(
     mock_sleep,
@@ -134,10 +134,12 @@ def test_load_motion_program_data(
     checker: bool,
     expected_calls: list,
     pmac: PMAC,
-    RE,
+    run_engine,
 ):
     test_dict = {"N_EXPOSURES": [0, 1]}
-    RE(load_motion_program_data(pmac, test_dict, map_type, pump_repeat, checker))
+    run_engine(
+        load_motion_program_data(pmac, test_dict, map_type, pump_repeat, checker)
+    )
     call_list = []
     for i in expected_calls:
         call_list.append(call(i, wait=True))
@@ -145,18 +147,18 @@ def test_load_motion_program_data(
     mock_pmac_str.assert_has_calls(call_list)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caget")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.cagetstring"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.sup")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.datetime"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.datetime"
 )
 def test_start_i24_with_eiger(
     fake_datetime,
@@ -168,7 +170,7 @@ def test_start_i24_with_eiger(
     fake_dcid,
     zebra: Zebra,
     shutter: HutchShutter,
-    RE,
+    run_engine,
     aperture,
     backlight,
     beamstop,
@@ -191,7 +193,7 @@ def test_start_i24_with_eiger(
     expected_odin_filename = f"{dummy_params_without_pp.filename}_0001"
     fake_cagetstring.return_value = expected_odin_filename
 
-    RE(
+    run_engine(
         start_i24(
             zebra,
             aperture,
@@ -229,20 +231,20 @@ def test_start_i24_with_eiger(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.write_userlog"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.cagetstring"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.cagetstring"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caget")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.sup")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caget")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.sup")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.reset_zebra_when_collection_done_plan"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.reset_zebra_when_collection_done_plan"
 )
-@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_Extruder_Collect_py3v2.bps.rd")
+@patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.bps.rd")
 def test_finish_i24(
     fake_read,
     fake_reset_zebra,
@@ -256,12 +258,12 @@ def test_finish_i24(
     shutter,
     dcm,
     dummy_params_without_pp,
-    RE,
+    run_engine,
 ):
     fake_read.side_effect = [fake_generator(0.6)]
     fake_caget.return_value = 0.0
     fake_cagetstring.return_value = "chip_01"
-    RE(finish_i24(zebra, pmac, shutter, dcm, dummy_params_without_pp))
+    run_engine(finish_i24(zebra, pmac, shutter, dcm, dummy_params_without_pp))
 
     fake_reset_zebra.assert_called_once()
 
@@ -276,15 +278,15 @@ def test_finish_i24(
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 
 
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.SSX_LOGGER"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
 def test_run_aborted_plan(
-    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, RE, done_status
+    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, run_engine, done_status
 ):
     pmac.abort_program.trigger = MagicMock(return_value=done_status)
-    RE(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
+    run_engine(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
 
     pmac.abort_program.trigger.assert_called_once()
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
@@ -292,13 +294,13 @@ def test_run_aborted_plan(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.finish_i24"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.finish_i24"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.caput")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.caput")
 async def test_tidy_up_after_collection_plan(
     fake_caput,
     fake_dcid,
@@ -308,10 +310,10 @@ async def test_tidy_up_after_collection_plan(
     pmac,
     shutter,
     dcm,
-    RE,
+    run_engine,
     dummy_params_without_pp,
 ):
-    RE(
+    run_engine(
         tidy_up_after_collection_plan(
             zebra, pmac, shutter, dcm, dummy_params_without_pp, fake_dcid
         )
@@ -326,7 +328,7 @@ async def test_tidy_up_after_collection_plan(
 
 
 async def test_kick_off_and_complete_collection(
-    pmac, dummy_params_with_pp, RE, done_status
+    pmac, dummy_params_with_pp, run_engine, done_status
 ):
     pmac.run_program.kickoff = MagicMock(return_value=done_status)
     pmac.run_program.complete = MagicMock(return_value=done_status)
@@ -340,7 +342,7 @@ async def test_kick_off_and_complete_collection(
         pmac.pmac_string,
         lambda *args, **kwargs: asyncio.create_task(go_high_then_low()),  # type: ignore
     )
-    res = RE(kickoff_and_complete_collection(pmac, dummy_params_with_pp))
+    res = run_engine(kickoff_and_complete_collection(pmac, dummy_params_with_pp))
 
     assert await pmac.program_number.get_value() == 14
 
@@ -352,35 +354,35 @@ async def test_kick_off_and_complete_collection(
 
 @patch("dodal.devices.i24.pmac.DEFAULT_TIMEOUT", 0.1)
 async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
-    pmac, dummy_params_without_pp, RE
+    pmac, dummy_params_without_pp, run_engine
 ):
     pmac.run_program.KICKOFF_TIMEOUT = 0.1
     set_mock_value(pmac.scanstatus, 0)
     with pytest.raises(FailedStatus):
-        RE(kickoff_and_complete_collection(pmac, dummy_params_without_pp))
+        run_engine(kickoff_and_complete_collection(pmac, dummy_params_without_pp))
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.kickoff_and_complete_collection"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.kickoff_and_complete_collection"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.start_i24"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.start_i24"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.set_datasize"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.set_datasize"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.load_motion_program_data"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.load_motion_program_data"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.get_chip_prog_values"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.get_chip_prog_values"
 )
-@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.DCID")
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.call_nexgen"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.call_nexgen"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 async def test_main_fixed_target_plan(
     fake_sleep,
@@ -391,7 +393,7 @@ async def test_main_fixed_target_plan(
     fake_datasize,
     mock_start,
     mock_kickoff,
-    RE,
+    run_engine,
     zebra,
     pmac,
     aperture,
@@ -408,13 +410,13 @@ async def test_main_fixed_target_plan(
     set_mock_value(dcm.wavelength_in_a.user_readback, 0.6)
     fake_datasize.return_value = 400
     with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.BEAM_CENTER_LUT_FILES",
+        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.BEAM_CENTER_LUT_FILES",
         new=TEST_LUT,
     ):
         with patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
         ):
-            RE(
+            run_engine(
                 main_fixed_target_plan(
                     zebra,
                     pmac,
@@ -462,13 +464,13 @@ async def test_main_fixed_target_plan(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.Path.mkdir"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.Path.mkdir"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.read_parameters"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.read_parameters"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.bps.sleep"
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
 def test_setup_tasks_in_run_fixed_target_plan(
     fake_sleep,
@@ -484,20 +486,20 @@ def test_setup_tasks_in_run_fixed_target_plan(
     dcm,
     mirrors,
     eiger_beam_center,
-    RE,
+    run_engine,
     dummy_params_without_pp,
 ):
     mock_attenuator = MagicMock()
     fake_read.side_effect = [fake_generator(dummy_params_without_pp)]
     with (
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.run_plan_in_wrapper"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.run_plan_in_wrapper"
         ) as patch_wrapped_plan,
         patch(
-            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1.upload_chip_map_to_geobrick"
+            "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.upload_chip_map_to_geobrick"
         ) as patch_upload,
     ):
-        RE(
+        run_engine(
             run_fixed_target_plan(
                 zebra,
                 pmac,
