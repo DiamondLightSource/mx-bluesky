@@ -125,7 +125,6 @@ reportUnknownVariableType = false
 reportUnusedVariable = false
 reportArgumentType = false
 reportMatchNotExhaustive = false
-reportUnnecessaryIsInstance = false
 
 
 [tool.pytest.ini_options]

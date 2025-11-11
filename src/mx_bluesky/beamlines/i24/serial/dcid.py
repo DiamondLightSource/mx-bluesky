@@ -112,6 +112,8 @@ class DCID:
         match expt_params.detector_name:
             case "eiger":
                 self.detector = Eiger()
+            case _:
+                raise ValueError("Unknown detector:", expt_params.detector_name)
 
         self.server = server or DEFAULT_ISPYB_SERVER
         self.emit_errors = emit_errors
@@ -156,10 +158,7 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            if isinstance(self.detector, Eiger):
-                start_image_number = 1
-            else:
-                raise ValueError("Unknown detector:", self.detector)
+            start_image_number = 1
 
             events = [
                 {
