@@ -320,7 +320,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    run_engine: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -456,7 +455,7 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     with init_devices(mock=True):
         name = StaticFilenameProvider("jf_out")
         path = AutoIncrementingPathProvider(name, PurePath(tmp_path))

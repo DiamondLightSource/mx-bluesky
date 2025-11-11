@@ -36,7 +36,7 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav(run_engine: RunEngine) -> OAV:
+async def oav() -> OAV:
     oav_config = OAVConfig(ZOOM_LEVELS_XML)
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="fake_oav")
@@ -51,7 +51,7 @@ async def oav(run_engine: RunEngine) -> OAV:
 
 
 @pytest.fixture
-async def smargon(run_engine: RunEngine) -> AsyncGenerator[Smargon, None]:
+async def smargon() -> AsyncGenerator[Smargon, None]:
     smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
@@ -62,7 +62,7 @@ async def smargon(run_engine: RunEngine) -> AsyncGenerator[Smargon, None]:
 
 
 @pytest.fixture
-def thawer(run_engine: RunEngine) -> Thawer:
+def thawer() -> Thawer:
     return i04.thawer(connect_immediately=True, mock=True)
 
 
@@ -77,7 +77,7 @@ async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
 
 
 @pytest.fixture
-async def oav_forwarder(run_engine: RunEngine) -> OAVToRedisForwarder:
+async def oav_forwarder() -> OAVToRedisForwarder:
     with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
             "prefix", "host", "password", name="oav_to_redis_forwarder"
@@ -90,7 +90,7 @@ async def oav_forwarder(run_engine: RunEngine) -> OAVToRedisForwarder:
 
 
 @pytest.fixture
-def robot(run_engine: RunEngine) -> BartRobot:
+def robot() -> BartRobot:
     return i04.robot(connect_immediately=True, mock=True)
 
 

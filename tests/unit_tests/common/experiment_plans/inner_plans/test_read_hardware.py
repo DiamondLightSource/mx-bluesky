@@ -61,7 +61,6 @@ class FakeComposite:
 
 @pytest.fixture
 async def fake_composite(
-    run_engine: RunEngine,
     attenuator,
     aperture_scatterguard,
     dcm,
