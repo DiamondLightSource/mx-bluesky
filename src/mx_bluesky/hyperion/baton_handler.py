@@ -24,13 +24,13 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
+from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
     load_centre_collect_full,
 )
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
-    DefaultStateCheckFailureError,
     UDCDefaultDevices,
     move_to_udc_default_state,
 )
@@ -123,7 +123,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
     def trap_default_state_exception(e: Exception):
-        if isinstance(e, DefaultStateCheckFailureError):
+        if isinstance(e, BeamlineCheckFailureError):
             LOGGER.warning("Caught default state check failure:", exc_info=e)
             yield from bps.null()
         else:
@@ -131,10 +131,12 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             raise
 
     def collect_then_release() -> MsgGenerator:
-        yield from bpp.contingency_wrapper(collect(),
-                                           except_plan=trap_default_state_exception,
-                                            final_plan=release_baton,
-                                            auto_raise=False)
+        yield from bpp.contingency_wrapper(
+            collect(),
+            except_plan=trap_default_state_exception,
+            final_plan=release_baton,
+            auto_raise=False,
+        )
 
     context.run_engine(acquire_baton())
     _initialise_udc(context, runner.is_dev_mode)

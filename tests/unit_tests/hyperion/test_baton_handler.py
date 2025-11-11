@@ -969,3 +969,13 @@ def test_detector_shutter_closed_when_baton_requested_away_from_hyperion(
         bluesky_context, "detector_motion", DetectorMotion
     )
     get_mock_put(detector_motion.shutter).assert_called_once()
+
+
+def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check():
+    # TODO
+    pass
+
+
+def test_failure_in_udc_default_state_raises_an_alert():
+    # TODO
+    pass

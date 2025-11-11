@@ -1,3 +1,4 @@
+import asyncio
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -5,13 +6,18 @@ import numpy as np
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.hutch_shutter import ShutterState
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
+from dodal.testing import patch_all_motors
 from event_model import Event
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, init_devices
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -24,6 +30,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.hyperion.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -370,3 +377,59 @@ def beamline_specific(
     return construct_hyperion_specific_features(
         hyperion_flyscan_xrc_composite, hyperion_fgs_params
     )
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    async with init_devices(mock=True):
+        beamstop = Beamstop("", MagicMock())
+
+    with patch_all_motors(beamstop):
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        def put_sample_shutter(value, **kwargs):
+            set_mock_value(devices.sample_shutter.position_readback, value)
+
+        get_mock_put(
+            devices.sample_shutter._manual_position_setpoint
+        ).side_effect = put_sample_shutter
+        yield devices
