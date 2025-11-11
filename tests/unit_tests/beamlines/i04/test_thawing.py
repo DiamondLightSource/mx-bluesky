@@ -98,9 +98,7 @@ async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
 
 
 @pytest.fixture
-async def oav_forwarder(
-  oav_full_screen: OAV, oav_roi: OAV
-) -> OAVToRedisForwarder:
+async def oav_forwarder(oav_full_screen: OAV, oav_roi: OAV) -> OAVToRedisForwarder:
     with init_devices(mock=True):
         oav_forwarder = OAVToRedisForwarder(
             "prefix",
