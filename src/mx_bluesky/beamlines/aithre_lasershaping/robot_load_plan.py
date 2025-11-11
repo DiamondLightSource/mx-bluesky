@@ -21,7 +21,7 @@ from mx_bluesky.common.parameters.constants import (
     HardwareConstants,
     PlanNameConstants,
 )
-from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load import AithreRobotLoad
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import AithreRobotLoad
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
