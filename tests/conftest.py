@@ -51,7 +51,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -838,7 +838,7 @@ def fake_create_rotation_devices(
     backlight: Backlight,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
@@ -1763,7 +1763,7 @@ def test_rotation_params(tmp_path):
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class XBPMAndTransmissionWrapperComposite:
-    undulator: Undulator
+    undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
     dcm: DCM
@@ -1771,7 +1771,7 @@ class XBPMAndTransmissionWrapperComposite:
 
 @pytest.fixture
 def xbpm_and_transmission_wrapper_composite(
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
     dcm: DCM,

@@ -25,7 +25,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -104,7 +104,7 @@ def i04_grid_detect_then_xray_centre(
     oav: OAV = inject("oav"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
     s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps"),
-    undulator: Undulator = inject("undulator"),
+    undulator: UndulatorInKeV = inject("undulator"),
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
     zebra: Zebra = inject("zebra"),
     robot: BartRobot = inject("robot"),
