@@ -52,7 +52,7 @@ def gonio_with_limits(aithre_gonio: Goniometer) -> Goniometer:
     "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
 )
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.pin_tip_centring.pin_tip_centring_plan",
+    "mx_bluesky.beamlines.aithre_lasershaping.pin_tip_centring.pin_tip_centre_plan",
     autospec=True,
 )
 @patch(
