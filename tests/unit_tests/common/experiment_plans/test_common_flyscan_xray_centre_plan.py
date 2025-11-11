@@ -35,9 +35,6 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -559,7 +556,6 @@ class TestFlyscanXrayCentrePlan:
                 beamline_specific,
             )
 
-        run_engine.subscribe(VerbosePlanExecutionLoggingCallback())
         beamline_specific.get_xrc_results_from_zocalo = True
         run_engine(
             ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params)
