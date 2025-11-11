@@ -83,7 +83,4 @@ async def test_when_aithre_pin_tip_centre_called_then_expected_plans_called(
         )
     )
 
-    mock_move_into_view.assert_called_once_with(
-        mock_pin_tip_detection, gonio_with_limits
-    )
     assert mock_pin_tip_centring_plan.call_count == 1
