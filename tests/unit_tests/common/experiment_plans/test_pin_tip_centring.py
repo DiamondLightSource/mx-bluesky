@@ -294,10 +294,16 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
     test_y,
     test_z,
 ):
+    set_mock_value(smargon.x.dial_high_limit_travel, x_high)
+    set_mock_value(smargon.x.dial_low_limit_travel, x_low)
     set_mock_value(smargon.x.high_limit_travel, x_high)
     set_mock_value(smargon.x.low_limit_travel, x_low)
+    set_mock_value(smargon.y.dial_high_limit_travel, y_high)
+    set_mock_value(smargon.y.dial_low_limit_travel, y_low)
     set_mock_value(smargon.y.high_limit_travel, y_high)
     set_mock_value(smargon.y.low_limit_travel, y_low)
+    set_mock_value(smargon.z.dial_high_limit_travel, z_high)
+    set_mock_value(smargon.z.dial_low_limit_travel, z_low)
     set_mock_value(smargon.z.high_limit_travel, z_high)
     set_mock_value(smargon.z.low_limit_travel, z_low)
 
