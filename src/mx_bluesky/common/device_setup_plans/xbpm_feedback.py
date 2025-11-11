@@ -17,6 +17,8 @@ def unpause_xbpm_feedback_and_set_transmission_to_1(
         xbpm_feedback (XBPMFeedback): The XBPM device that is responsible for keeping
                                       the beam in position
         attenuator (BinaryFilterAttenuator): The attenuator used to set transmission
+        timeout_for_stable: If specified and non-zero, specifies the time in seconds to wait for
+            feedback to stabilise, otherwise we do not wait.
     """
     yield from bps.mv(xbpm_feedback.pause_feedback, Pause.RUN, attenuator, 1.0)
     if timeout_for_stable:
