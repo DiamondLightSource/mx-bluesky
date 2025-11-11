@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
@@ -15,7 +16,12 @@ from dodal.devices.robot import BartRobot, SampleLocation
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
 )
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.constants import (
+    DocDescriptorNames,
+    HardwareConstants,
+    PlanNameConstants,
+)
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load import AithreRobotLoad
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -99,19 +105,22 @@ def pin_already_loaded(
     )
 
 
-def robot_unload(
+def robot_snapshots_and_unload_plan(
     composite: RobotLoadComposite,
+    params: AithreRobotLoad,
 ):
     """Unloads the currently mounted pin into the location that it was loaded from. The
     loaded location is stored on the robot and so need not be provided.
     """
     yield from move_gonio_to_home_position(composite)
-    sample_id = yield from bps.rd (robot.sample_id)
+    sample_id = yield from bps.rd (composite.robot.sample_id)
+
+    assert sample_id == params.sample_id
 
     @bpp.run_decorator(
         md={
             "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
-            "metadata": {"visit": visit, "sample_id": sample_id},
+            "metadata": {"visit": params.visit, "sample_id": sample_id},
             "activate_callbacks":[
                 "RobotLoadISpyBCallback",
             ],
@@ -119,7 +128,7 @@ def robot_unload(
     )
     def do_robot_unload_and_send_to_ispyb():
         yield from bps.create(name=DocDescriptorNames.Robot_UPDATE)
-        yield from bps.read(robot)
+        yield from bps.read(composite.robot)
         yield from bps.save()
 
         def _unload():
@@ -128,7 +137,7 @@ def robot_unload(
         gonio_finished = yield from do_plan_while_lower_gonio_at_home(
             _unload(), composite.lower_gonio
         )
-         yield from bps.wait(gonio_finished)
+        yield from bps.wait(gonio_finished)
 
     yield from do_robot_unload_and_send_to_ispyb()
 
@@ -185,7 +194,7 @@ def robot_load_and_snapshots_plan(
             ),
             md={
                 "subplan_name": PlanNameConstants.ROBOT_LOAD,
-                "metadata": {"visit" params.visit, "sample_id": params.sample_id},
+                "metadata": {"visit": params.visit, "sample_id": params.sample_id},
                 "activate_callbacks": [
                     "RobotLoadISPyBCallback",
                 ],
