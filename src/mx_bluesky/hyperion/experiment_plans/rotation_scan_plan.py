@@ -21,7 +21,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -81,7 +81,7 @@ class RotationScanComposite(OavSnapshotComposite):
     flux: Flux
     robot: BartRobot
     smargon: Smargon
-    undulator: Undulator
+    undulator: UndulatorInKeV
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     sample_shutter: ZebraShutter
