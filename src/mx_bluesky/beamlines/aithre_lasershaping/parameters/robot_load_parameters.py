@@ -1,12 +1,13 @@
-from pydantic import Field
-
 from mx_bluesky.common.parameters.components import (
     WithSample,
-    WithSnapshots.
+    WithSnapshot,
     WithVisit,
 )
 
 
 class AithreRobotLoad(
-    WithSample, WithSnapshots, WithVisit,
-)
+    WithSample,
+    WithSnapshot,
+    WithVisit,
+):
+    pass

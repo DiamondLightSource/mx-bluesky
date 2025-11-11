@@ -13,15 +13,16 @@ from dodal.devices.motors import XYZOmegaStage, XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
 
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
+    AithreRobotLoad,
+)
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
-    HardwareConstants,
     PlanNameConstants,
 )
-from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import AithreRobotLoad
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -93,7 +94,6 @@ def do_robot_load(
     yield from bps.wait(gonio_in_position)
 
 
-
 def pin_already_loaded(
     robot: BartRobot, sample_location: SampleLocation
 ) -> Generator[Msg, None, bool]:
@@ -113,7 +113,7 @@ def robot_snapshots_and_unload_plan(
     loaded location is stored on the robot and so need not be provided.
     """
     yield from move_gonio_to_home_position(composite)
-    sample_id = yield from bps.rd (composite.robot.sample_id)
+    sample_id = yield from bps.rd(composite.robot.sample_id)
 
     assert sample_id == params.sample_id
 
@@ -121,7 +121,7 @@ def robot_snapshots_and_unload_plan(
         md={
             "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
             "metadata": {"visit": params.visit, "sample_id": sample_id},
-            "activate_callbacks":[
+            "activate_callbacks": [
                 "RobotLoadISpyBCallback",
             ],
         },
@@ -180,7 +180,7 @@ def robot_load_and_snapshots_plan(
     assert params.sample_puck is not None
     assert params.sample_pin is not None
 
-    sample_location = SampleLocation(params.sample_pick, params.sample_pin)
+    sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
     yield from move_gonio_to_home_position(composite)
 
@@ -189,7 +189,7 @@ def robot_load_and_snapshots_plan(
             robot_load_and_snapshots(
                 composite,
                 sample_location,
-                params.snapeshot_directory,
+                params.snapshot_directory,
                 params.sample_id,
             ),
             md={

@@ -3,29 +3,52 @@ from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
 
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
+    AithreRobotLoad,
+)
 from mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan import (
     RobotLoadComposite,
-    do_robot_load,
-    robot_unload,
+    robot_load_and_snapshots_plan,
+    robot_snapshots_and_unload_plan,
 )
 
 
-def aithre_robot_load(
+def robot_load_and_snapshot(
     robot: BartRobot = inject("robot"),
     gonio: XYZOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
     sample_loc: SampleLocation = inject("sample_loc"),
     sample_id: int = 0,
+    visit: str = "testvisit-1",
 ):
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
+    params = AithreRobotLoad(
+        sample_id=sample_id,
+        sample_puck=sample_loc.puck,
+        sample_pin=sample_loc.pin,
+        snapshot_directory="/dls/tmp/wck38436/snapshots",
+        visit=visit,
+        beamline="LA18L",
+    )
 
-    yield from do_robot_load(composite, sample_loc, sample_id)
+    yield from robot_load_and_snapshots_plan(composite, params)
 
 
-def aithre_robot_unload(
+def robot_snapshot_and_unload(
     robot: BartRobot = inject("robot"),
     gonio: XYZOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
+    sample_loc: SampleLocation = inject("sample_loc"),
+    sample_id: int = 0,
+    visit: str = "testvisit-1",
 ):
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
-    yield from robot_unload(composite)
+    params = AithreRobotLoad(
+        sample_id=sample_id,
+        sample_puck=sample_loc.puck,
+        sample_pin=sample_loc.pin,
+        snapshot_directory="/dls/tmp/wck38436/snapshots",
+        visit=visit,
+        beamline="LA18L",
+    )
+    yield from robot_snapshots_and_unload_plan(composite, params)
