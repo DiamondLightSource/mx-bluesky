@@ -29,7 +29,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
@@ -38,6 +38,7 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteError,
@@ -378,16 +379,11 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_reverts(
     mock_create_gridscan_callbacks: MagicMock,
-    mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
     run_engine: RunEngine,
@@ -416,3 +412,33 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
         call.mock_create_gridscan_callbacks(),
         call.transfocator_set(initial_beamsize),
     ]
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    autospec=True,
+)
+async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sample_to_initial_position(
+    mock_grid_detect_then_xray_centre: MagicMock,
+    mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    run_engine: RunEngine,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    smargon: Smargon,
+):
+    initial_x, initial_y, initial_z = 1, 2, 3
+    set_mock_value(smargon.x.user_readback, initial_x)
+    set_mock_value(smargon.y.user_readback, initial_y)
+    set_mock_value(smargon.z.user_readback, initial_z)
+
+    mock_grid_detect_then_xray_centre.side_effect = CrystalNotFoundError
+
+    with pytest.raises(CrystalNotFoundError):
+        run_engine(i04_grid_detect_then_xrc_default_params())
+
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(initial_x, wait=True)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(initial_y, wait=True)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])

@@ -71,6 +71,7 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
@@ -154,6 +155,10 @@ def i04_grid_detect_then_xray_centre(
     )
     initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
 
+    initial_x = yield from bps.rd(smargon.x.user_readback)
+    initial_y = yield from bps.rd(smargon.y.user_readback)
+    initial_z = yield from bps.rd(smargon.z.user_readback)
+
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
 
@@ -186,7 +191,13 @@ def i04_grid_detect_then_xray_centre(
                 oav_config=oav_config,
             )
 
-        yield from grid_detect_then_xray_centre_with_callbacks()
+        try:
+            yield from grid_detect_then_xray_centre_with_callbacks()
+        except CrystalNotFoundError:
+            yield from bps.mv(
+                smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
+            )
+            raise
 
     yield from _change_beamsize(transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, parameters)
     yield from _inner_grid_detect_then_xrc()
