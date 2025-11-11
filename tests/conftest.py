@@ -51,7 +51,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -572,9 +572,10 @@ def robot(done_status, run_engine: RunEngine):
 
     @AsyncStatus.wrap
     async def fake_load(val: SampleLocation):
-        set_mock_value(robot.current_pin, val.pin)
-        set_mock_value(robot.current_puck, val.puck)
-        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+        if val is not None:
+            set_mock_value(robot.current_pin, val.pin)
+            set_mock_value(robot.current_puck, val.puck)
+            set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
 
     robot.set = MagicMock(side_effect=fake_load)
     return robot
@@ -837,7 +838,7 @@ def fake_create_rotation_devices(
     backlight: Backlight,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
@@ -1311,6 +1312,9 @@ class OavGridSnapshotTestEvents:
             "oav-microns_per_pixel_y": 1.58,
             "oav-beam_centre_i": 517,
             "oav-beam_centre_j": 350,
+            "oav-x_direction": -1,
+            "oav-y_direction": -1,
+            "oav-z_direction": 1,
             "oav-grid_snapshot-box_width": 0.1 * 1000 / 1.25,  # size in pixels
             "oav-grid_snapshot-last_path_full_overlay": "test_1_y",
             "oav-grid_snapshot-last_path_outer": "test_2_y",
@@ -1340,6 +1344,9 @@ class OavGridSnapshotTestEvents:
             "oav-microns_per_pixel_y": 1.58,
             "oav-beam_centre_i": 517,
             "oav-beam_centre_j": 350,
+            "oav-x_direction": -1,
+            "oav-y_direction": -1,
+            "oav-z_direction": 1,
             "smargon-omega": -90,
             "smargon-x": 0,
             "smargon-y": 0,
@@ -1756,7 +1763,7 @@ def test_rotation_params(tmp_path):
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class XBPMAndTransmissionWrapperComposite:
-    undulator: Undulator
+    undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
     dcm: DCM
@@ -1764,7 +1771,7 @@ class XBPMAndTransmissionWrapperComposite:
 
 @pytest.fixture
 def xbpm_and_transmission_wrapper_composite(
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
     dcm: DCM,
