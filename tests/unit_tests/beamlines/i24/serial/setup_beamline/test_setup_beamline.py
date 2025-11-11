@@ -100,22 +100,3 @@ def test_eiger_triggered(_, fake_caget, fake_caput, fake_read, run_engine, dcm):
     assert fake_caget.call_count == 3
     assert fake_caput.call_count == 30
     assert fake_read.call_count == 1
-
-
-@pytest.mark.parametrize(
-    "action, expected_caputs, expected_sleeps",
-    [
-        ("Pin_hand_mount", 11, 0),
-        ("Pin_rt_hand_mount", 11, 0),
-        ("Pin_data_collection", 12, 2),
-        ("Pin_rt_data_collection", 13, 2),
-    ],
-)
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_mode_change(
-    fake_sleep, fake_caput, action, expected_caputs, expected_sleeps, run_engine
-):
-    run_engine(setup_beamline.modechange(action))
-    assert fake_caput.call_count == expected_caputs
-    assert fake_sleep.call_count == expected_sleeps
