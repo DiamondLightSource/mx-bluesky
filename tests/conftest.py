@@ -81,9 +81,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -353,9 +350,6 @@ def pytest_runtest_teardown(item):
 @pytest.fixture
 def run_engine():
     run_engine = RunEngine({}, call_returns_result=True)
-    run_engine.subscribe(
-        VerbosePlanExecutionLoggingCallback()
-    )  # log all events at INFO for easier debugging
     yield run_engine
     try:
         run_engine.halt()
