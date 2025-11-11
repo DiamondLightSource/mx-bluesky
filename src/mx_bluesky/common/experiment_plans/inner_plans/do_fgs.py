@@ -72,8 +72,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
 def kickoff_and_complete_gridscan(
     gridscan: FastGridScanCommon,
     detector: EigerDetector
-    | FastCSEiger
-    | FastCSEiger,  # Once Eiger inherits from StandardDetector, use that type instead
+    | FastCSEiger,  # use StandardDetector once old eiger not in use
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
