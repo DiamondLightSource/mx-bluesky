@@ -124,7 +124,6 @@ reportPrivateUsage = false
 reportUnknownVariableType = false
 reportUnusedVariable = false
 reportArgumentType = false
-reportUnnecessaryComparison = false
 reportMatchNotExhaustive = false
 reportUnnecessaryIsInstance = false
 

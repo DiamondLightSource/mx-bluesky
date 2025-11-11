@@ -45,21 +45,13 @@ from mx_bluesky.hyperion.runner import (
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
-def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):
+def compose_start_args(context: BlueskyContext, plan_name: str):
     experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
     if experiment_registry_entry is None:
         raise PlanNotFoundError(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
     plan = context.plan_functions.get(plan_name)
-    if experiment_internal_param_type is None:
-        raise PlanNotFoundError(
-            f"Corresponding internal param type for '{plan_name}' not found in registry."
-        )
-    if plan is None:
-        raise PlanNotFoundError(
-            f"Experiment plan '{plan_name}' not found in context. Context has {context.plan_functions.keys()}"
-        )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
         parameters = update_params_from_agamemnon(parameters)
@@ -80,13 +72,11 @@ class RunExperiment(Resource):
         self.runner = runner
         self.context = context
 
-    def put(self, plan_name: str, action: Actions):
+    def put(self, plan_name: str, action: str):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                plan, params, plan_name = compose_start_args(
-                    self.context, plan_name, action
-                )
+                plan, params, plan_name = compose_start_args(self.context, plan_name)
                 status_and_message = self.runner.start(plan, params, plan_name)
             except Exception as e:
                 status_and_message = make_error_status_and_message(e)

@@ -144,7 +144,7 @@ class DCID:
         try:
             if not start_time:
                 start_time = datetime.datetime.now().astimezone()
-            elif not start_time.timetz:
+            else:
                 start_time = start_time.astimezone()
 
             resolution = get_resolution(
