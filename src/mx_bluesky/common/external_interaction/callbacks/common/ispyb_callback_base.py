@@ -5,7 +5,6 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from dodal.beamline_specific_utils.i03 import beam_size_from_aperture
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
@@ -148,13 +147,15 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         return scan_data_infos
 
-    def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
+    def _handle_ispyb_transmission_flux_read(
+        self, doc: Event
+    ) -> Sequence[ScanDataInfo]:
         assert self.params
         aperture = doc["data"]["aperture_scatterguard-selected_aperture"]
-        aperture_radius = doc["data"]["aperture_scatterguard-radius"]
-        beamsize = beam_size_from_aperture(aperture_radius)
-        beamsize_x_mm = beamsize.x_um / 1000 if beamsize.x_um else None
-        beamsize_y_mm = beamsize.y_um / 1000 if beamsize.y_um else None
+        beamsize_x_um = doc["data"]["beamsize-x_um"]
+        beamsize_y_um = doc["data"]["beamsize-y_um"]
+        beamsize_x_mm = beamsize_x_um / 1000 if beamsize_x_um else None
+        beamsize_y_mm = beamsize_y_um / 1000 if beamsize_y_um else None
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
