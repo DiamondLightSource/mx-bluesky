@@ -152,10 +152,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
     ) -> Sequence[ScanDataInfo]:
         assert self.params
         aperture = doc["data"]["aperture_scatterguard-selected_aperture"]
-        beamsize_x_um = doc["data"]["beamsize-x_um"]
-        beamsize_y_um = doc["data"]["beamsize-y_um"]
-        beamsize_x_mm = beamsize_x_um / 1000 if beamsize_x_um else None
-        beamsize_y_mm = beamsize_y_um / 1000 if beamsize_y_um else None
+        beamsize_x_mm = doc["data"]["beamsize-x_um"] / 1000
+        beamsize_y_mm = doc["data"]["beamsize-y_um"] / 1000
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
