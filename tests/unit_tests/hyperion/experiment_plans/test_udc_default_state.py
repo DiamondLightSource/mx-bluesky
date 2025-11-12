@@ -11,9 +11,10 @@ from dodal.devices.cryostream import CryoStream, CryoStreamGantry, CryoStreamSel
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand, ShutterState
+from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.robot import PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.testing import patch_all_motors
 from ophyd_async.core import Signal, init_devices
 from ophyd_async.epics.motor import Motor
@@ -136,19 +137,11 @@ def test_udc_default_state_runs_in_real_run_engine(
     run_engine(move_to_udc_default_state(default_devices))
 
 
-def test_udc_default_state_performs_and_waits_for_pre_beamstop_check_items():
-    pass
-
-
-def test_udc_default_state_performs_and_waits_for_post_beamstop_check_items():
-    pass
-
-
 @patch(
     "mx_bluesky.hyperion.experiment_plans.udc_default_state.move_beamstop_in_and_verify_using_diode",
     return_value=iter([Msg("move_beamstop_in")]),
 )
-def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
+def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_before_and_after_beamstop_check(
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -265,9 +258,40 @@ def test_udc_default_state_checks_that_pin_not_mounted(
             sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
 
 
-def test_default_state_closes_sample_shutter_before_open_hutch_shutter():
-    pass
+def test_default_state_closes_sample_shutter_before_open_hutch_shutter(
+    sim_run_engine: RunEngineSimulator, default_devices: UDCDefaultDevices
+):
+    msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj is default_devices.sample_shutter
+        and msg.args[0] == ZebraShutterState.CLOSE,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == msgs[0].kwargs["group"],
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj is default_devices.hutch_shutter
+        and msg.args[0] == ShutterDemand.OPEN
+        and msg.kwargs["group"] == "pre_beamstop_check",
+    )
 
 
-def test_default_state_hutch_shutter_open_is_skippied_if_commissioning_mode_enabled():
-    pass
+def test_default_state_hutch_shutter_open_is_skippied_if_commissioning_mode_enabled(
+    sim_run_engine: RunEngineSimulator, default_devices: UDCDefaultDevices
+):
+    sim_run_engine.add_read_handler_for(default_devices.baton.commissioning, True)
+    msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+    open_shutter_msgs = [
+        msg
+        for msg in msgs
+        if msg.command == "set"
+        and msg.obj is default_devices.hutch_shutter
+        and msg.args[0] == ShutterDemand.OPEN
+    ]
+    assert not open_shutter_msgs
