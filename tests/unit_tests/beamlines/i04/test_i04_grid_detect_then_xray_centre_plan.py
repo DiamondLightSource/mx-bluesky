@@ -29,6 +29,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
@@ -72,6 +73,7 @@ def i04_grid_detect_then_xrc_default_params(
     detector_motion: DetectorMotion,
     test_full_grid_scan_params: GridCommon,
     transfocator: Transfocator,
+    fastcs_eiger: FastCSEiger,
 ):
     return partial(
         i04_grid_detect_then_xray_centre,
@@ -97,6 +99,7 @@ def i04_grid_detect_then_xrc_default_params(
         smargon=smargon,
         detector_motion=detector_motion,
         transfocator=transfocator,
+        fastcs_eiger=fastcs_eiger,
     )
 
 
