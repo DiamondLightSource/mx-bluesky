@@ -270,8 +270,8 @@ def move_on_arrow_click(move_type: str, direction: str, size_of_move: str):
             xmove = -31750
         if direction == "right":
             xmove = 31750
-    xmovepmacstring = "#5J:" + str(xmove)
-    ymovepmacstring = "#6J:" + str(ymove)
+    xmovepmacstring = "&2#5J:" + str(xmove)
+    ymovepmacstring = "&2#6J:" + str(ymove)
     yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
     yield from bps.abs_set(pmac.pmac_string, ymovepmacstring, wait=True)
 
