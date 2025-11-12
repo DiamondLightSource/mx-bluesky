@@ -20,7 +20,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import JogDire
 
 
 @pytest.fixture
-def goniometer(run_engine: RunEngine) -> Goniometer:
+def goniometer() -> Goniometer:
     with init_devices(mock=True):
         gonio = aithre.goniometer(connect_immediately=True, mock=True)
 
