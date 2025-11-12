@@ -6,7 +6,6 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
@@ -43,6 +42,7 @@ class SmargonSpeedError(Exception):
 def construct_hyperion_specific_features(
     xrc_composite: HyperionFlyScanXRayCentreComposite,
     xrc_parameters: HyperionSpecifiedThreeDGridScan,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ):
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -63,9 +63,10 @@ def construct_hyperion_specific_features(
         xrc_composite.beamsize,
         xrc_composite.eiger.cam.roi_mode,
         xrc_composite.eiger.ispyb_detector_id,
-        xrc_composite.eiger.bit_depth
-        if isinstance(xrc_composite.eiger, EigerDetector)  # old eiger
-        else xrc_composite.eiger.drv.detector.bit_depth_image,  # fastcs eiger
+        xrc_composite.eiger.bit_depth,
+        xrc_composite.fastcs_eiger.drv.detector.bit_depth_image  # fastcs eiger
+        if use_fastcs_eiger
+        else xrc_composite.eiger.bit_depth,  # old eiger
     ]
 
     setup_trigger_plan: Callable[..., MsgGenerator]

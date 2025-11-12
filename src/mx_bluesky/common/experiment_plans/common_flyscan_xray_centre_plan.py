@@ -10,7 +10,6 @@ import numpy as np
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
 from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
@@ -59,7 +58,11 @@ class BeamlineSpecificFGSFeatures:
     get_xrc_results_from_zocalo: bool
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
+def generic_tidy(
+    xrc_composite: FlyScanEssentialDevices,
+    wait=True,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
+) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
     LOGGER.info("Tidying up Zocalo")
@@ -73,8 +76,8 @@ def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenera
     yield from bps.abs_set(
         (
             xrc_composite.eiger.odin.fan.dev_shm_enable  # old eiger
-            if isinstance(xrc_composite.eiger, EigerDetector)
-            else xrc_composite.eiger.odin.fan_dev_shm_enable  # fastcs_eiger, requires https://github.com/bluesky/ophyd-async/pull/1127
+            if not use_fastcs_eiger
+            else xrc_composite.fastcs_eiger.odin.fan_dev_shm_enable  # fastcs_eiger, requires https://github.com/bluesky/ophyd-async/pull/1127
         ),
         0,
         group=group,
@@ -140,6 +143,7 @@ def common_flyscan_xray_centre(
     composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs_eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
@@ -164,7 +168,7 @@ def common_flyscan_xray_centre(
 
     def _overall_tidy():
         yield from beamline_specific.tidy_plan()
-        yield from generic_tidy(composite)
+        yield from generic_tidy(composite, use_fastcs_eiger=use_fastcs_eiger)
 
     def _decorated_flyscan():
         @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
@@ -189,7 +193,12 @@ def common_flyscan_xray_centre(
             yield from bps.stage(
                 fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
             )  # connect to zocalo and make sure the queue is clear
-            yield from run_gridscan(fgs_composite, params, beamline_specific)
+            yield from run_gridscan(
+                fgs_composite,
+                params,
+                beamline_specific,
+                use_fastcs_eiger=use_fastcs_eiger,
+            )
 
             LOGGER.info("Grid scan finished")
 
@@ -198,7 +207,7 @@ def common_flyscan_xray_centre(
 
         yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
 
-    if isinstance(composite.eiger, EigerDetector):
+    if not use_fastcs_eiger:
         composite.eiger.set_detector_parameters(parameters.detector_params)
     yield from _decorated_flyscan()
 
@@ -268,6 +277,7 @@ def run_gridscan(
     fgs_composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
@@ -290,10 +300,10 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
-    if isinstance(fgs_composite.eiger, EigerDetector):
-        yield from bps.stage(fgs_composite.eiger, wait=True)  # old eiger
+    if use_fastcs_eiger:
+        yield from bps.kickoff(fgs_composite.fastcs_eiger, wait=True)  # fastcs eiger
     else:
-        yield from bps.kickoff(fgs_composite.eiger, wait=True)  # fastcs eiger
+        yield from bps.stage(fgs_composite.eiger, wait=True)  # old eiger
 
     yield from kickoff_and_complete_gridscan(
         beamline_specific.fgs_motors,

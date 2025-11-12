@@ -34,6 +34,7 @@ from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.utils import (
@@ -74,6 +75,7 @@ class RobotLoadThenCentreComposite:
     beamsize: BeamsizeBase
     detector_motion: DetectorMotion
     eiger: EigerDetector
+    fastcs_eiger: FastCSEiger
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import cast
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -35,6 +34,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from pydantic import BaseModel
 
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
@@ -137,6 +137,7 @@ def i04_default_grid_detect_and_xray_centre(
     smargon: Smargon = inject("smargon"),
     detector_motion: DetectorMotion = inject("detector_motion"),
     transfocator: Transfocator = inject("transfocator"),
+    fastcs_eiger: FastCSEiger = inject("fastcs_eiger"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
     udc: bool = False,
 ) -> MsgGenerator:
@@ -153,27 +154,28 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = GridDetectThenXRayCentreComposite(
-        eiger,
-        synchrotron,
-        zocalo,
-        smargon,
-        aperture_scatterguard,
-        attenuator,
-        backlight,
-        beamstop,
-        beamsize,
-        dcm,
-        detector_motion,
-        zebra_fast_grid_scan,
-        flux,
-        oav,
-        pin_tip_detection,
-        s4_slit_gaps,
-        undulator,
-        xbpm_feedback,
-        zebra,
-        robot,
-        sample_shutter,
+        eiger=eiger,
+        synchrotron=synchrotron,
+        zocalo=zocalo,
+        smargon=smargon,
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        beamstop=beamstop,
+        beamsize=beamsize,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        zebra_fast_grid_scan=zebra_fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=pin_tip_detection,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        robot=robot,
+        sample_shutter=sample_shutter,
+        fastcs_eiger=fastcs_eiger,
     )
     initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
 
@@ -272,11 +274,11 @@ def create_gridscan_callbacks() -> tuple[
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
     xrc_parameters: SpecifiedThreeDGridScan,
+    _,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ) -> BeamlineSpecificFGSFeatures:
     """
     Get all the information needed to do the i04 XRC flyscan.
     """
-    xrc_composite.eiger = cast(EigerDetector, xrc_composite.eiger)
     signals_to_read_pre_flyscan = [
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
