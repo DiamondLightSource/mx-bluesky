@@ -16,8 +16,10 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
 
 from mx_bluesky.common.parameters.components import (
+    DiffractionExperimentNoTransmissionOrExposure,
     DiffractionExperimentWithSample,
     IspybExperimentType,
+    MxBlueskyParameters,
     OptionalGonioAngleStarts,
     SplitScan,
     WithOptionalEnergyChange,
@@ -42,9 +44,32 @@ GridScanParamType = TypeVar(
 )
 
 
+class GridCommonAttributes(MxBlueskyParameters, OptionalGonioAngleStarts):
+    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    grid_width_um: float = Field(default=GridscanParamConstants.WIDTH_UM)
+    ispyb_experiment_type: IspybExperimentType = Field(
+        default=IspybExperimentType.GRIDSCAN_3D
+    )
+    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
+
+    tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
+
+
+class GridCommonNoTransmissionAndExposure(
+    DiffractionExperimentNoTransmissionOrExposure, GridCommonAttributes
+):
+    """
+    Some plans, for example i04's XRC, don't let the user/GDA specify transmission or
+    exposure time. Instead, these values are calculated using known good
+    values for a specific energy as well as the energy at the time of plan execution.
+    """
+
+    ...
+
+
 class GridCommon(
+    GridCommonAttributes,
     DiffractionExperimentWithSample,
-    OptionalGonioAngleStarts,
 ):
     """
     Parameters used in every MX diffraction experiment using grids. This model should
@@ -52,16 +77,7 @@ class GridCommon(
     automatic grid detection has completed
     """
 
-    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    grid_width_um: float = Field(default=GridscanParamConstants.WIDTH_UM)
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
-
-    ispyb_experiment_type: IspybExperimentType = Field(
-        default=IspybExperimentType.GRIDSCAN_3D
-    )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
-
-    tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
     @property
     def detector_params(self):

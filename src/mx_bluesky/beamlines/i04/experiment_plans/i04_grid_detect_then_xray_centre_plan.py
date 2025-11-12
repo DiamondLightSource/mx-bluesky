@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from functools import partial
 
 import bluesky.plan_stubs as bps
@@ -63,6 +64,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 )
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
+    GridscanParamConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -70,7 +72,11 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridCommon,
+    GridCommonNoTransmissionAndExposure,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
@@ -96,7 +102,7 @@ def _change_beamsize(
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
-    parameters: GridCommon,
+    parameters: GridCommonNoTransmissionAndExposure,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
@@ -127,7 +133,6 @@ def i04_grid_detect_then_xray_centre(
     - Scans through the grid to identify the crystal centre
     - Changes the aperture to match the beam size to the crystal size
     - Moves the sample to the crystal centre of mass
-
 
     i04's implementation of this plan is very similar to Hyperion. However, since i04
     isn't running in a continuous Bluesky UDC loop, we take additional steps in beamline
@@ -164,13 +169,19 @@ def i04_grid_detect_then_xray_centre(
 
     current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
 
-    parameters.transmission_frac, parameters.exposure_time_s = (
+    _default_transmission_frac = 1
+    transmission_frac, exposure_time_s = (
         _fix_transmission_and_exposure_time_for_current_wavelength(
-            parameters.transmission_frac,
-            parameters.exposure_time_s,
+            _default_transmission_frac,
+            GridscanParamConstants.EXPOSURE_TIME_S,
             current_wavelength_a,
         )
     )
+
+    grid_common = json.loads(parameters.model_dump_json())
+    grid_common["transmission_frac"] = transmission_frac
+    grid_common["exposure_time_s"] = exposure_time_s
+    grid_common_params = GridCommon(**grid_common)
 
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
@@ -193,12 +204,14 @@ def i04_grid_detect_then_xray_centre(
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
         @transmission_and_xbpm_feedback_for_collection_decorator(
-            composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
+            composite,
+            grid_common_params.transmission_frac,
+            PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
             yield from grid_detect_then_xray_centre(
                 composite=composite,
-                parameters=parameters,
+                parameters=grid_common_params,
                 xrc_params_type=SpecifiedThreeDGridScan,
                 construct_beamline_specific=construct_i04_specific_features,
                 oav_config=oav_config,
@@ -212,7 +225,9 @@ def i04_grid_detect_then_xray_centre(
             )
             raise
 
-    yield from _change_beamsize(transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, parameters)
+    yield from _change_beamsize(
+        transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, grid_common_params
+    )
     yield from _inner_grid_detect_then_xrc()
 
 

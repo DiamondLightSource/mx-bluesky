@@ -156,8 +156,15 @@ class WithVisit(BaseModel):
     detector_distance_mm: float | None = Field(default=None, gt=0)
 
 
-class DiffractionExperiment(
-    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
+class WithSpecifiedTransmission(BaseModel):
+    transmission_frac: float = Field(default=0.1)
+
+
+class DiffractionExperimentBase(
+    MxBlueskyParameters,
+    WithSnapshot,
+    WithOptionalEnergyChange,
+    WithVisit,
 ):
     """For all experiments which use beam"""
 
@@ -167,7 +174,6 @@ class DiffractionExperiment(
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     run_number: int | None = Field(default=None, ge=0)
     selected_aperture: ApertureValue | None = Field(default=None)
-    transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
     use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
@@ -186,6 +192,24 @@ class DiffractionExperiment(
     @property
     def num_images(self) -> int:
         return 0
+
+    @property
+    @abstractmethod
+    def detector_params(self) -> DetectorParams: ...
+
+
+class DiffractionExperimentNoTransmissionOrExposure(
+    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
+):
+    # Add some validators to convert transmission and exposure
+    ...
+
+
+class DiffractionExperiment(
+    DiffractionExperimentBase,
+    WithSpecifiedTransmission,
+):
+    """For all experiments which use beam"""
 
     @property
     @abstractmethod
