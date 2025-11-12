@@ -73,7 +73,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    GridCommonNoTransmissionAndExposure,
+    GridCommonNoTransmissionOrExposure,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -104,7 +104,7 @@ def _change_beamsize(
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
-    parameters: GridCommonNoTransmissionAndExposure,
+    parameters: GridCommonNoTransmissionOrExposure,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),

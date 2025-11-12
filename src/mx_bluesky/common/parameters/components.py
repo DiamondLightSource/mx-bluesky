@@ -168,7 +168,6 @@ class DiffractionExperimentBase(
     ABC,
 ):
     file_name: str
-    exposure_time_s: float = Field(gt=0)
     comment: str = Field(default="")
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     run_number: int | None = Field(default=None, ge=0)
@@ -192,21 +191,14 @@ class DiffractionExperimentBase(
     def num_images(self) -> int:
         return 0
 
-    @property
-    @abstractmethod
-    def detector_params(self) -> DetectorParams: ...
-
-
-class DiffractionExperimentNoTransmissionOrExposure(
-    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
-): ...
-
 
 class DiffractionExperiment(
     DiffractionExperimentBase,
     WithSpecifiedTransmission,
 ):
     """For all experiments which use beam"""
+
+    exposure_time_s: float = Field(gt=0)
 
     @property
     @abstractmethod
@@ -248,6 +240,17 @@ class WithSample(BaseModel):
 
 
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
+
+
+class DiffractionSampleExperimentAutoTransmissionAndExposure(
+    DiffractionExperimentBase,
+    WithSnapshot,
+    WithOptionalEnergyChange,
+    WithVisit,
+    WithSample,
+):
+    """For experiments where a sensible exposure and transmission are internally
+    calculated."""
 
 
 class MultiXtalSelection(BaseModel):

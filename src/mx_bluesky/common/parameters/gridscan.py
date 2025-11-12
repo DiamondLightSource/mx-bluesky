@@ -16,8 +16,8 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
 
 from mx_bluesky.common.parameters.components import (
-    DiffractionExperimentNoTransmissionOrExposure,
     DiffractionExperimentWithSample,
+    DiffractionSampleExperimentAutoTransmissionAndExposure,
     IspybExperimentType,
     MxBlueskyParameters,
     OptionalGonioAngleStarts,
@@ -55,8 +55,8 @@ class GridCommonAttributes(MxBlueskyParameters, OptionalGonioAngleStarts, ABC):
     tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
 
-class GridCommonNoTransmissionAndExposure(
-    DiffractionExperimentNoTransmissionOrExposure, GridCommonAttributes
+class GridCommonNoTransmissionOrExposure(
+    GridCommonAttributes, DiffractionSampleExperimentAutoTransmissionAndExposure
 ):
     """
     Some plans, for example i04's XRC, don't let the user/GDA specify transmission or
