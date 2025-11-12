@@ -251,6 +251,7 @@ def robot_load_composite(
     panda,
     panda_fast_grid_scan,
     beamsize: BeamsizeBase,
+    fastcs_eiger,
 ) -> RobotLoadThenCentreComposite:
     set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
@@ -286,6 +287,7 @@ def robot_load_composite(
         robot=robot,
         webcam=webcam,
         lower_gonio=lower_gonio,
+        fastcs_eiger=fastcs_eiger,
     )
 
 
