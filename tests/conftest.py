@@ -416,9 +416,13 @@ def smargon() -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
-def aithre_gonio():
+def aithre_gonio(
+    run_engine: RunEngine,
+    sim_run_engine: RunEngineSimulator,
+):
     aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
 
+    # Replace when https://github.com/bluesky/bluesky/issues/1906 is fixed
     with patch_all_motors(aithre_gonio):
         yield aithre_gonio
 
