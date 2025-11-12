@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.beamsize import Beamsize
 from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
@@ -98,6 +99,7 @@ def i04_grid_detect_then_xray_centre(
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
+    beamsize: Beamsize = inject("beamsize"),
     dcm: DoubleCrystalMonochromator = inject("dcm"),
     zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
@@ -140,6 +142,7 @@ def i04_grid_detect_then_xray_centre(
         attenuator,
         backlight,
         beamstop,
+        beamsize,
         dcm,
         detector_motion,
         zebra_fast_grid_scan,
