@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import json
-from typing import cast
 
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
@@ -121,8 +119,7 @@ def pin_tip_centre_then_xray_centre(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    eiger: EigerDetector = cast(EigerDetector, composite.eiger)
-
+    eiger = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
     flyscan_event_handler = XRayCentreEventHandler()
