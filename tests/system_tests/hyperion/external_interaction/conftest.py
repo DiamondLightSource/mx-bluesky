@@ -14,6 +14,7 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -281,6 +282,7 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
     request,
+    beamsize: BeamsizeBase,
 ):
     composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
@@ -305,6 +307,7 @@ def grid_detect_then_xray_centre_composite(
         dcm=dcm,
         flux=flux,
         sample_shutter=sample_shutter,
+        beamsize=beamsize,
     )
 
     def default_edge_generator():
@@ -429,6 +432,7 @@ def composite_for_rotation_scan(
     oav_for_system_test: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     oav_for_system_test.zoom_controller.level.describe = AsyncMock(
@@ -453,6 +457,7 @@ def composite_for_rotation_scan(
         oav=oav_for_system_test,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        beamsize=beamsize,
     )
 
     energy_ev = convert_angstrom_to_ev(0.71)
