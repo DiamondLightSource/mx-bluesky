@@ -28,7 +28,7 @@ def robot_load_and_snapshot(
         sample_pin=sample_loc.pin,
         snapshot_directory="/dls/tmp/wck38436/snapshots",
         visit=visit,
-        beamline="LA18L",
+        beamline="BL23I",
     )
 
     yield from robot_load_and_snapshots_plan(composite, params)
@@ -49,6 +49,6 @@ def robot_unload(
         sample_pin=sample_loc.pin,
         snapshot_directory="/dls/tmp/wck38436/snapshots",
         visit=visit,
-        beamline="LA18L",
+        beamline="BL23I",
     )
     yield from robot_unload_plan(composite, params)
