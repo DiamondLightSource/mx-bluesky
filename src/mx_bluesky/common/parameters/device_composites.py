@@ -21,7 +21,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -62,7 +62,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     oav: OAV
     pin_tip_detection: PinTipDetection
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     robot: BartRobot
