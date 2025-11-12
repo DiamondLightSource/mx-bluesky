@@ -552,7 +552,7 @@ def robot(done_status):
 
     @AsyncStatus.wrap
     async def fake_load(val: SampleLocation):
-        if val is not None:
+        if val is not None:  # type: ignore
             set_mock_value(robot.current_pin, val.pin)
             set_mock_value(robot.current_puck, val.puck)
             set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
@@ -1235,15 +1235,6 @@ def _dummy_params(tmp_path):
     return dummy_params
 
 
-def _dummy_params_2d(tmp_path):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-        tmp_path,
-    )
-    raw_params["z_steps"] = 1
-    return SpecifiedThreeDGridScan(**raw_params)
-
-
 TEST_SESSION_ID = 90
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
@@ -1772,7 +1763,9 @@ def assert_images_pixelwise_equal(actual, expected):
 
 
 def _fake_config_server_read(
-    filepath: str | Path, desired_return_type=str, reset_cached_result=False
+    filepath: str | Path,
+    desired_return_type: type[str] | type[dict] = str,
+    reset_cached_result=False,
 ):
     filepath = Path(filepath)
     # Minimal logic required for unit tests

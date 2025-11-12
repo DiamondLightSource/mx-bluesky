@@ -178,7 +178,7 @@ class StoreInIspyb:
         data_collection_id: int,
         data_collection_group_id: int,
     ) -> None:
-        if reason is not None and reason != "":
+        if reason != "":
             self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
