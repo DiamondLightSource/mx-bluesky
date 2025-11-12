@@ -343,6 +343,7 @@ async def fake_fgs_composite(
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
+        fastcs_eiger=i03.fastcs_eiger(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -415,6 +416,7 @@ async def grid_detect_xrc_devices(
     beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
+    fastcs_eiger: FastCSEiger,
     smargon: Smargon,
     oav: OAV,
     ophyd_pin_tip_detection: PinTipDetection,
@@ -452,6 +454,7 @@ async def grid_detect_xrc_devices(
         dcm=dcm,
         robot=MagicMock(spec=BartRobot),
         sample_shutter=zebra_shutter,
+        fastcs_eiger=fastcs_eiger,
     )
 
 
