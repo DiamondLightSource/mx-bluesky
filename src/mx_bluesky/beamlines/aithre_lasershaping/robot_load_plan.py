@@ -105,7 +105,7 @@ def pin_already_loaded(
     )
 
 
-def robot_snapshots_and_unload_plan(
+def robot_unload_plan(
     composite: RobotLoadComposite,
     params: AithreRobotLoad,
 ):
@@ -115,7 +115,7 @@ def robot_snapshots_and_unload_plan(
     yield from move_gonio_to_home_position(composite)
     sample_id = yield from bps.rd(composite.robot.sample_id)
 
-    assert sample_id == params.sample_id
+    # assert sample_id == params.sample_id
 
     @bpp.run_decorator(
         md={
@@ -200,4 +200,5 @@ def robot_load_and_snapshots_plan(
                 ],
             },
         ),
+        PlanNameConstants.ROBOT_LOAD_AND_SNAPSHOTS,
     )

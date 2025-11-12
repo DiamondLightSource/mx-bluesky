@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters i
 from mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan import (
     RobotLoadComposite,
     robot_load_and_snapshots_plan,
-    robot_snapshots_and_unload_plan,
+    robot_unload_plan,
 )
 
 
@@ -19,7 +19,7 @@ def robot_load_and_snapshot(
     oav: OAV = inject("oav"),
     sample_loc: SampleLocation = inject("sample_loc"),
     sample_id: int = 0,
-    visit: str = "testvisit-1",
+    visit: str = "cm40645-1",
 ):
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
@@ -34,13 +34,13 @@ def robot_load_and_snapshot(
     yield from robot_load_and_snapshots_plan(composite, params)
 
 
-def robot_snapshot_and_unload(
+def robot_unload(
     robot: BartRobot = inject("robot"),
     gonio: XYZOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
     sample_loc: SampleLocation = inject("sample_loc"),
     sample_id: int = 0,
-    visit: str = "testvisit-1",
+    visit: str = "cm40645-1",
 ):
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
@@ -51,4 +51,4 @@ def robot_snapshot_and_unload(
         visit=visit,
         beamline="LA18L",
     )
-    yield from robot_snapshots_and_unload_plan(composite, params)
+    yield from robot_unload_plan(composite, params)
