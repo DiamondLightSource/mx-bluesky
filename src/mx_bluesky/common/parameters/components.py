@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
@@ -165,9 +165,8 @@ class DiffractionExperimentBase(
     WithSnapshot,
     WithOptionalEnergyChange,
     WithVisit,
+    ABC,
 ):
-    """For all experiments which use beam"""
-
     file_name: str
     exposure_time_s: float = Field(gt=0)
     comment: str = Field(default="")

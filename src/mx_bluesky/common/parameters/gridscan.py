@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -44,7 +44,7 @@ GridScanParamType = TypeVar(
 )
 
 
-class GridCommonAttributes(MxBlueskyParameters, OptionalGonioAngleStarts):
+class GridCommonAttributes(MxBlueskyParameters, OptionalGonioAngleStarts, ABC):
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.WIDTH_UM)
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -61,7 +61,7 @@ class GridCommonNoTransmissionAndExposure(
     """
     Some plans, for example i04's XRC, don't let the user/GDA specify transmission or
     exposure time. Instead, these values are calculated using known good
-    values for a specific energy as well as the energy at the time of plan execution.
+    values, see fix_transmission_and_exposure_time_for_current_wavelength
     """
 
     ...
