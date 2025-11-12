@@ -200,9 +200,7 @@ class DiffractionExperimentBase(
 
 class DiffractionExperimentNoTransmissionOrExposure(
     MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
-):
-    # Add some validators to convert transmission and exposure
-    ...
+): ...
 
 
 class DiffractionExperiment(

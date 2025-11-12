@@ -33,7 +33,6 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
-    _fix_transmission_and_exposure_time_for_current_wavelength,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
@@ -253,7 +252,7 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan._fix_transmission_and_exposure_time_for_current_wavelength"
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
 )
 def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
     mock_fix_transmission_and_exp_time: MagicMock,
@@ -378,50 +377,6 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
         )
 
     assert mock_get_ready_for_oav_and_close_shutter.call_count == 1
-
-
-def test_fix_transmission_and_exposure_time_given_expected_wavelength_does_nothing_given_expected_energy():
-    transmission = 0.55
-    exposure_time_s = 0.03
-    assert _fix_transmission_and_exposure_time_for_current_wavelength(
-        transmission, exposure_time_s, EXPECTED_WAVELENGTH
-    ) == (transmission, exposure_time_s)
-
-
-def test_fix_transmission_and_exposure_time_different_wavelength_reduces_transmission_only():
-    transmission = 0.55
-    exposure_time_s = 0.03
-    wavelength_to_use = EXPECTED_WAVELENGTH * 2
-    expected_transmission = transmission * (
-        (EXPECTED_WAVELENGTH / wavelength_to_use) ** 2
-    )
-    assert _fix_transmission_and_exposure_time_for_current_wavelength(
-        transmission, exposure_time_s, wavelength_to_use
-    ) == (expected_transmission, exposure_time_s)
-
-
-def test_fix_transmission_and_exposure_time_low_wavelength_lowers_exposure_time_if_transmission_is_maxed():
-    transmission = 0.95
-    exposure_time_s = 0.03
-    wavelength_to_use = EXPECTED_WAVELENGTH / 2
-    expected_transmission = 1
-    expected_exposure_time = round(
-        transmission
-        * ((EXPECTED_WAVELENGTH / wavelength_to_use) ** 2)
-        * exposure_time_s,
-        3,
-    )
-    assert _fix_transmission_and_exposure_time_for_current_wavelength(
-        transmission, exposure_time_s, wavelength_to_use
-    ) == (expected_transmission, expected_exposure_time)
-
-
-def test_fix_transmission_and_exposure_time_rounds_exposure_time_to_ms():
-    exposure_time_s = 0.234873469
-    transmission = 1
-    assert _fix_transmission_and_exposure_time_for_current_wavelength(
-        transmission, exposure_time_s, EXPECTED_WAVELENGTH
-    ) == (transmission, round(exposure_time_s, 3))
 
 
 @patch(
