@@ -26,7 +26,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -79,7 +79,7 @@ class RobotLoadThenCentreComposite:
     smargon: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     zebra: Zebra
     zocalo: ZocaloResults
     panda: HDFPanda
