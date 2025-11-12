@@ -57,7 +57,9 @@ def _fake_flyscan(*args):
 def construct_beamline_specific(
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> ConstructBeamlineSpecificFeatures:
-    return lambda xrc_composite, xrc_parameters: beamline_specific
+    return (
+        lambda xrc_composite, xrc_parameters, use_fastcs_eiger: beamline_specific
+    )  #  https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 
 
 @pytest.mark.timeout(2)
