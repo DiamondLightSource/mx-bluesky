@@ -14,7 +14,7 @@ from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 
 
 @pytest.fixture
-def mock_gonio():
+def mock_gonio(run_engine: RunEngine):
     with init_devices(mock=True):
         gonio = SixAxisGonio("", name="gonio")
     patch_motor(gonio.x)
@@ -24,7 +24,7 @@ def mock_gonio():
 
 
 @pytest.fixture
-def mock_detector_motion():
+def mock_detector_motion(run_engine: RunEngine):
     with init_devices(mock=True):
         detector_motion = Positioner1D("", I23DetectorPositions)
     return detector_motion

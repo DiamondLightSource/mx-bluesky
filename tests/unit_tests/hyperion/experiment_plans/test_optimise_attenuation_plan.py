@@ -72,7 +72,9 @@ def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
         yield fake_composite
 
 
-def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
+def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold(
+    run_engine: RunEngine,
+):
     deadtime: float = 1
     direction = Direction.POSITIVE
     for _ in range(5):

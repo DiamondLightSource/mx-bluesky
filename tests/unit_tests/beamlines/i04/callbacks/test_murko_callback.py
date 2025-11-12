@@ -13,76 +13,49 @@ test_oav_uuid = "UUID"
 test_smargon_data = 90
 
 
-def event_template(data_dict: dict, timestamp=1666604299.0) -> Event:
+def event_template(data_key, data_value, timestamp=1666604299.0) -> Event:
     return {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.01,
-        "data": data_dict,
-        "timestamps": dict.fromkeys(data_dict.keys(), timestamp),
+        "data": {data_key: data_value},
+        "timestamps": {data_key: timestamp},
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
         "filled": {},
     }
 
 
-test_oav_full_screen_event = event_template(
-    {
-        "oav_to_redis_forwarder-uuid": test_oav_uuid,
-        "oav_full_screen-microns_per_pixel_x": 1.2,
-        "oav_full_screen-microns_per_pixel_y": 2.5,
-        "oav_full_screen-beam_centre_i": 158,
-        "oav_full_screen-beam_centre_j": 452,
-    }
-)
-
-test_oav_roi_event = event_template(
-    {
-        "oav_to_redis_forwarder-uuid": test_oav_uuid,
-        "oav-microns_per_pixel_x": 3.2,
-        "oav-microns_per_pixel_y": 4.1,
-        "oav-beam_centre_i": 201,
-        "oav-beam_centre_j": 342,
-    }
-)
-test_smargon_event = event_template({"smargon-omega": test_smargon_data})
+test_oav_event = event_template("oav_to_redis_forwarder-uuid", test_oav_uuid)
+test_smargon_event = event_template("smargon-omega", test_smargon_data)
 
 test_start_document = {
     "uid": "event_uuid",
-    "sample_id": 12345,
-}
-
-metadata_based_on_test_events_full_screen = {
-    "sample_id": 12345,
+    "zoom_percentage": 80,
     "microns_per_x_pixel": 1.2,
     "microns_per_y_pixel": 2.5,
     "beam_centre_i": 158,
     "beam_centre_j": 452,
-    "omega_angle": test_smargon_data,
-    "uuid": test_oav_uuid,
+    "sample_id": 12345,
 }
 
-metadata_based_on_test_events_roi = {
-    "sample_id": 12345,
-    "microns_per_x_pixel": 3.2,
-    "microns_per_y_pixel": 4.1,
-    "beam_centre_i": 201,
-    "beam_centre_j": 342,
-    "omega_angle": test_smargon_data,
-    "uuid": test_oav_uuid,
-}
+
+@pytest.fixture
+def murko_callback() -> MurkoCallback:
+    callback = MurkoCallback("", "")
+    callback.redis_client = MagicMock()
+    return callback
 
 
 @pytest.fixture
 def murko_with_mock_call(murko_callback) -> MurkoCallback:
     murko_callback.call_murko = MagicMock()
-    murko_callback.murko_metadata = {}
     return murko_callback
 
 
 def test_when_oav_data_arrives_then_murko_not_called(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_full_screen_event)
+    murko_with_mock_call.event(test_oav_event)
     murko_with_mock_call.call_murko.assert_not_called()  # type: ignore
 
 
@@ -97,14 +70,14 @@ def test_when_smargon_data_arrives_then_image_data_then_murko_not_called(
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_smargon_event)
-    murko_with_mock_call.event(test_oav_full_screen_event)
+    murko_with_mock_call.event(test_oav_event)
     murko_with_mock_call.call_murko.assert_not_called()  # type: ignore
 
 
 def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_called_with_latest_image_and_omega(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_full_screen_event)
+    murko_with_mock_call.event(test_oav_event)
     murko_with_mock_call.event(test_smargon_event)
     murko_with_mock_call.call_murko.assert_called_once_with(  # type: ignore
         test_oav_uuid, test_smargon_data
@@ -112,7 +85,7 @@ def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_
 
     murko_with_mock_call.call_murko.reset_mock()  # type: ignore
 
-    murko_with_mock_call.event(event_template({"smargon-omega": (second_omega := 30)}))
+    murko_with_mock_call.event(event_template("smargon-omega", second_omega := 30))
     murko_with_mock_call.call_murko.assert_called_once_with(  # type: ignore
         test_oav_uuid, second_omega
     )
@@ -121,14 +94,14 @@ def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_
 def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_full_screen_event)
-    murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
-    murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
+    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(event_template("smargon-omega", 10, 0))
+    murko_with_mock_call.event(event_template("smargon-omega", 15, 5))
 
     murko_with_mock_call.call_murko.reset_mock()  # type:ignore
 
     murko_with_mock_call.event(
-        event_template({"oav_to_redis_forwarder-uuid": test_oav_uuid}, 10)
+        event_template("oav_to_redis_forwarder-uuid", test_oav_uuid, 10)
     )
 
     murko_with_mock_call.call_murko.assert_called_once_with(test_oav_uuid, 20)  # type: ignore
@@ -137,15 +110,15 @@ def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapo
 def test_given_three_sets_of_smargon_data_then_next_image_calls_murko_with_extrapolated_omega_from_last_two(
     murko_with_mock_call: MurkoCallback,
 ):
-    murko_with_mock_call.event(test_oav_full_screen_event)
-    murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
-    murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
-    murko_with_mock_call.event(event_template({"smargon-omega": 17}, 6))
+    murko_with_mock_call.event(test_oav_event)
+    murko_with_mock_call.event(event_template("smargon-omega", 10, 0))
+    murko_with_mock_call.event(event_template("smargon-omega", 15, 5))
+    murko_with_mock_call.event(event_template("smargon-omega", 17, 6))
 
     murko_with_mock_call.call_murko.reset_mock()  # type:ignore
 
     murko_with_mock_call.event(
-        event_template({"oav_to_redis_forwarder-uuid": test_oav_uuid}, 10)
+        event_template("oav_to_redis_forwarder-uuid", test_oav_uuid, 10)
     )
 
     murko_with_mock_call.call_murko.assert_called_once_with(test_oav_uuid, 25)  # type: ignore
@@ -155,68 +128,25 @@ def test_when_murko_called_with_event_data_then_meta_data_put_in_redis(
     murko_callback: MurkoCallback,
 ):
     murko_callback.start(test_start_document)  # type: ignore
-    murko_callback.event(test_oav_full_screen_event)
+    murko_callback.event(test_oav_event)
     murko_callback.event(test_smargon_event)
 
-    expected_metadata = metadata_based_on_test_events_full_screen
+    expected_metadata = {
+        "zoom_percentage": 80,
+        "microns_per_x_pixel": 1.2,
+        "microns_per_y_pixel": 2.5,
+        "beam_centre_i": 158,
+        "beam_centre_j": 452,
+        "sample_id": 12345,
+        "omega_angle": test_smargon_data,
+        "uuid": test_oav_uuid,
+    }
 
     murko_callback.redis_client.hset.assert_called_once_with(  # type: ignore
         "murko:12345:metadata", test_oav_uuid, json.dumps(expected_metadata)
     )
     murko_callback.redis_client.publish.assert_called_once_with(  # type: ignore
         "murko", json.dumps(expected_metadata)
-    )
-
-
-@pytest.mark.parametrize(
-    "first_event, second_event, expected_md_after_first, expected_md_after_second",
-    [
-        (
-            test_oav_full_screen_event,
-            test_oav_roi_event,
-            metadata_based_on_test_events_full_screen,
-            metadata_based_on_test_events_roi,
-        ),
-        (
-            test_oav_roi_event,
-            test_oav_full_screen_event,
-            metadata_based_on_test_events_roi,
-            metadata_based_on_test_events_full_screen,
-        ),
-    ],
-)
-def test_when_murko_called_with_full_screen_and_roi_event_then_metadata_updates_correctly(
-    first_event,
-    second_event,
-    expected_md_after_first,
-    expected_md_after_second,
-    murko_callback: MurkoCallback,
-):
-    murko_callback.start(test_start_document)  # type: ignore
-    murko_callback.event(first_event)
-    murko_callback.event(test_smargon_event)
-
-    murko_callback.redis_client.hset.assert_called_once_with(  # type: ignore
-        "murko:12345:metadata",
-        test_oav_uuid,
-        json.dumps(expected_md_after_first),
-    )
-    murko_callback.redis_client.publish.assert_called_once_with(  # type: ignore
-        "murko",
-        json.dumps(expected_md_after_first),
-    )
-
-    murko_callback.event(second_event)
-    murko_callback.event(test_smargon_event)
-
-    assert murko_callback.redis_client.hset.call_args[0] == (  # type: ignore
-        "murko:12345:metadata",
-        test_oav_uuid,
-        json.dumps(expected_md_after_second),
-    )
-    assert murko_callback.redis_client.publish.call_args[0] == (  # type: ignore
-        "murko",
-        json.dumps(expected_md_after_second),
     )
 
 

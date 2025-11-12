@@ -1,6 +1,7 @@
 import asyncio
 import pprint
 import sys
+import time
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast
@@ -71,6 +72,23 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import raw_params_from_file
+
+
+@pytest.fixture
+async def run_engine():
+    run_engine = RunEngine(call_returns_result=True)
+    # make sure the event loop is thoroughly up and running before we try to create
+    # any ophyd_async devices which might need it
+    timeout = time.monotonic() + 1
+    while not run_engine.loop.is_running():
+        await asyncio.sleep(0)
+        if time.monotonic() > timeout:
+            raise TimeoutError("This really shouldn't happen but just in case...")
+    yield run_engine
+    # RunEngine creates its own loop if we did not supply it, we must terminate it
+    run_engine.loop.call_soon_threadsafe(run_engine.loop.stop)
+    run_engine._th.join()
+
 
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
@@ -320,6 +338,7 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
+    run_engine: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -455,7 +474,7 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
         name = StaticFilenameProvider("jf_out")
         path = AutoIncrementingPathProvider(name, PurePath(tmp_path))

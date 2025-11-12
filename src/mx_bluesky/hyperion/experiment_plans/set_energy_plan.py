@@ -12,7 +12,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
 from mx_bluesky.common.parameters.constants import PlanNameConstants
@@ -39,7 +39,7 @@ class SetEnergyComposite:
 # Remove composite after https://github.com/DiamondLightSource/dodal/issues/1092
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class XBPMWrapperComposite:
-    undulator: UndulatorInKeV
+    undulator: Undulator
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
     dcm: DCM

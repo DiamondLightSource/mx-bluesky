@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
 import pytest
+from bluesky.run_engine import RunEngine
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
@@ -71,7 +72,6 @@ def test_rotation_nexgen(
     test_data_directory,
     prefix,
     reference_file,
-    run_engine,
 ):
     meta_file = f"{prefix}_meta.h5.gz"
     test_params.file_name = prefix
@@ -84,6 +84,7 @@ def test_rotation_nexgen(
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
+    run_engine = RunEngine({})
     run_engine(
         _fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices

@@ -222,7 +222,7 @@ def baton_with_requested_user(
 
 
 @pytest.fixture()
-def udc_runner(bluesky_context: BlueskyContext) -> PlanRunner:
+def udc_runner(bluesky_context: BlueskyContext, run_engine: RunEngine) -> PlanRunner:
     return PlanRunner(bluesky_context, True)
 
 
@@ -374,6 +374,7 @@ async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_
     agamemnon: MagicMock,
     udc_runner: PlanRunner,
     bluesky_context: BlueskyContext,
+    run_engine: RunEngine,
 ):
     agamemnon.side_effect = ValueError()
     with pytest.raises(ValueError):

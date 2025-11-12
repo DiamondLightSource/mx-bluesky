@@ -52,6 +52,7 @@ X_Z_EDGE_DATA = SampleLocation(
 
 @pytest.fixture
 def fake_devices(
+    run_engine: RunEngine,
     smargon: Smargon,
     backlight: Backlight,
     test_config_files: dict[str, str],
