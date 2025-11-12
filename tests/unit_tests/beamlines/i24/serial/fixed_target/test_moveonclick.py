@@ -134,6 +134,6 @@ def test_move_on_arrow_click(move_type, direction, size_of_move, expected_pmac_s
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.abs_set"
     ) as mock_abs_set:
-        run_engine = MagicMock()
-        run_engine(move_on_arrow_click(move_type, direction, size_of_move))
+        plan = move_on_arrow_click(move_type, direction, size_of_move)
+        list(plan)
         mock_abs_set.assert_called_with(ANY, expected_pmac_string, wait=True)
