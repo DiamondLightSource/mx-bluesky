@@ -423,8 +423,8 @@ def aithre_gonio():
         yield aithre_gonio
 
 
+@pytest.fixture
 def zebra():
-
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
