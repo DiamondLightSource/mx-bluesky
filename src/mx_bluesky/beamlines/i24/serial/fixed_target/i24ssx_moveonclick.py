@@ -219,6 +219,63 @@ def start_viewer(oav: OAV, pmac: PMAC, run_engine: RunEngine, oav1: str = OAV1_C
     cap.release()
 
 
+def move_on_arrow_click(move_type: str, direction: str, size_of_move: str):
+    """A plan that moves the chip based on the arrow clicked."""
+    xmove = 0
+    ymove = 0
+    if move_type == "nudge":
+        if size_of_move == "small":
+            if direction == "up":
+                ymove = -10
+            if direction == "left":
+                xmove = -10
+            if direction == "right":
+                xmove = 10
+            if direction == "down":
+                ymove = 10
+        if size_of_move == "big":
+            if direction == "up":
+                ymove = -60
+            if direction == "left":
+                xmove = -60
+            if direction == "right":
+                xmove = 60
+            if direction == "down":
+                ymove = 60
+    elif move_type == "window":
+        if size_of_move == "small":
+            if direction == "up":
+                ymove = -1250
+            if direction == "left":
+                xmove = -1250
+            if direction == "right":
+                xmove = 1250
+            if direction == "down":
+                ymove = 1250
+        if size_of_move == "big":
+            if direction == "up":
+                ymove = -3750
+            if direction == "left":
+                xmove = -3750
+            if direction == "right":
+                xmove = 3750
+            if direction == "down":
+                ymove = 3750
+    elif move_type == "block":
+        if direction == "up":
+            ymove = -31750
+        if direction == "down":
+            ymove = 31750
+        if direction == "left":
+            xmove = -31750
+        if direction == "right":
+            xmove = 31750
+    xmovepmacstring = "#5J:" + str(xmove)
+    ymovepmacstring = "#6J:" + str(ymove)
+    yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
+    yield from bps.abs_set(pmac.pmac_string, ymovepmacstring, wait=True)
+
+
 if __name__ == "__main__":
     run_engine = RunEngine(call_returns_result=True)
     # Get devices out of dodal
