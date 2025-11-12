@@ -127,7 +127,7 @@ def robot_snapshots_and_unload_plan(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
-        yield from bps.create(name=DocDescriptorNames.Robot_UPDATE)
+        yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
         yield from bps.read(composite.robot)
         yield from bps.save()
 
