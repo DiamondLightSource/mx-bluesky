@@ -28,10 +28,11 @@ from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class FlyScanEssentialDevices:
-    eiger: EigerDetector | FastCSEiger
+    eiger: EigerDetector
     synchrotron: Synchrotron
     zocalo: ZocaloResults
     smargon: Smargon
+    fastcs_eiger: FastCSEiger
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
