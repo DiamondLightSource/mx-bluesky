@@ -68,7 +68,6 @@ async def default_devices(aperture_scatterguard, cryostream_gantry):
 
 
 async def test_given_cryostream_temp_is_too_high_then_exception_raised(
-    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -81,7 +80,6 @@ async def test_given_cryostream_temp_is_too_high_then_exception_raised(
 
 
 async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
-    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -94,7 +92,6 @@ async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
 
 
 async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
-    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):
@@ -128,7 +125,6 @@ def test_udc_default_state_runs_in_real_run_engine(
 
 
 def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
-    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
 ):

@@ -10,7 +10,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -40,7 +40,7 @@ def read_hardware_for_zocalo(detector: EigerDetector):
 
 
 def standard_read_hardware_pre_collection(
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DoubleCrystalMonochromator,
