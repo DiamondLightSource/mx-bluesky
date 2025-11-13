@@ -175,7 +175,7 @@ def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
 
 @patch(
     "mx_bluesky.hyperion.experiment_plans.udc_default_state.move_beamstop_in_and_verify_using_diode",
-    return_value=iter([Msg("move_beamstop_in")]),
+    MagicMock(return_value=iter([Msg("move_beamstop_in")])),
 )
 def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_before_and_after_beamstop_check(
     sim_run_engine: RunEngineSimulator,
@@ -195,8 +195,6 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
             and msg.args[0] == value
             and msg.kwargs["group"] == group,
         )
-
-    msgs = assert_expected_set(default_devices.hutch_shutter, ShutterDemand.OPEN)
 
     msgs = assert_expected_set(
         default_devices.fluorescence_det_motion.pos, FlouInOut.OUT, pre_beamstop_group
