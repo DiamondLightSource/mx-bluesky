@@ -1,3 +1,4 @@
+import os
 import time
 
 import bluesky.plan_stubs as bps
@@ -20,7 +21,6 @@ from ophyd_async.core import InOut as core_INOUT
 from mx_bluesky.common.utils.exceptions import BeamlineStateException
 
 initial_wait = "Wait for scint to move in"
-group = "oav image path setting"
 
 
 def take_oav_image_with_scintillator_in(
@@ -48,7 +48,7 @@ def take_oav_image_with_scintillator_in(
                      defaults are always correct.
     """
 
-    _prepare_beamline_for_scintillator_images(
+    yield from _prepare_beamline_for_scintillator_images(
         initial_wait=initial_wait,
         robot=robot,
         beamstop=beamstop,
@@ -88,9 +88,8 @@ def _prepare_beamline_for_scintillator_images(
 
     yield from bps.trigger(xbpm_feedback, wait=True)
 
-    beamstop_pos = beamstop.selected_pos
     yield from bps.abs_set(
-        beamstop_pos, BeamstopPositions.DATA_COLLECTION, group=initial_wait
+        beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=initial_wait
     )
 
     yield from bps.abs_set(backlight, core_INOUT.OUT, group=initial_wait)
@@ -111,7 +110,12 @@ def take_and_save_oav_image(
         devices: These are the specific ophyd-devices used for the plan, the
                      defaults are always correct.
     """
-    yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
-    yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
-    yield from bps.wait(group)
-    yield from bps.trigger(oav.snapshot, wait=True)
+    group = "oav image path setting"
+    full_file_path = file_path + "/" + file_name
+    if not os.path.exists(full_file_path):
+        yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
+        yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
+        yield from bps.wait(group)
+        yield from bps.trigger(oav.snapshot, wait=True)
+    else:
+        raise FileExistsError("OAV image file path already exists")

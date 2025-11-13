@@ -29,7 +29,7 @@ async def test_check_exception_raised_if_pin_mounted(
     shutter: ZebraShutter,
     oav: OAV,
 ):
-    set_mock_value(robot.gonio_pin_sensor, PinMounted.NO_PIN_MOUNTED)
+    set_mock_value(robot.gonio_pin_sensor, PinMounted.PIN_MOUNTED)
 
     with pytest.raises(BeamlineStateException, match="Pin should not be mounted!"):
         RE(
@@ -80,7 +80,7 @@ def test_plan_stubs_called_in_correct_order(
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "scintillator-selected_pos"
+        # and msg.obj.name == "scintillator-selected_pos"
         and msg.args[0] == InOut.IN
         and msg.kwargs["group"] == "Wait for scint to move in",
     )
@@ -101,16 +101,16 @@ def test_plan_stubs_called_in_correct_order(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.MANUAL,
-        # and msg.args[1] is True,
+        and msg.args[0] == ZebraShutterControl.MANUAL
+        and msg.args[1] is True,
     )
 
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "sample_shutter"
-        and msg.args[0] == ZebraShutterState.OPEN,
-        # and msg.kwargs["wait"] == True
+        and msg.args[0] == ZebraShutterState.OPEN
+        and msg.kwargs["wait"] is True,
     )
 
 

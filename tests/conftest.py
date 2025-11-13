@@ -583,7 +583,7 @@ def robot(done_status, RE: RunEngine):
 
 
 @pytest.fixture
-def beamstop(run_engine: RunEngine) -> Beamstop:
+def beamstop(RE: RunEngine) -> Beamstop:
     with init_devices(mock=True):
         beamstop = Beamstop("", beamline_parameters=MagicMock(), name="beamstop")
     return beamstop
@@ -602,7 +602,7 @@ def scintillator(RE: RunEngine):
 
 
 @pytest.fixture
-def shutter(run_engine: RunEngine) -> ZebraShutter:
+def shutter(RE: RunEngine) -> ZebraShutter:
     with init_devices(mock=True):
         shutter = ZebraShutter("", name="sample_shutter")
     return shutter
