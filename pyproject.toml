@@ -123,12 +123,8 @@ reportMissingTypeArgument = false
 reportPrivateUsage = false
 reportUnknownVariableType = false
 reportUnusedVariable = false
-reportUnusedFunction = false
 reportArgumentType = false
-reportUnnecessaryComparison = false
-reportUnnecessaryCast = false
 reportMatchNotExhaustive = false
-reportUnnecessaryIsInstance = false
 
 
 [tool.pytest.ini_options]

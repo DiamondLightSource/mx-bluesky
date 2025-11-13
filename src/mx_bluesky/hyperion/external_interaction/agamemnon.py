@@ -220,7 +220,7 @@ def _get_withvisit_parameters_from_agamemnon(parameters: dict) -> tuple:
 def _get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any]:
     try:
         first_collection: dict = parameters["collection"][0]
-        wavelength = first_collection.get("wavelength")
+        wavelength: float | None = first_collection.get("wavelength")
         assert isinstance(wavelength, float)
         demand_energy_ev = convert_angstrom_to_ev(wavelength)
         return {"demand_energy_ev": demand_energy_ev}
