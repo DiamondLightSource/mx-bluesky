@@ -12,6 +12,7 @@ from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
@@ -26,6 +27,7 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     UnexpectedSampleError,
     move_to_udc_default_state,
 )
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 
 @pytest.fixture
@@ -61,6 +63,7 @@ async def default_devices(
     with (
         patch_all_motors(scintillator),
         patch_all_motors(collimation_table),
+        patch("dodal.devices.hutch_shutter.TEST_MODE", True),
     ):
         devices = UDCDefaultDevices(
             collimation_table=collimation_table,
@@ -78,6 +81,19 @@ async def default_devices(
         )
 
         yield devices
+
+
+@pytest.fixture
+def feature_flags_with_beamstop_diode_check():
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
+    ) as mock_get_config_client:
+        mock_get_config_client.return_value.get_feature_flags.return_value = (
+            HyperionFeatureSetting(
+                BEAMSTOP_DIODE_CHECK=True,
+            )
+        )
+        yield mock_get_config_client.return_value.get_feature_flags.return_value
 
 
 async def test_given_cryostream_temp_is_too_high_then_exception_raised(
@@ -137,6 +153,26 @@ def test_udc_default_state_runs_in_real_run_engine(
     run_engine(move_to_udc_default_state(default_devices))
 
 
+def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
+    sim_run_engine: RunEngineSimulator,
+    default_devices: UDCDefaultDevices,
+):
+    pre_beamstop_group = "pre_beamstop_check"
+    msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait" and msg.kwargs["group"] == pre_beamstop_group,
+    )
+    assert (
+        msgs[1].command == "set"
+        and msgs[1].obj is default_devices.beamstop.selected_pos
+        and msgs[1].args[0] == BeamstopPositions.DATA_COLLECTION
+    )
+    assert (
+        msgs[2].command == "wait" and msgs[2].kwargs["group"] == msgs[1].kwargs["group"]
+    )
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.udc_default_state.move_beamstop_in_and_verify_using_diode",
     return_value=iter([Msg("move_beamstop_in")]),
@@ -144,6 +180,7 @@ def test_udc_default_state_runs_in_real_run_engine(
 def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_before_and_after_beamstop_check(
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
+    feature_flags_with_beamstop_diode_check: HyperionFeatureSetting,
 ):
     msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
 

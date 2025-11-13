@@ -11,6 +11,7 @@ from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
@@ -23,6 +24,10 @@ from mx_bluesky.hyperion.experiment_plans.beamstop_check import (
     BeamstopCheckDevices,
     move_beamstop_in_and_verify_using_diode,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
@@ -106,10 +111,18 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     # Wait for all of the above to complete
-    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK)
+    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK, timeout=0.1)
 
-    beamline_parameters = get_beamline_parameters()
-    yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
+    feature_flags: HyperionFeatureSetting = (
+        get_hyperion_config_client().get_feature_flags()
+    )
+    if feature_flags.BEAMSTOP_DIODE_CHECK:
+        beamline_parameters = get_beamline_parameters()
+        yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
+    else:
+        yield from bps.abs_set(
+            devices.beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, wait=True
+        )
 
     yield from bps.abs_set(
         devices.aperture_scatterguard.selected_aperture,
