@@ -38,7 +38,6 @@ _PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT = "dataCollectionMinSampleCurrent"
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices(BeamstopCheckDevices):
     collimation_table: CollimationTable
-    hutch_shutter: HutchShutter
     cryostream: CryoStream
     cryostream_gantry: CryoStreamGantry
     fluorescence_det_motion: FluorescenceDetector
@@ -64,11 +63,6 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         raise CryoStreamError("Cryostream temperature is too high, not starting UDC")
     if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
         raise CryoStreamError("Cryostream back pressure is too high, not starting UDC")
-
-    yield from bps.abs_set(
-        devices.hutch_shutter, ShutterDemand.OPEN, group="udc_default"
-    )
-
 
     yield from _verify_no_sample_present(devices.robot)
 
