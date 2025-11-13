@@ -10,11 +10,13 @@ import numpy as np
 import zmq
 from dodal.devices.i04.constants import RedisConstants
 from dodal.devices.i04.murko_results import RESULTS_COMPLETE_MESSAGE, MurkoResult
-from dodal.devices.oav.oav_to_redis_forwarder import FORWARDING_COMPLETE_MESSAGE
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
 
+from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
+    FORWARDING_COMPLETE_MESSAGE,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
