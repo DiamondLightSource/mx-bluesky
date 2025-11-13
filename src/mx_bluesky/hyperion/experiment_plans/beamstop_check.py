@@ -147,7 +147,7 @@ def _pre_beamstop_out_check_actions(
     )
     yield from bps.abs_set(
         devices.beamstop.selected_pos,
-        BeamstopPositions.OUT,
+        BeamstopPositions.OUT_OF_BEAM,
         group=_GROUP_PRE_BEAMSTOP_OUT_CHECK,
     )
 

@@ -154,7 +154,7 @@ def test_beamstop_check_performs_pre_beamstop_out_check_actions_before_first_bac
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj is beamstop_check_devices.beamstop.selected_pos
-        and msg.args[0] == BeamstopPositions.OUT
+        and msg.args[0] == BeamstopPositions.OUT_OF_BEAM
         and msg.kwargs["group"] == pre_check_group,
     )
     msgs = assert_message_and_return_remaining(
