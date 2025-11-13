@@ -56,11 +56,14 @@ def move_beamstop_in_and_verify_using_diode(
     devices: BeamstopCheckDevices, beamline_parameters: GDABeamlineParameters
 ) -> MsgGenerator:
     """
-    Move the beamstop into the data collection position, comparing before and after the beam
-    current via the diode on the detector shutter, in order to verify that the beamstop has
-    been successfully moved.
+    Move the beamstop into the data collection position, checking the beam current
+    via the diode on the detector shutter, first with the beamstop out and then with
+    the beamstop in.
+    These checks aim to ensure that
+       * The beam is not obstructed by something other than the beamstop
+       * The beamstop has been successfully moved and is intercepting the beam
 
-    As a side-effect, also does the following things:
+    As a side-effect, this plan also does the following things:
         * Move the detector z-axis in range
         * Move the backlight out
         * Unpauses feedback
@@ -83,6 +86,8 @@ def move_beamstop_in_and_verify_using_diode(
             the check.
         BeamstopNotInPositionError: If the ipin current is too high, indicating that the
             beamstop is not in the correct position.
+        BeamObstructedError: If the ipin current is too low after the first check
+            with the beamstop out, indicating a likely obstruction.
     """
     LOGGER.info("Performing beamstop check...")
     commissioning_mode_enabled = yield from bps.rd(devices.baton.commissioning)
