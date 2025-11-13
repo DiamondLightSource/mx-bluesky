@@ -30,7 +30,7 @@ MAX_DEPLOYMENTS = 4
 help_message = f"""
 To deploy mx_bluesky on a specific beamline, using the control machine to create the \
 environment and without kubernetes, only the beamline argument needs to be passed.
-This will put the latest release in /dls_sw/ixx/software/bluesky/mx_bluesky_v#.#.# and \
+This will put the latest release in /dls_sw/ixx/software/bluesky/mx_bluesky_#.#.# and \
 set the permissions accordingly. \n
 To run in dev mode, pass also the --dev option. This will place a test release in \
 {DEV_DEPLOY_LOCATION}. \n
