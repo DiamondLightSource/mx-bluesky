@@ -169,8 +169,8 @@ def _start_moving_detector_if_needed(devices: BeamstopCheckDevices):
     target_z = max(min(detector_current_z, detector_max_z), detector_min_z)
     if detector_current_z != target_z:
         LOGGER.info(
-            f"Detector distance {detector_current_z}mm outside acceptable range {detector_min_z} <= z <="
-            f" {detector_max_z}, moving it."
+            f"Detector distance {detector_current_z}mm outside acceptable range for diode "
+            f"check {detector_min_z} <= z <= {detector_max_z}, moving it."
         )
         yield from bps.abs_set(
             devices.detector_motion.z, target_z, group=_GROUP_POST_BEAMSTOP_OUT_CHECK
