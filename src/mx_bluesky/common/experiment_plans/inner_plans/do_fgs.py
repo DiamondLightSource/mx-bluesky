@@ -109,7 +109,11 @@ def kickoff_and_complete_gridscan(
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from bps.unstage(detector, wait=True)),
+        else_plan=lambda: (
+            yield from bps.unstage(detector, wait=True)  # old eiger
+            if isinstance(detector, EigerDetector)
+            else bps.complete(detector, wait=True)  # fastcs eiger
+        ),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(
