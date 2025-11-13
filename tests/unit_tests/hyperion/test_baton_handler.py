@@ -986,7 +986,7 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
     )
     run_udc_when_requested(bluesky_context, udc_runner)
 
-    baton: Baton = bluesky_context.find_device("baton")
+    baton: Baton = bluesky_context.find_device("baton")  # type: ignore
     mock_move_to_udc_default_state.assert_called_once()
     assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
     assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
