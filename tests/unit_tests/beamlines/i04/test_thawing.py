@@ -277,10 +277,7 @@ def test_thaw_and_stream_will_produce_events_that_call_murko(
     class StopPlanError(Exception):
         pass
 
-    def stop_plan(_):
-        raise StopPlanError
-
-    patch_stop_call.side_effect = stop_plan
+    patch_stop_call.side_effect = StopPlanError()
 
     with pytest.raises(StopPlanError):
         run_engine(
