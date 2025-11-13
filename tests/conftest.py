@@ -72,6 +72,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 from ophyd_async.testing import set_mock_value
 from PIL import Image
@@ -401,6 +402,15 @@ def eiger(done_status):
     eiger.do_arm.set = MagicMock(return_value=done_status)
     eiger.unstage = MagicMock(return_value=done_status)
     return eiger
+
+
+@pytest.fixture
+def fastcs_eiger(done_status):
+    fascs_eiger = i03.fastcs_eiger(connect_immediately=True, mock=True)
+    fascs_eiger.stage = MagicMock(return_value=done_status)
+    fascs_eiger.kickoff = MagicMock(return_value=done_status)
+    fascs_eiger.unstage = MagicMock(return_value=done_status)
+    return fascs_eiger
 
 
 @pytest.fixture
@@ -945,6 +955,7 @@ async def hyperion_flyscan_xrc_composite(
     s4_slit_gaps,
     fast_grid_scan,
     panda_fast_grid_scan,
+    fastcs_eiger: FastCSEiger,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -966,6 +977,7 @@ async def hyperion_flyscan_xrc_composite(
         panda_fast_grid_scan=panda_fast_grid_scan,
         robot=i03.robot(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter(connect_immediately=True, mock=True),
+        fastcs_eiger=fastcs_eiger,
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
