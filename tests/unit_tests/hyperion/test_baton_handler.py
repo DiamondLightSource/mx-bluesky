@@ -222,7 +222,7 @@ def baton_with_requested_user(
 
 
 @pytest.fixture()
-def udc_runner(bluesky_context: BlueskyContext, run_engine: RunEngine) -> PlanRunner:
+def udc_runner(bluesky_context: BlueskyContext) -> PlanRunner:
     return PlanRunner(bluesky_context, True)
 
 
@@ -374,7 +374,6 @@ async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_
     agamemnon: MagicMock,
     udc_runner: PlanRunner,
     bluesky_context: BlueskyContext,
-    run_engine: RunEngine,
 ):
     agamemnon.side_effect = ValueError()
     with pytest.raises(ValueError):
@@ -685,7 +684,7 @@ def test_run_forever_clears_error_status_on_resume(
             while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
             await baton.requested_user.set(HYPERION_USER)
-            while udc_runner.current_status != Status.BUSY:
+            while udc_runner.current_status != Status.BUSY:  # type: ignore
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         finally:
             udc_runner.shutdown()
