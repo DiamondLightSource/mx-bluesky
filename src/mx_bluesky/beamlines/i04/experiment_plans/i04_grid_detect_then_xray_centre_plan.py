@@ -169,30 +169,8 @@ def i04_grid_detect_then_xray_centre(
     initial_y = yield from bps.rd(smargon.y.user_readback)
     initial_z = yield from bps.rd(smargon.z.user_readback)
 
-    # Calculate scaled transmission and exposure by comparing current beamline energy to default energy
     _current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
-    _assumed_wavelength_a = (
-        get_i04_config_client().get_feature_flags().ASSUMED_WAVELENGTH_IN_A
-    )
-    _unscaled_transmission = (
-        get_i04_config_client().get_feature_flags().XRC_UNSCALED_TRANSMISSION_FRAC
-    )
-    _unscaled_exposure_time_s = (
-        get_i04_config_client().get_feature_flags().XRC_UNSCALED_EXPOSURE_TIME_S
-    )
-    transmission_frac, exposure_time_s = (
-        fix_transmission_and_exposure_time_for_current_wavelength(
-            _current_wavelength_a,
-            _assumed_wavelength_a,
-            _unscaled_transmission,
-            _unscaled_exposure_time_s,
-        )
-    )
-
-    grid_common = json.loads(parameters.model_dump_json())
-    grid_common["transmission_frac"] = transmission_frac
-    grid_common["exposure_time_s"] = exposure_time_s
-    grid_common_params = GridCommon(**grid_common)
+    grid_common_params = _get_grid_common_params(_current_wavelength_a, parameters)
 
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
@@ -329,3 +307,31 @@ def construct_i04_specific_features(
         signals_to_read_during_collection,
         get_xrc_results_from_zocalo=True,
     )
+
+
+def _get_grid_common_params(
+    _current_wavelength_a: float, parameters: GridCommonNoTransmissionOrExposure
+) -> GridCommon:
+    """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
+    _assumed_wavelength_a = (
+        get_i04_config_client().get_feature_flags().ASSUMED_WAVELENGTH_IN_A
+    )
+    _unscaled_transmission = (
+        get_i04_config_client().get_feature_flags().XRC_UNSCALED_TRANSMISSION_FRAC
+    )
+    _unscaled_exposure_time_s = (
+        get_i04_config_client().get_feature_flags().XRC_UNSCALED_EXPOSURE_TIME_S
+    )
+    transmission_frac, exposure_time_s = (
+        fix_transmission_and_exposure_time_for_current_wavelength(
+            _current_wavelength_a,
+            _assumed_wavelength_a,
+            _unscaled_transmission,
+            _unscaled_exposure_time_s,
+        )
+    )
+
+    grid_common = json.loads(parameters.model_dump_json())
+    grid_common["transmission_frac"] = transmission_frac
+    grid_common["exposure_time_s"] = exposure_time_s
+    return GridCommon(**grid_common)

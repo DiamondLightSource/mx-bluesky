@@ -1,3 +1,4 @@
+import json
 from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -33,6 +34,7 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
+    _get_grid_common_params,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
@@ -506,3 +508,25 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
     assert isinstance(grid_common_params, GridCommon)
     assert grid_common_params.exposure_time_s == expected_exposure_time
     assert grid_common_params.transmission_frac == expected_trans_frac
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+)
+def test_get_grid_common_params(
+    mock_fix_trans_and_exposure: MagicMock, test_full_grid_scan_params: GridCommon
+):
+    expected_trans_frac = 1
+    expected_exposure_time = 0.004
+    mock_fix_trans_and_exposure.return_value = (
+        expected_trans_frac,
+        expected_exposure_time,
+    )
+    params = json.loads(test_full_grid_scan_params.model_dump_json())
+    del params["exposure_time_s"]
+    del params["transmission_frac"]
+    entry_params = GridCommonNoTransmissionOrExposure(**params)
+    expected_params = test_full_grid_scan_params
+    expected_params.exposure_time_s = 0.004
+    expected_params.transmission_frac = 1
+    assert _get_grid_common_params(1, entry_params) == expected_params
