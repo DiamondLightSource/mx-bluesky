@@ -28,6 +28,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      ################################
+      # Hyperion Container Image Build 
+      ################################
+
       - name: Build and export to Docker local cache
         uses: docker/build-push-action@v6
         env:
@@ -35,18 +39,6 @@ jobs:
         with:
           context: .
           file: Dockerfile.hyperion
-          load: true
-
-      - name: Check disk space
-        run: df  -h
-
-      - name: Build and export Dockerfile.blueapi to local cache
-        uses: docker/build-push-action@v6
-        env:
-          DOCKER_BUILD_RECORD_UPLOAD: false
-        with:
-          context: .
-          file: Dockerfile.blueapi
           load: true
 
       - name: Create tags for publishing Hyperion image
@@ -61,22 +53,6 @@ jobs:
           annotations: |
             org.opencontainers.image.title=mx-bluesky
             org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest
-
-      - name: Create tags for publishing BlueAPI image
-        id: meta-blueapi
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/${{ github.repository }}-blueapi
-          labels: |
-            org.opencontainers.image.title=mx-bluesky-blueapi
-            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
-          annotations: |
-            org.opencontainers.image.title=mx-bluesky-blueapi
-            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
           tags: |
             type=ref,event=tag
             type=raw,value=latest
@@ -96,6 +72,45 @@ jobs:
           labels: ${{ steps.meta-hyperion.outputs.labels }}
           # Set the annotations to make the description appear in the GH repo page
           annotations: ${{ steps.meta-hyperion.outputs.annotations }}
+
+      - name: Check disk space before
+        run: df  -h && docker buildx du
+
+      - name: Prune local image cache before next build
+        run: docker buildx prune
+
+      - name: Check disk space after
+        run: df  -h && docker buildx du
+
+      ###############################
+      # BlueAPI Container Image Build
+      ###############################
+
+      - name: Build and export Dockerfile.blueapi to local cache
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.blueapi
+          load: true
+
+
+      - name: Create tags for publishing BlueAPI image
+        id: meta-blueapi
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}-blueapi
+          labels: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
+          annotations: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
 
       - name: Push cached BlueAPI image to container registry
         if: github.ref_type == 'tag'
