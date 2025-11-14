@@ -37,6 +37,9 @@ jobs:
           file: Dockerfile.hyperion
           load: true
 
+      - name: Check disk space
+        run: df  -h
+
       - name: Build and export Dockerfile.blueapi to local cache
         uses: docker/build-push-action@v6
         env:
@@ -45,9 +48,6 @@ jobs:
           context: .
           file: Dockerfile.blueapi
           load: true
-          
-      - name: Check disk space
-        run: df  -h
 
       - name: Create tags for publishing Hyperion image
         id: meta-hyperion
