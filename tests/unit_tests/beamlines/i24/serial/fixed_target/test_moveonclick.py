@@ -121,7 +121,7 @@ def test_update_ui_uses_correct_beam_centre_for_ellipse(
 
 
 @pytest.mark.parametrize(
-    "direction, size_of_move, expected_pmac_string",
+    "direction, expected_pmac_string",
     [
         ("up", "&2#6J:-31750"),
         ("right", "&2#5J:31750"),
