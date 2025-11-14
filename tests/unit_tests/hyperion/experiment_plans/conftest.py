@@ -401,35 +401,38 @@ async def beamstop_check_devices(
         await asyncio.sleep(0)
 
     run_engine.register_command("sleep", noop)
-    async with init_devices(mock=True):
-        beamstop = Beamstop("", MagicMock())
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
 
-    with patch_all_motors(beamstop):
-        devices = BeamstopCheckDevices(
-            aperture_scatterguard=aperture_scatterguard,
-            attenuator=attenuator,
-            backlight=backlight,
-            baton=baton,
-            beamstop=beamstop,
-            detector_motion=detector_motion,
-            ipin=ipin,
-            sample_shutter=zebra_shutter,
-            xbpm_feedback=xbpm_feedback,
-        )
-        sim_run_engine.add_read_handler_for(
-            devices.sample_shutter, ZebraShutterState.CLOSE
-        )
-        sim_run_engine.add_handler(
-            "locate",
-            lambda msg: {"readback": ShutterState.CLOSED},
-            "detector_motion-shutter",
-        )
-        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+        with patch_all_motors(beamstop):
+            devices = BeamstopCheckDevices(
+                aperture_scatterguard=aperture_scatterguard,
+                attenuator=attenuator,
+                backlight=backlight,
+                baton=baton,
+                beamstop=beamstop,
+                detector_motion=detector_motion,
+                ipin=ipin,
+                sample_shutter=zebra_shutter,
+                xbpm_feedback=xbpm_feedback,
+            )
+            sim_run_engine.add_read_handler_for(
+                devices.sample_shutter, ZebraShutterState.CLOSE
+            )
+            sim_run_engine.add_handler(
+                "locate",
+                lambda msg: {"readback": ShutterState.CLOSED},
+                "detector_motion-shutter",
+            )
+            sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
 
-        def put_sample_shutter(value, **kwargs):
-            set_mock_value(devices.sample_shutter.position_readback, value)
+            def put_sample_shutter(value, **kwargs):
+                set_mock_value(devices.sample_shutter.position_readback, value)
 
-        get_mock_put(
-            devices.sample_shutter._manual_position_setpoint
-        ).side_effect = put_sample_shutter
-        yield devices
+            get_mock_put(
+                devices.sample_shutter._manual_position_setpoint
+            ).side_effect = put_sample_shutter
+            yield devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
