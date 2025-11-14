@@ -26,6 +26,7 @@ def goniometer() -> Goniometer:
 
     patch_motor(gonio.omega)
     patch_motor(gonio.x)
+    patch_motor(gonio.y)
     patch_motor(gonio.z)
     patch_motor(gonio.sampy)
     patch_motor(gonio.sampz)
