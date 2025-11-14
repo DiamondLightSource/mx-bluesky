@@ -2,11 +2,13 @@ FROM python:3.11 AS build
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update -y && apt upgrade -y
-# Needed for python cv2 dependency
-RUN apt install -y libgl1 libglib2.0-0
+# Need:
+# libgl, libglib2.0 for python cv2 dependency
+RUN apt update -y && \
+    apt upgrade -y && \
+    apt install -y libgl1 libglib2.0-0
 
-RUN pip install setuptools_scm
+RUN pip install --no-cache-dir --no-compile setuptools_scm
 
 # Copy the pyproject.toml and install dependencies for better caching when developing
 # & rerunning deployment scripts
