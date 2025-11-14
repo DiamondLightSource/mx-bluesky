@@ -4,6 +4,7 @@ Robin Owen 12 Jan 2021
 """
 
 from collections.abc import Sequence
+from enum import Enum
 
 import bluesky.plan_stubs as bps
 import cv2 as cv
@@ -219,36 +220,57 @@ def start_viewer(oav: OAV, pmac: PMAC, run_engine: RunEngine, oav1: str = OAV1_C
     cap.release()
 
 
-def move_on_arrow_click(move_type: str, direction: str, size_of_move: str):
+class MoveType(Enum):
+    NUDGE = "nudge"
+    WINDOW = "window"
+    BLOCK = "block"
+
+
+class MoveSize(Enum):
+    SMALL = "small"
+    BIG = "big"
+
+
+class Direction(Enum):
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
+
+
+def move_on_arrow_click(
+    move_type: MoveType, direction: Direction, size_of_move: MoveSize
+):
     """A plan that moves the chip based on the arrow clicked."""
     xmove = 0
     ymove = 0
     magnitude = 0
 
-    if move_type == "nudge":
-        if size_of_move == "small":
+    if move_type is MoveType.NUDGE:
+        if size_of_move is MoveSize.SMALL:
             magnitude = 10
-        if size_of_move == "big":
+        if size_of_move is MoveSize.BIG:
             magnitude = 60
-    elif move_type == "window":
-        if size_of_move == "small":
+    elif move_type is MoveType.WINDOW:
+        if size_of_move is MoveSize.SMALL:
             magnitude = 1250
-        if size_of_move == "big":
+        if size_of_move is MoveSize.BIG:
             magnitude = 3750
-    elif move_type == "block":
+    elif move_type is MoveType.BLOCK:
         magnitude = 31750
 
-    if direction == "up":
+    if direction is Direction.UP:
         ymove = -magnitude
-    elif direction == "left":
+    elif direction is Direction.LEFT:
         xmove = -magnitude
-    elif direction == "right":
+    elif direction is Direction.RIGHT:
         xmove = magnitude
-    elif direction == "down":
+    elif direction is Direction.DOWN:
         ymove = magnitude
 
-    xmovepmacstring = "&2#5J:" + str(xmove)
-    ymovepmacstring = "&2#6J:" + str(ymove)
+    xmovepmacstring = f"&2#5J:{xmove}"
+    ymovepmacstring = f"&2#6J:{ymove}"
+
     yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
     yield from bps.abs_set(pmac.pmac_string, ymovepmacstring, wait=True)
 
