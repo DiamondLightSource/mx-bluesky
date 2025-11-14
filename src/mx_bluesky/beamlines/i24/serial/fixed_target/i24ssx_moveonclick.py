@@ -220,12 +220,6 @@ def start_viewer(oav: OAV, pmac: PMAC, run_engine: RunEngine, oav1: str = OAV1_C
     cap.release()
 
 
-class MoveType(Enum):
-    NUDGE = "nudge"
-    WINDOW = "window"
-    BLOCK = "block"
-
-
 class MoveSize(Enum):
     SMALL = "small"
     BIG = "big"
@@ -238,41 +232,52 @@ class Direction(Enum):
     RIGHT = "right"
 
 
-def move_on_arrow_click(
-    move_type: MoveType, direction: Direction, size_of_move: MoveSize
-):
-    """A plan that moves the chip based on the arrow clicked."""
-    xmove = 0
-    ymove = 0
-    magnitude = 0
+def _calculate_direction(magnitude: int, direction: Direction) -> tuple[str, str]:
+    y_move = "&2#6J:0"
+    x_move = "&2#5J:0"
 
-    if move_type is MoveType.NUDGE:
-        if size_of_move is MoveSize.SMALL:
-            magnitude = 10
-        if size_of_move is MoveSize.BIG:
-            magnitude = 60
-    elif move_type is MoveType.WINDOW:
-        if size_of_move is MoveSize.SMALL:
+    match direction:
+        case Direction.UP:
+            y_move = f"&2#6J:{-magnitude}"
+        case Direction.DOWN:
+            y_move = f"&2#6J:{magnitude}"
+        case Direction.LEFT:
+            x_move = f"&2#5J:{-magnitude}"
+        case Direction.RIGHT:
+            x_move = f"&2#5J:{magnitude}"
+
+    return x_move, y_move
+
+
+def move_block_on_arrow_click(direction: Direction):
+    magnitude = 31750
+    x_move, y_move = _calculate_direction(magnitude, direction)
+    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
+    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
+
+
+def move_window_on_arrow_click(direction: Direction, size_of_move: MoveSize):
+    match size_of_move:
+        case MoveSize.SMALL:
             magnitude = 1250
-        if size_of_move is MoveSize.BIG:
+        case MoveSize.BIG:
             magnitude = 3750
-    elif move_type is MoveType.BLOCK:
-        magnitude = 31750
 
-    if direction is Direction.UP:
-        ymove = -magnitude
-    elif direction is Direction.LEFT:
-        xmove = -magnitude
-    elif direction is Direction.RIGHT:
-        xmove = magnitude
-    elif direction is Direction.DOWN:
-        ymove = magnitude
+    x_move, y_move = _calculate_direction(magnitude, direction)
+    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
+    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
 
-    xmovepmacstring = f"&2#5J:{xmove}"
-    ymovepmacstring = f"&2#6J:{ymove}"
 
-    yield from bps.abs_set(pmac.pmac_string, xmovepmacstring, wait=True)
-    yield from bps.abs_set(pmac.pmac_string, ymovepmacstring, wait=True)
+def move_nudge_on_arrow_click(direction: Direction, size_of_move: MoveSize):
+    match size_of_move:
+        case MoveSize.SMALL:
+            magnitude = 10
+        case MoveSize.BIG:
+            magnitude = 60
+
+    x_move, y_move = _calculate_direction(magnitude, direction)
+    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
+    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
 
 
 if __name__ == "__main__":
