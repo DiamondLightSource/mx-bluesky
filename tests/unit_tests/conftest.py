@@ -95,9 +95,8 @@ def _error_and_kill_pending_tasks(
     unfinished_tasks = {
         task
         for task in asyncio.all_tasks(loop)
-        if (coro := task.get_coro()) is not None
-        and hasattr(coro, "__name__")
-        and coro.__name__ not in _ALLOWED_PYTEST_TASKS
+        if hasattr(coro := task.get_coro(), "__name__")
+        and coro.__name__ not in _ALLOWED_PYTEST_TASKS  # type: ignore
         and not task.done()
     }
     for task in unfinished_tasks:
