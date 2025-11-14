@@ -77,7 +77,7 @@ jobs:
         run: df  -h && docker buildx du
 
       - name: Prune local image cache before next build
-        run: docker buildx prune
+        run: docker buildx prune -f
 
       - name: Check disk space after
         run: df  -h && docker buildx du
