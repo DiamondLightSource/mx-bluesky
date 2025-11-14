@@ -130,7 +130,6 @@ def test_update_ui_uses_correct_beam_centre_for_ellipse(
 def test_move_block_on_arrow_click(
     direction,
     expected_pmac_string,
-    pmac: PMAC,
 ):
     with patch(
         "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.abs_set"
