@@ -41,7 +41,7 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    GridCommonNoTransmissionOrExposure,
+    GridCommonNoTransmissionExposureEnergy,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from tests.conftest import TEST_RESULT_LARGE, raw_params_from_file, simulate_xrc_result
@@ -87,7 +87,7 @@ def i04_grid_detect_then_xrc_default_params(
     )
     del params["exposure_time_s"]
     del params["transmission_frac"]
-    entry_params = GridCommonNoTransmissionOrExposure(**params)
+    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
 
     set_mock_value(dcm.wavelength_in_a.user_readback, EXPECTED_WAVELENGTH)
     return partial(
@@ -525,7 +525,7 @@ def test_get_grid_common_params(
     params = json.loads(test_full_grid_scan_params.model_dump_json())
     del params["exposure_time_s"]
     del params["transmission_frac"]
-    entry_params = GridCommonNoTransmissionOrExposure(**params)
+    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
     expected_params = test_full_grid_scan_params
     expected_params.exposure_time_s = 0.004
     expected_params.transmission_frac = 1

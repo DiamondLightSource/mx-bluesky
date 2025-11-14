@@ -73,7 +73,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    GridCommonNoTransmissionOrExposure,
+    GridCommonNoTransmissionExposureEnergy,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -104,7 +104,7 @@ def _change_beamsize(
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
 def i04_grid_detect_then_xray_centre(
-    parameters: GridCommonNoTransmissionOrExposure,
+    parameters: GridCommonNoTransmissionExposureEnergy,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
@@ -310,7 +310,7 @@ def construct_i04_specific_features(
 
 
 def _get_grid_common_params(
-    _current_wavelength_a: float, parameters: GridCommonNoTransmissionOrExposure
+    _current_wavelength_a: float, parameters: GridCommonNoTransmissionExposureEnergy
 ) -> GridCommon:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
     _assumed_wavelength_a = (

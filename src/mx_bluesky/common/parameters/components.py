@@ -163,7 +163,6 @@ class WithSpecifiedTransmission(BaseModel):
 class DiffractionExperimentBase(
     MxBlueskyParameters,
     WithSnapshot,
-    WithOptionalEnergyChange,
     WithVisit,
     ABC,
 ):
@@ -195,6 +194,7 @@ class DiffractionExperimentBase(
 class DiffractionExperiment(
     DiffractionExperimentBase,
     WithSpecifiedTransmission,
+    WithOptionalEnergyChange,
 ):
     """For all experiments which use beam"""
 
@@ -242,15 +242,14 @@ class WithSample(BaseModel):
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 
-class DiffractionSampleExperimentAutoTransmissionAndExposure(
+class DiffractionSampleExperimentAutoTransmissionExposureEnergy(
     DiffractionExperimentBase,
     WithSnapshot,
-    WithOptionalEnergyChange,
     WithVisit,
     WithSample,
 ):
     """For experiments where a sensible exposure and transmission are internally
-    calculated."""
+    calculated, and current beamline energy is used."""
 
 
 class MultiXtalSelection(BaseModel):
