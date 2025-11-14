@@ -1,3 +1,4 @@
+import json
 from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -33,19 +34,26 @@ from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
+    _get_grid_common_params,
     get_ready_for_oav_and_close_shutter,
     i04_grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import (
+    GridCommon,
+    GridCommonNoTransmissionExposureEnergy,
+)
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
-from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
+from tests.conftest import TEST_RESULT_LARGE, raw_params_from_file, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteError,
 )
 
 
 class CustomError(Exception): ...
+
+
+EXPECTED_WAVELENGTH = 0.95373
 
 
 @pytest.fixture
@@ -70,12 +78,21 @@ def i04_grid_detect_then_xrc_default_params(
     zocalo: ZocaloResults,
     smargon: Smargon,
     detector_motion: DetectorMotion,
-    test_full_grid_scan_params: GridCommon,
     transfocator: Transfocator,
+    tmp_path,
 ):
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
+        tmp_path,
+    )
+    del params["exposure_time_s"]
+    del params["transmission_frac"]
+    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
+
+    set_mock_value(dcm.wavelength_in_a.user_readback, EXPECTED_WAVELENGTH)
     return partial(
         i04_grid_detect_then_xray_centre,
-        parameters=test_full_grid_scan_params,
+        parameters=entry_params,
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -247,7 +264,11 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
 )
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
+)
 def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+    mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
     mock_create_parameters: MagicMock,
@@ -260,6 +281,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     hyperion_fgs_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
+    mock_fix_transmission_and_exp_time.return_value = (1, 1)
     flyscan_event_handler = MagicMock()
     flyscan_event_handler.xray_centre_results = "dummy"
     mock_events_handler.return_value = flyscan_event_handler
@@ -442,3 +464,69 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(initial_x, wait=True)])
     get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(initial_y, wait=True)])
     get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+    return_value=(1, 0.004),
+)
+def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_grid_common(
+    mock_fix_transmission: MagicMock,
+    mock_create_gridscan_callbacks: MagicMock,
+    mock_setup_beamline_for_oav: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
+    mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    run_engine: RunEngine,
+):
+    expected_trans_frac = 1
+    expected_exposure_time = 0.004
+    mock_fix_transmission.return_value = (expected_trans_frac, expected_exposure_time)
+
+    run_engine(i04_grid_detect_then_xrc_default_params())
+    mock_fix_transmission.assert_called_once()
+
+    grid_common_params = mock_grid_detect_then_xray_centre.call_args.kwargs[
+        "parameters"
+    ]
+    assert isinstance(grid_common_params, GridCommon)
+    assert grid_common_params.exposure_time_s == expected_exposure_time
+    assert grid_common_params.transmission_frac == expected_trans_frac
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+)
+def test_get_grid_common_params(
+    mock_fix_trans_and_exposure: MagicMock, test_full_grid_scan_params: GridCommon
+):
+    expected_trans_frac = 1
+    expected_exposure_time = 0.004
+    mock_fix_trans_and_exposure.return_value = (
+        expected_trans_frac,
+        expected_exposure_time,
+    )
+    params = json.loads(test_full_grid_scan_params.model_dump_json())
+    del params["exposure_time_s"]
+    del params["transmission_frac"]
+    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
+    expected_params = test_full_grid_scan_params
+    expected_params.exposure_time_s = 0.004
+    expected_params.transmission_frac = 1
+    assert _get_grid_common_params(1, entry_params) == expected_params
