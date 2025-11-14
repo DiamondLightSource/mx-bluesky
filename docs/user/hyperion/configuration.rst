@@ -28,6 +28,9 @@ Note that making a change to these properties generally requires a restart of th
     "gda.mx.hyperion.xrc.use_gpu_results", "boolean", "If true, then zocalo gridscan processing uses the GPU results"
     "gda.mx.hyperion.xrc.use_roi_mode", "boolean", "If true then ROI mode is used."
     "gda.mx.udc.hyperion.enable", "boolean",  "Enables Hyperion UDC mode."
+    "gda.mx.hyperion.enable_beamstop_diode_check", "boolean", "If true, enables an extended beamstop position check
+ during UDC default state script measuring the diode current out-of and in beam. Otherwise the beamstop position is
+ moved to the data collection position."
 
 Beamline configuration/calibration files
 ========================================
