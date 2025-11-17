@@ -6,12 +6,11 @@ import os
 import sys
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
-from copy import deepcopy
 from functools import partial
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
 import pydantic
@@ -68,7 +67,6 @@ from dodal.log import set_up_all_logging_handlers
 from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
@@ -118,6 +116,8 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+
+pytest_plugins = ["tests.expeye_helpers"]
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -480,10 +480,8 @@ def detector_motion():
 
 
 @pytest.fixture
-def undulator():
+def undulator(baton):
     undulator = i03.undulator(connect_immediately=True, mock=True)
-    # force the child baton to be connected
-    i03.baton(connect_immediately=True, mock=True)
     with patch_all_motors(undulator):
         yield undulator
 
@@ -553,7 +551,7 @@ def robot(done_status):
 
     @AsyncStatus.wrap
     async def fake_load(val: SampleLocation):
-        if val is not None:
+        if val is not None:  # type: ignore
             set_mock_value(robot.current_pin, val.pin)
             set_mock_value(robot.current_puck, val.puck)
             set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
@@ -608,7 +606,10 @@ def beamstop_phase1(
 
 
 @pytest.fixture
-def xbpm_feedback(done_status):
+def xbpm_feedback(
+    done_status,
+    baton: Baton,  # Ensure baton is cached with mock configuration
+):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
@@ -1251,33 +1252,15 @@ def _dummy_params(tmp_path):
     return dummy_params
 
 
-def _dummy_params_2d(tmp_path):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-        tmp_path,
-    )
-    raw_params["z_steps"] = 1
-    return SpecifiedThreeDGridScan(**raw_params)
-
-
 TEST_SESSION_ID = 90
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
-TEST_DATA_COLLECTION_IDS = (12, 13)
-TEST_DATA_COLLECTION_GROUP_ID = 34
-TEST_POSITION_ID = 78
-TEST_GRID_INFO_IDS = (56, 57)
 TEST_SAMPLE_ID = 364758
 TEST_BARCODE = "12345A"
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
     return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-
-
-def assert_upsert_call_with(call, param_template, expected: dict):
-    actual = remap_upsert_columns(list(param_template), call.args[0])
-    assert actual == dict(param_template | expected)
 
 
 def remap_upsert_columns(keys: Sequence[str], values: list):
@@ -1650,86 +1633,6 @@ class TestData(OavGridSnapshotTestEvents):
     ]
 
 
-def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
-    def upsert_data_collection(values):
-        kvpairs = remap_upsert_columns(
-            list(MXAcquisition.get_data_collection_params()), values
-        )
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_data_collection.i)  # pyright: ignore
-
-    mx_acq = base_ispyb_conn.return_value.mx_acquisition
-    mx_acq.upsert_data_collection.side_effect = upsert_data_collection
-    mx_acq.update_dc_position.return_value = position_id
-    mx_acq.upsert_data_collection_group.return_value = dcgid
-
-    def upsert_dc_grid(values):
-        kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_dc_grid.i)  # pyright: ignore
-
-    upsert_data_collection.i = iter(dcids)  # pyright: ignore
-    upsert_dc_grid.i = iter(giids)  # pyright: ignore
-
-    mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
-    return base_ispyb_conn
-
-
-@pytest.fixture
-def mock_ispyb_conn(base_ispyb_conn):
-    return _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
-        TEST_DATA_COLLECTION_GROUP_ID,
-        TEST_DATA_COLLECTION_IDS,
-        TEST_GRID_INFO_IDS,
-    )
-
-
-@pytest.fixture
-def base_ispyb_conn():
-    with patch("ispyb.open", mock_open()) as ispyb_connection:
-        mock_mx_acquisition = MagicMock()
-        mock_mx_acquisition.get_data_collection_group_params.side_effect = (
-            lambda: deepcopy(MXAcquisition.get_data_collection_group_params())
-        )
-
-        mock_mx_acquisition.get_data_collection_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_data_collection_params()
-        )
-        mock_mx_acquisition.get_dc_position_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_position_params()
-        )
-        mock_mx_acquisition.get_dc_grid_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_grid_params()
-        )
-        ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
-        mock_core = MagicMock()
-
-        def mock_retrieve_visit(visit_str):
-            assert visit_str, "No visit id supplied"
-            return TEST_SESSION_ID
-
-        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
-        ispyb_connection.return_value.core = mock_core
-        yield ispyb_connection
-
-
-@pytest.fixture
-def mock_ispyb_conn_multiscan(base_ispyb_conn):
-    return _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
-        TEST_DATA_COLLECTION_GROUP_ID,
-        list(range(12, 24)),
-        list(range(56, 68)),
-    )
-
-
 @pytest.fixture
 def dummy_rotation_params(tmp_path):
     dummy_params = RotationScan(
@@ -1788,7 +1691,9 @@ def assert_images_pixelwise_equal(actual, expected):
 
 
 def _fake_config_server_read(
-    filepath: str | Path, desired_return_type=str, reset_cached_result=False
+    filepath: str | Path,
+    desired_return_type: type[str] | type[dict] = str,
+    reset_cached_result=False,
 ):
     filepath = Path(filepath)
     # Minimal logic required for unit tests

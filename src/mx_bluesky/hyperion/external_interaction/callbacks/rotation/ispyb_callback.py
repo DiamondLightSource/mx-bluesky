@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from dodal.devices.zocalo import ZocaloStartInfo
 
@@ -94,7 +94,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
-                cast(SingleRotationScan, self.params)
+                self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
                 self.params.comment,

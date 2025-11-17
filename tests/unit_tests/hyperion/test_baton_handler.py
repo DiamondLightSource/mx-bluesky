@@ -684,7 +684,7 @@ def test_run_forever_clears_error_status_on_resume(
             while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
             await baton.requested_user.set(HYPERION_USER)
-            while udc_runner.current_status != Status.BUSY:
+            while udc_runner.current_status != Status.BUSY:  # type: ignore
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         finally:
             udc_runner.shutdown()

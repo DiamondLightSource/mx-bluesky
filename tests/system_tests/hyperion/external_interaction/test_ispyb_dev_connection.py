@@ -432,8 +432,6 @@ def test_ispyb_deposition_in_gridscan(
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        "focalspotsizeatsamplex": 0.02,
-        "focalspotsizeatsampley": 0.02,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
         "beamsizeatsamplex": 0.02,
@@ -484,8 +482,8 @@ def test_ispyb_deposition_in_gridscan(
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "micronsPerPixelX": 0.806,
-        "micronsPerPixelY": 0.806,
+        "pixelsPerMicronX": 1.24069,
+        "pixelsPerMicronY": 1.24069,
     }
 
     compare_actual_and_expected(

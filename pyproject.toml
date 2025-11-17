@@ -21,7 +21,6 @@ dependencies = [
     "caproto",
     "fastapi[all]",
     "flask-restful",
-    "ispyb",
     "jupyterlab",
     "matplotlib",
     "nexgen >= 0.11.0",
@@ -67,6 +66,7 @@ dev = [
     "diff-cover",
     "GitPython",
     "import-linter",
+    "ispyb",
     "ipython",
     "mypy",
     "myst-parser",
@@ -81,6 +81,7 @@ dev = [
     "pytest-random-order",
     "pytest-timeout",
     "pytest",
+    "responses",
     "ruff",
     "sphinx-autobuild",
     "sphinx-copybutton",
@@ -123,12 +124,8 @@ reportMissingTypeArgument = false
 reportPrivateUsage = false
 reportUnknownVariableType = false
 reportUnusedVariable = false
-reportUnusedFunction = false
 reportArgumentType = false
-reportUnnecessaryComparison = false
-reportUnnecessaryCast = false
 reportMatchNotExhaustive = false
-reportUnnecessaryIsInstance = false
 
 
 [tool.pytest.ini_options]
