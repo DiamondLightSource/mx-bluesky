@@ -48,10 +48,6 @@ eiger_beamy = "BL24I-EA-EIGER-01:CAM:BeamY"
 eiger_omegaincr = "BL24I-EA-EIGER-01:CAM:OmegaIncr"
 eiger_od_filename_rbv = "BL24I-EA-EIGER-01:OD:FP:FileName_RBV"
 
-# Detector
-det_y = "BL24I-EA-DET-01:Y"
-det_z = "BL24I-EA-DET-01:Z"
-
 # General Purpose PV. Now use STEP13
 ioc13_gp1 = "BL24I-MO-IOC-13:GP1"
 ioc13_gp2 = "BL24I-MO-IOC-13:GP2"
