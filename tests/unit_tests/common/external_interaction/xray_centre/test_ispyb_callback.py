@@ -1,3 +1,4 @@
+import json
 from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 
@@ -19,36 +20,39 @@ from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetect
 
 from .....conftest import (
     EXPECTED_START_TIME,
+    TEST_SAMPLE_ID,
+    replace_all_tmp_paths,
+)
+from .....expeye_helpers import (
+    DC_COMMENT_RE,
+    DC_RE,
+    DCG_RE,
+    DCGS_RE,
+    DCS_RE,
+    GRID_RE,
+    POSITION_RE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_SAMPLE_ID,
-    TEST_SESSION_ID,
-    assert_upsert_call_with,
-    mx_acquisition_from_conn,
-    remap_upsert_columns,
-    replace_all_tmp_paths,
+)
+from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
+    TEST_PROPOSAL_REF,
+    TEST_VISIT_NUMBER,
 )
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
-    "visitid": TEST_SESSION_ID,
-    "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-    "sampleid": TEST_SAMPLE_ID,
     "comments": "MX-Bluesky: Xray centring 1 -",
-    "detectorid": 78,
-    "detector_distance": 100.0,
-    "exp_time": 0.1,
-    "imgdir": "{tmp_data}/",
-    "imgprefix": "file_name",
-    "imgsuffix": "h5",
-    "n_passes": 1,
+    "detectorId": 78,
+    "detectorDistance": 100.0,
+    "exposureTime": 0.1,
+    "imageDirectory": "{tmp_data}/",
+    "imagePrefix": "file_name",
+    "imageSuffix": "h5",
+    "numberOfPasses": 1,
     "overlap": 0,
-    "start_image_number": 1,
-    "wavelength": None,
-    "xbeam": 150.0,
-    "ybeam": 160.0,
-    "synchrotron_mode": None,
-    "undulator_gap1": None,
-    "starttime": EXPECTED_START_TIME,
+    "startImageNumber": 1,
+    "xBeam": 150.0,
+    "yBeam": 160.0,
+    "startTime": EXPECTED_START_TIME,
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
@@ -57,7 +61,6 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
 
 
 TEST_GRID_INFO_IDS = (56, 57)
-TEST_POSITION_ID = 78
 
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
@@ -74,28 +77,36 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
-            mx_acq.get_data_collection_group_params(),
-            {
-                "parentid": TEST_SESSION_ID,
-                "experimenttype": "Mesh3D",
-                "sampleid": TEST_SAMPLE_ID,
-            },
+        create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
+        assert (
+            mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
         )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            replace_all_tmp_paths(EXPECTED_DATA_COLLECTION_3D_XY, tmp_path),
+        assert (
+            int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3))
+            == TEST_VISIT_NUMBER
         )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[1],
-            mx_acq.get_data_collection_params(),
-            replace_all_tmp_paths(EXPECTED_DATA_COLLECTION_3D_XZ, tmp_path),
+        assert json.loads(create_dcg_request.body) == {
+            "experimentType": "Mesh3D",
+            "sampleId": TEST_SAMPLE_ID,
+        }
+        create_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DCS_RE)]
+        assert (
+            int(mock_ispyb_conn.match(create_dc_requests[0], DCS_RE, 2))
+            == TEST_DATA_COLLECTION_GROUP_ID
         )
-        mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
-        mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
+        assert (
+            int(mock_ispyb_conn.match(create_dc_requests[1], DCS_RE, 2))
+            == TEST_DATA_COLLECTION_GROUP_ID
+        )
+        assert json.loads(create_dc_requests[0].body) == replace_all_tmp_paths(
+            EXPECTED_DATA_COLLECTION_3D_XY, tmp_path
+        )
+        assert json.loads(create_dc_requests[1].body) == replace_all_tmp_paths(
+            EXPECTED_DATA_COLLECTION_3D_XZ, tmp_path
+        )
+
+        assert len(mock_ispyb_conn.calls_for(POSITION_RE)) == 0
+        assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 0
 
     @patch(
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
@@ -109,17 +120,15 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_stop(
             test_event_data.test_grid_detect_and_gridscan_stop_document_with_crystal_exception
         )
-        assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
-            (
-                TEST_DATA_COLLECTION_IDS[0],
-                "DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
-                " ",
-            ),
-        )
+        dcids_to_comment_requests = {
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+        }
+        assert dcids_to_comment_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "comments": " DataCollection Unsuccessful reason: Diffraction not found, skipping sample.",
+        }
         assert (
             mock_update_data_collection_group_table.call_args_list[0][0][0].comments
             == "Diffraction not found, skipping sample."
@@ -132,35 +141,27 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(
             test_event_data.test_event_document_pre_data_collection
         )
-        mx_acq.upsert_data_collection_group.assert_called_once()
+        assert len(mock_ispyb_conn.calls_for(DCG_RE)) == 1
+
         expected_upsert = {
-            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-            "slitgaphorizontal": 0.1234,
-            "slitgapvertical": 0.2345,
-            "synchrotronmode": "User",
-            "undulatorgap1": 1.234,
+            "slitGapHorizontal": 0.1234,
+            "slitGapVertical": 0.2345,
+            "synchrotronMode": "User",
+            "undulatorGap1": 1.234,
             "resolution": 1.1830593331191241,
             "wavelength": 1.11647184541378,
         }
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            {"id": TEST_DATA_COLLECTION_IDS[0], **expected_upsert},
-        )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[1],
-            mx_acq.get_data_collection_params(),
-            {"id": TEST_DATA_COLLECTION_IDS[1], **expected_upsert},
-        )
+        update_dc_requests = mock_ispyb_conn.dc_calls_for(DC_RE)
+        assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+        assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+        assert update_dc_requests[0].body == expected_upsert
+        assert update_dc_requests[1].body == expected_upsert
 
     def test_flux_read_events_3d(self, mock_ispyb_conn, test_event_data):
         callback = GridscanISPyBCallback(
@@ -169,15 +170,12 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(
             test_event_data.test_event_document_pre_data_collection
         )
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_during_data_collection
@@ -186,57 +184,48 @@ class TestXrayCentreISPyBCallback:
             test_event_data.test_event_document_during_data_collection
         )
 
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "wavelength": 1.11647184541378,
-                "transmission": 100,
-                "flux": 10,
-                "resolution": 1.1830593331191241,
-                "focal_spot_size_at_samplex": 0.05,
-                "focal_spot_size_at_sampley": 0.02,
-                "beamsize_at_samplex": 0.05,
-                "beamsize_at_sampley": 0.02,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[1],
-            mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[1],
-                "wavelength": 1.11647184541378,
-                "transmission": 100,
-                "flux": 10,
-                "resolution": 1.1830593331191241,
-                "focal_spot_size_at_samplex": 0.05,
-                "focal_spot_size_at_sampley": 0.02,
-                "beamsize_at_samplex": 0.05,
-                "beamsize_at_sampley": 0.02,
-            },
-        )
-        mx_acq.update_dc_position.assert_not_called()
-        mx_acq.upsert_dc_grid.assert_not_called()
+        update_dc_requests = mock_ispyb_conn.dc_calls_for(DC_RE)[2:]
+        expected_payload = {
+            "wavelength": 1.11647184541378,
+            "transmission": 100,
+            "flux": 10,
+            "resolution": 1.1830593331191241,
+            "beamSizeAtSampleX": 0.05,
+            "beamSizeAtSampleY": 0.02,
+        }
+        assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+        assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+        assert update_dc_requests[0].body == expected_payload
+        assert update_dc_requests[1].body == expected_payload
+        assert len(mock_ispyb_conn.calls_for(POSITION_RE)) == 0
+        assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 0
 
     @pytest.mark.parametrize(
-        "snapshot_events",
+        "snapshot_events, first_comment",
         [
             [
-                "test_event_document_oav_snapshot_xy",
-                "test_event_document_oav_snapshot_xz",
+                [
+                    "test_event_document_oav_snapshot_xy",
+                    "test_event_document_oav_snapshot_xz",
+                ],
+                "Diffraction grid scan of 40 by 20 by _.",
             ],
             [
-                "test_event_document_oav_snapshot_xz",
-                "test_event_document_oav_snapshot_xy",
+                [
+                    "test_event_document_oav_snapshot_xz",
+                    "test_event_document_oav_snapshot_xy",
+                ],
+                "Diffraction grid scan of 40 by _ by 10.",
             ],
         ],
         ids=["xy-then-xz", "xz-then-xy"],
     )
     def test_activity_gated_event_oav_snapshot_triggered(
-        self, mock_ispyb_conn, test_event_data, snapshot_events: list[str]
+        self,
+        mock_ispyb_conn,
+        test_event_data,
+        snapshot_events: list[str],
+        first_comment: str,
     ):
         callback = GridscanISPyBCallback(
             param_type=GridCommonWithHyperionDetectorParams
@@ -244,9 +233,6 @@ class TestXrayCentreISPyBCallback:
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
         )  # pyright: ignore
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
 
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_oav_snapshot
@@ -256,103 +242,88 @@ class TestXrayCentreISPyBCallback:
         ]:
             callback.activity_gated_event(event)
 
-        dc_params = mx_acq.get_data_collection_params()
-        ids_to_dc_upsert_calls = {
-            c.args[0][0]: c for c in mx_acq.upsert_data_collection.mock_calls[0:2]
+        ids_to_dc_upsert_requests = {
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_RE)
         }
-        assert_upsert_call_with(
-            ids_to_dc_upsert_calls[TEST_DATA_COLLECTION_IDS[0]],
-            dc_params,
-            {
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "nimages": 40 * 20,
-                "xtal_snapshot1": "test_1_y",
-                "xtal_snapshot2": "test_2_y",
-                "xtal_snapshot3": "test_3_y",
-                "axisstart": 0,
-                "omegastart": 0,
-                "axisend": 0,
-                "axisrange": 0,
-                "datacollectionnumber": 1,
-                "filetemplate": "file_name_1_master.h5",
-            },
-        )
-        mx_acq.update_data_collection_append_comments.assert_any_call(
-            TEST_DATA_COLLECTION_IDS[0],
-            "Diffraction grid scan of 40 by 20 "
+        assert ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "numberOfImages": 40 * 20,
+            "xtalSnapshotFullPath1": "test_1_y",
+            "xtalSnapshotFullPath2": "test_2_y",
+            "xtalSnapshotFullPath3": "test_3_y",
+            "axisStart": 0,
+            "omegaStart": 0,
+            "axisEnd": 0,
+            "axisRange": 0,
+            "dataCollectionNumber": 1,
+            "fileTemplate": "file_name_1_master.h5",
+        }
+        dcids_to_append_comment_reqs = {
+            r.dcid: r for r in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+        }
+        assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "comments": " Diffraction grid scan of 40 by 20 "
             "images in 126.4 um by 126.4 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            " ",
-        )
-        assert_upsert_call_with(
-            ids_to_dc_upsert_calls[TEST_DATA_COLLECTION_IDS[1]],
-            dc_params,
-            {
-                "id": TEST_DATA_COLLECTION_IDS[1],
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "nimages": 40 * 10,
-                "xtal_snapshot1": "test_1_z",
-                "xtal_snapshot2": "test_2_z",
-                "xtal_snapshot3": "test_3_z",
-                "axisstart": 90,
-                "omegastart": 90,
-                "axisend": 90,
-                "axisrange": 0,
-                "datacollectionnumber": 2,
-                "filetemplate": "file_name_2_master.h5",
-            },
-        )
-        mx_acq.update_data_collection_append_comments.assert_any_call(
-            TEST_DATA_COLLECTION_IDS[1],
-            "Diffraction grid scan of 40 by 10 "
+        }
+        assert ids_to_dc_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body == {
+            "numberOfImages": 40 * 10,
+            "xtalSnapshotFullPath1": "test_1_z",
+            "xtalSnapshotFullPath2": "test_2_z",
+            "xtalSnapshotFullPath3": "test_3_z",
+            "axisStart": 90,
+            "omegaStart": 90,
+            "axisEnd": 90,
+            "axisRange": 0,
+            "dataCollectionNumber": 2,
+            "fileTemplate": "file_name_2_master.h5",
+        }
+        assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[1]].body == {
+            "comments": " Diffraction grid scan of 40 by 10 "
             "images in 126.4 um by 126.4 um steps. Top left (px): [50,0], "
             "bottom right (px): [3250,800].",
-            " ",
-        )
-        ids_to_grid_upsert_calls = {
-            c.args[0][1]: c for c in mx_acq.upsert_dc_grid.mock_calls[0:2]
         }
-        assert_upsert_call_with(
-            ids_to_grid_upsert_calls[TEST_DATA_COLLECTION_IDS[0]],
-            mx_acq.get_dc_grid_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_IDS[0],
-                "dxinmm": 0.1264,
-                "dyinmm": 0.1264,
-                "stepsx": 40,
-                "stepsy": 20,
-                "micronsperpixelx": 1.58,
-                "micronsperpixely": 1.58,
-                "snapshotoffsetxpixel": 50,
-                "snapshotoffsetypixel": 100,
-                "orientation": "horizontal",
-                "snaked": True,
-            },
-        )
-        assert_upsert_call_with(
-            ids_to_grid_upsert_calls[TEST_DATA_COLLECTION_IDS[1]],
-            mx_acq.get_dc_grid_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_IDS[1],
-                "dxinmm": 0.1264,
-                "dyinmm": 0.1264,
-                "stepsx": 40,
-                "stepsy": 10,
-                "micronsperpixelx": 1.58,
-                "micronsperpixely": 1.58,
-                "snapshotoffsetxpixel": 50,
-                "snapshotoffsetypixel": 0,
-                "orientation": "horizontal",
-                "snaked": True,
-            },
-        )
+        ids_to_grid_upsert_requests = {
+            rq.dcid: rq for rq in (mock_ispyb_conn.dc_calls_for(GRID_RE))
+        }
+        assert ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[0]].body == {
+            "dx": 0.1264,
+            "dy": 0.1264,
+            "stepsX": 40,
+            "stepsY": 20,
+            "pixelsPerMicronX": 1 / 1.58,
+            "pixelsPerMicronY": 1 / 1.58,
+            "snapshotOffsetXPixel": 50,
+            "snapshotOffsetYPixel": 100,
+            "orientation": "horizontal",
+            "snaked": True,
+        }
+        assert ids_to_grid_upsert_requests[TEST_DATA_COLLECTION_IDS[1]].body == {
+            "dx": 0.1264,
+            "dy": 0.1264,
+            "stepsX": 40,
+            "stepsY": 10,
+            "pixelsPerMicronX": 1 / 1.58,
+            "pixelsPerMicronY": 1 / 1.58,
+            "snapshotOffsetXPixel": 50,
+            "snapshotOffsetYPixel": 0,
+            "orientation": "horizontal",
+            "snaked": True,
+        }
 
-        group_dc_cols = remap_upsert_columns(
-            mx_acq.get_data_collection_group_params(),
-            mx_acq.upsert_data_collection_group.mock_calls[1].args[0],
+        update_dcg_requests = [c.request for c in mock_ispyb_conn.calls_for(DCG_RE)]
+        assert (
+            int(mock_ispyb_conn.match(update_dcg_requests[0], DCG_RE, 2))
+            == TEST_DATA_COLLECTION_GROUP_ID
         )
-        assert group_dc_cols["comments"] == "Diffraction grid scan of 40 by 20 by 10."
+        assert json.loads(update_dcg_requests[0].body)["comments"] == first_comment
+        assert (
+            int(mock_ispyb_conn.match(update_dcg_requests[1], DCG_RE, 2))
+            == TEST_DATA_COLLECTION_GROUP_ID
+        )
+        assert (
+            json.loads(update_dcg_requests[1].body)["comments"]
+            == "Diffraction grid scan of 40 by 20 by 10."
+        )
 
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
         self, run_engine, mock_ispyb_conn, dummy_rotation_data_collection_group_info
