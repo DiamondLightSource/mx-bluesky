@@ -123,7 +123,7 @@ reportMissingParameterType = false
 reportMissingTypeArgument = false
 reportPrivateUsage = false
 reportUnknownVariableType = false
-reportUnusedVariable = false
+reportUnusedVariable = true
 reportArgumentType = false
 reportMatchNotExhaustive = false
 
