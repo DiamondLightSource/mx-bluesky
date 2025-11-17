@@ -21,6 +21,7 @@ from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.thawer import OnOff
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
@@ -524,6 +525,23 @@ def test_rotation_scan_waits_on_aperture_being_prepared_before_moving_in(
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard-selected_aperture"
         and msg.args[0] == ApertureValue.SMALL
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+
+
+def test_rotation_scan_waits_on_thawing_being_off_before_collection(
+    rotation_scan_simulated_messages,
+):
+    msgs = assert_message_and_return_remaining(
+        rotation_scan_simulated_messages,
+        lambda msg: msg.command == "set"
+        and msg.args[0] == OnOff.OFF
+        and msg.obj.name == "thawer-control"
+        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+    )
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
 
