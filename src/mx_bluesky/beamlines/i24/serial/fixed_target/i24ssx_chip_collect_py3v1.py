@@ -257,7 +257,7 @@ def set_datasize(
         SSX_LOGGER.debug(f"Num exposures: {parameters.num_exposures}")
         SSX_LOGGER.debug(f"Block count: {len(parameters.chip_map)}")
 
-    caput(pv.me14e_gp10, parameters.total_num_images)
+    caput(pv.ioc13_gp10, parameters.total_num_images)
 
 
 @log_on_entry
