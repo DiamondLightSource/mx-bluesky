@@ -26,38 +26,16 @@ def mock_pin_tip(pin_tip: PinTipDetection):
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
-    new=partial(return_pixel, (200, 200)),
-)
-@patch(
-    "dodal.devices.oav.utils.get_move_required_so_that_beam_is_at_pixel",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
-)
-@patch(
     "mx_bluesky.beamlines.aithre_lasershaping.pin_tip_centring.pin_tip_centre_plan",
     autospec=True,
 )
-@patch(
-    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
-    autospec=True,
-)
 async def test_when_aithre_pin_tip_centre_called_then_expected_plans_called(
-    mock_sleep,
     mock_pin_tip_centring_plan,
-    mock_move_into_view,
-    get_move: MagicMock,
     gonio_with_limits: Goniometer,
     oav: OAV,
     test_config_files: dict[str, str],
     run_engine: RunEngine,
 ):
-    set_mock_value(oav.zoom_controller.level, "1.0")
-    set_mock_value(gonio_with_limits.omega.user_readback, 0)
-    mock_pin_tip_detection = MagicMock(spec=PinTipDetection)
-    mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
     run_engine(
         aithre_pin_tip_centre(
             oav,
