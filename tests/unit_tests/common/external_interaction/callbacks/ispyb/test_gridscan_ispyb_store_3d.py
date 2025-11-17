@@ -1,11 +1,8 @@
+import json
 from dataclasses import replace
-from functools import partial
-from itertools import dropwhile
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ispyb import ReadWriteError
-from ispyb.sp.mxacquisition import MXAcquisition
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -24,15 +21,23 @@ from ......conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
     TEST_BARCODE,
+    TEST_SAMPLE_ID,
+)
+from ......expeye_helpers import (
+    DC_COMMENT_RE,
+    DC_RE,
+    DCG_RE,
+    DCGS_RE,
+    DCS_RE,
+    GRID_RE,
+    POSITION_RE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_GRID_INFO_IDS,
-    TEST_SAMPLE_ID,
-    TEST_SESSION_ID,
-    assert_upsert_call_with,
-    mx_acquisition_from_conn,
-    remap_upsert_columns,
 )
+
+TEST_PROPOSAL_REF = "cm31105"
+TEST_VISIT_NUMBER = 4
 
 
 @pytest.fixture
@@ -56,11 +61,8 @@ DC_INFO_FOR_BEGIN_XY = DataCollectionInfo(
     kappa_start=None,
     parent_id=None,
     visit_string="cm31105-4",
-    sample_id=364758,
     detector_id=78,
     axis_start=0.0,
-    focal_spot_size_at_samplex=0.0,
-    focal_spot_size_at_sampley=0.0,
     slitgap_vertical=0.1,
     slitgap_horizontal=0.1,
     beamsize_at_samplex=0.1,
@@ -114,54 +116,49 @@ DC_INFO_FOR_UPDATE_XZ = replace(
 )
 
 EXPECTED_BASE_UPSERT = {
-    "visitid": TEST_SESSION_ID,
-    "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-    "sampleid": TEST_SAMPLE_ID,
-    "detectorid": 78,
-    "axisrange": 0,
-    "focal_spot_size_at_samplex": 0.0,
-    "focal_spot_size_at_sampley": 0.0,
-    "slitgap_vertical": 0.1,
-    "slitgap_horizontal": 0.1,
-    "beamsize_at_samplex": 0.1,
-    "beamsize_at_sampley": 0.1,
+    "detectorId": 78,
+    "axisRange": 0,
+    "slitGapVertical": 0.1,
+    "slitGapHorizontal": 0.1,
+    "beamSizeAtSampleX": 0.1,
+    "beamSizeAtSampleY": 0.1,
     "transmission": 100.0,
-    "data_collection_number": 1,
-    "detector_distance": 100.0,
-    "exp_time": 0.1,
-    "imgdir": "/tmp/",
-    "imgprefix": "file_name",
-    "imgsuffix": "h5",
-    "n_passes": 1,
+    "dataCollectionNumber": 1,
+    "detectorDistance": 100.0,
+    "exposureTime": 0.1,
+    "imageDirectory": "/tmp/",
+    "imagePrefix": "file_name",
+    "imageSuffix": "h5",
+    "numberOfPasses": 1,
     "overlap": 0,
-    "start_image_number": 1,
+    "startImageNumber": 1,
     "wavelength": 123.98419840550369,
-    "xbeam": 150.0,
-    "ybeam": 160.0,
-    "undulator_gap1": 1.0,
-    "starttime": EXPECTED_START_TIME,
+    "xBeam": 150.0,
+    "yBeam": 160.0,
+    "undulatorGap1": 1.0,
+    "startTime": EXPECTED_START_TIME,
 }
 
 EXPECTED_BASE_XY_UPSERT = EXPECTED_BASE_UPSERT | {
-    "xtal_snapshot1": "test_1_y",
-    "xtal_snapshot2": "test_2_y",
-    "xtal_snapshot3": "test_3_y",
-    "omegastart": 0,
-    "axisstart": 0.0,
-    "axisend": 0,
-    "filetemplate": "file_name_0_master.h5",
-    "nimages": 40 * 20,
+    "xtalSnapshotFullPath1": "test_1_y",
+    "xtalSnapshotFullPath2": "test_2_y",
+    "xtalSnapshotFullPath3": "test_3_y",
+    "omegaStart": 0,
+    "axisStart": 0.0,
+    "axisEnd": 0,
+    "fileTemplate": "file_name_0_master.h5",
+    "numberOfImages": 40 * 20,
 }
 
 EXPECTED_BASE_XZ_UPSERT = EXPECTED_BASE_UPSERT | {
-    "xtal_snapshot1": "test_1_z",
-    "xtal_snapshot2": "test_2_z",
-    "xtal_snapshot3": "test_3_z",
-    "omegastart": 90.0,
-    "axisstart": 90.0,
-    "axisend": 90.0,
-    "filetemplate": "file_name_1_master.h5",
-    "nimages": 40 * 10,
+    "xtalSnapshotFullPath1": "test_1_z",
+    "xtalSnapshotFullPath2": "test_2_z",
+    "xtalSnapshotFullPath3": "test_3_z",
+    "omegaStart": 90.0,
+    "axisStart": 90.0,
+    "axisEnd": 90.0,
+    "fileTemplate": "file_name_1_master.h5",
+    "numberOfImages": 40 * 10,
 }
 
 EXPECTED_DC_XY_BEGIN_UPSERT = EXPECTED_BASE_XY_UPSERT | {
@@ -173,15 +170,13 @@ EXPECTED_DC_XZ_BEGIN_UPSERT = EXPECTED_BASE_XZ_UPSERT | {
 }
 
 EXPECTED_DC_XY_UPDATE_UPSERT = EXPECTED_BASE_XY_UPSERT | {
-    "id": 12,
     "flux": 10.0,
-    "synchrotron_mode": "test",
+    "synchrotronMode": "test",
 }
 
 EXPECTED_DC_XZ_UPDATE_UPSERT = EXPECTED_BASE_XZ_UPSERT | {
-    "id": 13,
     "flux": 10,
-    "synchrotron_mode": "test",
+    "synchrotronMode": "test",
 }
 
 
@@ -254,37 +249,27 @@ def test_ispyb_deposition_comment_for_3d_correct(
     scan_data_infos_for_update,
 ):
     mock_ispyb_conn = mock_ispyb_conn
-    mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
-    mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
+
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
     dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
 
-    upsert_keys = mock_mx_aquisition.get_data_collection_params()
-    first_upserted_param_value_dict = remap_upsert_columns(
-        upsert_keys, mock_upsert_dc.call_args_list[0][0][0]
+    first_create_dc, second_create_dc = mock_ispyb_conn.dc_calls_for(DCS_RE)
+    assert first_create_dc.body["comments"] == ("MX-Bluesky: Xray centring 1 -")
+    assert second_create_dc.body["comments"] == ("MX-Bluesky: Xray centring 2 -")
+    append_comments_requests = mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+    assert append_comments_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert append_comments_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+    assert (
+        append_comments_requests[0].body["comments"]
+        == " Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700]."
     )
-    second_upserted_param_value_dict = remap_upsert_columns(
-        upsert_keys, mock_upsert_dc.call_args_list[1][0][0]
-    )
-    assert first_upserted_param_value_dict["comments"] == (
-        "MX-Bluesky: Xray centring 1 -"
-    )
-    assert second_upserted_param_value_dict["comments"] == (
-        "MX-Bluesky: Xray centring 2 -"
-    )
-    mock_mx_aquisition.update_data_collection_append_comments.assert_any_call(
-        TEST_DATA_COLLECTION_IDS[0],
-        "Diffraction grid scan of 40 by 20 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
-        " ",
-    )
-    mock_mx_aquisition.update_data_collection_append_comments.assert_any_call(
-        TEST_DATA_COLLECTION_IDS[1],
-        "Diffraction grid scan of 40 by 10 images "
-        "in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720].",
-        " ",
+    assert (
+        append_comments_requests[1].body["comments"]
+        == " Diffraction grid scan of 40 by 10 images "
+        "in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720]."
     )
 
 
@@ -329,28 +314,30 @@ def test_begin_deposition(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection_group.mock_calls[0],
-        mx_acq.get_data_collection_group_params(),
-        {
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "Mesh3D",
-            "sampleid": TEST_SAMPLE_ID,
-        },
+    create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
+    assert mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 2) == TEST_PROPOSAL_REF
+    assert (
+        int(mock_ispyb_conn.match(create_dcg_request, DCGS_RE, 3)) == TEST_VISIT_NUMBER
     )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[0],
-        mx_acq.get_data_collection_params(),
-        EXPECTED_DC_XY_BEGIN_UPSERT,
+    dcg_payload = json.loads(create_dcg_request.body)
+    assert dcg_payload["experimentType"] == "Mesh3D"
+    assert dcg_payload["sampleId"] == TEST_SAMPLE_ID
+
+    create_dc_requests = mock_ispyb_conn.calls_for(DCS_RE)
+    request1 = create_dc_requests[0].request
+    assert (
+        int(mock_ispyb_conn.match(request1, DCS_RE, 2)) == TEST_DATA_COLLECTION_GROUP_ID
     )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[1],
-        mx_acq.get_data_collection_params(),
-        EXPECTED_DC_XZ_BEGIN_UPSERT,
+    assert json.loads(request1.body) == EXPECTED_DC_XY_BEGIN_UPSERT
+
+    request2 = create_dc_requests[1].request
+    assert (
+        int(mock_ispyb_conn.match(request2, DCS_RE, 2)) == TEST_DATA_COLLECTION_GROUP_ID
     )
-    mx_acq.update_dc_position.assert_not_called()
-    mx_acq.upsert_dc_grid.assert_not_called()
+    assert json.loads(request2.body) == EXPECTED_DC_XZ_BEGIN_UPSERT
+
+    assert len(mock_ispyb_conn.calls_for(POSITION_RE)) == 0
+    assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 0
 
 
 @patch(
@@ -367,11 +354,8 @@ def test_update_deposition(
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    mx_acq.upsert_data_collection_group.assert_called_once()
-    mx_acq.upsert_data_collection.assert_called()
-    mx_acq.upsert_data_collection_group.reset_mock()
-    mx_acq.upsert_data_collection.reset_mock()
+    assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
+    assert len(mock_ispyb_conn.calls_for(DCS_RE)) == 2
 
     dummy_collection_group_info.sample_barcode = TEST_BARCODE
 
@@ -383,97 +367,75 @@ def test_update_deposition(
         grid_ids=TEST_GRID_INFO_IDS,
     )
 
-    mx_acq.upsert_data_collection_group.assert_not_called()
+    assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
 
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[0],
-        mx_acq.get_data_collection_params(),
-        EXPECTED_DC_XY_UPDATE_UPSERT,
-    )
+    update_xy_req, update_xz_req = mock_ispyb_conn.dc_calls_for(DC_RE)
 
-    assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
-        (
-            TEST_DATA_COLLECTION_IDS[0],
-            "Diffraction grid scan of 40 by 20 "
-            "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
-            "bottom right (px): [3250,1700].",
-            " ",
-        ),
-    )
+    assert update_xy_req.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_xy_req.body == EXPECTED_DC_XY_UPDATE_UPSERT
+    assert update_xz_req.dcid == TEST_DATA_COLLECTION_IDS[1]
+    assert update_xz_req.body == EXPECTED_DC_XZ_UPDATE_UPSERT
 
-    assert_upsert_call_with(
-        mx_acq.update_dc_position.mock_calls[0],
-        mx_acq.get_dc_position_params(),
-        {
-            "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": 0,
-            "pos_y": 0,
-            "pos_z": 0,
-        },
-    )
+    dcid_to_comment_req = {
+        rq.dcid: rq for rq in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+    }
+    assert dcid_to_comment_req[TEST_DATA_COLLECTION_IDS[0]].body == {
+        "comments": " Diffraction grid scan of 40 by 20 "
+        "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
+        "bottom right (px): [3250,1700].",
+    }
 
-    assert_upsert_call_with(
-        mx_acq.upsert_dc_grid.mock_calls[0],
-        mx_acq.get_dc_grid_params(),
-        {
-            "parentid": TEST_DATA_COLLECTION_IDS[0],
-            "dxinmm": 0.1,
-            "dyinmm": 0.1,
-            "stepsx": 40,
-            "stepsy": 20,
-            "micronsperpixelx": 1.25,
-            "micronsperpixely": 1.25,
-            "snapshotoffsetxpixel": 50,
-            "snapshotoffsetypixel": 100,
-            "orientation": "horizontal",
-            "snaked": True,
-        },
+    update_dc_xy_pos_req, update_dc_xz_pos_req = mock_ispyb_conn.dc_calls_for(
+        POSITION_RE
     )
+    assert update_dc_xy_pos_req.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_xz_pos_req.body == {
+        "posX": 0,
+        "posY": 0,
+        "posZ": 0,
+    }
 
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[1],
-        mx_acq.get_data_collection_params(),
-        EXPECTED_DC_XZ_UPDATE_UPSERT,
-    )
+    update_grid_xy_req, update_grid_xz_req = mock_ispyb_conn.dc_calls_for(GRID_RE)
+    assert update_grid_xy_req.dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_grid_xy_req.body == {
+        "dx": 0.1,
+        "dy": 0.1,
+        "stepsX": 40,
+        "stepsY": 20,
+        "pixelsPerMicronX": 0.8,
+        "pixelsPerMicronY": 0.8,
+        "snapshotOffsetXPixel": 50,
+        "snapshotOffsetYPixel": 100,
+        "orientation": "horizontal",
+        "snaked": True,
+    }
 
-    assert mx_acq.update_data_collection_append_comments.call_args_list[1] == (
-        (
-            TEST_DATA_COLLECTION_IDS[1],
-            "Diffraction grid scan of 40 by 10 "
-            "images in 100.0 um by 200.0 um steps. Top left (px): [50,120], "
-            "bottom right (px): [3250,1720].",
-            " ",
-        ),
-    )
+    assert dcid_to_comment_req[TEST_DATA_COLLECTION_IDS[1]].body == {
+        "comments": " Diffraction grid scan of 40 by 10 "
+        "images in 100.0 um by 200.0 um steps. Top left (px): [50,120], "
+        "bottom right (px): [3250,1720].",
+    }
 
-    assert_upsert_call_with(
-        mx_acq.update_dc_position.mock_calls[1],
-        mx_acq.get_dc_position_params(),
-        {
-            "id": TEST_DATA_COLLECTION_IDS[1],
-            "pos_x": 0,
-            "pos_y": 0,
-            "pos_z": 0,
-        },
-    )
+    assert update_dc_xz_pos_req.dcid == TEST_DATA_COLLECTION_IDS[1]
+    assert update_dc_xz_pos_req.body == {
+        "posX": 0,
+        "posY": 0,
+        "posZ": 0,
+    }
 
-    assert_upsert_call_with(
-        mx_acq.upsert_dc_grid.mock_calls[1],
-        mx_acq.get_dc_grid_params(),
-        {
-            "parentid": TEST_DATA_COLLECTION_IDS[1],
-            "dxinmm": 0.1,
-            "dyinmm": 0.2,
-            "stepsx": 40,
-            "stepsy": 10,
-            "micronsperpixelx": 1.25,
-            "micronsperpixely": 1.25,
-            "snapshotoffsetxpixel": 50,
-            "snapshotoffsetypixel": 120,
-            "orientation": "horizontal",
-            "snaked": True,
-        },
-    )
+    assert update_grid_xz_req.dcid == TEST_DATA_COLLECTION_IDS[1]
+    assert update_grid_xz_req.body == {
+        "dx": 0.1,
+        "dy": 0.2,
+        "stepsX": 40,
+        "stepsY": 10,
+        "pixelsPerMicronX": 0.8,
+        "pixelsPerMicronY": 0.8,
+        "snapshotOffsetXPixel": 50,
+        "snapshotOffsetYPixel": 120,
+        "orientation": "horizontal",
+        "snaked": True,
+    }
 
 
 @patch(
@@ -494,45 +456,36 @@ def test_end_deposition_happy_path(
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    assert len(mx_acq.upsert_data_collection_group.mock_calls) == 1
+    assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
     ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
-    assert len(mx_acq.upsert_data_collection_group.mock_calls) == 1
-    assert len(mx_acq.upsert_data_collection.mock_calls) == 4
-    assert len(mx_acq.upsert_dc_grid.mock_calls) == 2
+    assert len(mock_ispyb_conn.calls_for(DCGS_RE)) == 1
+    assert len(mock_ispyb_conn.calls_for(DCS_RE)) == 2
+    assert len(mock_ispyb_conn.calls_for(DC_RE)) == 2
+    assert len(mock_ispyb_conn.calls_for(GRID_RE)) == 2
 
     get_current_time.return_value = EXPECTED_END_TIME
     dummy_ispyb.end_deposition(ispyb_ids, "success", "Test succeeded")
-    mx_acq.update_data_collection_append_comments.assert_any_call(
-        TEST_DATA_COLLECTION_IDS[0],
-        "DataCollection Successful reason: Test succeeded",
-        " ",
-    )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[4],
-        mx_acq.get_data_collection_params(),
-        {
-            "id": TEST_DATA_COLLECTION_IDS[0],
-            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-            "endtime": EXPECTED_END_TIME,
-            "runstatus": "DataCollection Successful",
-        },
-    )
-    mx_acq.update_data_collection_append_comments.assert_any_call(
-        TEST_DATA_COLLECTION_IDS[1],
-        "DataCollection Successful reason: Test succeeded",
-        " ",
-    )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection.mock_calls[5],
-        mx_acq.get_data_collection_params(),
-        {
-            "id": TEST_DATA_COLLECTION_IDS[1],
-            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-            "endtime": EXPECTED_END_TIME,
-            "runstatus": "DataCollection Successful",
-        },
-    )
+    dcids_to_append_comment_reqs = {
+        rq.dcid: rq for rq in mock_ispyb_conn.dc_calls_for(DC_COMMENT_RE)
+    }
+    assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[0]].body == {
+        "comments": " DataCollection Successful reason: Test succeeded"
+    }
+
+    update_dc_requests = list(mock_ispyb_conn.dc_calls_for(DC_RE)[2:])
+    assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
+    assert update_dc_requests[0].body == {
+        "endTime": EXPECTED_END_TIME,
+        "runStatus": "DataCollection Successful",
+    }
+    assert dcids_to_append_comment_reqs[TEST_DATA_COLLECTION_IDS[1]].body == {
+        "comments": " DataCollection Successful reason: Test succeeded",
+    }
+    assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
+    assert update_dc_requests[1].body == {
+        "endTime": EXPECTED_END_TIME,
+        "runStatus": "DataCollection Successful",
+    }
 
 
 def test_param_keys(
@@ -554,43 +507,6 @@ def test_param_keys(
     )
 
 
-def _test_when_grid_scan_stored_then_data_present_in_upserts(
-    ispyb_conn,
-    dummy_ispyb,
-    test_function,
-    dummy_collection_group_info,
-    scan_data_infos_for_begin,
-    scan_data_infos_for_update,
-    test_group=False,
-):
-    ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_infos_for_begin
-    )
-    dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
-
-    mx_acquisition = mx_acquisition_from_conn(ispyb_conn)
-
-    def call_does_not_have_dcid(id, func_call):
-        return func_call.args[0][0] != id
-
-    for dc_id in ispyb_ids.data_collection_ids:
-        upsert_call = next(
-            dropwhile(
-                partial(call_does_not_have_dcid, dc_id),
-                mx_acquisition.upsert_data_collection.call_args_list,
-            )
-        )
-        actual = upsert_call[0][0]
-        assert test_function(MXAcquisition.get_data_collection_params(), actual)
-
-    if test_group:
-        upsert_data_collection_group_arg_list = (
-            mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
-        )
-        actual = upsert_data_collection_group_arg_list[0]
-        assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
-
-
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     mock_ispyb_conn,
     dummy_ispyb,
@@ -605,19 +521,16 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     ]:
         dc_info.sample_id = None
 
-    def test_sample_id(default_params, actual):
-        sampleid_idx = list(default_params).index("sampleid")
-        return actual[sampleid_idx] == default_params["sampleid"]
-
-    _test_when_grid_scan_stored_then_data_present_in_upserts(
-        mock_ispyb_conn,
-        dummy_ispyb,
-        test_sample_id,
-        dummy_collection_group_info,
-        scan_data_infos_for_begin,
-        scan_data_infos_for_update,
-        True,
+    ispyb_ids = dummy_ispyb.begin_deposition(
+        dummy_collection_group_info, scan_data_infos_for_begin
     )
+    dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
+
+    dcg_requests = [c.request for c in mock_ispyb_conn.calls_for(DCGS_RE)] + [
+        c.request for c in mock_ispyb_conn.calls_for(DCG_RE)
+    ]
+    for req in dcg_requests:
+        assert "sampleId" not in json.loads(req.body)
 
 
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
@@ -629,19 +542,17 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 ):
     expected_sample_id = 364758
 
-    def test_sample_id(default_params, actual):
-        sampleid_idx = list(default_params).index("sampleid")
-        return actual[sampleid_idx] == expected_sample_id
-
-    _test_when_grid_scan_stored_then_data_present_in_upserts(
-        mock_ispyb_conn,
-        dummy_ispyb,
-        test_sample_id,
-        dummy_collection_group_info,
-        scan_data_infos_for_begin,
-        scan_data_infos_for_update,
-        True,
+    ispyb_ids = dummy_ispyb.begin_deposition(
+        dummy_collection_group_info, scan_data_infos_for_begin
     )
+    dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
+
+    dcg_requests = [c.request for c in mock_ispyb_conn.calls_for(DCGS_RE)] + [
+        c.request for c in mock_ispyb_conn.calls_for(DCG_RE)
+    ]
+    assert len(dcg_requests) > 0
+    for req in dcg_requests:
+        assert json.loads(req.body)["sampleId"] == expected_sample_id
 
 
 def test_fail_result_run_results_in_bad_run_status(
@@ -652,10 +563,6 @@ def test_fail_result_run_results_in_bad_run_status(
     scan_data_infos_for_update,
 ):
     mock_ispyb_conn = mock_ispyb_conn
-    mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
@@ -663,12 +570,18 @@ def test_fail_result_run_results_in_bad_run_status(
     ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "test specifies failure")
 
-    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    for upsert_call in mock_upsert_data_collection_calls[4:5]:
-        end_deposition_upsert_args = upsert_call[0]
-        upserted_param_value_list = end_deposition_upsert_args[0]
-        assert "DataCollection Unsuccessful" in upserted_param_value_list
-        assert "DataCollection Successful" not in upserted_param_value_list
+    update_dc_requests = list(mock_ispyb_conn.dc_calls_for(DC_RE))
+    expected_ids_and_runstatuses = [
+        (TEST_DATA_COLLECTION_IDS[0], None),
+        (TEST_DATA_COLLECTION_IDS[1], None),
+        (TEST_DATA_COLLECTION_IDS[0], "DataCollection Unsuccessful"),
+        (TEST_DATA_COLLECTION_IDS[1], "DataCollection Unsuccessful"),
+    ]
+    for req, expected in zip(
+        update_dc_requests, expected_ids_and_runstatuses, strict=True
+    ):
+        assert req.dcid == expected[0]
+        assert req.body.get("runStatus") == expected[1]
 
 
 def test_fail_result_long_comment_still_updates_run_status(
@@ -679,11 +592,6 @@ def test_fail_result_long_comment_still_updates_run_status(
     scan_data_infos_for_update,
 ):
     mock_ispyb_conn = mock_ispyb_conn
-    mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    mock_mx_aquisition.update_data_collection_append_comments.side_effect = (
-        ReadWriteError("Comment too big for column")
-    )
 
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
@@ -691,12 +599,18 @@ def test_fail_result_long_comment_still_updates_run_status(
     ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "this comment is too long")
 
-    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    for upsert_call in mock_upsert_data_collection_calls[4:5]:
-        end_deposition_upsert_args = upsert_call[0]
-        upserted_param_value_list = end_deposition_upsert_args[0]
-        assert "DataCollection Unsuccessful" in upserted_param_value_list
-        assert "DataCollection Successful" not in upserted_param_value_list
+    update_dc_requests = list(mock_ispyb_conn.dc_calls_for(DC_RE))
+    expected_ids_and_runstatuses = [
+        (TEST_DATA_COLLECTION_IDS[0], None),
+        (TEST_DATA_COLLECTION_IDS[1], None),
+        (TEST_DATA_COLLECTION_IDS[0], "DataCollection Unsuccessful"),
+        (TEST_DATA_COLLECTION_IDS[1], "DataCollection Unsuccessful"),
+    ]
+    for req, expected in zip(
+        update_dc_requests, expected_ids_and_runstatuses, strict=True
+    ):
+        assert req.dcid == expected[0]
+        assert req.body.get("runStatus") == expected[1]
 
 
 def test_no_exception_during_run_results_in_good_run_status(
@@ -706,23 +620,25 @@ def test_no_exception_during_run_results_in_good_run_status(
     scan_data_infos_for_begin,
     scan_data_infos_for_update,
 ):
-    mock_mx_acquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    mock_upsert_data_collection = mock_mx_acquisition.upsert_data_collection
-
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, scan_data_infos_for_begin
     )
     ispyb_ids = dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
     dummy_ispyb.end_deposition(ispyb_ids, "success", "")
 
-    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    for upsert_call in mock_upsert_data_collection_calls[4:5]:
-        end_deposition_upsert_args = upsert_call[0]
-        upserted_param_value_list = end_deposition_upsert_args[0]
-        assert "DataCollection Unsuccessful" not in upserted_param_value_list
-        assert "DataCollection Successful" in upserted_param_value_list
+    update_dc_requests = [c.request for c in mock_ispyb_conn.calls_for(DC_RE)]
+    expected_ids_and_runstatuses = [
+        (TEST_DATA_COLLECTION_IDS[0], None),
+        (TEST_DATA_COLLECTION_IDS[1], None),
+        (TEST_DATA_COLLECTION_IDS[0], "DataCollection Successful"),
+        (TEST_DATA_COLLECTION_IDS[1], "DataCollection Successful"),
+    ]
+    for req, expected in zip(
+        update_dc_requests, expected_ids_and_runstatuses, strict=True
+    ):
+        payload = json.loads(req.body)
+        assert int(mock_ispyb_conn.match(req, DC_RE, 2)) == expected[0]
+        assert payload.get("runStatus") == expected[1]
 
 
 def test_update_data_collection_no_comment(
@@ -740,5 +656,4 @@ def test_update_data_collection_no_comment(
     )
     dummy_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
 
-    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    mx_acq.update_data_collection_append_comments.assert_not_called()
+    assert len(mock_ispyb_conn.calls_for(DC_COMMENT_RE)) == 0
