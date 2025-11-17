@@ -25,21 +25,6 @@ def mock_pin_tip(pin_tip: PinTipDetection):
     return pin_tip
 
 
-@pytest.fixture
-def gonio_with_limits(aithre_gonio: Goniometer) -> Goniometer:
-    set_mock_value(aithre_gonio.x.high_limit_travel, 2)
-    set_mock_value(aithre_gonio.x.low_limit_travel, -2)
-    set_mock_value(aithre_gonio.y.high_limit_travel, 2)
-    set_mock_value(aithre_gonio.y.low_limit_travel, -2)
-    set_mock_value(aithre_gonio.z.high_limit_travel, 2)
-    set_mock_value(aithre_gonio.z.low_limit_travel, -2)
-    set_mock_value(aithre_gonio.omega.high_limit_travel, 0)
-    set_mock_value(aithre_gonio.omega.low_limit_travel, 0)
-    set_mock_value(aithre_gonio.omega.dial_high_limit_travel, 0)
-    set_mock_value(aithre_gonio.omega.dial_low_limit_travel, 0)
-    return aithre_gonio
-
-
 @patch(
     "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
