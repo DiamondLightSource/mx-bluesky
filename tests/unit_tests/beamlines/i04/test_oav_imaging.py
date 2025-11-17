@@ -78,9 +78,13 @@ def test_plan_stubs_called_in_correct_order(
     )
 
     messages = assert_message_and_return_remaining(
-        messages,
+        messages, lambda msg: msg.command == "set" and msg.obj == "backlight"
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages[1:],
         lambda msg: msg.command == "set"
-        # and msg.obj.name == "scintillator-selected_pos"
+        and msg.obj.name == "scintillator-selected_pos"
         and msg.args[0] == InOut.IN
         and msg.kwargs["group"] == "Wait for scint to move in",
     )
@@ -101,16 +105,26 @@ def test_plan_stubs_called_in_correct_order(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.MANUAL
-        and msg.args[1] is True,
+        and msg.args[0] == ZebraShutterControl.MANUAL,
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == messages[0].kwargs["group"],
     )
 
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "sample_shutter"
-        and msg.args[0] == ZebraShutterState.OPEN
-        and msg.kwargs["wait"] is True,
+        and msg.args[0] == ZebraShutterState.OPEN,
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == messages[0].kwargs["group"],
     )
 
 
@@ -146,3 +160,12 @@ def test_oav_image(
         messages,
         lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot",
     )
+
+
+async def test_take_and_save_oav_image_in_re(RE: RunEngine, oav: OAV, tmp_path):
+    expected_filename = "filename"
+    expected_directory = tmp_path
+    RE(take_and_save_oav_image(expected_filename, expected_directory, oav))
+    assert await oav.snapshot.filename.get_value() == expected_filename
+    assert await oav.snapshot.directory.get_value() == str(expected_directory)
+    oav.snapshot.trigger.assert_called_once()  # type: ignore
