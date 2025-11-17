@@ -6,7 +6,6 @@ from weakref import WeakValueDictionary
 
 import pytest
 from blueapi.core import BlueskyContext
-from bluesky import RunEngine
 from ophyd_async.core import Device
 from ophyd_async.plan_stubs import ensure_connected
 
@@ -61,9 +60,7 @@ def patch_ensure_connected():
 )
 @pytest.mark.system_test
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
-def test_udc_reloads_all_devices_soak_test_dev_mode(
-    RE: RunEngine, i: int, patch_setup_devices
-):
+def test_udc_reloads_all_devices_soak_test_dev_mode(i: int, patch_setup_devices):
     reinitialise_beamline(True, i)
 
 
@@ -76,7 +73,7 @@ def test_udc_reloads_all_devices_soak_test_dev_mode(
 @patch("ophyd_async.plan_stubs._ensure_connected.DEFAULT_TIMEOUT", 1)
 @pytest.mark.timeout(10)
 def test_udc_reloads_all_devices_soak_test_real(
-    RE: RunEngine, i: int, patch_setup_devices, patch_ensure_connected
+    i: int, patch_setup_devices, patch_ensure_connected
 ):
     """
     Deliberately not part of main system tests because this is SLOW and requires

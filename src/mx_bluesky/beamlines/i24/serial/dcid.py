@@ -95,7 +95,7 @@ class DCID:
 
     Attributes:
         error:
-            If an error has occured. This will be set, even if emit_errors = True
+            If an error has occurred. This will be set, even if emit_errors = True
     """
 
     def __init__(
@@ -112,6 +112,8 @@ class DCID:
         match expt_params.detector_name:
             case "eiger":
                 self.detector = Eiger()
+            case _:
+                raise ValueError("Unknown detector:", expt_params.detector_name)
 
         self.server = server or DEFAULT_ISPYB_SERVER
         self.emit_errors = emit_errors
@@ -144,7 +146,7 @@ class DCID:
         try:
             if not start_time:
                 start_time = datetime.datetime.now().astimezone()
-            elif not start_time.timetz:
+            else:
                 start_time = start_time.astimezone()
 
             resolution = get_resolution(
@@ -156,10 +158,7 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            if isinstance(self.detector, Eiger):
-                startImageNumber = 1
-            else:
-                raise ValueError("Unknown detector:", self.detector)
+            start_image_number = 1
 
             events = [
                 {
@@ -201,7 +200,7 @@ class DCID:
                 "imageDirectory": image_dir,
                 "numberOfImages": num_images,
                 "resolution": resolution,
-                "startImageNumber": startImageNumber,
+                "startImageNumber": start_image_number,
                 "startTime": start_time.isoformat(),
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,

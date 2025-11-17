@@ -11,18 +11,18 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 def setup_tracing(service_name: str = "Hyperion"):
     resource = Resource(attributes={SERVICE_NAME: service_name})
 
-    traceProvider = TracerProvider(resource=resource)
+    trace_provider = TracerProvider(resource=resource)
     processor = BatchSpanProcessor(
         OTLPSpanExporter(endpoint="http://0.0.0.0:4318/v1/traces")
     )
-    traceProvider.add_span_processor(processor)
-    trace.set_tracer_provider(traceProvider)
+    trace_provider.add_span_processor(processor)
+    trace.set_tracer_provider(trace_provider)
 
     reader = PeriodicExportingMetricReader(
         OTLPMetricExporter(endpoint="http://0.0.0.0:4318/v1/metrics")
     )
-    meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
-    metrics.set_meter_provider(meterProvider)
+    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+    metrics.set_meter_provider(meter_provider)
 
 
 TRACER = trace.get_tracer(__name__)

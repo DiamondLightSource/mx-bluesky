@@ -28,9 +28,9 @@ async def _get_shutter_input_1(zebra: Zebra):
 
 
 async def test_zebra_set_up_for_panda_gridscan(
-    RE, zebra: Zebra, zebra_shutter: ZebraShutter
+    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
 ):
-    RE(setup_zebra_for_panda_flyscan(zebra, zebra_shutter, wait=True))
+    run_engine(setup_zebra_for_panda_flyscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN1_TTL

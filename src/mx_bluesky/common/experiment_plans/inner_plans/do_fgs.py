@@ -46,7 +46,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
-    # Triggers Zocalo if RE is subscribed to ZocaloCallback
+    # Triggers Zocalo if run_engine is subscribed to ZocaloCallback
     yield from read_hardware_for_zocalo(detector)
     LOGGER.info("Wait for all moves with no assigned group")
     yield from bps.wait()
@@ -103,7 +103,7 @@ def kickoff_and_complete_gridscan(
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from bps.unstage(detector)),
+        else_plan=lambda: (yield from bps.unstage(detector, wait=True)),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(
