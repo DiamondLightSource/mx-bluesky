@@ -8,6 +8,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.thawer import OnOff
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
@@ -316,13 +317,11 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
-def test_when_plan_run_then_thawing_turned_on_for_expected_time(
+def test_when_plan_run_then_thawing_turned_on(
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    robot_load_and_energy_change_params_no_energy.thawing_time = (thaw_time := 50)
-
     sim_run_engine.add_handler(
         "read",
         lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
@@ -339,8 +338,8 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "thawer-thaw_for_time_s"
-        and msg.args[0] == thaw_time,
+        and msg.obj.name == "thawer-control"
+        and msg.args[0] == OnOff.ON,
     )
 
 
