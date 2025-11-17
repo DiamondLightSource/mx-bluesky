@@ -48,20 +48,6 @@ eiger_beamy = "BL24I-EA-EIGER-01:CAM:BeamY"
 eiger_omegaincr = "BL24I-EA-EIGER-01:CAM:OmegaIncr"
 eiger_od_filename_rbv = "BL24I-EA-EIGER-01:OD:FP:FileName_RBV"
 
-# PMAC Strings
-step08_pmac_str = "BL24I-MO-IOC-08:ASYN8.AOUT"
-step09_pmac_str = "BL24I-MO-IOC-09:ASYN9.AOUT"
-step10_pmac_str = "BL24I-MO-IOC-10:ASYN10.AOUT"
-step11_pmac_str = "BL24I-MO-IOC-11:ASYN11.AOUT"
-step12_pmac_str = "BL24I-MO-IOC-12:ASYN12.AOUT"
-step13_pmac_str = "BL24I-MO-IOC-13:PMAC:console"
-step08_pmac_response = "BL24I-MO-IOC-08:ASYN8.AINP"
-step09_pmac_response = "BL24I-MO-IOC-09:ASYN9.AINP"
-step10_pmac_response = "BL24I-MO-IOC-10:ASYN10.AINP"
-step11_pmac_response = "BL24I-MO-IOC-11:ASYN11.AINP"
-step12_pmac_response = "BL24I-MO-IOC-12:ASYN12.AINP"
-step13_pmac_response = "BL24I-MO-IOC-13:PMAC:console_RBV"
-
 # BL24I beamline-specific labelled PVs
 me14e_filter = "BL24I-EA-CHIP-01:FILTER"  # to check
 me14e_filepath = "BL24I-MO-CHIP-01:filePath"
@@ -70,20 +56,6 @@ me14e_chipcapacity = "BL24I-MO-CHIP-01:chipCapacity"
 me14e_blockcapacity = "BL24I-MO-CHIP-01:blockCapacity"
 me14e_exptime = "BL24I-MO-CHIP-01:expTime"
 me14e_dcdetdist = "BL24I-MO-CHIP-01:detDistance"
-
-# STEP-13 chip motion
-ioc13_stage_x = "BL24I-MO-CHIP-01:X"
-ioc13_stage_y = "BL24I-MO-CHIP-01:Y"
-ioc13_stage_z = "BL24I-MO-CHIP-01:Z"
-ioc13_filepath = "BL24I-MO-CHIP-01:filePath"
-ioc13_chip_name = "BL24I-MO-CHIP-01:chipName"
-ioc13_chipcapacity = "BL24I-MO-CHIP-01:chipCapacity"
-ioc13_blockcapacity = "BL24I-MO-CHIP-01:blockCapacity"
-ioc13_exptime = "BL24I-MO-CHIP-01:expTime"
-ioc13_dcdetdist = "BL24I-MO-CHIP-01:detDistance"
-ioc13_scanstatus = "BL24I-MO-STEP-13:pmac:read:P2401"
-ioc13_counter = "BL24I-MO-STEP-13:pmac:read:P2402"
-
 
 # General Purpose PV. Now use STEP13
 ioc13_gp1 = "BL24I-MO-IOC-13:GP1"
