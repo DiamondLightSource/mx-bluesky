@@ -143,7 +143,7 @@ def ispyb_config_path() -> Generator[str, Any, Any]:
 
 @pytest.fixture
 def zocalo_env():
-    zocalo_config = os.environ["ZOCALO_CONFIG"]
+    zocalo_config = os.environ.get("ZOCALO_CONFIG")
     if zocalo_config is None:
         raise _system_test_env_error_message("ZOCALO_CONFIG")
     yield zocalo_config
