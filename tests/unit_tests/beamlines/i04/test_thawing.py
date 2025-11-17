@@ -622,9 +622,13 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
     assert publish_call_args_list[3].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
 
 
+@patch(
+    "mx_bluesky.beamlines.i04.thawing_plan._rotate_in_one_direction_and_stream_to_redis"
+)
 @patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
 def test_plans_do_thaw_if_redis_connection_check_fails(
     patch_thaw: MagicMock,
+    patch_rotate_in_one_direction_and_stream_to_redis: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
     robot: BartRobot,
@@ -648,6 +652,7 @@ def test_plans_do_thaw_if_redis_connection_check_fails(
         patch_thaw.assert_called_once_with(
             time_to_thaw=10, rotation=360, thawer=thawer, smargon=smargon
         )
+        patch_rotate_in_one_direction_and_stream_to_redis.assert_not_called()
         assert any(
             record.message.startswith("Failed to connect to redis")
             and record.levelname == "WARNING"
@@ -655,3 +660,50 @@ def test_plans_do_thaw_if_redis_connection_check_fails(
         )
         caplog.clear()
         patch_thaw.reset_mock()
+        patch_rotate_in_one_direction_and_stream_to_redis.reset_mock()
+
+
+@patch("mx_bluesky.beamlines.i04.thawing_plan.thaw")
+@patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
+@patch(
+    "mx_bluesky.beamlines.i04.thawing_plan._rotate_in_one_direction_and_stream_to_redis"
+)
+@patch("mx_bluesky.beamlines.i04.thawing_plan.check_redis_connection")
+def test_plans_continue_as_normal_if_redis_connection_check_passes(
+    patch_redis_connection: MagicMock,
+    patch_rotate_in_one_direction_and_stream_to_redis: MagicMock,
+    patch_murko_callback: MagicMock,
+    patch_thaw: MagicMock,
+    smargon: Smargon,
+    thawer: Thawer,
+    robot: BartRobot,
+    oav_forwarder: OAVToRedisForwarder,
+    run_engine: RunEngine,
+    murko_results: MurkoResultsDevice,
+):
+    patch_redis_connection.return_value = True
+    for plan in (
+        thaw_and_murko_centre(
+            10,
+            360,
+            thawer=thawer,
+            smargon=smargon,
+            robot=robot,
+            oav_to_redis_forwarder=oav_forwarder,
+            murko_results=murko_results,
+        ),
+        thaw_and_stream_to_redis(
+            10,
+            360,
+            thawer=thawer,
+            smargon=smargon,
+            robot=robot,
+            oav_to_redis_forwarder=oav_forwarder,
+        ),
+    ):
+        run_engine(plan)
+
+        patch_thaw.assert_not_called()
+        assert patch_rotate_in_one_direction_and_stream_to_redis.call_count == 2
+        patch_thaw.reset_mock()
+        patch_rotate_in_one_direction_and_stream_to_redis.reset_mock()
