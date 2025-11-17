@@ -258,7 +258,7 @@ async def test_laser_control_on_and_off(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.sleep"
 )
-def test_laser_control_burn_setting(
+def test_laser_control_burn_1_setting(
     fake_sleep: MagicMock, fake_caget: MagicMock, pmac: PMAC, run_engine
 ):
     fake_caget.return_value = 0.1
@@ -270,6 +270,26 @@ def test_laser_control_burn_setting(
         [
             call(" M712=1 M711=1", wait=True),
             call(" M712=0 M711=1", wait=True),
+        ]
+    )
+
+
+@patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.caget")
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1.bps.sleep"
+)
+def test_laser_control_burn_2_setting(
+    fake_sleep: MagicMock, fake_caget: MagicMock, pmac: PMAC, run_engine
+):
+    fake_caget.return_value = 0.1
+    run_engine(laser_control("laser2burn", pmac))
+
+    fake_sleep.assert_called_once_with(0.1)
+    mock_pmac_str = get_mock_put(pmac.pmac_string)
+    mock_pmac_str.assert_has_calls(
+        [
+            call(" M812=1 M811=1", wait=True),
+            call(" M812=0 M811=1", wait=True),
         ]
     )
 
