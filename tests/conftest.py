@@ -35,8 +35,8 @@ from dodal.devices.attenuator.attenuator import (
     EnumFilterAttenuator,
 )
 from dodal.devices.attenuator.filter_selections import (
-    I24_FilterOneSelections,
-    I24_FilterTwoSelections,
+    I24FilterOneSelections,
+    I24FilterTwoSelections,
 )
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
@@ -863,7 +863,7 @@ def zocalo(done_status):
 async def enum_attenuator() -> EnumFilterAttenuator:
     with init_devices(mock=True):
         attenuator = EnumFilterAttenuator(
-            "", filter_selection=(I24_FilterOneSelections, I24_FilterTwoSelections)
+            "", filter_selection=(I24FilterOneSelections, I24FilterTwoSelections)
         )
 
     @AsyncStatus.wrap

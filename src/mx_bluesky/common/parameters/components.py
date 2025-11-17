@@ -12,7 +12,7 @@ from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
-from dodal.utils import BeamlinePrefix, get_beamline_name
+from dodal.utils import get_beamline_name
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -25,7 +25,6 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
-    TEST_MODE,
     DetectorParamConstants,
     GridscanParamConstants,
 )
@@ -154,9 +153,6 @@ class WithVisit(BaseModel):
     visit: str = Field(min_length=1)
     det_dist_to_beam_converter_path: str = Field(
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
-    )
-    insertion_prefix: str = (
-        f"{BeamlinePrefix(BL).insertion_prefix}" if TEST_MODE else "SR03I"
     )
     detector_distance_mm: float | None = Field(default=None, gt=0)
 

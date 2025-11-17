@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
@@ -53,9 +51,6 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.experiment_plans.setup_zebra import (
-    arm_zebra,
-)
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
@@ -66,6 +61,9 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
+    arm_zebra,
+)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 

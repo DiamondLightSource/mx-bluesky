@@ -46,5 +46,5 @@ def do_internal_acquisition(
         override_file_path(jungfrau, path_of_output_file)
 
     trigger_info = create_jungfrau_internal_triggering_info(total_frames, exp_time_s)
-    status = yield from fly_jungfrau(jungfrau, trigger_info, wait=wait)
+    status = yield from fly_jungfrau(jungfrau, trigger_info, gain_mode, wait=wait)
     return status

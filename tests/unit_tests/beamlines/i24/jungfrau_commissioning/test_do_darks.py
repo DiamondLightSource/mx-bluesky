@@ -16,7 +16,7 @@ from ophyd_async.fastcs.jungfrau import (
 )
 from ophyd_async.testing import set_mock_value
 
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import (
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
     do_pedestal_darks,
 )
 
@@ -38,7 +38,9 @@ class CheckMonitor(CallbackBase):
         return doc
 
 
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
+)
 async def test_full_do_pedestal_darks(
     mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
 ):
@@ -102,7 +104,9 @@ async def test_full_do_pedestal_darks(
 class FakeException(Exception): ...
 
 
-@patch("mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks.override_file_path")
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
+)
 @patch("bluesky.plan_stubs.unstage")
 async def test_jungfrau_unstage(
     mock_unstage: MagicMock,
