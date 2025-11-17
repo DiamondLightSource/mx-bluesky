@@ -152,7 +152,7 @@ class StoreInIspyb:
     def _update_scan_with_end_time_and_status(
         self, end_time: str, run_status: str, reason: str, data_collection_id: int
     ) -> None:
-        if reason is not None and reason != "":
+        if reason != "":
             self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
         info = DataCollectionInfo(end_time=end_time, run_status=run_status)

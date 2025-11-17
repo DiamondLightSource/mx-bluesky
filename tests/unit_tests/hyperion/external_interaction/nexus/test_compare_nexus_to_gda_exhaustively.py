@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 from pathlib import Path
@@ -290,10 +289,6 @@ def test_hyperion_vs_gda_datatypes(
 
 
 def _test_params(filename_stub, tmp_path: Path):
-    def get_params(filename):
-        with open(filename) as f:
-            return json.loads(f.read())
-
     params = RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",

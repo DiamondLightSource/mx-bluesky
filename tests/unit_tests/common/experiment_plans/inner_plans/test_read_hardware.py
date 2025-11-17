@@ -19,7 +19,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
@@ -52,7 +52,7 @@ class FakeComposite:
     dcm: DCM
     flux: Flux
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     synchrotron: Synchrotron
     robot: BartRobot
     smargon: Smargon
@@ -61,7 +61,6 @@ class FakeComposite:
 
 @pytest.fixture
 async def fake_composite(
-    run_engine: RunEngine,
     attenuator,
     aperture_scatterguard,
     dcm,
