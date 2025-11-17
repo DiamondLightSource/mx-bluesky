@@ -17,10 +17,7 @@ def move_gonio_warn_on_out_of_range(
     """
     group = "move_warn_out_of_range"
     try:
-        yield from bps.abs_set(gonio.x, position[0], group=group, wait=True)
-        yield from bps.abs_set(gonio.y, position[1], group=group, wait=True)
-        yield from bps.abs_set(gonio.z, position[2], group=group, wait=True)
-        yield from bps.wait(group=group)
+        yield from bps.mv(gonio.x, position[0], gonio.y, position[1], gonio.z, position[2])
     except FailedStatus as fs:
         if isinstance(fs.__cause__, MotorLimitsError):
             raise SampleError(
