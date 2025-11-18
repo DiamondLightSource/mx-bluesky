@@ -4,10 +4,15 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.robot import SampleLocation
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
     AithreRobotLoad,
+)
+from mx_bluesky.beamlines.aithre_lasershaping.robot_load import (
+    robot_load_and_snapshot,
+    robot_unload,
 )
 from mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan import (
     RobotLoadComposite,
@@ -55,12 +60,11 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
 ):
-    robot = aithre_robot_load_composite.robot
     set_mock_value(
         aithre_robot_load_composite.oav.snapshot.last_saved_path,
         "test_oav_snapshot",
     )
-    set_mock_value(robot.barcode, "BARCODE")
+    set_mock_value(aithre_robot_load_composite.robot.barcode, "BARCODE")
 
     run_engine.subscribe(RobotLoadISPyBCallback())
 
@@ -132,14 +136,10 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
     callback.expeye = (mock_expeye := MagicMock())
     run_engine.subscribe(callback)
 
-    set_mock_value(
-        aithre_robot_load_composite.robot.sample_id, expected_sample_id := 12345
-    )
-
     run_engine(robot_unload_plan(aithre_robot_load_composite, robot_load_params))
 
     mock_expeye.start_robot_action.assert_called_once_with(
-        "UNLOAD", "cm31105", 4, expected_sample_id
+        "UNLOAD", "cm31105", 4, 12345
     )
 
 
@@ -153,13 +153,11 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     run_engine.subscribe(callback)
 
     set_mock_value(
-        aithre_robot_load_composite.robot.sample_id, expected_sample_id := 12345
+        aithre_robot_load_composite.oav.snapshot.last_saved_path,
+        "test_oav_snapshot",
     )
-    set_mock_value(aithre_robot_load_composite.robot.current_pin, expected_pin := 3)
-    set_mock_value(aithre_robot_load_composite.robot.current_puck, expected_puck := 40)
-    set_mock_value(
-        aithre_robot_load_composite.robot.barcode, expected_barcode := "BARODE"
-    )
+    set_mock_value(aithre_robot_load_composite.robot.current_pin, 3)
+    set_mock_value(aithre_robot_load_composite.robot.current_puck, 40)
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id
@@ -167,14 +165,15 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     run_engine(robot_unload_plan(aithre_robot_load_composite, robot_load_params))
 
     mock_expeye.start_robot_action.assert_called_once_with(
-        "UNLOAD", "cm31105", 4, expected_sample_id
+        "UNLOAD", "cm31105", 4, 12345
     )
     mock_expeye.update_robot_action.assert_called_once_with(
         action_id,
         {
-            "sampleBarcode": expected_barcode,
-            "containerLocation": expected_pin,
-            "dewarLocation": expected_puck,
+            "sampleBarcode": "BARCODE",
+            "xtalSnapshotAfter": "test_oav_snapshot",
+            "containerLocation": 3,
+            "dewarLocation": 40,
         },
     )
     mock_expeye.end_robot_action.assert_called_once_with(action_id, "success", "OK")
@@ -205,3 +204,51 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
 
     mock_expeye.start_robot_action.assert_called_once_with("UNLOAD", "cm31105", 4, ANY)
     mock_expeye.end_robot_action.assert_called_once_with(action_id, "fail", "Bad Error")
+
+
+@patch(
+    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.robot_load_and_snapshots",
+    autospec=True,
+)
+def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
+    mock_robot_load_and_snapshots,
+    aithre_robot_load_composite: RobotLoadComposite,
+    robot_load_params: AithreRobotLoad,
+    run_engine: RunEngine,
+):
+    run_engine(
+        robot_load_and_snapshot(
+            aithre_robot_load_composite.robot,
+            aithre_robot_load_composite.gonio,
+            aithre_robot_load_composite.oav,
+            SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
+            robot_load_params.sample_id,
+            robot_load_params.visit,
+        )
+    )
+
+    mock_robot_load_and_snapshots.assert_called_once()
+
+
+@patch(
+    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.do_plan_while_lower_gonio_at_home",
+    autospec=True,
+)
+def test_when_robot_unload_plan_called_correct_plan_called(
+    mock_do_plan,
+    aithre_robot_load_composite: RobotLoadComposite,
+    robot_load_params: AithreRobotLoad,
+    run_engine: RunEngine,
+):
+    run_engine(
+        robot_unload(
+            aithre_robot_load_composite.robot,
+            aithre_robot_load_composite.gonio,
+            aithre_robot_load_composite.oav,
+            SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
+            robot_load_params.sample_id,
+            robot_load_params.visit,
+        )
+    )
+
+    mock_do_plan.assert_called_once()

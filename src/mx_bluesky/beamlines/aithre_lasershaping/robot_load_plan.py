@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
 
@@ -8,7 +7,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from blueapi.core import BlueskyContext
-from bluesky.utils import Msg
 from dodal.devices.motors import XYZOmegaStage, XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -94,47 +92,6 @@ def do_robot_load(
     yield from bps.wait(gonio_in_position)
 
 
-def pin_already_loaded(
-    robot: BartRobot, sample_location: SampleLocation
-) -> Generator[Msg, None, bool]:
-    current_puck = yield from bps.rd(robot.current_puck)
-    current_pin = yield from bps.rd(robot.current_pin)
-    return (
-        int(current_puck) == sample_location.puck
-        and int(current_pin) == sample_location.pin
-    )
-
-
-def robot_unload_plan(
-    composite: RobotLoadComposite,
-    params: AithreRobotLoad,
-):
-    @bpp.run_decorator(
-        md={
-            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
-            "metadata": {"visit": params.visit, "sample_id": params.sample_id},
-            "activate_callbacks": [
-                "RobotLoadISPyBCallback",
-            ],
-        },
-    )
-    def do_robot_unload_and_send_to_ispyb():
-        yield from move_gonio_to_home_position(composite)
-        yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
-        yield from bps.read(composite.robot)
-        yield from bps.save()
-
-        def _unload():
-            yield from bps.abs_set(composite.robot, None, wait=True)
-
-        gonio_finished = yield from do_plan_while_lower_gonio_at_home(
-            _unload(), composite.lower_gonio
-        )
-        yield from bps.wait(gonio_finished)
-
-    yield from do_robot_unload_and_send_to_ispyb()
-
-
 def robot_load_and_snapshots(
     composite: RobotLoadComposite,
     location: SampleLocation,
@@ -195,3 +152,37 @@ def robot_load_and_snapshots_plan(
         ),
         PlanNameConstants.ROBOT_LOAD_AND_SNAPSHOTS,
     )
+
+
+def robot_unload_plan(
+    composite: RobotLoadComposite,
+    params: AithreRobotLoad,
+):
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
+            "metadata": {"visit": params.visit, "sample_id": params.sample_id},
+            "activate_callbacks": [
+                "RobotLoadISPyBCallback",
+            ],
+        },
+    )
+    def do_robot_unload_and_send_to_ispyb():
+        yield from take_robot_snapshots(composite.oav, params.snapshot_directory)
+        yield from bps.wait(group="snapshot")
+        yield from move_gonio_to_home_position(composite)
+
+        def _unload():
+            yield from bps.abs_set(composite.robot, None, wait=True)
+
+        gonio_finished = yield from do_plan_while_lower_gonio_at_home(
+            _unload(), composite.lower_gonio
+        )
+        yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
+        yield from bps.read(composite.robot)
+        yield from bps.read(composite.oav.snapshot)
+        yield from bps.save()
+
+        yield from bps.wait(gonio_finished)
+
+    yield from do_robot_unload_and_send_to_ispyb()
