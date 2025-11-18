@@ -1,4 +1,4 @@
-from mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan import (
+from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     i04_default_grid_detect_and_xray_centre,
 )
 from mx_bluesky.beamlines.i04.thawing_plan import (
