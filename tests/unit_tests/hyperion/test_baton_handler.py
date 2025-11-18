@@ -125,14 +125,13 @@ def bluesky_context(
             context.register_device(device)
         return {d.name: d for d in devices}, {}
 
-    context.with_dodal_module(
-        get_beamline_based_on_environment_variable(),
+    context.with_device_manager(
+        get_beamline_based_on_environment_variable().devices,
         mock=True,
-        fake_with_ophyd_sim=True,
     )
 
     baton_with_requested_user(context, HYPERION_USER)
-    with patch.object(context, "with_dodal_module", mock_load_module):
+    with patch.object(context, "with_device_manager", mock_load_module):
         yield context
 
 
@@ -174,10 +173,9 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
     ):
         context = BlueskyContext(run_engine=faked_run_engine)
-        context.with_dodal_module(
-            get_beamline_based_on_environment_variable(),
+        context.with_device_manager(
+            get_beamline_based_on_environment_variable().devices,
             mock=True,
-            fake_with_ophyd_sim=True,
         )
         yield msgs, context
 
