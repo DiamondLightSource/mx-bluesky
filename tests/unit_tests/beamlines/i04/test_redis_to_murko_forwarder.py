@@ -5,9 +5,16 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from dodal.devices.i04.murko_results import MurkoMetadata, MurkoResult
+from dodal.devices.i04.murko_results import (
+    RESULTS_COMPLETE_MESSAGE,
+    MurkoMetadata,
+    MurkoResult,
+)
 from PIL import Image
 
+from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
+    FORWARDING_COMPLETE_MESSAGE,
+)
 from mx_bluesky.beamlines.i04.redis_to_murko_forwarder import (
     MURKO_ADDRESS,
     BatchMurkoForwarder,
@@ -247,3 +254,21 @@ def test_given_no_bytes_received_then_warn_and_do_nothing(
 
     patch_logger.warning.assert_called_once()
     redis_listener.forwarder.add.assert_not_called()  # type:ignore
+
+
+def test_once_forwarding_complete_message_received_flush_is_called_and_results_complete_message_published(
+    redis_listener: RedisListener,
+):
+    redis_listener.forwarder.flush = MagicMock()
+    redis_listener.forwarder.add = MagicMock()
+    redis_listener.pubsub.get_message.return_value = {  # type:ignore
+        "type": "message",
+        "data": json.dumps(FORWARDING_COMPLETE_MESSAGE),
+    }
+    redis_listener._get_and_handle_message()
+
+    redis_listener.forwarder.flush.assert_called_once()
+    redis_listener.forwarder.add.assert_not_called()
+    redis_listener.forwarder.redis_client.publish.assert_called_once_with(  # type:ignore
+        "murko-results", pickle.dumps(RESULTS_COMPLETE_MESSAGE)
+    )
