@@ -14,7 +14,7 @@ from mx_bluesky.common.device_setup_plans.utils import (
 
 @pytest.fixture()
 def mock_eiger():
-    eiger = i03.eiger(mock=True)
+    eiger = i03.eiger.build(mock=True)
     eiger.detector_params = MagicMock()
     eiger.async_stage = MagicMock()
     eiger.disarm_detector = MagicMock()

@@ -306,7 +306,9 @@ def run_generic_ispyb_handler_setup(
 
 @pytest.fixture
 async def zebra_fast_grid_scan():
-    zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    zebra_fast_grid_scan = i03.zebra_fast_grid_scan.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
     set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
@@ -330,7 +332,7 @@ async def fake_fgs_composite(
 ):
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger(connect_immediately=True, mock=True),
+        eiger=i03.eiger.build(mock=True),
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
