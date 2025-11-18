@@ -8,7 +8,7 @@ from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 
-from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
+from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 
 
 @pytest.fixture(autouse=True)
@@ -26,8 +26,8 @@ def patch_timer_expiry():
         yield
 
 
-def test_external_callbacks_waits_for_external_callback_ping(RE: RunEngine):
-    runner = PlanRunner(BlueskyContext(run_engine=RE), True)
+def test_external_callbacks_waits_for_external_callback_ping(run_engine: RunEngine):
+    runner = PlanRunner(BlueskyContext(run_engine=run_engine), True)
     plan_started = Event()
 
     def execute_test():
@@ -42,14 +42,14 @@ def test_external_callbacks_waits_for_external_callback_ping(RE: RunEngine):
 
     with ThreadPoolExecutor(1) as executor:
         fut = executor.submit(execute_test)
-        RE(runner.execute_plan(test_plan))
+        run_engine(runner.execute_plan(test_plan))
         fut.result()
 
 
 def test_external_callbacks_not_running_raises_exception_for_plan_execution(
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
-    runner = PlanRunner(BlueskyContext(run_engine=RE), True)
+    runner = PlanRunner(BlueskyContext(run_engine=run_engine), True)
     plan_started = Event()
 
     def execute_test():
@@ -61,9 +61,9 @@ def test_external_callbacks_not_running_raises_exception_for_plan_execution(
 
     with ThreadPoolExecutor(1) as executor:
         fut = executor.submit(execute_test)
-        RE(runner.execute_plan(test_plan))
-        with pytest.raises(PlanException) as exc_info:
-            RE(runner.execute_plan(test_plan))
+        run_engine(runner.execute_plan(test_plan))
+        with pytest.raises(PlanError) as exc_info:
+            run_engine(runner.execute_plan(test_plan))
         assert exc_info.value.__cause__.args[0].startswith(  # type:ignore
             "External callback watchdog timer expired"
         )
