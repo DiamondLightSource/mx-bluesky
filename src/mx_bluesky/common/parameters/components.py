@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
@@ -156,21 +156,18 @@ class WithVisit(BaseModel):
     detector_distance_mm: float | None = Field(default=None, gt=0)
 
 
-class WithSpecifiedTransmission(BaseModel):
-    transmission_frac: float = Field(default=0.1)
-
-
-class DiffractionExperimentBase(
-    MxBlueskyParameters,
-    WithSnapshot,
-    WithVisit,
-    ABC,
+class DiffractionExperiment(
+    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
 ):
+    """For all experiments which use beam"""
+
     file_name: str
+    exposure_time_s: float = Field(gt=0)
     comment: str = Field(default="")
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     run_number: int | None = Field(default=None, ge=0)
     selected_aperture: ApertureValue | None = Field(default=None)
+    transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
     use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
@@ -189,16 +186,6 @@ class DiffractionExperimentBase(
     @property
     def num_images(self) -> int:
         return 0
-
-
-class DiffractionExperiment(
-    DiffractionExperimentBase,
-    WithSpecifiedTransmission,
-    WithOptionalEnergyChange,
-):
-    """For all experiments which use beam"""
-
-    exposure_time_s: float = Field(gt=0)
 
     @property
     @abstractmethod
@@ -240,16 +227,6 @@ class WithSample(BaseModel):
 
 
 class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
-
-
-class DiffractionSampleExperimentAutoTransmissionExposureEnergy(
-    DiffractionExperimentBase,
-    WithSnapshot,
-    WithVisit,
-    WithSample,
-):
-    """For experiments where a sensible exposure and transmission are internally
-    calculated, and current beamline energy is used."""
 
 
 class MultiXtalSelection(BaseModel):
