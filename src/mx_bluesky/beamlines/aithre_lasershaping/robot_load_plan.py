@@ -105,46 +105,34 @@ def pin_already_loaded(
     )
 
 
-def do_robot_unload(
-    composite: RobotLoadComposite,
-    params: AithreRobotLoad,
-):
-    yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
-    yield from bps.read(composite.robot)
-    yield from bps.save()
-
-    def _unload():
-        yield from bps.trigger(composite.robot.unload, wait=True)
-
-    gonio_finished = yield from do_plan_while_lower_gonio_at_home(
-        _unload(), composite.lower_gonio
-    )
-    yield from bps.wait(gonio_finished)
-
-
 def robot_unload_plan(
     composite: RobotLoadComposite,
     params: AithreRobotLoad,
 ):
-    """Unloads the currently mounted pin into the location that it was loaded from. The
-    loaded location is stored on the robot and so need not be provided.
-    """
-    yield from move_gonio_to_home_position(composite)
-    sample_id = yield from bps.rd(composite.robot.sample_id)
-
-    yield from bpp.set_run_key_wrapper(
-        bpp.run_wrapper(
-            do_robot_unload(composite, params),
-            md={
-                "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
-                "metadata": {"visit": params.visit, "sample_id": sample_id},
-                "activate_callbacks": [
-                    "RobotLoadISpyBCallback",
-                ],
-            },
-        ),
-        PlanNameConstants.ROBOT_UNLOAD,
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
+            "metadata": {"visit": params.visit, "sample_id": params.sample_id},
+            "activate_callbacks": [
+                "RobotLoadISPyBCallback",
+            ],
+        },
     )
+    def do_robot_unload_and_send_to_ispyb():
+        yield from move_gonio_to_home_position(composite)
+        yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
+        yield from bps.read(composite.robot)
+        yield from bps.save()
+
+        def _unload():
+            yield from bps.abs_set(composite.robot, None, wait=True)
+
+        gonio_finished = yield from do_plan_while_lower_gonio_at_home(
+            _unload(), composite.lower_gonio
+        )
+        yield from bps.wait(gonio_finished)
+
+    yield from do_robot_unload_and_send_to_ispyb()
 
 
 def robot_load_and_snapshots(
