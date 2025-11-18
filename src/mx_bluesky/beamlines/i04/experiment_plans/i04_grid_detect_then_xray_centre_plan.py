@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from functools import partial
+from pathlib import Path
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -34,6 +35,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
+from pydantic import BaseModel
 
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_config_client,
@@ -73,7 +75,6 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    GridCommonNoTransmissionExposureEnergy,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -86,6 +87,15 @@ from mx_bluesky.common.utils.utils import (
 )
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
+
+
+class I04AutoXrcParams(BaseModel):
+    sample_id: int
+    file_name: str
+    visit: Path
+    detector_distance_mm: float
+    storage_directory: str
+    parameter_model_version: str = "5.3.0"
 
 
 def _change_beamsize(
@@ -103,8 +113,8 @@ def _change_beamsize(
 
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
-def i04_grid_detect_then_xray_centre(
-    parameters: GridCommonNoTransmissionExposureEnergy,
+def i04_default_grid_detect_and_xray_centre(
+    parameters: I04AutoXrcParams,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
@@ -310,7 +320,7 @@ def construct_i04_specific_features(
 
 
 def _get_grid_common_params(
-    _current_wavelength_a: float, parameters: GridCommonNoTransmissionExposureEnergy
+    _current_wavelength_a: float, parameters: I04AutoXrcParams
 ) -> GridCommon:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
     _assumed_wavelength_a = (

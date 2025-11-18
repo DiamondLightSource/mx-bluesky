@@ -30,21 +30,21 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.testing import get_mock_put, set_mock_value
-
-from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+from mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
+    I04AutoXrcParams,
     _get_grid_common_params,
     get_ready_for_oav_and_close_shutter,
-    i04_grid_detect_then_xray_centre,
+    i04_default_grid_detect_and_xray_centre,
 )
+from ophyd_async.testing import get_mock_put, set_mock_value
+
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
-    GridCommonNoTransmissionExposureEnergy,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
-from tests.conftest import TEST_RESULT_LARGE, raw_params_from_file, simulate_xrc_result
+from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteError,
 )
@@ -81,17 +81,17 @@ def i04_grid_detect_then_xrc_default_params(
     transfocator: Transfocator,
     tmp_path,
 ):
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
-        tmp_path,
+    entry_params = I04AutoXrcParams(
+        sample_id=1,
+        file_name="filename",
+        visit=tmp_path,
+        detector_distance_mm=264.5,
+        storage_directory=str(tmp_path),
     )
-    del params["exposure_time_s"]
-    del params["transmission_frac"]
-    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
 
     set_mock_value(dcm.wavelength_in_a.user_readback, EXPECTED_WAVELENGTH)
     return partial(
-        i04_grid_detect_then_xray_centre,
+        i04_default_grid_detect_and_xray_centre,
         parameters=entry_params,
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
@@ -118,7 +118,7 @@ def i04_grid_detect_then_xrc_default_params(
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
 def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_oav_plan(
@@ -159,19 +159,19 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     [(True), (False)],
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.grid_detect_then_xray_centre",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
@@ -195,7 +195,7 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 @patch(
@@ -265,9 +265,9 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
 )
-def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+def test_i04_default_grid_detect_and_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
     mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
@@ -322,7 +322,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 @patch(
@@ -346,7 +346,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
 @patch(
     "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
 )
-def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection(
+def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_collection(
     mock_verify_gap: MagicMock,
     mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,
@@ -368,11 +368,11 @@ def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
@@ -393,15 +393,15 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.grid_detect_then_xray_centre",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_reverts(
@@ -437,11 +437,11 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.grid_detect_then_xray_centre",
     autospec=True,
 )
 async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sample_to_initial_position(
@@ -467,23 +467,23 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.grid_detect_then_xray_centre",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
     return_value=(1, 0.004),
 )
 def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_grid_common(
@@ -511,10 +511,11 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
 
 
 @patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_default_grid_detect_and_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
 )
 def test_get_grid_common_params(
-    mock_fix_trans_and_exposure: MagicMock, test_full_grid_scan_params: GridCommon
+    mock_fix_trans_and_exposure: MagicMock,
+    test_full_grid_scan_params: GridCommon,
 ):
     expected_trans_frac = 1
     expected_exposure_time = 0.004
@@ -525,8 +526,7 @@ def test_get_grid_common_params(
     params = json.loads(test_full_grid_scan_params.model_dump_json())
     del params["exposure_time_s"]
     del params["transmission_frac"]
-    entry_params = GridCommonNoTransmissionExposureEnergy(**params)
-    expected_params = test_full_grid_scan_params
-    expected_params.exposure_time_s = 0.004
-    expected_params.transmission_frac = 1
-    assert _get_grid_common_params(1, entry_params) == expected_params
+    entry_params = I04AutoXrcParams(**params)
+    grid_common_params = _get_grid_common_params(1, entry_params)
+    assert grid_common_params.exposure_time_s == expected_exposure_time
+    assert grid_common_params.transmission_frac == expected_trans_frac
