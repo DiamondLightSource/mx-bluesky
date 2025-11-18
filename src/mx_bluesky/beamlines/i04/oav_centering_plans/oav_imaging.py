@@ -20,7 +20,7 @@ from ophyd_async.core import InOut as core_INOUT
 
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
 
-initial_wait = "Wait for scint to move in"
+initial_wait_group = "Wait for scint to move in"
 
 
 def take_oav_image_with_scintillator_in(
@@ -43,26 +43,21 @@ def take_oav_image_with_scintillator_in(
         image_name: Name of the OAV image to be saved
         image_path: Path where the image should be saved
         transmission: Transmission of the beam, takes a value from 0 to 1 where
-        1 lets all the beam through and 0 lets none of the beam through.
+                    1 lets all the beam through and 0 lets none of the beam through.
         devices: These are the specific ophyd-devices used for the plan, the
-                     defaults are always correct.
+                    defaults are always correct.
     """
 
     yield from _prepare_beamline_for_scintillator_images(
-        initial_wait=initial_wait,
-        robot=robot,
-        beamstop=beamstop,
-        backlight=backlight,
-        scintillator=scintillator,
-        xbpm_feedback=xbpm_feedback,
+        robot, beamstop, backlight, scintillator, xbpm_feedback, initial_wait_group
     )
 
-    yield from bps.abs_set(attenuator, transmission, group=initial_wait)
+    yield from bps.abs_set(attenuator, transmission, group=initial_wait_group)
 
     if image_name is None:
         image_name = f"{time.time_ns()}ATT{transmission * 100}"
 
-    yield from bps.wait(initial_wait)
+    yield from bps.wait(initial_wait_group)
 
     yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
@@ -71,12 +66,12 @@ def take_oav_image_with_scintillator_in(
 
 
 def _prepare_beamline_for_scintillator_images(
-    initial_wait: str,
-    robot: BartRobot = inject("robot"),
-    beamstop: Beamstop = inject("beamstop"),
-    backlight: Backlight = inject("backlight"),
-    scintillator: Scintillator = inject("scintillator"),
-    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
+    robot: BartRobot,
+    beamstop: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    group: str,
 ) -> MsgGenerator:
     """
     Prepares the beamline for oav image by making sure the pin is NOT mounted and
@@ -86,15 +81,15 @@ def _prepare_beamline_for_scintillator_images(
     if pin_mounted == PinMounted.PIN_MOUNTED:
         raise BeamlineStateError("Pin should not be mounted!")
 
-    yield from bps.trigger(xbpm_feedback, wait=True)
+    yield from bps.trigger(xbpm_feedback, group=group)
 
     yield from bps.abs_set(
-        beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=initial_wait
+        beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=group
     )
 
-    yield from bps.abs_set(backlight, core_INOUT.OUT, group=initial_wait)
+    yield from bps.abs_set(backlight, core_INOUT.OUT, group=group)
 
-    yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=initial_wait)
+    yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=group)
 
 
 def take_and_save_oav_image(
@@ -107,8 +102,7 @@ def take_and_save_oav_image(
      Args:
         file_name: Filename specifying the name of the image,
         file_path: Path as a string specifying where the image should be saved,
-        devices: These are the specific ophyd-devices used for the plan, the
-                     defaults are always correct.
+        oav: The OAV to take the image with
     """
     group = "oav image path setting"
     full_file_path = file_path + "/" + file_name

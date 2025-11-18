@@ -17,7 +17,6 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,
-    initial_wait,
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
@@ -27,10 +26,10 @@ from mx_bluesky.common.utils.exceptions import BeamlineStateError
 async def test_check_exception_raised_if_pin_mounted(
     run_engine: RunEngine,
     robot: BartRobot,
-    beamstop: Beamstop,
+    beamstop_phase1: Beamstop,
     scintillator: Scintillator,
     attenuator: BinaryFilterAttenuator,
-    shutter: ZebraShutter,
+    sample_shutter: ZebraShutter,
     oav: OAV,
 ):
     set_mock_value(robot.gonio_pin_sensor, PinMounted.PIN_MOUNTED)
@@ -39,10 +38,10 @@ async def test_check_exception_raised_if_pin_mounted(
         run_engine(
             take_oav_image_with_scintillator_in(
                 robot=robot,
-                beamstop=beamstop,
+                beamstop=beamstop_phase1,
                 scintillator=scintillator,
                 attenuator=attenuator,
-                shutter=shutter,
+                shutter=sample_shutter,
                 oav=oav,
             )
         )
@@ -51,19 +50,15 @@ async def test_check_exception_raised_if_pin_mounted(
 def test_prepare_beamline_for_scint_images(
     sim_run_engine: RunEngineSimulator,
     robot: BartRobot,
-    beamstop: Beamstop,
+    beamstop_phase1: Beamstop,
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
 ):
+    test_group = "my_group"
     messages = sim_run_engine.simulate_plan(
         _prepare_beamline_for_scintillator_images(
-            initial_wait=initial_wait,
-            robot=robot,
-            beamstop=beamstop,
-            backlight=backlight,
-            scintillator=scintillator,
-            xbpm_feedback=xbpm_feedback,
+            robot, beamstop_phase1, backlight, scintillator, xbpm_feedback, test_group
         )
     )
 
@@ -82,39 +77,46 @@ def test_prepare_beamline_for_scint_images(
         lambda msg: msg.command == "set"
         and msg.obj.name == "beamstop-selected_pos"
         and msg.args[0] == BeamstopPositions.DATA_COLLECTION
-        and msg.kwargs["group"] == "Wait for scint to move in",
+        and msg.kwargs["group"] == test_group,
     )
 
     messages = assert_message_and_return_remaining(
-        messages, lambda msg: msg.command == "set" and msg.obj == "backlight"
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "backlight"
+        and msg.args[0] == InOut.OUT,
     )
 
     messages = assert_message_and_return_remaining(
-        messages[1:],
+        messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "scintillator-selected_pos"
         and msg.args[0] == InOut.IN
-        and msg.kwargs["group"] == "Wait for scint to move in",
+        and msg.kwargs["group"] == test_group,
     )
 
 
 def test_plan_stubs_called_in_correct_order(
     sim_run_engine: RunEngineSimulator,
     robot: BartRobot,
-    beamstop: Beamstop,
+    beamstop_phase1: Beamstop,
     scintillator: Scintillator,
     attenuator: BinaryFilterAttenuator,
-    shutter: ZebraShutter,
     oav: OAV,
+    sample_shutter: ZebraShutter,
+    backlight: Backlight,
+    xbpm_feedback: XBPMFeedback,
 ):
     messages = sim_run_engine.simulate_plan(
         take_oav_image_with_scintillator_in(
-            robot=robot,
-            beamstop=beamstop,
-            scintillator=scintillator,
             attenuator=attenuator,
-            shutter=shutter,
+            shutter=sample_shutter,
             oav=oav,
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
         )
     )
 
@@ -157,27 +159,63 @@ def test_plan_stubs_called_in_correct_order(
     )
 
 
-def test_oav_image(
-    sim_run_engine: RunEngineSimulator, oav: OAV, path=".", name="mock-name"
+@pytest.mark.parametrize(
+    "transmission",
+    [1, 0.5, 0.1],
+)
+def test_plan_called_with_specified_transmission_then_transmission_set(
+    sim_run_engine: RunEngineSimulator,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    scintillator: Scintillator,
+    attenuator: BinaryFilterAttenuator,
+    oav: OAV,
+    sample_shutter: ZebraShutter,
+    backlight: Backlight,
+    xbpm_feedback: XBPMFeedback,
+    transmission: float,
 ):
     messages = sim_run_engine.simulate_plan(
-        take_and_save_oav_image(oav=oav, file_path=path, file_name=name)
+        take_oav_image_with_scintillator_in(
+            transmission=transmission,
+            attenuator=attenuator,
+            shutter=sample_shutter,
+            oav=oav,
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == transmission,
+    )
+
+
+def test_oav_image(sim_run_engine: RunEngineSimulator, oav: OAV):
+    mock_filepath = "mock_path"
+    mock_filename = "mock_file"
+    messages = sim_run_engine.simulate_plan(
+        take_and_save_oav_image(mock_filename, mock_filepath, oav)
     )
 
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav-snapshot-filename"
-        and msg.args[0] == "mock-name"
-        and msg.kwargs["group"] == "path setting",
+        and msg.args[0] == mock_filename,
     )
 
     messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav-snapshot-directory"
-        and msg.args[0] == "."
-        and msg.kwargs["group"] == "path setting",
+        and msg.args[0] == mock_filepath,
     )
 
     messages = assert_message_and_return_remaining(
@@ -193,7 +231,7 @@ def test_oav_image(
 
 async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tmp_path):
     expected_filename = "filename"
-    expected_directory = tmp_path
+    expected_directory = str(tmp_path)
     run_engine(take_and_save_oav_image(expected_filename, expected_directory, oav))
     assert await oav.snapshot.filename.get_value() == expected_filename
     assert await oav.snapshot.directory.get_value() == str(expected_directory)

@@ -66,6 +66,7 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    Reference,
     completed_status,
     init_devices,
 )
@@ -561,29 +562,16 @@ def robot(done_status):
 
 
 @pytest.fixture
-def beamstop() -> Beamstop:
+def scintillator(aperture_scatterguard):
     with init_devices(mock=True):
-        beamstop = Beamstop("", beamline_parameters=MagicMock(), name="beamstop")
-    return beamstop
-
-
-@pytest.fixture
-def scintillator():
-    scintillator = Scintillator(
-        "",
-        aperture_scatterguard=MagicMock(),
-        beamline_parameters=MagicMock(),
-        name="scintillator",
-    )
-
+        scintillator = Scintillator(
+            "",
+            aperture_scatterguard=Reference(aperture_scatterguard),
+            beamline_parameters=MagicMock(),
+            name="scintillator",
+        )
+    patch_all_motors(scintillator)
     return scintillator
-
-
-@pytest.fixture
-def shutter() -> ZebraShutter:
-    with init_devices(mock=True):
-        shutter = ZebraShutter("", name="sample_shutter")
-    return shutter
 
 
 @pytest.fixture
