@@ -67,6 +67,7 @@ class DataCollectionInfo:
     start_time: str | None = None
     end_time: str | None = None
     run_status: str | None = None
+    detector_mode: str | None = None
 
     sample_id: int | None = None
 
