@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy
 import pydantic
 import pytest
-from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import aithre, i03
@@ -562,14 +561,14 @@ def robot(done_status):
 
 
 @pytest.fixture
-def beamstop(re: RunEngine) -> Beamstop:
+def beamstop() -> Beamstop:
     with init_devices(mock=True):
         beamstop = Beamstop("", beamline_parameters=MagicMock(), name="beamstop")
     return beamstop
 
 
 @pytest.fixture
-def scintillator(re: RunEngine):
+def scintillator():
     scintillator = Scintillator(
         "",
         aperture_scatterguard=MagicMock(),
@@ -581,12 +580,13 @@ def scintillator(re: RunEngine):
 
 
 @pytest.fixture
-def shutter(re: RunEngine) -> ZebraShutter:
+def shutter() -> ZebraShutter:
     with init_devices(mock=True):
         shutter = ZebraShutter("", name="sample_shutter")
     return shutter
 
 
+@pytest.fixture
 def attenuator():
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
