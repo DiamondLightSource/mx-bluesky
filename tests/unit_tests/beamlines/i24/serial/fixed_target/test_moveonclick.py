@@ -10,7 +10,6 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
     _calculate_zoom_calibrator,
     _get_beam_centre,
     _move_on_mouse_click_plan,
-    move_block_on_arrow_click,
     on_mouse,
     update_ui,
 )
@@ -118,22 +117,3 @@ def test_update_ui_uses_correct_beam_centre_for_ellipse(
     fake_cv.ellipse.assert_has_calls(
         [call(ANY, (15, 10), (12, 8), 0.0, 0.0, 360, (0, 255, 255), thickness=2)]
     )
-
-
-@pytest.mark.parametrize(
-    "direction, expected_pmac_string",
-    [
-        ("up", "&2#6J:-31750"),
-        ("right", "&2#5J:31750"),
-    ],
-)
-def test_move_block_on_arrow_click(
-    direction,
-    expected_pmac_string,
-):
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.abs_set"
-    ) as mock_abs_set:
-        plan = move_block_on_arrow_click(direction)
-        list(plan)
-        mock_abs_set.assert_called_with(ANY, expected_pmac_string, wait=True)
