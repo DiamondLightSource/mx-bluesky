@@ -1,5 +1,4 @@
 import pytest
-from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
@@ -8,7 +7,7 @@ from mx_bluesky.beamlines.aithre_lasershaping import check_omega_performance
 
 
 @pytest.fixture
-def goniometer(RE: RunEngine) -> Goniometer:
+def goniometer() -> Goniometer:
     return aithre.goniometer(connect_immediately=True, mock=True)
 
 

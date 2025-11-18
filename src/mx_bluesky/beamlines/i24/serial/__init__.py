@@ -3,19 +3,20 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_move_backlight,
     gui_move_detector,
     gui_run_chip_collection,
+    gui_run_extruder_collection,
+    gui_set_fiducial_0,
     gui_set_zoom_level,
-    gui_sleep,
     gui_stage_move_on_click,
 )
 
-from .extruder.i24ssx_Extruder_Collect_py3v2 import (
+from .extruder.i24ssx_extruder_collect_py3v2 import (
     enter_hutch,
     initialise_extruder,
     laser_check,
     run_extruder_plan,
 )
-from .fixed_target.i24ssx_Chip_Collect_py3v1 import run_fixed_target_plan
-from .fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from .fixed_target.i24ssx_chip_collect_py3v1 import run_fixed_target_plan
+from .fixed_target.i24ssx_chip_manager_py3v1 import (
     block_check,
     cs_maker,
     cs_reset,
@@ -56,9 +57,10 @@ __all__ = [
     # GUI plans
     "gui_stage_move_on_click",
     "gui_gonio_move_on_click",
-    "gui_sleep",
     "gui_move_detector",
     "gui_run_chip_collection",
     "gui_move_backlight",
     "gui_set_zoom_level",
+    "gui_set_fiducial_0",
+    "gui_run_extruder_collection",
 ]

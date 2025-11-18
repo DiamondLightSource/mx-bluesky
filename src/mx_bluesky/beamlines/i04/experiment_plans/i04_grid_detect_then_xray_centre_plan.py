@@ -25,7 +25,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -40,13 +40,13 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    construct_beamline_specific_FGS_features,
+    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -71,9 +71,10 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
 
-DEFAULT_BEAMSIZE_MICRONS = 20
+DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
 
 def _change_beamsize(
@@ -103,7 +104,7 @@ def i04_grid_detect_then_xray_centre(
     oav: OAV = inject("oav"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
     s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps"),
-    undulator: Undulator = inject("undulator"),
+    undulator: UndulatorInKeV = inject("undulator"),
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
     zebra: Zebra = inject("zebra"),
     robot: BartRobot = inject("robot"),
@@ -152,9 +153,15 @@ def i04_grid_detect_then_xray_centre(
         robot,
         sample_shutter,
     )
-    initial_beamsize = yield from bps.rd(transfocator.beamsize_set_microns)
+    initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
+
+    initial_x = yield from bps.rd(smargon.x.user_readback)
+    initial_y = yield from bps.rd(smargon.y.user_readback)
+    initial_z = yield from bps.rd(smargon.z.user_readback)
 
     def tidy_beamline():
+        yield from bps.mv(transfocator, initial_beamsize)
+
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
                 composite.smargon,
@@ -162,7 +169,6 @@ def i04_grid_detect_then_xray_centre(
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
-        yield from bps.mv(transfocator, initial_beamsize)
 
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
@@ -185,9 +191,15 @@ def i04_grid_detect_then_xray_centre(
                 oav_config=oav_config,
             )
 
-        yield from grid_detect_then_xray_centre_with_callbacks()
+        try:
+            yield from grid_detect_then_xray_centre_with_callbacks()
+        except CrystalNotFoundError:
+            yield from bps.mv(
+                smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
+            )
+            raise
 
-    yield from _change_beamsize(transfocator, DEFAULT_BEAMSIZE_MICRONS, parameters)
+    yield from _change_beamsize(transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, parameters)
     yield from _inner_grid_detect_then_xrc()
 
 
@@ -200,7 +212,7 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     LOGGER.info("Non-udc tidy: Setting up beamline for OAV")
-    yield from setup_beamline_for_OAV(
+    yield from setup_beamline_for_oav(
         smargon, backlight, aperture_scatterguard, group=group
     )
     LOGGER.info("Non-udc tidy: Closing detector shutter")
@@ -243,14 +255,14 @@ def construct_i04_specific_features(
         xrc_composite.smargon.x,
         xrc_composite.smargon.y,
         xrc_composite.smargon.z,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
     ]
 
     signals_to_read_during_collection = [
         xrc_composite.aperture_scatterguard,
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
-        xrc_composite.dcm.energy_in_kev,
+        xrc_composite.dcm.energy_in_keV,
         xrc_composite.eiger.bit_depth,
     ]
 
@@ -264,10 +276,10 @@ def construct_i04_specific_features(
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,
-        xrc_parameters.FGS_params,
+        xrc_parameters.fast_gridscan_params,
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
-    return construct_beamline_specific_FGS_features(
+    return construct_beamline_specific_fast_gridscan_features(
         partial(
             setup_zebra_for_gridscan,
         ),

@@ -21,7 +21,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -49,7 +49,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -81,7 +81,7 @@ class RotationScanComposite(OavSnapshotComposite):
     flux: Flux
     robot: BartRobot
     smargon: Smargon
-    undulator: Undulator
+    undulator: UndulatorInKeV
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     sample_shutter: ZebraShutter
@@ -346,7 +346,7 @@ def _move_and_rotation(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         if not params.use_grid_snapshots:
-            yield from setup_beamline_for_OAV(
+            yield from setup_beamline_for_oav(
                 composite.smargon,
                 composite.backlight,
                 composite.aperture_scatterguard,

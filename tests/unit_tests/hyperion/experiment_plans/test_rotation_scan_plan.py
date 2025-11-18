@@ -39,7 +39,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMade
+from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -64,9 +64,14 @@ from ....conftest import (
     DocumentCapturer,
     extract_metafile,
     fake_read,
-    mx_acquisition_from_conn,
     raw_params_from_file,
-    remap_upsert_columns,
+)
+from ....expeye_helpers import (
+    DC_COMMENT_RE,
+    DC_RE,
+    DCG_RE,
+    DCGS_RE,
+    DCS_RE,
 )
 
 TEST_OFFSET = 1
@@ -90,7 +95,7 @@ def do_rotation_main_plan_for_tests(
 
 @pytest.fixture
 def run_full_rotation_plan(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -99,7 +104,7 @@ def run_full_rotation_plan(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
-        RE(
+        run_engine(
             rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
@@ -120,18 +125,18 @@ def motion_values(test_rotation_params: RotationScan):
 
 
 def setup_and_run_rotation_plan_for_tests(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_params: SingleRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE, test_params, fake_create_rotation_devices, motion_values
+            run_engine, test_params, fake_create_rotation_devices, motion_values
         )
 
     return {
-        "RE_with_subs": RE,
+        "run_engine_with_subs": run_engine,
         "test_rotation_params": test_params,
         "smargon": fake_create_rotation_devices.smargon,
         "zebra": fake_create_rotation_devices.zebra,
@@ -140,27 +145,27 @@ def setup_and_run_rotation_plan_for_tests(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
     params = next(test_rotation_params.single_rotation_scans)
     return setup_and_run_rotation_plan_for_tests(
-        RE, params, fake_create_rotation_devices, motion_values
+        run_engine, params, fake_create_rotation_devices, motion_values
     )
 
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params_nomove: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
     rotation_params = next(test_rotation_params_nomove.single_rotation_scans)
     return setup_and_run_rotation_plan_for_tests(
-        RE, rotation_params, fake_create_rotation_devices, motion_values
+        run_engine, rotation_params, fake_create_rotation_devices, motion_values
     )
 
 
@@ -205,13 +210,15 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
 )
 def test_rotation_scan(
     plan: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
     composite = fake_create_rotation_devices
-    RE(rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation))
+    run_engine(
+        rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation)
+    )
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
 
@@ -219,8 +226,10 @@ def test_rotation_scan(
 def test_rotation_plan_runs(
     setup_and_run_rotation_plan_for_tests_standard: dict[str, Any],
 ) -> None:
-    RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
-    assert RE._exit_status == "success"
+    run_engine: RunEngine = setup_and_run_rotation_plan_for_tests_standard[
+        "run_engine_with_subs"
+    ]
+    assert run_engine._exit_status == "success"
 
 
 async def test_rotation_plan_zebra_settings(
@@ -304,28 +313,30 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    class MyTestException(Exception):
+    class MyTestError(Exception):
         pass
 
     failing_set = MagicMock(
-        side_effect=MyTestException("Experiment fails because this is a test")
+        side_effect=MyTestError("Experiment fails because this is a test")
     )
 
     with patch.object(fake_create_rotation_devices.smargon.omega, "set", failing_set):
         # check main subplan part fails
         params = next(test_rotation_params.single_rotation_scans)
-        with pytest.raises(MyTestException):
-            RE(rotation_scan_plan(fake_create_rotation_devices, params, motion_values))
+        with pytest.raises(MyTestError):
+            run_engine(
+                rotation_scan_plan(fake_create_rotation_devices, params, motion_values)
+            )
         cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
-        with pytest.raises(MyTestException) as exc:
-            RE(
+        with pytest.raises(MyTestError) as exc:
+            run_engine(
                 rotation_scan(
                     fake_create_rotation_devices,
                     test_rotation_params,
@@ -767,13 +778,13 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
 )
 def test_rotation_scan_correctly_triggers_ispyb_callback(
     mock_store_in_ispyb,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
     mock_ispyb_callback = RotationISPyBCallback()
-    RE.subscribe(mock_ispyb_callback)
+    run_engine.subscribe(mock_ispyb_callback)
     with (
         patch("bluesky.plan_stubs.wait", autospec=True),
         patch(
@@ -781,7 +792,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
             fake_read,
         ),
     ):
-        RE(
+        run_engine(
             rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
@@ -800,7 +811,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
 def test_rotation_scan_correctly_triggers_zocalo_callback(
     mock_store_in_ispyb,
     mock_zocalo_interactor,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -812,7 +823,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)
     )
-    RE.subscribe(mock_ispyb_callback)
+    run_engine.subscribe(mock_ispyb_callback)
     with (
         patch("bluesky.plan_stubs.wait", autospec=True),
         patch(
@@ -820,7 +831,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
             fake_read,
         ),
     ):
-        RE(
+        run_engine(
             rotation_scan(
                 fake_create_rotation_devices,
                 test_rotation_params,
@@ -892,7 +903,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     with patch(
         "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
@@ -902,7 +913,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             scan.rotation_direction = rotation_direction
             scan.omega_start_deg = 30
         mock_callback = Mock(spec=RotationISPyBCallback)
-        RE.subscribe(mock_callback)
+        run_engine.subscribe(mock_callback)
         omega_put = get_mock_put(
             fake_create_rotation_devices.smargon.omega.user_setpoint
         )
@@ -916,7 +927,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
                 fake_read,
             ),
         ):
-            RE(
+            run_engine(
                 rotation_scan(
                     fake_create_rotation_devices,
                     test_rotation_params,
@@ -1060,16 +1071,16 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
 
 
 def _run_multi_rotation_plan(
-    RE: RunEngine,
+    run_engine: RunEngine,
     params: RotationScan,
     devices: RotationScanComposite,
     callbacks: Sequence[Callable[[str, dict[str, Any]], Any]],
     oav_params: OAVParameters,
 ):
     for cb in callbacks:
-        RE.subscribe(cb)
+        run_engine.subscribe(cb)
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE(rotation_scan(devices, params, oav_params))
+        run_engine(rotation_scan(devices, params, oav_params))
 
 
 @patch(
@@ -1078,14 +1089,14 @@ def _run_multi_rotation_plan(
 )
 def test_full_multi_rotation_plan_docs_emitted(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
     callback_sim = DocumentCapturer()
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [callback_sim],
@@ -1129,7 +1140,7 @@ def test_full_multi_rotation_plan_docs_emitted(
                 [
                     "attenuator-actual_transmission",
                     "flux-flux_reading",
-                    "dcm-energy_in_kev",
+                    "dcm-energy_in_keV",
                     "eiger_bit_depth",
                 ],
             ],
@@ -1151,14 +1162,14 @@ def test_full_multi_rotation_plan_docs_emitted(
 def test_full_multi_rotation_plan_nexus_writer_called_correctly(
     _,
     mock_nexus_writer: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
     callback = RotationNexusFileCallback()
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [callback],
@@ -1191,7 +1202,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
 )
 def test_full_multi_rotation_plan_nexus_files_written_correctly(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_omega_flip: bool,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
@@ -1212,7 +1223,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
 
     callback = RotationNexusFileCallback()
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         multi_params,
         fake_create_rotation_devices,
         [callback],
@@ -1311,7 +1322,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
 )
 def test_full_multi_rotation_plan_ispyb_called_correctly(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1321,7 +1332,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     mock_ispyb_store = MagicMock()
     callback.ispyb = mock_ispyb_store
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [callback],
@@ -1351,7 +1362,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
 def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     _,
     mock_ispyb_conn_multiscan,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1359,49 +1370,56 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     number_of_scans = len(test_multi_rotation_params.rotation_scans)
     callback = RotationISPyBCallback()
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [callback],
         oav_parameters_for_rotation,
     )
-    mx = mx_acquisition_from_conn(mock_ispyb_conn_multiscan)
-    assert mx.get_data_collection_group_params.call_count == number_of_scans
-    assert mx.get_data_collection_params.call_count == number_of_scans * 4
-    upsert_keys = mx.get_data_collection_params()
-    for upsert_calls, rotation_params in zip(
-        [  # there should be 4 datacollection upserts per scan
-            mx.upsert_data_collection.call_args_list[i * 4 : (i + 1) * 4]
+    assert (
+        len(mock_ispyb_conn_multiscan.calls_for(DCGS_RE))
+        + len(mock_ispyb_conn_multiscan.calls_for(DCG_RE))
+    ) == number_of_scans
+    create_dc_requests = [
+        c.request for c in mock_ispyb_conn_multiscan.calls_for(DCS_RE)
+    ]
+    update_dc_requests = mock_ispyb_conn_multiscan.dc_calls_for(DC_RE)
+    assert len(create_dc_requests) == number_of_scans
+    assert len(update_dc_requests) == number_of_scans * 3
+    for create_dc, update_dcs, rotation_params in zip(
+        create_dc_requests,
+        [  # there should be 1 datacollection create and 3 updates per scan
+            update_dc_requests[i * 3 : (i + 1) * 3]
             for i in range(len(test_multi_rotation_params.rotation_scans))
         ],
         test_multi_rotation_params.single_rotation_scans,
         strict=False,
     ):
-        first_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[0].args[0])
+        create_data = json.loads(create_dc.body)
         assert (
-            first_upsert_data["axisend"] - first_upsert_data["axisstart"]
+            create_data["axisEnd"] - create_data["axisStart"]
             == rotation_params.scan_width_deg
             * rotation_params.rotation_direction.multiplier
         )
-        assert first_upsert_data["nimages"] == rotation_params.num_images
-        second_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[1].args[0])
-        dc_id = second_upsert_data["id"]
-        append_comment_call = next(
-            dropwhile(
-                lambda c: c.args[0] != dc_id,
-                mx.update_data_collection_append_comments.mock_calls,
-            )
-        )
-        comment = append_comment_call.args[1]
-        assert comment.startswith("Sample position")
+        assert create_data["numberOfImages"] == rotation_params.num_images
+
+        dc_id = update_dcs[0].dcid
+        append_comment_call = [
+            rq
+            for rq in mock_ispyb_conn_multiscan.dc_calls_for(DC_COMMENT_RE)
+            if rq.dcid == dc_id
+        ][0]
+        comment = append_comment_call.body["comments"]
+        assert comment.startswith(" Sample position")
         position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
         assert position_string in comment
-        third_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[2].args[0])
-        assert third_upsert_data["resolution"] > 0  # resolution
-        assert third_upsert_data["focalspotsizeatsamplex"] > 0  # beam size
-        fourth_upsert_data = remap_upsert_columns(upsert_keys, upsert_calls[3].args[0])
-        assert fourth_upsert_data["endtime"]  # timestamp
-        assert fourth_upsert_data["runstatus"] == "DataCollection Successful"
+
+        second_update_data = update_dcs[1].body
+        assert second_update_data["resolution"] > 0  # resolution
+
+        third_update_data = update_dcs[2].body
+        assert third_update_data["endTime"]  # timestamp
+        assert third_update_data["runStatus"] == "DataCollection Successful"
 
 
 @patch(
@@ -1410,7 +1428,7 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
 )
 def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1421,7 +1439,7 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     eiger.do_arm.set = MagicMock(return_value=Status(done=True, success=True))
 
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [],
@@ -1444,7 +1462,7 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
 def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     _,
     mock_ispyb_store: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1466,7 +1484,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     zocalo_callback.zocalo_interactor.run_end = parent_mock.run_end
 
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [ispyb_callback],
@@ -1489,7 +1507,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
 def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     _,
     mock_ispyb_store: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1500,9 +1518,9 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     zocalo_callback.zocalo_interactor = (zocalo_trigger := MagicMock())
 
     ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-    with pytest.raises(ISPyBDepositionNotMade):
+    with pytest.raises(ISPyBDepositionNotMadeError):
         _run_multi_rotation_plan(
-            RE,
+            run_engine,
             test_multi_rotation_params,
             fake_create_rotation_devices,
             [ispyb_callback],
@@ -1518,7 +1536,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
 )
 def test_ispyb_triggered_before_zocalo(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1539,7 +1557,7 @@ def test_ispyb_triggered_before_zocalo(
     zocalo_callback.zocalo_interactor.run_start = parent_mock.zocalo_start
 
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [ispyb_callback],
@@ -1560,7 +1578,7 @@ def test_ispyb_triggered_before_zocalo(
 )
 def test_zocalo_start_and_end_called_once_for_each_collection(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1578,7 +1596,7 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     zocalo_callback.zocalo_interactor = MagicMock()
 
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [ispyb_callback],
@@ -1599,7 +1617,7 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
 )
 def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_uses_a_different_sample_id(
     _,
-    RE: RunEngine,
+    run_engine: RunEngine,
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
@@ -1617,15 +1635,15 @@ def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_us
     test_multi_rotation_params.rotation_scans[2].sample_id = 789
 
     _run_multi_rotation_plan(
-        RE,
+        run_engine,
         test_multi_rotation_params,
         fake_create_rotation_devices,
         [ispyb_callback],
         oav_parameters_for_rotation,
     )
-    assert deposition.mock_calls[0].args[1][0].data_collection_info.sample_id == 123
-    assert deposition.mock_calls[1].args[1][0].data_collection_info.sample_id == 456
-    assert deposition.mock_calls[2].args[1][0].data_collection_info.sample_id == 789
+    assert deposition.mock_calls[0].args[0].sample_id == 123
+    assert deposition.mock_calls[1].args[0].sample_id == 456
+    assert deposition.mock_calls[2].args[0].sample_id == 789
 
 
 def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_collected(

@@ -18,7 +18,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 )
 from ophyd_async.core import InOut as core_INOUT
 
-from mx_bluesky.common.utils.exceptions import BeamlineStateException
+from mx_bluesky.common.utils.exceptions import BeamlineStateError
 
 initial_wait = "Wait for scint to move in"
 
@@ -84,7 +84,7 @@ def _prepare_beamline_for_scintillator_images(
     """
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.PIN_MOUNTED:
-        raise BeamlineStateException("Pin should not be mounted!")
+        raise BeamlineStateError("Pin should not be mounted!")
 
     yield from bps.trigger(xbpm_feedback, wait=True)
 

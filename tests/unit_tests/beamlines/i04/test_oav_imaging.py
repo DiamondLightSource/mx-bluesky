@@ -17,11 +17,11 @@ from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
-from mx_bluesky.common.utils.exceptions import BeamlineStateException
+from mx_bluesky.common.utils.exceptions import BeamlineStateError
 
 
 async def test_check_exception_raised_if_pin_mounted(
-    RE: RunEngine,
+    re: RunEngine,
     robot: BartRobot,
     beamstop: Beamstop,
     scintillator: Scintillator,
@@ -31,8 +31,8 @@ async def test_check_exception_raised_if_pin_mounted(
 ):
     set_mock_value(robot.gonio_pin_sensor, PinMounted.PIN_MOUNTED)
 
-    with pytest.raises(BeamlineStateException, match="Pin should not be mounted!"):
-        RE(
+    with pytest.raises(BeamlineStateError, match="Pin should not be mounted!"):
+        re(
             take_oav_image_with_scintillator_in(
                 robot=robot,
                 beamstop=beamstop,
@@ -162,10 +162,10 @@ def test_oav_image(
     )
 
 
-async def test_take_and_save_oav_image_in_re(RE: RunEngine, oav: OAV, tmp_path):
+async def test_take_and_save_oav_image_in_re(re: RunEngine, oav: OAV, tmp_path):
     expected_filename = "filename"
     expected_directory = tmp_path
-    RE(take_and_save_oav_image(expected_filename, expected_directory, oav))
+    re(take_and_save_oav_image(expected_filename, expected_directory, oav))
     assert await oav.snapshot.filename.get_value() == expected_filename
     assert await oav.snapshot.directory.get_value() == str(expected_directory)
     oav.snapshot.trigger.assert_called_once()  # type: ignore
