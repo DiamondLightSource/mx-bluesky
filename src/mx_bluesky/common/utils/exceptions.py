@@ -22,6 +22,12 @@ class ISPyBDepositionNotMadeError(Exception):
     pass
 
 
+class BeamlineStateError(Exception):
+    """Exception raised when the beamline is in the incorrect state"""
+
+    pass
+
+
 class SampleError(WarningError):
     """An exception which identifies an issue relating to the sample."""
 
