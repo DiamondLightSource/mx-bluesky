@@ -17,7 +17,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -422,6 +422,14 @@ def smargon() -> Generator[Smargon, None, None]:
         set_mock_value(smargon.omega.max_velocity, 1)
         yield smargon
     clear_devices()
+
+
+@pytest.fixture
+def aithre_gonio():
+    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
+
+    with patch_all_motors(aithre_gonio):
+        yield aithre_gonio
 
 
 @pytest.fixture
