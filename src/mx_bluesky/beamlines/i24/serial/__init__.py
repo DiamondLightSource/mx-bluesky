@@ -1,4 +1,6 @@
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.do_darks import do_pedestal_darks
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
+    do_pedestal_darks,
+)
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_gonio_move_on_click,
     gui_move_backlight,
@@ -33,6 +35,10 @@ from .fixed_target.i24ssx_chip_manager_py3v1 import (
 )
 from .log import clean_up_log_config_at_end, setup_collection_logs
 from .setup_beamline.setup_detector import setup_detector_stage
+from .web_gui_plans.jungfrau_plans import (
+    run_multi_rotation_plan,
+    run_single_rotation_plan,
+)
 
 __all__ = [
     "setup_detector_stage",
@@ -62,8 +68,10 @@ __all__ = [
     "gui_run_chip_collection",
     "gui_move_backlight",
     "gui_set_zoom_level",
-    # Jungfrau
-    "do_pedestal_darks",
     "gui_set_fiducial_0",
     "gui_run_extruder_collection",
+    # Jungfrau
+    "do_pedestal_darks",
+    "run_single_rotation_plan",
+    "run_multi_rotation_plan",
 ]
