@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -227,6 +229,19 @@ def test_oav_image(sim_run_engine: RunEngineSimulator, oav: OAV):
         messages,
         lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot",
     )
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.os.path.exists",
+    MagicMock(return_value=True),
+)
+def test_given_file_exists_then_take_oav_image_raises(
+    sim_run_engine: RunEngineSimulator, oav: OAV
+):
+    with pytest.raises(FileExistsError):
+        sim_run_engine.simulate_plan(
+            take_and_save_oav_image("mock_file", "mock_path", oav)
+        )
 
 
 async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tmp_path):
