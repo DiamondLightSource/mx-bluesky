@@ -225,24 +225,7 @@ def test_beamstop_check_ensures_detector_shutter_closed(
     )
     with pytest.raises(
         RuntimeError,
-        match="Unable to proceed with beamstop background check, shutters did not close",
-    ):
-        sim_run_engine.simulate_plan(
-            move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
-            )
-        )
-
-
-def test_beamstop_check_ensures_sample_shutter_closed(
-    beamstop_check_devices, sim_run_engine, beamline_parameters
-):
-    sim_run_engine.add_read_handler_for(
-        beamstop_check_devices.sample_shutter, ZebraShutterState.OPEN
-    )
-    with pytest.raises(
-        RuntimeError,
-        match="Unable to proceed with beamstop background check, shutters did not close",
+        match="Unable to proceed with beamstop background check, detector shutter did not close",
     ):
         sim_run_engine.simulate_plan(
             move_beamstop_in_and_verify_using_diode(
@@ -252,7 +235,7 @@ def test_beamstop_check_ensures_sample_shutter_closed(
 
 
 @pytest.mark.parametrize(
-    "ipin_reading, beamstop_threshold, commissioning_mode, expected_exception",
+    "ipin_reading_with_beamstop_out, beamstop_threshold, commissioning_mode, expected_exception",
     [
         [0.099, 0.1, False, BeamObstructedError],
         [0.101, 0.1, False, None],
@@ -269,7 +252,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     beamstop_check_devices: BeamstopCheckDevices,
     run_engine: RunEngine,
     beamline_parameters: GDABeamlineParameters,
-    ipin_reading: float,
+    ipin_reading_with_beamstop_out,
     beamstop_threshold: float,
     commissioning_mode: bool,
     expected_exception: Exception | None,
@@ -277,7 +260,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     set_mock_value(beamstop_check_devices.baton.commissioning, commissioning_mode)
     beamline_parameters.params["ipin_threshold"] = beamstop_threshold
     value_iter = set_mock_values(
-        beamstop_check_devices.ipin.pin_readback, [ipin_reading, 0]
+        beamstop_check_devices.ipin.pin_readback, [ipin_reading_with_beamstop_out, 0]
     )
     next(value_iter)
 
@@ -296,7 +279,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
 
 
 @pytest.mark.parametrize(
-    "ipin_reading, beamstop_threshold, expected_exception",
+    "ipin_reading_with_beamstop_in, beamstop_threshold, expected_exception",
     [
         [0.101, 0.1, BeamstopNotInPositionError],
         [0.099, 0.1, None],
@@ -312,13 +295,13 @@ def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     beamstop_check_devices: BeamstopCheckDevices,
     run_engine: RunEngine,
     beamline_parameters: GDABeamlineParameters,
-    ipin_reading: float,
+    ipin_reading_with_beamstop_in,
     beamstop_threshold: float,
     expected_exception: Exception | None,
 ):
     beamline_parameters.params["ipin_threshold"] = beamstop_threshold
     value_iter = set_mock_values(
-        beamstop_check_devices.ipin.pin_readback, [100, ipin_reading]
+        beamstop_check_devices.ipin.pin_readback, [100, ipin_reading_with_beamstop_in]
     )
     next(value_iter)
 

@@ -32,8 +32,6 @@ from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 
-_PARAM_DATA_COLLECTION_MIN_SAMPLE_CURRENT = "dataCollectionMinSampleCurrent"
-
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices(BeamstopCheckDevices):
@@ -147,10 +145,9 @@ def _verify_correct_cryostream_selected(
 
 
 def _verify_no_sample_present(robot: BartRobot):
-    sample_id = yield from bps.rd(robot.sample_id)
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
 
-    if sample_id or pin_mounted != PinMounted.NO_PIN_MOUNTED:
+    if pin_mounted != PinMounted.NO_PIN_MOUNTED:
         # Cannot unload this sample because we do not know the correct visit for it
         raise UnexpectedSampleError(
             "An unexpected sample was found, please unload the sample manually."

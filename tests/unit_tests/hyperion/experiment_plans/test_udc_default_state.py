@@ -267,18 +267,6 @@ def test_udc_default_state_checks_cryostream_selection(
         run_engine(move_to_udc_default_state(default_devices))
 
 
-def test_udc_default_state_checks_that_no_sample_is_present(
-    default_devices, sim_run_engine, beamline_parameters
-):
-    sim_run_engine.add_read_handler_for(default_devices.robot.sample_id, 123456)
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_beamline_parameters",
-        return_value=beamline_parameters,
-    ):
-        with pytest.raises(UnexpectedSampleError):
-            sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
-
-
 def test_udc_default_state_checks_that_pin_not_mounted(
     default_devices, sim_run_engine, beamline_parameters
 ):
