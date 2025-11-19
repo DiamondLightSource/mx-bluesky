@@ -6,6 +6,7 @@ from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
+from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline
 
@@ -77,26 +78,30 @@ async def test_set_detector_beam_center_plan(
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 def test_eiger_raises_error_if_quickshot_and_no_args_list(
-    fake_caget, fake_caput, run_engine, dcm
+    fake_caget, fake_caput, run_engine, dcm, detector_stage
 ):
     with pytest.raises(TypeError):
-        run_engine(setup_beamline.eiger("quickshot", None, dcm))
+        run_engine(setup_beamline.eiger("quickshot", None, dcm, detector_stage))
 
 
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_eiger_quickshot(_, fake_caget, fake_caput, run_engine, dcm):
-    run_engine(setup_beamline.eiger("quickshot", ["", "", "1", "0.1"], dcm))
+def test_eiger_quickshot(_, fake_caget, fake_caput, run_engine, dcm, detector_stage):
+    run_engine(
+        setup_beamline.eiger("quickshot", ["", "", "1", "0.1"], dcm, detector_stage)
+    )
     assert fake_caput.call_count == 30
 
 
-@patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.rd")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caput")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.caget")
 @patch("mx_bluesky.beamlines.i24.serial.setup_beamline.setup_beamline.bps.sleep")
-def test_eiger_triggered(_, fake_caget, fake_caput, fake_read, run_engine, dcm):
-    run_engine(setup_beamline.eiger("triggered", ["", "", "10", "0.1"], dcm))
-    assert fake_caget.call_count == 3
+def test_eiger_triggered(_, fake_caget, fake_caput, run_engine, dcm, detector_stage):
+    set_mock_value(detector_stage.z.user_readback, 300)
+    set_mock_value(dcm.wavelength_in_a.user_readback, 1)
+    run_engine(
+        setup_beamline.eiger("triggered", ["", "", "10", "0.1"], dcm, detector_stage)
+    )
+    assert fake_caget.call_count == 2
     assert fake_caput.call_count == 30
-    assert fake_read.call_count == 1

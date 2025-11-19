@@ -96,13 +96,19 @@ def set_detector_beam_center_plan(
         yield from bps.wait(group=group)
 
 
-def eiger(action, args_list, dcm: DCM):
+def eiger(
+    action,
+    args_list,
+    dcm: DCM,
+    detector_stage: YZStage,
+):
     SSX_LOGGER.debug("***** Entering Eiger")
     SSX_LOGGER.info(f"Setup eiger - {action}")
     if args_list:
         for arg in args_list:
             SSX_LOGGER.debug(f"Argument: {arg}")
-    caput(pv.eiger_detdist, str(float(caget(pv.det_z)) / 1000))
+    det_z = yield from bps.rd(detector_stage.z.user_readback)
+    caput(pv.eiger_detdist, str(det_z / 1000))
     dcm_wavelength_a = yield from bps.rd(dcm.wavelength_in_a.user_readback)
     caput(pv.eiger_wavelength, dcm_wavelength_a)
     caput(pv.eiger_omegaincr, 0.0)
