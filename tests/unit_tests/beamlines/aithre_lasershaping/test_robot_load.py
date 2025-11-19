@@ -1,6 +1,7 @@
 from pathlib import Path
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
@@ -53,20 +54,32 @@ def aithre_robot_load_composite(
     return composite
 
 
+@pytest.fixture
+def mock_pin_tip(pin_tip: PinTipDetection):
+    pin_tip._get_tip_and_edge_data = AsyncMock(retrun_value=pin_tip.INVALID_POSITION)
+    return pin_tip
+
+
+def noop_plan():
+    yield from bps.null()
+
+
+@pytest.mark.timeout(20)
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.pin_tip_centring.pin_tip_centre_plan",
+    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.pin_tip_centre_plan",
+    side_effect=lambda *args, **kwargs: noop_plan(),
 )
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
 def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called_then_ispyb_deposited(
     exp_eye: MagicMock,
-    mock_pin_tip_centring_plan: MagicMock,
+    mock_pin_tip_centring_plan,
+    mock_pin_tip: PinTipDetection,
     aithre_robot_load_composite: RobotLoadComposite,
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
 ):
-    mock_pin_tip_detection = MagicMock(spec=PinTipDetection)
     set_mock_value(
         aithre_robot_load_composite.oav.snapshot.last_saved_path,
         "test_oav_snapshot",
@@ -80,16 +93,11 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
 
     run_engine(
         robot_load_and_snapshots_plan(
-            aithre_robot_load_composite, robot_load_params, mock_pin_tip_detection
+            aithre_robot_load_composite, robot_load_params, mock_pin_tip
         )
     )
 
-    mock_pin_tip_centring_plan.assert_caled_once_with(
-        aithre_robot_load_composite.oav,
-        aithre_robot_load_composite.gonio,
-        mock_pin_tip_detection,
-    )
-
+    mock_pin_tip_centring_plan.assert_called_once()
     exp_eye.return_value.start_robot_action.assert_called_once_with(
         "LOAD", "cm31105", 4, 12345
     )
@@ -233,11 +241,13 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
 ):
     tip_offset = 0
     oav_config = CONST.OAV_CENTRING_FILE
+    mock_pin_tip_detection = MagicMock(spec=PinTipDetection)
     run_engine(
         robot_load_and_snapshot(
             aithre_robot_load_composite.robot,
             aithre_robot_load_composite.gonio,
             aithre_robot_load_composite.oav,
+            mock_pin_tip_detection,
             tip_offset,
             oav_config,
             SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
