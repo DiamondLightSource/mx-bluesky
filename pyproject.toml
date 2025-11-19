@@ -158,9 +158,6 @@ filterwarnings = [
     "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
-    # Ignore warning about deprecations in python-workflows encountered during system tests
-    # https://github.com/DiamondLightSource/python-workflows/issues/188
-    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
     #Remove when we drop python 3.11
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
     # epicscorelibs requires setuptools >= 70.1
