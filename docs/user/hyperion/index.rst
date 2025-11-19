@@ -43,9 +43,9 @@ to a user is:
 - If an xray centre cannot be done on a pin (because it is too long/short or bent), or if no diffraction is found in the 
   xray centring data, the sample will be immediately unloaded without a rotation scan being done and the next sample loaded.
 
-For a more detailed breakdown of the operation, it may be helpful to browse the  `Code Map`_
+For a more detailed overview of operations, it may be helpful to view the `Data Collection Plan Diagrams`_
 
-.. _Code Map: ../../developer/code-map 
+.. _Data Collection Plan Diagrams: advanced/operations 
 .. _Developer Guide: ../../developer/hyperion/deploying-hyperion
 .. _configuration: ./configuration
 

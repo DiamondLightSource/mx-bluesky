@@ -41,3 +41,13 @@ However on inspection the start log will not show any errors. Hyperion running c
 that Hyperion is running`_
 
 .. _`Verifying that Hyperion is running`: advanced/install.rst
+
+smargon motion
+~~~~~~~~~~~~~~
+
+There are potential race conditions surrounding smargon moves. This may manifest as a CancelledError or TimeoutError 
+on one of the smargon axes. The workaround if this occurs is to run a collection in GDA to confirm correct operation 
+and then return control to Hyperion. 
+
+We believe this is fixed with https://github.com/DiamondLightSource/mx-bluesky/issues/1049 however it is possible 
+that this may recur.
