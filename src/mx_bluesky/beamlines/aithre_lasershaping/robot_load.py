@@ -1,8 +1,10 @@
 from dodal.common import inject
 from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.constants import CONST
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
     AithreRobotLoad,
 )
@@ -17,6 +19,9 @@ def robot_load_and_snapshot(
     robot: BartRobot = inject("robot"),
     gonio: XYZOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
+    ptd: PinTipDetection = inject("ptd"),
+    tip_offset_microns: float = 0,
+    oav_config_file: str = CONST.OAV_CENTRING_FILE,
     sample_loc: SampleLocation = inject("sample_loc"),
     sample_id: int = 0,
     visit: str = "cm40645-1",
@@ -31,7 +36,9 @@ def robot_load_and_snapshot(
         beamline="BL23I",
     )
 
-    yield from robot_load_and_snapshots_plan(composite, params)
+    yield from robot_load_and_snapshots_plan(
+        composite, params, ptd, tip_offset_microns, oav_config_file
+    )
 
 
 def robot_unload(

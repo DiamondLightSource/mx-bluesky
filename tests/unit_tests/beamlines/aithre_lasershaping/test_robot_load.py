@@ -4,9 +4,11 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import SampleLocation
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.constants import CONST
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
     AithreRobotLoad,
 )
@@ -52,14 +54,19 @@ def aithre_robot_load_composite(
 
 
 @patch(
+    "mx_bluesky.beamlines.aithre_lasershaping.pin_tip_centring.pin_tip_centre_plan",
+)
+@patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
 def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called_then_ispyb_deposited(
     exp_eye: MagicMock,
+    mock_pin_tip_centring_plan: MagicMock,
     aithre_robot_load_composite: RobotLoadComposite,
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
 ):
+    mock_pin_tip_detection = MagicMock(spec=PinTipDetection)
     set_mock_value(
         aithre_robot_load_composite.oav.snapshot.last_saved_path,
         "test_oav_snapshot",
@@ -72,7 +79,15 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
     exp_eye.return_value.start_robot_action.return_value = action_id
 
     run_engine(
-        robot_load_and_snapshots_plan(aithre_robot_load_composite, robot_load_params)
+        robot_load_and_snapshots_plan(
+            aithre_robot_load_composite, robot_load_params, mock_pin_tip_detection
+        )
+    )
+
+    mock_pin_tip_centring_plan.assert_caled_once_with(
+        aithre_robot_load_composite.oav,
+        aithre_robot_load_composite.gonio,
+        mock_pin_tip_detection,
     )
 
     exp_eye.return_value.start_robot_action.assert_called_once_with(
@@ -216,11 +231,15 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
 ):
+    tip_offset = 0
+    oav_config = CONST.OAV_CENTRING_FILE
     run_engine(
         robot_load_and_snapshot(
             aithre_robot_load_composite.robot,
             aithre_robot_load_composite.gonio,
             aithre_robot_load_composite.oav,
+            tip_offset,
+            oav_config,
             SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
             robot_load_params.sample_id,
             robot_load_params.visit,

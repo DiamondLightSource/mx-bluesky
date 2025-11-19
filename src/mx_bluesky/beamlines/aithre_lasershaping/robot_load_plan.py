@@ -9,13 +9,19 @@ import pydantic
 from blueapi.core import BlueskyContext
 from dodal.devices.motors import XYZOmegaStage, XYZStage
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 
+from mx_bluesky.beamlines.aithre_lasershaping.parameters.constants import CONST
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
     AithreRobotLoad,
 )
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
+)
+from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
+    PinTipCentringComposite,
+    pin_tip_centre_plan,
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -70,10 +76,13 @@ def take_robot_snapshots(oav: OAV, directory: Path):
         yield from bps.wait("snapshots")
 
 
-def do_robot_load(
+def do_robot_load_and_centre(
     composite: RobotLoadComposite,
     sample_location: SampleLocation,
     sample_id: int,
+    ptd: PinTipDetection,
+    tip_offset_microns: float = 0,
+    oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ):
     yield from bps.abs_set(composite.robot.next_sample_id, sample_id, wait=True)
     yield from bps.abs_set(
@@ -91,21 +100,34 @@ def do_robot_load(
     )
     yield from bps.wait(gonio_in_position)
 
+    pin_tip_centring_composite = PinTipCentringComposite(
+        composite.oav, composite.gonio, ptd
+    )
+    yield from pin_tip_centre_plan(
+        pin_tip_centring_composite, tip_offset_microns, oav_config_file
+    )
+
 
 def robot_load_and_snapshots(
     composite: RobotLoadComposite,
     location: SampleLocation,
     snapshot_directory: Path,
     sample_id: int,
+    ptd: PinTipDetection,
+    tip_offset_microns: float = 0,
+    oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ):
     yield from bps.create(name=DocDescriptorNames.ROBOT_PRE_LOAD)
     yield from bps.read(composite.robot)
     yield from bps.save()
 
-    robot_load_plan = do_robot_load(
+    robot_load_plan = do_robot_load_and_centre(
         composite,
         location,
         sample_id,
+        ptd,
+        tip_offset_microns,
+        oav_config_file,
     )
 
     gonio_finished = yield from do_plan_while_lower_gonio_at_home(
@@ -126,6 +148,9 @@ def robot_load_and_snapshots(
 def robot_load_and_snapshots_plan(
     composite: RobotLoadComposite,
     params: AithreRobotLoad,
+    ptd: PinTipDetection,
+    tip_offset_microns: float = 0,
+    oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ):
     assert params.sample_puck is not None
     assert params.sample_pin is not None
@@ -141,6 +166,9 @@ def robot_load_and_snapshots_plan(
                 sample_location,
                 params.snapshot_directory,
                 params.sample_id,
+                ptd,
+                tip_offset_microns,
+                oav_config_file,
             ),
             md={
                 "subplan_name": PlanNameConstants.ROBOT_LOAD,
