@@ -42,7 +42,7 @@ that Hyperion is running`_
 
 .. _`Verifying that Hyperion is running`: advanced/install.rst
 
-smargon motion
+Smargon Motion
 ~~~~~~~~~~~~~~
 
 There are potential race conditions surrounding smargon moves. This may manifest as a CancelledError or TimeoutError 
