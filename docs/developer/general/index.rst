@@ -25,6 +25,7 @@ Documentation is split into four categories, and each is also accessible from li
             :maxdepth: 1
 
             how-to/get-started
+            how-to/setup-blueapi-for-mx
             how-to/contribute
             how-to/create-a-release
             how-to/deploy-a-release
