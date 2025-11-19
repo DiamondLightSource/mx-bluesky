@@ -4,6 +4,7 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -65,6 +66,7 @@ def standard_read_hardware_during_collection(
     flux: Flux,
     dcm: DoubleCrystalMonochromator,
     detector: EigerDetector,
+    beamsize: BeamsizeBase,
 ):
     signals_to_read_during_collection = [
         aperture_scatterguard,
@@ -72,6 +74,8 @@ def standard_read_hardware_during_collection(
         flux.flux_reading,
         dcm.energy_in_keV,
         detector.bit_depth,
+        beamsize.x_um,
+        beamsize.y_um,
     ]
     yield from read_hardware_plan(
         signals_to_read_during_collection, DocDescriptorNames.HARDWARE_READ_DURING

@@ -4,6 +4,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -51,6 +52,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
     beamstop: Beamstop
+    beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
     zebra_fast_grid_scan: ZebraFastGridScanThreeD

@@ -10,6 +10,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
@@ -70,6 +71,7 @@ class RobotLoadThenCentreComposite:
     # HyperionGridDetectThenXRayCentreComposite fields
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
+    beamsize: BeamsizeBase
     detector_motion: DetectorMotion
     eiger: EigerDetector
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
