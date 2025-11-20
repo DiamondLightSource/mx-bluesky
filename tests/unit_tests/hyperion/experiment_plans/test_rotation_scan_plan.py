@@ -25,7 +25,7 @@ from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd.status import Status
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,

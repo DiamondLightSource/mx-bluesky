@@ -13,10 +13,8 @@ from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.scintillator import InOut, Scintillator
-from dodal.testing import patch_all_motors
-from ophyd_async.core import Signal, completed_status, init_devices
+from ophyd_async.core import Signal, completed_status, init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
     UDCDefaultDevices,
@@ -50,21 +48,16 @@ async def default_devices(aperture_scatterguard, cryostream_gantry):
 
     hutch_shutter.set = MagicMock(return_value=completed_status())
 
-    with (
-        patch_all_motors(scintillator),
-        patch_all_motors(collimation_table),
-        patch_all_motors(beamstop),
-    ):
-        yield UDCDefaultDevices(
-            cryo,
-            cryostream_gantry,
-            fluo,
-            beamstop,
-            scintillator,
-            aperture_scatterguard,
-            collimation_table,
-            hutch_shutter,
-        )
+    return UDCDefaultDevices(
+        cryo,
+        cryostream_gantry,
+        fluo,
+        beamstop,
+        scintillator,
+        aperture_scatterguard,
+        collimation_table,
+        hutch_shutter,
+    )
 
 
 async def test_given_cryostream_temp_is_too_high_then_exception_raised(
