@@ -223,7 +223,9 @@ def baton_with_requested_user(
 
 @pytest.fixture()
 def udc_runner(bluesky_context: BlueskyContext) -> PlanRunner:
-    return PlanRunner(bluesky_context, True)
+    runner = PlanRunner(bluesky_context, True)
+    runner.reset_callback_watchdog_timer()
+    return runner
 
 
 @pytest.fixture
@@ -486,6 +488,7 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
 ):
     msgs, context = bluesky_context_with_sim_run_engine
     udc_runner = PlanRunner(context, True)
+    udc_runner.reset_callback_watchdog_timer()
     run_udc_when_requested(context, udc_runner)
 
     assert_message_and_return_remaining(
