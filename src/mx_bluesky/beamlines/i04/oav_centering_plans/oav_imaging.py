@@ -5,6 +5,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
@@ -117,32 +118,57 @@ def take_and_save_oav_image(
     yield from bps.trigger(oav.snapshot, wait=True)
 
 
-def get_max_pixel_value_from_transmission(transmission):
+# this is just a test device
+def get_max_pixel_value_from_transmission(transmission) -> float:
     # yields from the dodal device which needs to be made
-    pass
+    return transmission + 10
 
 
 def optimise_oav_transmission_binary_search(
-    target_pixel_l,
+    target_pixel_l,  # this should be a fraction of the oversaturated luminosity
     upper_bound,
     lower_bound,
-    tolerance: int = 10,
-    max_iterations: int = 20,
-):
+    tolerance: int = 1,
+    max_iterations: int = 100,
+    max_pixel_lum: MaxPixel = inject("maxpixel"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+) -> MsgGenerator:
+    #  # first we want to get the max_pixel from an oversaturated transmission and use
+    # yield from bps.mv(attenuator, upper_bound / 100, wait=True)
+    # brightest_pixel_sat = yield from bps.trigger(max_pixel_lum, wait=True)
+    # target_pixel_l = int(brightest_pixel_sat) * 0.5
+    # print(f"~~Target luminosity: {target_pixel_l}~~\n")
     while max_iterations > tolerance:
         # may need to add logic to limit the amount of decimal points
         mid = (upper_bound + lower_bound) / 2
         max_iterations -= 1
-        brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+
+        yield from bps.mv(attenuator, mid / 100, wait=True)
+        brightest_pixel = yield from bps.trigger(max_pixel_lum, wait=True)
+
+        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+        print(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
+        print(f"Testing transmission {mid}")
 
         if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+            mid = round(mid, 0)
+            print(f"\nOptimal transmission found - {mid}")
             return mid
 
         # condition for too low so want to try higher
         elif brightest_pixel < target_pixel_l - tolerance:
+            print("Result: Too low \n")
             lower_bound = mid
 
         # condition for too high so want to try lower
         elif brightest_pixel > target_pixel_l + tolerance:
+            print("Result: Too high \n")
             upper_bound = mid
     return "Max iterations reached"
+
+
+# some tests for the above function
+
+# optimise_oav_transmission_binary_search(
+#     target_pixel_l=90, upper_bound=100, lower_bound=0
+# )  # expecting optimal transmission to be 30.
