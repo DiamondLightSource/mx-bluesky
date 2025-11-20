@@ -101,7 +101,11 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             runner: The runner
         """
         _raise_udc_start_alert(get_alerting_service())
-        yield from _move_to_udc_default_state(context)
+        yield from bpp.contingency_wrapper(
+            _move_to_udc_default_state(context),
+            except_plan=trap_default_state_exception,
+            auto_raise=False,
+        )
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
@@ -123,19 +127,18 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
     def trap_default_state_exception(e: Exception):
+        yield from bps.null()
         if isinstance(e, BeamlineCheckFailureError):
             LOGGER.warning("Caught default state check failure:", exc_info=e)
-            yield from bps.null()
+            raise PlanError("Caught default state check failure") from e
         else:
             LOGGER.warning("Caught unexpected exception", exc_info=e)
-            raise
+            raise PlanError("Unexpected exception from UDC Default State plan") from e
 
     def collect_then_release() -> MsgGenerator:
         yield from bpp.contingency_wrapper(
             collect(),
-            except_plan=trap_default_state_exception,
             final_plan=release_baton,
-            auto_raise=False,
         )
 
     context.run_engine(acquire_baton())
