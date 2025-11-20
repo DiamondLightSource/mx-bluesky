@@ -12,6 +12,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from scanspec.core import AxesPoints, Axis
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
@@ -28,12 +29,16 @@ from mx_bluesky.common.utils.tracing import TRACER
 
 def _wait_for_zocalo_to_stage_then_do_fgs(
     grid_scan_device: FastGridScanCommon,
-    detector: EigerDetector,
+    detector: EigerDetector | FastCSEiger,
     synchrotron: Synchrotron,
     during_collection_plan: Callable[[], MsgGenerator] | None = None,
 ):
     expected_images = yield from bps.rd(grid_scan_device.expected_images)
-    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+    exposure_sec_per_image = yield from (
+        bps.rd(detector.cam.acquire_time)
+        if isinstance(detector, EigerDetector)  # old eiger
+        else bps.rd(detector.drv.detector.frame_time)  # fastcs eiger
+    )
     LOGGER.info("waiting for topup if necessary...")
     yield from check_topup_and_wait_if_necessary(
         synchrotron,
@@ -66,7 +71,8 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
 
 def kickoff_and_complete_gridscan(
     gridscan: FastGridScanCommon,
-    detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
+    detector: EigerDetector
+    | FastCSEiger,  # use StandardDetector once old eiger not in use
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
@@ -103,7 +109,11 @@ def kickoff_and_complete_gridscan(
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from bps.unstage(detector, wait=True)),
+        else_plan=lambda: (
+            yield from bps.unstage(detector, wait=True)  # old eiger
+            if isinstance(detector, EigerDetector)
+            else bps.complete(detector, wait=True)  # fastcs eiger
+        ),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(

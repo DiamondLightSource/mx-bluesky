@@ -38,6 +38,7 @@ def hyperion_grid_detect_then_xray_centre(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetect,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
@@ -55,6 +56,7 @@ def hyperion_grid_detect_then_xray_centre(
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_hyperion_specific_features,
             oav_config=oav_config,
+            use_fastcs_eiger=use_fastcs_eiger,
         )
 
     yield from plan_to_perform()

@@ -6,6 +6,7 @@ from bluesky.utils import Msg
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
 from mx_bluesky.common.device_setup_plans.position_detector import (
     set_detector_z_position,
@@ -15,7 +16,7 @@ from mx_bluesky.common.device_setup_plans.position_detector import (
 
 def start_preparing_data_collection_then_do_plan(
     beamstop: Beamstop,
-    eiger: EigerDetector,
+    eiger: EigerDetector | FastCSEiger,
     detector_motion: DetectorMotion,
     detector_distance_mm: float | None,
     plan_to_run: Generator[Msg, None, None],
@@ -32,7 +33,8 @@ def start_preparing_data_collection_then_do_plan(
     """
 
     def wrapped_plan():
-        yield from bps.abs_set(eiger.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        if isinstance(eiger, EigerDetector):
+            yield from bps.abs_set(eiger.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
         yield from bps.abs_set(
             beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=group
         )
