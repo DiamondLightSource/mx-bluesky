@@ -6,9 +6,14 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import SampleLocation
 from ophyd_async.testing import set_mock_value
 
+from mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan import (
+    RobotLoadComposite,
+    robot_load_and_snapshots_plan,
+    robot_unload_plan,
+    take_robot_snapshots,
+)
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.constants import CONST
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
     AithreRobotLoad,
@@ -16,12 +21,6 @@ from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters i
 from mx_bluesky.beamlines.aithre_lasershaping.robot_load import (
     robot_load_and_snapshot,
     robot_unload,
-)
-from mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan import (
-    RobotLoadComposite,
-    robot_load_and_snapshots_plan,
-    robot_unload_plan,
-    take_robot_snapshots,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -66,7 +65,7 @@ def noop_plan():
 
 @pytest.mark.timeout(20)
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.pin_tip_centre_plan",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.pin_tip_centre_plan",
     side_effect=lambda *args, **kwargs: noop_plan(),
 )
 @patch(
@@ -118,7 +117,9 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
 # Leave for later load and centre plan
 
 
-@patch("mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.datetime")
+@patch(
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.datetime"
+)
 async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
     mock_datetime: MagicMock, oav: OAV, run_engine: RunEngine
 ):
@@ -136,7 +137,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.move_gonio_to_home_position",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.move_gonio_to_home_position",
     autospec=True,
 )
 async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
@@ -203,7 +204,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.move_gonio_to_home_position",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.move_gonio_to_home_position",
     autospec=True,
 )
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
@@ -230,7 +231,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.robot_load_and_snapshots",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.robot_load_and_snapshots",
     autospec=True,
 )
 def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
@@ -250,7 +251,8 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
             mock_pin_tip_detection,
             tip_offset,
             oav_config,
-            SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
+            robot_load_params.sample_puck,
+            robot_load_params.sample_pin,
             robot_load_params.sample_id,
             robot_load_params.visit,
         )
@@ -260,7 +262,7 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.robot_load_plan.do_plan_while_lower_gonio_at_home",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.do_plan_while_lower_gonio_at_home",
     autospec=True,
 )
 def test_when_robot_unload_plan_called_correct_plan_called(
@@ -274,7 +276,8 @@ def test_when_robot_unload_plan_called_correct_plan_called(
             aithre_robot_load_composite.robot,
             aithre_robot_load_composite.gonio,
             aithre_robot_load_composite.oav,
-            SampleLocation(robot_load_params.sample_puck, robot_load_params.sample_pin),
+            robot_load_params.sample_puck,
+            robot_load_params.sample_pin,
             robot_load_params.sample_id,
             robot_load_params.visit,
         )
