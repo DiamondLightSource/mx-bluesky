@@ -12,8 +12,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.areadetector.plugins.mjpg import MJPG
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 from PIL import Image
 
 from mx_bluesky.common.parameters.components import WithSnapshot

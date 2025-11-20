@@ -7,7 +7,7 @@ from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines.i24 import CommissioningJungfrau
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.do_external_acquisition import (
     do_external_acquisition,

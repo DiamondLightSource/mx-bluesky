@@ -14,11 +14,11 @@ from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
-from dodal.testing import patch_all_motors
 from ophyd.sim import NullStatus
-from ophyd_async.core import completed_status, init_devices
-from ophyd_async.testing import (
+from ophyd_async.core import (
+    completed_status,
     get_mock_put,
+    init_devices,
     set_mock_value,
 )
 
@@ -81,8 +81,7 @@ async def smargon(run_engine: RunEngine) -> AsyncGenerator[Smargon, None]:
 
     set_mock_value(smargon.omega.user_readback, 0.0)
 
-    with patch_all_motors(smargon):
-        yield smargon
+    yield smargon
 
 
 @pytest.fixture

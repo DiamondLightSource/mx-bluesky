@@ -12,7 +12,7 @@ from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.smargon import CombinedMove
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,

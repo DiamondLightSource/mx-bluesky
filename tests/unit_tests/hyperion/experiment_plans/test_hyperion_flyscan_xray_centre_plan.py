@@ -12,8 +12,8 @@ from dodal.devices.aperturescatterguard import (
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd.sim import NullStatus
 from ophyd.status import Status
+from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,

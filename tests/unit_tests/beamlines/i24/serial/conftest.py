@@ -12,17 +12,13 @@ from dodal.devices.hutch_shutter import (
     ShutterDemand,
     ShutterState,
 )
-from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
-from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
-from dodal.testing import patch_all_motors
 from dodal.utils import AnyDeviceFactory
-from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
+from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -119,44 +115,32 @@ def shutter(run_engine) -> HutchShutter:
 
 @pytest.fixture
 def detector_stage(run_engine):
-    detector_motion = i24.detector_motion(connect_immediately=True, mock=True)
-
-    with patch_all_motors(detector_motion):
-        yield detector_motion
+    return i24.detector_motion(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def aperture(run_engine):
-    aperture: Aperture = i24.aperture(connect_immediately=True, mock=True)
-    with patch_all_motors(aperture):
-        yield aperture
+    return i24.aperture(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def backlight(run_engine) -> DualBacklight:
-    backlight = i24.backlight(connect_immediately=True, mock=True)
-    return backlight
+    return i24.backlight(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def beamstop(run_engine):
-    beamstop: Beamstop = i24.beamstop(connect_immediately=True, mock=True)
-
-    with patch_all_motors(beamstop):
-        yield beamstop
+    return i24.beamstop(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def pmac(run_engine):
-    pmac: PMAC = i24.pmac(connect_immediately=True, mock=True)
-    with patch_all_motors(pmac):
-        yield pmac
+    return i24.pmac(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def dcm(run_engine) -> DCM:
-    dcm = i24.dcm(connect_immediately=True, mock=True)
-    return dcm
+    return i24.dcm(connect_immediately=True, mock=True)
 
 
 @pytest.fixture

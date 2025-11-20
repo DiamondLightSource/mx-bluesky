@@ -19,7 +19,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.baton import Baton
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,

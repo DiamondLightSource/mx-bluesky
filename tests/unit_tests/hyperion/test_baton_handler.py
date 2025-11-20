@@ -16,7 +16,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.utils import get_beamline_based_on_environment_variable
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,

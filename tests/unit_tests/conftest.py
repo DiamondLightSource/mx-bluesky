@@ -31,11 +31,9 @@ from ophyd_async.core import (
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,

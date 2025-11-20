@@ -8,8 +8,6 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
-)
-from ophyd_async.testing import (
     set_mock_value,
 )
 

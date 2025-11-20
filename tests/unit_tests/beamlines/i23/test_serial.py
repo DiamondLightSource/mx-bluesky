@@ -6,9 +6,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.beamlines.i23 import I23DetectorPositions
 from dodal.devices.motors import SixAxisGonio
 from dodal.devices.positioner import Positioner1D
-from dodal.testing import patch_motor
-from ophyd_async.core import init_devices
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put, init_devices
 
 from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 
@@ -17,9 +15,6 @@ from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 def mock_gonio():
     with init_devices(mock=True):
         gonio = SixAxisGonio("", name="gonio")
-    patch_motor(gonio.x)
-    patch_motor(gonio.y)
-    patch_motor(gonio.omega)
     return gonio
 
 
