@@ -763,6 +763,7 @@ async def aperture_scatterguard():
     ):
         ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
 
+    await ap_sg.aperture.z.set(2)
     await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
     set_mock_value(ap_sg.aperture.small, 1)
