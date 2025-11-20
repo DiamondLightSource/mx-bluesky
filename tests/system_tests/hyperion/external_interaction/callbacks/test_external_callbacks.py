@@ -97,7 +97,7 @@ def external_callbacks():
 
 
 @pytest.fixture
-def RE_with_external_callbacks(
+def run_engine_with_external_callbacks(
     external_callbacks,
     zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
     run_engine,
@@ -258,7 +258,7 @@ def test_external_callbacks_ping(external_callbacks):
     ping_received = threading.Event()
 
     class PingHTTPRequestHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
+        def do_GET(self):  # noqa: N802
             assert self.path == "/callbackPing"
             ping_received.set()
 
