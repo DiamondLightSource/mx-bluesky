@@ -16,7 +16,10 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
+from dodal.devices.i04.max_pixel import MaxPixel
 from ophyd_async.core import InOut as core_INOUT
+from mx_bluesky.common.utils.log import LOGGER
+
 
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
 
@@ -109,7 +112,50 @@ def take_and_save_oav_image(
     if not os.path.exists(full_file_path):
         yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
         yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=60)
         yield from bps.trigger(oav.snapshot, wait=True)
     else:
         raise FileExistsError("OAV image file path already exists")
+
+def optimise_oav_transmission_binary_search(
+    target_pixel_l: int,  # this should be a fraction of the oversaturated luminosity
+    upper_bound: float, # in percent
+    lower_bound: float, # in percent
+    tolerance: int = 1,
+    max_iterations: int = 5,
+    max_pixel_lum: MaxPixel = inject("max_pixel"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+) -> MsgGenerator:
+    #  # first we want to get the max_pixel from an oversaturated transmission and use
+    # yield from bps.mv(attenuator, upper_bound / 100, wait=True)
+    # brightest_pixel_sat = yield from bps.trigger(max_pixel_lum, wait=True)
+    # target_pixel_l = int(brightest_pixel_sat) * 0.5
+    # print(f"~~Target luminosity: {target_pixel_l}~~\n")
+    while max_iterations > tolerance:
+        # may need to add logic to limit the amount of decimal points
+        mid = (upper_bound + lower_bound) / 2
+        max_iterations -= 1
+
+        yield from bps.mv(attenuator, mid / 100)
+        yield from bps.trigger(max_pixel_lum, wait=True)
+        brightest_pixel = yield from bps.rd(max_pixel_lum.max_pixel_val)
+
+        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+        LOGGER.info(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
+        LOGGER.info(f"Testing transmission {mid}, brightest pixel found {brightest_pixel}")
+
+        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+            mid = round(mid, 0)
+            LOGGER.info(f"\nOptimal transmission found - {mid}")
+            return mid
+
+        # condition for too low so want to try higher
+        elif brightest_pixel < target_pixel_l - tolerance:
+            LOGGER.info("Result: Too low \n")
+            lower_bound = mid
+
+        # condition for too high so want to try lower
+        elif brightest_pixel > target_pixel_l + tolerance:
+            LOGGER.info("Result: Too high \n")
+            upper_bound = mid
+    return "Max iterations reached"
