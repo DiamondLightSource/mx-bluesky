@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from bluesky import Msg, RunEngine
@@ -24,7 +24,6 @@ from mx_bluesky.hyperion.experiment_plans.beamstop_check import (
     _post_beamstop_out_check_actions,
     move_beamstop_in_and_verify_using_diode,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 
 def test_beamstop_check_closes_sample_shutter(
@@ -32,7 +31,10 @@ def test_beamstop_check_closes_sample_shutter(
 ):
     msgs = sim_run_engine.simulate_plan(
         move_beamstop_in_and_verify_using_diode(
-            beamstop_check_devices, beamline_parameters
+            beamstop_check_devices,
+            beamline_parameters,
+            250,
+            800,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -58,7 +60,10 @@ def test_beamstop_check_raises_error_if_feedback_fails_to_stabilise(
     with pytest.raises(SampleCurrentBelowThresholdError):
         run_engine(
             move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
+                beamstop_check_devices,
+                beamline_parameters,
+                250,
+                800,
             )
         )
 
@@ -66,26 +71,6 @@ def test_beamstop_check_raises_error_if_feedback_fails_to_stabilise(
         beamstop_check_devices.xbpm_feedback,
         beamstop_check_devices.attenuator,
         _FEEDBACK_TIMEOUT_S,
-    )
-
-
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.beamstop_check.unpause_xbpm_feedback_and_set_transmission_to_1"
-)
-def test_feedback_ignored_if_commissioning_mode_enabled(
-    mock_unpause_feedback: MagicMock,
-    beamstop_check_devices: BeamstopCheckDevices,
-    run_engine: RunEngine,
-    beamline_parameters: GDABeamlineParameters,
-):
-    set_mock_value(beamstop_check_devices.baton.commissioning, True)
-    run_engine(
-        move_beamstop_in_and_verify_using_diode(
-            beamstop_check_devices, beamline_parameters
-        )
-    )
-    mock_unpause_feedback.assert_called_once_with(
-        beamstop_check_devices.xbpm_feedback, beamstop_check_devices.attenuator, 0
     )
 
 
@@ -112,7 +97,10 @@ def test_beamstop_check_performs_pre_beamstop_out_check_actions_before_first_bac
     mock_unpause_feedback.return_value = iter([Msg("unpause_feedback")])
     all_msgs = sim_run_engine.simulate_plan(
         move_beamstop_in_and_verify_using_diode(
-            beamstop_check_devices, beamline_parameters
+            beamstop_check_devices,
+            beamline_parameters,
+            250,
+            800,
         )
     )
 
@@ -176,7 +164,10 @@ def test_beamstop_check_completes_post_beamstop_out_check_actions_before_second_
 ):
     msgs = sim_run_engine.simulate_plan(
         move_beamstop_in_and_verify_using_diode(
-            beamstop_check_devices, beamline_parameters
+            beamstop_check_devices,
+            beamline_parameters,
+            250,
+            800,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -229,7 +220,10 @@ def test_beamstop_check_ensures_detector_shutter_closed(
     ):
         sim_run_engine.simulate_plan(
             move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
+                beamstop_check_devices,
+                beamline_parameters,
+                250,
+                800,
             )
         )
 
@@ -273,7 +267,10 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     with pytest.raises(expected_exception) if expected_exception else nullcontext():
         run_engine(
             move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
+                beamstop_check_devices,
+                beamline_parameters,
+                250,
+                800,
             )
         )
 
@@ -314,7 +311,10 @@ def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     with pytest.raises(expected_exception) if expected_exception else nullcontext():
         run_engine(
             move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
+                beamstop_check_devices,
+                beamline_parameters,
+                250,
+                800,
             )
         )
 
@@ -326,7 +326,10 @@ def test_beamstop_check_operates_shutter_and_beamstop_during_ipin_check(
 ):
     msgs = sim_run_engine.simulate_plan(
         move_beamstop_in_and_verify_using_diode(
-            beamstop_check_devices, beamline_parameters
+            beamstop_check_devices,
+            beamline_parameters,
+            250,
+            800,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -404,20 +407,14 @@ def test_beamstop_check_moves_detector_if_outside_thresholds(
     sim_run_engine.add_handler(
         "locate", lambda msg: {"readback": current_z}, "detector_motion-z"
     )
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.beamstop_check.get_hyperion_config_client"
-    ) as mock_get_config_client:
-        mock_get_config_client.return_value.get_feature_flags.return_value = (
-            HyperionFeatureSetting(
-                DETECTOR_DISTANCE_LIMIT_MAX_MM=max_z,
-                DETECTOR_DISTANCE_LIMIT_MIN_MM=min_z,
-            )
+    msgs = sim_run_engine.simulate_plan(
+        move_beamstop_in_and_verify_using_diode(
+            beamstop_check_devices,
+            beamline_parameters,
+            min_z,
+            max_z,
         )
-        msgs = sim_run_engine.simulate_plan(
-            move_beamstop_in_and_verify_using_diode(
-                beamstop_check_devices, beamline_parameters
-            )
-        )
+    )
 
     if expected_move is not None:
         assert_message_and_return_remaining(

@@ -18,10 +18,6 @@ from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
 )
 from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
 
 _GROUP_PRE_BEAMSTOP_OUT_CHECK = "pre_background_check"
 _GROUP_POST_BEAMSTOP_OUT_CHECK = "post_background_check"
@@ -53,7 +49,10 @@ class BeamObstructedError(BeamlineCheckFailureError): ...
 
 
 def move_beamstop_in_and_verify_using_diode(
-    devices: BeamstopCheckDevices, beamline_parameters: GDABeamlineParameters
+    devices: BeamstopCheckDevices,
+    beamline_parameters: GDABeamlineParameters,
+    detector_min_z_mm: float,
+    detector_max_z_mm: float,
 ) -> MsgGenerator:
     """
     Move the beamstop into the data collection position, checking the beam current
@@ -81,6 +80,8 @@ def move_beamstop_in_and_verify_using_diode(
     Args:
         devices: The device composite containing the necessary devices
         beamline_parameters: A mapping containing the beamlineParameters
+        detector_min_z_mm: Detector minimum distance at which beamstop is effective
+        detector_max_z_mm: Detector maximum distance at which beamstop is effective
     Raises:
         SampleCurrentBelowThresholdError: If we do not have sufficient sample current to perform
             the check.
@@ -93,8 +94,10 @@ def move_beamstop_in_and_verify_using_diode(
     commissioning_mode_enabled = yield from bps.rd(devices.baton.commissioning)
     beamstop_threshold_uA = beamline_parameters[_PARAM_IPIN_THRESHOLD]  # noqa: N806
 
-    yield from _start_moving_detector_if_needed(devices, _GROUP_POST_BEAMSTOP_OUT_CHECK)
-    yield from _pre_beamstop_out_check_actions(devices, commissioning_mode_enabled)
+    yield from _start_moving_detector_if_needed(
+        devices, detector_min_z_mm, detector_max_z_mm, _GROUP_POST_BEAMSTOP_OUT_CHECK
+    )
+    yield from _pre_beamstop_out_check_actions(devices)
     yield from _beamstop_out_check(
         devices, beamstop_threshold_uA, commissioning_mode_enabled
     )
@@ -102,9 +105,7 @@ def move_beamstop_in_and_verify_using_diode(
     yield from _beamstop_in_check(devices, beamstop_threshold_uA)
 
 
-def _pre_beamstop_out_check_actions(
-    devices: BeamstopCheckDevices, commissioning_mode_enabled: bool
-):
+def _pre_beamstop_out_check_actions(devices: BeamstopCheckDevices):
     # Re-verify that the sample shutter is closed
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
     LOGGER.info("Unpausing feedback, transmission to 100%, wait for feedback stable...")
@@ -112,7 +113,7 @@ def _pre_beamstop_out_check_actions(
         yield from unpause_xbpm_feedback_and_set_transmission_to_1(
             devices.xbpm_feedback,
             devices.attenuator,
-            0 if commissioning_mode_enabled else _FEEDBACK_TIMEOUT_S,
+            _FEEDBACK_TIMEOUT_S,
         )
     except TimeoutError as e:
         raise SampleCurrentBelowThresholdError(
@@ -158,17 +159,18 @@ def _pre_beamstop_out_check_actions(
         )
 
 
-def _start_moving_detector_if_needed(devices: BeamstopCheckDevices, group: str = None):
-    config_client = get_hyperion_config_client()
+def _start_moving_detector_if_needed(
+    devices: BeamstopCheckDevices,
+    detector_min_z_mm: float,
+    detector_max_z_mm: float,
+    group: str = None,
+):
     detector_current_z = yield from bps.rd(devices.detector_motion.z)
-    features_settings: HyperionFeatureSetting = config_client.get_feature_flags()
-    detector_min_z = features_settings.DETECTOR_DISTANCE_LIMIT_MIN_MM
-    detector_max_z = features_settings.DETECTOR_DISTANCE_LIMIT_MAX_MM
-    target_z = max(min(detector_current_z, detector_max_z), detector_min_z)
+    target_z = max(min(detector_current_z, detector_max_z_mm), detector_min_z_mm)
     if detector_current_z != target_z:
         LOGGER.info(
             f"Detector distance {detector_current_z}mm outside acceptable range for diode "
-            f"check {detector_min_z} <= z <= {detector_max_z}, moving it."
+            f"check {detector_min_z_mm} <= z <= {detector_max_z_mm}, moving it."
         )
         yield from bps.abs_set(devices.detector_motion.z, target_z, group=group)
 

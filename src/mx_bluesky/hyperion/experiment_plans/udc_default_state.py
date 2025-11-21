@@ -110,7 +110,13 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
     if feature_flags.BEAMSTOP_DIODE_CHECK:
         beamline_parameters = get_beamline_parameters()
-        yield from move_beamstop_in_and_verify_using_diode(devices, beamline_parameters)
+        config_client = get_hyperion_config_client()
+        features_settings: HyperionFeatureSetting = config_client.get_feature_flags()
+        detector_min_z = features_settings.DETECTOR_DISTANCE_LIMIT_MIN_MM
+        detector_max_z = features_settings.DETECTOR_DISTANCE_LIMIT_MAX_MM
+        yield from move_beamstop_in_and_verify_using_diode(
+            devices, beamline_parameters, detector_min_z, detector_max_z
+        )
     else:
         yield from bps.abs_set(
             devices.beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, wait=True

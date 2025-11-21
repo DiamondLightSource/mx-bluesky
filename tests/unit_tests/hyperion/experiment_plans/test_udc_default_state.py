@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from bluesky import Msg
@@ -173,6 +173,38 @@ def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
     )
 
 
+@pytest.mark.parametrize(
+    "min_z, max_z",
+    [
+        [250, 800],
+        [300, 650],
+    ],
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state.move_beamstop_in_and_verify_using_diode",
+    return_value=iter([Msg("move_beamstop_in")]),
+)
+def test_beamstop_check_is_called_with_detector_distances_from_config_server(
+    mock_move_beamstop_in: MagicMock,
+    default_devices: UDCDefaultDevices,
+    sim_run_engine: RunEngineSimulator,
+    min_z: float,
+    max_z: float,
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
+    ) as mock_get_config_client:
+        mock_get_config_client.return_value.get_feature_flags.return_value = (
+            HyperionFeatureSetting(
+                BEAMSTOP_DIODE_CHECK=True,
+                DETECTOR_DISTANCE_LIMIT_MAX_MM=max_z,
+                DETECTOR_DISTANCE_LIMIT_MIN_MM=min_z,
+            )
+        )
+        sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+    mock_move_beamstop_in.assert_called_once_with(ANY, ANY, min_z, max_z)
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.udc_default_state.move_beamstop_in_and_verify_using_diode",
     MagicMock(return_value=iter([Msg("move_beamstop_in")])),
@@ -305,7 +337,7 @@ def test_default_state_closes_sample_shutter_before_open_hutch_shutter(
     )
 
 
-def test_default_state_hutch_shutter_open_is_skippied_if_commissioning_mode_enabled(
+def test_default_state_hutch_shutter_open_is_skipped_if_commissioning_mode_enabled(
     sim_run_engine: RunEngineSimulator, default_devices: UDCDefaultDevices
 ):
     sim_run_engine.add_read_handler_for(default_devices.baton.commissioning, True)
