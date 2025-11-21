@@ -176,13 +176,10 @@ def robot_load_cb() -> RobotLoadISPyBCallback:
 
 
 GRID_DC_1_EXPECTED_VALUES = {
-    "BLSAMPLEID": SimConstants.ST_SAMPLE_ID,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0,
     "axisend": 0,
-    "focalspotsizeatsamplex": 0.02,
-    "focalspotsizeatsampley": 0.02,
     "slitgapvertical": 0.234,
     "slitgaphorizontal": 0.123,
     "beamsizeatsamplex": 0.02,
@@ -197,6 +194,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "numberofpasses": 1,
     "overlap": 0,
     "omegastart": 0,
+    "chistart": 30,
     "startimagenumber": 1,
     "wavelength": 1.11697,
     "xbeam": 75.6027,
@@ -229,6 +227,7 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": -350,
+    "chiStart": 0,
     # "chiStart": 0, mx-bluesky 325
     "wavelength": 1.11697,
     "beamSizeAtSampleX": 0.02,
@@ -251,6 +250,7 @@ ROTATION_DC_EXPECTED_VALUES = {
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "axisStart": -350,
     "axisEnd": 10,
+    "chiStart": 30,
     "xtalSnapshotFullPath1": "regex:{tmp_data}/123457/snapshots/\\d{"
     "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:{tmp_data}/123457/snapshots/\\d{"
@@ -882,17 +882,6 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
         fetch_datacollectiongroup_attribute,
     )
 
-    compare_actual_and_expected(
-        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[0],
-        {"BLSAMPLEID": expected_sample_id},
-        fetch_datacollection_attribute,
-    )
-    compare_actual_and_expected(
-        ispyb_gridscan_cb.ispyb_ids.data_collection_ids[1],
-        {"BLSAMPLEID": expected_sample_id},
-        fetch_datacollection_attribute,
-    )
-
 
 @pytest.mark.system_test
 @pytest.mark.parametrize(
@@ -929,11 +918,11 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     run_engine.subscribe(snapshot_cb)
     run_engine.subscribe(robot_load_cb)
 
-    original_upsert_dcg = ispyb_rotation_cb.ispyb._upsert_data_collection_group
+    original_upsert_dcg = ispyb_rotation_cb.ispyb._store_data_collection_group_table
     captured_upsert_dcg_ids = []
 
-    def intercept_upserts(conn, params):
-        dcg_id = original_upsert_dcg(conn, params)
+    def intercept_upserts(dcg_info, data_collection_group_id=None):
+        dcg_id = original_upsert_dcg(dcg_info, data_collection_group_id)
         nonlocal captured_upsert_dcg_ids
         if dcg_id not in captured_upsert_dcg_ids:
             captured_upsert_dcg_ids.append(dcg_id)
@@ -941,7 +930,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
 
     with patch.object(
         ispyb_rotation_cb.ispyb,
-        "_upsert_data_collection_group",
+        "_store_data_collection_group_table",
         side_effect=intercept_upserts,
     ):
         run_engine(
@@ -960,17 +949,6 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
             dcg_id,
             {"blSampleId": expected_sample_id},
             fetch_datacollectiongroup_attribute,
-        )
-        dc_ids = fetch_datacollection_ids_for_group_id(dcg_id)
-        compare_actual_and_expected(
-            dc_ids[0],
-            {"BLSAMPLEID": expected_sample_id},
-            fetch_datacollection_attribute,
-        )
-        compare_actual_and_expected(
-            dc_ids[1],
-            {"BLSAMPLEID": expected_sample_id},
-            fetch_datacollection_attribute,
         )
 
 

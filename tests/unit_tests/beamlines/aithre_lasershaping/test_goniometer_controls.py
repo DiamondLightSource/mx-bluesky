@@ -20,12 +20,13 @@ from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import JogDire
 
 
 @pytest.fixture
-def goniometer(run_engine: RunEngine) -> Goniometer:
+def goniometer() -> Goniometer:
     with init_devices(mock=True):
         gonio = aithre.goniometer(connect_immediately=True, mock=True)
 
     patch_motor(gonio.omega)
     patch_motor(gonio.x)
+    patch_motor(gonio.y)
     patch_motor(gonio.z)
     patch_motor(gonio.sampy)
     patch_motor(gonio.sampz)
