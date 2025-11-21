@@ -10,9 +10,9 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan import (
     RobotLoadComposite,
+    _take_robot_snapshots,
     robot_load_and_snapshots_plan,
     robot_unload_plan,
-    take_robot_snapshots,
 )
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.constants import CONST
 from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters import (
@@ -63,7 +63,6 @@ def noop_plan():
     yield from bps.null()
 
 
-@pytest.mark.timeout(20)
 @patch(
     "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.pin_tip_centre_plan",
     side_effect=lambda *args, **kwargs: noop_plan(),
@@ -114,9 +113,6 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
     )
 
 
-# Leave for later load and centre plan
-
-
 @patch(
     "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.datetime"
 )
@@ -129,7 +125,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
 
-    run_engine(take_robot_snapshots(oav, Path(test_directory)))
+    run_engine(_take_robot_snapshots(oav, Path(test_directory)))
 
     oav.snapshot.trigger.assert_called_once()
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"
@@ -137,7 +133,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.move_gonio_to_home_position",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan._move_gonio_to_home_position",
     autospec=True,
 )
 async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
@@ -204,7 +200,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.move_gonio_to_home_position",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan._move_gonio_to_home_position",
     autospec=True,
 )
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
@@ -231,7 +227,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.robot_load_and_snapshots",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan._robot_load_and_snapshots",
     autospec=True,
 )
 def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
@@ -262,11 +258,11 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
 
 
 @patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.do_plan_while_lower_gonio_at_home",
+    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan._move_gonio_to_home_position",
     autospec=True,
 )
 def test_when_robot_unload_plan_called_correct_plan_called(
-    mock_do_plan,
+    mock_move_gonio,
     aithre_robot_load_composite: RobotLoadComposite,
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
@@ -283,4 +279,4 @@ def test_when_robot_unload_plan_called_correct_plan_called(
         )
     )
 
-    mock_do_plan.assert_called_once()
+    mock_move_gonio.assert_called_once()

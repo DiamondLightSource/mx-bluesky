@@ -30,6 +30,9 @@ def robot_load_and_snapshot(
     visit: str = "cm40645-5",
     categories: str = "",
 ):
+    """
+    catergories: type of the sample, e.g. Germ, ProteinaseK, Screening
+    """
     time_now = datetime.datetime.now()
     year_now = time_now.year
     snapshot_directory = (
@@ -60,6 +63,9 @@ def robot_unload(
     visit: str = "cm40645-5",
     categories: str = "",
 ):
+    """
+    catergories: type of the sample, e.g. Germ, ProteinaseK, Screening
+    """
     time_now = datetime.datetime.now()
     year_now = time_now.year
     snapshot_directory = (
