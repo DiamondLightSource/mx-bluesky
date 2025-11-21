@@ -6,7 +6,6 @@ from pathlib import Path
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
-from blueapi.core import BlueskyContext
 from dodal.devices.motors import XYZOmegaStage, XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -36,12 +35,6 @@ class RobotLoadComposite:
     lower_gonio: XYZStage
     oav: OAV
     gonio: XYZOmegaStage
-
-
-def create_devices(context: BlueskyContext) -> RobotLoadComposite:
-    from mx_bluesky.common.utils.context import device_composite_from_context
-
-    return device_composite_from_context(context, RobotLoadComposite)
 
 
 def move_gonio_to_home_position(
