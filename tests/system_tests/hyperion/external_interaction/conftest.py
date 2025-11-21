@@ -24,6 +24,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -421,6 +422,7 @@ def composite_for_rotation_scan(
     oav_for_system_test: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     oav_for_system_test.zoom_controller.level.describe = AsyncMock(
@@ -445,6 +447,7 @@ def composite_for_rotation_scan(
         oav=oav_for_system_test,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )
 
     energy_ev = convert_angstrom_to_ev(0.71)

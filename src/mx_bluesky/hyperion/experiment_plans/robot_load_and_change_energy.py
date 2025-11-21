@@ -20,7 +20,7 @@ from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.smargon import Smargon
-from dodal.devices.thawer import Thawer
+from dodal.devices.thawer import OnOff, Thawer
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
@@ -82,7 +82,6 @@ def do_robot_load(
     sample_location: SampleLocation,
     sample_id: int,
     demand_energy_ev: float | None,
-    thawing_time: float,
 ):
     yield from bps.abs_set(composite.robot.next_sample_id, sample_id, wait=True)
 
@@ -96,12 +95,9 @@ def do_robot_load(
 
     yield from bps.wait("robot_load")
 
-    yield from bps.abs_set(
-        composite.thawer.thaw_for_time_s,
-        thawing_time,
-        group="thawing_finished",
-    )
     yield from wait_for_smargon_not_disabled(composite.smargon)
+
+    yield from bps.mv(composite.thawer.control, OnOff.ON)
 
 
 def pin_already_loaded(
@@ -120,7 +116,6 @@ def robot_load_and_snapshots(
     location: SampleLocation,
     snapshot_directory: Path,
     sample_id: int,
-    thawing_time: float,
     demand_energy_ev: float | None,
 ):
     yield from bps.abs_set(composite.backlight, InOut.IN, group="snapshot")
@@ -134,7 +129,6 @@ def robot_load_and_snapshots(
         location,
         sample_id,
         demand_energy_ev,
-        thawing_time,
     )
 
     gonio_finished = yield from do_plan_while_lower_gonio_at_home(
@@ -173,7 +167,6 @@ def robot_load_and_change_energy_plan(
                 sample_location,
                 params.snapshot_directory,
                 params.sample_id,
-                params.thawing_time,
                 params.demand_energy_ev,
             ),
             md={
