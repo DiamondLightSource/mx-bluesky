@@ -188,17 +188,11 @@ def robot_unload_plan(
         yield from bps.wait(group="snapshot")
         yield from _move_gonio_to_home_position(composite)
 
-        def _unload():
-            yield from bps.abs_set(composite.robot, None, wait=True)
+        yield from bps.abs_set(composite.robot, None, wait=True)
 
-        gonio_finished = yield from do_plan_while_lower_gonio_at_home(
-            _unload(), composite.lower_gonio
-        )
         yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
         yield from bps.read(composite.robot)
         yield from bps.read(composite.oav.snapshot)
         yield from bps.save()
-
-        yield from bps.wait(gonio_finished)
 
     yield from do_robot_unload_and_send_to_ispyb()
