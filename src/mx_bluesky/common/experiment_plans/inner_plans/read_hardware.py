@@ -72,6 +72,7 @@ def standard_read_hardware_during_collection(
         flux.flux_reading,
         dcm.energy_in_keV,
         detector.bit_depth,
+        detector.cam.roi_mode,
     ]
     yield from read_hardware_plan(
         signals_to_read_during_collection, DocDescriptorNames.HARDWARE_READ_DURING

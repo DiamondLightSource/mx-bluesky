@@ -154,6 +154,7 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "eiger_cam_roi_mode": True,
 }
 
 
