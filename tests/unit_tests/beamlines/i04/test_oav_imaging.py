@@ -256,3 +256,12 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
 # add test for transmission optimization
 # test that everything is called in the correct order.
 # mock out the different transmissions and max vals and make sure you reach what's expected.
+
+
+# mock function transmission optimisation
+def get_max_pixel_value_from_transmission(transmission) -> float:
+    return transmission + 10
+
+
+# def test_optimise_oav_transmission_binary_search():
+#     with patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.")
