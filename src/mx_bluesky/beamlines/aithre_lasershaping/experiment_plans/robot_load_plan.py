@@ -84,14 +84,9 @@ def do_robot_load_and_centre(
         group="robot_load",
     )
 
-    move_gonio_to_home = move_gonio_to_home_position(
-        composite=composite, group="robot_load"
-    )
+    yield from move_gonio_to_home_position(composite=composite, group="robot_load")
 
-    gonio_in_position = yield from do_plan_while_lower_gonio_at_home(
-        move_gonio_to_home, composite.lower_gonio
-    )
-    yield from bps.wait(gonio_in_position)
+    yield from bps.wait(group="robot_load")
 
     pin_tip_centring_composite = PinTipCentringComposite(
         composite.oav, composite.gonio, pin_tip_detection
