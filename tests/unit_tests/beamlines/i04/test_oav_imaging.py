@@ -251,3 +251,8 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
     assert await oav.snapshot.filename.get_value() == expected_filename
     assert await oav.snapshot.directory.get_value() == str(expected_directory)
     oav.snapshot.trigger.assert_called_once()  # type: ignore
+
+
+# add test for transmission optimization
+# test that everything is called in the correct order.
+# mock out the different transmissions and max vals and make sure you reach what's expected.
