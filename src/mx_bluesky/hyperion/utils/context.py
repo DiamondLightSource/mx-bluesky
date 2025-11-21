@@ -27,8 +27,8 @@ def clear_all_device_caches(context: BlueskyContext):
 
 
 def setup_devices(context: BlueskyContext, dev_mode: bool):
-    _, exceptions = context.with_dodal_module(
-        get_beamline_based_on_environment_variable(),
+    _, exceptions = context.with_device_manager(
+        get_beamline_based_on_environment_variable().devices,
         mock=dev_mode,
     )
     if exceptions:
