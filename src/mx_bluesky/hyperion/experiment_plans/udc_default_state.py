@@ -55,12 +55,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     """Moves beamline to known positions prior to UDC start"""
     yield from _verify_correct_cryostream_selected(devices.cryostream_gantry)
 
-    cryostream_temp = yield from bps.rd(devices.cryostream.temperature_k)
-    cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure_bar)
-    if cryostream_temp > devices.cryostream.MAX_TEMP_K:
-        raise CryoStreamError("Cryostream temperature is too high, not starting UDC")
-    if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
-        raise CryoStreamError("Cryostream back pressure is too high, not starting UDC")
+    yield from _check_cryostream(devices)
 
     yield from _verify_no_sample_present(devices.robot)
 
@@ -129,13 +124,31 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     yield from bps.abs_set(
-        devices.cryostream.course, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
+        devices.cryostream.coarse, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
     )
     yield from bps.abs_set(
         devices.cryostream.fine, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
     )
 
     yield from bps.wait(_GROUP_POST_BEAMSTOP_CHECK)
+
+
+def _check_cryostream(devices: UDCDefaultDevices):
+    commissioning_mode = yield from bps.rd(devices.baton.commissioning)
+    cryo_mode = yield from bps.rd(devices.robot.cryomode_rbv)
+    if commissioning_mode and cryo_mode == BartRobot.CRYO_MODE_WARM:
+        LOGGER.warning("Ignoring cryostream status in commissioning mode")
+    else:
+        cryostream_temp = yield from bps.rd(devices.cryostream.temperature_k)
+        cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure_bar)
+        if cryostream_temp > devices.cryostream.MAX_TEMP_K:
+            raise CryoStreamError(
+                "Cryostream temperature is too high, not starting UDC"
+            )
+        if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
+            raise CryoStreamError(
+                "Cryostream back pressure is too high, not starting UDC"
+            )
 
 
 def _verify_correct_cryostream_selected(

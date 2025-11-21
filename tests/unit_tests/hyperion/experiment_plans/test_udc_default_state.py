@@ -13,7 +13,7 @@ from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
-from dodal.devices.robot import PinMounted
+from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.testing import patch_all_motors
@@ -257,7 +257,7 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     )
 
     msgs = assert_expected_set(
-        default_devices.cryostream.course, CryoInOut.IN, post_beamstop_group
+        default_devices.cryostream.coarse, CryoInOut.IN, post_beamstop_group
     )
     msgs = assert_expected_set(
         default_devices.cryostream.fine, CryoInOut.IN, post_beamstop_group
@@ -350,3 +350,33 @@ def test_default_state_hutch_shutter_open_is_skipped_if_commissioning_mode_enabl
         and msg.args[0] == ShutterDemand.OPEN
     ]
     assert not open_shutter_msgs
+
+
+@pytest.mark.parametrize(
+    "cryo_mode, commissioning_mode, expected_exception",
+    [
+        [BartRobot.CRYO_MODE_WARM, True, None],
+        [BartRobot.CRYO_MODE_CRYO, True, CryoStreamError],
+        [BartRobot.CRYO_MODE_WARM, False, CryoStreamError],
+        [BartRobot.CRYO_MODE_CRYO, False, CryoStreamError],
+    ],
+)
+def test_default_state_cryo_check_skipped_in_commissioning_mode_if_cryo_mode(
+    run_engine: RunEngine,
+    default_devices: UDCDefaultDevices,
+    cryo_mode: float,
+    commissioning_mode: bool,
+    expected_exception: type | None,
+):
+    set_mock_value(default_devices.robot.cryomode_rbv, cryo_mode)
+    set_mock_value(default_devices.baton.commissioning, commissioning_mode)
+    set_mock_value(
+        default_devices.cryostream.temperature_k,
+        default_devices.cryostream.MAX_TEMP_K + 1,
+    )
+    set_mock_value(
+        default_devices.cryostream.back_pressure_bar,
+        default_devices.cryostream.MAX_PRESSURE_BAR + 0.1,
+    )
+    with pytest.raises(expected_exception) if expected_exception else nullcontext():
+        run_engine(move_to_udc_default_state(default_devices))
