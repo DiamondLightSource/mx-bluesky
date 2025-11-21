@@ -18,12 +18,12 @@ from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 
-from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
-from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.experiment_plans.beamstop_check import (
+from mx_bluesky.common.experiment_plans.beamstop_check import (
     BeamstopCheckDevices,
     move_beamstop_in_and_verify_using_diode,
 )
+from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_config_client,
 )

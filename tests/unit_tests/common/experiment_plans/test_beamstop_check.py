@@ -13,7 +13,7 @@ from dodal.devices.scintillator import InOut
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from ophyd_async.testing import set_mock_value, set_mock_values
 
-from mx_bluesky.hyperion.experiment_plans.beamstop_check import (
+from mx_bluesky.common.experiment_plans.beamstop_check import (
     _FEEDBACK_TIMEOUT_S,
     _GROUP_POST_BEAMSTOP_OUT_CHECK,
     _GROUP_PRE_BEAMSTOP_OUT_CHECK,
@@ -51,7 +51,7 @@ def test_beamstop_check_closes_sample_shutter(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.beamstop_check.unpause_xbpm_feedback_and_set_transmission_to_1"
+    "mx_bluesky.common.experiment_plans.beamstop_check.unpause_xbpm_feedback_and_set_transmission_to_1"
 )
 def test_beamstop_check_raises_error_if_feedback_fails_to_stabilise(
     mock_unpause_feedback, beamstop_check_devices, run_engine, beamline_parameters
@@ -75,7 +75,7 @@ def test_beamstop_check_raises_error_if_feedback_fails_to_stabilise(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.beamstop_check.unpause_xbpm_feedback_and_set_transmission_to_1"
+    "mx_bluesky.common.experiment_plans.beamstop_check.unpause_xbpm_feedback_and_set_transmission_to_1"
 )
 def test_beamstop_check_performs_pre_beamstop_out_check_actions_before_first_background_read(
     mock_unpause_feedback,
@@ -239,7 +239,7 @@ def test_beamstop_check_ensures_detector_shutter_closed(
     ],
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
+    "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
 def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_check(
     mock_post_beamstop_out_actions,
@@ -285,7 +285,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     ],
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
+    "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
 def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     mock_post_beamstop_out_actions,

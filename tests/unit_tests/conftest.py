@@ -16,15 +16,18 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
+from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
+from dodal.testing import patch_all_motors
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
@@ -37,6 +40,7 @@ from ophyd_async.testing import (
     set_mock_value,
 )
 
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -462,3 +466,56 @@ def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     set_mock_value(detector._writer.writer_ready, 1)
 
     return detector
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
+
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        with patch_all_motors(beamstop):
+            yield devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin(connect_immediately=True, mock=True)
