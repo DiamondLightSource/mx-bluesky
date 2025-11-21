@@ -37,7 +37,7 @@ class RobotLoadComposite:
     gonio: XYZOmegaStage
 
 
-def move_gonio_to_home_position(
+def _move_gonio_to_home_position(
     composite: RobotLoadComposite,
     x_home: float = 0.0,
     y_home: float = 0.0,
@@ -56,7 +56,7 @@ def move_gonio_to_home_position(
     yield from bps.wait(group=group)
 
 
-def take_robot_snapshots(oav: OAV, directory: Path):
+def _take_robot_snapshots(oav: OAV, directory: Path):
     time_now = datetime.now()
     snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
     for device in [oav.snapshot]:
@@ -69,7 +69,7 @@ def take_robot_snapshots(oav: OAV, directory: Path):
         yield from bps.wait("snapshots")
 
 
-def do_robot_load_and_centre(
+def _do_robot_load_and_centre(
     composite: RobotLoadComposite,
     sample_location: SampleLocation,
     sample_id: int,
@@ -84,7 +84,7 @@ def do_robot_load_and_centre(
         group="robot_load",
     )
 
-    yield from move_gonio_to_home_position(composite=composite, group="robot_load")
+    yield from _move_gonio_to_home_position(composite=composite, group="robot_load")
 
     yield from bps.wait(group="robot_load")
 
@@ -96,7 +96,7 @@ def do_robot_load_and_centre(
     )
 
 
-def robot_load_and_snapshots(
+def _robot_load_and_snapshots(
     composite: RobotLoadComposite,
     location: SampleLocation,
     snapshot_directory: Path,
@@ -109,7 +109,7 @@ def robot_load_and_snapshots(
     yield from bps.read(composite.robot)
     yield from bps.save()
 
-    robot_load_plan = do_robot_load_and_centre(
+    robot_load_plan = _do_robot_load_and_centre(
         composite,
         location,
         sample_id,
@@ -123,7 +123,7 @@ def robot_load_and_snapshots(
     )
     yield from bps.wait(group="snapshot")
 
-    yield from take_robot_snapshots(composite.oav, snapshot_directory)
+    yield from _take_robot_snapshots(composite.oav, snapshot_directory)
 
     yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
     yield from bps.read(composite.robot)
@@ -145,11 +145,11 @@ def robot_load_and_snapshots_plan(
 
     sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
-    yield from move_gonio_to_home_position(composite)
+    yield from _move_gonio_to_home_position(composite)
 
     yield from bpp.set_run_key_wrapper(
         bpp.run_wrapper(
-            robot_load_and_snapshots(
+            _robot_load_and_snapshots(
                 composite,
                 sample_location,
                 params.snapshot_directory,
@@ -184,9 +184,9 @@ def robot_unload_plan(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
-        yield from take_robot_snapshots(composite.oav, params.snapshot_directory)
+        yield from _take_robot_snapshots(composite.oav, params.snapshot_directory)
         yield from bps.wait(group="snapshot")
-        yield from move_gonio_to_home_position(composite)
+        yield from _move_gonio_to_home_position(composite)
 
         def _unload():
             yield from bps.abs_set(composite.robot, None, wait=True)
