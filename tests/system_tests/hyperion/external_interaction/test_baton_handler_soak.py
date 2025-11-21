@@ -6,6 +6,7 @@ from weakref import WeakValueDictionary
 
 import pytest
 from blueapi.core import BlueskyContext
+from bluesky.run_engine import get_bluesky_event_loop, set_bluesky_event_loop
 from ophyd_async.core import Device
 from ophyd_async.plan_stubs import ensure_connected
 
@@ -35,6 +36,19 @@ def patch_setup_devices(request):
         side_effect=patched_setup_devices,
     ) as patched_func:
         yield patched_func
+
+
+@pytest.fixture(autouse=True)
+def restore_global_event_loop():
+    """Constructing a RunEngine during the soak tests overwrites the global
+    bluesky event loop, we must restore it to the global session fixture in order for
+    subsequent tests to not be affected.
+    """
+    old_event_loop = get_bluesky_event_loop()
+    try:
+        yield
+    finally:
+        set_bluesky_event_loop(old_event_loop)
 
 
 @pytest.fixture

@@ -464,9 +464,12 @@ def test_robot_load_then_centre_moves_beamstop_into_place(
     )
 
 
-@pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
+    MagicMock(),
 )
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,

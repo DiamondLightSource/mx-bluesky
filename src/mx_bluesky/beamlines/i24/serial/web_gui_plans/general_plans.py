@@ -108,7 +108,7 @@ def gui_move_detector(
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable
     SSX_LOGGER.debug(f"Detector move done, resetting general PV to {det}")
-    caput(pv.me14e_gp101, det)
+    caput(pv.ioc13_gp101, det)
 
 
 @bpp.run_decorator()

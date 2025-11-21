@@ -17,7 +17,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -37,14 +37,15 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
+from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -65,6 +66,7 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    Reference,
     completed_status,
     init_devices,
 )
@@ -416,6 +418,14 @@ def smargon() -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
+def aithre_gonio():
+    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
+
+    with patch_all_motors(aithre_gonio):
+        yield aithre_gonio
+
+
+@pytest.fixture
 def zebra():
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
@@ -549,6 +559,19 @@ def robot(done_status):
 
     robot.set = MagicMock(side_effect=fake_load)
     return robot
+
+
+@pytest.fixture
+def scintillator(aperture_scatterguard):
+    with init_devices(mock=True):
+        scintillator = Scintillator(
+            "",
+            aperture_scatterguard=Reference(aperture_scatterguard),
+            beamline_parameters=MagicMock(),
+            name="scintillator",
+        )
+    patch_all_motors(scintillator)
+    return scintillator
 
 
 @pytest.fixture
@@ -1272,6 +1295,7 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
             "smargon-omega": 0,
+            "smargon-chi": 0,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1300,6 +1324,7 @@ class OavGridSnapshotTestEvents:
             "oav-y_direction": -1,
             "oav-z_direction": 1,
             "smargon-omega": -90,
+            "smargon-chi": 30,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,

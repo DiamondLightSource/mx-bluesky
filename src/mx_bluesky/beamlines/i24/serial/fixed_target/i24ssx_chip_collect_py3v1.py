@@ -257,7 +257,7 @@ def set_datasize(
         SSX_LOGGER.debug(f"Num exposures: {parameters.num_exposures}")
         SSX_LOGGER.debug(f"Block count: {len(parameters.chip_map)}")
 
-    caput(pv.me14e_gp10, parameters.total_num_images)
+    caput(pv.ioc13_gp10, parameters.total_num_images)
 
 
 @log_on_entry
@@ -331,6 +331,7 @@ def start_i24(
                 parameters.exposure_time_s,
             ],
             dcm,
+            detector_stage,
         )
 
         # DCID process depends on detector PVs being set up already
@@ -387,6 +388,7 @@ def finish_i24(
     pmac: PMAC,
     shutter: HutchShutter,
     dcm: DCM,
+    detector_stage: YZStage,
     parameters: FixedTargetParameters,
 ):
     SSX_LOGGER.info(
@@ -400,7 +402,7 @@ def finish_i24(
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
-        yield from sup.eiger("return-to-normal", None, dcm)
+        yield from sup.eiger("return-to-normal", None, dcm, detector_stage)
         complete_filename = cagetstring(pv.eiger_od_filename_rbv)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name} unrecognised")
@@ -548,6 +550,7 @@ def tidy_up_after_collection_plan(
     pmac: PMAC,
     shutter: HutchShutter,
     dcm: DCM,
+    detector_stage: YZStage,
     parameters: FixedTargetParameters,
     dcid: DCID,
 ) -> MsgGenerator:
@@ -565,7 +568,7 @@ def tidy_up_after_collection_plan(
         caput(pv.eiger_od_capture, "Done")
         yield from bps.sleep(0.5)
 
-    yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
+    yield from finish_i24(zebra, pmac, shutter, dcm, detector_stage, parameters)
 
     SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
@@ -653,7 +656,7 @@ def run_plan_in_wrapper(
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (
             yield from tidy_up_after_collection_plan(
-                zebra, pmac, shutter, dcm, parameters, dcid
+                zebra, pmac, shutter, dcm, detector_stage, parameters, dcid
             )
         ),
         auto_raise=False,

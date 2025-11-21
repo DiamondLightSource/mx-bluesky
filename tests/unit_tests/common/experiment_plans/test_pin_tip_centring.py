@@ -7,7 +7,6 @@ from bluesky import plan_stubs as bps
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.utils import FailedStatus
-from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
@@ -17,16 +16,19 @@ from ophyd.sim import NullStatus
 from ophyd_async.epics.motor import MotorLimitsError
 from ophyd_async.testing import get_mock_put, set_mock_value
 
-from mx_bluesky.common.utils.exceptions import SampleError, WarningError
-from mx_bluesky.hyperion.device_setup_plans.smargon import (
-    move_smargon_warn_on_out_of_range,
+from mx_bluesky.common.device_setup_plans.gonio import (
+    move_gonio_warn_on_out_of_range,
 )
-from mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan import (
+from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
     DEFAULT_STEP_SIZE,
     PinTipCentringComposite,
     move_pin_into_view,
     pin_tip_centre_plan,
     trigger_and_return_pin_tip,
+)
+from mx_bluesky.common.utils.exceptions import (
+    SampleError,
+    WarningError,
 )
 
 
@@ -56,7 +58,7 @@ def smargon_with_limits(smargon: Smargon) -> Smargon:
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
@@ -76,7 +78,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
@@ -107,7 +109,7 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
     [[DEFAULT_STEP_SIZE, (None, None)], [-DEFAULT_STEP_SIZE, (0, 100)]],
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_direction_then_tip_returned(
@@ -154,7 +156,7 @@ async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_directi
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
@@ -194,10 +196,10 @@ def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip"
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
@@ -222,10 +224,10 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip"
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
@@ -253,7 +255,7 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     new=MagicMock(),
 )
 async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
@@ -268,24 +270,56 @@ async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved
     assert await smargon.x.user_setpoint.get_value() == 1
 
 
+@pytest.mark.parametrize(
+    "x_high, x_low, y_high, y_low, z_high, z_low, test_x, test_y, test_z",
+    [
+        (99, -99, 99, -99, 99, -99, 100, 0, 0),
+        (99, -99, 99, -99, 99, -99, -100, 0, 0),
+        (99, -99, 99, -99, 99, -99, 0, 100, 0),
+        (99, -99, 99, -99, 99, -99, 0, -100, 0),
+        (99, -99, 99, -99, 99, -99, 0, 0, 100),
+        (99, -99, 99, -99, 99, -99, 0, 0, -100),
+    ],
+)
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
-    run_engine: RunEngine, smargon: Smargon
+    run_engine: RunEngine,
+    smargon: Smargon,
+    x_high,
+    x_low,
+    y_high,
+    y_low,
+    z_high,
+    z_low,
+    test_x,
+    test_y,
+    test_z,
 ):
-    set_mock_value(smargon.x.high_limit_travel, 10)
+    set_mock_value(smargon.x.dial_high_limit_travel, x_high)
+    set_mock_value(smargon.x.dial_low_limit_travel, x_low)
+    set_mock_value(smargon.x.high_limit_travel, x_high)
+    set_mock_value(smargon.x.low_limit_travel, x_low)
+    set_mock_value(smargon.y.dial_high_limit_travel, y_high)
+    set_mock_value(smargon.y.dial_low_limit_travel, y_low)
+    set_mock_value(smargon.y.high_limit_travel, y_high)
+    set_mock_value(smargon.y.low_limit_travel, y_low)
+    set_mock_value(smargon.z.dial_high_limit_travel, z_high)
+    set_mock_value(smargon.z.dial_low_limit_travel, z_low)
+    set_mock_value(smargon.z.high_limit_travel, z_high)
+    set_mock_value(smargon.z.low_limit_travel, z_low)
 
     with pytest.raises(WarningError):
-        run_engine(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
+        run_engine(move_gonio_warn_on_out_of_range(smargon, (test_x, test_y, test_z)))
 
 
 @patch(
-    "mx_bluesky.hyperion.device_setup_plans.smargon.bps.mv",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.mv",
     new=MagicMock(side_effect=FailedStatus(RuntimeError("RuntimeError"))),
 )
 def test_re_raise_failed_status_that_is_not_motor_limits_exception(
     run_engine: RunEngine, smargon: Smargon
 ):
     with pytest.raises(FailedStatus) as fs:
-        run_engine(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+        run_engine(move_gonio_warn_on_out_of_range(smargon, (0, 0, 0)))
 
     assert fs.type is FailedStatus
     assert not isinstance(fs.value.args[0], MotorLimitsError)
@@ -293,14 +327,14 @@ def test_re_raise_failed_status_that_is_not_motor_limits_exception(
 
 
 @patch(
-    "mx_bluesky.hyperion.device_setup_plans.smargon.bps.mv",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.mv",
     new=MagicMock(side_effect=RuntimeError("RuntimeError")),
 )
 def test_does_not_catch_exception_that_is_not_motor_limits_exception(
     run_engine: RunEngine, smargon: Smargon
 ):
     with pytest.raises(RuntimeError, match="RuntimeError"):
-        run_engine(move_smargon_warn_on_out_of_range(smargon, (0, 0, 0)))
+        run_engine(move_gonio_warn_on_out_of_range(smargon, (0, 0, 0)))
 
 
 def return_pixel(pixel, *args):
@@ -309,31 +343,25 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
-    autospec=True,
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
     new=partial(return_pixel, (100, 100)),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     autospec=True,
 )
 async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     get_move: MagicMock,
@@ -342,11 +370,18 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     test_config_files: dict[str, str],
     run_engine: RunEngine,
 ):
+    def mock_get_move_plan(gonio, pixel, oav):
+        """Mock bluesky plan"""
+        if False:
+            yield from bps.null()
+        return np.array([1.0, 2.0, 3.0])
+
+    get_move.side_effect = mock_get_move_plan
+
     set_mock_value(oav.zoom_controller.level, "1.0")
     composite = PinTipCentringComposite(
-        backlight=MagicMock(spec=Backlight),
         oav=oav,
-        smargon=smargon,
+        gonio=smargon,
         pin_tip_detection=MagicMock(spec=PinTipDetection),
     )
     run_engine(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
@@ -365,30 +400,25 @@ async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    "dodal.devices.oav.utils.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     autospec=True,
 )
 def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_expected_plans_called(
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     mock_move_into_view,
@@ -401,9 +431,8 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     set_mock_value(smargon.omega.user_readback, 0)
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
-        backlight=MagicMock(Backlight),
         oav=oav,
-        smargon=smargon,
+        gonio=smargon,
         pin_tip_detection=mock_ophyd_pin_tip_detection,
     )
     mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
@@ -415,31 +444,26 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    "dodal.devices.oav.utils.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.bps.sleep",
     autospec=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "mx_bluesky.common.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     autospec=True,
 )
 def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
     mock_wait_for_tip,
-    move_smargon,
     mock_sleep,
     mock_setup_oav,
     mock_move_into_view,
@@ -452,9 +476,8 @@ def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
     set_mock_value(smargon.omega.user_readback, 0)
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
-        backlight=MagicMock(Backlight),
         oav=oav,
-        smargon=smargon,
+        gonio=smargon,
         pin_tip_detection=mock_ophyd_pin_tip_detection,
     )
 

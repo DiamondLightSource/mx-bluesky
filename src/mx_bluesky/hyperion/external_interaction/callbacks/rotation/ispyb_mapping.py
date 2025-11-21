@@ -6,6 +6,7 @@ from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 def populate_data_collection_info_for_rotation(params: SingleRotationScan):
     info = DataCollectionInfo(
+        chi_start=params.chi_start_deg,
         omega_start=params.omega_start_deg,
         data_collection_number=params.detector_params.run_number,  # type:ignore # the validator always makes this int
         n_images=params.num_images,
