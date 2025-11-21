@@ -73,7 +73,7 @@ def do_robot_load_and_centre(
     composite: RobotLoadComposite,
     sample_location: SampleLocation,
     sample_id: int,
-    ptd: PinTipDetection,
+    pin_tip_detection: PinTipDetection,
     tip_offset_microns: float = 0,
     oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ):
@@ -94,7 +94,7 @@ def do_robot_load_and_centre(
     yield from bps.wait(gonio_in_position)
 
     pin_tip_centring_composite = PinTipCentringComposite(
-        composite.oav, composite.gonio, ptd
+        composite.oav, composite.gonio, pin_tip_detection
     )
     yield from pin_tip_centre_plan(
         pin_tip_centring_composite, tip_offset_microns, oav_config_file
@@ -106,7 +106,7 @@ def robot_load_and_snapshots(
     location: SampleLocation,
     snapshot_directory: Path,
     sample_id: int,
-    ptd: PinTipDetection,
+    pin_tip_detection: PinTipDetection,
     tip_offset_microns: float = 0,
     oav_config_file: str = CONST.OAV_CENTRING_FILE,
 ):
@@ -118,7 +118,7 @@ def robot_load_and_snapshots(
         composite,
         location,
         sample_id,
-        ptd,
+        pin_tip_detection,
         tip_offset_microns,
         oav_config_file,
     )
