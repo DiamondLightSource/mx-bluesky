@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configuration &#8212; mx-bluesky 1.0.1.dev409+gbf5207f7b documentation</title>
+    <title>Configuration &#8212; mx-bluesky 1.0.1.dev410+g526767b0d documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=89368265"></script>
+    <script src="../../_static/documentation_options.js?v=f422b0c1"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -463,53 +463,55 @@
 </div>
 <p>Note that making a change to these properties generally requires a restart of the GDA server.</p>
 <div class="pst-scrollable-table-container"><table class="table" id="id2">
-<caption><span class="caption-text">Configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property Name</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
+<caption><span class="caption-text">Configuration properties
+   :widths: auto
+   :header: “Property Name”, “Type”, “Description”</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
 <tbody>
-<tr class="row-even"><td><p>gda.gridscan.hyperion.flaskServerAddress</p></td>
+<tr class="row-odd"><td><p>gda.gridscan.hyperion.flaskServerAddress</p></td>
 <td><p>host:port</p></td>
 <td><p>Configures the Hyperion server address that GDA connects to.</p></td>
 </tr>
-<tr class="row-odd"><td><p>gda.gridscan.hyperion.multipin</p></td>
+<tr class="row-even"><td><p>gda.gridscan.hyperion.multipin</p></td>
 <td><p>boolean</p></td>
 <td><p>Controls whether multipin collection is enabled.</p></td>
 </tr>
-<tr class="row-even"><td><p>gda.hyperion.use_grid_snapshots_for_rotation</p></td>
+<tr class="row-odd"><td><p>gda.hyperion.use_grid_snapshots_for_rotation</p></td>
 <td><p>boolean</p></td>
 <td><p>If true, then rotation snapshots are generated from the grid snapshots instead of directly capturing them</p></td>
 </tr>
-<tr class="row-odd"><td><p>gda.mx.hyperion.enabled</p></td>
+<tr class="row-even"><td><p>gda.mx.hyperion.enabled</p></td>
 <td><p>boolean</p></td>
 <td><p>Controls whether GDA invokes Hyperion or performs collection itself</p></td>
 </tr>
-<tr class="row-even"><td><p>gda.mx.hyperion.panda.runnup_distance_mm</p></td>
+<tr class="row-odd"><td><p>gda.mx.hyperion.panda.runnup_distance_mm</p></td>
 <td><p>double</p></td>
 <td><p>Controls the panda runup distance.</p></td>
 </tr>
-<tr class="row-odd"><td><p>gda.mx.hyperion.xrc.box_size</p></td>
+<tr class="row-even"><td><p>gda.mx.hyperion.xrc.box_size</p></td>
 <td><p>double</p></td>
 <td><p>Configures the grid scan box size in microns.</p></td>
 </tr>
-<tr class="row-even"><td><p>gda.mx.hyperion.use_panda_for_gridscans</p></td>
+<tr class="row-odd"><td><p>gda.mx.hyperion.use_panda_for_gridscans</p></td>
 <td><p>boolean</p></td>
 <td><p>If true then the Panda is used instead of the Zebra for XRC gridscans</p></td>
 </tr>
-<tr class="row-odd"><td><p>gda.mx.hyperion.xrc.use_gpu_results</p></td>
+<tr class="row-even"><td><p>gda.mx.hyperion.xrc.use_gpu_results</p></td>
 <td><p>boolean</p></td>
 <td><p>If true, then zocalo gridscan processing uses the GPU results</p></td>
 </tr>
-<tr class="row-even"><td><p>gda.mx.hyperion.xrc.use_roi_mode</p></td>
+<tr class="row-odd"><td><p>gda.mx.hyperion.xrc.use_roi_mode</p></td>
 <td><p>boolean</p></td>
 <td><p>If true then ROI mode is used.</p></td>
 </tr>
-<tr class="row-odd"><td><p>gda.mx.udc.hyperion.enable</p></td>
+<tr class="row-even"><td><p>gda.mx.udc.hyperion.enable</p></td>
 <td><p>boolean</p></td>
 <td><p>Enables Hyperion UDC mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p>gda.mx.hyperion.enable_beamstop_diode_check</p></td>
+<td><p>boolean</p></td>
+<td><p>If true, enables an extended beamstop position check
+during UDC default state script measuring the diode current out-of and in beam. Otherwise the beamstop position is
+moved to the data collection position.</p></td>
 </tr>
 </tbody>
 </table>
