@@ -73,7 +73,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -439,7 +439,13 @@ def zebra():
 
 @pytest.fixture
 def zebra_shutter():
-    return i03.sample_shutter(connect_immediately=True, mock=True)
+    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+
+    def put_sample_shutter(value, **kwargs):
+        set_mock_value(shutter.position_readback, value)
+
+    get_mock_put(shutter._manual_position_setpoint).side_effect = put_sample_shutter
+    return shutter
 
 
 @pytest.fixture
