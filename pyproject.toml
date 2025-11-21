@@ -215,7 +215,7 @@ setenv =
     ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
     ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
 commands =
-    pytest -m system_test --timeout=60 tests/system_tests
+    pytest -m system_test --timeout=60 tests/system_tests {posargs}
 """
 
 [tool.ruff]
