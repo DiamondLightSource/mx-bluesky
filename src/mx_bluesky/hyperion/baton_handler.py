@@ -9,15 +9,12 @@ from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.baton import Baton
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
-from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
-    UDCDefaultDevices,
-    move_to_udc_default_state,
-)
 from mx_bluesky.common.external_interaction.alerting import (
     AlertService,
     get_alerting_service,
@@ -27,10 +24,15 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
+from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
     load_centre_collect_full,
+)
+from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
+    UDCDefaultDevices,
+    move_to_udc_default_state,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
@@ -38,7 +40,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
 from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
 from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.plan_runner import PlanException, PlanRunner
+from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
     setup_devices,
@@ -53,7 +55,7 @@ def run_forever(runner: PlanRunner):
         while True:
             try:
                 run_udc_when_requested(runner.context, runner)
-            except PlanException as e:
+            except PlanError as e:
                 LOGGER.info(
                     "Caught exception during plan execution, stopped and waiting for baton.",
                     exc_info=e,
@@ -64,7 +66,7 @@ def run_forever(runner: PlanRunner):
         # RunEngine.abort() will have been called and we will get RunEngineInterrupted
         LOGGER.info(
             f"RunEngine was interrupted. Runner state is {runner.current_status}, "
-            f"run engine is {runner.RE.state}"
+            f"run engine is {runner.run_engine.state}"
         )
 
 
@@ -93,13 +95,17 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         * A user requests the baton away from Hyperion
         * Hyperion releases the baton when Agamemnon has no more instructions
         * The RunEngine raises a RequestAbort exception, most likely due to a shutdown command
-        * A plan raises an exception not of type WarningException (which is then wrapped as a PlanException)
+        * A plan raises an exception not of type WarningError (which is then wrapped as a PlanError)
         Args:
             baton: The baton device
             runner: The runner
         """
         _raise_udc_start_alert(get_alerting_service())
-        yield from _move_to_udc_default_state(context)
+        yield from bpp.contingency_wrapper(
+            _move_to_udc_default_state(context),
+            except_plan=trap_default_state_exception,
+            auto_raise=False,
+        )
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
@@ -109,7 +115,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
                 baton, runner, current_visit
             )
         if current_visit:
-            yield from _perform_robot_unload(runner.context, current_visit)
+            yield from _clean_up_udc(runner.context, current_visit)
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -120,8 +126,20 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
+    def trap_default_state_exception(e: Exception):
+        yield from bps.null()
+        if isinstance(e, BeamlineCheckFailureError):
+            LOGGER.warning("Caught default state check failure:", exc_info=e)
+            raise PlanError("Caught default state check failure") from e
+        else:
+            LOGGER.warning("Caught unexpected exception", exc_info=e)
+            raise PlanError("Unexpected exception from UDC Default State plan") from e
+
     def collect_then_release() -> MsgGenerator:
-        yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
+        yield from bpp.contingency_wrapper(
+            collect(),
+            final_plan=release_baton,
+        )
 
     context.run_engine(acquire_baton())
     _initialise_udc(context, runner.is_dev_mode)
@@ -145,13 +163,13 @@ def _initialise_udc(context: BlueskyContext, dev_mode: bool):
 
 def _wait_for_hyperion_requested(baton: Baton):
     LOGGER.debug("Hyperion waiting for baton...")
-    SLEEP_PER_CHECK = 0.1
+    sleep_per_check = 0.1
     while True:
         requested_user = yield from bps.rd(baton.requested_user)
         if requested_user == HYPERION_USER:
             LOGGER.debug("Baton requested for Hyperion")
             break
-        yield from bps.sleep(SLEEP_PER_CHECK)
+        yield from bps.sleep(sleep_per_check)
 
 
 def _fetch_and_process_agamemnon_instruction(
@@ -239,11 +257,17 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     return requested_user
 
 
-def _perform_robot_unload(context: BlueskyContext, visit: str) -> MsgGenerator:
+def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
+    cleanup_group = "cleanup"
     robot = find_device_in_context(context, "robot", BartRobot)
     smargon = find_device_in_context(context, "smargon", Smargon)
     aperture_scatterguard = find_device_in_context(
         context, "aperture_scatterguard", ApertureScatterguard
     )
     lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
+    detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
+    yield from bps.abs_set(
+        detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
+    )
     yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    yield from bps.wait(cleanup_group)

@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 from pathlib import Path
@@ -64,10 +63,10 @@ FilesAndgroups = tuple[h5py.File, set[str], h5py.File, set[str]]
 
 
 @pytest.fixture
-def files_and_groups(tmp_path, RE: RunEngine, fake_create_rotation_devices):
+def files_and_groups(tmp_path, run_engine: RunEngine, fake_create_rotation_devices):
     tmpdir = tmp_path
     filename, run_number = _generate_fake_nexus(
-        TEST_NEXUS_FILENAME, RE, fake_create_rotation_devices, tmp_path
+        TEST_NEXUS_FILENAME, run_engine, fake_create_rotation_devices, tmp_path
     )
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
@@ -290,10 +289,6 @@ def test_hyperion_vs_gda_datatypes(
 
 
 def _test_params(filename_stub, tmp_path: Path):
-    def get_params(filename):
-        with open(filename) as f:
-            return json.loads(f.read())
-
     params = RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_one_multi_rotation_scan_parameters.json",
@@ -314,14 +309,14 @@ def _test_params(filename_stub, tmp_path: Path):
 
 def _generate_fake_nexus(
     filename,
-    RE: RunEngine,
+    run_engine: RunEngine,
     rotation_scan_composite: RotationScanComposite,
     tmp_path: Path,
 ):
     params = _test_params(filename, tmp_path)
     run_number = params.detector_params.run_number
     filename_stub, run_number = sim_rotation_scan_to_create_nexus(
-        params, rotation_scan_composite, filename, RE
+        params, rotation_scan_composite, filename, run_engine
     )
     return filename_stub, run_number
 
@@ -330,14 +325,14 @@ def sim_rotation_scan_to_create_nexus(
     test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     filename_stub,
-    RE,
+    run_engine: RunEngine,
 ):
     run_number = test_params.detector_params.run_number
     nexus_filename = f"{filename_stub}_{run_number}.nxs"
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
-    RE(
+    run_engine(
         fake_rotation_scan(
             test_params, RotationNexusFileCallback(), fake_create_rotation_devices
         )
@@ -371,6 +366,7 @@ def fake_rotation_scan(
             rotation_devices.flux,
             rotation_devices.dcm,
             rotation_devices.eiger,
+            rotation_devices.beamsize,
         )
 
     return plan()

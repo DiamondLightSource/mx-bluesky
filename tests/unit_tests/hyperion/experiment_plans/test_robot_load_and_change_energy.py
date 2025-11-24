@@ -8,6 +8,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.thawer import OnOff
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
 from ophyd_async.testing import set_mock_value
@@ -55,8 +56,8 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 ):
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
@@ -84,7 +85,7 @@ def run_simulating_smargon_wait(
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": 11.105},
-        "dcm-energy_in_kev",
+        "dcm-energy_in_keV",
     )
     sim_run_engine.add_handler(
         "read", return_not_disabled_after_reads, "smargon-disabled"
@@ -158,7 +159,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     exp_eye: MagicMock,
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     robot = robot_load_and_energy_change_composite.robot
     webcam = robot_load_and_energy_change_composite.webcam
@@ -170,12 +171,12 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     webcam.trigger = MagicMock(return_value=NullStatus())
     set_mock_value(robot.barcode, "BARCODE")
 
-    RE.subscribe(RobotLoadISPyBCallback())
+    run_engine.subscribe(RobotLoadISPyBCallback())
 
     action_id = 1098
     exp_eye.return_value.start_robot_action.return_value = action_id
 
-    RE(
+    run_engine(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite, robot_load_and_energy_change_params
         )
@@ -201,24 +202,24 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
 @patch("mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.datetime")
 async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
-    mock_datetime: MagicMock, oav: OAV, webcam: Webcam, RE: RunEngine
+    mock_datetime: MagicMock, oav: OAV, webcam: Webcam, run_engine: RunEngine
 ):
-    TEST_DIRECTORY = "TEST"
+    test_directory = "TEST"
 
     mock_datetime.now.return_value.strftime.return_value = "TIME"
 
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
-    RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
+    run_engine(take_robot_snapshots(oav, webcam, Path(test_directory)))
 
     oav.snapshot.trigger.assert_called_once()
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"
-    assert await oav.snapshot.directory.get_value() == TEST_DIRECTORY
+    assert await oav.snapshot.directory.get_value() == test_directory
 
     webcam.trigger.assert_called_once()
     assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"
-    assert (await webcam.directory.get_value()) == TEST_DIRECTORY
+    assert (await webcam.directory.get_value()) == test_directory
 
 
 def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_and_back(
@@ -316,17 +317,15 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
-def test_when_plan_run_then_thawing_turned_on_for_expected_time(
+def test_when_plan_run_then_thawing_turned_on(
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    robot_load_and_energy_change_params_no_energy.thawing_time = (thaw_time := 50)
-
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
 
     messages = sim_run_engine.simulate_plan(
@@ -339,8 +338,8 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "thawer-thaw_for_time_s"
-        and msg.args[0] == thaw_time,
+        and msg.obj.name == "thawer"
+        and msg.args[0] == OnOff.ON,
     )
 
 
@@ -359,8 +358,8 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
 ):
     sim_run_engine.add_handler(
         "read",
-        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
-        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
+        "dcm-energy_in_keV",
     )
 
     messages = sim_run_engine.simulate_plan(

@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
-    CompleteException,
+    CompleteError,
 )
 
 
@@ -76,14 +76,14 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         test_full_grid_scan_params: GridScanWithEdgeDetect,
         test_config_files,
         pin_tip_detection_with_found_pin: PinTipDetection,
-        RE: RunEngine,
+        run_engine: RunEngine,
     ):
-        class TestException(Exception):
+        class TestError(Exception):
             pass
 
-        mock_common_flyscan_xray_centre.side_effect = TestException
-        with pytest.raises(TestException):  # noqa: B017
-            RE(
+        mock_common_flyscan_xray_centre.side_effect = TestError
+        with pytest.raises(TestError):  # noqa: B017
+            run_engine(
                 hyperion_grid_detect_then_xray_centre(
                     hyperion_grid_detect_xrc_devices,
                     test_full_grid_scan_params,
@@ -208,16 +208,16 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         mock_move_aperture_if_required: MagicMock,
         mock_bps_abs_set: MagicMock,
         mock_grid_detection_plan: MagicMock,
-        RE: RunEngine,
+        run_engine: RunEngine,
         test_full_grid_scan_params: GridScanWithEdgeDetect,
         hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
         test_config_files,
         hyperion_fgs_params,
     ):
         mock_create_parameters.return_value = hyperion_fgs_params
-        mock_run_gridscan.side_effect = CompleteException
-        with pytest.raises(CompleteException):
-            RE(
+        mock_run_gridscan.side_effect = CompleteError
+        with pytest.raises(CompleteError):
+            run_engine(
                 hyperion_grid_detect_then_xray_centre(
                     hyperion_grid_detect_xrc_devices,
                     test_full_grid_scan_params,

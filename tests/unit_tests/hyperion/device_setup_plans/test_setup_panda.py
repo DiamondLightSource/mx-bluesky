@@ -139,7 +139,7 @@ def test_setup_panda_correctly_configures_table(
     ][0]
 
     table = table_msg.args[0]
-    SPACE_WIDTH_US = int(time_between_x_steps_ms * 1000 - PULSE_WIDTH_US)
+    spade_width_us = int(time_between_x_steps_ms * 1000 - PULSE_WIDTH_US)
 
     exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS
     expected_seq_table: SeqTable = (
@@ -158,7 +158,7 @@ def test_setup_panda_correctly_configures_table(
             position=int(params.x_start_mm * MM_TO_ENCODER_COUNTS),
             time1=PULSE_WIDTH_US,
             outa1=True,
-            time2=SPACE_WIDTH_US,
+            time2=spade_width_us,
             outa2=False,
         )
         + SeqTable.row(
@@ -180,7 +180,7 @@ def test_setup_panda_correctly_configures_table(
             ),
             time1=PULSE_WIDTH_US,
             outa1=True,
-            time2=SPACE_WIDTH_US,
+            time2=spade_width_us,
             outa2=False,
         )
     )
@@ -191,7 +191,9 @@ def test_setup_panda_correctly_configures_table(
         )
 
 
-def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smargon):
+def test_wait_between_setting_table_and_arming_panda(
+    run_engine: RunEngine, panda, smargon
+):
     bps_wait_done = False
 
     def handle_wait(*args, **kwargs):
@@ -217,7 +219,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine, panda, smarg
         ),
         patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.bps.abs_set"),
     ):
-        RE(
+        run_engine(
             setup_panda_for_flyscan(
                 panda,
                 PandAGridScanParams(transmission_fraction=0.01),
@@ -244,7 +246,7 @@ def test_disarm_panda_disables_correct_blocks(sim_run_engine, panda, smargon):
 @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.get_path_provider")
 @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.datetime", spec=datetime)
 def test_set_panda_directory(
-    mock_datetime, mock_get_path_provider: MagicMock, tmp_path, RE
+    mock_datetime, mock_get_path_provider: MagicMock, tmp_path, run_engine
 ):
     mock_directory_provider = MagicMock(spec=UpdatingPathProvider)
     mock_datetime.now = MagicMock(
@@ -252,7 +254,7 @@ def test_set_panda_directory(
     )
     mock_get_path_provider.return_value = mock_directory_provider
 
-    RE(set_panda_directory(tmp_path))
+    run_engine(set_panda_directory(tmp_path))
     mock_directory_provider.update.assert_called_with(
         directory=tmp_path, suffix="_20240811155923"
     )

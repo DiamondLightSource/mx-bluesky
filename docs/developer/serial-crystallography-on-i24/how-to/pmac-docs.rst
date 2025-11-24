@@ -108,7 +108,7 @@ Theory for this computation
 
    Skew:
    Skew is the difference between the Sz1 and Sz2 after rotation is taken out.
-   This should be measured in situ prior to expriment, ie. measure by hand using
+   This should be measured in situ prior to experiment, ie. measure by hand using
    opposite and adjacent RBV after calibration of scale factors.
 
 The plan needs information stored in a few files:

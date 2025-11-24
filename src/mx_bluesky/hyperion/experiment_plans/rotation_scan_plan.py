@@ -10,6 +10,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -21,7 +22,8 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -49,7 +51,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
-    setup_beamline_for_OAV,
+    setup_beamline_for_oav,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -74,6 +76,7 @@ class RotationScanComposite(OavSnapshotComposite):
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamsize: BeamsizeBase
     beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
@@ -81,13 +84,14 @@ class RotationScanComposite(OavSnapshotComposite):
     flux: Flux
     robot: BartRobot
     smargon: Smargon
-    undulator: Undulator
+    undulator: UndulatorInKeV
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     sample_shutter: ZebraShutter
     zebra: Zebra
     oav: OAV
     xbpm_feedback: XBPMFeedback
+    thawer: Thawer
 
 
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
@@ -258,6 +262,7 @@ def rotation_scan_plan(
             composite.aperture_scatterguard,
             params.selected_aperture,
             composite.backlight,
+            composite.thawer,
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
 
@@ -301,6 +306,7 @@ def rotation_scan_plan(
             composite.flux,
             composite.dcm,
             composite.eiger,
+            composite.beamsize,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
@@ -346,7 +352,7 @@ def _move_and_rotation(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         if not params.use_grid_snapshots:
-            yield from setup_beamline_for_OAV(
+            yield from setup_beamline_for_oav(
                 composite.smargon,
                 composite.backlight,
                 composite.aperture_scatterguard,

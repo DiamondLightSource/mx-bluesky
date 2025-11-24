@@ -155,7 +155,9 @@ def launch_test_in_runner_event_loop(
     result and any exception to the caller."""
 
     def _launch_in_new_thread():
-        future = asyncio.run_coroutine_threadsafe(async_func(), udc_runner.RE.loop)
+        future = asyncio.run_coroutine_threadsafe(
+            async_func(), udc_runner.run_engine.loop
+        )
         return future.result(TEST_SCRIPT_TIMEOUT_S)
 
     return executor.submit(_launch_in_new_thread)

@@ -1,6 +1,6 @@
 import pytest
 
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_StartUp_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_startup_py3v1 import (
     fiducials,
     pathli,
 )

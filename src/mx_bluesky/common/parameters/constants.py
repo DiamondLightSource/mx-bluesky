@@ -40,6 +40,8 @@ def _get_oav_config_json_path():
         return "tests/test_data/test_OAVCentring.json"
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
+    elif BEAMLINE == "aithre":
+        return "/dls/science/groups/i23/aithre/daq_configuration/json/OAVCentring_aithre.json"
     else:
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring.json"
 
@@ -85,7 +87,6 @@ class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
-    THAWING_TIME = 40
     TIP_OFFSET_UM = 0
 
     # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
@@ -166,6 +167,6 @@ class Status(Enum):
 class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
-class FeatureSettingources(
+class FeatureSettingSources(
     StrEnum
 ): ...  # List of features and the name of that property in domain.properties
