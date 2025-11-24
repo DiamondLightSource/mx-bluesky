@@ -33,11 +33,13 @@ from dodal.devices.aperturescatterguard import (
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
+from dodal.devices.i03.beamsize import Beamsize
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
@@ -45,6 +47,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -65,13 +68,14 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    Reference,
     completed_status,
     init_devices,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -437,7 +441,13 @@ def zebra():
 
 @pytest.fixture
 def zebra_shutter():
-    return i03.sample_shutter(connect_immediately=True, mock=True)
+    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+
+    def put_sample_shutter(value, **kwargs):
+        set_mock_value(shutter.position_readback, value)
+
+    get_mock_put(shutter._manual_position_setpoint).side_effect = put_sample_shutter
+    return shutter
 
 
 @pytest.fixture
@@ -557,6 +567,19 @@ def robot(done_status):
 
     robot.set = MagicMock(side_effect=fake_load)
     return robot
+
+
+@pytest.fixture
+def scintillator(aperture_scatterguard):
+    with init_devices(mock=True):
+        scintillator = Scintillator(
+            "",
+            aperture_scatterguard=Reference(aperture_scatterguard),
+            beamline_parameters=MagicMock(),
+            name="scintillator",
+        )
+    patch_all_motors(scintillator)
+    return scintillator
 
 
 @pytest.fixture
@@ -772,6 +795,11 @@ async def aperture_scatterguard():
 
 
 @pytest.fixture()
+async def beamsize(aperture_scatterguard: ApertureScatterguard):
+    return Beamsize(aperture_scatterguard, name="beamsize")
+
+
+@pytest.fixture()
 def test_config_files():
     return {
         "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
@@ -826,12 +854,15 @@ def fake_create_rotation_devices(
     oav: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
@@ -847,6 +878,7 @@ def fake_create_rotation_devices(
         oav=oav,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )
 
 
@@ -1280,6 +1312,7 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
             "smargon-omega": 0,
+            "smargon-chi": 0,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1308,6 +1341,7 @@ class OavGridSnapshotTestEvents:
             "oav-y_direction": -1,
             "oav-z_direction": 1,
             "smargon-omega": -90,
+            "smargon-chi": 30,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1393,6 +1427,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1505,6 +1541,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,
