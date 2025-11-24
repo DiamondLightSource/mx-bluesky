@@ -1,5 +1,6 @@
 import datetime
 
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
@@ -29,7 +30,7 @@ def robot_load_and_snapshot(
     sample_id: int = 0,
     visit: str = "cm40645-5",
     categories: str = "",
-):
+) -> MsgGenerator:
     """
     categories: type of the sample, e.g. Germ, ProteinaseK, Screening
     """
@@ -60,7 +61,7 @@ def robot_unload(
     sample_id: int = 0,
     visit: str = "cm40645-5",
     categories: str = "",
-):
+) -> MsgGenerator:
     """
     categories: type of the sample, e.g. Germ, ProteinaseK, Screening
     """
