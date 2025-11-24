@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Create a New Release &#8212; mx-bluesky 1.0.1.dev416+g19c861810 documentation</title>
+    <title>Create a New Release &#8212; mx-bluesky 1.0.1.dev417+g0f1c281d2 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=dd4a9b44"></script>
+    <script src="../../../_static/documentation_options.js?v=20288749"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -526,8 +526,8 @@
 <section id="release">
 <h2>Release<a class="headerlink" href="#release" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p>Create a new branch from main named pre followed by the release version e.g. pre_v0.1.0. The release versions should look like <code class="docutils literal notranslate"><span class="pre">v{major}.{minor}.{patch}</span></code>.</p></li>
-<li><p>On this branch pin the up-to-date version of dodal and the latest release of nexgen if necessary, then push to GitHub.</p></li>
+<li><p>Create a new branch from main named pre followed by the release version e.g. pre_0.1.0. The release versions should look like <code class="docutils literal notranslate"><span class="pre">{major}.{minor}.{patch}</span></code>.</p></li>
+<li><p>On this branch pin the latest release of dodal, and nexgen if necessary, then push to GitHub. (e.g “dls-dodal == 1.63.0”)</p></li>
 <li><p>Make sure the CI is passing for this new pre-release branch.</p></li>
 <li><p>Go <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/releases/new">here</a>.</p></li>
 <li><p>Select Choose a new tag and type the version of the release, then select the branch created in step 1 as the target.</p></li>
@@ -535,7 +535,8 @@
 <li><p>You should now manually go through each line on the release notes and read it from the perspective of a beamline scientist. It should be clear from each what the change means to the beamline and should have links to easily find further info.</p></li>
 <li><p>Publish the release</p></li>
 </ol>
-<p>NOTE FOR USING THE MX-BLUESKY-BLUEAPI IMAGE: If using this image with BlueAPI’s helmchart for deployment, the version of dodal which is installed will be the version which is pinned in the BlueAPI, rather than what’s in mx-bluesky’s pyproject.toml. Before releasing, you should pin BlueAPI to a version which uses a dodal version which is compatible with itself AND mx-bluesky. The deployment will fail if BlueAPI has no version which works with the desired dodal version</p>
+<p>NOTE FOR USING THE MX-BLUESKY-BLUEAPI IMAGE: If using this image with BlueAPI’s helmchart for deployment, the version of dodal which is installed will be the version which is pinned in the BlueAPI, rather than what’s in mx-bluesky’s pyproject.toml. Before releasing, you should pin BlueAPI to a version which uses a dodal version which is compatible with itself AND mx-bluesky. The deployment will fail if BlueAPI has no version which works with the desired dodal version
+Follow these <a class="reference internal" href="deploy-a-release.html#deploying-to-i04-blueapi"><span class="std std-ref">instructions</span></a> on how to deploy to I04 BlueAPI.</p>
 <section id="deciding-release-numbers">
 <h3>Deciding release numbers<a class="headerlink" href="#deciding-release-numbers" title="Link to this heading">#</a></h3>
 <p>Releases should obviously be versioned higher than the previous latest release. Otherwise you should follow this guide:</p>
