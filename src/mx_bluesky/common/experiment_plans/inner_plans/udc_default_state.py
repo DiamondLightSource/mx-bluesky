@@ -17,7 +17,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices:
-    cryostream: CompositeCryoStreamCryoJet
+    cryostream_and_cryojet: CompositeCryoStreamCryoJet
     fluorescence_det_motion: FluorescenceDetector
     beamstop: Beamstop
     scintillator: Scintillator
@@ -27,7 +27,7 @@ class UDCDefaultDevices:
 
 def move_to_udc_default_state(devices: UDCDefaultDevices):
     """Moves beamline to known positions prior to UDC start"""
-    cryostream = devices.cryostream.cryostream.status
+    cryostream = devices.cryostream_and_cryojet.cryostream
     cryostream_temp = yield from bps.rd(cryostream.temp)
     cryostream_pressure = yield from bps.rd(cryostream.back_pressure)
     if cryostream_temp > CONST.HARDWARE.MAX_CRYO_TEMP_K:
@@ -62,10 +62,10 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     yield from bps.abs_set(
-        devices.cryostream.cryojet.course, CryoInOut.IN, group="udc_default"
+        devices.cryostream_and_cryojet.cryojet.coarse, CryoInOut.IN, group="udc_default"
     )
     yield from bps.abs_set(
-        devices.cryostream.cryojet.fine, CryoInOut.IN, group="udc_default"
+        devices.cryostream_and_cryojet.cryojet.fine, CryoInOut.IN, group="udc_default"
     )
 
     yield from bps.wait("udc_default")

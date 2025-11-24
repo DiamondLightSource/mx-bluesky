@@ -7,8 +7,6 @@ from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CompositeCryoStreamCryoJet,
-    OxfordCryoJet,
-    OxfordCryoStream,
 )
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
@@ -30,7 +28,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 @pytest.fixture
 async def default_devices(aperture_scatterguard):
     async with init_devices(mock=True):
-        cryo = CompositeCryoStreamCryoJet(OxfordCryoStream(""), OxfordCryoJet(""))
+        cryo = CompositeCryoStreamCryoJet("", "")
         fluo = FluorescenceDetector("")
         beamstop = Beamstop("", MagicMock())
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
@@ -52,7 +50,7 @@ async def test_given_cryostream_temp_is_too_high_then_exception_raised(
     default_devices: UDCDefaultDevices,
 ):
     sim_run_engine.add_read_handler_for(
-        default_devices.cryostream.cryostream.status.temp,
+        default_devices.cryostream_and_cryojet.cryostream.temp,
         CONST.HARDWARE.MAX_CRYO_TEMP_K + 10,
     )
     with pytest.raises(ValueError, match="temperature is too high"):
@@ -65,7 +63,7 @@ async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
     default_devices: UDCDefaultDevices,
 ):
     sim_run_engine.add_read_handler_for(
-        default_devices.cryostream.cryostream.status.back_pressure,
+        default_devices.cryostream_and_cryojet.cryostream.back_pressure,
         CONST.HARDWARE.MAX_CRYO_PRESSURE_BAR + 10,
     )
     with pytest.raises(ValueError, match="pressure is too high"):
@@ -97,8 +95,10 @@ async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
 def test_udc_default_state_runs_in_real_RE(
     RE: RunEngine, default_devices: UDCDefaultDevices
 ):
-    set_mock_value(default_devices.cryostream.cryostream.status.temp, 100)
-    set_mock_value(default_devices.cryostream.cryostream.status.back_pressure, 0.01)
+    set_mock_value(default_devices.cryostream_and_cryojet.cryostream.temp, 100)
+    set_mock_value(
+        default_devices.cryostream_and_cryojet.cryostream.back_pressure, 0.01
+    )
     default_devices.scintillator._aperture_scatterguard().selected_aperture.get_value = MagicMock(
         return_value=ApertureValue.PARKED
     )
@@ -145,8 +145,12 @@ def test_udc_default_state_group_contains_expected_items_and_is_waited_on(
         default_devices.aperture_scatterguard.selected_aperture, ApertureValue.SMALL
     )
 
-    msgs = assert_expected_set(default_devices.cryostream.cryojet.course, CryoInOut.IN)
-    msgs = assert_expected_set(default_devices.cryostream.cryojet.fine, CryoInOut.IN)
+    msgs = assert_expected_set(
+        default_devices.cryostream_and_cryojet.cryojet.coarse, CryoInOut.IN
+    )
+    msgs = assert_expected_set(
+        default_devices.cryostream_and_cryojet.cryojet.fine, CryoInOut.IN
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,
