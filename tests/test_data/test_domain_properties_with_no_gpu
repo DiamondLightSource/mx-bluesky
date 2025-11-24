@@ -32,6 +32,7 @@ gda.gridscan.hyperion.flaskServerAddress=localhost:5005
 # gda.gridscan.hyperion.flaskServerAddress=i03-hyperion.diamond.ac.uk:443
 gda.gridscan.hyperion.multipin=false
 gda.gridscan.hyperion.grid.detection=true
+gda.mx.hyperion.enable_beamstop_diode_check=false
 
 #use hyperion for rotation all the time
 gda.mx.hyperion.override_udc_only=true
@@ -71,3 +72,6 @@ gda.mx.hyperion.xrc.use_roi_mode=true
 
 
 #####################################################
+
+gda.detector.distance.limit.min = 150
+gda.detector.distance.limit.max = 800

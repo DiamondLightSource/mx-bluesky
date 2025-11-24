@@ -1,4 +1,3 @@
-import os
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
 from functools import partial
@@ -25,7 +24,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -202,13 +201,6 @@ def dummy_params(tmp_path):
 @pytest.fixture
 def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
     return StoreInIspyb(ispyb_config_path)
-
-
-@pytest.fixture
-def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = os.environ.get(
-        "ZOCALO_CONFIG", "/dls_sw/apps/zocalo/live/configuration.yaml"
-    )
 
 
 @pytest_asyncio.fixture
@@ -420,7 +412,7 @@ def composite_for_rotation_scan(
     backlight: Backlight,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    undulator_for_system_test: Undulator,
+    undulator_for_system_test: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,

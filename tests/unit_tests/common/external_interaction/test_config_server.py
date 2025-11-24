@@ -60,6 +60,9 @@ def test_get_feature_flags_good_request(mock_log_warn: MagicMock):
         "USE_GPU_RESULTS": False,
         "USE_PANDA_FOR_GRIDSCAN": True,
         "SET_STUB_OFFSETS": False,
+        "DETECTOR_DISTANCE_LIMIT_MIN_MM": 150,
+        "DETECTOR_DISTANCE_LIMIT_MAX_MM": 800,
+        "BEAMSTOP_DIODE_CHECK": False,
     }
     server = get_hyperion_config_client()
     assert server.get_feature_flags() == HyperionFeatureSetting(

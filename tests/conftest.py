@@ -4,23 +4,20 @@ import json
 import logging
 import os
 import sys
-import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack
-from copy import deepcopy
 from functools import partial
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
 import pydantic
 import pytest
-from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -40,18 +37,19 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
+from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
@@ -63,27 +61,24 @@ from dodal.log import set_up_all_logging_handlers
 from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    Reference,
     completed_status,
     init_devices,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import get_mock_put, set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -114,6 +109,8 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+
+pytest_plugins = ["tests.expeye_helpers"]
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -350,29 +347,6 @@ def pytest_runtest_teardown(item):
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
 
 
-@pytest.fixture
-def run_engine():
-    run_engine = RunEngine({}, call_returns_result=True)
-    run_engine.subscribe(
-        VerbosePlanExecutionLoggingCallback()
-    )  # log all events at INFO for easier debugging
-    yield run_engine
-    try:
-        run_engine.halt()
-    except Exception as e:
-        print(f"Got exception while halting RunEngine {e}")
-    finally:
-        stopped_event = threading.Event()
-
-        def stop_event_loop():
-            run_engine.loop.stop()  # noqa: F821
-            stopped_event.set()
-
-        run_engine.loop.call_soon_threadsafe(stop_event_loop)
-        stopped_event.wait(10)
-    del run_engine
-
-
 def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
     def _pass_on_mock(value: float, wait: bool):
         set_mock_value(motor.user_readback, value)
@@ -423,7 +397,7 @@ def done_status():
 
 
 @pytest.fixture
-def eiger(done_status, run_engine: RunEngine):
+def eiger(done_status):
     eiger = i03.eiger(connect_immediately=True, mock=True)
     eiger.stage = MagicMock(return_value=done_status)
     eiger.do_arm.set = MagicMock(return_value=done_status)
@@ -432,7 +406,7 @@ def eiger(done_status, run_engine: RunEngine):
 
 
 @pytest.fixture
-def smargon(run_engine: RunEngine) -> Generator[Smargon, None, None]:
+def smargon() -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
@@ -444,7 +418,15 @@ def smargon(run_engine: RunEngine) -> Generator[Smargon, None, None]:
 
 
 @pytest.fixture
-def zebra(run_engine: RunEngine):
+def aithre_gonio():
+    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
+
+    with patch_all_motors(aithre_gonio):
+        yield aithre_gonio
+
+
+@pytest.fixture
+def zebra():
     zebra = i03.zebra(connect_immediately=True, mock=True)
 
     def mock_side(demand: ArmDemand):
@@ -456,19 +438,25 @@ def zebra(run_engine: RunEngine):
 
 
 @pytest.fixture
-def zebra_shutter(run_engine: RunEngine):
-    return i03.sample_shutter(connect_immediately=True, mock=True)
+def zebra_shutter():
+    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+
+    def put_sample_shutter(value, **kwargs):
+        set_mock_value(shutter.position_readback, value)
+
+    get_mock_put(shutter._manual_position_setpoint).side_effect = put_sample_shutter
+    return shutter
 
 
 @pytest.fixture
-def backlight(run_engine: RunEngine):
+def backlight():
     backlight = i03.backlight(connect_immediately=True, mock=True)
     backlight.TIME_TO_MOVE_S = 0.001
     return backlight
 
 
 @pytest.fixture
-def baton(run_engine: RunEngine):
+def baton():
     baton = i03.baton(connect_immediately=True, mock=True)
     set_mock_value(baton.requested_user, HYPERION_USER)
     set_mock_value(baton.current_user, HYPERION_USER)
@@ -476,7 +464,7 @@ def baton(run_engine: RunEngine):
 
 
 @pytest.fixture
-def baton_in_commissioning_mode(run_engine: RunEngine, baton: Baton):
+def baton_in_commissioning_mode(baton: Baton):
     set_commissioning_signal(baton.commissioning)
     set_mock_value(baton.commissioning, True)
     yield baton
@@ -484,7 +472,7 @@ def baton_in_commissioning_mode(run_engine: RunEngine, baton: Baton):
 
 
 @pytest.fixture
-def fast_grid_scan(run_engine: RunEngine):
+def fast_grid_scan():
     scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
     for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
         set_mock_value(signal, 1)
@@ -492,28 +480,26 @@ def fast_grid_scan(run_engine: RunEngine):
 
 
 @pytest.fixture
-def detector_motion(run_engine: RunEngine):
+def detector_motion():
     det = i03.detector_motion(connect_immediately=True, mock=True)
     with patch_all_motors(det):
         yield det
 
 
 @pytest.fixture
-def undulator(run_engine: RunEngine):
+def undulator(baton):
     undulator = i03.undulator(connect_immediately=True, mock=True)
-    # force the child baton to be connected
-    i03.baton(connect_immediately=True, mock=True)
     with patch_all_motors(undulator):
         yield undulator
 
 
 @pytest.fixture
-def s4_slit_gaps(run_engine: RunEngine):
+def s4_slit_gaps():
     return i03.s4_slit_gaps(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def synchrotron(run_engine: RunEngine):
+def synchrotron():
     synchrotron = i03.synchrotron(connect_immediately=True, mock=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -521,7 +507,7 @@ def synchrotron(run_engine: RunEngine):
 
 
 @pytest.fixture
-def oav(test_config_files, run_engine: RunEngine):
+def oav(test_config_files):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -543,22 +529,22 @@ def oav(test_config_files, run_engine: RunEngine):
 
 
 @pytest.fixture
-def flux(run_engine: RunEngine):
+def flux():
     return i03.flux(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def pin_tip(run_engine: RunEngine):
+def pin_tip():
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def ophyd_pin_tip_detection(run_engine: RunEngine):
+def ophyd_pin_tip_detection():
     return i03.pin_tip_detection(connect_immediately=True, mock=True)
 
 
 @pytest.fixture()
-def transfocator(run_engine: RunEngine):
+def transfocator():
     with init_devices(mock=True):
         transfocator = Transfocator("", "")
     transfocator.set = MagicMock(side_effect=lambda _: completed_status())
@@ -566,22 +552,36 @@ def transfocator(run_engine: RunEngine):
 
 
 @pytest.fixture
-def robot(done_status, run_engine: RunEngine):
+def robot(done_status):
     robot = i03.robot(connect_immediately=True, mock=True)
     set_mock_value(robot.barcode, "BARCODE")
 
     @AsyncStatus.wrap
     async def fake_load(val: SampleLocation):
-        set_mock_value(robot.current_pin, val.pin)
-        set_mock_value(robot.current_puck, val.puck)
-        set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
+        if val is not None:  # type: ignore
+            set_mock_value(robot.current_pin, val.pin)
+            set_mock_value(robot.current_puck, val.puck)
+            set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
 
     robot.set = MagicMock(side_effect=fake_load)
     return robot
 
 
 @pytest.fixture
-def attenuator(run_engine: RunEngine):
+def scintillator(aperture_scatterguard):
+    with init_devices(mock=True):
+        scintillator = Scintillator(
+            "",
+            aperture_scatterguard=Reference(aperture_scatterguard),
+            beamline_parameters=MagicMock(),
+            name="scintillator",
+        )
+    patch_all_motors(scintillator)
+    return scintillator
+
+
+@pytest.fixture
+def attenuator():
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
 
@@ -598,7 +598,6 @@ def attenuator(run_engine: RunEngine):
 def beamstop_phase1(
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine: RunEngineSimulator,
-    run_engine: RunEngine,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
         "dodal.beamlines.i03.get_beamline_parameters",
@@ -627,7 +626,10 @@ def beamstop_phase1(
 
 
 @pytest.fixture
-def xbpm_feedback(done_status, run_engine: RunEngine):
+def xbpm_feedback(
+    done_status,
+    baton: Baton,  # Ensure baton is cached with mock configuration
+):
     xbpm = i03.xbpm_feedback(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(return_value=done_status)
     yield xbpm
@@ -644,14 +646,14 @@ def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
 
 
 @pytest.fixture
-def dcm(run_engine: RunEngine, sim_run_engine):
+def dcm(sim_run_engine):
     dcm = i03.dcm(connect_immediately=True, mock=True)
     set_up_dcm(dcm, sim_run_engine)
     yield dcm
 
 
 @pytest.fixture
-def vfm(run_engine: RunEngine):
+def vfm():
     vfm = i03.vfm(connect_immediately=True, mock=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -662,7 +664,6 @@ def vfm(run_engine: RunEngine):
 
 @pytest.fixture
 def lower_gonio(
-    run_engine: RunEngine,
     sim_run_engine: RunEngineSimulator,
 ):
     lower_gonio = i03.lower_gonio(connect_immediately=True, mock=True)
@@ -679,7 +680,7 @@ def lower_gonio(
 
 
 @pytest.fixture
-def mirror_voltages(run_engine: RunEngine):
+def mirror_voltages():
     voltages = i03.mirror_voltages(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
@@ -691,7 +692,7 @@ def mirror_voltages(run_engine: RunEngine):
 
 
 @pytest.fixture
-def undulator_dcm(run_engine: RunEngine, sim_run_engine, undulator, dcm):
+def undulator_dcm(sim_run_engine, undulator, dcm):
     # This depends on the undulator and dcm as they must be connected as mocks first
     undulator_dcm = i03.undulator_dcm(
         connect_immediately=True,
@@ -704,24 +705,24 @@ def undulator_dcm(run_engine: RunEngine, sim_run_engine, undulator, dcm):
 
 
 @pytest.fixture
-def webcam(run_engine: RunEngine) -> Generator[Webcam, Any, Any]:
+def webcam() -> Generator[Webcam, Any, Any]:
     webcam = i03.webcam(connect_immediately=True, mock=True)
     with patch.object(webcam, "_get_and_write_image"):
         yield webcam
 
 
 @pytest.fixture
-def thawer(run_engine: RunEngine) -> Generator[Thawer, Any, Any]:
+def thawer() -> Generator[Thawer, Any, Any]:
     yield i03.thawer(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def sample_shutter(run_engine: RunEngine) -> Generator[ZebraShutter, Any, Any]:
+def sample_shutter() -> Generator[ZebraShutter, Any, Any]:
     yield i03.sample_shutter(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-async def aperture_scatterguard(run_engine: RunEngine):
+async def aperture_scatterguard():
     positions = {
         ApertureValue.LARGE: AperturePosition(
             aperture_x=0,
@@ -837,7 +838,7 @@ def fake_create_rotation_devices(
     backlight: Backlight,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
@@ -871,7 +872,7 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def zocalo(done_status, run_engine: RunEngine):
+def zocalo(done_status):
     zoc = i03.zocalo(connect_immediately=True, mock=True)
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
@@ -879,7 +880,7 @@ def zocalo(done_status, run_engine: RunEngine):
 
 
 @pytest.fixture
-async def panda(run_engine: RunEngine):
+async def panda():
     class MockBlock(Device):
         def __init__(
             self,
@@ -951,7 +952,7 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 
 @pytest.fixture
-def panda_fast_grid_scan(run_engine: RunEngine):
+def panda_fast_grid_scan():
     scan = i03.panda_fast_grid_scan(connect_immediately=True, mock=True)
     for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
         set_mock_value(signal, 1)
@@ -962,7 +963,6 @@ def panda_fast_grid_scan(run_engine: RunEngine):
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    run_engine: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -1257,33 +1257,15 @@ def _dummy_params(tmp_path):
     return dummy_params
 
 
-def _dummy_params_2d(tmp_path):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-        tmp_path,
-    )
-    raw_params["z_steps"] = 1
-    return SpecifiedThreeDGridScan(**raw_params)
-
-
 TEST_SESSION_ID = 90
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
-TEST_DATA_COLLECTION_IDS = (12, 13)
-TEST_DATA_COLLECTION_GROUP_ID = 34
-TEST_POSITION_ID = 78
-TEST_GRID_INFO_IDS = (56, 57)
 TEST_SAMPLE_ID = 364758
 TEST_BARCODE = "12345A"
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
     return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-
-
-def assert_upsert_call_with(call, param_template, expected: dict):
-    actual = remap_upsert_columns(list(param_template), call.args[0])
-    assert actual == dict(param_template | expected)
 
 
 def remap_upsert_columns(keys: Sequence[str], values: list):
@@ -1311,11 +1293,15 @@ class OavGridSnapshotTestEvents:
             "oav-microns_per_pixel_y": 1.58,
             "oav-beam_centre_i": 517,
             "oav-beam_centre_j": 350,
+            "oav-x_direction": -1,
+            "oav-y_direction": -1,
+            "oav-z_direction": 1,
             "oav-grid_snapshot-box_width": 0.1 * 1000 / 1.25,  # size in pixels
             "oav-grid_snapshot-last_path_full_overlay": "test_1_y",
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
             "smargon-omega": 0,
+            "smargon-chi": 0,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1340,7 +1326,11 @@ class OavGridSnapshotTestEvents:
             "oav-microns_per_pixel_y": 1.58,
             "oav-beam_centre_i": 517,
             "oav-beam_centre_j": 350,
+            "oav-x_direction": -1,
+            "oav-y_direction": -1,
+            "oav-z_direction": 1,
             "smargon-omega": -90,
+            "smargon-chi": 30,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1650,86 +1640,6 @@ class TestData(OavGridSnapshotTestEvents):
     ]
 
 
-def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
-    def upsert_data_collection(values):
-        kvpairs = remap_upsert_columns(
-            list(MXAcquisition.get_data_collection_params()), values
-        )
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_data_collection.i)  # pyright: ignore
-
-    mx_acq = base_ispyb_conn.return_value.mx_acquisition
-    mx_acq.upsert_data_collection.side_effect = upsert_data_collection
-    mx_acq.update_dc_position.return_value = position_id
-    mx_acq.upsert_data_collection_group.return_value = dcgid
-
-    def upsert_dc_grid(values):
-        kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
-        if kvpairs["id"]:
-            return kvpairs["id"]
-        else:
-            return next(upsert_dc_grid.i)  # pyright: ignore
-
-    upsert_data_collection.i = iter(dcids)  # pyright: ignore
-    upsert_dc_grid.i = iter(giids)  # pyright: ignore
-
-    mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
-    return base_ispyb_conn
-
-
-@pytest.fixture
-def mock_ispyb_conn(base_ispyb_conn):
-    return _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
-        TEST_DATA_COLLECTION_GROUP_ID,
-        TEST_DATA_COLLECTION_IDS,
-        TEST_GRID_INFO_IDS,
-    )
-
-
-@pytest.fixture
-def base_ispyb_conn():
-    with patch("ispyb.open", mock_open()) as ispyb_connection:
-        mock_mx_acquisition = MagicMock()
-        mock_mx_acquisition.get_data_collection_group_params.side_effect = (
-            lambda: deepcopy(MXAcquisition.get_data_collection_group_params())
-        )
-
-        mock_mx_acquisition.get_data_collection_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_data_collection_params()
-        )
-        mock_mx_acquisition.get_dc_position_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_position_params()
-        )
-        mock_mx_acquisition.get_dc_grid_params.side_effect = lambda: deepcopy(
-            MXAcquisition.get_dc_grid_params()
-        )
-        ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
-        mock_core = MagicMock()
-
-        def mock_retrieve_visit(visit_str):
-            assert visit_str, "No visit id supplied"
-            return TEST_SESSION_ID
-
-        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
-        ispyb_connection.return_value.core = mock_core
-        yield ispyb_connection
-
-
-@pytest.fixture
-def mock_ispyb_conn_multiscan(base_ispyb_conn):
-    return _mock_ispyb_conn(
-        base_ispyb_conn,
-        TEST_POSITION_ID,
-        TEST_DATA_COLLECTION_GROUP_ID,
-        list(range(12, 24)),
-        list(range(56, 68)),
-    )
-
-
 @pytest.fixture
 def dummy_rotation_params(tmp_path):
     dummy_params = RotationScan(
@@ -1756,7 +1666,7 @@ def test_rotation_params(tmp_path):
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class XBPMAndTransmissionWrapperComposite:
-    undulator: Undulator
+    undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
     dcm: DCM
@@ -1764,7 +1674,7 @@ class XBPMAndTransmissionWrapperComposite:
 
 @pytest.fixture
 def xbpm_and_transmission_wrapper_composite(
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     xbpm_feedback: XBPMFeedback,
     attenuator: BinaryFilterAttenuator,
     dcm: DCM,
@@ -1788,7 +1698,9 @@ def assert_images_pixelwise_equal(actual, expected):
 
 
 def _fake_config_server_read(
-    filepath: str | Path, desired_return_type=str, reset_cached_result=False
+    filepath: str | Path,
+    desired_return_type: type[str] | type[dict] = str,
+    reset_cached_result=False,
 ):
     filepath = Path(filepath)
     # Minimal logic required for unit tests
