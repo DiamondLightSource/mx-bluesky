@@ -241,6 +241,7 @@ def test_beamstop_check_ensures_detector_shutter_closed(
 @patch(
     "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
+@patch("mx_bluesky.common.experiment_plans.beamstop_check.bps.sleep", new=MagicMock())
 def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_check(
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
