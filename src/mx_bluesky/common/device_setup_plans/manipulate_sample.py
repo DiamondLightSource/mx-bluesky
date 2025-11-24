@@ -38,7 +38,7 @@ def setup_sample_environment(
         aperture_scatterguard, aperture_value, group=group
     )
 
-    yield from bps.abs_set(thawer.control, OnOff.OFF, group=group)
+    yield from bps.abs_set(thawer, OnOff.OFF, group=group)
 
 
 def move_aperture_if_required(

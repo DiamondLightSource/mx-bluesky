@@ -97,7 +97,7 @@ def do_robot_load(
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
-    yield from bps.mv(composite.thawer.control, OnOff.ON)
+    yield from bps.mv(composite.thawer, OnOff.ON)
 
 
 def pin_already_loaded(
