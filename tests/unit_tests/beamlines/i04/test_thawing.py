@@ -1,5 +1,4 @@
 import json
-from collections.abc import AsyncGenerator
 from functools import partial
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
@@ -75,13 +74,13 @@ async def oav_roi() -> OAV:
 
 
 @pytest.fixture
-async def smargon(run_engine: RunEngine) -> AsyncGenerator[Smargon, None]:
+async def smargon() -> Smargon:
     smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
 
-    yield smargon
+    return smargon
 
 
 @pytest.fixture
