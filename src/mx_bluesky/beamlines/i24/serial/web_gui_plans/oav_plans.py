@@ -17,7 +17,7 @@ class Direction(Enum):
     RIGHT = "right"
 
 
-def _calculate_direction(magnitude: int, direction: Direction) -> tuple[str, str]:
+def _move_direction(magnitude: int, direction: Direction, pmac):
     y_move = "&2#6J:0"
     x_move = "&2#5J:0"
 
@@ -31,14 +31,13 @@ def _calculate_direction(magnitude: int, direction: Direction) -> tuple[str, str
         case Direction.RIGHT:
             x_move = f"&2#5J:{magnitude}"
 
-    return x_move, y_move
+    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
+    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
 
 
 def move_block_on_arrow_click(direction: Direction, pmac: PMAC = inject("pmac")):
     magnitude = 31750
-    x_move, y_move = _calculate_direction(magnitude, direction)
-    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
-    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
+    yield from _move_direction(magnitude, direction, pmac)
 
 
 def move_window_on_arrow_click(
@@ -50,9 +49,7 @@ def move_window_on_arrow_click(
         case MoveSize.BIG:
             magnitude = 3750
 
-    x_move, y_move = _calculate_direction(magnitude, direction)
-    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
-    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
+    yield from _move_direction(magnitude, direction, pmac)
 
 
 def move_nudge_on_arrow_click(
@@ -64,6 +61,4 @@ def move_nudge_on_arrow_click(
         case MoveSize.BIG:
             magnitude = 60
 
-    x_move, y_move = _calculate_direction(magnitude, direction)
-    yield from bps.abs_set(pmac.pmac_string, x_move, wait=True)
-    yield from bps.abs_set(pmac.pmac_string, y_move, wait=True)
+    yield from _move_direction(magnitude, direction, pmac)
