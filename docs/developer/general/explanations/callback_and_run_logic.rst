@@ -18,7 +18,7 @@ Rotation Scans
 
 Rotation scans are generalised so that multiple scans can be done at once. The plan will create one hdf file for all rotations but then N nexus files, N ispyb depositions and triggers zocalo N times.
 
-This is does by starting 1+2*N different runs:
+It does this by starting 1+2*N different runs:
 
 1. ``CONST.PLAN.ROTATION_MULTI``: This is emitted once for the whole multiple rotation. It is used by the nexus callback to get the full number of images and meta_data_run_number so that it knows which hdf file to use. When this is finished zocalo end is triggered.
 2. ``CONST.PLAN.ROTATION_OUTER``: Emitted N times, inside a ``CONST.PLAN.ROTATION_MULTI`` run. This is used to create the initial ispyb deposition and create the nexus writer (but not actually write the file)
