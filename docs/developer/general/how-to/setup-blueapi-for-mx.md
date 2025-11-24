@@ -1,15 +1,15 @@
 # Setting up BlueAPI for an MX beamline
 
-### Background
+## Background
 
 The Athena DAQ platform is intended to run in microservices using kubernetes. A beamline ixx has a gitlab repository `ixx-services`, which contains that beamline's available services and their helm configurations, as well as `ixx-deployments` which says which available services should be deployed. Services managed in this way will be deployed into the `ixx-beamline` namespace. ArgoCD provides a useful dashboard for the deployed services and their kubernetes objects. See [here](https://dev-guide.diamond.ac.uk/athena/how-tos/migration/) for more information. This guide will explain how to setup BlueAPI using mx-bluesky within this framework.
 
-### Prerequisites
+## Prerequisites
 
 1. The beamline has a kubernetes cluster with gitlab deployment and services repos. See [here](https://dev-guide.diamond.ac.uk/epics-containers/how-tos/intro/) for a guide on this. DAQ members should be codeowners of these repos.
 2. Confirm the beamline cluster has a Blueapi ingress and DNS entry for `ixx-blueapi.diamond.ac.uk` - create a scicomp ticket if it doesn't.
 
-### Guide to run BlueAPI with mx-bluesky through kubernetes
+## Guide to run BlueAPI with mx-bluesky through kubernetes
 
 The best way to add BlueAPI to the services and deployments repo with the correct configuration is to copy from an existing setup and change the relevant values. i04 will be used as an example for this guide - [see their blueapi configuration](https://gitlab.diamond.ac.uk/controls/containers/beamline/i04-services/-/tree/main/services/i04-blueapi?ref_type=heads). The `chart.yaml` tells us which helmcharts are being used. The BlueAPI helmchart gives us the bulk of the configuration. See [here](https://github.com/DiamondLightSource/blueapi/tree/main/helm/blueapi) for a table of its settings. In MX we use an additional `mx-bluesky-blueapi` helmchart - right now this is purely for configuring Zocalo, but anything else which is generic to MX should be added.
 
