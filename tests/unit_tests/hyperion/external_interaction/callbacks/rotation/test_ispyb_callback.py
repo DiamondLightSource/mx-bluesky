@@ -33,6 +33,7 @@ EXPECTED_DATA_COLLECTION = {
     "axisRange": 0.1,
     "axisEnd": -180,
     "comments": "test",
+    "chiStart": 23.85,
     "dataCollectionNumber": 1,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
