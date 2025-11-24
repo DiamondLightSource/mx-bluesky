@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky import Msg, RunEngine
@@ -287,6 +287,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
 @patch(
     "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
+@patch("mx_bluesky.common.experiment_plans.beamstop_check.bps.sleep", new=MagicMock())
 def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
