@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan import (
     RobotLoadComposite,
