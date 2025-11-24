@@ -470,6 +470,16 @@ def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     return detector
 
 
+@pytest.fixture(autouse=True)
+def use_fake_properites_for_config_server():
+    properties_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new=properties_path,
+    ):
+        yield
+
+
 @pytest.fixture
 async def beamstop_check_devices(
     aperture_scatterguard,
