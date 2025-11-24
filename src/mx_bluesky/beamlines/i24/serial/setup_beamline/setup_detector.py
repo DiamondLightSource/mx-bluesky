@@ -20,7 +20,7 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import (
 )
 
 EXPT_TYPE_DETECTOR_PVS = {
-    SSXType.FIXED: pv.me14e_gp101,
+    SSXType.FIXED: pv.ioc13_gp101,
     SSXType.EXTRUDER: pv.ioc13_gp15,
 }
 
@@ -32,7 +32,7 @@ class DetRequest(IntEnum):
         return self.name
 
 
-class UnknownDetectorType(Exception):
+class UnknownDetectorTypeError(Exception):
     pass
 
 
@@ -45,7 +45,7 @@ def get_detector_type(detector_stage: YZStage) -> Generator[Msg, None, Detector]
         return Eiger()
     else:
         SSX_LOGGER.error("Detector not found.")
-        raise UnknownDetectorType("Detector not found.")
+        raise UnknownDetectorTypeError("Detector not found.")
 
 
 def _move_detector_stage(detector_stage: YZStage, target: float) -> MsgGenerator:
