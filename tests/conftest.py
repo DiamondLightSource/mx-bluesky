@@ -796,7 +796,7 @@ async def aperture_scatterguard():
 
 @pytest.fixture()
 async def beamsize(aperture_scatterguard: ApertureScatterguard):
-    return Beamsize(aperture_scatterguard)
+    return Beamsize(aperture_scatterguard, name="beamsize")
 
 
 @pytest.fixture()
