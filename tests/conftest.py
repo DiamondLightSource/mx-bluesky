@@ -1416,6 +1416,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
+                "eiger_cam_roi_mode": False,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1528,6 +1529,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
+                "eiger_cam_roi_mode": True,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,
