@@ -1,4 +1,3 @@
-import json
 from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -86,7 +85,7 @@ def i04_grid_detect_then_xrc_default_params(
     entry_params = I04AutoXrcParams(
         sample_id=1,
         file_name="filename",
-        visit=tmp_path,
+        visit="cm40607-5",
         detector_distance_mm=264.5,
         storage_directory=str(tmp_path),
     )
@@ -518,7 +517,6 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
 )
 def test_get_grid_common_params(
     mock_fix_trans_and_exposure: MagicMock,
-    test_full_grid_scan_params: GridCommon,
     tmp_path,
 ):
     expected_trans_frac = 0.2
@@ -527,13 +525,10 @@ def test_get_grid_common_params(
         expected_trans_frac,
         expected_exposure_time,
     )
-    params = json.loads(test_full_grid_scan_params.model_dump_json())
-    del params["exposure_time_s"]
-    del params["transmission_frac"]
     entry_params = I04AutoXrcParams(
         sample_id=1,
         file_name="filename",
-        visit=tmp_path,
+        visit="cm40607-5",
         detector_distance_mm=264.5,
         storage_directory=str(tmp_path),
     )

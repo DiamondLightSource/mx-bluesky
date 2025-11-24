@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 from functools import partial
-from pathlib import Path
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -65,6 +63,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -93,10 +92,9 @@ DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 class I04AutoXrcParams(BaseModel):
     sample_id: int
     file_name: str
-    visit: Path
+    visit: str
     detector_distance_mm: float
     storage_directory: str
-    parameter_model_version: str = "5.3.0"
 
 
 def _change_beamsize(
@@ -344,7 +342,13 @@ def _get_grid_common_params(
         )
     )
 
-    grid_common = json.loads(parameters.model_dump_json())
-    grid_common["transmission_frac"] = transmission_frac
-    grid_common["exposure_time_s"] = exposure_time_s
-    return GridCommon(**grid_common)
+    return GridCommon(
+        sample_id=parameters.sample_id,
+        file_name=parameters.file_name,
+        visit=parameters.visit,
+        detector_distance_mm=parameters.detector_distance_mm,
+        storage_directory=parameters.storage_directory,
+        transmission_frac=transmission_frac,
+        exposure_time_s=exposure_time_s,
+        parameter_model_version=PARAMETER_VERSION,
+    )

@@ -25,7 +25,7 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     UnexpectedSampleError,
     move_to_udc_default_state,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSettings
 
 
 @pytest.fixture
@@ -83,7 +83,7 @@ def feature_flags_with_beamstop_diode_check():
         "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
     ) as mock_get_config_client:
         mock_get_config_client.return_value.get_feature_flags.return_value = (
-            HyperionFeatureSetting(
+            HyperionFeatureSettings(
                 BEAMSTOP_DIODE_CHECK=True,
             )
         )
@@ -189,7 +189,7 @@ def test_beamstop_check_is_called_with_detector_distances_from_config_server(
         "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
     ) as mock_get_config_client:
         mock_get_config_client.return_value.get_feature_flags.return_value = (
-            HyperionFeatureSetting(
+            HyperionFeatureSettings(
                 BEAMSTOP_DIODE_CHECK=True,
                 DETECTOR_DISTANCE_LIMIT_MAX_MM=max_z,
                 DETECTOR_DISTANCE_LIMIT_MIN_MM=min_z,
@@ -206,7 +206,7 @@ def test_beamstop_check_is_called_with_detector_distances_from_config_server(
 def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_before_and_after_beamstop_check(
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
-    feature_flags_with_beamstop_diode_check: HyperionFeatureSetting,
+    feature_flags_with_beamstop_diode_check: HyperionFeatureSettings,
 ):
     msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
 
