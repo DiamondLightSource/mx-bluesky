@@ -12,18 +12,21 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
+from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
 from event_model.documents import Event
 from ophyd_async.core import (
@@ -31,12 +34,11 @@ from ophyd_async.core import (
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -154,6 +156,8 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -405,6 +409,7 @@ async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
+    beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -427,6 +432,7 @@ async def grid_detect_xrc_devices(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -464,3 +470,55 @@ def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     set_mock_value(detector._writer.writer_ready, 1)
 
     return detector
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
+
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        return devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin.build(connect_immediately=True, mock=True)

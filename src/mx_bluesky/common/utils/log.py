@@ -1,3 +1,4 @@
+import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from os import environ
@@ -25,6 +26,14 @@ NEXUS_LOGGER.setLevel(logging.DEBUG)
 ALL_LOGGERS = [LOGGER, ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER]
 
 __logger_handlers: DodalLogHandlers | None = None
+
+
+def format_doc_for_log(doc):
+    class _BestEffortEncoder(json.JSONEncoder):
+        def default(self, o):
+            return repr(o)
+
+    return json.dumps(doc, indent=2, cls=_BestEffortEncoder)
 
 
 class ExperimentMetadataTagFilter(logging.Filter):
