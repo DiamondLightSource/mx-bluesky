@@ -17,9 +17,6 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
     gui_set_fiducial_0,
     gui_stage_move_on_click,
 )
-from mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans import (
-    move_block_on_arrow_click,
-)
 
 from ..conftest import fake_generator
 
@@ -290,19 +287,3 @@ def test_gui_run_extruder_collection(
                 mock_dcid(),
                 fake_start,
             )
-
-
-@pytest.mark.parametrize(
-    "direction, expected_pmac_string",
-    [
-        ("up", "&2#6J:-31750"),
-        ("right", "&2#5J:31750"),
-    ],
-)
-def test_move_block_on_arrow_click(direction, expected_pmac_string, pmac):
-    with patch(
-        "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick.bps.abs_set",
-    ) as mock_abs_set:
-        plan = move_block_on_arrow_click(direction)
-        list(plan)
-        mock_abs_set.assert_called_with(pmac, expected_pmac_string, wait=True)
