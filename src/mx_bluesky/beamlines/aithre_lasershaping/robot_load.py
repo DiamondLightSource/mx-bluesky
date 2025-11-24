@@ -34,10 +34,8 @@ def robot_load_and_snapshot(
     catergories: type of the sample, e.g. Germ, ProteinaseK, Screening
     """
     time_now = datetime.datetime.now()
-    year_now = time_now.year
-    snapshot_directory = (
-        "/dls/i23/data/" + str(year_now) + "/" + visit + "/" + categories
-    )
+    year_now = str(time_now.year)
+    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{categories}"
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
         sample_id=sample_id,
@@ -68,9 +66,7 @@ def robot_unload(
     """
     time_now = datetime.datetime.now()
     year_now = time_now.year
-    snapshot_directory = (
-        "/dls/i23/data/" + str(year_now) + "/" + visit + "/" + categories
-    )
+    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{categories}"
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
         sample_id=sample_id,
