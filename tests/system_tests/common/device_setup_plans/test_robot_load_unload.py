@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 from requests import get
 from tests.conftest import SimConstants
 

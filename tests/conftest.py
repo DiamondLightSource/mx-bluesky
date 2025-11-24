@@ -33,11 +33,13 @@ from dodal.devices.aperturescatterguard import (
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.i03 import Beamstop, BeamstopPositions
+from dodal.devices.i03.beamsize import Beamsize
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
@@ -45,6 +47,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -57,7 +60,6 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
-from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd.sim import NullStatus
@@ -65,13 +67,15 @@ from ophyd_async.core import (
     AsyncStatus,
     Device,
     DeviceVector,
+    Reference,
     completed_status,
+    get_mock_put,
     init_devices,
+    set_mock_value,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -408,19 +412,14 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-
-    with patch_all_motors(smargon):
-        set_mock_value(smargon.omega.max_velocity, 1)
-        yield smargon
+    yield smargon
     clear_devices()
 
 
 @pytest.fixture
 def aithre_gonio():
     aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
-
-    with patch_all_motors(aithre_gonio):
-        yield aithre_gonio
+    return aithre_gonio
 
 
 @pytest.fixture
@@ -437,7 +436,13 @@ def zebra():
 
 @pytest.fixture
 def zebra_shutter():
-    return i03.sample_shutter(connect_immediately=True, mock=True)
+    shutter = i03.sample_shutter(connect_immediately=True, mock=True)
+
+    def put_sample_shutter(value, **kwargs):
+        set_mock_value(shutter.position_readback, value)
+
+    get_mock_put(shutter._manual_position_setpoint).side_effect = put_sample_shutter
+    return shutter
 
 
 @pytest.fixture
@@ -473,16 +478,13 @@ def fast_grid_scan():
 
 @pytest.fixture
 def detector_motion():
-    det = i03.detector_motion(connect_immediately=True, mock=True)
-    with patch_all_motors(det):
-        yield det
+    return i03.detector_motion(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def undulator(baton):
     undulator = i03.undulator(connect_immediately=True, mock=True)
-    with patch_all_motors(undulator):
-        yield undulator
+    return undulator
 
 
 @pytest.fixture
@@ -560,6 +562,18 @@ def robot(done_status):
 
 
 @pytest.fixture
+def scintillator(aperture_scatterguard):
+    with init_devices(mock=True):
+        scintillator = Scintillator(
+            "",
+            aperture_scatterguard=Reference(aperture_scatterguard),
+            beamline_parameters=MagicMock(),
+            name="scintillator",
+        )
+    return scintillator
+
+
+@pytest.fixture
 def attenuator():
     attenuator = i03.attenuator(connect_immediately=True, mock=True)
     set_mock_value(attenuator.actual_transmission, 0.49118047952)
@@ -583,7 +597,6 @@ def beamstop_phase1(
         return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
-        patch_all_motors(beamstop)
 
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
@@ -616,7 +629,6 @@ def xbpm_feedback(
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
-    patch_all_motors(dcm)
     set_mock_value(dcm.energy_in_keV.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
@@ -637,8 +649,7 @@ def vfm():
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    with patch_all_motors(vfm):
-        yield vfm
+    return vfm
 
 
 @pytest.fixture
@@ -654,8 +665,7 @@ def lower_gonio(
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
-    with patch_all_motors(lower_gonio):
-        yield lower_gonio
+    return lower_gonio
 
 
 @pytest.fixture
@@ -761,14 +771,17 @@ async def aperture_scatterguard():
         ),
     ):
         ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
-    with (
-        patch_all_motors(ap_sg),
-        patch_motor(ap_sg.aperture.z, 2),
-    ):
-        await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
-        set_mock_value(ap_sg.aperture.small, 1)
-        yield ap_sg
+    await ap_sg.aperture.z.set(2)
+    await ap_sg.selected_aperture.set(ApertureValue.SMALL)
+
+    set_mock_value(ap_sg.aperture.small, 1)
+    return ap_sg
+
+
+@pytest.fixture()
+async def beamsize(aperture_scatterguard: ApertureScatterguard):
+    return Beamsize(aperture_scatterguard, name="beamsize")
 
 
 @pytest.fixture()
@@ -826,12 +839,15 @@ def fake_create_rotation_devices(
     oav: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
@@ -847,6 +863,7 @@ def fake_create_rotation_devices(
         oav=oav,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )
 
 
@@ -1280,6 +1297,7 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
             "smargon-omega": 0,
+            "smargon-chi": 0,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1308,6 +1326,7 @@ class OavGridSnapshotTestEvents:
             "oav-y_direction": -1,
             "oav-z_direction": 1,
             "smargon-omega": -90,
+            "smargon-chi": 30,
             "smargon-x": 0,
             "smargon-y": 0,
             "smargon-z": 0,
@@ -1393,6 +1412,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1505,6 +1526,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,
