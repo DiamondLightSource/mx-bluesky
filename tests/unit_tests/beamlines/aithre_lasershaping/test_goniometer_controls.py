@@ -5,10 +5,8 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
-from dodal.testing import patch_motor
-from ophyd_async.core import init_devices
+from ophyd_async.core import init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
     change_goniometer_turn_speed,
@@ -23,13 +21,6 @@ from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import JogDire
 def goniometer() -> Goniometer:
     with init_devices(mock=True):
         gonio = aithre.goniometer(connect_immediately=True, mock=True)
-
-    patch_motor(gonio.omega)
-    patch_motor(gonio.x)
-    patch_motor(gonio.y)
-    patch_motor(gonio.z)
-    patch_motor(gonio.sampy)
-    patch_motor(gonio.sampz)
     return gonio
 
 

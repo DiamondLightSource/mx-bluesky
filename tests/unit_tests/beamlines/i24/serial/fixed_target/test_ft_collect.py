@@ -7,7 +7,7 @@ from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
-from ophyd_async.testing import callback_on_mock_put, get_mock_put, set_mock_value
+from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -257,17 +257,22 @@ def test_finish_i24(
     pmac,
     shutter,
     dcm,
+    detector_stage,
     dummy_params_without_pp,
     run_engine,
 ):
     fake_read.side_effect = [fake_generator(0.6)]
     fake_caget.return_value = 0.0
     fake_cagetstring.return_value = "chip_01"
-    run_engine(finish_i24(zebra, pmac, shutter, dcm, dummy_params_without_pp))
+    run_engine(
+        finish_i24(zebra, pmac, shutter, dcm, detector_stage, dummy_params_without_pp)
+    )
 
     fake_reset_zebra.assert_called_once()
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
+    fake_sup.eiger.assert_called_once_with(
+        "return-to-normal", None, dcm, detector_stage
+    )
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
     mock_pmac_string.assert_has_calls([call("&2!x0y0z0", wait=True)])
@@ -310,12 +315,19 @@ async def test_tidy_up_after_collection_plan(
     pmac,
     shutter,
     dcm,
+    detector_stage,
     run_engine,
     dummy_params_without_pp,
 ):
     run_engine(
         tidy_up_after_collection_plan(
-            zebra, pmac, shutter, dcm, dummy_params_without_pp, fake_dcid
+            zebra,
+            pmac,
+            shutter,
+            dcm,
+            detector_stage,
+            dummy_params_without_pp,
+            fake_dcid,
         )
     )
     assert await zebra.inputs.soft_in_2.get_value() == "No"

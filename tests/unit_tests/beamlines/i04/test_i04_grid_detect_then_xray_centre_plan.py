@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.beamsize import Beamsize
 from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
@@ -30,7 +31,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
@@ -61,6 +62,7 @@ def i04_grid_detect_then_xrc_default_params(
     aperture_scatterguard: ApertureScatterguard,
     attenuator: BinaryFilterAttenuator,
     backlight: Backlight,
+    beamsize: Beamsize,
     beamstop_phase1: Beamstop,
     dcm: DoubleCrystalMonochromator,
     zebra_fast_grid_scan: ZebraFastGridScanThreeD,
@@ -97,6 +99,7 @@ def i04_grid_detect_then_xrc_default_params(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         dcm=dcm,
         zebra_fast_grid_scan=zebra_fast_grid_scan,
         flux=flux,

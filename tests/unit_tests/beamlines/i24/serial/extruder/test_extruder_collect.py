@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,
@@ -233,11 +233,14 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     run_engine,
     zebra,
     shutter,
+    detector_stage,
     dummy_params,
     dcm,
 ):
     run_engine(
-        tidy_up_at_collection_end_plan(zebra, shutter, dummy_params, fake_dcid, dcm)
+        tidy_up_at_collection_end_plan(
+            zebra, shutter, dummy_params, fake_dcid, dcm, detector_stage
+        )
     )
 
     mock_reset_zebra_plan.assert_called_once()
@@ -247,7 +250,9 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1
 
-    fake_sup.eiger.assert_called_once_with("return-to-normal", None, dcm)
+    fake_sup.eiger.assert_called_once_with(
+        "return-to-normal", None, dcm, detector_stage
+    )
 
 
 @patch("mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2.DCID")
