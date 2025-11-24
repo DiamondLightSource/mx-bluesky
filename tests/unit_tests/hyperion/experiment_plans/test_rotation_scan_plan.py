@@ -536,7 +536,7 @@ def test_rotation_scan_waits_on_thawing_being_off_before_collection(
         rotation_scan_simulated_messages,
         lambda msg: msg.command == "set"
         and msg.args[0] == OnOff.OFF
-        and msg.obj.name == "thawer-control"
+        and msg.obj.name == "thawer"
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     assert_message_and_return_remaining(

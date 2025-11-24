@@ -338,7 +338,7 @@ def test_when_plan_run_then_thawing_turned_on(
     assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "thawer-control"
+        and msg.obj.name == "thawer"
         and msg.args[0] == OnOff.ON,
     )
 
