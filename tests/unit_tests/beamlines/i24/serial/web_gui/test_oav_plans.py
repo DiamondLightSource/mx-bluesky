@@ -5,6 +5,7 @@ import pytest
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans import (
     Direction,
     MoveSize,
+    focus_on_oav_view,
     move_block_on_arrow_click,
     move_nudge_on_arrow_click,
     move_window_on_arrow_click,
@@ -85,3 +86,20 @@ def test_move_nudge_on_arrow_click(
             mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
         else:
             mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+
+
+@pytest.mark.parametrize(
+    "direction, move_size, expected_value",
+    [
+        ("in", "small", -200),
+        ("in", "big", -1200),
+        ("out", "small", 200),
+        ("out", "big", 1200),
+    ],
+)
+def test_focus_on_oav_view(direction, move_size, expected_value, pmac, run_engine):
+    with patch(
+        "mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans.bps.abs_set",
+    ) as mock_abs_set:
+        run_engine(focus_on_oav_view(Direction(direction), MoveSize(move_size), pmac))
+        mock_abs_set.assert_any_call(pmac.z, expected_value, wait=True)
