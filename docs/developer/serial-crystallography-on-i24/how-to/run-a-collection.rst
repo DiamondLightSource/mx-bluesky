@@ -24,7 +24,7 @@ detector name from the list and clicking the ``Move Stage`` button,
 which will move the detector stage to the correct height and update the
 relative PVs.
 
-Detectors available for serial: Pilatus 6M or Eiger CdTe 9M.
+Detectors available for serial: Eiger CdTe 9M.
 
 Extruder (Serial Jet)
 =====================
@@ -58,9 +58,8 @@ in the ``Pump Probe`` panel.
 
 **WARNING** This setting requires a
 hardware change, as there are only 4 outputs on the zebra and they are
-all in use. When using the Eiger the Pilatus trigger cable should be
-used to trigger the light source. When using the pilatus the eiger
-trigger cable should be used.
+all in use. When using the Eiger the ex-Pilatus trigger cable should be
+used to trigger the light source.
 
 III - **Run collection**
 

@@ -35,8 +35,9 @@ def call_nexgen(
         start_time (datetime): Collection start time.
 
     Raises:
-        ValueError: For a wrong experiment type passed (either unknwon or not matched \
+        ValueError: For a wrong experiment type passed (either unknown or not matched \
             to parameter model).
+        HTTPError: For a problem with response from server
 
     """
     current_chip_map = None
@@ -54,7 +55,7 @@ def call_nexgen(
             total_numb_imgs = parameters.num_images
             pump_status = parameters.pump_status
 
-    filename_prefix = cagetstring(Eiger.pv.filenameRBV)
+    filename_prefix = cagetstring(Eiger.PV.filename_rbv)
     meta_h5 = parameters.visit / parameters.directory / f"{filename_prefix}_meta.h5"
     t0 = time.time()
     max_wait = 60  # seconds
@@ -70,14 +71,10 @@ def call_nexgen(
         SSX_LOGGER.warning(f"Giving up waiting for {meta_h5} after {max_wait} seconds")
         return
 
-    bit_depth = int(caget(Eiger.pv.bit_depth))
+    bit_depth = int(caget(Eiger.PV.bit_depth))
     SSX_LOGGER.debug(
         f"Call to nexgen server with the following chip definition: \n{chip_prog_dict}"
     )
-
-    access_token = pathlib.Path("/scratch/ssx_nexgen.key").read_text().strip()
-    url = "https://ssx-nexgen.diamond.ac.uk/ssx_eiger/write"
-    headers = {"Authorization": f"Bearer {access_token}"}
 
     payload = {
         "beamline": "i24",
@@ -98,8 +95,36 @@ def call_nexgen(
         "bit_depth": bit_depth,
         "start_time": start_time.isoformat(),
     }
-    SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
-    SSX_LOGGER.info(pprint.pformat(payload))
-    response = requests.post(url, headers=headers, json=payload)
-    response.raise_for_status()
+    submit_to_server(payload)
+
+
+def submit_to_server(
+    payload: dict | None,
+):
+    """Submit the payload to nexgen-server.
+
+    Args:
+        payload (dict): Dictionary of parameters to send to nex-gen server
+
+    Raises:
+        ValueError: For a wrong experiment type passed (either unknown or not matched \
+            to parameter model).
+        HTTPError: For a problem with response from server
+
+    """
+    access_token = pathlib.Path("/scratch/ssx_nexgen.key").read_text().strip()
+    url = "https://ssx-nexgen.diamond.ac.uk/ssx_eiger/write"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    try:
+        SSX_LOGGER.info(f"Sending POST request to {url} with payload:")
+        SSX_LOGGER.info(pprint.pformat(payload))
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        SSX_LOGGER.error(f"Nexus writer failed. Reason from server {e}")
+        raise
+    except Exception as e:
+        SSX_LOGGER.exception(f"Error generating nexus file: {e}")
+        raise
     SSX_LOGGER.info(f"Response: {response.text} (status code: {response.status_code})")

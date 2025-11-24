@@ -12,13 +12,14 @@ from mx_bluesky.common.external_interaction.ispyb.exp_eye_store import (
     BLSampleStatus,
     ExpeyeInteraction,
 )
-from mx_bluesky.common.utils.exceptions import CrystalNotFoundException, SampleException
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 
 class SampleHandlingCallback(PlanReactiveCallback):
-    """Intercepts exceptions from experiment plans and updates the ISPyB BLSampleStatus
-    field according to the type of exception raised."""
+    """Intercepts exceptions from experiment plans and:
+    * Updates the ISPyB BLSampleStatus field according to the type of exception raised.
+    * Triggers an alert with details of the error."""
 
     def __init__(self, record_loaded_on_success=False):
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER)
@@ -46,7 +47,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
             expeye = ExpeyeInteraction()
             if doc["exit_status"] != "success":
                 reason = doc.get("reason", "")
-                exception_type, message = SampleException.type_and_message_from_reason(
+                exception_type, message = SampleError.type_and_message_from_reason(
                     reason
                 )
                 self.log.info(
@@ -82,7 +83,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
 
     def _decode_sample_status(self, exception_type: str) -> BLSampleStatus:
         match exception_type:
-            case SampleException.__name__ | CrystalNotFoundException.__name__:
+            case SampleError.__name__ | CrystalNotFoundError.__name__:
                 return BLSampleStatus.ERROR_SAMPLE
         return BLSampleStatus.ERROR_BEAMLINE
 

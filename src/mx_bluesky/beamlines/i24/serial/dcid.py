@@ -11,7 +11,6 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -21,7 +20,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     ExtruderParameters,
     FixedTargetParameters,
 )
-from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger, Pilatus
+from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger
 
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
@@ -67,9 +66,7 @@ def read_beam_info_from_hardware(
     wavelength = yield from bps.rd(dcm.wavelength_in_a)
     beamsize_x = yield from bps.rd(mirrors.beam_size_x)
     beamsize_y = yield from bps.rd(mirrors.beam_size_y)
-    pixel_size = (
-        Eiger().pixel_size_mm if detector_name == "eiger" else Pilatus().pixel_size_mm
-    )
+    pixel_size = Eiger().pixel_size_mm
     beam_center_x = yield from bps.rd(beam_center.beam_x)
     beam_center_y = yield from bps.rd(beam_center.beam_y)
     return BeamSettings(
@@ -98,7 +95,7 @@ class DCID:
 
     Attributes:
         error:
-            If an error has occured. This will be set, even if emit_errors = True
+            If an error has occurred. This will be set, even if emit_errors = True
     """
 
     def __init__(
@@ -115,8 +112,8 @@ class DCID:
         match expt_params.detector_name:
             case "eiger":
                 self.detector = Eiger()
-            case "pilatus":
-                self.detector = Pilatus()
+            case _:
+                raise ValueError("Unknown detector:", expt_params.detector_name)
 
         self.server = server or DEFAULT_ISPYB_SERVER
         self.emit_errors = emit_errors
@@ -149,7 +146,7 @@ class DCID:
         try:
             if not start_time:
                 start_time = datetime.datetime.now().astimezone()
-            elif not start_time.timetz:
+            else:
                 start_time = start_time.astimezone()
 
             resolution = get_resolution(
@@ -161,12 +158,7 @@ class DCID:
             transmission = self.parameters.transmission * 100
             xbeam, ybeam = beam_settings.beam_center_in_mm
 
-            if isinstance(self.detector, Pilatus):
-                startImageNumber = 0
-            elif isinstance(self.detector, Eiger):
-                startImageNumber = 1
-            else:
-                raise ValueError("Unknown detector:", self.detector)
+            start_image_number = 1
 
             events = [
                 {
@@ -208,7 +200,7 @@ class DCID:
                 "imageDirectory": image_dir,
                 "numberOfImages": num_images,
                 "resolution": resolution,
-                "startImageNumber": startImageNumber,
+                "startImageNumber": start_image_number,
                 "startTime": start_time.isoformat(),
                 "transmission": transmission,
                 "visit": self.parameters.visit.name,
@@ -361,20 +353,6 @@ class DCID:
             SSX_LOGGER.warning("Error completing DCID: %s (%s)", e, resp_str)
 
 
-def get_pilatus_filename_template_from_device(
-    pilatus_metadata: PilatusMetadata,
-) -> MsgGenerator[str]:
-    """
-    Get the template file path by querying the detector PVs, mirror the construction \
-    that the PPU does.
-
-    Returns:
-        A template string, with the image numbers replaced with '#'
-    """
-    filename_template = yield from bps.rd(pilatus_metadata.filename_template)
-    return filename_template
-
-
 def get_resolution(detector: Detector, distance: float, wavelength: float) -> float:
     """ Calculate the inscribed resolution for detector.
 
@@ -382,7 +360,7 @@ def get_resolution(detector: Detector, distance: float, wavelength: float) -> fl
     position parameters yet.
 
     Args:
-        detector (Detector): Detector instance, Eiger() or Pilatus().
+        detector (Detector): Detector instance, Eiger().
         distance (float): Distance to detector, in mm.
         wavelength (float): Beam wavelength, in Å.
 

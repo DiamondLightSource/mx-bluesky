@@ -1,0 +1,192 @@
+@startuml
+title GDA Baton Management
+
+package Server {
+    class Thread
+    class JythonServerThread extends Thread {
+        authorisationLevel: int
+        int getAuthorisationLevel()
+    }
+        
+    interface IBatonManager {
+        ClientDetails getClientInformation((myJSFIdentifier)
+        boolean requestBaton(uniqueIdentifier)
+        void returnBaton((uniqueIdentifier)
+        void assignBaton(myJSFIdentifier, indexOfReceiver, indexOfPasser)
+        boolean isBatonHeld()
+        boolean amIBatonHolder(myJSFIdentifier)
+        int effectiveAuthorisationLevelOf(uniqueId)
+        void addFacade(uniqueId, info: ClientDetails)
+        void removeFacade(uniqueId)
+    }
+    
+    class BatonManager implements IBatonManager {
+        useBaton = true
+        useRBAC = true
+        firstClientTakesBaton = true
+        batonHolder: String
+        facadeNames: Map<String, ClientInfo>
+        leaseHolders: Map<String, Long>
+    }
+    
+    note "Each client has a facade name aka uniqueId aka jsfIdentifier\n\
+There is a LeaseRefresher that periodically sends a BatonLeaseRenewRequest\n\
+to all clients, any interaction with the BatonManager extends the lease.\n\n\
+On first client registration, if firstClientTakesBaton is true then it will\n\
+assume the baton if it is not the server or an automated client." as batonManagerNote
+
+    BatonManager .. batonManagerNote
+
+
+    interface IJythonServerNotifier {
+        void notifyServer(source, data)    
+    }
+    interface LocalJython
+    class JythonServer implements LocalJython {
+        batonManager: BatonManager
+    }
+
+    note "JythonServer registers a client with the BatonManager via forwarding of addFacade()\n\
+The authorisationLevel is determined by asking the Authoriser" as jythonServerNote
+
+    JythonServer .. jythonServerNote
+        
+    interface Authoriser {
+        int getAuthorisationLevel(username)
+        int getDefaultPermissions(username)
+        isLocalStaff(username)    
+    }
+    
+    class FileAuthoriser implements Authoriser
+    note "Gets the permissions from user_permissions.xml" as fileAuthoriserNote
+    FileAuthoriser .. fileAuthoriserNote
+    class LdapAuthoriser extends FileAuthoriser
+    class SingleFileAuthoriser implements Authoriser
+    note "Authorisation method is determined by gda.gui.AcquisitionGUI.authorisationMethod" as authoriserNote
+    
+    Authoriser .. authoriserNote    
+
+    together {
+        class UDCBatonHandler {
+            runner: IUDCRunner
+        }
+        interface IUDCRunner
+        class GDAUDCRunner implements IUDCRunner
+        class HyperionUDCRunner implements IUDCRunner
+    }
+
+    note "\
+Creates the UDC Client by calling getUnattendedClientFacade() during configuration.\n\
+Creates the UDC Runner according to the gda.mx.udc.hyperion.enable property.\
+" as udcBatonHandlerNote
+    UDCBatonHandler .. udcBatonHandlerNote
+
+    class Device {
+        protectionLevel: int
+    }
+    class DeviceInterceptor
+    note "DeviceInterceptor is an interceptor on specific methods of Device, if the current thread\n\
+has an authorisationLevel below the protectionLevel of the device, and\n\
+the call is made from Jython the method call throws AccessDeniedException." as deviceNote
+    Device .. deviceNote
+    
+    
+    
+    class UDCCompleteEvent
+    
+}
+
+package Common {
+    together {
+        class BatonChanged
+        class BatonRequested
+        class BatonLeaseRenewRequest
+    }
+
+    interface Jython {
+        boolean amIBatonHolder(myJSFIdentifier)
+        int addFacade(jsfIdentifier, hostname, username, fullName, visitId)
+        boolean isBatonHeld()
+    }
+
+    class ClientInfo {
+        index: int
+        userId: String
+        fullName: String
+        hostname: String
+        authorisationLevel: int
+        visitID: String
+        
+        boolean isServer()
+        boolean isAutomatedUser()
+    }
+    note "isServer and isAutomatedUser are determined by the authorisationLevel" as clientInfoNote
+    ClientInfo .. clientInfoNote
+    
+    class ClientDetails extends ClientInfo {
+     hasBaton: boolean
+    }
+
+    interface IAuthorisationHolder {
+        int getAuthorisationLevel()
+        int getAuthorisationLevelAtRegistration()
+    }
+    
+    interface IBatonStateProvider {
+        boolean amIBatonHolder()
+        boolean isBatonHeld()
+        void addBatonChangedObserver(observer)
+        void deleteBatonChangedObserver(observer)
+    }
+    note "Access is enforced in the client via calls to amIBatonHolder()" as iBatonStateProviderNote
+
+    class JythonServerFacade implements IBatonStateProvider, IAuthorisationHolder {
+        commandServer: Jython
+        visitID: String
+        {static} JythonServerFacade getUnattendedClientFacade()
+    }
+}
+
+package Client {
+  class ApplicationWorkbenchAdvisor
+    note "ApplicationWorkbenchAdvisor receives the BatonLeaseRenewRequest and uses IBatonStateProvider\n\
+to renew the lease by calling amIBatonHolder()" as applicationWorkbenchAdvisorNote
+}
+
+'Server -up-> Common
+'Common -up[hidden]-> Client
+ApplicationWorkbenchAdvisor ..[norank] applicationWorkbenchAdvisorNote
+   
+ApplicationWorkbenchAdvisor --down> IBatonStateProvider
+
+IBatonStateProvider .. iBatonStateProviderNote
+LocalJython -up-|> Jython
+LocalJython --|> IJythonServerNotifier
+
+JythonServerFacade o-> Jython
+JythonServer o->BatonManager
+JythonServer --> Authoriser
+
+JythonServer --> JythonServerThread
+
+BatonChanged --> UDCBatonHandler : handles
+BatonRequested --> UDCBatonHandler : handles
+UDCCompleteEvent --> UDCBatonHandler : handles
+
+UDCBatonHandler -[norank]-> JythonServerFacade
+UDCBatonHandler o-> IUDCRunner
+BatonManager -up-> BatonChanged : fires
+BatonManager -up-> BatonRequested : fires
+BatonManager -up-> BatonLeaseRenewRequest : fires
+GDAUDCRunner -[norank]-> UDCCompleteEvent : fires
+BatonManager *-[norank]-> ClientInfo
+
+UDCCompleteEvent --> GDAUDCRunner : handles
+HyperionUDCRunner --> UDCCompleteEvent : fires
+
+DeviceInterceptor --> Device
+DeviceInterceptor --> JythonServerThread
+
+BatonManager -up-> IJythonServerNotifier
+
+@enduml

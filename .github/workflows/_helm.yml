@@ -6,6 +6,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+
       - name: Install Helm
         uses: Azure/setup-helm@v4.3.0
         id: install
@@ -14,6 +20,12 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password-stdin
+
+      - name: Get version from Git tag
+        id: meta
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "version=$TAG" >> $GITHUB_OUTPUT
 
       - name: Package and push chart
         if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}

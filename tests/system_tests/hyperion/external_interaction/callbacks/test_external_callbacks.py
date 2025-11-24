@@ -15,6 +15,8 @@ import zmq
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -24,7 +26,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_decorator,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -39,9 +41,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 from .....conftest import fake_read
-from ..conftest import (  # noqa
-    fetch_comment,
-)
+from ..conftest import fetch_comment  # noqa  # type: ignore
 
 """
 Note that because these tests use the external processes some of the errors coming from
@@ -78,11 +78,10 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 
 
 @pytest.fixture
-def RE_with_external_callbacks(
+def run_engine_with_external_callbacks(
     zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
+    run_engine,
 ):
-    RE = RunEngine()
-
     process_env = os.environ.copy()
 
     external_callbacks_process = subprocess.Popen(
@@ -107,11 +106,11 @@ def RE_with_external_callbacks(
     while not connection_active_lock.locked():
         sleep(0.1)  # wait for connection to happen before continuing
 
-    sub_id = RE.subscribe(publisher)
+    sub_id = run_engine.subscribe(publisher)
 
-    yield RE
+    yield run_engine
 
-    RE.unsubscribe(sub_id)
+    run_engine.unsubscribe(sub_id)
     publisher.close()
 
     external_callbacks_process.send_signal(signal.SIGINT)
@@ -122,33 +121,37 @@ def RE_with_external_callbacks(
 
 
 @pytest.mark.system_test
-def test_RE_with_external_callbacks_starts_and_stops(
-    RE_with_external_callbacks: RunEngine,
+def test_run_engine_with_external_callbacks_starts_and_stops(
+    run_engine_with_external_callbacks: RunEngine,
 ):
-    RE = RE_with_external_callbacks
+    run_engine = run_engine_with_external_callbacks
 
     def plan():
         yield from bps.sleep(1)
 
-    RE(plan())
+    run_engine(plan())
 
 
 @pytest.mark.system_test
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
-    RE_with_external_callbacks: RunEngine,
+    oav_for_system_test: OAV,
+    smargon: Smargon,
+    run_engine_with_external_callbacks: RunEngine,
     dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
     fetch_comment,  # noqa
+    fetch_datacollection_ids_for_group_id,
+    fake_grid_snapshot_plan,
 ):
     """
     This test requires fake zocalo, and a connection to the dev ISPyB database.
     """
 
-    RE = RE_with_external_callbacks
+    run_engine = run_engine_with_external_callbacks
 
     doc_catcher = DocumentCatcher()
-    RE.subscribe(doc_catcher)
+    run_engine.subscribe(doc_catcher)
 
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
@@ -157,11 +160,12 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
     @ispyb_activation_decorator(dummy_params)
     def wrapped_xray_centre():
+        yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
         )
 
-    RE(wrapped_xray_centre())
+    run_engine(wrapped_xray_centre())
 
     # get dcids from zocalo device
     dcid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcid.read()
@@ -173,15 +177,23 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     assert dcid != 0
     assert dcgid != 0
 
+    dcids = fetch_datacollection_ids_for_group_id(dcgid)
+
+    assert dcid in dcids
+
     # check the data in dev ispyb corresponding to this "collection"
-    ispyb_comment = fetch_comment(dcid)
-    assert ispyb_comment != ""
-    assert "Zocalo processing took" in ispyb_comment
+    ispyb_comment1 = fetch_comment(dcids[0])
+    ispyb_comment2 = fetch_comment(dcids[1])
+    assert ispyb_comment1 != "" and ispyb_comment2 != ""
+    assert (
+        "Zocalo processing took" in ispyb_comment1
+        or "Zocalo processing took" in ispyb_comment2
+    )
 
 
 @pytest.mark.system_test
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
-    RE_with_external_callbacks: RunEngine,
+    run_engine_with_external_callbacks: RunEngine,
     params_for_rotation_scan: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
@@ -196,10 +208,10 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
 
     params_for_rotation_scan.rotation_increment_deg = test_img_wid
     params_for_rotation_scan.exposure_time_s = test_exp_time
-    params_for_rotation_scan.demand_energy_ev = convert_angstrom_to_eV(test_wl)
+    params_for_rotation_scan.demand_energy_ev = convert_angstrom_to_ev(test_wl)
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE_with_external_callbacks(
+        run_engine_with_external_callbacks(
             rotation_scan(
                 composite_for_rotation_scan,
                 params_for_rotation_scan,

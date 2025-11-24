@@ -12,7 +12,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
 from dodal.devices.i03 import Beamstop
@@ -26,7 +26,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -72,14 +72,14 @@ class RobotLoadThenCentreComposite:
     backlight: Backlight
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
     smargon: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     zebra: Zebra
     zocalo: ZocaloResults
     panda: HDFPanda

@@ -1,4 +1,5 @@
 import json
+import signal
 import threading
 from dataclasses import asdict
 from sys import argv
@@ -21,7 +22,7 @@ from mx_bluesky.common.utils.log import (
 from mx_bluesky.hyperion.baton_handler import run_forever
 from mx_bluesky.hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
-    PlanNotFound,
+    PlanNotFoundError,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
@@ -32,9 +33,10 @@ from mx_bluesky.hyperion.parameters.cli import (
     HyperionMode,
     parse_cli_args,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanRunner
+from mx_bluesky.hyperion.plan_runner_api import create_server_for_udc
 from mx_bluesky.hyperion.runner import (
     GDARunner,
     StatusAndMessage,
@@ -43,21 +45,13 @@ from mx_bluesky.hyperion.runner import (
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
-def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):
+def compose_start_args(context: BlueskyContext, plan_name: str):
     experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
     if experiment_registry_entry is None:
-        raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
+        raise PlanNotFoundError(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
     plan = context.plan_functions.get(plan_name)
-    if experiment_internal_param_type is None:
-        raise PlanNotFound(
-            f"Corresponding internal param type for '{plan_name}' not found in registry."
-        )
-    if plan is None:
-        raise PlanNotFound(
-            f"Experiment plan '{plan_name}' not found in context. Context has {context.plan_functions.keys()}"
-        )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
         parameters = update_params_from_agamemnon(parameters)
@@ -78,13 +72,11 @@ class RunExperiment(Resource):
         self.runner = runner
         self.context = context
 
-    def put(self, plan_name: str, action: Actions):
+    def put(self, plan_name: str, action: str):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                plan, params, plan_name = compose_start_args(
-                    self.context, plan_name, action
-                )
+                plan, params, plan_name = compose_start_args(self.context, plan_name)
                 status_and_message = self.runner.start(plan, params, plan_name)
             except Exception as e:
                 status_and_message = make_error_status_and_message(e)
@@ -113,7 +105,7 @@ class StopOrStatus(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
             LOGGER.debug(
-                f"Runner received status request - state of the runner object is: {self.runner.__dict__} - state of the RE is: {self.runner.RE.__dict__}"
+                f"Runner received status request - state of the runner object is: {self.runner.__dict__} - state of the run_engine is: {self.runner.run_engine.__dict__}"
             )
             status_and_message = self.runner.current_status
         return asdict(status_and_message)
@@ -170,7 +162,7 @@ def main():
     """Main application entry point."""
     args = parse_cli_args()
     initialise_globals(args)
-    hyperion_port = 5005
+    hyperion_port = HyperionConstants.HYPERION_PORT
     context = setup_context(dev_mode=args.dev_mode)
 
     if args.mode == HyperionMode.GDA:
@@ -188,7 +180,18 @@ def main():
         )
         runner.wait_on_queue()
     else:
-        run_forever(PlanRunner(context))
+        plan_runner = PlanRunner(context, args.dev_mode)
+        create_server_for_udc(plan_runner)
+        _register_sigterm_handler(plan_runner)
+        run_forever(plan_runner)
+
+
+def _register_sigterm_handler(runner: PlanRunner):
+    def shutdown_on_sigterm(sig_num, frame):
+        LOGGER.info("Received SIGTERM, shutting down...")
+        runner.shutdown()
+
+    signal.signal(signal.SIGTERM, shutdown_on_sigterm)
 
 
 if __name__ == "__main__":

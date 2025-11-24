@@ -6,7 +6,7 @@ like tests`_, and run them to check for errors. You can run it with::
 
     $ tox -e tests
 
-It will also report coverage to the commandline and to ``cov.xml``.
+When the tests are run in GitHub CI it will also report coverage to ``codecov.io``.
 
 .. _pytest: https://pytest.org/
 .. _look like tests: https://docs.pytest.org/explanation/goodpractices.html#test-discovery

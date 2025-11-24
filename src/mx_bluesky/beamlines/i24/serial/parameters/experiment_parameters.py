@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_9M_SIZE,
-    PILATUS_6M_SIZE,
     DetectorSizeConstants,
 )
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
@@ -46,11 +45,7 @@ class SerialExperiment(BaseModel):
 
     @property
     def detector_size_constants(self) -> DetectorSizeConstants:
-        return (
-            EIGER2_X_9M_SIZE
-            if self.detector_name is DetectorName.EIGER
-            else PILATUS_6M_SIZE
-        )
+        return EIGER2_X_9M_SIZE
 
 
 class LaserExperiment(BaseModel):

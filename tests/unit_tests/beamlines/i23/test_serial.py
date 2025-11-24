@@ -6,7 +6,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.beamlines.i23 import I23DetectorPositions
 from dodal.devices.motors import SixAxisGonio
 from dodal.devices.positioner import Positioner1D
-from dodal.devices.util.test_utils import patch_motor
+from dodal.testing import patch_motor
 from ophyd_async.core import init_devices
 from ophyd_async.testing import get_mock_put
 
@@ -14,7 +14,7 @@ from mx_bluesky.beamlines.i23.serial import one_nd_step, serial_collection
 
 
 @pytest.fixture
-def mock_gonio(RE: RunEngine):
+def mock_gonio():
     with init_devices(mock=True):
         gonio = SixAxisGonio("", name="gonio")
     patch_motor(gonio.x)
@@ -24,7 +24,7 @@ def mock_gonio(RE: RunEngine):
 
 
 @pytest.fixture
-def mock_detector_motion(RE: RunEngine):
+def mock_detector_motion():
     with init_devices(mock=True):
         detector_motion = Positioner1D("", I23DetectorPositions)
     return detector_motion
@@ -155,9 +155,11 @@ def test_detector_moves_in_at_experiment_start(
     )
 
 
-async def test_serial_collection_can_run_in_real_RE(
-    RE: RunEngine, mock_detector_motion: Positioner1D, mock_gonio: SixAxisGonio
+async def test_serial_collection_can_run_in_real_run_engine(
+    run_engine: RunEngine, mock_detector_motion: Positioner1D, mock_gonio: SixAxisGonio
 ):
-    RE(serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_detector_motion, mock_gonio))
+    run_engine(
+        serial_collection(4, 4, 0.1, 0.1, 30, 1.0, mock_detector_motion, mock_gonio)
+    )
     assert get_mock_put(mock_gonio.x.user_setpoint).call_count == 4 * 4 + 1
     assert get_mock_put(mock_gonio.y.user_setpoint).call_count == 4 * 4 + 1

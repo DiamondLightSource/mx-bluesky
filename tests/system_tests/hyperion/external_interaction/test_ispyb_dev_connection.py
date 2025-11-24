@@ -22,11 +22,10 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    DataCollectionInfo,
     Orientation,
     ScanDataInfo,
 )
@@ -115,8 +114,8 @@ def dummy_data_collection_group_info(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin_xy(dummy_params):
-    info = populate_xy_data_collection_info(
-        dummy_params.detector_params,
+    info = DataCollectionInfo(
+        data_collection_number=dummy_params.detector_params.run_number,
     )
     info = populate_remaining_data_collection_info(
         "MX-Bluesky: Xray centring 1 -", None, info, dummy_params
@@ -128,9 +127,11 @@ def dummy_scan_data_info_for_begin_xy(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin_xz(dummy_params):
-    info = populate_xz_data_collection_info(
-        dummy_params.detector_params,
+    run_number = dummy_params.detector_params.run_number + 1
+    info1 = DataCollectionInfo(
+        data_collection_number=run_number,
     )
+    info = info1
     info = populate_remaining_data_collection_info(
         "MX-Bluesky: Xray centring 2 -", None, info, dummy_params
     )
@@ -189,9 +190,11 @@ def scan_data_infos_for_update_3d(
     scan_xy_data_info_for_update,
     dummy_params: HyperionSpecifiedThreeDGridScan,
 ):
-    xz_data_collection_info = populate_xz_data_collection_info(
-        dummy_params.detector_params
+    run_number = dummy_params.detector_params.run_number + 1
+    info = DataCollectionInfo(
+        data_collection_number=run_number,
     )
+    xz_data_collection_info = info
 
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
@@ -268,7 +271,7 @@ def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
 
 
 @pytest.mark.system_test
-def test_ispyb_deposition_comment_correct_for_3D_on_failure(
+def test_ispyb_deposition_comment_correct_for_3d_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
     dummy_params,
@@ -312,7 +315,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
         (IspybExperimentType.GRIDSCAN_3D, 2, True),
     ],
 )
-def test_can_store_2D_ispyb_data_correctly_when_in_error(
+def test_can_store_2d_ispyb_data_correctly_when_in_error(
     experiment_type,
     exp_num_of_grids: Literal[1, 2],
     success: bool,
@@ -396,7 +399,7 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
-    RE: RunEngine,
+    run_engine: RunEngine,
     grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
     fetch_datacollection_attribute: Callable[..., Any],
@@ -411,8 +414,8 @@ def test_ispyb_deposition_in_gridscan(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
     )
     ispyb_callback = GridscanISPyBCallback(GridCommonWithHyperionDetectorParams)
-    RE.subscribe(ispyb_callback)
-    RE(
+    run_engine.subscribe(ispyb_callback)
+    run_engine(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
@@ -422,13 +425,11 @@ def test_ispyb_deposition_in_gridscan(
     )
 
     ispyb_ids = ispyb_callback.ispyb_ids
-    DC_EXPECTED_VALUES = {
+    dc_expected_values = {
         "detectorid": 78,
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        "focalspotsizeatsamplex": 0.02,
-        "focalspotsizeatsampley": 0.02,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
         "beamsizeatsamplex": 0.02,
@@ -464,11 +465,11 @@ def test_ispyb_deposition_in_gridscan(
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
-        DC_EXPECTED_VALUES,
+        dc_expected_values,
         fetch_datacollection_attribute,
         DATA_COLLECTION_COLUMN_MAP,
     )
-    GRIDINFO_EXPECTED_VALUES = {
+    gridinfo_expected_values = {
         "gridInfoId": ispyb_ids.grid_ids[0],
         "dx_mm": 0.02,
         "dy_mm": 0.02,
@@ -479,13 +480,13 @@ def test_ispyb_deposition_in_gridscan(
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "micronsPerPixelX": 0.806,
-        "micronsPerPixelY": 0.806,
+        "pixelsPerMicronX": 1.24069,
+        "pixelsPerMicronY": 1.24069,
     }
 
     compare_actual_and_expected(
         ispyb_ids.grid_ids[0],
-        GRIDINFO_EXPECTED_VALUES,
+        gridinfo_expected_values,
         fetch_datacollection_grid_attribute,
         GRID_INFO_COLUMN_MAP,
     )
@@ -493,7 +494,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[0], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
     assert position_id is None
-    DC_EXPECTED_VALUES.update(
+    dc_expected_values.update(
         {
             "axisstart": 90.0,
             "axisend": 90.0,
@@ -508,7 +509,7 @@ def test_ispyb_deposition_in_gridscan(
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[1],
-        DC_EXPECTED_VALUES,
+        dc_expected_values,
         fetch_datacollection_attribute,
         DATA_COLLECTION_COLUMN_MAP,
     )
@@ -523,7 +524,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
     assert position_id is None
-    GRIDINFO_EXPECTED_VALUES.update(
+    gridinfo_expected_values.update(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
             "steps_y": 6.0,
@@ -533,7 +534,7 @@ def test_ispyb_deposition_in_gridscan(
     )
     compare_actual_and_expected(
         ispyb_ids.grid_ids[1],
-        GRIDINFO_EXPECTED_VALUES,
+        gridinfo_expected_values,
         fetch_datacollection_grid_attribute,
         GRID_INFO_COLUMN_MAP,
     )
@@ -544,16 +545,16 @@ def test_ispyb_deposition_in_rotation_plan(
     composite_for_rotation_scan: RotationScanComposite,
     params_for_rotation_scan: RotationScan,
     oav_parameters_for_rotation: OAVParameters,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
     tmp_path,
 ):
     ispyb_cb = RotationISPyBCallback()
-    RE.subscribe(ispyb_cb)
+    run_engine.subscribe(ispyb_cb)
 
-    RE(
+    run_engine(
         rotation_scan(
             composite_for_rotation_scan,
             params_for_rotation_scan,

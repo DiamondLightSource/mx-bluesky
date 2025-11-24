@@ -97,13 +97,13 @@ class GridScanParamsCommon {
     z2_start_mm
 }
 class PandAGridScanParams
-class ZebraGridScanParams
+class ZebraGridScanParamsThreeD
 
 AbstractExperimentBase <|-- AbstractExperimentWithBeamParams
 AbstractExperimentWithBeamParams <|-- GridScanParamsCommon
 GridScanParamsCommon <|-- PandAGridScanParams
-GridScanParamsCommon <|-- ZebraGridScanParams
+GridScanParamsCommon <|-- ZebraGridScanParamsThreeD
 
-HyperionThreeDGridScan --> ZebraGridScanParams : generates
+HyperionThreeDGridScan --> ZebraGridScanParamsThreeD : generates
 HyperionThreeDGridScan --> PandAGridScanParams : generates
 @enduml

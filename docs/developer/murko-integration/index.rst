@@ -16,6 +16,7 @@ Its integration at DLS, using Bluesky, is still a work in progress but this docu
             :maxdepth: 1
 
             explanations/architecture
+            explanations/DrawioImages
 
         +++
 

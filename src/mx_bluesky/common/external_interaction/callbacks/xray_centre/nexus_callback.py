@@ -24,16 +24,16 @@ T = TypeVar("T", bound="SpecifiedThreeDGridScan")
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
     """Callback class to handle the creation of Nexus files based on experiment \
-    parameters. Initialises on recieving a 'start' document for the \
+    parameters. Initialises on receiving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
     as metadata under the 'hyperion_internal_parameters' key. Actually writes the \
-    nexus files on updates the timestamps on recieving the 'ispyb_reading_hardware' event \
+    nexus files on updates the timestamps on receiving the 'ispyb_reading_hardware' event \
     document, and finalises the files on getting a 'stop' document for the whole run.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         nexus_file_handler_callback = NexusFileCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
+        run_engine.subscribe(nexus_file_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
@@ -89,7 +89,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     nexus_writer.beam,
                     nexus_writer.attenuator,
                 ) = create_beam_and_attenuator_parameters(
-                    data["dcm-energy_in_kev"],
+                    data["dcm-energy_in_keV"],
                     data["flux-flux_reading"],
                     data["attenuator-actual_transmission"],
                 )

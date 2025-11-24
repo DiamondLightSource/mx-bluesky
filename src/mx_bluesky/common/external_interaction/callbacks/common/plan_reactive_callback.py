@@ -24,8 +24,8 @@ class PlanReactiveCallback(CallbackBase):
         metadata to trigger this.
         The run_decorator of the plan should include in its metadata dictionary the key
         'activate callbacks', with a list of strings of the callback class(es) to
-        activate or deactivate. On a recieving a start doc which specifies this, this
-        class will be activated, and on recieving the stop document for the
+        activate or deactivate. On a receiving a start doc which specifies this, this
+        class will be activated, and on receiving the stop document for the
         corresponding uid it will deactivate. The ordinary 'start', 'descriptor',
         'event' and 'stop' methods will be triggered as normal, and will in turn trigger
         'activity_gated_' methods - to preserve this functionality, subclasses which
@@ -40,7 +40,7 @@ class PlanReactiveCallback(CallbackBase):
         self.log = log
 
     def _run_activity_gated(self, name: str, func, doc, override=False):
-        # Runs `func` if self.active is True or overide is true. Override can be used
+        # Runs `func` if self.active is True or override is true. Override can be used
         # to run the function even after setting self.active to False, i.e. in the last
         # handler of a run.
 

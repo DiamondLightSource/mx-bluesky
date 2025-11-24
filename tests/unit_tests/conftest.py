@@ -1,9 +1,8 @@
 import asyncio
 import pprint
 import sys
-import time
-from collections.abc import Callable
 from functools import partial
+from pathlib import Path, PurePath
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -15,21 +14,33 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
+from dodal.devices.hutch_shutter import ShutterState
+from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
+from dodal.devices.zocalo import ZocaloResults
+from dodal.testing import patch_all_motors
 from event_model.documents import Event
-from ophyd_async.core import AsyncStatus
+from ophyd_async.core import (
+    AsyncStatus,
+    AutoIncrementingPathProvider,
+    StaticFilenameProvider,
+    init_devices,
+)
 from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import set_mock_value
+from ophyd_async.testing import (
+    set_mock_value,
+)
 
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -39,6 +50,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
@@ -64,23 +76,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from tests.conftest import raw_params_from_file
 
-
-@pytest.fixture
-async def RE():
-    RE = RunEngine(call_returns_result=True)
-    # make sure the event loop is thoroughly up and running before we try to create
-    # any ophyd_async devices which might need it
-    timeout = time.monotonic() + 1
-    while not RE.loop.is_running():
-        await asyncio.sleep(0)
-        if time.monotonic() > timeout:
-            raise TimeoutError("This really shouldn't happen but just in case...")
-    yield RE
-    # RunEngine creates its own loop if we did not supply it, we must terminate it
-    RE.loop.call_soon_threadsafe(RE.loop.stop)
-    RE._th.join()
-
-
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
 
@@ -104,9 +99,8 @@ def _error_and_kill_pending_tasks(
     unfinished_tasks = {
         task
         for task in asyncio.all_tasks(loop)
-        if (coro := task.get_coro()) is not None
-        and hasattr(coro, "__name__")
-        and coro.__name__ not in _ALLOWED_PYTEST_TASKS
+        if hasattr(coro := task.get_coro(), "__name__")
+        and coro.__name__ not in _ALLOWED_PYTEST_TASKS  # type: ignore
         and not task.done()
     }
     for task in unfinished_tasks:
@@ -163,7 +157,7 @@ BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
-    "dcm-energy_in_kev": 11.105,
+    "dcm-energy_in_keV": 11.105,
 }
 
 
@@ -183,7 +177,9 @@ def create_gridscan_callbacks() -> tuple[
         GridscanISPyBCallback(
             param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
-                PlanNameConstants.DO_FGS, EnvironmentConstants.ZOCALO_ENV
+                PlanNameConstants.DO_FGS,
+                EnvironmentConstants.ZOCALO_ENV,
+                generate_start_info_from_omega_map,
             ),
         ),
     )
@@ -197,8 +193,12 @@ def use_beamline_t01():
     with patch.dict("os.environ", {"BEAMLINE": "t01"}):
         import tests.unit_tests.t01
 
-        with patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}):
-            yield
+        with (
+            patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
+            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
+            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+        ):
+            yield tests.unit_tests.t01
 
 
 @pytest.fixture
@@ -206,44 +206,33 @@ def mock_subscriptions(test_fgs_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
-            modified_interactor_mock,
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0), data_collection_group_id=0
-                )
-            ),
-        ),
-        patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
-            new=MagicMock(
-                return_value=IspybIds(
-                    data_collection_ids=(0, 0),
-                    data_collection_group_id=0,
-                    grid_ids=(0, 0),
-                )
-            ),
-        ),
+            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+        ) as mock_store_in_ispyb,
     ):
+        mock_store_in_ispyb.return_value.begin_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200), data_collection_group_id=0
+        )
+        mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
+            data_collection_ids=(100, 200),
+            data_collection_group_id=0,
+            grid_ids=(0, 0),
+        )
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
-    return (nexus_callback, ispyb_callback)
+        yield (nexus_callback, ispyb_callback)
 
 
 @pytest.fixture
-def RE_with_subs(
-    RE: RunEngine,
+def run_engine_with_subs(
+    run_engine: RunEngine,
     mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
 ):
     for cb in list(mock_subscriptions):
-        RE.subscribe(cb)
-    yield RE, mock_subscriptions
+        run_engine.subscribe(cb)
+    yield run_engine, mock_subscriptions
 
 
 @pytest.fixture
@@ -261,13 +250,6 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloTrigger)
-    if assign_run_end:
-        mock.run_end = assign_run_end
-    return mock
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
@@ -329,7 +311,10 @@ def run_generic_ispyb_handler_setup(
 @pytest.fixture
 async def zebra_fast_grid_scan():
     zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
-    set_mock_value(zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
+    set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
+    set_mock_value(zebra_fast_grid_scan.z_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.position_counter, 0)
     return zebra_fast_grid_scan
 
@@ -338,7 +323,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    RE: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -396,7 +380,7 @@ def dummy_rotation_data_collection_group_info():
 
 @pytest.fixture
 def beamline_specific(
-    zebra_fast_grid_scan: ZebraFastGridScan,
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan=MagicMock(),
@@ -430,7 +414,7 @@ async def grid_detect_xrc_devices(
     ophyd_pin_tip_detection: PinTipDetection,
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
-    fast_grid_scan: ZebraFastGridScan,
+    fast_grid_scan: ZebraFastGridScanThreeD,
     s4_slit_gaps: S4SlitGaps,
     flux: Flux,
     zebra,
@@ -470,3 +454,68 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     composite.panda = MagicMock(spec=HDFPanda)
     composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
     return composite
+
+
+# See https://github.com/DiamondLightSource/dodal/issues/1455
+@pytest.fixture
+def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
+    with init_devices(mock=True):
+        name = StaticFilenameProvider("jf_out")
+        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        detector = CommissioningJungfrau("", "", path)
+    set_mock_value(detector._writer.writer_ready, 1)
+
+    return detector
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
+
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        with patch_all_motors(beamstop):
+            yield devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin(connect_immediately=True, mock=True)

@@ -1,4 +1,5 @@
 # from collections.abc import Sequence
+from datetime import datetime
 from typing import Literal
 
 import bluesky.plan_stubs as bps
@@ -6,6 +7,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
+from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.aperture import Aperture
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -13,22 +15,24 @@ from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dcm import DCM
 from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.pilatus_metadata import PilatusMetadata
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i24.serial.dcid import DCID
+from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
+    run_plan_in_wrapper as run_ex_collection_plan,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     MappingType,
     PumpProbeSetting,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Collect_py3v1 import (
-    run_plan_in_wrapper,
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1 import (
+    run_plan_in_wrapper as run_ft_collection_plan,
 )
-from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_Chip_Manager_py3v1 import (
+from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_manager_py3v1 import (
     upload_chip_map_to_geobrick,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_moveonclick import (
@@ -39,17 +43,18 @@ from mx_bluesky.beamlines.i24.serial.log import (
     _read_visit_directory_from_file,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import (
-    DetectorName,
     FixedTargetParameters,
     get_chip_format,
+)
+from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
+    ExtruderParameters,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caput
-from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger, Pilatus
+from mx_bluesky.beamlines.i24.serial.setup_beamline.pv_abstract import Eiger
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
     _move_detector_stage,
-    get_detector_type,
 )
 
 
@@ -94,23 +99,22 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)  # type: ignore
 
 
-# See https://github.com/DiamondLightSource/mx-bluesky/issues/853
-@bpp.run_decorator()
-def gui_sleep(sec: int) -> MsgGenerator:
-    for _ in range(sec):
-        yield from bps.sleep(1)
-
-
 @bpp.run_decorator()
 def gui_move_detector(
-    det: Literal["eiger", "pilatus"],
+    det: Literal["eiger"],
     detector_stage: YZStage = inject("detector_motion"),
 ) -> MsgGenerator:
-    det_y_target = Eiger.det_y_target if det == "eiger" else Pilatus.det_y_target
+    det_y_target = Eiger.det_y_target
     yield from _move_detector_stage(detector_stage, det_y_target)
     # Make the output readable
     SSX_LOGGER.debug(f"Detector move done, resetting general PV to {det}")
-    caput(pv.me14e_gp101, det)
+    caput(pv.ioc13_gp101, det)
+
+
+@bpp.run_decorator()
+def gui_set_fiducial_0(pmac: PMAC = inject("PMAC")) -> MsgGenerator:
+    SSX_LOGGER.debug("Set fiducial 0 to home string")
+    yield from bps.trigger(pmac.home, wait=True)
 
 
 @bpp.run_decorator()
@@ -138,11 +142,10 @@ def gui_run_chip_collection(
     shutter: HutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    beam_center_pilatus: DetectorBeamCenter = inject("pilatus_bc"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
-    pilatus_metadata: PilatusMetadata = inject("pilatus_meta"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
-    """Set the parameter model for the data collection.
+    """Set the parameter model and run the data collection.
 
     Args:
         sub_dir (str): subdirectory of the visit to write data in.
@@ -170,7 +173,9 @@ def gui_run_chip_collection(
     """
     # NOTE still a work in progress, adding to it as the ui grows
     # See progression of https://github.com/DiamondLightSource/mx-daq-ui/issues/3
-    det_type = yield from get_detector_type(detector_stage)
+    # get_detector_type temporarily disabled as pilatus went away, and for now only eiger in use
+    # for this.
+    # det_type = yield from get_detector_type(detector_stage)
     _format = chip_format if ChipType[chip_type] is ChipType.Custom else None
     chip_params = get_chip_format(ChipType[chip_type], _format)
     if ChipType[chip_type] in [ChipType.Oxford, ChipType.OxfordInner]:
@@ -183,13 +188,16 @@ def gui_run_chip_collection(
         mapping = MappingType.NoMap
         chip_map = []
 
+    # NOTE. For now setting attenuation here in place of the edms doing a caput
+    yield from bps.abs_set(attenuator, transmission, wait=True)
+
     params = {
         "visit": _read_visit_directory_from_file().as_posix(),  # noqa
         "directory": sub_dir,
         "filename": chip_name,
         "exposure_time_s": exp_time,
         "detector_distance_mm": det_dist,
-        "detector_name": str(det_type),
+        "detector_name": "eiger",
         "num_exposures": n_shots,
         "transmission": transmission,
         "chip": chip_params,
@@ -210,18 +218,14 @@ def gui_run_chip_collection(
     if parameters.chip_map:
         yield from upload_chip_map_to_geobrick(pmac, parameters.chip_map)
 
-    beam_center_device = (
-        beam_center_eiger
-        if parameters.detector_name is DetectorName.EIGER
-        else beam_center_pilatus
-    )
+    beam_center_device = beam_center_eiger
     SSX_LOGGER.info("Beam center device ready")
 
     # DCID instance - do not create yet
     dcid = DCID(emit_errors=False, expt_params=parameters)  # noqa
     SSX_LOGGER.info("DCID created")
 
-    yield from run_plan_in_wrapper(
+    yield from run_ft_collection_plan(
         zebra,
         pmac,
         aperture,
@@ -234,5 +238,79 @@ def gui_run_chip_collection(
         beam_center_device,
         parameters,
         dcid,
-        pilatus_metadata,
+    )
+
+
+@bpp.run_decorator()
+def gui_run_extruder_collection(
+    sub_dir: str,
+    file_name: str,
+    exp_time: float,
+    det_dist: float,
+    transmission: float,
+    num_images: int,
+    pump_probe: bool,
+    laser_dwell: float,
+    laser_delay: float,
+    zebra: Zebra = inject("zebra"),
+    aperture: Aperture = inject("aperture"),
+    backlight: DualBacklight = inject("backlight"),
+    beamstop: Beamstop = inject("beamstop"),
+    detector_stage: YZStage = inject("detector_motion"),
+    shutter: HutchShutter = inject("shutter"),
+    dcm: DCM = inject("dcm"),
+    mirrors: FocusMirrorsMode = inject("focus_mirrors"),
+    attenuator: EnumFilterAttenuator = inject("attenuator"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+):
+    """Set parameter model for extruder and run the data collection.
+    Args:
+        sub_dir (str): subdirectory of the visit to write data in.
+        file_name (str): filename to be used for the collection.
+        exp_time (float): exposure time of each image, in s.
+        det_dist (float): sample-detector distance, in mm.
+        transmission (float): requested beam intensity transmission, expressed as
+            a fraction, e.g. 0.3.
+        num_images (int): number of images be collected.
+        pump_probe (bool): pump probe setting.
+        laser_dwell (float): laser exposure time for pump probe collections, in s.
+        laser_delay (float): delay between laser exposure and collection, in s.
+    """
+    # NOTE. For now setting attenuation here in place of the edms doing a caput
+    yield from bps.abs_set(attenuator, transmission, wait=True)
+    start_time = datetime.now()
+    SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
+
+    params = {
+        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
+        "directory": sub_dir,
+        "filename": file_name,
+        "exposure_time_s": exp_time,
+        "detector_distance_mm": det_dist,
+        "detector_name": "eiger",
+        "transmission": transmission,
+        "num_images": num_images,
+        "pump_status": pump_probe,
+        "laser_dwell_s": laser_dwell,
+        "laser_delay_s": laser_delay,
+    }
+    parameters = ExtruderParameters(**params)
+    # Create collection directory
+    parameters.collection_directory.mkdir(parents=True, exist_ok=True)
+    # DCID - not generated yet
+    dcid = DCID(emit_errors=False, expt_params=parameters)
+
+    yield from run_ex_collection_plan(
+        zebra,
+        aperture,
+        backlight,
+        beamstop,
+        detector_stage,
+        shutter,
+        dcm,
+        mirrors,
+        beam_center_eiger,
+        parameters,
+        dcid,
+        start_time,
     )

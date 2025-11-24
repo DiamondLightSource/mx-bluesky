@@ -1,21 +1,27 @@
 import io
 import json
+import logging
 import pickle
 from datetime import timedelta
+from logging import StreamHandler
 from typing import TypedDict
 
 import numpy as np
 import zmq
 from dodal.devices.i04.constants import RedisConstants
+from dodal.devices.i04.murko_results import RESULTS_COMPLETE_MESSAGE, MurkoResult
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
 
+from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
+    FORWARDING_COMPLETE_MESSAGE,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 MURKO_ADDRESS = "tcp://i04-murko-prod.diamond.ac.uk:8008"
 
-MurkoResult = dict
+
 FullMurkoResults = dict[str, list[MurkoResult]]
 
 
@@ -96,6 +102,7 @@ class BatchMurkoForwarder:
             ],
             "prefix": uuids,
         }
+
         results = send_to_murko_and_get_results(request_arguments)
         results_with_uuids = _correlate_results_to_uuids(request_arguments, results)
         self._send_murko_results_to_redis(sample_id, results_with_uuids)
@@ -110,6 +117,12 @@ class BatchMurkoForwarder:
             self.redis_client.hset(redis_key, uuid, str(pickle.dumps(result)))
             self.redis_client.expire(redis_key, timedelta(days=7))
         self.redis_client.publish("murko-results", pickle.dumps(results))
+
+    def send_stop_message_to_redis(self):
+        LOGGER.info(f"Publishing results complete message: {RESULTS_COMPLETE_MESSAGE}")
+        self.redis_client.publish(
+            "murko-results", pickle.dumps(RESULTS_COMPLETE_MESSAGE)
+        )
 
     def add(self, sample_id: str, uuid: str, image: NDArray):
         """Add an image to the batch to send to murko."""
@@ -158,6 +171,13 @@ class RedisListener:
         if message and message["type"] == "message":
             data = json.loads(message["data"])
             LOGGER.info(f"Received from redis: {data}")
+            if data == FORWARDING_COMPLETE_MESSAGE:
+                LOGGER.info(
+                    f"Received forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"
+                )
+                self.forwarder.flush()
+                self.forwarder.send_stop_message_to_redis()
+                return
             uuid = data["uuid"]
             sample_id = data["sample_id"]
 
@@ -187,6 +207,10 @@ class RedisListener:
 
 
 def main():
+    stream_handler = StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    LOGGER.addHandler(stream_handler)
+
     client = RedisListener()
     client.listen_for_image_data_forever()
 
