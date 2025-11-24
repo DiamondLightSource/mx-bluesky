@@ -16,7 +16,7 @@ In general, the ordering flow of when callbacks are triggered is controlled by e
 Rotation Scans
 ---------------------
 
-Rotation scans are generalised so that multiple can be done at once. The plan will create one hdf file for all rotations but then N nexus files, N ispyb depositions and triggers zocalo N times.
+Rotation scans are generalised so that multiple scans can be done at once. The plan will create one hdf file for all rotations but then N nexus files, N ispyb depositions and triggers zocalo N times.
 
 This is does by starting 1+2*N different runs:
 
