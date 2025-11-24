@@ -258,10 +258,47 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
 # mock out the different transmissions and max vals and make sure you reach what's expected.
 
 
-# mock function transmission optimisation
-def get_max_pixel_value_from_transmission(transmission) -> float:
-    return transmission + 10
+# # mock function transmission optimisation
+# @pytest.fixture
+# def get_max_pixel_value_from_transmission(transmission) -> float:
+#     return transmission + 10
+
+# @pytest.fixture
+# def get_max_pixel_value_from_transmission(max_pixel: MaxPixel) :
+#     max_pixel.max_pixel_val.read = AsyncMock([100, 3, 2], [200, 3, 90], [255/2, 90, 80])
+
+# async def test_optimise_oav_transmission_binary_search(
+#     get_max_pixel_value_from_transmission, run_engine: RunEngine, max_pixel: MaxPixel, attenuator: BinaryFilterAttenuator
+# ):
+#     pass
+# ----------------------------
+
+# # if target is set to 50, then we are expecting optimal transmission to be 40
+# def mid_logic(upper, lower):
+
+# @patch(
+#     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel_sat", 255
+# )
+# @patch(
+#     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel",
+#     get_max_pixel_value_from_transmission(),
+# )
+# def test_optimise_oav_transmission_binary_search(
+#     get_max_pixel_value_from_transmission, run_engine: RunEngine, max_pixel: MaxPixel, attenuator: BinaryFilterAttenuator
+# ):
+#     upper_bound = 100
+#     lower_bound = 0
+#     frac_of_max = 0.5
+#     run_engine(optimise_oav_transmission_binary_search(upper_bound, lower_bound, max_pixel = max_pixel, attenuator=attenuator))
+#     max_pixel_values = [50, 75, 87.5]
+
+#     async def get_max_pixel_val():
+#         upper = 50
+#         for i in range(5):
+#             yield
+
+#     max_pixel.max_pixel_val.read = AsyncMock(side_effect=get_max_pixel_val)
+#     set_mock_value()
 
 
-# def test_optimise_oav_transmission_binary_search():
 #     with patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.")
