@@ -16,10 +16,8 @@ from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
-from dodal.testing import patch_all_motors
-from ophyd_async.core import Signal, init_devices
+from ophyd_async.core import Signal, init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     CryoStreamError,
@@ -60,11 +58,7 @@ async def default_devices(
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
 
-    with (
-        patch_all_motors(scintillator),
-        patch_all_motors(collimation_table),
-        patch("dodal.devices.hutch_shutter.TEST_MODE", True),
-    ):
+    with patch("dodal.devices.hutch_shutter.TEST_MODE", True):
         devices = UDCDefaultDevices(
             collimation_table=collimation_table,
             cryostream=cryo,

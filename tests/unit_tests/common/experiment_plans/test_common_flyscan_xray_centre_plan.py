@@ -22,7 +22,7 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,

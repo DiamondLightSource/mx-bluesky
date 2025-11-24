@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky import Msg, RunEngine
@@ -11,7 +11,7 @@ from dodal.devices.ipin import IPinGain
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.scintillator import InOut
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
-from ophyd_async.testing import set_mock_value, set_mock_values
+from ophyd_async.core import set_mock_value, set_mock_values
 
 from mx_bluesky.common.experiment_plans.beamstop_check import (
     _FEEDBACK_TIMEOUT_S,
@@ -241,6 +241,7 @@ def test_beamstop_check_ensures_detector_shutter_closed(
 @patch(
     "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
+@patch("mx_bluesky.common.experiment_plans.beamstop_check.bps.sleep", new=MagicMock())
 def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_check(
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
@@ -287,6 +288,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
 @patch(
     "mx_bluesky.common.experiment_plans.beamstop_check._post_beamstop_out_check_actions"
 )
+@patch("mx_bluesky.common.experiment_plans.beamstop_check.bps.sleep", new=MagicMock())
 def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
