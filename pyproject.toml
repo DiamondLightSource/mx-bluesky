@@ -113,7 +113,6 @@ version_file = "src/mx_bluesky/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "strict"
-# Issue to remove some of these exceptions: https://github.com/DiamondLightSource/mx-bluesky/issues/1403
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownLambdaType = false
@@ -152,8 +151,6 @@ filterwarnings = [
     "ignore:(.*)unclosed file(.*)name='(.*)dodal.log'(.*):ResourceWarning",
     "ignore:(.*)unclosed <socket(.*):ResourceWarning",
     "ignore:(.*)unclosed event loop(.*):ResourceWarning",
-    # Ignore deprecation warning from python-workflows https://github.com/DiamondLightSource/python-workflows/issues/180
-    "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
     #Remove when we drop python 3.11
@@ -215,7 +212,7 @@ setenv =
     ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
     ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
 commands =
-    pytest -m system_test --timeout=60 tests/system_tests
+    pytest -m system_test --timeout=60 tests/system_tests {posargs}
 """
 
 [tool.ruff]
