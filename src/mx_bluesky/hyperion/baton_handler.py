@@ -15,10 +15,6 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
-from mx_bluesky.common.experiment_plans.inner_plans.udc_default_state import (
-    UDCDefaultDevices,
-    move_to_udc_default_state,
-)
 from mx_bluesky.common.external_interaction.alerting import (
     AlertService,
     get_alerting_service,
@@ -28,10 +24,15 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
+from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
     load_centre_collect_full,
+)
+from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
+    UDCDefaultDevices,
+    move_to_udc_default_state,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
@@ -100,7 +101,11 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             runner: The runner
         """
         _raise_udc_start_alert(get_alerting_service())
-        yield from _move_to_udc_default_state(context)
+        yield from bpp.contingency_wrapper(
+            _move_to_udc_default_state(context),
+            except_plan=trap_default_state_exception,
+            auto_raise=False,
+        )
 
         # re-fetch the baton because the device has been reinstantiated
         baton = _get_baton(context)
@@ -121,8 +126,20 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
         _raise_baton_released_alert(get_alerting_service(), previous_requested_user)
 
+    def trap_default_state_exception(e: Exception):
+        yield from bps.null()
+        if isinstance(e, BeamlineCheckFailureError):
+            LOGGER.warning("Caught default state check failure:", exc_info=e)
+            raise PlanError("Caught default state check failure") from e
+        else:
+            LOGGER.warning("Caught unexpected exception", exc_info=e)
+            raise PlanError("Unexpected exception from UDC Default State plan") from e
+
     def collect_then_release() -> MsgGenerator:
-        yield from bpp.contingency_wrapper(collect(), final_plan=release_baton)
+        yield from bpp.contingency_wrapper(
+            collect(),
+            final_plan=release_baton,
+        )
 
     context.run_engine(acquire_baton())
     _initialise_udc(context, runner.is_dev_mode)
