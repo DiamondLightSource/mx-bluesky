@@ -12,6 +12,7 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
@@ -158,6 +159,8 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -407,6 +410,7 @@ async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
+    beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -429,6 +433,7 @@ async def grid_detect_xrc_devices(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
