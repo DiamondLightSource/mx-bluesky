@@ -28,18 +28,15 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
-from dodal.testing import patch_all_motors
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -515,8 +512,7 @@ async def beamstop_check_devices(
         )
         sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
 
-        with patch_all_motors(beamstop):
-            yield devices
+        return devices
     finally:
         run_engine.register_command("sleep", run_engine._sleep)
 

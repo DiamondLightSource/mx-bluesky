@@ -11,7 +11,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 from ophyd.status import Status
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     unpause_xbpm_feedback_and_set_transmission_to_1,
