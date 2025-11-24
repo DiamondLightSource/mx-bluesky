@@ -33,13 +33,15 @@ from dodal.devices.aperturescatterguard import (
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.i03 import Beamstop, BeamstopPositions
+from dodal.devices.i03.beamsize import Beamsize
 from dodal.devices.i03.dcm import DCM
 from dodal.devices.i04.transfocator import Transfocator
-from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -793,6 +795,11 @@ async def aperture_scatterguard():
 
 
 @pytest.fixture()
+async def beamsize(aperture_scatterguard: ApertureScatterguard):
+    return Beamsize(aperture_scatterguard, name="beamsize")
+
+
+@pytest.fixture()
 def test_config_files():
     return {
         "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
@@ -848,12 +855,14 @@ def fake_create_rotation_devices(
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
     thawer: Thawer,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     undulator.set = MagicMock(return_value=NullStatus())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         dcm=dcm,
         detector_motion=detector_motion,
@@ -1418,6 +1427,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1530,6 +1541,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
                 "eiger_bit_depth": "16",
+                "beamsize-x_um": 50.0,
+                "beamsize-y_um": 20.0,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,

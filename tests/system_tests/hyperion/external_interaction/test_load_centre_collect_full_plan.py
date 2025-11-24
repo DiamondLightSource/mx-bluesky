@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -128,12 +129,14 @@ def load_centre_collect_composite(
     webcam,
     lower_gonio,
     baton,
+    beamsize: BeamsizeBase,
 ):
     composite = LoadCentreCollectComposite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
         baton=baton,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,

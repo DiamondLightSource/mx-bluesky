@@ -10,6 +10,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -75,6 +76,7 @@ class RotationScanComposite(OavSnapshotComposite):
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamsize: BeamsizeBase
     beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
@@ -304,6 +306,7 @@ def rotation_scan_plan(
             composite.flux,
             composite.dcm,
             composite.eiger,
+            composite.beamsize,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
