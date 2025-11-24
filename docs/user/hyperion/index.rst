@@ -46,7 +46,6 @@ to a user is:
 For a more detailed breakdown of the operation, it may be helpful to browse the  `Code Map`_
 
 .. _Code Map: ../../developer/code-map 
-.. _Developer Guide: ../../developer/hyperion/deploying-hyperion
 .. _configuration: ./configuration
 
 .. toctree::
