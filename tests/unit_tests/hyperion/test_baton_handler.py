@@ -27,7 +27,11 @@ from mx_bluesky.common.utils.context import (
     device_composite_from_context,
     find_device_in_context,
 )
-from mx_bluesky.common.utils.exceptions import SampleError, WarningError
+from mx_bluesky.common.utils.exceptions import (
+    BeamlineCheckFailureError,
+    SampleError,
+    WarningError,
+)
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
@@ -354,14 +358,21 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     await _assert_baton_released(baton)
 
 
+def raise_else_return(value):
+    if isinstance(value, Exception):
+        raise value
+    else:
+        return value
+
+
 @patch("mx_bluesky.hyperion.baton_handler._move_to_udc_default_state")
 async def test_when_exception_raised_in_default_state_then_baton_released(
     default_state: MagicMock,
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
 ):
-    default_state.side_effect = [ValueError()]
-    with pytest.raises(ValueError):
+    default_state.return_value = map(raise_else_return, [ValueError()])
+    with pytest.raises(PlanError, check=lambda e: isinstance(e.__cause__, ValueError)):
         run_udc_when_requested(bluesky_context, udc_runner)
 
     baton = find_device_in_context(bluesky_context, "baton", Baton)
@@ -969,3 +980,21 @@ def test_detector_shutter_closed_when_baton_requested_away_from_hyperion(
         bluesky_context, "detector_motion", DetectorMotion
     )
     get_mock_put(detector_motion.shutter).assert_called_once()
+
+
+@patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state")
+def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
+    mock_move_to_udc_default_state,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    mock_move_to_udc_default_state.side_effect = BeamlineCheckFailureError(
+        "Simulated default state check failed."
+    )
+    with pytest.raises(PlanError):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    baton: Baton = bluesky_context.find_device("baton")  # type: ignore
+    mock_move_to_udc_default_state.assert_called_once()
+    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
+    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)

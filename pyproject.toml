@@ -48,7 +48,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.13.7",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@1ad99e8ef0f07f1992994d164c907c052f791767",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 
@@ -156,9 +156,6 @@ filterwarnings = [
     "ignore:.*pkg_resources.*:DeprecationWarning",
     # Ignore warning about deprecated throw() call https://github.com/bluesky/bluesky/issues/1817
     "ignore:.*signature of throw\\(\\) is deprecated.*:DeprecationWarning",
-    # Ignore warning about deprecations in python-workflows encountered during system tests
-    # https://github.com/DiamondLightSource/python-workflows/issues/188
-    "ignore:.*`Field` should not be instantiated.*:marshmallow.warnings.ChangedInMarshmallow4Warning",
     #Remove when we drop python 3.11
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
     # epicscorelibs requires setuptools >= 70.1
@@ -218,7 +215,7 @@ setenv =
     ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
     ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
 commands =
-    pytest -m system_test --timeout=60 tests/system_tests
+    pytest -m system_test --timeout=60 tests/system_tests {posargs}
 """
 
 [tool.ruff]
