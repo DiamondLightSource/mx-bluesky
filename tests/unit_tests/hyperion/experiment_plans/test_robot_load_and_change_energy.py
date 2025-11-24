@@ -11,7 +11,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.thawer import OnOff
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,

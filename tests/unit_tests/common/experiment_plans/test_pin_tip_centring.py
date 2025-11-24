@@ -13,8 +13,8 @@ from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundError
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
+from ophyd_async.core import get_mock_put, set_mock_value
 from ophyd_async.epics.motor import MotorLimitsError
-from ophyd_async.testing import get_mock_put, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.gonio import (
     move_gonio_warn_on_out_of_range,
@@ -62,16 +62,16 @@ def smargon_with_limits(smargon: Smargon) -> Smargon:
     new=MagicMock(),
 )
 async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
-    smargon: Smargon, oav: OAV, run_engine: RunEngine, mock_pin_tip: PinTipDetection
+    smargon_with_limits: Smargon, run_engine: RunEngine, mock_pin_tip: PinTipDetection
 ):
     set_mock_value(mock_pin_tip.triggered_tip, np.array([100, 200]))
 
     mock_pin_tip.trigger = MagicMock(return_value=NullStatus())
 
-    result = run_engine(move_pin_into_view(mock_pin_tip, smargon))
+    result = run_engine(move_pin_into_view(mock_pin_tip, smargon_with_limits))
 
     mock_pin_tip.trigger.assert_called_once()
-    assert await smargon.x.user_setpoint.get_value() == 0
+    assert await smargon_with_limits.x.user_setpoint.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
     assert all(type(_) is int for _ in result.plan_result)
@@ -82,7 +82,7 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
     new=MagicMock(),
 )
 async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
-    smargon: Smargon, oav: OAV, run_engine: RunEngine, mock_pin_tip: PinTipDetection
+    smargon_with_limits: Smargon, run_engine: RunEngine, mock_pin_tip: PinTipDetection
 ):
     set_mock_value(mock_pin_tip.validity_timeout, 0.015)
 
@@ -92,14 +92,14 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
         )
         return f(*args, **kwargs)
 
-    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint = get_mock_put(smargon_with_limits.x.user_setpoint)
     x_user_setpoint.side_effect = partial(
         set_pin_tip_when_x_moved, x_user_setpoint.side_effect
     )
 
-    result = run_engine(move_pin_into_view(mock_pin_tip, smargon))
+    result = run_engine(move_pin_into_view(mock_pin_tip, smargon_with_limits))
 
-    assert await smargon.x.user_setpoint.get_value() == DEFAULT_STEP_SIZE
+    assert await smargon_with_limits.x.user_setpoint.get_value() == DEFAULT_STEP_SIZE
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
@@ -113,8 +113,7 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
     new=MagicMock(),
 )
 async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_direction_then_tip_returned(
-    smargon: Smargon,
-    oav: OAV,
+    smargon_with_limits: Smargon,
     run_engine: RunEngine,
     mock_pin_tip: PinTipDetection,
     expected_step_size: float,
@@ -140,12 +139,14 @@ async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_directi
 
         return f(*args, **kwargs)
 
-    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint = get_mock_put(smargon_with_limits.x.user_setpoint)
     x_user_setpoint.side_effect = partial(
         set_pin_tip_when_x_moved, x_user_setpoint.side_effect
     )
 
-    result = run_engine(move_pin_into_view(mock_pin_tip, smargon, max_steps=2))
+    result = run_engine(
+        move_pin_into_view(mock_pin_tip, smargon_with_limits, max_steps=2)
+    )
 
     x_user_setpoint.assert_has_calls(
         [call(expected_step_size, wait=True), call(expected_step_size * 2, wait=True)]
@@ -160,7 +161,7 @@ async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_directi
     new=MagicMock(),
 )
 async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
-    smargon: Smargon, oav: OAV, run_engine: RunEngine, mock_pin_tip: PinTipDetection
+    smargon_with_limits: Smargon, run_engine: RunEngine, mock_pin_tip: PinTipDetection
 ):
     mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
         0, 100, *FAKE_EDGE_ARRAYS
@@ -173,14 +174,14 @@ async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_s
         )
         return f(*args, **kwargs)
 
-    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint = get_mock_put(smargon_with_limits.x.user_setpoint)
     x_user_setpoint.side_effect = partial(
         set_pin_tip_when_x_moved, x_user_setpoint.side_effect
     )
 
-    result = run_engine(move_pin_into_view(mock_pin_tip, smargon))
+    result = run_engine(move_pin_into_view(mock_pin_tip, smargon_with_limits))
 
-    assert await smargon.x.user_setpoint.get_value() == -DEFAULT_STEP_SIZE
+    assert await smargon_with_limits.x.user_setpoint.get_value() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)  # type: ignore
 
 
@@ -233,7 +234,6 @@ async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_trigger_and_return_pin_tip: MagicMock,
     smargon_with_limits: Smargon,
-    oav: OAV,
     run_engine: RunEngine,
     pin_tip: PinTipDetection,
 ):
@@ -259,15 +259,15 @@ async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     new=MagicMock(),
 )
 async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
-    smargon: Smargon, oav: OAV, run_engine: RunEngine, pin_tip: PinTipDetection
+    smargon_with_limits: Smargon, run_engine: RunEngine, pin_tip: PinTipDetection
 ):
     set_mock_value(pin_tip.triggered_tip, pin_tip.INVALID_POSITION)
     set_mock_value(pin_tip.validity_timeout, 0.01)
 
     with pytest.raises(WarningError):
-        run_engine(move_pin_into_view(pin_tip, smargon))
+        run_engine(move_pin_into_view(pin_tip, smargon_with_limits))
 
-    assert await smargon.x.user_setpoint.get_value() == 1
+    assert await smargon_with_limits.x.user_setpoint.get_value() == 1
 
 
 @pytest.mark.parametrize(

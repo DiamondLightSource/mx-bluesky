@@ -60,7 +60,6 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
-from dodal.testing import patch_all_motors, patch_motor
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd.sim import NullStatus
@@ -70,12 +69,13 @@ from ophyd_async.core import (
     DeviceVector,
     Reference,
     completed_status,
+    get_mock_put,
     init_devices,
+    set_mock_value,
 )
 from ophyd_async.epics.core import epics_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
-from ophyd_async.testing import get_mock_put, set_mock_value
 from PIL import Image
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
@@ -412,19 +412,14 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon = i03.smargon(connect_immediately=True, mock=True)
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
-
-    with patch_all_motors(smargon):
-        set_mock_value(smargon.omega.max_velocity, 1)
-        yield smargon
+    yield smargon
     clear_devices()
 
 
 @pytest.fixture
 def aithre_gonio():
     aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
-
-    with patch_all_motors(aithre_gonio):
-        yield aithre_gonio
+    return aithre_gonio
 
 
 @pytest.fixture
@@ -483,16 +478,13 @@ def fast_grid_scan():
 
 @pytest.fixture
 def detector_motion():
-    det = i03.detector_motion(connect_immediately=True, mock=True)
-    with patch_all_motors(det):
-        yield det
+    return i03.detector_motion(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
 def undulator(baton):
     undulator = i03.undulator(connect_immediately=True, mock=True)
-    with patch_all_motors(undulator):
-        yield undulator
+    return undulator
 
 
 @pytest.fixture
@@ -578,7 +570,6 @@ def scintillator(aperture_scatterguard):
             beamline_parameters=MagicMock(),
             name="scintillator",
         )
-    patch_all_motors(scintillator)
     return scintillator
 
 
@@ -606,7 +597,6 @@ def beamstop_phase1(
         return_value=beamline_parameters,
     ):
         beamstop = i03.beamstop(connect_immediately=True, mock=True)
-        patch_all_motors(beamstop)
 
         set_mock_value(beamstop.x_mm.user_readback, 1.52)
         set_mock_value(beamstop.y_mm.user_readback, 44.78)
@@ -639,7 +629,6 @@ def xbpm_feedback(
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
-    patch_all_motors(dcm)
     set_mock_value(dcm.energy_in_keV.user_readback, 12.7)
     set_mock_value(dcm.xtal_1.pitch_in_mrad.user_readback, 1)
     set_mock_value(dcm.crystal_metadata_d_spacing_a, 3.13475)
@@ -660,8 +649,7 @@ def vfm():
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
-    with patch_all_motors(vfm):
-        yield vfm
+    return vfm
 
 
 @pytest.fixture
@@ -677,8 +665,7 @@ def lower_gonio(
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.x.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.y.name)
     sim_run_engine.add_handler("locate", locate_gonio, lower_gonio.z.name)
-    with patch_all_motors(lower_gonio):
-        yield lower_gonio
+    return lower_gonio
 
 
 @pytest.fixture
@@ -784,14 +771,12 @@ async def aperture_scatterguard():
         ),
     ):
         ap_sg = i03.aperture_scatterguard(connect_immediately=True, mock=True)
-    with (
-        patch_all_motors(ap_sg),
-        patch_motor(ap_sg.aperture.z, 2),
-    ):
-        await ap_sg.selected_aperture.set(ApertureValue.SMALL)
 
-        set_mock_value(ap_sg.aperture.small, 1)
-        yield ap_sg
+    await ap_sg.aperture.z.set(2)
+    await ap_sg.selected_aperture.set(ApertureValue.SMALL)
+
+    set_mock_value(ap_sg.aperture.small, 1)
+    return ap_sg
 
 
 @pytest.fixture()
