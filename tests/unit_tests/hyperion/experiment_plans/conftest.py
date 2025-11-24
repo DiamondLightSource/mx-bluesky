@@ -6,6 +6,7 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
 from event_model import Event
@@ -103,6 +104,8 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -247,6 +250,7 @@ def robot_load_composite(
     zebra,
     panda,
     panda_fast_grid_scan,
+    beamsize: BeamsizeBase,
 ) -> RobotLoadThenCentreComposite:
     set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
@@ -257,6 +261,7 @@ def robot_load_composite(
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,

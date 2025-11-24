@@ -120,7 +120,6 @@ def test_robot_load_and_snapshots_triggers_alert_and_resets_state_between_plans(
                         MagicMock(),
                         MagicMock(),
                         1,
-                        2,
                         None,
                     ),
                 )

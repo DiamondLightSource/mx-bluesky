@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
@@ -127,12 +128,14 @@ def load_centre_collect_composite(
     webcam,
     lower_gonio,
     baton,
+    beamsize: BeamsizeBase,
 ):
     composite = LoadCentreCollectComposite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,
         baton=baton,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
@@ -193,6 +196,7 @@ GRID_DC_1_EXPECTED_VALUES = {
     "numberofpasses": 1,
     "overlap": 0,
     "omegastart": 0,
+    "chistart": 30,
     "startimagenumber": 1,
     "wavelength": 1.11697,
     "xbeam": 75.6027,
@@ -225,6 +229,7 @@ GRID_DC_2_EXPECTED_VALUES = GRID_DC_1_EXPECTED_VALUES | {
 ROTATION_DC_EXPECTED_VALUES = {
     "axisStart": 10,
     "axisEnd": -350,
+    "chiStart": 0,
     # "chiStart": 0, mx-bluesky 325
     "wavelength": 1.11697,
     "beamSizeAtSampleX": 0.02,
@@ -247,6 +252,7 @@ ROTATION_DC_EXPECTED_VALUES = {
 ROTATION_DC_2_EXPECTED_VALUES = ROTATION_DC_EXPECTED_VALUES | {
     "axisStart": -350,
     "axisEnd": 10,
+    "chiStart": 30,
     "xtalSnapshotFullPath1": "regex:{tmp_data}/123457/snapshots/\\d{"
     "8}_oav_snapshot_0_with_beam_centre\\.png",
     "xtalSnapshotFullPath2": "regex:{tmp_data}/123457/snapshots/\\d{"

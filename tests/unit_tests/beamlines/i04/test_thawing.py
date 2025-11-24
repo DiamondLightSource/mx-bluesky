@@ -129,7 +129,7 @@ def _do_thaw_and_confirm_cleanup(
     set_mock_value(smargon.omega.velocity, initial_velocity := 10)
     smargon.omega.set = move_mock
     do_thaw_func()
-    last_thawer_call = get_mock_put(thawer.control).call_args_list[-1]
+    last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
     assert last_thawer_call == call(OnOff.OFF, wait=ANY)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
     assert last_velocity_call == call(initial_velocity, wait=ANY)
