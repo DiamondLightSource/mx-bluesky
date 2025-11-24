@@ -847,6 +847,7 @@ def fake_create_rotation_devices(
     oav: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     undulator.set = MagicMock(return_value=NullStatus())
@@ -868,6 +869,7 @@ def fake_create_rotation_devices(
         oav=oav,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )
 
 
