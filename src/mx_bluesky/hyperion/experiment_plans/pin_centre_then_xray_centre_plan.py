@@ -72,6 +72,7 @@ def pin_centre_then_flyscan_plan(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
+    use_fastcs_eiger: bool = False,
 ):
     """Plan that performs a pin tip centre followed by a flyscan to determine the centres of interest"""
 
@@ -108,6 +109,7 @@ def pin_centre_then_flyscan_plan(
             oav_params,
             HyperionSpecifiedThreeDGridScan,
             construct_hyperion_specific_features,
+            use_fastcs_eiger,
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
