@@ -9,7 +9,7 @@ from pydantic import TypeAdapter
 
 from mx_bluesky.common.parameters.constants import (
     GDA_DOMAIN_PROPERTIES_PATH,
-    FeatureSetting,
+    FeatureSettings,
     FeatureSettingSources,
     OavConstants,
 )
@@ -19,7 +19,7 @@ FEATURE_FLAG_CACHE_LENGTH_S = 60 * 5
 # Used by the config server when refreshing its cache
 _JSON_CONFIG_PATHS = [OavConstants.OAV_CONFIG_JSON]
 
-T = TypeVar("T", bound=FeatureSetting)
+T = TypeVar("T", bound=FeatureSettings)
 
 
 class MXConfigClient(ConfigServer, Generic[T]):

@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i04.beamsize import Beamsize
 from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
@@ -33,7 +34,11 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
+from pydantic import BaseModel
 
+from mx_bluesky.beamlines.i04.external_interaction.config_server import (
+    get_i04_config_client,
+)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -58,6 +63,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -67,14 +73,28 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridCommon,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import (
+    fix_transmission_and_exposure_time_for_current_wavelength,
+)
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
+
+
+class I04AutoXrcParams(BaseModel):
+    sample_id: int
+    file_name: str
+    visit: str
+    detector_distance_mm: float
+    storage_directory: str
 
 
 def _change_beamsize(
@@ -92,12 +112,13 @@ def _change_beamsize(
 
 
 # See https://github.com/DiamondLightSource/blueapi/issues/506 for using device composites
-def i04_grid_detect_then_xray_centre(
-    parameters: GridCommon,
+def i04_default_grid_detect_and_xray_centre(
+    parameters: I04AutoXrcParams,
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
     backlight: Backlight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
+    beamsize: Beamsize = inject("beamsize"),
     dcm: DoubleCrystalMonochromator = inject("dcm"),
     zebra_fast_grid_scan: ZebraFastGridScanThreeD = inject("zebra_fast_grid_scan"),
     flux: Flux = inject("flux"),
@@ -125,7 +146,6 @@ def i04_grid_detect_then_xray_centre(
     - Changes the aperture to match the beam size to the crystal size
     - Moves the sample to the crystal centre of mass
 
-
     i04's implementation of this plan is very similar to Hyperion. However, since i04
     isn't running in a continuous Bluesky UDC loop, we take additional steps in beamline
     tidy-up.
@@ -140,6 +160,7 @@ def i04_grid_detect_then_xray_centre(
         attenuator,
         backlight,
         beamstop,
+        beamsize,
         dcm,
         detector_motion,
         zebra_fast_grid_scan,
@@ -158,6 +179,9 @@ def i04_grid_detect_then_xray_centre(
     initial_x = yield from bps.rd(smargon.x.user_readback)
     initial_y = yield from bps.rd(smargon.y.user_readback)
     initial_z = yield from bps.rd(smargon.z.user_readback)
+
+    _current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
+    grid_common_params = _get_grid_common_params(_current_wavelength_a, parameters)
 
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
@@ -180,12 +204,14 @@ def i04_grid_detect_then_xray_centre(
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
         @transmission_and_xbpm_feedback_for_collection_decorator(
-            composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
+            composite,
+            grid_common_params.transmission_frac,
+            PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
             yield from grid_detect_then_xray_centre(
                 composite=composite,
-                parameters=parameters,
+                parameters=grid_common_params,
                 xrc_params_type=SpecifiedThreeDGridScan,
                 construct_beamline_specific=construct_i04_specific_features,
                 oav_config=oav_config,
@@ -199,7 +225,9 @@ def i04_grid_detect_then_xray_centre(
             )
             raise
 
-    yield from _change_beamsize(transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, parameters)
+    yield from _change_beamsize(
+        transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, grid_common_params
+    )
     yield from _inner_grid_detect_then_xrc()
 
 
@@ -289,4 +317,38 @@ def construct_i04_specific_features(
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
         get_xrc_results_from_zocalo=True,
+    )
+
+
+def _get_grid_common_params(
+    _current_wavelength_a: float, parameters: I04AutoXrcParams
+) -> GridCommon:
+    """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
+    _assumed_wavelength_a = (
+        get_i04_config_client().get_feature_flags().ASSUMED_WAVELENGTH_IN_A
+    )
+    _unscaled_transmission = (
+        get_i04_config_client().get_feature_flags().XRC_UNSCALED_TRANSMISSION_FRAC
+    )
+    _unscaled_exposure_time_s = (
+        get_i04_config_client().get_feature_flags().XRC_UNSCALED_EXPOSURE_TIME_S
+    )
+    transmission_frac, exposure_time_s = (
+        fix_transmission_and_exposure_time_for_current_wavelength(
+            _current_wavelength_a,
+            _assumed_wavelength_a,
+            _unscaled_transmission,
+            _unscaled_exposure_time_s,
+        )
+    )
+
+    return GridCommon(
+        sample_id=parameters.sample_id,
+        file_name=parameters.file_name,
+        visit=parameters.visit,
+        detector_distance_mm=parameters.detector_distance_mm,
+        storage_directory=parameters.storage_directory,
+        transmission_frac=transmission_frac,
+        exposure_time_s=exposure_time_s,
+        parameter_model_version=PARAMETER_VERSION,
     )

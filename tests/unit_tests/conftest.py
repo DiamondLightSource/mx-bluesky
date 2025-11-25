@@ -12,6 +12,7 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
@@ -27,18 +28,15 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
-from dodal.testing import patch_all_motors
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -158,6 +156,8 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -407,6 +407,7 @@ async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
+    beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -429,6 +430,7 @@ async def grid_detect_xrc_devices(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -466,6 +468,16 @@ def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     set_mock_value(detector._writer.writer_ready, 1)
 
     return detector
+
+
+@pytest.fixture(autouse=True)
+def use_fake_properites_for_config_server():
+    properties_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new=properties_path,
+    ):
+        yield
 
 
 @pytest.fixture
@@ -510,8 +522,7 @@ async def beamstop_check_devices(
         )
         sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
 
-        with patch_all_motors(beamstop):
-            yield devices
+        return devices
     finally:
         run_engine.register_command("sleep", run_engine._sleep)
 
