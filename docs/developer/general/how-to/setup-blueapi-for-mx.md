@@ -28,6 +28,10 @@ MX Bluesky plans require some secrets to be added to the beamline cluster. The c
 5. Commit the sealed secret into `ixx-services/services/ixx-blueapi/templates`. Importantly, do not commit the unsealed secret!
 6. Once this is pushed to the main branch, you can check the k8s dashboard to see if the secret has successfully been added.
 
+<div style="border: 2px solid #f39c12; background-color: #fef2e4; padding: 10px; margin: 15px 0; border-radius: 5px;">
+  <strong>Warning:</strong> The mx-bluesky-blueapi image is responsible for your blueapi version and your python environment. It is independent from the mx-bluesky and dodal repos in the scratch folder. Currently, the versions of these repos must be manually managed. This will be addressed <a href="https://github.com/DiamondLightSource/blueapi/issues/933" target="_blank" style="color: #e67e22; text-decoration: underline;">here</a>. 
+</div>
+
 Paths to required credentials:
 
 - Zocalo api reader: `/dls_sw/apps/zocalo/secrets/rabbitmq-api-reader.yml`
