@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Logging &#8212; mx-bluesky 1.0.1.dev334+g63535b9f5 documentation</title>
+    <title>Logging &#8212; mx-bluesky 1.0.1.dev423+gb4ff08bd8 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=fd4645c7"></script>
+    <script src="../../_static/documentation_options.js?v=6de4237f"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Special PVs" href="pvs.html" />
+    <link rel="next" title="Running Hyperion" href="running.html" />
     <link rel="prev" title="Configuration" href="configuration.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -384,14 +384,21 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Topics</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="alerts.html">Alerts</a></li>
-
-
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Logging</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pvs.html">Special PVs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running Hyperion</a></li>
 
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="advanced/index.html">Advanced Topics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="advanced/alerts.html">Alerts</a></li>
+
+
+<li class="toctree-l2"><a class="reference internal" href="advanced/install.html">Server Install</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="advanced/operations.html">Overview of the Data Collection Plan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced/pvs.html">Special PVs</a></li>
+</ul>
+</details></li>
 </ul>
 </div>
 </nav></div>
@@ -455,20 +462,23 @@
   <section id="logging">
 <h1>Logging<a class="headerlink" href="#logging" title="Link to this heading">#</a></h1>
 <p>Hyperion logs to a number of different locations. The sections below describe the locations that are configured via
-environment variables for a standard server install; for kubernetes deployments please check the deployment
-<code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> for the configured locations.</p>
+environment variables for a standard server install.</p>
 <section id="graylog">
 <h2>Graylog<a class="headerlink" href="#graylog" title="Link to this heading">#</a></h2>
 <p>Graylog is the recommended way to view logs. It is used for more centralised logging which is also more easily
 searched and archived. Log messages are sent to the <a class="reference external" href="https://graylog.diamond.ac.uk/streams/66264f5519ccca6d1c9e4e03/search">Hyperion graylog stream</a>.</p>
+<p>To find different severity of message you can search for <code class="docutils literal notranslate"><span class="pre">level:</span> <span class="pre">X</span></code>. Where X is:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: Errors messages - usually causing Hyperion to have stopped. Note that no diffraction is currently logged as an error but this doesn’t stop Hyperion, only skip the sample. This will be improved by <a class="github reference external" href="https://github.com/DiamondLightSource/mx-bluesky/issues/427">DiamondLightSource/mx-bluesky#427</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">4</span></code>: Warnings - usually not a major problem</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">6</span></code>: Info - Just telling you what Hyperion is doing</p></li>
+</ul>
 </section>
 <section id="startup-log">
 <h2>Startup Log<a class="headerlink" href="#startup-log" title="Link to this heading">#</a></h2>
 <p>When <code class="docutils literal notranslate"><span class="pre">hyperion_restart()</span></code> is called by GDA, it will log the initial console output to a log file. This log file
 location is
 controlled by the <code class="docutils literal notranslate"><span class="pre">gda.logs.dir</span></code> property and is typically <code class="docutils literal notranslate"><span class="pre">/dls_sw/&lt;beamline&gt;/logs/bluesky</span></code>.</p>
-<p>On kubernetes deployments, the initial startup is sent to standard IO and is captured as part of the standard
-kubernetes logging facility.</p>
 </section>
 <section id="log-files">
 <h2>Log files<a class="headerlink" href="#log-files" title="Link to this heading">#</a></h2>
@@ -507,11 +517,11 @@ otherwise as specified by the <code class="docutils literal notranslate"><span c
       </div>
     </a>
     <a class="right-next"
-       href="pvs.html"
+       href="running.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Special PVs</p>
+        <p class="prev-next-title">Running Hyperion</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
