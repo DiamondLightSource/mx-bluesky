@@ -1,0 +1,38 @@
+@startuml
+!pragma teoz true
+participant "BlueSky RunEngine" as RE
+box "Opyhd Async Devices"
+participant "Undulator" as undulator
+participant "DCM" as dcm
+participant "Transmission\nand Feedback" as feedback
+participant "Mirrors" as mirrors
+participant "Mirror\nVoltages" as voltages
+end box
+
+group set_energy_plan
+    RE -> RE: set_energy_plan
+    activate RE
+    RE -> feedback: feedback off
+    activate feedback
+    RE -> undulator: set undulator gap for requested energy
+    activate undulator
+    RE -> dcm: Adjust DCM pitch and roll for energy
+    activate dcm
+    opt mirror stripe needs changing
+        RE -> mirrors: Adjust mirror stripe
+        activate mirrors
+        RE -> mirrors: Adjust yaw, lat
+        {start_voltages} RE -> voltages: Adjust mirror voltages
+        activate voltages
+        ...Wait for all voltages to settle...
+        {end_voltages} voltages -> RE
+        deactivate voltages
+        deactivate mirrors
+    end
+    undulator -> RE
+    deactivate undulator
+    deactivate dcm
+    deactivate feedback
+    deactivate RE /' set energy plan '/
+end
+@enduml

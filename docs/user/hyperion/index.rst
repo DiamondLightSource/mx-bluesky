@@ -2,7 +2,7 @@ Hyperion User Guide
 ===================
 
 The Hyperion User Guide describes how to run, configure and troubleshoot Hyperion. For installation instructions, see
-the `Developer Guide`_.
+the :doc:`Developer Guide<../../developer/hyperion/deploying-hyperion>`.
 
 What is Hyperion?
 -----------------
@@ -17,7 +17,7 @@ The software supports two modes of operation:
   instructions). GDA mode will be removed in a future release.
 
 The mode of operation is determined by configuration using the ``gda.mx.udc.hyperion.enable`` parameter inside 
-GDA properties. See `configuration`_ for other properties that control Hyperions behavior. 
+GDA properties. See :doc:`configuration<./configuration>` for other properties that control Hyperions behavior. 
 
 Once Hyperion has received a request, either from GDA or directly from Agamemnon, it will do the following tasks:
 
@@ -43,15 +43,14 @@ to a user is:
 - If an xray centre cannot be done on a pin (because it is too long/short or bent), or if no diffraction is found in the 
   xray centring data, the sample will be immediately unloaded without a rotation scan being done and the next sample loaded.
 
-For a more detailed breakdown of the operation, it may be helpful to browse the  `Code Map`_
-
-.. _Code Map: ../../developer/code-map 
-.. _Developer Guide: ../../developer/hyperion/deploying-hyperion
-.. _configuration: ./configuration
+For a more detailed overview of operations, it may be helpful to view the
+:doc:`Data Collection Plan Diagrams<./advanced/operations>`
 
 .. toctree::
     :caption: Topics
     :maxdepth: 1
     :glob:
+    
 
     *
+    advanced/index

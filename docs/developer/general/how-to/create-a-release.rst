@@ -3,7 +3,7 @@ Create a New Release
 ===========
 Pre-release
 ===========
-Make sure that dodal has an up-to-date release. If not, create one (see `dodal release instructions <https://diamondlightsource.github.io/dodal/main/developer/how-to/make-release.html>`_).
+Make sure that dodal has an up-to-date release. If not, create one (see `dodal release instructions <https://diamondlightsource.github.io/dodal/main/how-to/make-release.html>`_).
 
 =======
 Release

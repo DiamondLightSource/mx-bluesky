@@ -13,6 +13,7 @@ Configuration of several properties that control Hyperion execution are availabl
 
 Note that making a change to these properties generally requires a restart of the GDA server.
 
+Also note that some of these configuration properties will be removed in a future release of Hyperion. 
 
 .. csv-table:: Configuration properties
     :widths: auto
