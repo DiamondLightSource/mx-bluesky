@@ -1,8 +1,7 @@
 Hyperion User Guide
 ===================
 
-The Hyperion User Guide describes how to run, configure and troubleshoot Hyperion. For installation instructions, see
-the `Developer Guide`_.
+The Hyperion User Guide describes how to run, configure and troubleshoot Hyperion. See the `getting started <../../developer/general/how-to/get-started.html>`_ guide for installation instructions.
 
 What is Hyperion?
 -----------------

@@ -1,3 +1,5 @@
+:: _dev-guide:
+
 General MX-Bluesky Developer Guide
 ==================================
 
