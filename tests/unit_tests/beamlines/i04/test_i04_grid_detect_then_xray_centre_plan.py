@@ -34,11 +34,15 @@ from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
+    I04AutoXrcParams,
+    _get_grid_common_params,
     get_ready_for_oav_and_close_shutter,
-    i04_grid_detect_then_xray_centre,
+    i04_default_grid_detect_and_xray_centre,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import (
+    GridCommon,
+)
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
@@ -47,6 +51,9 @@ from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_pl
 
 
 class CustomError(Exception): ...
+
+
+EXPECTED_WAVELENGTH = 0.95373
 
 
 @pytest.fixture
@@ -72,12 +79,21 @@ def i04_grid_detect_then_xrc_default_params(
     zocalo: ZocaloResults,
     smargon: Smargon,
     detector_motion: DetectorMotion,
-    test_full_grid_scan_params: GridCommon,
     transfocator: Transfocator,
+    tmp_path,
 ):
+    entry_params = I04AutoXrcParams(
+        sample_id=1,
+        file_name="filename",
+        visit="cm40607-5",
+        detector_distance_mm=264.5,
+        storage_directory=str(tmp_path),
+    )
+
+    set_mock_value(dcm.wavelength_in_a.user_readback, EXPECTED_WAVELENGTH)
     return partial(
-        i04_grid_detect_then_xray_centre,
-        parameters=test_full_grid_scan_params,
+        i04_default_grid_detect_and_xray_centre,
+        parameters=entry_params,
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -250,7 +266,11 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
 )
-def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
+)
+def test_i04_default_grid_detect_and_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+    mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
     mock_create_parameters: MagicMock,
@@ -263,6 +283,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
     hyperion_fgs_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
+    mock_fix_transmission_and_exp_time.return_value = (1, 1)
     flyscan_event_handler = MagicMock()
     flyscan_event_handler.xray_centre_results = "dummy"
     mock_events_handler.return_value = flyscan_event_handler
@@ -327,7 +348,7 @@ def test_i04_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_c
 @patch(
     "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
 )
-def test_i04_grid_detect_then_xray_centre_does_undulator_check_before_collection(
+def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_collection(
     mock_verify_gap: MagicMock,
     mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,
@@ -445,3 +466,72 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(initial_x, wait=True)])
     get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(initial_y, wait=True)])
     get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+    return_value=(1, 0.004),
+)
+def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_grid_common(
+    mock_fix_transmission: MagicMock,
+    mock_create_gridscan_callbacks: MagicMock,
+    mock_setup_beamline_for_oav: MagicMock,
+    mock_grid_detect_then_xray_centre: MagicMock,
+    mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    run_engine: RunEngine,
+):
+    expected_trans_frac = 1
+    expected_exposure_time = 0.004
+    mock_fix_transmission.return_value = (expected_trans_frac, expected_exposure_time)
+
+    run_engine(i04_grid_detect_then_xrc_default_params())
+    mock_fix_transmission.assert_called_once()
+
+    grid_common_params = mock_grid_detect_then_xray_centre.call_args.kwargs[
+        "parameters"
+    ]
+    assert isinstance(grid_common_params, GridCommon)
+    assert grid_common_params.exposure_time_s == expected_exposure_time
+    assert grid_common_params.transmission_frac == expected_trans_frac
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+)
+def test_get_grid_common_params(
+    mock_fix_trans_and_exposure: MagicMock,
+    tmp_path,
+):
+    expected_trans_frac = 0.2
+    expected_exposure_time = 0.007
+    mock_fix_trans_and_exposure.return_value = (
+        expected_trans_frac,
+        expected_exposure_time,
+    )
+    entry_params = I04AutoXrcParams(
+        sample_id=1,
+        file_name="filename",
+        visit="cm40607-5",
+        detector_distance_mm=264.5,
+        storage_directory=str(tmp_path),
+    )
+    grid_common_params = _get_grid_common_params(1, entry_params)
+    assert grid_common_params.exposure_time_s == expected_exposure_time
+    assert grid_common_params.transmission_frac == expected_trans_frac

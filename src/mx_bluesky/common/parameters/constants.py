@@ -164,7 +164,7 @@ class Status(Enum):
 
 
 @dataclass
-class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
+class FeatureSettings: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
 class FeatureSettingSources(

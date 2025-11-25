@@ -27,7 +27,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_config_client,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSetting
+from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSettings
 
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
@@ -105,13 +105,13 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     # Wait for all of the above to complete
     yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK, timeout=0.1)
 
-    feature_flags: HyperionFeatureSetting = (
+    feature_flags: HyperionFeatureSettings = (
         get_hyperion_config_client().get_feature_flags()
     )
     if feature_flags.BEAMSTOP_DIODE_CHECK:
         beamline_parameters = get_beamline_parameters()
         config_client = get_hyperion_config_client()
-        features_settings: HyperionFeatureSetting = config_client.get_feature_flags()
+        features_settings: HyperionFeatureSettings = config_client.get_feature_flags()
         detector_min_z = features_settings.DETECTOR_DISTANCE_LIMIT_MIN_MM
         detector_max_z = features_settings.DETECTOR_DISTANCE_LIMIT_MAX_MM
         yield from move_beamstop_in_and_verify_using_diode(
