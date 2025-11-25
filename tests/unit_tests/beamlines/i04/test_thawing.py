@@ -1,6 +1,5 @@
 import json
 import logging
-from collections.abc import AsyncGenerator
 from functools import partial
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
@@ -15,11 +14,11 @@ from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
-from dodal.testing import patch_all_motors
 from ophyd.sim import NullStatus
-from ophyd_async.core import completed_status, init_devices
-from ophyd_async.testing import (
+from ophyd_async.core import (
+    completed_status,
     get_mock_put,
+    init_devices,
     set_mock_value,
 )
 
@@ -76,14 +75,13 @@ async def oav_roi() -> OAV:
 
 
 @pytest.fixture
-async def smargon(run_engine: RunEngine) -> AsyncGenerator[Smargon, None]:
+async def smargon() -> Smargon:
     smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
 
-    with patch_all_motors(smargon):
-        yield smargon
+    return smargon
 
 
 @pytest.fixture
@@ -131,7 +129,7 @@ def _do_thaw_and_confirm_cleanup(
     set_mock_value(smargon.omega.velocity, initial_velocity := 10)
     smargon.omega.set = move_mock
     do_thaw_func()
-    last_thawer_call = get_mock_put(thawer.control).call_args_list[-1]
+    last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
     assert last_thawer_call == call(OnOff.OFF, wait=ANY)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
     assert last_velocity_call == call(initial_velocity, wait=ANY)

@@ -9,7 +9,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
-from ophyd_async.testing import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,

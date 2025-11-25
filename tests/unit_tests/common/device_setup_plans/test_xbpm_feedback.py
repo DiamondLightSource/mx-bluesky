@@ -2,15 +2,20 @@ from unittest.mock import MagicMock
 
 import bluesky.preprocessors as bpp
 import pytest
+from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
-from dodal.devices.xbpm_feedback import Pause
+from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 from ophyd.status import Status
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
+    unpause_xbpm_feedback_and_set_transmission_to_1,
+)
 from mx_bluesky.common.preprocessors.preprocessors import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
@@ -125,3 +130,20 @@ async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorato
 
     assert await composite.attenuator.actual_transmission.get_value() == 1.0
     assert await composite.xbpm_feedback.pause_feedback.get_value() == Pause.RUN
+
+
+def test_unpause_feedback_and_set_transmission_to_1_times_out_if_timeout_specified(
+    run_engine: RunEngine,
+    xbpm_feedback: XBPMFeedback,
+    attenuator: BinaryFilterAttenuator,
+):
+    never_completed = Status()
+    xbpm_feedback.trigger = MagicMock(return_value=never_completed)
+    with pytest.raises(TimeoutError):
+        run_engine(
+            unpause_xbpm_feedback_and_set_transmission_to_1(
+                xbpm_feedback=xbpm_feedback,
+                attenuator=attenuator,
+                timeout_for_stable=0.1,
+            )
+        )

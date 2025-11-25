@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,

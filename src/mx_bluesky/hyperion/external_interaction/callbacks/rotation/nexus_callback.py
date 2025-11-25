@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -14,7 +11,7 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     vds_type_based_on_bit_depth,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.common.utils.log import NEXUS_LOGGER
+from mx_bluesky.common.utils.log import NEXUS_LOGGER, format_doc_for_log
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
 from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 

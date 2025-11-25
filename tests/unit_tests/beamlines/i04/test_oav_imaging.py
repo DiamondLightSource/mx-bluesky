@@ -15,7 +15,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,

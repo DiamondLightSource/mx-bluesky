@@ -8,6 +8,7 @@ from dodal.devices.aperturescatterguard import (
 from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import CombinedMove, Smargon
+from dodal.devices.thawer import OnOff, Thawer
 
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.utils.log import LOGGER
@@ -19,9 +20,13 @@ def setup_sample_environment(
     aperture_scatterguard: ApertureScatterguard,
     aperture_position_gda_name: str | None,
     backlight: Backlight,
+    thawer: Thawer,
     group="setup_senv",
 ):
-    """Move the aperture into required position, move out the backlight."""
+    """Move the aperture into required position, move out the backlight so that it
+    doesn't cause a shadow on the detector and turn off thawing so it doesn't vibrate
+    the pin."""
+
     yield from bps.abs_set(backlight, InOut.OUT, group=group)
 
     aperture_value = (
@@ -32,6 +37,8 @@ def setup_sample_environment(
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_value, group=group
     )
+
+    yield from bps.abs_set(thawer, OnOff.OFF, group=group)
 
 
 def move_aperture_if_required(
