@@ -6,6 +6,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
@@ -19,6 +20,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
 from ophyd_async.core import InOut as core_INOUT
 
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
+from mx_bluesky.common.utils.log import LOGGER
 
 initial_wait_group = "Wait for scint to move in"
 
@@ -76,6 +78,10 @@ def _prepare_beamline_for_scintillator_images(
     """
     Prepares the beamline for oav image by making sure the pin is NOT mounted and
     the beam is on (feedback check). Finally, the scintillator is moved in.
+
+     Args:
+        devices: These are the specific ophyd-devices used for the plan, the
+                    defaults are always correct.
     """
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.PIN_MOUNTED:
@@ -109,7 +115,66 @@ def take_and_save_oav_image(
     if not os.path.exists(full_file_path):
         yield from bps.abs_set(oav.snapshot.filename, file_name, group=group)
         yield from bps.abs_set(oav.snapshot.directory, file_path, group=group)
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=60)
         yield from bps.trigger(oav.snapshot, wait=True)
     else:
         raise FileExistsError("OAV image file path already exists")
+
+
+def optimise_oav_transmission_binary_search(
+    upper_bound: float,  # in percent
+    lower_bound: float,  # in percent
+    frac_of_max: float = 0.5,
+    tolerance: int = 1,
+    max_iterations: int = 5,
+    max_pixel: MaxPixel = inject("max_pixel"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+) -> MsgGenerator:
+    """
+    Plan to find the optimal oav transmission. First the brightest pixel at 100%
+    transmission is taken. A fraction of this (frac_of_max) is taken as the target -
+    as in the optimal transmission will have it's max pixel as the set target.
+    A binary search is used to each the target.
+    Args:
+        upper_bound: Maximum transmission which will be searched.
+        lower_bound: Minimum transmission which will be searched.
+        frac_of_max: Fraction of the brightest pixel at 100% transmission which should be
+                     used as the target max pixel brightness.
+        tolerance: Amount the search can be off by and still find a match.
+        max_iterations: Maximum amount of iterations.
+    """
+    yield from bps.mv(attenuator, 100)  # 100 % transmission
+    yield from bps.trigger(max_pixel, wait=True)
+    brightest_pixel_sat = yield from bps.rd(max_pixel.max_pixel_val)
+    target_pixel_l = brightest_pixel_sat * frac_of_max
+    LOGGER.info(f"~~Target luminosity: {target_pixel_l}~~\n")
+
+    while max_iterations > tolerance:
+        mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
+        max_iterations -= 1
+
+        yield from bps.mv(attenuator, mid / 100)
+        yield from bps.trigger(max_pixel, wait=True)
+        brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
+
+        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+        LOGGER.info(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
+        LOGGER.info(
+            f"Testing transmission {mid}, brightest pixel found {brightest_pixel}"
+        )
+
+        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+            mid = round(mid, 0)
+            LOGGER.info(f"\nOptimal transmission found - {mid}")
+            return mid
+
+        # condition for too low so want to try higher
+        elif brightest_pixel < target_pixel_l - tolerance:
+            LOGGER.info("Result: Too low \n")
+            lower_bound = mid
+
+        # condition for too high so want to try lower
+        elif brightest_pixel > target_pixel_l + tolerance:
+            LOGGER.info("Result: Too high \n")
+            upper_bound = mid
+    return "Max iterations reached"
