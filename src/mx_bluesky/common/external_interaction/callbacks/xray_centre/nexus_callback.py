@@ -94,9 +94,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     data["attenuator-actual_transmission"],
                 )
                 LOGGER.info(f"doc = {doc}")
-                bit_depth = doc["data"].get(
-                    ["fastcs_eiger-drv-detector-bit_depth_image"]
-                )
+                bit_depth = doc["data"].get("fastcs_eiger-drv-detector-bit_depth_image")
                 if bit_depth is None:
                     bit_depth = doc["data"]["eiger"]
                 vds_data_type = vds_type_based_on_bit_depth(bit_depth)
