@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Deploy a New Release &#8212; mx-bluesky 1.0.1.dev424+g0bfc74ee3 documentation</title>
+    <title>Deploy a New Release &#8212; mx-bluesky 1.0.1.dev426+g65ba717dd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=452b24f6"></script>
+    <script src="../../../_static/documentation_options.js?v=921c325c"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -387,6 +387,7 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">General MX-Bluesky Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/profile-tests.html">Unit test performance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="setup-blueapi-for-mx.html">Setting up BlueAPI for an MX beamline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="contribute.html">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-a-release.html">Create a New Release</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Deploy a New Release</a></li>
@@ -420,7 +421,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/baton.html">Hyperion Baton</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../hyperion/deploying-hyperion.html">Building a deployable Docker image</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../hyperion/system-tests.html">System Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../hyperion/how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
 </ul>
@@ -519,6 +519,10 @@
                   
   <section id="deploy-a-new-release">
 <h1>Deploy a New Release<a class="headerlink" href="#deploy-a-new-release" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This guide is for pre-containerised deployments. To see how deployments work using BlueAPI with kubernetes, please see <a class="reference external" href="setup-blueapi-for-mx.html">the updated guide</a>.</p>
+</div>
 <p><strong>Remember to discuss any new deployments with the appropriate beamline scientist.</strong></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">utility_scripts/deploy/deploy_mx_bluesky.py</span></code> script will deploy the latest mx-bluesky version to a specified beamline. Deployments live in <code class="docutils literal notranslate"><span class="pre">/dls_sw/ixx/software/bluesky/mx-bluesky_X.X.X</span></code>. To do a new deployment you should run the deploy script from your mx-bluesky dev environment with e.g.
 If you have just created a new release, you may need to run git fetch –tags to get the newest release.</p>
@@ -538,30 +542,6 @@ If you have just created a new release, you may need to run git fetch –tags to
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python ./deploy/deploy_mx_bluesky.py -h</span>
 </pre></div>
 </div>
-<p>For building and deploying a Docker image please see <a class="reference internal" href="../../hyperion/deploying-hyperion.html"><span class="doc">Building a deployable Docker image</span></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>On i03 the installation will succeed with error messages due to RedHat7 versions of dependencies being unavailable.
-This results in the installation being incomplete, thus requiring the following post-installation steps:</p>
-<p>First, on a RedHat8 workstation, run</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">. ./.venv/bin/activate</span>
-<span class="go">pip install confluent-kafka</span>
-<span class="go">pip install contourpy</span>
-</pre></div>
-</div>
-<p>Then, on the control machine, run</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">. ./.venv/bin/activate</span>
-<span class="go">pip install -e .</span>
-<span class="go">pip install -e ../dodal</span>
-</pre></div>
-</div>
-</div>
-<section id="deploying-to-i04-blueapi">
-<span id="id1"></span><h2>Deploying to I04 BlueAPI<a class="headerlink" href="#deploying-to-i04-blueapi" title="Link to this heading">#</a></h2>
-<p>To deploy to I04 BlueAPI, update the Chart.yaml and values.yaml in the i04-services repository to match the release version. It’s a good idea to bump BlueAPI to the latest version too.</p>
-<p>Look at this <a class="reference external" href="https://gitlab.diamond.ac.uk/controls/containers/beamline/i04-services/-/commit/f0ea7432ae996834001bbe50a07ba86d23534749">example</a> as a guide. Note that mx-bluesky has recently dropped the <code class="docutils literal notranslate"><span class="pre">v</span></code> from it’s version numbers.</p>
-<p>Once this change has been merged into main and the CI has completed successfully, press synchronise on the I04 ArgoCD page. This will update the version deployed in Kubernetes.</p>
-</section>
 </section>
 
 
@@ -602,18 +582,6 @@ This results in the installation being incomplete, thus requiring the following 
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deploying-to-i04-blueapi">Deploying to I04 BlueAPI</a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 
