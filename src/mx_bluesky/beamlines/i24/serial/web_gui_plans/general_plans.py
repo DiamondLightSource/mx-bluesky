@@ -89,11 +89,11 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     oav = i24.oav()
     gonio = i24.vgonio()
 
-    x_pixels_per_micron = yield from bps.rd(oav.microns_per_pixel_x)
-    y_pixels_per_micron = yield from bps.rd(oav.microns_per_pixel_y)
+    x_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_x)
+    y_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_y)
 
-    x_um = position_px[0] * x_pixels_per_micron
-    y_um = position_px[1] * y_pixels_per_micron
+    x_um = position_px[0] * x_microns_per_pixel
+    y_um = position_px[1] * y_microns_per_pixel
 
     # gonio is in mm?
     yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)  # type: ignore
