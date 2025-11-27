@@ -292,6 +292,7 @@ def construct_i04_specific_features(
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
         xrc_composite.eiger.bit_depth,
+        xrc_composite.beamsize,
     ]
 
     tidy_plan = partial(
