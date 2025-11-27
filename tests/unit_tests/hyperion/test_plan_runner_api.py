@@ -33,3 +33,10 @@ def test_plan_runner_api_fetch_status(app_under_test, client, mock_runner):
     assert response.status_code == 200
     assert response.content_type == "application/json"
     assert response.json["status"] == Status.BUSY.value
+
+
+def test_plan_runner_api_callback_liveness(app_under_test, client, mock_runner):
+    response = client.get("/callbackPing")
+    mock_runner.reset_callback_watchdog_timer.assert_called_once()
+    assert response.status_code == 200
+    assert response.content_type == "application/json"

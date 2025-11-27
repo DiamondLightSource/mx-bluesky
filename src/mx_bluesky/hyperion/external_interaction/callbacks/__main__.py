@@ -2,6 +2,8 @@ import logging
 from collections.abc import Callable, Sequence
 from threading import Thread
 from time import sleep  # noqa
+from urllib import request
+from urllib.error import URLError
 
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
@@ -51,14 +53,17 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
 )
 
+PING_TIMEOUT_S = 1
+
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
+HYPERION_PING_INTERVAL_S = 19
 
 
 def create_gridscan_callbacks() -> tuple[
@@ -128,21 +133,6 @@ def setup_logging(dev_mode: bool):
     log_debug("nexgen logger added to nexus logger")
 
 
-def setup_threads():
-    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
-    log_debug("Created proxy and dispatcher objects")
-
-    def start_proxy():
-        proxy.start()
-
-    def start_dispatcher(callbacks: list[Callable]):
-        [dispatcher.subscribe(cb) for cb in callbacks]
-        dispatcher.start()
-
-    return proxy, dispatcher, start_proxy, start_dispatcher
-
-
 def log_info(msg, *args, **kwargs):
     ISPYB_ZOCALO_CALLBACK_LOGGER.info(msg, *args, **kwargs)
     NEXUS_LOGGER.info(msg, *args, **kwargs)
@@ -175,20 +165,57 @@ class HyperionCallbackRunner:
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
-        self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()
-        log_info("Created 0MQ proxy and local RemoteDispatcher.")
 
-        self.proxy_thread = Thread(target=start_proxy, daemon=True)
-        self.dispatcher_thread = Thread(
-            target=start_dispatcher, args=[self.callbacks], daemon=True
+        self.proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+        self.proxy_thread = Thread(
+            target=self.proxy.start, daemon=True, name="0MQ Proxy"
         )
+
+        self.dispatcher = RemoteDispatcher(
+            f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}"
+        )
+
+        def start_dispatcher(callbacks: list[Callable]):
+            for cb in callbacks:
+                self.dispatcher.subscribe(cb)
+            self.dispatcher.start()
+
+        self.dispatcher_thread = Thread(
+            target=start_dispatcher,
+            args=[self.callbacks],
+            daemon=True,
+            name="0MQ Dispatcher",
+        )
+
+        self.watchdog_thread = Thread(target=run_watchdog, daemon=True, name="Watchdog")
+        log_info("Created 0MQ proxy and local RemoteDispatcher.")
 
     def start(self):
         log_info(f"Launching threads, with callbacks: {self.callbacks}")
         self.proxy_thread.start()
         self.dispatcher_thread.start()
+        self.watchdog_thread.start()
         log_info("Proxy and dispatcher thread launched.")
-        wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
+        wait_for_threads_forever(
+            [self.proxy_thread, self.dispatcher_thread, self.watchdog_thread]
+        )
+
+
+def run_watchdog():
+    log_info("Hyperion watchdog keepalive running")
+    while True:
+        try:
+            with request.urlopen(
+                f"http://localhost:{HyperionConstants.HYPERION_PORT}/callbackPing",
+                timeout=PING_TIMEOUT_S,
+            ) as response:
+                if response.status != 200:
+                    log_debug(
+                        f"Unable to ping Hyperion liveness endpoint, status {response.status}"
+                    )
+        except URLError as e:
+            log_debug("Unable to ping Hyperion liveness endpoint", exc_info=e)
+        sleep(HYPERION_PING_INTERVAL_S)
 
 
 def main(dev_mode=False) -> None:
