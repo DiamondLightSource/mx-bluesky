@@ -96,7 +96,7 @@ def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
     y_um = position_px[1] * y_microns_per_pixel
 
     # gonio is in mm?
-    yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)  # type: ignore
+    yield from bps.mv(gonio.x, x_um / 1000, gonio.yh, y_um / 1000)
 
 
 @bpp.run_decorator()
