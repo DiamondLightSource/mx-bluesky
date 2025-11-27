@@ -1,0 +1,131 @@
+@startuml
+!pragma teoz true
+participant "BlueSky RunEngine" as RE
+box "Opyhd Async Devices"
+participant "Aperture\nScatterguard" as ap_sg
+participant "Smargon" as smargon
+participant "Robot" as robot
+participant "Backlight" as backlight
+participant "OAV" as oav
+participant "Panda" as panda
+participant "Zebra" as zebra
+participant "Zocalo\nResults" as zocalo
+participant "Eiger" as eiger
+end box
+box "Callbacks"
+participant "Robot Load\nISPyB" as RobotLoadISPyB
+participant "Gridscan\nISPyB" as GridscanISPyB
+participant "Grid\nDetection" as GridDetection
+participant "GridScan\nNexus" as GridScanNexus
+participant "Zocalo\nTrigger" as ZocaloCallback
+participant "XRC\nResults" as XRayCentreEventHandler
+participant "Snapshot\nBeam Centre\nAnnotation" as BeamDrawingCallback 
+end box
+
+RE -> RE:robot_load_then_xray_centre
+activate RE #ffeeee
+    opt pin not already loaded
+        RE -> RE: robot_load_and_change_energy_plan
+        activate RE  #ffdddd
+            RE -> RE: prepare_for_robot_load
+            activate RE  #ffcccc
+                RE -> ap_sg: Move Aperture Scatterguard out of beam
+                activate ap_sg
+                    RE -> smargon: Home smargon
+                    activate smargon
+                deactivate ap_sg
+            deactivate RE /' prepare_for_robot_load '/
+            RE -> RE: robot_load_and_snapshots
+            activate RE #ffcccc
+                activate RobotLoadISPyB
+                RE -> RobotLoadISPyB: send parameters to robot load callback
+                RE -> backlight: move backlight in
+                RE -> RE: do_robot_load
+                activate RE  #ffbbbb
+                    RE -> robot: trigger robot load
+                    activate robot
+                    RE -> RE: set_energy_plan
+                    note right of RE: (see below)
+                    deactivate robot
+                deactivate RE /' do_robot_load '/
+                RE -> smargon: Restore motor positions
+                deactivate smargon
+                RE -> oav: trigger snapshots
+                RE -> RobotLoadISPyB: read hardware
+                RE -> RobotLoadISPyB: record snapshots
+            deactivate RE /'robot_load_and_snapshots'/
+        return /'robot_load_and_change_energy_plan'/
+        deactivate RobotLoadISPyB
+    end /'pin not already loaded'/
+    alt pin is loaded
+        RE -> RE: set_energy_plan
+    end /'pin is loaded'/
+    RE -> RE++ : start_preparing_data_collection_then_do_plan
+        RE -> eiger ++ : arm the eiger
+        RE -> GridscanISPyB ++ : send parameters to grdscan callback
+            RE -> RE ++ #ffdddd : pin_centre_then_flyscan_plan
+                RE -> RE: setup_beamline_for_oav
+                RE -> RE: pin_tip_centre_plan
+                ...do pin tip centring...
+                RE -> RE ++ #ffcccc: detect_grid_and_do_gridscan
+                    RE -> RE: setup_beamline_for_oav
+                    RE -> ap_sg ++: prepare aperture scatterguard\nfor gridscan in background
+                    activate GridDetection
+                        RE -> RE ++ #ffbbbb: grid_detection_plan
+                            loop xy and xz grids
+                                RE -> smargon: rotate omega
+                                RE -> oav: trigger OAV snapshot
+                                RE -> GridscanISPyB: snapshot event with oav + smargon state
+                                & RE -> BeamDrawingCallback ++
+                                BeamDrawingCallback -> BeamDrawingCallback : save snapshot details\n\
+to generate rotation\n\
+snapshots later
+                            end
+                        deactivate RE /'grid_detection_plan'/
+                    deactivate GridDetection
+                    RE -> RE ++
+                    ...grid detection...
+                    return
+                    RE -> backlight: move backlight out 
+                    ap_sg -> RE --: aperture scatterguard completes
+                    RE -> RE ++ #ffaaaa : common_flycan_xray_centre
+                        RE -> eiger : setup detector parameters
+                        RE -> GridScanNexus++: send gridscan parameters
+                        RE -> panda : configure panda
+                        RE -> zebra : configure zebra for panda
+                        RE -> panda ++ : arm panda
+                        RE -> zocalo ++ : stage zocalo device
+                        RE -> RE ++ #ff9999 : run_gridscan 
+                            RE -> GridscanISPyB : read hardware before
+                            & RE -> GridScanNexus
+                            RE <-> eiger : stage eiger (ensures arming complete if not already)
+                            RE -> ZocaloCallback ++ : send params to Zocalo callback
+                            zocalo -> RE : zocalo stage completes
+                            RE -> ZocaloCallback : trigger zocalo with detector filename
+                            RE -> panda ++ : kickoff gridscan
+                            RE -> GridscanISPyB : read hardware during
+                            & RE -> GridScanNexus
+                            deactivate GridScanNexus
+                            ...perform gridscan...
+                            panda -> RE --
+                            eiger -> RE -- : unstage eiger
+                            RE -> ZocaloCallback : notify Zocalo of completion
+                            deactivate ZocaloCallback
+                        deactivate RE /' run_gridscan '/
+                        RE -> zocalo ++: fetch results from zocalo
+                        ...wait for Zocalo processing...
+                        zocalo -> RE -- : detected xtal centres
+                        RE -> XRayCentreEventHandler ++ : post detected centres to callback
+                        zocalo -> RE -- : unstage zocalo
+                        panda -> RE -- : unstage panda
+                        RE -> zebra : tidy zebra
+                    deactivate RE /'common_flyscan_xray_centre'/
+                deactivate RE /' detect_grid_and_do_gridscan'/
+            return /' pin_centre_then_flyscan_plan'/
+        deactivate GridscanISPyB
+    deactivate RE /' start_preparing_data_collection_then_do_plan '/
+deactivate RE /'robot_load_then_xray_centre'/
+note over XRayCentreEventHandler
+Results collected later by rotation
+end note
+@enduml
