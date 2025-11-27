@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pydantic
 import pytest
@@ -81,9 +81,9 @@ def test_setup_devices_raises_on_exception(use_beamline_t01, run_engine: RunEngi
     context = BlueskyContext(run_engine=run_engine)
 
     with patch.object(
-        use_beamline_t01.baton(),
-        "connect",
-        AsyncMock(side_effect=RuntimeError("Simulated exception")),
+        context,
+        "with_device_manager",
+        return_value=({}, {"baton": RuntimeError("Simulated exception")}),
     ):
         with pytest.raises(ExceptionGroup):
             setup_devices(context, True)
