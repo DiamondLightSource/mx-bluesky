@@ -1,0 +1,19 @@
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.i03
+    - kind: planFunctions
+      module: mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan
+  events:
+    broadcast_status_events: false
+api:
+  url: http://localhost:5005
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
+logging:
+  graylog:
+    url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+    enabled: true
+  
