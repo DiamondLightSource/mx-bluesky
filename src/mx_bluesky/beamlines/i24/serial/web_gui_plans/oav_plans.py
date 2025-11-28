@@ -17,6 +17,11 @@ class Direction(Enum):
     RIGHT = "right"
 
 
+class FocusDirection(Enum):
+    IN = "in"
+    OUT = "out"
+
+
 def _move_direction(magnitude: float, direction: Direction, pmac):
     y_move = 0.0
     x_move = 0.0
@@ -62,3 +67,18 @@ def move_nudge_on_arrow_click(
             magnitude = 0.0060
 
     yield from _move_direction(magnitude, direction, pmac)
+
+
+def focus_on_oav_view(
+    direction: FocusDirection, size_of_move: MoveSize, pmac: PMAC = inject("pmac")
+):
+    match size_of_move:
+        case MoveSize.SMALL:
+            magnitude = 0.0200
+        case MoveSize.BIG:
+            magnitude = 0.1200
+
+    if direction == FocusDirection.IN:
+        magnitude = -magnitude
+
+    yield from bps.abs_set(pmac.z, magnitude, wait=True)
