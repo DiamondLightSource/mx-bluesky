@@ -134,7 +134,7 @@ def optimise_oav_transmission_binary_search(
     Plan to find the optimal oav transmission. First the brightest pixel at 100%
     transmission is taken. A fraction of this (frac_of_max) is taken as the target -
     as in the optimal transmission will have it's max pixel as the set target.
-    A binary search is used to each the target.
+    A binary search is used to reach the target.
     Args:
         upper_bound: Maximum transmission which will be searched.
         lower_bound: Minimum transmission which will be searched.

@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -5,6 +6,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
@@ -15,6 +17,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
+from ophyd_async.core import init_devices
 from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
@@ -23,6 +26,7 @@ from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     take_oav_image_with_scintillator_in,
 )
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
+from mx_bluesky.common.utils.log import LOGGER
 
 
 async def test_check_exception_raised_if_pin_mounted(
@@ -258,6 +262,24 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
 # mock out the different transmissions and max vals and make sure you reach what's expected.
 
 
+@pytest.fixture()
+async def max_pixel() -> AsyncGenerator[MaxPixel]:
+    async with init_devices(mock=True):
+        max_pixel = MaxPixel("TEST: MAX_PIXEL")
+    yield max_pixel
+
+
+@patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel_sat")
+def test_binary_search(
+    mock_brightest_pixel: MagicMock,
+    max_pixel: MaxPixel,
+    attenuator: BinaryFilterAttenuator,
+    upper_bound=100,
+    lower_bound=0,
+):
+    mock_brightest_pixel.return_value()
+
+
 # # mock function transmission optimisation
 # @pytest.fixture
 # def get_max_pixel_value_from_transmission(transmission) -> float:
@@ -302,3 +324,51 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
 
 
 #     with patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.")
+
+
+def tranmission_to_max_pixel(transmission):
+    max_pixel = transmission + 30
+    return max_pixel
+    # if target is 100 then we expect the optimal transmission to be 100 - 30 = 70
+
+
+def optimise_oav_transmission_binary_search(
+    upper_bound: float,  # in percent
+    lower_bound: float,  # in percent
+    frac_of_max: float = 0.5,
+    tolerance: int = 1,
+    max_iterations: int = 5,
+):
+    target_pixel_l = 255 * frac_of_max
+
+    while max_iterations > tolerance:
+        mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
+        max_iterations -= 1
+
+        brightest_pixel = tranmission_to_max_pixel(mid)
+        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
+        LOGGER.info(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
+        LOGGER.info(
+            f"Testing transmission {mid}, brightest pixel found {brightest_pixel}"
+        )
+
+        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+            mid = round(mid, 0)
+            LOGGER.info(f"\nOptimal transmission found - {mid}")
+            return mid
+
+        # condition for too low so want to try higher
+        elif brightest_pixel < target_pixel_l - tolerance:
+            LOGGER.info("Result: Too low \n")
+            lower_bound = mid
+
+        # condition for too high so want to try lower
+        elif brightest_pixel > target_pixel_l + tolerance:
+            LOGGER.info("Result: Too high \n")
+            upper_bound = mid
+    return "Max iterations reached"
+
+
+def test_binary_search_logic():
+    search = optimise_oav_transmission_binary_search(100, 0)
+    assert search == 70
