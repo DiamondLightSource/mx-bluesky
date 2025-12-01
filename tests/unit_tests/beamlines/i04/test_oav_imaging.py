@@ -17,8 +17,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
-from ophyd_async.core import init_devices
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import init_devices, set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,
@@ -295,7 +294,7 @@ async def max_pixel() -> AsyncGenerator[MaxPixel]:
 )
 def test_optimise_oav_transmission_binary_search(
     mock_brightest_pixel: MagicMock,
-    sim_run_engine: RunEngineSimulator,
+    run_engine: RunEngine,
     max_pixel: MaxPixel,
     attenuator: BinaryFilterAttenuator,
     done_status,
@@ -304,7 +303,7 @@ def test_optimise_oav_transmission_binary_search(
     # expecting transmission 18.75 to be correct
 
     # put this in a mark.parameterize so that you can try different dicts
-    mock_brightest_pixel.return_value = 255
+    mock_brightest_pixel.return_value = [255]
     # transmission_map = {100: 255, 50: 180, 25: 160, 18.75: 130, 12.5: 118, 0: 0}
     transmission_map = {50: 220, 25: 200, 18.75: 150, 12.5: 127}
     # transmission_list = list(transmission_map.keys())
@@ -315,7 +314,7 @@ def test_optimise_oav_transmission_binary_search(
     side_effect_input = [{"readback": i} for i in max_pixel_list]
     max_pixel.locate = AsyncMock(side_effect=side_effect_input)
 
-    optimise_oav_transmission_binary_search(upper_bound=100, lower_bound=0)
+    run_engine(optimise_oav_transmission_binary_search(upper_bound=100, lower_bound=0))
     assert max_pixel.trigger.call_count == 4
 
     # now defining a mock function
