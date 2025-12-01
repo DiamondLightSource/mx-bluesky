@@ -15,12 +15,14 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGG
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     PING_TIMEOUT_S,
     main,
+    run_watchdog,
     setup_callbacks,
     setup_logging,
     wait_for_threads_forever,
 )
 
 
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.run_watchdog")
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_dev_mode_arg",
     return_value=("DEBUG", True),
@@ -39,19 +41,24 @@ def test_main_function(
     setup_logging: MagicMock,
     setup_callbacks: MagicMock,
     parse_callback_dev_mode_arg: MagicMock,
+    mock_run_watchdog: MagicMock,
 ):
     proxy_started = Event()
     dispatcher_started = Event()
+    watchdog_started = Event()
     mock_proxy.return_value.start.side_effect = proxy_started.set
     mock_dispatcher.return_value.start.side_effect = dispatcher_started.set
+    mock_run_watchdog.side_effect = watchdog_started.set
 
     main()
 
-    mock_proxy.return_value.start.wait(0.5)
-    mock_dispatcher.return_value.start.wait(0.5)
+    proxy_started.wait(0.5)
+    dispatcher_started.wait(0.5)
+    mock_run_watchdog.wait(0.5)
     setup_logging.assert_called()
     setup_callbacks.assert_called()
     setup_alerting.assert_called_once()
+    mock_run_watchdog.assert_called_once()
     assert isinstance(setup_alerting.mock_calls[0].args[0], LoggingAlertService)
 
 
@@ -106,9 +113,13 @@ def test_launching_external_callbacks_pings_regularly(
     mock_proxy.return_value.start.side_effect = partial(sleep, 0.1)
     mock_dispatcher.return_value.start.side_effect = partial(sleep, 0.1)
     mock_request.urlopen.return_value.__enter__.return_value.status = 200
+    mock_request.urlopen.return_value.__exit__.side_effect = RuntimeError(
+        "Exit this thread"
+    )
 
-    main(True)
-    sleep(0.1)
+    with pytest.raises(RuntimeError, match="Exit this thread"):
+        run_watchdog()
+
     mock_request.urlopen.assert_called_with(
         "http://localhost:5005/callbackPing", timeout=PING_TIMEOUT_S
     )
