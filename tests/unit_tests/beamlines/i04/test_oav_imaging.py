@@ -22,6 +22,7 @@ from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,
+    optimise_oav_transmission_binary_search,
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
@@ -280,50 +281,51 @@ def test_binary_search(
     mock_brightest_pixel.return_value()
 
 
-# # mock function transmission optimisation
-# @pytest.fixture
-# def get_max_pixel_value_from_transmission(transmission) -> float:
-#     return transmission + 10
-
-# @pytest.fixture
-# def get_max_pixel_value_from_transmission(max_pixel: MaxPixel) :
-#     max_pixel.max_pixel_val.read = AsyncMock([100, 3, 2], [200, 3, 90], [255/2, 90, 80])
-
-# async def test_optimise_oav_transmission_binary_search(
-#     get_max_pixel_value_from_transmission, run_engine: RunEngine, max_pixel: MaxPixel, attenuator: BinaryFilterAttenuator
-# ):
-#     pass
-# ----------------------------
-
-# # if target is set to 50, then we are expecting optimal transmission to be 40
-# def mid_logic(upper, lower):
-
-# @patch(
-#     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel_sat", 255
-# )
-# @patch(
-#     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel",
-#     get_max_pixel_value_from_transmission(),
-# )
-# def test_optimise_oav_transmission_binary_search(
-#     get_max_pixel_value_from_transmission, run_engine: RunEngine, max_pixel: MaxPixel, attenuator: BinaryFilterAttenuator
-# ):
-#     upper_bound = 100
-#     lower_bound = 0
-#     frac_of_max = 0.5
-#     run_engine(optimise_oav_transmission_binary_search(upper_bound, lower_bound, max_pixel = max_pixel, attenuator=attenuator))
-#     max_pixel_values = [50, 75, 87.5]
-
-#     async def get_max_pixel_val():
-#         upper = 50
-#         for i in range(5):
-#             yield
-
-#     max_pixel.max_pixel_val.read = AsyncMock(side_effect=get_max_pixel_val)
-#     set_mock_value()
+# def test_initial_yield_froms(
+#         sim_run_engine: RunEngineSimulator,
+#         max_pixel: MaxPixel,
+#         attenuator: BinaryFilterAttenuator
+#         ):
+#     Messages = sim_run_engine.simulate_plan(
+#         take_oav_image_with_scintillator_in(
 
 
-#     with patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.")
+def test_optimise_oav_transmission_binary_search(
+    sim_run_engine: RunEngineSimulator,
+    max_pixel: MaxPixel,
+    attenuator: BinaryFilterAttenuator,
+    done_status,
+):
+    # Simulated transmission-to-pixel mapping
+    # expecting transmission 18.75 to be correct
+
+    # put this in a mark.parameterize so that you can try different dicts
+    transmission_map = {100: 255, 50: 180, 25: 160, 18.75: 130, 12.5: 118, 0: 0}
+    keys_list = list(transmission_map.keys())
+    max_pixel.trigger = MagicMock(return_value=done_status)
+    attenuator.set = MagicMock()
+
+    optimise_oav_transmission_binary_search(
+        upper_bound=100, lower_bound=0, max_pixel=max_pixel, attenuator=attenuator
+    )
+
+    # now defining a mock function
+    def mock_get_max_pixel_value_from_transmission(transmission):
+        pixel_val = transmission_map.get(transmission)
+
+        if pixel_val is None:
+            raise KeyError(f"Transmission {transmission} is not in the mock dictionary")
+
+        return pixel_val
+
+    # AsyncMock(side_effect=[50,75,etc...]) # use one for the transmissions one for the pixel values.
+
+    # with patch(
+    #     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.get_max_pixel_value_from_transmission",
+    #     side_effect=mock_get_max_pixel_value_from_transmission,
+    # ):
+    #     result = optimise_oav_transmission_binary_search(255 / 2, 100, 0, 5, 10)
+    #     assert result == 18.75
 
 
 def tranmission_to_max_pixel(transmission):

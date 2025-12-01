@@ -121,6 +121,16 @@ def take_and_save_oav_image(
         raise FileExistsError("OAV image file path already exists")
 
 
+def _get_max_pixel_from_100_transmission(
+    max_pixel: MaxPixel = inject("max_pixel"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+):
+    yield from bps.mv(attenuator, 100)  # 100 % transmission
+    yield from bps.trigger(max_pixel, wait=True)
+    target_brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
+    return target_brightest_pixel
+
+
 def optimise_oav_transmission_binary_search(
     upper_bound: float,  # in percent
     lower_bound: float,  # in percent
@@ -129,7 +139,7 @@ def optimise_oav_transmission_binary_search(
     max_iterations: int = 5,
     max_pixel: MaxPixel = inject("max_pixel"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-) -> MsgGenerator:
+):
     """
     Plan to find the optimal oav transmission. First the brightest pixel at 100%
     transmission is taken. A fraction of this (frac_of_max) is taken as the target -
@@ -143,9 +153,7 @@ def optimise_oav_transmission_binary_search(
         tolerance: Amount the search can be off by and still find a match.
         max_iterations: Maximum amount of iterations.
     """
-    yield from bps.mv(attenuator, 100)  # 100 % transmission
-    yield from bps.trigger(max_pixel, wait=True)
-    brightest_pixel_sat = yield from bps.rd(max_pixel.max_pixel_val)
+    brightest_pixel_sat = yield from _get_max_pixel_from_100_transmission()
     target_pixel_l = brightest_pixel_sat * frac_of_max
     LOGGER.info(f"~~Target luminosity: {target_pixel_l}~~\n")
 
@@ -177,4 +185,4 @@ def optimise_oav_transmission_binary_search(
         elif brightest_pixel > target_pixel_l + tolerance:
             LOGGER.info("Result: Too high \n")
             upper_bound = mid
-    return "Max iterations reached"
+    raise StopIteration("Max iterations reached")
