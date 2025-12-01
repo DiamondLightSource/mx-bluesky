@@ -8,7 +8,7 @@ from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from dodal.devices.backlight import Backlight
 from dodal.devices.robot import BartRobot
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
@@ -120,7 +120,6 @@ def test_robot_load_and_snapshots_triggers_alert_and_resets_state_between_plans(
                         MagicMock(),
                         MagicMock(),
                         1,
-                        2,
                         None,
                     ),
                 )

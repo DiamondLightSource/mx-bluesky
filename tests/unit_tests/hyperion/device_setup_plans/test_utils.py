@@ -5,7 +5,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -14,7 +14,7 @@ from mx_bluesky.common.device_setup_plans.utils import (
 
 @pytest.fixture()
 def mock_eiger():
-    eiger = i03.eiger(mock=True)
+    eiger = i03.eiger.build(mock=True)
     eiger.detector_params = MagicMock()
     eiger.async_stage = MagicMock()
     eiger.disarm_detector = MagicMock()
