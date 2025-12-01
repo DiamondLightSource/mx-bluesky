@@ -333,8 +333,8 @@ def _grid_info_to_json(data: DataCollectionGridInfo) -> dict:
             "stepsX": data.steps_x,
             "stepsY": data.steps_y,
             "orientation": data.orientation.value,
-            "pixelsPerMicronX": 1 / data.microns_per_pixel_x,
-            "pixelsPerMicronY": 1 / data.microns_per_pixel_y,
+            "micronsPerPixelX": data.microns_per_pixel_x,
+            "micronsPerPixelY": data.microns_per_pixel_y,
             "snaked": data.snaked,
         }
     )

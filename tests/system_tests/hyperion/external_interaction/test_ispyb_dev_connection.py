@@ -11,7 +11,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -88,8 +88,8 @@ GRID_INFO_COLUMN_MAP = {
         "steps_x",
         "steps_y",
         "meshAngle",
-        "pixelsPerMicronX",
-        "pixelsPerMicronY",
+        "micronsPerPixelX",
+        "micronsPerPixelY",
         "snapshot_offsetXPixel",
         "snapshot_offsetYPixel",
         "recordTimeStamp",
@@ -480,8 +480,8 @@ def test_ispyb_deposition_in_gridscan(
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "pixelsPerMicronX": 1.24069,
-        "pixelsPerMicronY": 1.24069,
+        "micronsPerPixelX": 0.8060031111720091,
+        "micronsPerPixelY": 0.8060031111720091,
     }
 
     compare_actual_and_expected(

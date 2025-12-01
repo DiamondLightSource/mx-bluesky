@@ -7,8 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
@@ -41,8 +40,8 @@ def mock_emit():
 
 @pytest.fixture
 async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
-    sample_shutter = i03.sample_shutter(connect_immediately=True, mock=True)
-    xspress3mini = i03.xspress3mini(connect_immediately=True, mock=True)
+    sample_shutter = i03.sample_shutter.build(connect_immediately=True, mock=True)
+    xspress3mini = i03.xspress3mini.build(connect_immediately=True, mock=True)
 
     return OptimizeAttenuationComposite(
         sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator
@@ -272,12 +271,12 @@ def test_deadtime_calc_new_transmission_gets_correct_value(
     )
 
 
-def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
+def test_deadtime_calc_new_transmission_raises_error_on_low_transmission():
     with pytest.raises(AttenuationOptimisationFailedError):
         deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
 
 
-def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
+def test_total_count_calc_new_transmission_raises_error_on_low_transmission(
     run_engine: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
     set_mock_value(

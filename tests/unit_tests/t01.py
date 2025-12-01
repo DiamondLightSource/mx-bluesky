@@ -6,7 +6,7 @@ See Also:
     use_beamline_t01()
 """
 
-from dodal.common.beamlines.beamline_utils import device_factory
+from dodal.device_manager import DeviceManager
 from dodal.devices.baton import Baton
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.utils import BeamlinePrefix, get_beamline_name
@@ -14,8 +14,10 @@ from dodal.utils import BeamlinePrefix, get_beamline_name
 BL = get_beamline_name("t01")
 PREFIX = BeamlinePrefix(BL)
 
+devices = DeviceManager()
 
-@device_factory()
+
+@devices.factory()
 def baton() -> Baton:
     """Get the i03 baton device, instantiate it if it hasn't already been.
     If this is called when already instantiated in i03, it will return the existing object.
@@ -23,7 +25,7 @@ def baton() -> Baton:
     return Baton(f"{PREFIX.beamline_prefix}-CS-BATON-01:")
 
 
-@device_factory()
+@devices.factory()
 def xbpm_feedback() -> XBPMFeedback:
     """Get the i03 XBPM feeback device, instantiate it if it hasn't already been.
     If this is called when already instantiated in i03, it will return the existing object.

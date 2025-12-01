@@ -19,7 +19,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.baton import Baton
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
@@ -540,11 +540,11 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         {"BEAMLINE": "i03"},
     ):
         with patch(
-            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module",
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_device_manager",
             return_value=({}, {}),
-        ) as mock_with_dodal_module:
+        ) as mock_with_device_manager:
             context = setup_context(dev_mode=dev_mode)
-            mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
+            mock_with_device_manager.assert_called_once_with(ANY, mock=dev_mode)
         plan_names = context.plans.keys()
 
         # assert "rotation_scan" in plan_names
