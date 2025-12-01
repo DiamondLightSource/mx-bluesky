@@ -45,10 +45,15 @@ class PlanRunner(BaseRunner):
         self.current_status = Status.BUSY
 
         try:
-            while not self._callbacks_started:
+            callback_expiry = time.monotonic() + self.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S
+            while time.monotonic() < callback_expiry:
+                if self._callbacks_started:
+                    break
                 # If on first launch the external callbacks aren't started yet, wait until they are
                 LOGGER.info("Waiting for external callbacks to start")
                 yield from bps.sleep(self.EXTERNAL_CALLBACK_POLL_INTERVAL_S)
+            else:
+                raise RuntimeError("External callbacks not running - try restarting")
 
             if not self._external_callbacks_are_alive():
                 raise RuntimeError(
