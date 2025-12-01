@@ -22,11 +22,9 @@ def patch_timer_poll_interval():
 
 @pytest.fixture()
 def patch_timer_expiry():
-    with (
-        patch(
-            "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
-            0.1,
-        ),
+    with patch(
+        "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
+        0.1,
     ):
         yield
 
@@ -72,7 +70,9 @@ def test_external_callbacks_raises_if_never_started(
             run_engine(runner.execute_plan(test_plan))
         fut.result()
 
-    assert exc_info.value.__cause__.args[0].startswith("External callbacks not running")
+    assert exc_info.value.__cause__.args[0].startswith(  # type: ignore
+        "External callbacks not running"
+    )
 
 
 def test_external_callbacks_not_running_raises_exception_for_plan_execution(
