@@ -973,6 +973,7 @@ async def hyperion_flyscan_xrc_composite(
     s4_slit_gaps,
     fast_grid_scan,
     panda_fast_grid_scan,
+    beamsize,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -994,6 +995,7 @@ async def hyperion_flyscan_xrc_composite(
         panda_fast_grid_scan=panda_fast_grid_scan,
         robot=i03.robot.build(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
+        beamsize=beamsize,
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)

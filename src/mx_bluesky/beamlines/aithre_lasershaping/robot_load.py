@@ -28,15 +28,12 @@ def robot_load_and_snapshot(
     sample_puck: int = 0,
     sample_pin: int = 0,
     sample_id: int = 0,
+    sample_name: str = "test",
     visit: str = "cm40645-5",
-    categories: str = "",
 ) -> MsgGenerator:
-    """
-    categories: type of the sample, e.g. Germ, ProteinaseK, Screening
-    """
     time_now = datetime.datetime.now()
     year_now = str(time_now.year)
-    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{categories}"
+    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{sample_name}/snapshots"
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
         sample_id=sample_id,
@@ -59,15 +56,12 @@ def robot_unload(
     sample_puck: int = 0,
     sample_pin: int = 0,
     sample_id: int = 0,
+    sample_name: str = "test",
     visit: str = "cm40645-5",
-    categories: str = "",
 ) -> MsgGenerator:
-    """
-    categories: type of the sample, e.g. Germ, ProteinaseK, Screening
-    """
     time_now = datetime.datetime.now()
     year_now = str(time_now.year)
-    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{categories}"
+    snapshot_directory = f"/dls/i23/data/{year_now}/{visit}/{sample_name}/snapshots"
     composite = RobotLoadComposite(robot, gonio, oav, gonio)
     params = AithreRobotLoad(
         sample_id=sample_id,
