@@ -58,16 +58,15 @@ class MurkoCallback(CallbackBase):
         self.last_uuid = None
         self.previous_omegas: list[OmegaReading] = []
         self.redis_connected = self._check_redis_connection()
-        if not self.redis_connected:
-            LOGGER.warning(
-                f"Failed to connect to redis: {self.redis_client}. Murko callback will not run"
-            )
 
     def _check_redis_connection(self):
         try:
             self.redis_client.ping()
             return True
         except ConnectionError:
+            LOGGER.warning(
+                f"Failed to connect to redis: {self.redis_client}. Murko callback will not run"
+            )
             return False
 
     def start(self, doc: RunStart) -> RunStart | None:
