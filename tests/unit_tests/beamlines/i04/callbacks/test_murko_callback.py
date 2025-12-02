@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from event_model import Event
@@ -275,3 +275,17 @@ def test_when_murko_called_with_full_screen_and_roi_event_then_metadata_updates_
 )
 def test_extrapolate_omega(latest_omega, previous_omega, now, expected):
     assert extrapolate_omega(latest_omega, previous_omega, now) == expected
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.callbacks.murko_callback.MurkoCallback._check_redis_connection"
+)
+def test_if_redis_connection_fails_then_there_is_no_error(
+    mock_check_redis_connection: MagicMock,
+):
+    mock_check_redis_connection.return_value = False
+    callback = MurkoCallback("", "")
+    doc = {}
+    callback.start(doc)
+    callback.event(doc)
+    callback.stop(doc)
