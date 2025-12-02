@@ -6,6 +6,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
@@ -186,3 +187,35 @@ def optimise_oav_transmission_binary_search(
             LOGGER.info("Result: Too high \n")
             upper_bound = mid
     raise StopIteration("Max iterations reached")
+
+
+def automated_centring(
+    robot: BartRobot,
+    beamstop: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod = inject("centre_ellipse"),
+):
+    # plan to move scintillator in
+    # call the above plan first to optimise transmission
+    # then use the centring device to find the centre
+    yield from _prepare_beamline_for_scintillator_images(
+        robot,
+        beamstop,
+        backlight,
+        scintillator,
+        xbpm_feedback,
+        initial_wait_group,
+    )
+    yield from optimise_oav_transmission_binary_search(100, 0)
+
+    yield from bps.trigger(centre_ellipse, wait=True)
+    centre_x = bps.rd(centre_ellipse.center_x_val)
+    centre_y = bps.rd(centre_ellipse.center_y_val)
+    LOGGER.info(f"Centre X: {centre_x}, Centre Y: {centre_y}")
+    # now you can add the bit to move it to the centre
+
+
+# A - if I put the injects then I don't think I need to put it here too
