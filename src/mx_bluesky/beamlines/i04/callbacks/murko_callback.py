@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import TypedDict
 
 from bluesky.callbacks import CallbackBase
+from dodal.devices.i04.murko_results import MurkoResultsDevice
 from dodal.log import LOGGER
 from event_model.documents import Event, RunStart, RunStop
 from redis import StrictRedis
@@ -56,6 +57,13 @@ class MurkoCallback(CallbackBase):
         )
         self.last_uuid = None
         self.previous_omegas: list[OmegaReading] = []
+        self.redis_connected = MurkoResultsDevice.check_redis_connection(
+            self.redis_client
+        )
+        if not self.redis_connected:
+            LOGGER.warning(
+                f"Failed to connect to redis: {self.redis_client}. Murko callback will not run"
+            )
 
     def start(self, doc: RunStart) -> RunStart | None:
         self.murko_metadata: dict = {"sample_id": doc.get("sample_id")}
@@ -109,17 +117,19 @@ class MurkoCallback(CallbackBase):
 
         # Send metadata to REDIS and trigger murko
         redis_key = f"murko:{metadata['sample_id']}:metadata"
-        self.redis_client.hset(redis_key, uuid, json.dumps(metadata))
-        self.redis_client.expire(redis_key, timedelta(days=self.DATA_EXPIRY_DAYS))
-        self.redis_client.publish("murko", json.dumps(metadata))
+        if self.redis_connected:
+            self.redis_client.hset(redis_key, uuid, json.dumps(metadata))
+            self.redis_client.expire(redis_key, timedelta(days=self.DATA_EXPIRY_DAYS))
+            self.redis_client.publish("murko", json.dumps(metadata))
 
     def stop(self, doc: RunStop) -> RunStop | None:
         LOGGER.info(f"Finished streaming {self.murko_metadata['sample_id']} to murko")
         LOGGER.info(
             f"Publishing forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"
         )
-        self.redis_client.publish(
-            "murko",
-            json.dumps(FORWARDING_COMPLETE_MESSAGE),
-        )
+        if self.redis_connected:
+            self.redis_client.publish(
+                "murko",
+                json.dumps(FORWARDING_COMPLETE_MESSAGE),
+            )
         return doc
