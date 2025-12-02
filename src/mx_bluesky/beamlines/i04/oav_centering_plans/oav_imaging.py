@@ -198,9 +198,6 @@ def automated_centring(
     max_pixel: MaxPixel,
     centre_ellipse: CentreEllipseMethod = inject("centre_ellipse"),
 ):
-    # plan to move scintillator in
-    # call the above plan first to optimise transmission
-    # then use the centring device to find the centre
     yield from _prepare_beamline_for_scintillator_images(
         robot,
         beamstop,
