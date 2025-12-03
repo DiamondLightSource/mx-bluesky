@@ -1,6 +1,6 @@
 import os
 import time
-
+from time import sleep
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -51,21 +51,28 @@ def take_oav_image_with_scintillator_in(
                     defaults are always correct.
     """
 
+    LOGGER.info("prearing beamline")
     yield from _prepare_beamline_for_scintillator_images(
-        robot, beamstop, backlight, scintillator, xbpm_feedback, initial_wait_group
+        robot, beamstop, backlight, scintillator, xbpm_feedback, initial_wait_group, shutter
     )
-
+    LOGGER.info("setting transmission")
     yield from bps.abs_set(attenuator, transmission, group=initial_wait_group)
+
 
     if image_name is None:
         image_name = f"{time.time_ns()}ATT{transmission * 100}"
-
+    LOGGER.info(f"using image name {image_name}")
+    LOGGER.info("Waiting for initial_wait_group...")
     yield from bps.wait(initial_wait_group)
+
+    LOGGER.info("Opening shutter...")
 
     yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
 
-    take_and_save_oav_image(file_path=image_path, file_name=image_name, oav=oav)
+    LOGGER.info("Taking image...")
+
+    yield from take_and_save_oav_image(file_path=image_path, file_name=image_name, oav=oav)
 
 
 def _prepare_beamline_for_scintillator_images(
@@ -74,6 +81,7 @@ def _prepare_beamline_for_scintillator_images(
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
+    shutter: ZebraShutter,
     group: str,
 ) -> MsgGenerator:
     """
@@ -97,6 +105,9 @@ def _prepare_beamline_for_scintillator_images(
     yield from bps.abs_set(backlight, core_INOUT.OUT, group=group)
 
     yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=group)
+
+    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
+    yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
 
 
 def take_and_save_oav_image(
@@ -123,24 +134,25 @@ def take_and_save_oav_image(
 
 
 def _get_max_pixel_from_100_transmission(
-    max_pixel: MaxPixel = inject("max_pixel"),
-    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+    max_pixel: MaxPixel,
+    attenuator: BinaryFilterAttenuator,
 ):
-    yield from bps.mv(attenuator, 100)  # 100 % transmission
+    yield from bps.mv(attenuator, 1)  # 100 % transmission
     yield from bps.trigger(max_pixel, wait=True)
     target_brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
     return target_brightest_pixel
 
 
 def optimise_oav_transmission_binary_search(
-    upper_bound: float,  # in percent
-    lower_bound: float,  # in percent
-    frac_of_max: float = 0.5,
-    tolerance: int = 1,
-    max_iterations: int = 5,
+    upper_bound: float = 100,  # in percent
+    lower_bound: float = 0,  # in percent
+    frac_of_max: float = 0.75,
+    tolerance: int = 5,
+    max_iterations: int = 10,
     max_pixel: MaxPixel = inject("max_pixel"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-):
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback")
+) -> MsgGenerator:
     """
     Plan to find the optimal oav transmission. First the brightest pixel at 100%
     transmission is taken. A fraction of this (frac_of_max) is taken as the target -
@@ -154,15 +166,18 @@ def optimise_oav_transmission_binary_search(
         tolerance: Amount the search can be off by and still find a match.
         max_iterations: Maximum amount of iterations.
     """
-    brightest_pixel_sat = yield from _get_max_pixel_from_100_transmission()
+    brightest_pixel_sat = yield from _get_max_pixel_from_100_transmission(max_pixel, attenuator)
     target_pixel_l = brightest_pixel_sat * frac_of_max
     LOGGER.info(f"~~Target luminosity: {target_pixel_l}~~\n")
 
-    while max_iterations > tolerance:
+    iterations = 0
+
+    while iterations<max_iterations:
         mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
-        max_iterations -= 1
+        LOGGER.info(f"on iteration {iterations}")
 
         yield from bps.mv(attenuator, mid / 100)
+        yield from bps.trigger(xbpm_feedback)
         yield from bps.trigger(max_pixel, wait=True)
         brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
 
@@ -174,7 +189,8 @@ def optimise_oav_transmission_binary_search(
 
         if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
             mid = round(mid, 0)
-            LOGGER.info(f"\nOptimal transmission found - {mid}")
+            LOGGER.info(f"\nOptimal transmission found: {mid}")
+            yield from bps.trigger(xbpm_feedback)
             return mid
 
         # condition for too low so want to try higher
@@ -186,32 +202,62 @@ def optimise_oav_transmission_binary_search(
         elif brightest_pixel > target_pixel_l + tolerance:
             LOGGER.info("Result: Too high \n")
             upper_bound = mid
+        iterations += 1
     raise StopIteration("Max iterations reached")
 
 
-def automated_centring(
-    robot: BartRobot,
-    beamstop: Beamstop,
-    backlight: Backlight,
-    scintillator: Scintillator,
-    xbpm_feedback: XBPMFeedback,
-    max_pixel: MaxPixel,
-    centre_ellipse: CentreEllipseMethod = inject("centre_ellipse"),
-):
-    yield from _prepare_beamline_for_scintillator_images(
-        robot,
-        beamstop,
-        backlight,
-        scintillator,
-        xbpm_feedback,
-        initial_wait_group,
-    )
-    yield from optimise_oav_transmission_binary_search(100, 0)
 
-    yield from bps.trigger(centre_ellipse, wait=True)
-    centre_x = bps.rd(centre_ellipse.center_x_val)
-    centre_y = bps.rd(centre_ellipse.center_y_val)
-    LOGGER.info(f"Centre X: {centre_x}, Centre Y: {centre_y}")
+def automated_centring(
+    zoom_levels: list[str] = ["1.0x", "1.5x", "2.0x", "2.5x", "3.0x", "5.0x", "7.5x", "10.0x"],
+    robot: BartRobot= inject("robot"),
+    beamstop: Beamstop = inject("beamstop"),
+    backlight: Backlight = inject("backlight"),
+    scintillator: Scintillator = inject("scintillator"),
+    xbpm_feedback: XBPMFeedback= inject("xbpm_feedback"),
+    max_pixel: MaxPixel = inject("max_pixel"),
+    centre_ellipse: CentreEllipseMethod = inject("beam_centre"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+    oav: OAV = inject("oav"),
+    shutter: ZebraShutter = inject("sample_shutter"),
+
+) -> MsgGenerator:
+    
+    zoom_level_to_dict = {"7.5x": [oav.zoom_controller.x_placeholder_zoom_7, oav.zoom_controller.y_placeholder_zoom_7], "1.0x": [oav.zoom_controller.x_placeholder_zoom_1, oav.zoom_controller.y_placeholder_zoom_1], "1.5x": [oav.zoom_controller.x_placeholder_zoom_2, oav.zoom_controller.y_placeholder_zoom_2], "2.0x": [oav.zoom_controller.x_placeholder_zoom_3, oav.zoom_controller.y_placeholder_zoom_3], 
+                          "2.5x": [oav.zoom_controller.x_placeholder_zoom_4, oav.zoom_controller.y_placeholder_zoom_4], "3.0x": [oav.zoom_controller.x_placeholder_zoom_5, oav.zoom_controller.y_placeholder_zoom_5], "5.0x": [oav.zoom_controller.x_placeholder_zoom_6, oav.zoom_controller.y_placeholder_zoom_6], "10.0x": [oav.zoom_controller.x_placeholder_zoom_8, oav.zoom_controller.y_placeholder_zoom_8],}
+    
+    LOGGER.info("Preparing beamline for images...")
+    yield from _prepare_beamline_for_scintillator_images(
+            robot,
+            beamstop,
+            backlight,
+            scintillator,
+            xbpm_feedback,
+            shutter,
+            initial_wait_group,
+        )
+
+    for zoom in zoom_levels:
+        LOGGER.info(f"Moving to zoom level {zoom}")
+        yield from bps.abs_set(oav.zoom_controller, zoom, wait=True)
+        yield from bps.sleep(1)
+        if zoom == "7.5x" or zoom == "1.0x":
+            LOGGER.info(f"Optimising transmission (zoom level {zoom})")
+            yield from optimise_oav_transmission_binary_search(100, 0, max_pixel=max_pixel, attenuator=attenuator, xbpm_feedback=xbpm_feedback)
+
+
+        yield from bps.trigger(centre_ellipse, wait=True)
+        centre_x = yield from bps.rd(centre_ellipse.center_x_val)
+        centre_y = yield from bps.rd(centre_ellipse.center_y_val)
+        LOGGER.info(f"Centre X: {centre_x}, Centre Y: {centre_y}")
+        centre_x = round(centre_x)
+        centre_y = round(centre_y)
+        x_signal = zoom_level_to_dict[zoom][0]
+        y_signal = zoom_level_to_dict[zoom][1]
+        LOGGER.info("Writing centre values to OAV PVs")
+        yield from bps.mv(x_signal, centre_x, y_signal, centre_y)
+
+    LOGGER.info("Done!")
+        
     # now you can add the bit to move it to the centre
 
 
