@@ -2,6 +2,8 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
     i04_default_grid_detect_and_xray_centre,
 )
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
+    automated_centring,
+    optimise_oav_transmission_binary_search,
     take_oav_image_with_scintillator_in,
 )
 from mx_bluesky.beamlines.i04.thawing_plan import (
@@ -16,4 +18,6 @@ __all__ = [
     "i04_default_grid_detect_and_xray_centre",
     "thaw_and_murko_centre",
     "take_oav_image_with_scintillator_in",
+    "optimise_oav_transmission_binary_search",
+    "automated_centring",
 ]
