@@ -16,9 +16,9 @@ Hyperion on BlueAPI consists of two components:
   collection.
 
 * hyperion-supervisor: This will be a separate service that is responsible for fetching instructions from 
-Agamemnon, decoding them and sending corresponding requests to ``hyperion-blueapi`` for execution. The supervisor 
-also monitors the state of ``hyperion-blueapi``, manages the Hyperion baton and provides endpoints for status 
-monitoring.  
+  Agamemnon, decoding them and sending corresponding requests to ``hyperion-blueapi`` for execution. The supervisor
+  also monitors the state of ``hyperion-blueapi``, manages the Hyperion baton and provides endpoints for status
+  monitoring.
 
 Deployment
 ----------
