@@ -16,4 +16,3 @@ logging:
   graylog:
     url: "tcp://graylog-log-target.diamond.ac.uk:12232"
     enabled: true
-  
