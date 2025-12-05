@@ -1,6 +1,6 @@
 env:
   sources:
-    - kind: dodal
+    - kind: deviceManager
       module: dodal.beamlines.i03
     - kind: planFunctions
       module: mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan
@@ -16,4 +16,3 @@ logging:
   graylog:
     url: "tcp://graylog-log-target.diamond.ac.uk:12232"
     enabled: true
-  
