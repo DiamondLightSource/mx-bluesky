@@ -1,6 +1,6 @@
 env:
   sources:
-    - kind: dodal
+    - kind: deviceManager
       module: dodal.beamlines.i03
       mock: true
     - kind: planFunctions
