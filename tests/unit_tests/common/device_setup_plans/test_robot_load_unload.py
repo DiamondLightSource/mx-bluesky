@@ -7,7 +7,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from ophyd_async.core import get_mock_put, set_mock_value
 
@@ -87,7 +87,9 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set" and msg.obj is robot and msg.args[0] is None,
+        lambda msg: msg.command == "set"
+        and msg.obj is robot
+        and msg.args[0] == SAMPLE_LOCATION_EMPTY,
     )
     assert_message_and_return_remaining(
         msgs,
@@ -134,7 +136,9 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set" and msg.obj is robot and msg.args[0] is None,
+        lambda msg: msg.command == "set"
+        and msg.obj is robot
+        and msg.args[0] == SAMPLE_LOCATION_EMPTY,
     )
 
     msgs = assert_message_and_return_remaining(
