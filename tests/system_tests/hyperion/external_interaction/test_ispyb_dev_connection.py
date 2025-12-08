@@ -480,8 +480,8 @@ def test_ispyb_deposition_in_gridscan(
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "micronsPerPixelX": 0.8060031111720091,
-        "micronsPerPixelY": 0.8060031111720091,
+        "micronsPerPixelX": 0.806,
+        "micronsPerPixelY": 0.806,
     }
 
     compare_actual_and_expected(
