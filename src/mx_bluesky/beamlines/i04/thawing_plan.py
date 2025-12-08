@@ -35,13 +35,13 @@ def thaw(
 
     def do_thaw():
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+        yield from bps.abs_set(thawer, OnOff.ON, wait=True)
         yield from bps.rel_set(smargon.omega, rotation, wait=True)
         yield from bps.rel_set(smargon.omega, -rotation, wait=True)
 
     def cleanup():
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
+        yield from bps.abs_set(thawer, OnOff.OFF, wait=True)
 
     yield from bpp.contingency_wrapper(
         do_thaw(),
@@ -97,7 +97,7 @@ def thaw_and_murko_centre(
     def cleanup():
         yield from bps.mv(oav_fs.zoom_controller.level, initial_zoom_level)
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
+        yield from bps.abs_set(thawer, OnOff.OFF, wait=True)
 
     def centre_from_murko():
         yield from bps.wait(murko_results_group)
@@ -124,7 +124,7 @@ def thaw_and_murko_centre(
             "1.0x",
         )
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+        yield from bps.abs_set(thawer, OnOff.ON, wait=True)
 
         def rotate_in_one_direction_then_murko_centre(
             rotation: float, oav_mode: Source
@@ -192,7 +192,7 @@ def thaw_and_stream_to_redis(
     def cleanup():
         yield from bps.mv(oav_fs.zoom_controller.level, initial_zoom_level)
         yield from bps.abs_set(smargon.omega.velocity, initial_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.OFF, wait=True)
+        yield from bps.abs_set(thawer, OnOff.OFF, wait=True)
 
     @subs_decorator(murko_callback)
     @contingency_decorator(final_plan=cleanup)
@@ -204,7 +204,7 @@ def thaw_and_stream_to_redis(
             "1.0x",
         )
         yield from bps.abs_set(smargon.omega.velocity, new_velocity, wait=True)
-        yield from bps.abs_set(thawer.control, OnOff.ON, wait=True)
+        yield from bps.abs_set(thawer, OnOff.ON, wait=True)
 
         @run_decorator(md={"sample_id": sample_id})
         def rotate_in_one_direction_and_stream_to_redis(

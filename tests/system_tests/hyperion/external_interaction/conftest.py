@@ -13,6 +13,7 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -24,6 +25,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -37,8 +39,7 @@ from ispyb.sqlalchemy import (
     Position,
 )
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
@@ -216,7 +217,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
-    zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo = i03.zocalo.build(connect_immediately=True, mock=True)
     zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
@@ -273,6 +274,7 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
     request,
+    beamsize: BeamsizeBase,
 ):
     composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
@@ -297,6 +299,7 @@ def grid_detect_then_xray_centre_composite(
         dcm=dcm,
         flux=flux,
         sample_shutter=sample_shutter,
+        beamsize=beamsize,
     )
 
     def default_edge_generator():
@@ -421,6 +424,8 @@ def composite_for_rotation_scan(
     oav_for_system_test: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     oav_for_system_test.zoom_controller.level.describe = AsyncMock(
@@ -445,6 +450,8 @@ def composite_for_rotation_scan(
         oav=oav_for_system_test,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
+        beamsize=beamsize,
     )
 
     energy_ev = convert_angstrom_to_ev(0.71)

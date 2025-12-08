@@ -87,7 +87,6 @@ class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
-    THAWING_TIME = 40
     TIP_OFFSET_UM = 0
     MAX_CRYO_TEMP_K = 110
     MAX_CRYO_PRESSURE_BAR = 0.1
@@ -167,7 +166,7 @@ class Status(Enum):
 
 
 @dataclass
-class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
+class FeatureSettings: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
 class FeatureSettingSources(

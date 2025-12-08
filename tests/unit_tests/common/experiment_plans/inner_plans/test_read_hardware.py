@@ -72,13 +72,13 @@ async def fake_composite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         dcm=dcm,
-        flux=i03.flux(connect_immediately=True, mock=True),
-        s4_slit_gaps=i03.s4_slit_gaps(connect_immediately=True, mock=True),
-        undulator=i03.undulator(connect_immediately=True, mock=True),
+        flux=i03.flux.build(connect_immediately=True, mock=True),
+        s4_slit_gaps=i03.s4_slit_gaps.build(connect_immediately=True, mock=True),
+        undulator=i03.undulator.build(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         robot=robot,
         smargon=smargon,
-        eiger=eiger(connect_immediately=True, mock=True),
+        eiger=eiger.build(mock=True),
     )
     return fake_composite
 

@@ -22,7 +22,7 @@ from dodal.devices.zocalo import ZocaloStartInfo
 from numpy import isclose
 from ophyd.sim import NullStatus
 from ophyd.status import Status
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -214,7 +214,7 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        fgs = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+        fgs = i03.zebra_fast_grid_scan.build(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_mock_value(fgs.motion_program.running, 1)
@@ -240,7 +240,7 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
 
-    def test_if_gridscan_prepare_fails_then_sample_exception_raised(
+    def test_if_gridscan_prepare_fails_with_invalid_grid_then_sample_exception_raised(
         self,
         run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
@@ -259,6 +259,31 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
             )
+
+    @patch(
+        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+    )
+    def test_if_gridscan_prepare_fails_with_other_exception_then_plan_re_raised(
+        self,
+        mock_kickoff_and_complete,
+        run_engine: RunEngine,
+        fake_fgs_composite: FlyScanEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        test_fgs_params: SpecifiedThreeDGridScan,
+    ):
+        exception = FailedStatus()
+        exception.__cause__ = Exception()
+
+        beamline_specific.set_flyscan_params_plan = MagicMock(side_effect=exception)
+
+        with pytest.raises(FailedStatus) as e:
+            run_engine(
+                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+            )
+
+        mock_kickoff_and_complete.assert_not_called()
+
+        assert e.value == exception
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.abs_set",
