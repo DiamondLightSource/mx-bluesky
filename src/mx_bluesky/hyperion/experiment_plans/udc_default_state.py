@@ -6,7 +6,12 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
-from dodal.devices.cryostream import CryoStream, CryoStreamGantry, CryoStreamSelection
+from dodal.devices.cryostream import (
+    CryoStreamGantry,
+    CryoStreamSelection,
+    OxfordCryoJet,
+    OxfordCryoStream,
+)
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
@@ -27,7 +32,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_config_client,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSettings
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionFeatureSettings
 
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
@@ -36,7 +41,8 @@ _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices(BeamstopCheckDevices):
     collimation_table: CollimationTable
-    cryostream: CryoStream
+    cryojet: OxfordCryoJet
+    cryostream: OxfordCryoStream
     cryostream_gantry: CryoStreamGantry
     fluorescence_det_motion: FluorescenceDetector
     hutch_shutter: HutchShutter
@@ -55,11 +61,11 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     """Moves beamline to known positions prior to UDC start"""
     yield from _verify_correct_cryostream_selected(devices.cryostream_gantry)
 
-    cryostream_temp = yield from bps.rd(devices.cryostream.temperature_k)
-    cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure_bar)
-    if cryostream_temp > devices.cryostream.MAX_TEMP_K:
+    cryostream_temp = yield from bps.rd(devices.cryostream.temp)
+    cryostream_pressure = yield from bps.rd(devices.cryostream.back_pressure)
+    if cryostream_temp > CONST.HARDWARE.MAX_CRYO_TEMP_K:
         raise CryoStreamError("Cryostream temperature is too high, not starting UDC")
-    if cryostream_pressure > devices.cryostream.MAX_PRESSURE_BAR:
+    if cryostream_pressure > CONST.HARDWARE.MAX_CRYO_PRESSURE_BAR:
         raise CryoStreamError("Cryostream back pressure is too high, not starting UDC")
 
     yield from _verify_no_sample_present(devices.robot)
@@ -129,10 +135,10 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     yield from bps.abs_set(
-        devices.cryostream.course, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
+        devices.cryojet.coarse, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
     )
     yield from bps.abs_set(
-        devices.cryostream.fine, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
+        devices.cryojet.fine, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
     )
 
     yield from bps.wait(_GROUP_POST_BEAMSTOP_CHECK)
