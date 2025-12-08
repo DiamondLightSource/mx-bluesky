@@ -340,7 +340,7 @@ def agamemnon_response(request) -> Generator[str, None, None]:
     indirect=True,
 )
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch("mx_bluesky.hyperion.parameters.rotation.os", new=MagicMock())
+@patch("mx_bluesky.common.parameters.rotation.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @patch("dodal.utils.os", new=MagicMock())
 def test_compare_params_causes_no_warning_when_compared_to_gda_params(

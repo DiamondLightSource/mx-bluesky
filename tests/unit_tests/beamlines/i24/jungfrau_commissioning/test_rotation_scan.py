@@ -13,7 +13,7 @@ from ophyd_async.core import completed_status, set_mock_value
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
     JF_DET_STAGE_Y_POSITION_MM,
-    HutchClosedException,
+    HutchClosedError,
     RotationScanComposite,
     _cleanup_plan,
     multi_rotation_plan_varying_transmission,
@@ -217,7 +217,7 @@ def test_set_up_beamline_for_rotation_error_on_closed_hutch(
     trans_frac = 0.1
     det_z = 200
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.CLOSED)
-    with pytest.raises(HutchClosedException):
+    with pytest.raises(HutchClosedError):
         run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
 

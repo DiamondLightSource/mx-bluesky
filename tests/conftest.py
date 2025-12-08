@@ -899,6 +899,7 @@ async def enum_attenuator() -> EnumFilterAttenuator:
     return attenuator
 
 
+@pytest.fixture
 async def panda():
     class MockBlock(Device):
         def __init__(

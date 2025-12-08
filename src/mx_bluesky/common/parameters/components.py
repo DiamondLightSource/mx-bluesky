@@ -25,6 +25,7 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
+    TEST_MODE,
     DetectorParamConstants,
     GridscanParamConstants,
 )
@@ -155,6 +156,7 @@ class WithVisit(BaseModel):
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
     )
     detector_distance_mm: float | None = Field(default=None, gt=0)
+    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
 
 
 class DiffractionExperiment(

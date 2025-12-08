@@ -113,7 +113,7 @@ def test_fgs_params(tmp_path):
 @pytest.fixture(params=[False, True])
 def test_omega_flip(request):
     with patch(
-        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
         new=request.param,
     ):
         yield request.param

@@ -59,7 +59,7 @@ JF_DET_STAGE_Y_POSITION_MM = 730
 DEFAULT_DETECTOR_DISTANCE_MM = 200
 
 
-class HutchClosedException(Exception): ...
+class HutchClosedError(Exception): ...
 
 
 def set_up_beamline_for_rotation(
@@ -68,7 +68,7 @@ def set_up_beamline_for_rotation(
     transmission_frac: float,
 ):
     """Check hutch is open, then, in parallel, move backlight in,
-    move aperture in, move backlight out and move det stages in. Wait for this parallel
+    move aperture in, move beamstop out and move det stages in. Wait for this parallel
     move to finish."""
 
     hutch_shutter_state: ShutterState = yield from bps.rd(
@@ -77,7 +77,7 @@ def set_up_beamline_for_rotation(
     LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
     if hutch_shutter_state != ShutterState.OPEN:
         LOGGER.error(f"Hutch shutter is not open! State is {hutch_shutter_state}")
-        raise HutchClosedException(
+        raise HutchClosedError(
             f"Hutch shutter is not open! State is {hutch_shutter_state}"
         )
 
