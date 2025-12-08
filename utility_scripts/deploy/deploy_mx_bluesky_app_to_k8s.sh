@@ -137,7 +137,7 @@ else
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
   MX_BLUESKY_BASENAME=$(basename $MX_BLUESKY_BASE)
-  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_v}
+  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_}
 fi
 
 
@@ -200,7 +200,7 @@ application.externalHostname=test-$APP_NAME.diamond.ac.uk "
   mkdir -p $PROJECTDIR/tmp/data
   DEPLOYMENT_DIR=$PROJECTDIR
 else
-  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
+  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_${APP_VERSION}/mx-bluesky
 fi
 if [[ -n $BIND_DIR ]]; then
   DEPLOYMENT_DIR=$BIND_DIR

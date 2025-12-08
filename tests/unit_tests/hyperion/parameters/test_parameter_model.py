@@ -15,7 +15,7 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
-    OddYStepsException,
+    OddYStepsError,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
@@ -85,9 +85,9 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
 
 def test_cant_do_panda_fgs_with_odd_y_steps(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    with pytest.raises(OddYStepsException):
-        _ = test_params.panda_FGS_params
-    assert test_params.FGS_params
+    with pytest.raises(OddYStepsError):
+        _ = test_params.panda_fast_gridscan_params
+    assert test_params.fast_gridscan_params
 
 
 def test_serialise_deserialise(minimal_3d_gridscan_params):

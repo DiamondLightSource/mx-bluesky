@@ -5,7 +5,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import FailedStatus
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.testing import get_mock_put
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -14,28 +14,28 @@ from mx_bluesky.common.device_setup_plans.utils import (
 
 @pytest.fixture()
 def mock_eiger():
-    eiger = i03.eiger(mock=True)
+    eiger = i03.eiger.build(mock=True)
     eiger.detector_params = MagicMock()
     eiger.async_stage = MagicMock()
     eiger.disarm_detector = MagicMock()
     return eiger
 
 
-class MyTestException(Exception):
+class MyTestError(Exception):
     pass
 
 
 def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_phase1, mock_eiger, detector_motion, RE
+    beamstop_phase1, mock_eiger, detector_motion, run_engine
 ):
     def my_plan():
         yield from bps.null()
-        raise MyTestException()
+        raise MyTestError()
 
     eiger = mock_eiger
 
-    with pytest.raises(MyTestException):
-        RE(
+    with pytest.raises(MyTestError):
+        run_engine(
             start_preparing_data_collection_then_do_plan(
                 beamstop_phase1, eiger, detector_motion, 100, my_plan()
             )
@@ -53,15 +53,15 @@ def null_plan():
 
 
 def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_phase1, mock_eiger, null_plan, RE
+    beamstop_phase1, mock_eiger, null_plan, run_engine
 ):
     detector_motion = MagicMock()
     status = Status()
-    status.set_exception(MyTestException())
+    status.set_exception(MyTestError())
     detector_motion.z.set = MagicMock(return_value=status)
 
     with pytest.raises(FailedStatus) as e:
-        RE(
+        run_engine(
             start_preparing_data_collection_then_do_plan(
                 beamstop_phase1, mock_eiger, detector_motion, 100, null_plan
             )
@@ -74,14 +74,14 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
 
 
 def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_returned(
-    beamstop_phase1, mock_eiger, detector_motion, null_plan, RE
+    beamstop_phase1, mock_eiger, detector_motion, null_plan, run_engine
 ):
     status = Status()
-    status.set_exception(MyTestException())
+    status.set_exception(MyTestError())
     detector_motion.shutter.set = MagicMock(return_value=status)
 
     with pytest.raises(FailedStatus) as e:
-        RE(
+        run_engine(
             start_preparing_data_collection_then_do_plan(
                 beamstop_phase1, mock_eiger, detector_motion, 100, null_plan
             )
@@ -92,6 +92,6 @@ def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_ret
     def wait_for_set():
         yield from bps.wait(group="ready_for_data_collection")
 
-    RE(wait_for_set())
+    run_engine(wait_for_set())
     get_mock_put(detector_motion.z.user_setpoint).assert_called_once()
     mock_eiger.disarm_detector.assert_called_once()

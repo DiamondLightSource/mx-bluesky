@@ -1,4 +1,3 @@
-import os
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
 from functools import partial
@@ -14,6 +13,7 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -25,7 +25,8 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.undulator import Undulator
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -38,8 +39,7 @@ from ispyb.sqlalchemy import (
     Position,
 )
 from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import callback_on_mock_put, set_mock_value
+from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
@@ -49,7 +49,7 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
-from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -67,13 +67,13 @@ from ....conftest import (
 )
 
 
-def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
+def get_current_datacollection_comment(session: Callable, dcid: int) -> str:
     """Read the 'comments' field from the given datacollection id's ISPyB entry.
     Returns an empty string if the comment is not yet initialised.
     """
     try:
-        with Session() as session:
-            query = session.query(DataCollection).filter(
+        with session() as _session:
+            query = _session.query(DataCollection).filter(
                 DataCollection.dataCollectionId == dcid
             )
             current_comment: str = query.first().comments
@@ -82,23 +82,23 @@ def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
     return current_comment
 
 
-def get_datacollections(Session: Callable, dcg_id: int) -> Sequence[int]:
-    with Session.begin() as session:  # type: ignore
-        query = session.query(DataCollection.dataCollectionId).filter(
+def get_datacollections(session: Callable, dcg_id: int) -> Sequence[int]:
+    with session.begin() as _session:  # type: ignore
+        query = _session.query(DataCollection.dataCollectionId).filter(
             DataCollection.dataCollectionGroupId == dcg_id
         )
         return [row[0] for row in query.all()]
 
 
 def get_current_datacollection_attribute(
-    Session: Callable, dcid: int, attr: str
+    session: Callable, dcid: int, attr: str
 ) -> str:
     """Read the specified field 'attr' from the given datacollection id's ISPyB entry.
     Returns an empty string if the attribute is not found.
     """
     try:
-        with Session() as session:
-            query = session.query(DataCollection).filter(
+        with session() as _session:
+            query = _session.query(DataCollection).filter(
                 DataCollection.dataCollectionId == dcid
             )
             first_result = query.first()
@@ -109,19 +109,19 @@ def get_current_datacollection_attribute(
 
 
 def get_current_datacollection_grid_attribute(
-    Session: Callable, grid_id: int, attr: str
+    session: Callable, grid_id: int, attr: str
 ) -> Any:
-    with Session() as session:
-        query = session.query(GridInfo).filter(GridInfo.gridInfoId == grid_id)
+    with session() as _session:
+        query = _session.query(GridInfo).filter(GridInfo.gridInfoId == grid_id)
         first_result = query.first()
         return getattr(first_result, attr)
 
 
 def get_current_position_attribute(
-    Session: Callable, position_id: int, attr: str
+    session: Callable, position_id: int, attr: str
 ) -> Any:
-    with Session() as session:
-        query = session.query(Position).filter(Position.positionId == position_id)
+    with session() as _session:
+        query = _session.query(Position).filter(Position.positionId == position_id)
         first_result = query.first()
         if first_result is None:
             return None
@@ -129,19 +129,19 @@ def get_current_position_attribute(
 
 
 def get_current_datacollectiongroup_attribute(
-    Session: Callable, dcg_id: int, attr: str
+    session: Callable, dcg_id: int, attr: str
 ):
-    with Session() as session:
-        query = session.query(DataCollectionGroup).filter(
+    with session() as _session:
+        query = _session.query(DataCollectionGroup).filter(
             DataCollectionGroup.dataCollectionGroupId == dcg_id
         )
         first_result = query.first()
         return getattr(first_result, attr)
 
 
-def get_blsample(Session: Callable, bl_sample_id: int) -> BLSample:
-    with Session() as session:
-        query = session.query(BLSample).filter(BLSample.blSampleId == bl_sample_id)
+def get_blsample(session: Callable, bl_sample_id: int) -> BLSample:
+    with session() as _session:
+        query = _session.query(BLSample).filter(BLSample.blSampleId == bl_sample_id)
         return query.first()
 
 
@@ -206,13 +206,6 @@ def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
     return StoreInIspyb(ispyb_config_path)
 
 
-@pytest.fixture
-def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = os.environ.get(
-        "ZOCALO_CONFIG", "/dls_sw/apps/zocalo/live/configuration.yaml"
-    )
-
-
 @pytest_asyncio.fixture
 async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
     """
@@ -226,7 +219,7 @@ async def zocalo_for_fake_zocalo(zocalo_env) -> ZocaloResults:
 
 @pytest.fixture
 def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
-    zocalo = i03.zocalo(connect_immediately=True, mock=True)
+    zocalo = i03.zocalo.build(connect_immediately=True, mock=True)
     zocalo.timeout_s = 10
     old_zocalo_trigger = zocalo.trigger
     zocalo.my_zocalo_result = deepcopy(TEST_RESULT_MEDIUM)
@@ -283,6 +276,7 @@ def grid_detect_then_xray_centre_composite(
     panda,
     panda_fast_grid_scan,
     request,
+    beamsize: BeamsizeBase,
 ):
     composite = HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
@@ -307,6 +301,7 @@ def grid_detect_then_xray_centre_composite(
         dcm=dcm,
         flux=flux,
         sample_shutter=sample_shutter,
+        beamsize=beamsize,
     )
 
     def default_edge_generator():
@@ -422,7 +417,7 @@ def composite_for_rotation_scan(
     backlight: Backlight,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
-    undulator_for_system_test: Undulator,
+    undulator_for_system_test: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
@@ -431,6 +426,8 @@ def composite_for_rotation_scan(
     oav_for_system_test: OAV,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     oav_for_system_test.zoom_controller.level.describe = AsyncMock(
@@ -455,11 +452,13 @@ def composite_for_rotation_scan(
         oav=oav_for_system_test,
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
+        beamsize=beamsize,
     )
 
-    energy_ev = convert_angstrom_to_eV(0.71)
+    energy_ev = convert_angstrom_to_ev(0.71)
     set_mock_value(
-        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
+        fake_create_rotation_devices.dcm.energy_in_keV.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
     set_mock_value(

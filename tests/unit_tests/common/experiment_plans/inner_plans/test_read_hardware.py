@@ -19,7 +19,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
@@ -52,7 +52,7 @@ class FakeComposite:
     dcm: DCM
     flux: Flux
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     synchrotron: Synchrotron
     robot: BartRobot
     smargon: Smargon
@@ -61,7 +61,6 @@ class FakeComposite:
 
 @pytest.fixture
 async def fake_composite(
-    RE: RunEngine,
     attenuator,
     aperture_scatterguard,
     dcm,
@@ -73,23 +72,25 @@ async def fake_composite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         dcm=dcm,
-        flux=i03.flux(connect_immediately=True, mock=True),
-        s4_slit_gaps=i03.s4_slit_gaps(connect_immediately=True, mock=True),
-        undulator=i03.undulator(connect_immediately=True, mock=True),
+        flux=i03.flux.build(connect_immediately=True, mock=True),
+        s4_slit_gaps=i03.s4_slit_gaps.build(connect_immediately=True, mock=True),
+        undulator=i03.undulator.build(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         robot=robot,
         smargon=smargon,
-        eiger=eiger(connect_immediately=True, mock=True),
+        eiger=eiger.build(mock=True),
     )
     return fake_composite
 
 
-def test_read_hardware_for_zocalo_in_RE(fake_composite: FakeComposite, RE: RunEngine):
+def test_read_hardware_for_zocalo_in_run_engine(
+    fake_composite: FakeComposite, run_engine: RunEngine
+):
     def open_run_and_read_hardware():
         yield from bps.open_run()
         yield from read_hardware_for_zocalo(fake_composite.eiger)
 
-    RE(open_run_and_read_hardware())
+    run_engine(open_run_and_read_hardware())
 
 
 def test_read_hardware_correct_messages(

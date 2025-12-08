@@ -4,6 +4,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -18,7 +19,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
@@ -51,6 +52,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
     beamstop: Beamstop
+    beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
@@ -58,7 +60,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
     oav: OAV
     pin_tip_detection: PinTipDetection
     s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
+    undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     robot: BartRobot

@@ -8,11 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
-from bluesky import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 from PIL import Image
 
 # Map all the case-sensitive column names from their normalised versions
@@ -126,13 +124,28 @@ DATA_COLLECTION_COLUMN_MAP = {
 }
 
 
+def _system_test_env_error_message(env_var: str):
+    return RuntimeError(
+        f"Environment variable {env_var} is not set, please ensure that the system test container "
+        f"images are running and the system tests are invoked via tox -e localsystemtests - see "
+        f"https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing for details."
+    )
+
+
 @pytest.fixture(autouse=True, scope="session")
 def ispyb_config_path() -> Generator[str, Any, Any]:
-    ispyb_config_path = os.environ.get(
-        "ISPYB_CONFIG_PATH", "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
-    )
-    with patch.dict(os.environ, {"ISPYB_CONFIG_PATH": ispyb_config_path}):
-        yield ispyb_config_path
+    ispyb_config_path = os.environ.get("ISPYB_CONFIG_PATH")
+    if ispyb_config_path is None:
+        raise _system_test_env_error_message("ISPYB_CONFIG_PATH")
+    yield ispyb_config_path
+
+
+@pytest.fixture
+def zocalo_env():
+    zocalo_config = os.environ.get("ZOCALO_CONFIG")
+    if zocalo_config is None:
+        raise _system_test_env_error_message("ZOCALO_CONFIG")
+    yield zocalo_config
 
 
 @pytest.fixture
@@ -149,11 +162,11 @@ def next_oav_system_test_image():
 
 
 @pytest.fixture
-def oav_for_system_test(RE: RunEngine, test_config_files, next_oav_system_test_image):
+def oav_for_system_test(test_config_files, next_oav_system_test_image):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    oav = i03.oav(connect_immediately=True, mock=True, params=parameters)
+    oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
     set_mock_value(oav.cam.array_size_y, 768)
 

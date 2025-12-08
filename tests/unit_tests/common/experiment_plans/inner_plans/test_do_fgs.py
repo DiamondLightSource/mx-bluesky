@@ -13,8 +13,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from event_model.documents import Event, RunStart
 from numpy.testing import assert_equal
-from ophyd_async.core import init_devices
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import init_devices, set_mock_value
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,
@@ -30,7 +29,7 @@ from .....conftest import create_dummy_scan_spec
 
 
 @pytest.fixture
-def fgs_devices(RE, eiger):
+def fgs_devices(run_engine, eiger):
     with init_devices(mock=True):
         synchrotron = Synchrotron()
         grid_scan_device = ZebraFastGridScanThreeD("zebra_fgs")
@@ -108,7 +107,7 @@ def test_kickoff_and_complete_gridscan_correct_messages(
 
 # This test should use the real Zocalo callbacks once https://github.com/DiamondLightSource/mx-bluesky/issues/215 is done
 def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
-    RE: RunEngine, fgs_devices
+    run_engine: RunEngine, fgs_devices
 ):
     class TestCallback(CallbackBase):
         def start(self, doc: RunStart):
@@ -121,7 +120,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
 
     test_callback = TestCallback()
 
-    RE.subscribe(test_callback)
+    run_engine.subscribe(test_callback)
     synchrotron = fgs_devices["synchrotron"]
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.DEV)
     detector = fgs_devices["detector"]
@@ -131,7 +130,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
 
     expected_scan_points = create_dummy_scan_spec()
     with patch("mx_bluesky.common.experiment_plans.inner_plans.do_fgs.bps.complete"):
-        RE(
+        run_engine(
             kickoff_and_complete_gridscan(
                 fgs_device,
                 detector,

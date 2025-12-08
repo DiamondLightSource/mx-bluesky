@@ -17,7 +17,7 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
-from mx_bluesky.common.utils.exceptions import CrystalNotFoundException
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
@@ -95,7 +95,7 @@ def load_centre_collect_full(
                 ),
                 flyscan_event_handler,
             )
-        except CrystalNotFoundException:
+        except CrystalNotFoundError:
             if parameters.select_centres.ignore_xtal_not_found:
                 LOGGER.info("Ignoring crystal not found due to parameter settings.")
             else:

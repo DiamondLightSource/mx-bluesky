@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -18,7 +15,7 @@ from mx_bluesky.common.parameters.constants import RotationParamConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
-from mx_bluesky.common.utils.log import NEXUS_LOGGER
+from mx_bluesky.common.utils.log import NEXUS_LOGGER, format_doc_for_log
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
@@ -32,7 +29,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         nexus_file_handler_callback = NexusFileCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
+        run_engine.subscribe(nexus_file_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
@@ -68,7 +65,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.writer.beam,
                 self.writer.attenuator,
             ) = create_beam_and_attenuator_parameters(
-                data["dcm-energy_in_kev"],
+                data["dcm-energy_in_keV"],
                 data["flux-flux_reading"],
                 data["attenuator-actual_transmission"],
             )

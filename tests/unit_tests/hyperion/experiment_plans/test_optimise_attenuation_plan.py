@@ -7,13 +7,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from ophyd.status import Status
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
 from mx_bluesky.hyperion.experiment_plans.optimise_attenuation_plan import (
-    AttenuationOptimisationFailedException,
+    AttenuationOptimisationFailedError,
     Direction,
     OptimizeAttenuationComposite,
     calculate_new_direction,
@@ -41,8 +40,8 @@ def mock_emit():
 
 @pytest.fixture
 async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
-    sample_shutter = i03.sample_shutter(connect_immediately=True, mock=True)
-    xspress3mini = i03.xspress3mini(connect_immediately=True, mock=True)
+    sample_shutter = i03.sample_shutter.build(connect_immediately=True, mock=True)
+    xspress3mini = i03.xspress3mini.build(connect_immediately=True, mock=True)
 
     return OptimizeAttenuationComposite(
         sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator
@@ -72,9 +71,7 @@ def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
         yield fake_composite
 
 
-def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold(
-    RE: RunEngine,
-):
+def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
     deadtime: float = 1
     direction = Direction.POSITIVE
     for _ in range(5):
@@ -95,7 +92,7 @@ def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_
 
 
 def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
-    RE: RunEngine,
+    run_engine: RunEngine,
     mock_emit: MagicMock,
     fake_composite_mocked_sets: OptimizeAttenuationComposite,
 ):
@@ -103,7 +100,7 @@ def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
         fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
         np.array([1, 1, 1, 1, 1, 1]),
     )
-    RE(
+    run_engine(
         total_counts_optimisation(
             fake_composite_mocked_sets,
             transmission=0.1,
@@ -147,7 +144,7 @@ def test_calculate_new_direction_gives_correct_value(
 )
 def test_deadtime_optimisation_calculates_deadtime_correctly(
     mock_do_device_optimise_iteration,
-    RE: RunEngine,
+    run_engine: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
     set_mock_value(fake_composite.xspress3mini.channels[1].total_time, 100)
@@ -157,7 +154,7 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
         "mx_bluesky.hyperion.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised",
         autospec=True,
     ) as mock_is_deadtime_optimised:
-        RE(
+        run_engine(
             deadtime_optimisation(
                 fake_composite,
                 0.5,
@@ -235,15 +232,15 @@ def test_is_counts_within_target_is_false(
 
 
 def test_total_count_exception_raised_after_max_cycles_reached(
-    RE: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
+    run_engine: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     set_mock_value(
         fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
         np.array([1, 1, 1, 1, 1, 1]),
     )
-    with pytest.raises(AttenuationOptimisationFailedException):
-        RE(
+    with pytest.raises(AttenuationOptimisationFailedError):
+        run_engine(
             total_counts_optimisation(
                 fake_composite_mocked_sets, 1, 0, 10, 0, 5, 2, 1, 0, 0
             )
@@ -274,20 +271,20 @@ def test_deadtime_calc_new_transmission_gets_correct_value(
     )
 
 
-def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
-    with pytest.raises(AttenuationOptimisationFailedException):
+def test_deadtime_calc_new_transmission_raises_error_on_low_transmission():
+    with pytest.raises(AttenuationOptimisationFailedError):
         deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
 
 
-def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
-    RE: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
+def test_total_count_calc_new_transmission_raises_error_on_low_transmission(
+    run_engine: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
     set_mock_value(
         fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
         np.array([1, 1, 1, 1, 1, 1]),
     )
-    with pytest.raises(AttenuationOptimisationFailedException):
-        RE(
+    with pytest.raises(AttenuationOptimisationFailedError):
+        run_engine(
             total_counts_optimisation(
                 fake_composite_mocked_sets,
                 1e-6,
@@ -304,7 +301,7 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
 
 
 def test_total_counts_gets_within_target(
-    RE: RunEngine,
+    run_engine: RunEngine,
     fake_composite_mocked_sets: OptimizeAttenuationComposite,
 ):
     # For simplicity we just increase the data array each iteration. In reality it's the transmission value that affects the array
@@ -320,7 +317,7 @@ def test_total_counts_gets_within_target(
     fake_composite_mocked_sets.attenuator.set = update_data
     iteration = 0
 
-    RE(
+    run_engine(
         total_counts_optimisation(
             fake_composite_mocked_sets,
             transmission=1,
@@ -357,7 +354,7 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     mock_deadtime_optimisation,
     mock_total_counts_optimisation,
     optimisation_type: Literal["total_counts"] | Literal["deadtime"],
-    RE: RunEngine,
+    run_engine: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
     fake_composite.attenuator.set = MagicMock(return_value=get_good_status())
@@ -365,7 +362,7 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
         return_value=get_good_status()
     )
 
-    RE(
+    run_engine(
         optimise_attenuation_plan.optimise_attenuation_plan(
             fake_composite,
             optimisation_type=optimisation_type,

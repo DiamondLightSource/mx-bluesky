@@ -186,11 +186,6 @@ def setup_zebra_for_rotation(
 
     ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
 
-    if not isinstance(direction, RotationDirection):
-        raise ValueError(
-            "Disallowed rotation direction provided to Zebra setup plan. "
-            "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
-        )
     yield from bps.abs_set(zebra.pc.dir, direction.value, group=group)
     LOGGER.info("ZEBRA SETUP: START")
     # Set gate start, adjust for shutter opening time if necessary

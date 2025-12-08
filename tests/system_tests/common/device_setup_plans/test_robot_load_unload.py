@@ -8,7 +8,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 from requests import get
 from tests.conftest import SimConstants
 
@@ -20,7 +20,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_call
 
 @pytest.mark.system_test
 def test_execute_unload_sample_full(
-    RE: RunEngine,
+    run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -40,8 +40,8 @@ def test_execute_unload_sample_full(
     set_mock_value(robot.sample_id, SimConstants.ST_SAMPLE_ID)
     set_mock_value(robot.current_puck, 10)
 
-    RE.subscribe(callback)
-    RE(
+    run_engine.subscribe(callback)
+    run_engine(
         robot_unload(
             robot, smargon, aperture_scatterguard, lower_gonio, SimConstants.ST_VISIT
         )

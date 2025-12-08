@@ -4,13 +4,14 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
+from dodal.devices.undulator import UndulatorInKeV
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -40,7 +41,7 @@ def read_hardware_for_zocalo(detector: EigerDetector):
 
 
 def standard_read_hardware_pre_collection(
-    undulator: Undulator,
+    undulator: UndulatorInKeV,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DoubleCrystalMonochromator,
@@ -52,7 +53,7 @@ def standard_read_hardware_pre_collection(
         synchrotron.synchrotron_mode,
         s4_slit_gaps,
         smargon,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
     ]
     yield from read_hardware_plan(
         signals_to_read_pre_flyscan, DocDescriptorNames.HARDWARE_READ_PRE
@@ -65,13 +66,15 @@ def standard_read_hardware_during_collection(
     flux: Flux,
     dcm: DoubleCrystalMonochromator,
     detector: EigerDetector,
+    beamsize: BeamsizeBase,
 ):
     signals_to_read_during_collection = [
         aperture_scatterguard,
         attenuator.actual_transmission,
         flux.flux_reading,
-        dcm.energy_in_kev,
+        dcm.energy_in_keV,
         detector.bit_depth,
+        beamsize,
     ]
     yield from read_hardware_plan(
         signals_to_read_during_collection, DocDescriptorNames.HARDWARE_READ_DURING

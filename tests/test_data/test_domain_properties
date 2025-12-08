@@ -1,6 +1,8 @@
 
 gda.px.oav.centring.pinTip=True
 
+gda.px.expttable.default.wavelength=0.95373
+
 # Main Hyperion settings
 
 #####################################################
@@ -68,6 +70,9 @@ gda.mx.hyperion.set_energy.enabled=false
 
 #Use ROI on the detector for xray centring
 gda.mx.hyperion.xrc.use_roi_mode=true
+
+gda.mx.bluesky.i04.xrc.unscaled_transmission_frac=1
+gda.mx.bluesky.i04.xrc.unscaled_exposure_time_s=0.007
 
 
 #####################################################

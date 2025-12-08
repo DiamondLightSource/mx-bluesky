@@ -1,7 +1,6 @@
 import asyncio
 import pprint
 import sys
-import time
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast
@@ -13,18 +12,21 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
+from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
 from event_model.documents import Event
 from ophyd_async.core import (
@@ -32,12 +34,11 @@ from ophyd_async.core import (
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -73,23 +74,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from tests.conftest import raw_params_from_file
 
-
-@pytest.fixture
-async def RE():
-    RE = RunEngine(call_returns_result=True)
-    # make sure the event loop is thoroughly up and running before we try to create
-    # any ophyd_async devices which might need it
-    timeout = time.monotonic() + 1
-    while not RE.loop.is_running():
-        await asyncio.sleep(0)
-        if time.monotonic() > timeout:
-            raise TimeoutError("This really shouldn't happen but just in case...")
-    yield RE
-    # RunEngine creates its own loop if we did not supply it, we must terminate it
-    RE.loop.call_soon_threadsafe(RE.loop.stop)
-    RE._th.join()
-
-
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
 
@@ -113,9 +97,8 @@ def _error_and_kill_pending_tasks(
     unfinished_tasks = {
         task
         for task in asyncio.all_tasks(loop)
-        if (coro := task.get_coro()) is not None
-        and hasattr(coro, "__name__")
-        and coro.__name__ not in _ALLOWED_PYTEST_TASKS
+        if hasattr(coro := task.get_coro(), "__name__")
+        and coro.__name__ not in _ALLOWED_PYTEST_TASKS  # type: ignore
         and not task.done()
     }
     for task in unfinished_tasks:
@@ -172,7 +155,9 @@ BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
-    "dcm-energy_in_kev": 11.105,
+    "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -241,13 +226,13 @@ def mock_subscriptions(test_fgs_params):
 
 
 @pytest.fixture
-def RE_with_subs(
-    RE: RunEngine,
+def run_engine_with_subs(
+    run_engine: RunEngine,
     mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
 ):
     for cb in list(mock_subscriptions):
-        RE.subscribe(cb)
-    yield RE, mock_subscriptions
+        run_engine.subscribe(cb)
+    yield run_engine, mock_subscriptions
 
 
 @pytest.fixture
@@ -325,7 +310,9 @@ def run_generic_ispyb_handler_setup(
 
 @pytest.fixture
 async def zebra_fast_grid_scan():
-    zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    zebra_fast_grid_scan = i03.zebra_fast_grid_scan.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
     set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
@@ -338,7 +325,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    RE: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
@@ -350,7 +336,7 @@ async def fake_fgs_composite(
 ):
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger(connect_immediately=True, mock=True),
+        eiger=i03.eiger.build(mock=True),
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
@@ -423,6 +409,7 @@ async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
+    beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -445,6 +432,7 @@ async def grid_detect_xrc_devices(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -474,7 +462,7 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path, RE: RunEngine) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
     with init_devices(mock=True):
         name = StaticFilenameProvider("jf_out")
         path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
@@ -482,3 +470,65 @@ def jungfrau(tmp_path: Path, RE: RunEngine) -> CommissioningJungfrau:
     set_mock_value(detector._writer.writer_ready, 1)
 
     return detector
+
+
+@pytest.fixture(autouse=True)
+def use_fake_properites_for_config_server():
+    properties_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new=properties_path,
+    ):
+        yield
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
+
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        return devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin.build(connect_immediately=True, mock=True)

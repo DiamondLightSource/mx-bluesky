@@ -6,6 +6,7 @@ import signal
 import subprocess
 import threading
 from genericpath import isfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from time import sleep
 from unittest.mock import MagicMock, patch
 
@@ -29,7 +30,7 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.utils.utils import convert_angstrom_to_eV
+from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -43,9 +44,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from .....conftest import fake_read
-from ..conftest import (  # noqa
-    fetch_comment,
-)
+from ..conftest import fetch_comment  # noqa  # type: ignore
 
 """
 Note that because these tests use the external processes some of the errors coming from
@@ -82,13 +81,8 @@ def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -
 
 
 @pytest.fixture
-def RE_with_external_callbacks(
-    zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
-):
-    RE = RunEngine()
-
+def external_callbacks():
     process_env = os.environ.copy()
-
     external_callbacks_process = subprocess.Popen(
         [
             "python",
@@ -97,6 +91,19 @@ def RE_with_external_callbacks(
         ],
         env=process_env,
     )
+    yield external_callbacks_process
+    external_callbacks_process.send_signal(signal.SIGINT)
+    sleep(0.01)
+    external_callbacks_process.kill()
+    external_callbacks_process.wait(10)
+
+
+@pytest.fixture
+def run_engine_with_external_callbacks(
+    external_callbacks,
+    zocalo_env,  # ZOCALO_CONFIG must be exported to external callback environment
+    run_engine,
+):
     publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
     monitor = publisher._socket.get_monitor_socket()
 
@@ -111,37 +118,33 @@ def RE_with_external_callbacks(
     while not connection_active_lock.locked():
         sleep(0.1)  # wait for connection to happen before continuing
 
-    sub_id = RE.subscribe(publisher)
+    sub_id = run_engine.subscribe(publisher)
 
-    yield RE
+    yield run_engine
 
-    RE.unsubscribe(sub_id)
+    run_engine.unsubscribe(sub_id)
     publisher.close()
 
-    external_callbacks_process.send_signal(signal.SIGINT)
-    sleep(0.01)
-    external_callbacks_process.kill()
-    external_callbacks_process.wait(10)
     t.join()
 
 
 @pytest.mark.system_test
-def test_RE_with_external_callbacks_starts_and_stops(
-    RE_with_external_callbacks: RunEngine,
+def test_run_engine_with_external_callbacks_starts_and_stops(
+    run_engine_with_external_callbacks: RunEngine,
 ):
-    RE = RE_with_external_callbacks
+    run_engine = run_engine_with_external_callbacks
 
     def plan():
         yield from bps.sleep(1)
 
-    RE(plan())
+    run_engine(plan())
 
 
 @pytest.mark.system_test
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     oav_for_system_test: OAV,
     smargon: Smargon,
-    RE_with_external_callbacks: RunEngine,
+    run_engine_with_external_callbacks: RunEngine,
     dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
     done_status,
@@ -153,10 +156,10 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     This test requires fake zocalo, and a connection to the dev ISPyB database.
     """
 
-    RE = RE_with_external_callbacks
+    run_engine = run_engine_with_external_callbacks
 
     doc_catcher = DocumentCatcher()
-    RE.subscribe(doc_catcher)
+    run_engine.subscribe(doc_catcher)
 
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
@@ -170,7 +173,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
         )
 
-    RE(wrapped_xray_centre())
+    run_engine(wrapped_xray_centre())
 
     # get dcids from zocalo device
     dcid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcid.read()
@@ -198,7 +201,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
 @pytest.mark.system_test
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
-    RE_with_external_callbacks: RunEngine,
+    run_engine_with_external_callbacks: RunEngine,
     params_for_rotation_scan: RotationScan,
     fetch_comment,  # noqa
     fetch_datacollection_attribute,
@@ -213,10 +216,10 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
 
     params_for_rotation_scan.rotation_increment_deg = test_img_wid
     params_for_rotation_scan.exposure_time_s = test_exp_time
-    params_for_rotation_scan.demand_energy_ev = convert_angstrom_to_eV(test_wl)
+    params_for_rotation_scan.demand_energy_ev = convert_angstrom_to_ev(test_wl)
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE_with_external_callbacks(
+        run_engine_with_external_callbacks(
             rotation_scan(
                 composite_for_rotation_scan,
                 params_for_rotation_scan,
@@ -250,3 +253,24 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     assert beamsize_x == test_bs_x
     assert beamsize_y == test_bs_y
     assert exposure == test_exp_time
+
+
+@pytest.mark.system_test
+def test_external_callbacks_ping(external_callbacks):
+    ping_received = threading.Event()
+
+    class PingHTTPRequestHandler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            assert self.path == "/callbackPing"
+            ping_received.set()
+
+    httpd = HTTPServer(("localhost", CONST.HYPERION_PORT), PingHTTPRequestHandler)
+    server_thread = threading.Thread(
+        group=None, target=httpd.serve_forever, daemon=True
+    )
+    try:
+        server_thread.start()
+        ping_received.wait(5)
+    finally:
+        httpd.shutdown()
+        server_thread.join()

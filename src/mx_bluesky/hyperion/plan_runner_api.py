@@ -24,10 +24,11 @@ def create_server_for_udc(runner: PlanRunner) -> Thread:  # pragma: no cover
     return flask_thread
 
 
-def create_app_for_udc(runner):
+def create_app_for_udc(runner: PlanRunner):
     app = Flask(__name__)
     api = Api(app)
     api.add_resource(StatusResource, "/status", resource_class_args=[runner])
+    api.add_resource(CallbackLiveness, "/callbackPing", resource_class_args=[runner])
     return app
 
 
@@ -41,3 +42,15 @@ class StatusResource(Resource):
     def get(self):
         status = self._runner.current_status
         return {"status": status.value}
+
+
+class CallbackLiveness(Resource):
+    """Called periodically by the external callbacks to indicate that they are still running"""
+
+    def __init__(self, runner: PlanRunner):
+        super().__init__()
+        self._runner = runner
+
+    def get(self):
+        LOGGER.debug("External callback ping received.")
+        self._runner.reset_callback_watchdog_timer()

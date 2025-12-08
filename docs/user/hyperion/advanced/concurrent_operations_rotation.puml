@@ -1,0 +1,77 @@
+@startuml
+!pragma teoz true
+participant "BlueSky RunEngine" as RE
+box "Opyhd Async Devices"
+participant "Aperture\nScatterguard" as ap_sg
+participant "Smargon" as smargon
+participant "Robot" as robot
+participant "Backlight" as backlight
+participant "OAV" as oav
+participant "Zebra" as zebra
+participant "Eiger" as eiger
+participant "Synchrotron" as synchrotron
+end box
+box "Callbacks"
+participant "Rotation\nISPyB" as RotationISPyB
+participant "Rotation\nNexus" as RotationScanNexus
+participant "XRC\nResults" as XRayCentreEventHandler
+participant "Snapshot\nBeam Centre\nAnnotation" as BeamDrawingCallback
+end box
+
+activate XRayCentreEventHandler
+activate BeamDrawingCallback
+XRayCentreEventHandler -> RE : results from gridscan
+deactivate XRayCentreEventHandler
+
+RE -> eiger : configure eiger parameters
+
+RE -> RE ++ : start_preparing_data_collection_then_do_plan
+    RE -> eiger ++ : start arming the eiger
+    RE -> RotationScanNexus ++ : send rotation parameters
+    loop for each rotation
+        RE -> RotationISPyB ++: send rotation parameters (ROTATION_OUTER)
+        & RotationISPyB -> RotationScanNexus
+        RE -> smargon : move to xtal centre
+        RE -> RE : setup_beamline_for_oav
+        note right of RE : (if snapshots not derived from gridscan snapshots)
+        RE -> ap_sg ++ : prepare aperture
+        RE -> RE ++ #ffdddd : oav_snapshot_plan
+            loop for each snapshot
+                RE -> smargon : rotate
+                RE -> oav : configure + trigger snapshot (if taking real snapshots)
+                oav -> oav : save snapshots
+                RE -> RotationISPyB : generate snapshot event
+                & RE -> BeamDrawingCallback
+                BeamDrawingCallback -> BeamDrawingCallback : annotate snapshots
+            end
+            deactivate BeamDrawingCallback
+        deactivate RE /' oav_snapshot_plan '/
+        RE -> RE ++ #ffdddd : rotation_scan_plan
+            RE -> RotationISPyB ++ : send scan points (ROTATION_SCAN_MAIN)
+            RE -> zebra ++ : configure zebra for rotation
+            RE -> RE ++ #ffcccc : setup_sample_environment
+                RE -> backlight : move backlight out
+                ap_sg -> RE -- : select aperture completed
+            deactivate RE /' setup_sample_environment '/
+            RE -> smargon : set velocity
+            RE -> zebra : arm zebra PC
+            opt wait for topup
+                RE -> synchrotron ++ : check synchrotron status vs desired exposure
+                ...wait until topup is complete if necessary...
+                return 
+            end
+            RE -> smargon : trigger scan
+            RE -> RotationISPyB : read hardware during scan
+            & -> RotationScanNexus
+        deactivate RE /' rotation_scan_plan '/
+        RE -> RotationISPyB : record subplan exit status
+        deactivate RotationISPyB
+    end /' loop for each rotation '/
+    deactivate RotationISPyB
+    eiger -> RE -- : unstage eiger
+    RE -> zebra : tidy zebra
+    deactivate zebra
+    deactivate RotationScanNexus
+deactivate RE /' start_preparing_data_collection_then_do_plan '/
+
+@enduml

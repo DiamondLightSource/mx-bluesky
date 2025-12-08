@@ -40,8 +40,8 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import GridCommon
 from mx_bluesky.common.utils.exceptions import (
-    ISPyBDepositionNotMade,
-    SampleException,
+    ISPyBDepositionNotMadeError,
+    SampleError,
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
@@ -87,7 +87,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         ispyb_handler_callback = FGSISPyBCallback(parameters)
-        RE.subscribe(ispyb_handler_callback)
+        run_engine.subscribe(ispyb_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
@@ -240,7 +240,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             f"{y_steps} by {z_steps}."
         )
 
-        self._populate_axis_info(data_collection_info, omega)
+        self._populate_axis_info(data_collection_info, doc["data"])
 
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
@@ -254,15 +254,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
 
-    def _populate_axis_info(
-        self, data_collection_info: DataCollectionInfo, omega_start: float | None
-    ):
-        if omega_start is not None:
+    def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
+        if (omega_start := doc.get("smargon-omega")) is not None:
             omega_in_gda_space = -omega_start
             data_collection_info.omega_start = omega_in_gda_space
             data_collection_info.axis_start = omega_in_gda_space
             data_collection_info.axis_end = omega_in_gda_space
             data_collection_info.axis_range = 0
+        if (chi_start := doc.get("smargon-chi")) is not None:
+            data_collection_info.chi_start = chi_start
 
     def populate_info_for_update(
         self,
@@ -303,8 +303,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 f"with uid: {self.uid_to_finalize_on}."
             )
             if self.ispyb_ids == IspybIds():
-                raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-            exception_type, message = SampleException.type_and_message_from_reason(
+                raise ISPyBDepositionNotMadeError(
+                    "ispyb was not initialised at run start"
+                )
+            exception_type, message = SampleError.type_and_message_from_reason(
                 doc.get("reason", "")
             )
             if exception_type:

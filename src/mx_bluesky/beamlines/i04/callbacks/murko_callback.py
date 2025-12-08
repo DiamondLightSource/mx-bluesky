@@ -8,6 +8,8 @@ from dodal.log import LOGGER
 from event_model.documents import Event, RunStart, RunStop
 from redis import StrictRedis
 
+FORWARDING_COMPLETE_MESSAGE = "image_forwarding_complete"
+
 
 class OmegaReading(TypedDict):
     value: float
@@ -56,22 +58,28 @@ class MurkoCallback(CallbackBase):
         self.previous_omegas: list[OmegaReading] = []
 
     def start(self, doc: RunStart) -> RunStart | None:
-        self.sample_id = doc.get("sample_id")
-        self.murko_metadata = {
-            "zoom_percentage": doc.get("zoom_percentage"),
-            "microns_per_x_pixel": doc.get("microns_per_x_pixel"),
-            "microns_per_y_pixel": doc.get("microns_per_y_pixel"),
-            "beam_centre_i": doc.get("beam_centre_i"),
-            "beam_centre_j": doc.get("beam_centre_j"),
-            "sample_id": self.sample_id,
-        }
+        self.murko_metadata: dict = {"sample_id": doc.get("sample_id")}
         self.last_uuid = None
         self.previous_omegas = []
-        LOGGER.info(f"Starting to stream metadata to murko under {self.sample_id}")
+        LOGGER.info(
+            f"Starting to stream metadata to murko under {self.murko_metadata['sample_id']}"
+        )
         return doc
 
     def event(self, doc: Event) -> Event:
-        if latest_omega := doc["data"].get("smargon-omega"):
+        data = doc["data"]
+        for prefix in ("oav", "oav_full_screen"):
+            if f"{prefix}-beam_centre_j" in data:
+                self.murko_metadata.update(
+                    {
+                        "microns_per_x_pixel": data[f"{prefix}-microns_per_pixel_x"],
+                        "microns_per_y_pixel": data[f"{prefix}-microns_per_pixel_y"],
+                        "beam_centre_i": data[f"{prefix}-beam_centre_i"],
+                        "beam_centre_j": data[f"{prefix}-beam_centre_j"],
+                    }
+                )
+
+        if (latest_omega := data.get("smargon-omega")) is not None:
             if len(self.previous_omegas) <= 2 and self.last_uuid:
                 # For the first few images there's not enough data to extrapolate so we
                 # match them one to one
@@ -106,5 +114,12 @@ class MurkoCallback(CallbackBase):
         self.redis_client.publish("murko", json.dumps(metadata))
 
     def stop(self, doc: RunStop) -> RunStop | None:
-        LOGGER.info(f"Finished streaming {self.sample_id} to murko")
+        LOGGER.info(f"Finished streaming {self.murko_metadata['sample_id']} to murko")
+        LOGGER.info(
+            f"Publishing forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"
+        )
+        self.redis_client.publish(
+            "murko",
+            json.dumps(FORWARDING_COMPLETE_MESSAGE),
+        )
         return doc
