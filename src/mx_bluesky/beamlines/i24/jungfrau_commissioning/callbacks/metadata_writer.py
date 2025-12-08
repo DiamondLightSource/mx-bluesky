@@ -34,7 +34,7 @@ class JsonMetadataWriter(CallbackBase):
         super().__init__()
 
     def start(self, doc: dict):  # type: ignore
-        if doc.get("subplan_name") == PlanNameConstants.ROTATION_META_READ:
+        if doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
             json_params = doc.get("rotation_scan_params")
             assert json_params is not None
             LOGGER.info(
@@ -49,7 +49,7 @@ class JsonMetadataWriter(CallbackBase):
     def event(self, doc: dict):  # type: ignore
         event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if event_descriptor.get("name") == PlanNameConstants.ROTATION_META_READ:
+        if event_descriptor.get("name") == PlanNameConstants.ROTATION_DEVICE_READ:
             assert self.parameters is not None
             data = doc.get("data")
             assert data is not None

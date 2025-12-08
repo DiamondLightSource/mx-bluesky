@@ -11,7 +11,6 @@ from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.i24.dual_backlight import BacklightPositions
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
@@ -26,13 +25,9 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
-    override_file_path,
-)
-from mx_bluesky.beamlines.i24.jungfrau_commissioning.utility_plans import (
-    read_devices_for_metadata,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import (
-    PlanNameConstants as I24PlanNameConstants,
+    PlanNameConstants,
 )
 from mx_bluesky.beamlines.i24.parameters.rotation import (
     MultiRotationScanByTransmissions,
@@ -41,13 +36,15 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
 )
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    read_hardware_plan,
+)
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
 from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
-    PlanNameConstants,
 )
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
@@ -55,6 +52,9 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.log import LOGGER
 
 READING_DUMP_FILENAME = "collection_info.json"
+
+# Should be read from config file, see
+# https://github.com/DiamondLightSource/mx-bluesky/issues/1502
 JF_DET_STAGE_Y_POSITION_MM = 730
 DEFAULT_DETECTOR_DISTANCE_MM = 200
 
@@ -104,7 +104,7 @@ def multi_rotation_plan_varying_transmission(
     composite: RotationScanComposite,
     params: MultiRotationScanByTransmissions,
 ):
-    @bpp.set_run_key_decorator(I24PlanNameConstants.MULTI_ROTATION_SCAN)
+    @bpp.set_run_key_decorator(PlanNameConstants.MULTI_ROTATION_SCAN)
     @run_decorator()
     def _plan_in_run_decorator():
         for transmission in params.transmission_fractions:
@@ -125,7 +125,7 @@ def single_rotation_plan(
     about a fixed axis - for now this axis is limited to omega.
     Needs additional setup of the sample environment and a wrapper to clean up."""
 
-    @bpp.set_run_key_decorator(I24PlanNameConstants.SINGLE_ROTATION_SCAN)
+    @bpp.set_run_key_decorator(PlanNameConstants.SINGLE_ROTATION_SCAN)
     @run_decorator()
     def _plan_in_run_decorator():
         if not params.detector_distance_mm:
@@ -146,6 +146,11 @@ def single_rotation_plan(
             params, _motor_time_to_speed, _max_velocity_deg_s
         )
 
+        # Callback which intercepts read documents and writes to json file,
+        # used for saving device metadata
+        metadata_writer = JsonMetadataWriter()
+
+        @bpp.subs_decorator([metadata_writer])
         @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
         @bpp.run_decorator(
             md={
@@ -194,40 +199,27 @@ def single_rotation_plan(
             )
             yield from bps.abs_set(composite.zebra.pc.arm, ArmDemand.ARM, wait=True)
 
-            # Check topup gate
-            yield from check_topup_and_wait_if_necessary(
-                composite.synchrotron,
-                motion_values.total_exposure_s,
-                ops_time=10.0,  # Additional time to account for rotation, is s
-            )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+            # Should check topup gate here, but not yet implemented,
+            # see https://github.com/DiamondLightSource/mx-bluesky/issues/1501
 
-            override_file_path(
-                composite.jungfrau,
-                f"{params.storage_directory}/{params.detector_params.full_filename}",
+            # Read hardware after preparing jungfrau so that device metadata output from callback is correct
+            read_hardware_partial = partial(
+                read_hardware_plan,
+                [
+                    composite.dcm.energy_in_keV,
+                    composite.dcm.wavelength_in_a,
+                    composite.det_stage.z,
+                ],
+                PlanNameConstants.ROTATION_DEVICE_READ,
             )
 
-            metadata_writer = JsonMetadataWriter()
-
-            @bpp.subs_decorator([metadata_writer])
-            @bpp.set_run_key_decorator(I24PlanNameConstants.ROTATION_META_READ)
-            @bpp.run_decorator(
-                md={
-                    "subplan_name": I24PlanNameConstants.ROTATION_META_READ,
-                    "scan_points": [params.scan_points],
-                    "rotation_scan_params": params.model_dump_json(),
-                }
-            )
-            # Write metadata json file
-            def _do_read():
-                yield from read_devices_for_metadata(composite)
-
-            yield from _do_read()
             yield from fly_jungfrau(
                 composite.jungfrau,
                 _jf_trigger_info,
                 GainMode.DYNAMIC,
                 wait=False,
                 log_on_percentage_prefix="Jungfrau rotation scan triggers received",
+                read_hardware_after_prepare_plan=read_hardware_partial,
             )
 
             LOGGER.info("Executing rotation scan")

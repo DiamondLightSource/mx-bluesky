@@ -48,9 +48,6 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.read_devices_for_metadata"
-)
-@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan._cleanup_plan"
 )
 @patch(
@@ -138,7 +135,7 @@ def test_single_rotation_plan_in_simulator(
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == PlanNameConstants.ROTATION_META_READ,
+        and msg.kwargs["name"] == PlanNameConstants.ROTATION_DEVICE_READ,
     )
 
     # Set omega axis then wait for JF to complete
