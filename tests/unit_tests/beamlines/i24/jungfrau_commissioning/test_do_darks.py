@@ -9,12 +9,12 @@ from bluesky.callbacks import CallbackBase
 from bluesky.preprocessors import monitor_during_wrapper
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     PedestalMode,
 )
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
     do_pedestal_darks,
@@ -24,7 +24,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks i
 class CheckMonitor(CallbackBase):
     """Store the order and values of updates to specified signals
 
-    Usage: Instantiate this callback with list of signals to track, and subscribe the RE to this
+    Usage: Instantiate this callback with list of signals to track, and subscribe the run_engine to this
     callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifing the same signals
     in the monitor.
     """
@@ -42,7 +42,9 @@ class CheckMonitor(CallbackBase):
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
 )
 async def test_full_do_pedestal_darks(
-    mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
+    mock_override_path: MagicMock,
+    jungfrau: CommissioningJungfrau,
+    run_engine: RunEngine,
 ):
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
     test_path = "path"
@@ -69,8 +71,8 @@ async def test_full_do_pedestal_darks(
             "detector-drv-gain_mode",
         ]
     )
-    RE.subscribe(monitor_tracker)
-    RE(
+    run_engine.subscribe(monitor_tracker)
+    run_engine(
         monitor_during_wrapper(
             test_plan(),
             [
@@ -101,7 +103,7 @@ async def test_full_do_pedestal_darks(
     mock_override_path.assert_called_once_with(jungfrau, test_path)
 
 
-class FakeException(Exception): ...
+class FakeError(Exception): ...
 
 
 @patch(
@@ -112,15 +114,15 @@ async def test_jungfrau_unstage(
     mock_unstage: MagicMock,
     mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
-    jungfrau.stage = MagicMock(side_effect=FakeException)
+    jungfrau.stage = MagicMock(side_effect=FakeError)
 
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
 
-    with pytest.raises(FakeException):
-        RE(test_plan())
+    with pytest.raises(FakeError):
+        run_engine(test_plan())
     assert (
         mock_unstage.call_count == 2
     )  # Once from fly_jungfrau, once from pedestal darks plan
