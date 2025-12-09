@@ -30,7 +30,14 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
 )
-from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+    EnumFilterAttenuator,
+)
+from dodal.devices.attenuator.filter_selections import (
+    I24FilterOneSelections,
+    I24FilterTwoSelections,
+)
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -93,6 +100,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.rotation import RotationScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
@@ -113,7 +121,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 pytest_plugins = ["tests.expeye_helpers"]
 
@@ -877,6 +884,21 @@ def zocalo(done_status):
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
     return zoc
+
+
+@pytest.fixture
+async def enum_attenuator() -> EnumFilterAttenuator:
+    with init_devices(mock=True):
+        attenuator = EnumFilterAttenuator(
+            "", filter_selection=(I24FilterOneSelections, I24FilterTwoSelections)
+        )
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    return attenuator
 
 
 @pytest.fixture

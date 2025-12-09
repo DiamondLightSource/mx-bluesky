@@ -5,18 +5,19 @@ from ophyd_async.core import (
     WatchableAsyncStatus,
 )
 from ophyd_async.fastcs.jungfrau import (
+    GainMode,
     create_jungfrau_external_triggering_info,
 )
 from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
-    override_file_path,
 )
 
 
 def do_external_acquisition(
     exp_time_s: float,
+    gain_mode: GainMode,
     total_triggers: PositiveInt = 1,
     output_file_path: str | None = None,
     wait: bool = False,
@@ -37,9 +38,6 @@ def do_external_acquisition(
         wait: Optionally block until data collection is complete.
     """
 
-    if output_file_path:
-        override_file_path(jungfrau, output_file_path)
-
     trigger_info = create_jungfrau_external_triggering_info(total_triggers, exp_time_s)
-    status = yield from fly_jungfrau(jungfrau, trigger_info, wait=wait)
+    status = yield from fly_jungfrau(jungfrau, trigger_info, gain_mode, wait=wait)
     return status

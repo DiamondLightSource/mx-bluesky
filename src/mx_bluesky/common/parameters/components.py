@@ -152,8 +152,8 @@ class WithVisit(BaseModel):
     det_dist_to_beam_converter_path: str = Field(
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
     )
-    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
     detector_distance_mm: float | None = Field(default=None, gt=0)
+    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
 
 
 class DiffractionExperiment(
