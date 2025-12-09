@@ -1,0 +1,18 @@
+env:
+  sources:
+    - kind: deviceManager
+      module: dodal.beamlines.i03_supervisor
+    - kind: planFunctions
+      module: mx_bluesky.hyperion.supervisor.plans
+  events:
+    broadcast_status_events: false
+api:
+  url: http://localhost:5006
+  cors:
+    allow_credentials: True
+    origins:
+      - "*"
+logging:
+  graylog:
+    url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+    enabled: true
