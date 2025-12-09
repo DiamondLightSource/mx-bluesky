@@ -3,7 +3,7 @@ env:
     - kind: deviceManager
       module: dodal.beamlines.i03
     - kind: planFunctions
-      module: mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan
+      module: mx_bluesky.hyperion.blueapi_plans
   events:
     broadcast_status_events: false
 api:
