@@ -9,6 +9,7 @@ from mx_bluesky._version import version
 class HyperionMode(StrEnum):
     GDA = "gda"
     UDC = "udc"
+    SUPERVISOR = "supervisor"
 
 
 @dataclass

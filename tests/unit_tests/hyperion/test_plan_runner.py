@@ -8,13 +8,13 @@ from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 
-from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
+from mx_bluesky.hyperion.plan_runner import InProcessRunner, PlanError
 
 
 @pytest.fixture(autouse=True)
 def patch_timer_poll_interval():
     with patch(
-        "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_POLL_INTERVAL_S",
+        "mx_bluesky.hyperion.plan_runner.InProcessRunner.EXTERNAL_CALLBACK_POLL_INTERVAL_S",
         0.01,
     ):
         yield
@@ -23,14 +23,14 @@ def patch_timer_poll_interval():
 @pytest.fixture()
 def patch_timer_expiry():
     with patch(
-        "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
+        "mx_bluesky.hyperion.plan_runner.InProcessRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
         0.1,
     ):
         yield
 
 
 def test_external_callbacks_waits_for_external_callback_ping(run_engine: RunEngine):
-    runner = PlanRunner(BlueskyContext(run_engine=run_engine), True)
+    runner = InProcessRunner(BlueskyContext(run_engine=run_engine), True)
     plan_started = Event()
 
     def execute_test():
@@ -52,7 +52,7 @@ def test_external_callbacks_waits_for_external_callback_ping(run_engine: RunEngi
 def test_external_callbacks_raises_if_never_started(
     run_engine: RunEngine, patch_timer_expiry
 ):
-    runner = PlanRunner(BlueskyContext(run_engine=run_engine), True)
+    runner = InProcessRunner(BlueskyContext(run_engine=run_engine), True)
     plan_started = Event()
 
     def execute_test():
@@ -79,7 +79,7 @@ def test_external_callbacks_not_running_raises_exception_for_plan_execution(
     run_engine: RunEngine,
     patch_timer_expiry,
 ):
-    runner = PlanRunner(BlueskyContext(run_engine=run_engine), True)
+    runner = InProcessRunner(BlueskyContext(run_engine=run_engine), True)
 
     def execute_test():
         runner.reset_callback_watchdog_timer()
