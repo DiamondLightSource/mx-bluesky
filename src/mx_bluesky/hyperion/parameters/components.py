@@ -8,3 +8,16 @@ class Wait(MxBlueskyParameters):
     """
 
     duration_s: float
+
+
+class UDCDefaultState(MxBlueskyParameters):
+    """Represents an instruction to execute the UDC default state plan."""
+
+    pass
+
+
+class UDCCleanup(MxBlueskyParameters):
+    """Represents an instruction to perform UDC Cleanup,
+    in which the detector shutter is closed and a robot unload is performed."""
+
+    pass
