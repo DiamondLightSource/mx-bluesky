@@ -17,6 +17,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
+from daq_config_server.converters.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -1725,7 +1726,7 @@ IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
 
 
 @pytest.fixture(autouse=True)
-def mock_config_server():
+def mock_mx_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
     for client in IMPLEMENTED_CONFIG_CLIENTS:
@@ -1734,6 +1735,34 @@ def mock_config_server():
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
         side_effect=_fake_config_server_read,
+    ):
+        yield
+
+
+def _fake_config_server_get_file_contents(
+    filepath: str | Path,
+    desired_return_type: type[str] | type[dict] | ConfigModel = str,
+    reset_cached_result: bool = True,
+):
+    filepath = Path(filepath)
+    # Minimal logic required for unit tests
+    with filepath.open("r") as f:
+        contents = f.read()
+        if desired_return_type is str:
+            return contents
+        elif desired_return_type is dict:
+            return json.loads(contents)
+        elif issubclass(desired_return_type, ConfigModel):  # type: ignore
+            return desired_return_type.model_validate(json.loads(contents))
+
+
+@pytest.fixture(autouse=True)
+def mock_config_server():
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    with patch(
+        "daq_config_server.client.ConfigServer.get_file_contents",
+        side_effect=_fake_config_server_get_file_contents,
     ):
         yield
 
