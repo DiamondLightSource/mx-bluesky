@@ -31,8 +31,8 @@ RUN git remote set-url origin git@github.com:DiamondLightSource/mx-bluesky.git
 
 
 # For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install libnss-ldapd -y
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Make editable and debuggable
