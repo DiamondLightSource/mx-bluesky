@@ -9,12 +9,11 @@ from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator, RequestAbort
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
-from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.context import (
@@ -23,7 +22,7 @@ from mx_bluesky.common.utils.context import (
 )
 from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.blueapi_plans import move_to_udc_default_state
+from mx_bluesky.hyperion.blueapi_plans import clean_up_udc, move_to_udc_default_state
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
     load_centre_collect_full,
@@ -47,7 +46,7 @@ class PlanRunner(BaseRunner):
 
     @abstractmethod
     def decode_and_execute(
-        self, current_visit: str | None, parameters: Sequence[MxBlueskyParameters]
+        self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
     ) -> MsgGenerator:
         pass
 
@@ -57,7 +56,7 @@ class PlanRunner(BaseRunner):
 
     @property
     @abstractmethod
-    def current_status(self):
+    def current_status(self) -> Status:
         pass
 
 
@@ -74,7 +73,7 @@ class InProcessRunner(PlanRunner):
         self._callback_watchdog_expiry = time.monotonic()
 
     def decode_and_execute(
-        self, current_visit: str, parameter_list: Sequence[MxBlueskyParameters]
+        self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
     ) -> MsgGenerator:
         for parameters in parameter_list:
             LOGGER.info(
@@ -177,7 +176,8 @@ class InProcessRunner(PlanRunner):
     def _external_callbacks_are_alive(self) -> bool:
         return time.monotonic() < self._callback_watchdog_expiry
 
-    def current_status(self):
+    @property
+    def current_status(self) -> Status:
         return self._current_status
 
 
@@ -186,7 +186,6 @@ def _runner_sleep(parameters: Wait) -> MsgGenerator:
 
 
 def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
-    cleanup_group = "cleanup"
     robot = find_device_in_context(context, "robot", BartRobot)
     smargon = find_device_in_context(context, "smargon", Smargon)
     aperture_scatterguard = find_device_in_context(
@@ -194,8 +193,11 @@ def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
     )
     lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
     detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
-    yield from bps.abs_set(
-        detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
+    yield from clean_up_udc(
+        visit,
+        robot=robot,
+        smargon=smargon,
+        aperture_scatterguard=aperture_scatterguard,
+        lower_gonio=lower_gonio,
+        detector_motion=detector_motion,
     )
-    yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
-    yield from bps.wait(cleanup_group)
