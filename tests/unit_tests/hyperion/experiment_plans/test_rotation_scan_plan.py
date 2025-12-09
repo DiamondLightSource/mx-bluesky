@@ -914,7 +914,7 @@ def test_rotation_scan_moves_beamstop_into_place(
     MagicMock(),
 )
 @patch(
-    "mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter.setup_zebra_for_rotation"
+    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
 )
 def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_event_params(
     mock_setup_zebra_for_rotation: MagicMock,

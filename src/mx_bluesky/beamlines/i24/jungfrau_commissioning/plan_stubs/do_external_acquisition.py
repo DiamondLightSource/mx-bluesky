@@ -12,7 +12,6 @@ from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
-    override_file_path,
 )
 
 
@@ -38,9 +37,6 @@ def do_external_acquisition(
             set during jungfrau device instantiation
         wait: Optionally block until data collection is complete.
     """
-
-    if output_file_path:
-        override_file_path(jungfrau, output_file_path)
 
     trigger_info = create_jungfrau_external_triggering_info(total_triggers, exp_time_s)
     status = yield from fly_jungfrau(jungfrau, trigger_info, gain_mode, wait=wait)

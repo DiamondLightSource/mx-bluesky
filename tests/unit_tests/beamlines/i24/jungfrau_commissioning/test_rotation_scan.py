@@ -51,9 +51,6 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan._cleanup_plan"
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
-)
-@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
 )
 @patch(
@@ -70,9 +67,7 @@ async def test_single_rotation_plan_in_re(
     mock_setup_beamline: MagicMock,
     mock_calc_motion_profile: MagicMock,
     mock_setup_zebra: MagicMock,
-    mock_check_topup: MagicMock,
     mock_cleanup: MagicMock,
-    mock_metadata_read: MagicMock,
     run_engine: RunEngine,
     tmp_path,
     rotation_composite: RotationScanComposite,
@@ -91,15 +86,10 @@ async def test_single_rotation_plan_in_re(
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
-    mock_check_topup.assert_called_once()
-    mock_metadata_read.assert_called_once()
     mock_fly.assert_called_once()
     mock_cleanup.assert_called_once()
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
-)
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
 )
@@ -109,7 +99,6 @@ async def test_single_rotation_plan_in_re(
 def test_single_rotation_plan_in_simulator(
     _mock_fly: MagicMock,
     _mock_set_up_beamline_for_rotation: MagicMock,
-    _mock_topup: MagicMock,
     sim_run_engine: RunEngineSimulator,
     rotation_composite: RotationScanComposite,
     tmp_path,
@@ -131,11 +120,6 @@ def test_single_rotation_plan_in_simulator(
         msgs,
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == PlanNameConstants.ROTATION_DEVICE_READ,
     )
 
     # Set omega axis then wait for JF to complete
@@ -222,11 +206,7 @@ class FakeError(Exception): ...
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
-    new=MagicMock(side_effect=FakeError),  # Exit test early by inserting exception
-)
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
 )
 def test_single_rotation_plan_uses_default_if_no_det_distance(
     mock_set_up_beamline: MagicMock,
@@ -234,6 +214,9 @@ def test_single_rotation_plan_uses_default_if_no_det_distance(
     rotation_composite: RotationScanComposite,
     tmp_path,
 ):
+    mock_set_up_beamline.side_effect = (
+        FakeError,
+    )  # Exit test early by inserting exception
     params = get_good_single_rotation_params(tmp_path)
     params.detector_distance_mm = None
     with pytest.raises(FakeError):

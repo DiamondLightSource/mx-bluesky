@@ -15,7 +15,6 @@ from ophyd_async.fastcs.jungfrau import GainMode
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
     fly_jungfrau,
-    override_file_path,
 )
 
 
@@ -45,19 +44,3 @@ async def test_fly_jungfrau(
 
     run_engine(_open_run_and_fly())
     await asyncio.sleep(0)
-
-
-async def test_override_file_path(
-    jungfrau: CommissioningJungfrau, run_engine: RunEngine, tmp_path: Path
-):
-    new_file_name = "test_file_name"
-    new_path = f"{tmp_path}/{new_file_name}"
-    override_file_path(jungfrau, new_path)
-    assert await jungfrau._writer.file_name.get_value() == ""
-    assert await jungfrau._writer.file_path.get_value() == ""
-    await jungfrau._writer.open("")
-    assert await jungfrau._writer.file_name.get_value() == new_file_name
-    assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00000"
-    await jungfrau._writer.open("")
-    assert await jungfrau._writer.file_name.get_value() == new_file_name
-    assert await jungfrau._writer.file_path.get_value() == f"{tmp_path}/00001"

@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from pathlib import PurePath
 from typing import cast
 
 import bluesky.plan_stubs as bps
@@ -7,8 +6,6 @@ from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
-    AutoIncrementingPathProvider,
-    StaticFilenameProvider,
     TriggerInfo,
     WatchableAsyncStatus,
 )
@@ -63,18 +60,3 @@ def fly_jungfrau(
     if wait:
         yield from bps.wait(JF_COMPLETE_GROUP)
     return status
-
-
-# Needs removing
-def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str):
-    """While we should generally use device instantiation to set the path,
-    during commissioning, it is useful to be able to explicitly set the filename
-    and path.
-
-    This function must be called before the Jungfrau is prepared.
-    """
-    _file_path = PurePath(path_of_output_file)
-    _new_filename_provider = StaticFilenameProvider(_file_path.name)
-    jungfrau._writer._path_info = AutoIncrementingPathProvider(  # noqa: SLF001
-        _new_filename_provider, _file_path.parent
-    )

@@ -12,7 +12,6 @@ from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
-from dodal.utils import get_beamline_name
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -31,8 +30,6 @@ from mx_bluesky.common.parameters.constants import (
 )
 
 PARAMETER_VERSION = Version.parse("5.3.0")
-
-BL = get_beamline_name("i03")
 
 
 class RotationAxis(StrEnum):
