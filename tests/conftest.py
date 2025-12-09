@@ -684,11 +684,13 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(sim_run_engine):
+def undulator_dcm(sim_run_engine, dcm, undulator):
     undulator_dcm = i03.undulator_dcm.build(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
+        dcm=dcm,
+        undulator=undulator,
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
