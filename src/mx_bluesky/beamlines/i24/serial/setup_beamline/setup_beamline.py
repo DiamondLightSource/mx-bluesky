@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
+from daq_config_server.client import ConfigServer
+from daq_config_server.converters.models import GenericLookupTable
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -10,7 +12,6 @@ from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.motors import YZStage
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
-    parse_lookup_table,
 )
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -26,9 +27,12 @@ def compute_beam_center_position_from_lut(
     """Calculate the beam center position for the detector distance \
     using the values in the lookup table for the conversion.
     """
-    lut_values = parse_lookup_table(lut_path.as_posix())
+    config_server = ConfigServer(url="https://daq-config.diamond.ac.uk")
+    lut_columns = config_server.get_file_contents(
+        lut_path, GenericLookupTable
+    ).columns()
 
-    calc_x = linear_interpolation_lut(lut_values[0], lut_values[1])
+    calc_x = linear_interpolation_lut(lut_columns[0], lut_columns[1])
     beam_x_mm = calc_x(detector_distance_mm)
     beam_x = (
         beam_x_mm
@@ -36,7 +40,7 @@ def compute_beam_center_position_from_lut(
         / det_size_constants.det_dimension.width
     )
 
-    calc_y = linear_interpolation_lut(lut_values[0], lut_values[2])
+    calc_y = linear_interpolation_lut(lut_columns[0], lut_columns[2])
     beam_y_mm = calc_y(detector_distance_mm)
     beam_y = (
         beam_y_mm
