@@ -229,8 +229,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.json"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json"),
 ]
 
 
@@ -782,9 +782,9 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
 @pytest.fixture()
 def test_config_files():
     return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
+        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.json",
         "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
+        "display_config": "tests/test_data/test_display_configuration.json",
     }
 
 
