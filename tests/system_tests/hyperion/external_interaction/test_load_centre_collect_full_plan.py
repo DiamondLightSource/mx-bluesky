@@ -1124,14 +1124,6 @@ def grid_detect_for_snapshot_generation():
 
 
 class TestGenerateSnapshot:
-    @pytest.fixture()
-    def test_config_files(self):
-        return {
-            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.json",
-            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-            "display_config": "tests/test_data/test_daq_configuration/display_configuration.json",
-        }
-
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,

@@ -20,7 +20,7 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 
-from ....conftest import raw_params_from_file
+from ....conftest import ConfigFilesForTests, raw_params_from_file
 
 
 @pytest.fixture
@@ -63,13 +63,17 @@ def fixed_datetime() -> Generator[str, None, None]:
 
 
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
-    fixed_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
+    fixed_datetime,
+    oav_snapshot_params,
+    oav_snapshot_composite,
+    sim_run_engine,
+    test_config_files: ConfigFilesForTests,
 ):
     msgs = sim_run_engine.simulate_plan(
         oav_snapshot_plan(
             oav_snapshot_composite,
             oav_snapshot_params,
-            OAVParameters(oav_config_json="tests/test_data/test_OAVCentring.json"),
+            OAVParameters(oav_config_json=test_config_files["oav_config_json"]),
         )
     )
 

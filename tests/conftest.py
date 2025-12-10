@@ -9,7 +9,7 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, TypedDict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
@@ -219,7 +219,7 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.json"),
+    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json"),
     ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json"),
 ]
 mock_attributes_table = {
@@ -789,13 +789,19 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
     return Beamsize(aperture_scatterguard, name="beamsize")
 
 
+class ConfigFilesForTests(TypedDict):
+    zoom_params_file: str
+    oav_config_json: str
+    display_config: str
+
+
 @pytest.fixture()
 def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.json",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display_configuration.json",
-    }
+    return ConfigFilesForTests(
+        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json",
+        oav_config_json=f"{MOCK_DAQ_CONFIG_PATH}/OAVCentring.json",
+        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json",
+    )
 
 
 @pytest.fixture()
