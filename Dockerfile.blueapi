@@ -3,6 +3,8 @@
 # be overridden
 FROM ghcr.io/diamondlightsource/blueapi:1.11.0
 
+USER root
+
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Need:
@@ -16,3 +18,5 @@ RUN /venv/bin/pip install --no-cache-dir --no-compile mx-bluesky
 # Needed so that Blueapi's setup-scratch stage has permission to modify dependencies installed 
 # in the above pip installation
 RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
+
+USER ubuntu
