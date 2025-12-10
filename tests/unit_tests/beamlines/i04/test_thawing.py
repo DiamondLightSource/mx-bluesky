@@ -31,8 +31,8 @@ from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw_and_stream_to_redis,
 )
 
-DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
+DISPLAY_CONFIGURATION = "tests/test_data/test_display_configuration.json"
+ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.json"
 
 
 class MyError(Exception):

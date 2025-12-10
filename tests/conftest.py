@@ -17,6 +17,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
+from daq_config_server.converters.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
@@ -218,8 +219,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.json"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json"),
 ]
 mock_attributes_table = {
     "i03": mock_paths,
@@ -791,9 +792,9 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
 @pytest.fixture()
 def test_config_files():
     return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
+        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.json",
         "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
+        "display_config": "tests/test_data/test_display_configuration.json",
     }
 
 
@@ -1725,7 +1726,7 @@ IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
 
 
 @pytest.fixture(autouse=True)
-def mock_config_server():
+def mock_mx_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
     for client in IMPLEMENTED_CONFIG_CLIENTS:
@@ -1734,6 +1735,36 @@ def mock_config_server():
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
         side_effect=_fake_config_server_read,
+    ):
+        yield
+
+
+def _fake_config_server_get_file_contents(
+    filepath: str | Path,
+    desired_return_type: type[str] | type[dict] | ConfigModel = str,
+    reset_cached_result: bool = True,
+):
+    filepath = Path(filepath)
+    # Minimal logic required for unit tests
+    with filepath.open("r") as f:
+        contents = f.read()
+        print(contents)
+        if desired_return_type is str:
+            return contents
+        elif desired_return_type is dict:
+            print("return type is dict")
+            return json.loads(contents)
+        elif issubclass(desired_return_type, ConfigModel):  # type: ignore
+            return desired_return_type.model_validate(json.loads(contents))
+
+
+@pytest.fixture(autouse=True)
+def mock_config_server():
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    with patch(
+        "daq_config_server.client.ConfigServer.get_file_contents",
+        side_effect=_fake_config_server_get_file_contents,
     ):
         yield
 
