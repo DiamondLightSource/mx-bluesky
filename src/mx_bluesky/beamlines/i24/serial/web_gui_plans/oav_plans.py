@@ -1,6 +1,7 @@
 from enum import Enum
 
 import bluesky.plan_stubs as bps
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i24.pmac import PMAC
 
@@ -71,7 +72,7 @@ def move_nudge_on_arrow_click(
 
 def focus_on_oav_view(
     direction: FocusDirection, size_of_move: MoveSize, pmac: PMAC = inject("pmac")
-):
+) -> MsgGenerator:
     match size_of_move:
         case MoveSize.SMALL:
             magnitude = 0.0200
