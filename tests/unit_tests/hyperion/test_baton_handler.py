@@ -129,14 +129,13 @@ def bluesky_context(
             context.register_device(device)
         return {d.name: d for d in devices}, {}
 
-    context.with_dodal_module(
-        get_beamline_based_on_environment_variable(),
+    context.with_device_manager(
+        get_beamline_based_on_environment_variable().devices,
         mock=True,
-        fake_with_ophyd_sim=True,
     )
 
     baton_with_requested_user(context, HYPERION_USER)
-    with patch.object(context, "with_dodal_module", mock_load_module):
+    with patch.object(context, "with_device_manager", mock_load_module):
         yield context
 
 
@@ -178,10 +177,9 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
     ):
         context = BlueskyContext(run_engine=faked_run_engine)
-        context.with_dodal_module(
-            get_beamline_based_on_environment_variable(),
+        context.with_device_manager(
+            get_beamline_based_on_environment_variable().devices,
             mock=True,
-            fake_with_ophyd_sim=True,
         )
         yield msgs, context
 
@@ -227,7 +225,9 @@ def baton_with_requested_user(
 
 @pytest.fixture()
 def udc_runner(bluesky_context: BlueskyContext) -> PlanRunner:
-    return PlanRunner(bluesky_context, True)
+    runner = PlanRunner(bluesky_context, True)
+    runner.reset_callback_watchdog_timer()
+    return runner
 
 
 @pytest.fixture
@@ -497,6 +497,7 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
 ):
     msgs, context = bluesky_context_with_sim_run_engine
     udc_runner = PlanRunner(context, True)
+    udc_runner.reset_callback_watchdog_timer()
     run_udc_when_requested(context, udc_runner)
 
     assert_message_and_return_remaining(

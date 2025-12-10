@@ -3,7 +3,7 @@ Create a New Release
 ===========
 Pre-release
 ===========
-Make sure that dodal has an up-to-date release. If not, create one (see `dodal release instructions <https://diamondlightsource.github.io/dodal/main/developer/how-to/make-release.html>`_).
+Make sure that dodal has an up-to-date release. If not, create one (see `dodal release instructions <https://diamondlightsource.github.io/dodal/main/how-to/make-release.html>`_).
 
 =======
 Release
@@ -19,7 +19,7 @@ Release
 8. Publish the release
 
 NOTE FOR USING THE MX-BLUESKY-BLUEAPI IMAGE: If using this image with BlueAPI's helmchart for deployment, the version of dodal which is installed will be the version which is pinned in the BlueAPI, rather than what's in mx-bluesky's pyproject.toml. Before releasing, you should pin BlueAPI to a version which uses a dodal version which is compatible with itself AND mx-bluesky. The deployment will fail if BlueAPI has no version which works with the desired dodal version
-Follow these :ref:`instructions <deploying-to-i04-blueapi>` on how to deploy to I04 BlueAPI.
+Follow `these instructions <setup-blueapi-for-mx.html>`_ on using the mx-bluesky-blueapi image.
 
 ------------------------
 Deciding release numbers

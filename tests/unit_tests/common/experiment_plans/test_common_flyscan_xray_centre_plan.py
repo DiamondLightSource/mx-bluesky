@@ -214,7 +214,7 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        fgs = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+        fgs = i03.zebra_fast_grid_scan.build(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_mock_value(fgs.motion_program.running, 1)

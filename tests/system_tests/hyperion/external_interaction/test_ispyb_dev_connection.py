@@ -88,8 +88,8 @@ GRID_INFO_COLUMN_MAP = {
         "steps_x",
         "steps_y",
         "meshAngle",
-        "pixelsPerMicronX",
-        "pixelsPerMicronY",
+        "micronsPerPixelX",
+        "micronsPerPixelY",
         "snapshot_offsetXPixel",
         "snapshot_offsetYPixel",
         "recordTimeStamp",
@@ -480,8 +480,8 @@ def test_ispyb_deposition_in_gridscan(
         "orientation": "horizontal",
         "snaked": True,
         "dataCollectionId": ispyb_ids.data_collection_ids[0],
-        "pixelsPerMicronX": 1.24069,
-        "pixelsPerMicronY": 1.24069,
+        "micronsPerPixelX": 0.806,
+        "micronsPerPixelY": 0.806,
     }
 
     compare_actual_and_expected(
