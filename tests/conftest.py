@@ -229,8 +229,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json"),
+    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
 
 
@@ -788,9 +788,9 @@ class ConfigFilesForTests(TypedDict):
 @pytest.fixture()
 def test_config_files():
     return ConfigFilesForTests(
-        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json",
+        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml",
         oav_config_json=f"{MOCK_DAQ_CONFIG_PATH}/OAVCentring.json",
-        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json",
+        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display.configuration",
     )
 
 
@@ -1728,7 +1728,7 @@ def mock_mx_config_server():
 
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=fake_config_server_get_file_contents,
+        side_effect=MockConfigServer().get_file_contents,
     ):
         yield
 
