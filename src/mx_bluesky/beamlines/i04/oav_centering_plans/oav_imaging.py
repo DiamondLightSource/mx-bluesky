@@ -9,7 +9,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, ZoomController
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -150,7 +150,7 @@ def _get_max_pixel_from_100_transmission(
     return target_brightest_pixel
 
 
-def optimise_oav_transmission_binary_search(
+def optimise_transmission_with_oav(
     upper_bound: float = 100,  # in percent
     lower_bound: float = 0,  # in percent
     frac_of_max: float = 0.75,
@@ -215,17 +215,9 @@ def optimise_oav_transmission_binary_search(
     raise StopIteration("Max iterations reached")
 
 
-def automated_centring(
-    zoom_levels: list[str] = [
-        "1.0x",
-        "1.5x",
-        "2.0x",
-        "2.5x",
-        "3.0x",
-        "5.0x",
-        "7.5x",
-        "10.0x",
-    ],
+def find_beam_centres(
+    zoom_levels_to_centre: list[str] | None = None,
+    zoom_levels_to_optimise_transmission: list[str] | None = None,
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: Backlight = inject("backlight"),
@@ -237,40 +229,16 @@ def automated_centring(
     oav: OAV = inject("oav"),
     shutter: ZebraShutter = inject("sample_shutter"),
 ) -> MsgGenerator:
-    zoom_level_to_dict = {
-        "7.5x": [
-            oav.zoom_controller.x_placeholder_zoom_7,
-            oav.zoom_controller.y_placeholder_zoom_7,
-        ],
-        "1.0x": [
-            oav.zoom_controller.x_placeholder_zoom_1,
-            oav.zoom_controller.y_placeholder_zoom_1,
-        ],
-        "1.5x": [
-            oav.zoom_controller.x_placeholder_zoom_2,
-            oav.zoom_controller.y_placeholder_zoom_2,
-        ],
-        "2.0x": [
-            oav.zoom_controller.x_placeholder_zoom_3,
-            oav.zoom_controller.y_placeholder_zoom_3,
-        ],
-        "2.5x": [
-            oav.zoom_controller.x_placeholder_zoom_4,
-            oav.zoom_controller.y_placeholder_zoom_4,
-        ],
-        "3.0x": [
-            oav.zoom_controller.x_placeholder_zoom_5,
-            oav.zoom_controller.y_placeholder_zoom_5,
-        ],
-        "5.0x": [
-            oav.zoom_controller.x_placeholder_zoom_6,
-            oav.zoom_controller.y_placeholder_zoom_6,
-        ],
-        "10.0x": [
-            oav.zoom_controller.x_placeholder_zoom_8,
-            oav.zoom_controller.y_placeholder_zoom_8,
-        ],
-    }
+    """
+    zoom_levels: The levels to do centring at, by default runs at all known zoom levels.
+    """
+
+    assert isinstance(oav.zoom_controller, ZoomController), (
+        "Zoom controller does not support setting beam centres"
+    )  # Can probably do better typing? Make OAV generic to zoom controller?
+
+    if zoom_levels_to_optimise_transmission is None:
+        zoom_levels_to_optimise_transmission = ["1.0x", "7.5x"]
 
     LOGGER.info("Preparing beamline for images...")
     yield from _prepare_beamline_for_scintillator_images(
@@ -283,29 +251,29 @@ def automated_centring(
         initial_wait_group,
     )
 
-    for zoom in zoom_levels:
-        LOGGER.info(f"Moving to zoom level {zoom}")
-        yield from bps.abs_set(oav.zoom_controller, zoom, wait=True)
-        yield from bps.sleep(1)
-        if zoom == "7.5x" or zoom == "1.0x":
-            LOGGER.info(f"Optimising transmission (zoom level {zoom})")
-            yield from optimise_oav_transmission_binary_search(
-                100,
-                0,
-                max_pixel=max_pixel,
-                attenuator=attenuator,
-                xbpm_feedback=xbpm_feedback,
-            )
+    for centring_device in oav.zoom_controller.beam_centres.values():
+        zoom_name = yield from bps.rd(centring_device.level_name)
+        if zoom_levels_to_centre is None or zoom_name in zoom_levels_to_centre:
+            LOGGER.info(f"Moving to zoom level {zoom_name}")
+            yield from bps.abs_set(oav.zoom_controller, zoom_name, wait=True)
+            if zoom_name in zoom_levels_to_optimise_transmission:
+                LOGGER.info(f"Optimising transmission at zoom level {zoom_name}")
+                yield from optimise_transmission_with_oav(
+                    100,
+                    0,
+                    max_pixel=max_pixel,
+                    attenuator=attenuator,
+                    xbpm_feedback=xbpm_feedback,
+                )
 
-        yield from bps.trigger(centre_ellipse, wait=True)
-        centre_x = yield from bps.rd(centre_ellipse.center_x_val)
-        centre_y = yield from bps.rd(centre_ellipse.center_y_val)
-        LOGGER.info(f"Centre X: {centre_x}, Centre Y: {centre_y}")
-        centre_x = round(centre_x)
-        centre_y = round(centre_y)
-        x_signal = zoom_level_to_dict[zoom][0]
-        y_signal = zoom_level_to_dict[zoom][1]
-        LOGGER.info("Writing centre values to OAV PVs")
-        yield from bps.mv(x_signal, centre_x, y_signal, centre_y)
+            yield from bps.trigger(centre_ellipse, wait=True)
+            centre_x = yield from bps.rd(centre_ellipse.center_x_val)
+            centre_y = yield from bps.rd(centre_ellipse.center_y_val)
+            centre_x = round(centre_x)
+            centre_y = round(centre_y)
+            LOGGER.info(f"Writing centre values ({centre_x}, {centre_y}) to OAV PVs")
+            yield from bps.mv(
+                centring_device.x_centre, centre_x, centring_device.y_centre, centre_y
+            )
 
     LOGGER.info("Done!")
