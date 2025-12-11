@@ -143,8 +143,8 @@ class OavConfig:
                     bottomRightY=322,
                 ),
                 5.0: DisplayConfigData(
-                    crosshairX=429,
-                    crosshairY=357,
+                    crosshairX=517,
+                    crosshairY=350,
                     topLeftX=268,
                     topLeftY=326,
                     bottomRightX=354,
