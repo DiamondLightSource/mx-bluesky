@@ -49,6 +49,7 @@ EXPECTED_DATA_COLLECTION = {
     "startTime": EXPECTED_START_TIME,
     "fileTemplate": "file_name_1_master.h5",
     "numberOfImages": 1800,
+    "sampleId": 123456,
 }
 
 
