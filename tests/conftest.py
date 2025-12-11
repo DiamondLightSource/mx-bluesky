@@ -1710,23 +1710,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(
-    filepath: str | Path,
-    desired_return_type: type[str] | type[dict] = str,
-    reset_cached_result=False,
-):
-    filepath = Path(filepath)
-    print(filepath)
-    print(desired_return_type)
-    # Minimal logic required for unit tests
-    with filepath.open("r") as f:
-        contents = f.read()
-        if desired_return_type is str:
-            return contents
-        elif desired_return_type is dict:
-            return json.loads(contents)
-
-
 IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
     get_hyperion_config_client,
     get_i04_config_client,
