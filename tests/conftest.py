@@ -17,7 +17,6 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from daq_config_server.converters.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
@@ -115,6 +114,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.parameters.rotation import RotationScan
+from tests.mock_config_server.mock_config_server import MockConfigServer
 
 pytest_plugins = ["tests.expeye_helpers"]
 
@@ -219,8 +219,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json"),
+    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
 mock_attributes_table = {
     "i03": mock_paths,
@@ -798,9 +798,9 @@ class ConfigFilesForTests(TypedDict):
 @pytest.fixture()
 def test_config_files():
     return ConfigFilesForTests(
-        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.json",
+        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml",
         oav_config_json=f"{MOCK_DAQ_CONFIG_PATH}/OAVCentring.json",
-        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display_configuration.json",
+        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display.configuration",
     )
 
 
@@ -1716,6 +1716,8 @@ def _fake_config_server_read(
     reset_cached_result=False,
 ):
     filepath = Path(filepath)
+    print(filepath)
+    print(desired_return_type)
     # Minimal logic required for unit tests
     with filepath.open("r") as f:
         contents = f.read()
@@ -1740,28 +1742,9 @@ def mock_mx_config_server():
 
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=_fake_config_server_read,
+        side_effect=MockConfigServer().get_file_contents,
     ):
         yield
-
-
-def _fake_config_server_get_file_contents(
-    filepath: str | Path,
-    desired_return_type: type[str] | type[dict] | ConfigModel = str,
-    reset_cached_result: bool = True,
-):
-    filepath = Path(filepath)
-    # Minimal logic required for unit tests
-    with filepath.open("r") as f:
-        contents = f.read()
-        print(contents)
-        if desired_return_type is str:
-            return contents
-        elif desired_return_type is dict:
-            print("return type is dict")
-            return json.loads(contents)
-        elif issubclass(desired_return_type, ConfigModel):  # type: ignore
-            return desired_return_type.model_validate(json.loads(contents))
 
 
 @pytest.fixture(autouse=True)
@@ -1770,7 +1753,7 @@ def mock_config_server():
 
     with patch(
         "daq_config_server.client.ConfigServer.get_file_contents",
-        side_effect=_fake_config_server_get_file_contents,
+        side_effect=MockConfigServer().get_file_contents,
     ):
         yield
 
