@@ -219,8 +219,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", "jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", "display.configuration"),
 ]
 mock_attributes_table = {
     "i03": mock_paths,
@@ -798,9 +798,9 @@ class ConfigFilesForTests(TypedDict):
 @pytest.fixture()
 def test_config_files():
     return ConfigFilesForTests(
-        zoom_params_file=f"{MOCK_DAQ_CONFIG_PATH}/jCameraManZoomLevels.xml",
-        oav_config_json=f"{MOCK_DAQ_CONFIG_PATH}/OAVCentring.json",
-        display_config=f"{MOCK_DAQ_CONFIG_PATH}/display.configuration",
+        zoom_params_file="jCameraManZoomLevels.xml",
+        oav_config_json="OAVCentring.json",
+        display_config="display.configuration",
     )
 
 
