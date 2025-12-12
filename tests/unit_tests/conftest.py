@@ -159,6 +159,7 @@ BASIC_POST_SETUP_DOC = {
     "beamsize-x_um": 50.0,
     "beamsize-y_um": 20.0,
     "eiger_cam_roi_mode": True,
+    "eiger-detector_id": 78,
 }
 
 
