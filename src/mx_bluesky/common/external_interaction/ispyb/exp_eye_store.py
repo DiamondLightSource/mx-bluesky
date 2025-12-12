@@ -309,6 +309,7 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
             "startTime": data.start_time,
             "endTime": data.end_time,
             "runStatus": data.run_status,
+            "sampleId": data.sample_id,
         }
     )
 

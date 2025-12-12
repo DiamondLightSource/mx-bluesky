@@ -68,6 +68,8 @@ class DataCollectionInfo:
     end_time: str | None = None
     run_status: str | None = None
 
+    sample_id: int | None = None
+
 
 @dataclass
 class DataCollectionPositionInfo:
