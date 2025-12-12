@@ -176,14 +176,6 @@ class TestGeneratedSnapshots:
         return MagicMock(side_effect=request.param)
 
     @pytest.fixture()
-    def test_config_files(self):
-        return {
-            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
-        }
-
-    @pytest.fixture()
     def snapshot_oav_with_1x_zoom(self, oav_with_snapshots):
         set_mock_value(oav_with_snapshots.zoom_controller.level, "1.0x")
         return oav_with_snapshots
@@ -299,10 +291,10 @@ class TestGeneratedSnapshots:
     @pytest.mark.parametrize(
         "expected_px_1, expected_px_2, grid_smargon_mm, rotation_smargon_mm",
         [
-            [(397.0, 373.0), (397.0, 373.0), (0, 0, 0), (0, 0, 0)],
-            [(497.0, 373.0), (497.0, 373.0), (0, 0, 0), (0.287, 0, 0)],
-            [(397.0, 473.0), (397.0, 373.0), (0, 0, 0), (0, 0.287, 0)],
-            [(397.0, 373.0), (397.0, 473.0), (0, 0, 0), (0, 0, 0.287)],
+            [(477.0, 359.0), (477.0, 359.0), (0, 0, 0), (0, 0, 0)],
+            [(577.0, 359.0), (577.0, 359.0), (0, 0, 0), (0.287, 0, 0)],
+            [(477.0, 459.0), (477.0, 359.0), (0, 0, 0), (0, 0.287, 0)],
+            [(477.0, 359.0), (477.0, 459.0), (0, 0, 0), (0, 0, 0.287)],
         ],
     )
     @patch(

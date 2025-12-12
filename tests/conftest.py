@@ -9,7 +9,7 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, TypedDict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy
@@ -60,6 +60,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
+from dodal.testing import MockConfigServer
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd.sim import NullStatus
@@ -218,8 +219,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", "jCameraManZoomLevels.xml"),
+    ("DISPLAY_CONFIG", "display.configuration"),
 ]
 mock_attributes_table = {
     "i03": mock_paths,
@@ -788,13 +789,19 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
     return Beamsize(aperture_scatterguard, name="beamsize")
 
 
+class ConfigFilesForTests(TypedDict):
+    zoom_params_file: str
+    oav_config_json: str
+    display_config: str
+
+
 @pytest.fixture()
 def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
-    }
+    return ConfigFilesForTests(
+        zoom_params_file="jCameraManZoomLevels.xml",
+        oav_config_json="OAVCentring.json",
+        display_config="display.configuration",
+    )
 
 
 @pytest.fixture()
@@ -1705,21 +1712,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(
-    filepath: str | Path,
-    desired_return_type: type[str] | type[dict] = str,
-    reset_cached_result=False,
-):
-    filepath = Path(filepath)
-    # Minimal logic required for unit tests
-    with filepath.open("r") as f:
-        contents = f.read()
-        if desired_return_type is str:
-            return contents
-        elif desired_return_type is dict:
-            return json.loads(contents)
-
-
 IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
     get_hyperion_config_client,
     get_i04_config_client,
@@ -1727,7 +1719,7 @@ IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
 
 
 @pytest.fixture(autouse=True)
-def mock_config_server():
+def mock_mx_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
     for client in IMPLEMENTED_CONFIG_CLIENTS:
@@ -1735,7 +1727,18 @@ def mock_config_server():
 
     with patch(
         "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=_fake_config_server_read,
+        side_effect=MockConfigServer().get_file_contents,
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def mock_config_server():
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    with patch(
+        "daq_config_server.client.ConfigServer.get_file_contents",
+        side_effect=MockConfigServer().get_file_contents,
     ):
         yield
 

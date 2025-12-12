@@ -37,7 +37,7 @@ class DocDescriptorNames:
 
 def _get_oav_config_json_path():
     if TEST_MODE:
-        return "tests/test_data/test_OAVCentring.json"
+        return "OAVCentring.json"
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
     elif BEAMLINE == "aithre":

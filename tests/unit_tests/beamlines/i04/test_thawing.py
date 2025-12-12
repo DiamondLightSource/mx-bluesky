@@ -30,9 +30,7 @@ from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw_and_murko_centre,
     thaw_and_stream_to_redis,
 )
-
-DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
+from tests.conftest import ConfigFilesForTests
 
 
 class MyError(Exception):
@@ -40,8 +38,8 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav_full_screen() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"])
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
@@ -57,8 +55,8 @@ async def oav_full_screen() -> OAV:
 
 
 @pytest.fixture
-async def oav_roi() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_roi(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"])
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
     zoom_levels_list = ["1.0x", "2.0x", "5.0x"]

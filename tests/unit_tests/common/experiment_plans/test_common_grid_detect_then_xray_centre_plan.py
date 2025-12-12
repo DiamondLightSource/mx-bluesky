@@ -218,7 +218,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     assert params.detector_params.num_triggers == 180
     assert params.fast_gridscan_params.x_axis.full_steps == 15
-    assert params.fast_gridscan_params.y_axis.end == pytest.approx(-0.0649, 0.001)
+    assert params.fast_gridscan_params.y_axis.end == pytest.approx(-0.137442, 0.001)
 
     # Parameters can be serialized
     params.model_dump_json()

@@ -1,7 +1,7 @@
-import json
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from dodal.testing import MockOavConfig
 from pydantic.dataclasses import dataclass
 
 from mx_bluesky.common.external_interaction.config_server import MXConfigClient
@@ -15,6 +15,9 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSettings
+
+
+class StopTestError(Exception): ...
 
 
 def test_verify_feature_parameters():
@@ -32,21 +35,24 @@ def test_verify_feature_parameters():
 
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
 def test_get_json_config_good_request(mock_log_warn: MagicMock):
-    with open(OavConstants.OAV_CONFIG_JSON) as f:
-        expected_dict = json.loads(f.read())
+    expected_dict = MockOavConfig.get_oav_config_json()
     assert expected_dict == get_hyperion_config_client().get_json_config(
         OavConstants.OAV_CONFIG_JSON
     )
     mock_log_warn.assert_not_called()
 
 
+@patch(
+    "mx_bluesky.common.external_interaction.config_server.open",
+    side_effect=StopTestError,
+)
 @patch("mx_bluesky.common.external_interaction.config_server.LOGGER.warning")
-def test_get_json_config_on_bad_request(mock_log_warn: MagicMock):
-    with open(OavConstants.OAV_CONFIG_JSON) as f:
-        expected_dict = json.loads(f.read())
+def test_get_json_config_on_bad_request(mock_open: MagicMock, mock_log_warn: MagicMock):
+    expected_dict = MockOavConfig.get_oav_config_json()
     server = get_hyperion_config_client()
     server.get_file_contents = MagicMock(side_effect=Exception)
-    assert expected_dict == server.get_json_config(OavConstants.OAV_CONFIG_JSON)
+    with pytest.raises(StopTestError):
+        assert expected_dict == server.get_json_config(OavConstants.OAV_CONFIG_JSON)
     mock_log_warn.assert_called_once()
 
 
@@ -91,8 +97,7 @@ def test_get_feature_flags_cache():
 
 def test_get_json_config_cache():
     server = get_hyperion_config_client()
-    with open(OavConstants.OAV_CONFIG_JSON) as f:
-        expected_dict = json.loads(f.read())
+    expected_dict = MockOavConfig.get_oav_config_json()
     get_hyperion_config_client().get_json_config(OavConstants.OAV_CONFIG_JSON)
     assert server._cached_json_config[OavConstants.OAV_CONFIG_JSON] == expected_dict
     with patch(
