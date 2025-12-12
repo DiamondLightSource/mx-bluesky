@@ -164,6 +164,7 @@ def test_flux_read_events(
         "transmission": 98,
         "flux": 9.81,
         "resolution": 1.1830593331191241,
+        "detectorMode": "FULL",
     }
 
 
