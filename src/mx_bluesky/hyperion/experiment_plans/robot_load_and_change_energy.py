@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from datetime import datetime
 from pathlib import Path
 from typing import cast
 
@@ -27,6 +26,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
     prepare_for_robot_load,
+    take_robot_snapshots,
     wait_for_smargon_not_disabled,
 )
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
@@ -62,19 +62,6 @@ def create_devices(context: BlueskyContext) -> RobotLoadAndEnergyChangeComposite
     from mx_bluesky.common.utils.context import device_composite_from_context
 
     return device_composite_from_context(context, RobotLoadAndEnergyChangeComposite)
-
-
-def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
-    time_now = datetime.now()
-    snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
-    for device in [oav.snapshot, webcam]:
-        yield from bps.abs_set(
-            device.filename, snapshot_format.format(device=device.name)
-        )
-        yield from bps.abs_set(device.directory, str(directory))
-        # Note: should be able to use `wait=True` after https://github.com/bluesky/bluesky/issues/1795
-        yield from bps.trigger(device, group="snapshots")
-        yield from bps.wait("snapshots")
 
 
 def do_robot_load(
@@ -136,7 +123,9 @@ def robot_load_and_snapshots(
     )
     yield from bps.wait(group="snapshot")
 
-    yield from take_robot_snapshots(composite.oav, composite.webcam, snapshot_directory)
+    yield from take_robot_snapshots(
+        [composite.oav.snapshot, composite.webcam], snapshot_directory
+    )
 
     yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
     yield from bps.read(composite.robot)

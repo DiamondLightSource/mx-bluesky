@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
+from dodal.devices.oav.snapshots.snapshot import Snapshot
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
+from dodal.devices.webcam import Webcam
 from dodal.plan_stubs.motor_utils import MoveTooLargeError, home_and_reset_wrapper
 
 from mx_bluesky.common.parameters.constants import (
@@ -126,3 +131,16 @@ def robot_unload(
         yield from bps.wait(gonio_finished)
 
     yield from do_robot_unload_and_send_to_ispyb()
+
+
+def take_robot_snapshots(snapshot_devices: list[Snapshot | Webcam], directory: Path):
+    time_now = datetime.now()
+    snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
+    for device in snapshot_devices:
+        yield from bps.abs_set(
+            device.filename, snapshot_format.format(device=device.name)
+        )
+        yield from bps.abs_set(device.directory, str(directory))
+        # Note: should be able to use `wait=True` after https://github.com/bluesky/bluesky/issues/1795
+        yield from bps.trigger(device, group="snapshots")
+        yield from bps.wait("snapshots")

@@ -13,10 +13,10 @@ from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.device_setup_plans.robot_load_unload import take_robot_snapshots
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
     robot_load_and_change_energy_plan,
-    take_robot_snapshots,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -211,7 +211,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
-    run_engine(take_robot_snapshots(oav, webcam, Path(test_directory)))
+    run_engine(take_robot_snapshots([oav.snapshot, webcam], Path(test_directory)))
 
     oav.snapshot.trigger.assert_called_once()
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"

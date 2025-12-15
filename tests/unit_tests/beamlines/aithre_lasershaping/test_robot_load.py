@@ -10,7 +10,6 @@ from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan import (
     RobotLoadComposite,
-    _take_robot_snapshots,
     robot_load_and_snapshots_plan,
     robot_unload_plan,
 )
@@ -22,6 +21,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.robot_load import (
     robot_load_and_snapshot,
     robot_unload,
 )
+from mx_bluesky.common.device_setup_plans.robot_load_unload import take_robot_snapshots
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
@@ -113,9 +113,7 @@ def test_given_ispyb_callback_attached_when_robot_load_and_snapshots_plan_called
     )
 
 
-@patch(
-    "mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan.datetime"
-)
+@patch("mx_bluesky.common.device_setup_plans.robot_load_unload.datetime")
 async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
     mock_datetime: MagicMock, oav: OAV, run_engine: RunEngine
 ):
@@ -125,7 +123,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
 
-    run_engine(_take_robot_snapshots(oav, Path(test_directory)))
+    run_engine(take_robot_snapshots([oav.snapshot], Path(test_directory)))
 
     oav.snapshot.trigger.assert_called_once()
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"

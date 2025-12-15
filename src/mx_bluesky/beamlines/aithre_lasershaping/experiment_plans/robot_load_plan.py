@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
@@ -17,6 +16,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters i
 )
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
+    take_robot_snapshots,
 )
 from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
@@ -54,19 +54,6 @@ def _move_gonio_to_home_position(
     yield from bps.abs_set(composite.gonio.z, z_home, group=group)
 
     yield from bps.wait(group=group)
-
-
-def _take_robot_snapshots(oav: OAV, directory: Path):
-    time_now = datetime.now()
-    snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
-    for device in [oav.snapshot]:
-        yield from bps.abs_set(
-            device.filename, snapshot_format.format(device=device.name)
-        )
-        yield from bps.abs_set(device.directory, str(directory))
-        # Note: should be able to use `wait=True` after https://github.com/bluesky/bluesky/issues/1795
-        yield from bps.trigger(device, group="snapshots")
-        yield from bps.wait("snapshots")
 
 
 def _do_robot_load_and_centre(
@@ -123,7 +110,7 @@ def _robot_load_and_snapshots(
     )
     yield from bps.wait(group="snapshot")
 
-    yield from _take_robot_snapshots(composite.oav, snapshot_directory)
+    yield from take_robot_snapshots([composite.oav.snapshot], snapshot_directory)
 
     yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
     yield from bps.read(composite.robot)
@@ -184,7 +171,9 @@ def robot_unload_plan(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
-        yield from _take_robot_snapshots(composite.oav, params.snapshot_directory)
+        yield from take_robot_snapshots(
+            [composite.oav.snapshot], params.snapshot_directory
+        )
         yield from bps.wait(group="snapshot")
         yield from _move_gonio_to_home_position(composite)
 
