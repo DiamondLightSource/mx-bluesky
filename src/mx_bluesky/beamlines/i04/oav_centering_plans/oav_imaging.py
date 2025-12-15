@@ -58,8 +58,8 @@ def take_oav_image_with_scintillator_in(
         backlight,
         scintillator,
         xbpm_feedback,
-        initial_wait_group,
         shutter,
+        initial_wait_group,
     )
     LOGGER.info("setting transmission")
     yield from bps.abs_set(attenuator, transmission, group=initial_wait_group)
@@ -92,12 +92,8 @@ def _prepare_beamline_for_scintillator_images(
     group: str,
 ) -> MsgGenerator:
     """
-    Prepares the beamline for oav image by making sure the pin is NOT mounted and
+    Prepares the beamline for oav image by making sure the pin is not mounted and
     the beam is on (feedback check). Finally, the scintillator is moved in.
-
-     Args:
-        devices: These are the specific ophyd-devices used for the plan, the
-                    defaults are always correct.
     """
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.PIN_MOUNTED:
@@ -140,20 +136,22 @@ def take_and_save_oav_image(
         raise FileExistsError("OAV image file path already exists")
 
 
-def _get_max_pixel_from_100_transmission(
+def _max_pixel_at_transmission(
     max_pixel: MaxPixel,
     attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    transmission: float,
 ):
-    yield from bps.mv(attenuator, 1)  # 100 % transmission
+    yield from bps.trigger(xbpm_feedback, wait=True)
+    yield from bps.mv(attenuator, transmission)
     yield from bps.trigger(max_pixel, wait=True)
-    target_brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
-    return target_brightest_pixel
+    return (yield from bps.rd(max_pixel.max_pixel_val))
 
 
 def optimise_transmission_with_oav(
-    upper_bound: float = 100,  # in percent
-    lower_bound: float = 0,  # in percent
-    frac_of_max: float = 0.75,
+    upper_bound: float = 100,
+    lower_bound: float = 0,
+    target_brightness_fraction: float = 0.75,
     tolerance: int = 5,
     max_iterations: int = 10,
     max_pixel: MaxPixel = inject("max_pixel"),
@@ -162,53 +160,66 @@ def optimise_transmission_with_oav(
 ) -> MsgGenerator:
     """
     Plan to find the optimal oav transmission. First the brightest pixel at 100%
-    transmission is taken. A fraction of this (frac_of_max) is taken as the target -
-    as in the optimal transmission will have it's max pixel as the set target.
-    A binary search is used to reach the target.
+    transmission is taken. A fraction of this (target_brightness_fraction) is taken
+    as the target - as in the optimal transmission will have it's max pixel as the set
+    target. A binary search is used to reach this.
     Args:
-        upper_bound: Maximum transmission which will be searched.
-        lower_bound: Minimum transmission which will be searched.
-        frac_of_max: Fraction of the brightest pixel at 100% transmission which should be
-                     used as the target max pixel brightness.
-        tolerance: Amount the search can be off by and still find a match.
+        upper_bound: Maximum transmission which will be searched. In percent.
+        lower_bound: Minimum transmission which will be searched. In percent.
+        target_brightness_fraction: Fraction of the brightest pixel at 100%
+                    transmission which should be used as the target max pixel brightness.
+        tolerance: Amount the brightness can be off by and still find a match.
         max_iterations: Maximum amount of iterations.
     """
-    brightest_pixel_sat = yield from _get_max_pixel_from_100_transmission(
-        max_pixel, attenuator
+
+    if upper_bound < lower_bound:
+        raise ValueError(
+            f"Upper bound ({upper_bound}) must be higher than lower bound {lower_bound}"
+        )
+
+    brightest_pixel_at_full_beam = yield from _max_pixel_at_transmission(
+        max_pixel, attenuator, xbpm_feedback, 1
     )
-    target_pixel_l = brightest_pixel_sat * frac_of_max
-    LOGGER.info(f"~~Target luminosity: {target_pixel_l}~~\n")
+
+    if brightest_pixel_at_full_beam == 0:
+        raise ValueError("No beam found at full transmission")
+
+    target_pixel_brightness = brightest_pixel_at_full_beam * target_brightness_fraction
+    LOGGER.info(
+        f"Optimising until max pixel in image has a value of {target_pixel_brightness}"
+    )
 
     iterations = 0
 
     while iterations < max_iterations:
         mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
-        LOGGER.info(f"on iteration {iterations}")
+        LOGGER.info(f"On iteration {iterations}")
 
-        yield from bps.mv(attenuator, mid / 100)
-        yield from bps.trigger(xbpm_feedback, wait=True)
-        yield from bps.trigger(max_pixel, wait=True)
-        brightest_pixel = yield from bps.rd(max_pixel.max_pixel_val)
+        brightest_pixel = yield from _max_pixel_at_transmission(
+            max_pixel, attenuator, xbpm_feedback, mid / 100
+        )
 
-        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
         LOGGER.info(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
         LOGGER.info(
             f"Testing transmission {mid}, brightest pixel found {brightest_pixel}"
         )
 
-        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
+        if (
+            target_pixel_brightness - tolerance
+            <= brightest_pixel
+            <= target_pixel_brightness + tolerance
+        ):
             mid = round(mid, 0)
             LOGGER.info(f"\nOptimal transmission found: {mid}")
-            yield from bps.trigger(xbpm_feedback)
             return mid
 
         # condition for too low so want to try higher
-        elif brightest_pixel < target_pixel_l - tolerance:
+        elif brightest_pixel < target_pixel_brightness - tolerance:
             LOGGER.info("Result: Too low \n")
             lower_bound = mid
 
         # condition for too high so want to try lower
-        elif brightest_pixel > target_pixel_l + tolerance:
+        elif brightest_pixel > target_pixel_brightness + tolerance:
             LOGGER.info("Result: Too high \n")
             upper_bound = mid
         iterations += 1

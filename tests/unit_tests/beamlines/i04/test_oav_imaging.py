@@ -1,5 +1,4 @@
-from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -17,16 +16,15 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
-from ophyd_async.core import init_devices, set_mock_value
+from ophyd_async.core import completed_status, init_devices, set_mock_value
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,
-    optimise_oav_transmission_binary_search,
+    optimise_transmission_with_oav,
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
 )
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
-from mx_bluesky.common.utils.log import LOGGER
 
 
 async def test_check_exception_raised_if_pin_mounted(
@@ -60,11 +58,18 @@ def test_prepare_beamline_for_scint_images(
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
+    sample_shutter: ZebraShutter,
 ):
     test_group = "my_group"
     messages = sim_run_engine.simulate_plan(
         _prepare_beamline_for_scintillator_images(
-            robot, beamstop_phase1, backlight, scintillator, xbpm_feedback, test_group
+            robot,
+            beamstop_phase1,
+            backlight,
+            scintillator,
+            xbpm_feedback,
+            sample_shutter,
+            test_group,
         )
     )
 
@@ -257,128 +262,329 @@ async def test_take_and_save_oav_image_in_re(run_engine: RunEngine, oav: OAV, tm
     oav.snapshot.trigger.assert_called_once()  # type: ignore
 
 
-# add test for transmission optimization
-# test that everything is called in the correct order.
-# mock out the different transmissions and max vals and make sure you reach what's expected.
-
-
 @pytest.fixture()
-async def max_pixel() -> AsyncGenerator[MaxPixel]:
+async def max_pixel() -> MaxPixel:
     async with init_devices(mock=True):
-        max_pixel = MaxPixel("TEST: MAX_PIXEL")
-    yield max_pixel
+        max_pixel = MaxPixel("TEST: MAX_PIXEL", "max_pixel")
 
-
-# @patch("mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.brightest_pixel_sat")
-# def test_binary_search(
-#     mock_brightest_pixel: MagicMock,
-#     max_pixel: MaxPixel,
-#     attenuator: BinaryFilterAttenuator,
-#     upper_bound=100,
-#     lower_bound=0,
-# ):
-#     mock_brightest_pixel.return_value()
-
-
-# def test_initial_yield_froms(
-#         sim_run_engine: RunEngineSimulator,
-#         max_pixel: MaxPixel,
-#         attenuator: BinaryFilterAttenuator
-#         ):
-#     Messages = sim_run_engine.simulate_plan(
-#         take_oav_image_with_scintillator_in(
-
-
-@patch(
-    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._get_max_pixel_from_100_transmission"
-)
-def test_optimise_oav_transmission_binary_search(
-    mock_brightest_pixel: MagicMock,
-    run_engine: RunEngine,
-    max_pixel: MaxPixel,
-    attenuator: BinaryFilterAttenuator,
-    done_status,
-):
-    # Simulated transmission-to-pixel mapping
-    # expecting transmission 18.75 to be correct
-
-    # put this in a mark.parameterize so that you can try different dicts
-    mock_brightest_pixel.return_value = [255]
-    # transmission_map = {100: 255, 50: 180, 25: 160, 18.75: 130, 12.5: 118, 0: 0}
-    transmission_map = {50: 220, 25: 200, 18.75: 150, 12.5: 127}
-    # transmission_list = list(transmission_map.keys())
-
-    max_pixel_list = list(transmission_map.values())
-    max_pixel.trigger = MagicMock(return_value=done_status)
-    attenuator.set = MagicMock()
-    side_effect_input = [{"readback": i} for i in max_pixel_list]
-    max_pixel.locate = AsyncMock(side_effect=side_effect_input)
-
-    run_engine(optimise_oav_transmission_binary_search(upper_bound=100, lower_bound=0))
-    assert max_pixel.trigger.call_count == 4
-
-    # now defining a mock function
-    # def mock_get_max_pixel_value_from_transmission(transmission):
-    #     pixel_val = transmission_map.get(transmission)
-
-    #     if pixel_val is None:
-    #         raise KeyError(f"Transmission {transmission} is not in the mock dictionary")
-
-    #     return pixel_val
-
-    # AsyncMock(side_effect=[50,75,etc...]) # use one for the transmissions one for the pixel values.
-
-    # with patch(
-    #     "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.get_max_pixel_value_from_transmission",
-    #     side_effect=mock_get_max_pixel_value_from_transmission,
-    # ):
-    #     result = optimise_oav_transmission_binary_search(255 / 2, 100, 0, 5, 10)
-    #     assert result == 18.75
-
-
-def tranmission_to_max_pixel(transmission):
-    max_pixel = transmission + 30
+    max_pixel.trigger = MagicMock(return_value=completed_status())
     return max_pixel
-    # if target is 100 then we expect the optimal transmission to be 100 - 30 = 70
 
 
-def optimise_oav_transmission_binary_search_without_yields(
-    upper_bound: float,  # in percent
-    lower_bound: float,  # in percent
-    frac_of_max: float = 0.5,
-    tolerance: int = 1,
-    max_iterations: int = 5,
+def test_optimise_transmission_first_gets_max_pixel_at_100_percent(
+    sim_run_engine: RunEngineSimulator,
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
 ):
-    target_pixel_l = 255 * frac_of_max
+    max_values = [100, 75]
 
-    while max_iterations > tolerance:
-        mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
-        max_iterations -= 1
+    def return_max_values(_):
+        return {"readback": {"value": max_values.pop(0)}}
 
-        brightest_pixel = tranmission_to_max_pixel(mid)
-        # brightest_pixel = get_max_pixel_value_from_transmission(transmission=mid)
-        LOGGER.info(f"Upper bound is: {upper_bound}, Lower bound is: {lower_bound}")
-        LOGGER.info(
-            f"Testing transmission {mid}, brightest pixel found {brightest_pixel}"
+    sim_run_engine.add_handler("read", return_max_values, max_pixel.max_pixel_val.name)
+
+    messages = sim_run_engine.simulate_plan(
+        optimise_transmission_with_oav(
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "trigger" and msg.obj == xbpm_feedback,
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set" and msg.obj == attenuator and msg.args[0] == 1,
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "trigger" and msg.obj == max_pixel
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "read" and msg.obj == max_pixel.max_pixel_val,
+    )
+
+
+@pytest.mark.parametrize("iterations", [10, 6, 4])
+def test_given_max_pixel_never_changes_then_optimise_transmission_raises_stop_iteration(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+    iterations: int,
+):
+    set_mock_value(max_pixel.max_pixel_val, 100)
+
+    with pytest.raises(RuntimeError) as e:
+        run_engine(
+            optimise_transmission_with_oav(
+                max_pixel=max_pixel,
+                attenuator=attenuator,
+                xbpm_feedback=xbpm_feedback,
+                max_iterations=iterations,
+            )
         )
 
-        if target_pixel_l - tolerance < brightest_pixel < target_pixel_l + tolerance:
-            mid = round(mid, 0)
-            LOGGER.info(f"\nOptimal transmission found - {mid}")
-            return mid
-
-        # condition for too low so want to try higher
-        elif brightest_pixel < target_pixel_l - tolerance:
-            LOGGER.info("Result: Too low \n")
-            lower_bound = mid
-
-        # condition for too high so want to try lower
-        elif brightest_pixel > target_pixel_l + tolerance:
-            LOGGER.info("Result: Too high \n")
-            upper_bound = mid
-    return "Max iterations reached"
+    # The RE hides the StopIteration behind a RuntimeError but will mention it in the message
+    assert "StopIteration" in e.value.args[0]
+    assert max_pixel.trigger.call_count == iterations + 1  # type: ignore
 
 
-def test_binary_search_logic():
-    search = optimise_oav_transmission_binary_search(100, 0)
-    assert search == 70
+def given_max_values(max_pixel: MaxPixel, max_values: list):
+    def _set_max_value():
+        set_mock_value(max_pixel.max_pixel_val, max_values.pop(0))
+        return completed_status()
+
+    max_pixel.trigger.side_effect = _set_max_value  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "lower_bound, upper_bound, expected_final_transmission",
+    [[0, 100, 50], [0, 10, 5], [5, 25, 15]],
+)
+def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_returns_half_bounds(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+    lower_bound: int,
+    upper_bound: int,
+    expected_final_transmission: int,
+):
+    given_max_values(max_pixel, [100, 75])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == expected_final_transmission
+
+    assert attenuator.set.call_args_list == [  # type: ignore
+        call(1),
+        call(expected_final_transmission / 100),
+    ]
+
+
+@pytest.mark.parametrize(
+    "target_fraction",
+    [0.75, 0.26, 0.39],
+)
+def test_optimise_transmission_reaches_different_target_fractions(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+    target_fraction: float,
+):
+    given_max_values(max_pixel, [100, 100 * target_fraction])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            target_brightness_fraction=target_fraction,
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == 50
+
+    assert attenuator.set.call_args_list == [call(1), call(0.5)]  # type: ignore
+
+
+def test_max_pixel_stays_too_large_then_optimise_transmission_keeps_reducing(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+):
+    given_max_values(max_pixel, [100, 100, 100, 100, 100, 75])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == 3.0
+
+    assert attenuator.set.call_args_list == [  # type: ignore
+        call(1),
+        call(0.5),
+        call(pytest.approx(0.25)),
+        call(pytest.approx(0.125)),
+        call(pytest.approx(0.0625)),
+        call(pytest.approx(0.0312)),
+    ]
+
+
+def test_max_pixel_stays_too_small_then_optimise_transmission_keeps_increasing(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+):
+    given_max_values(max_pixel, [100, 20, 20, 20, 20, 75])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == 97.0
+
+    assert attenuator.set.call_args_list == [  # type: ignore
+        call(1),
+        call(0.5),
+        call(pytest.approx(0.75)),
+        call(pytest.approx(0.875)),
+        call(pytest.approx(0.9375)),
+        call(pytest.approx(0.9688)),
+    ]
+
+
+@pytest.mark.parametrize(
+    "tolerance, expected_final_transmission, expected_calls",
+    [
+        (10, 50.0, [call(1), call(0.5)]),
+        (3, 75.0, [call(1), call(0.5), call(0.75)]),
+    ],
+)
+def test_different_tolerances_change_when_we_accept(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+    tolerance: int,
+    expected_final_transmission: float,
+    expected_calls: list,
+):
+    given_max_values(max_pixel, [100, 68, 75])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            tolerance=tolerance,
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == expected_final_transmission
+    assert attenuator.set.call_args_list == expected_calls  # type: ignore
+
+
+def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+):
+    given_max_values(max_pixel, [100, 90, 60, 85, 65, 75])
+
+    final_transmission = run_engine(
+        optimise_transmission_with_oav(
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
+    ).plan_result  # type: ignore
+
+    assert final_transmission == 34.0
+
+    # Note the 2 dp rounding on set values:
+    assert attenuator.set.call_args_list == [  # type: ignore
+        call(1),
+        call(0.5),
+        call(0.25),
+        call(pytest.approx(0.375)),
+        call(pytest.approx(0.3125)),
+        call(pytest.approx(0.3438)),
+    ]
+
+
+@pytest.mark.parametrize(
+    "edge_value",
+    [70, 80],
+)
+def test_equal_to_target_plus_or_minus_tolerance_matches_target(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+    edge_value: int,
+):
+    given_max_values(max_pixel, [100, edge_value])
+
+    plan = optimise_transmission_with_oav(
+        max_pixel=max_pixel,
+        attenuator=attenuator,
+        xbpm_feedback=xbpm_feedback,
+    )
+    plan_result = run_engine(plan).plan_result  # type: ignore
+
+    assert plan_result == 50
+    assert attenuator.set.call_args_list == [call(1), call(0.5)]  # type:ignore
+
+
+def test_optimise_transmission_raises_value_error_when_upper_bound_less_than_lower_bound(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+):
+    with pytest.raises(ValueError) as excinfo:
+        run_engine(
+            optimise_transmission_with_oav(
+                lower_bound=60,
+                upper_bound=40,
+                max_pixel=max_pixel,
+                attenuator=attenuator,
+                xbpm_feedback=xbpm_feedback,
+            )
+        )
+    assert "Upper bound (40) must be higher than lower bound 60" in str(excinfo.value)
+
+    # Ensure nothing was moved/triggered since the
+    assert attenuator.set.call_count == 0  # type: ignore
+    assert xbpm_feedback.trigger.call_count == 0  # type: ignore
+
+
+def test_optimise_transmission_raises_value_error_when_full_beam_brightness_is_zero(
+    attenuator: BinaryFilterAttenuator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    run_engine: RunEngine,
+):
+    given_max_values(max_pixel, [0])
+
+    with pytest.raises(ValueError) as excinfo:
+        run_engine(
+            optimise_transmission_with_oav(
+                max_pixel=max_pixel,
+                attenuator=attenuator,
+                xbpm_feedback=xbpm_feedback,
+            )
+        )
+
+    assert "No beam" in str(excinfo.value)
+
+    assert attenuator.set.call_count == 1  # type:ignore
