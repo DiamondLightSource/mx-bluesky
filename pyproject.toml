@@ -48,7 +48,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@i03-device-manager",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@1726_beam_centre_device_post_testing",
 ]
 
 

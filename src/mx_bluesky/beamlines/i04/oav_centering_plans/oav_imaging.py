@@ -9,7 +9,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.oav.oav_detector import OAV, ZoomController
+from dodal.devices.oav.oav_detector import OAV, ZoomControllerWithBeamCentres
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -226,17 +226,12 @@ def find_beam_centres(
     max_pixel: MaxPixel = inject("max_pixel"),
     centre_ellipse: CentreEllipseMethod = inject("beam_centre"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-    oav: OAV = inject("oav"),
+    zoom_controller: ZoomControllerWithBeamCentres = inject("zoom_controller"),
     shutter: ZebraShutter = inject("sample_shutter"),
 ) -> MsgGenerator:
     """
     zoom_levels: The levels to do centring at, by default runs at all known zoom levels.
     """
-
-    assert isinstance(oav.zoom_controller, ZoomController), (
-        "Zoom controller does not support setting beam centres"
-    )  # Can probably do better typing? Make OAV generic to zoom controller?
-
     if zoom_levels_to_optimise_transmission is None:
         zoom_levels_to_optimise_transmission = ["1.0x", "7.5x"]
 
@@ -251,11 +246,11 @@ def find_beam_centres(
         initial_wait_group,
     )
 
-    for centring_device in oav.zoom_controller.beam_centres.values():
+    for centring_device in zoom_controller.beam_centres.values():
         zoom_name = yield from bps.rd(centring_device.level_name)
         if zoom_levels_to_centre is None or zoom_name in zoom_levels_to_centre:
             LOGGER.info(f"Moving to zoom level {zoom_name}")
-            yield from bps.abs_set(oav.zoom_controller, zoom_name, wait=True)
+            yield from bps.abs_set(zoom_controller, zoom_name, wait=True)
             if zoom_name in zoom_levels_to_optimise_transmission:
                 LOGGER.info(f"Optimising transmission at zoom level {zoom_name}")
                 yield from optimise_transmission_with_oav(
