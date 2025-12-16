@@ -11,6 +11,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.motors import XYZStage
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
@@ -266,8 +267,11 @@ def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
     )
     lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
     detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
+    oav = find_device_in_context(context, "oav", OAV)
     yield from bps.abs_set(
         detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
     )
-    yield from robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    yield from robot_unload(
+        robot, smargon, aperture_scatterguard, lower_gonio, oav, visit
+    )
     yield from bps.wait(cleanup_group)

@@ -8,6 +8,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.snapshots.snapshot import Snapshot
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
@@ -99,6 +100,8 @@ def robot_unload(
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     lower_gonio: XYZStage,
+    oav: OAV,
+    snapshot_directory: str,
     visit: str,
 ):
     """Unloads the currently mounted pin into the location that it was loaded from. The
@@ -117,6 +120,7 @@ def robot_unload(
         },
     )
     def do_robot_unload_and_send_to_ispyb():
+        yield from take_robot_snapshots([oav.snapshot], snapshot_directory)
         yield from bps.create(name=DocDescriptorNames.ROBOT_UPDATE)
         yield from bps.read(robot)
         yield from bps.save()
