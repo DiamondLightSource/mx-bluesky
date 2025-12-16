@@ -226,6 +226,21 @@ def optimise_transmission_with_oav(
     raise StopIteration("Max iterations reached")
 
 
+def _get_all_zoom_levels(
+    zoom_controller: ZoomControllerWithBeamCentres,
+) -> MsgGenerator[list[str]]:
+    zoom_levels = []
+    level_signals = [
+        centring_device.level_name
+        for centring_device in zoom_controller.beam_centres.values()
+    ]
+    for signal in level_signals:
+        level_name = yield from bps.rd(signal)
+        if level_name:
+            zoom_levels.append(level_name)
+    return zoom_levels
+
+
 def find_beam_centres(
     zoom_levels_to_centre: list[str] | None = None,
     zoom_levels_to_optimise_transmission: list[str] | None = None,
@@ -246,6 +261,9 @@ def find_beam_centres(
     if zoom_levels_to_optimise_transmission is None:
         zoom_levels_to_optimise_transmission = ["1.0x", "7.5x"]
 
+    if zoom_levels_to_centre is None:
+        zoom_levels_to_centre = yield from _get_all_zoom_levels(zoom_controller)
+
     LOGGER.info("Preparing beamline for images...")
     yield from _prepare_beamline_for_scintillator_images(
         robot,
@@ -259,7 +277,7 @@ def find_beam_centres(
 
     for centring_device in zoom_controller.beam_centres.values():
         zoom_name = yield from bps.rd(centring_device.level_name)
-        if zoom_levels_to_centre is None or zoom_name in zoom_levels_to_centre:
+        if zoom_name in zoom_levels_to_centre:
             LOGGER.info(f"Moving to zoom level {zoom_name}")
             yield from bps.abs_set(zoom_controller, zoom_name, wait=True)
             if zoom_name in zoom_levels_to_optimise_transmission:

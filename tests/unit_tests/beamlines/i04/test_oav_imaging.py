@@ -1,13 +1,15 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, ZoomControllerWithBeamCentres
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -16,10 +18,16 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
     ZebraShutterState,
 )
-from ophyd_async.core import completed_status, init_devices, set_mock_value
+from ophyd_async.core import (
+    completed_status,
+    get_mock_put,
+    init_devices,
+    set_mock_value,
+)
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     _prepare_beamline_for_scintillator_images,
+    find_beam_centres,
     optimise_transmission_with_oav,
     take_and_save_oav_image,
     take_oav_image_with_scintillator_in,
@@ -588,3 +596,302 @@ def test_optimise_transmission_raises_value_error_when_full_beam_brightness_is_z
     assert "No beam" in str(excinfo.value)
 
     assert attenuator.set.call_count == 1  # type:ignore
+
+
+@pytest.fixture()
+async def centre_ellipse() -> CentreEllipseMethod:
+    async with init_devices(mock=True):
+        centre_ellipse = CentreEllipseMethod("", "centre_ellipse")
+
+    centre_ellipse.trigger = MagicMock(return_value=completed_status())
+    return centre_ellipse
+
+
+def initialise_zoom_centres(
+    zoom_controller: ZoomControllerWithBeamCentres, init_values: dict
+):
+    for i, (level, beam_centre) in enumerate(init_values.items()):
+        centre_device = zoom_controller.beam_centres[i]
+        set_mock_value(centre_device.level_name, level)
+        set_mock_value(centre_device.x_centre, beam_centre[0])
+        set_mock_value(centre_device.y_centre, beam_centre[1])
+
+
+@pytest.fixture()
+async def zoom_controller_with_centres() -> ZoomControllerWithBeamCentres:
+    async with init_devices(mock=True):
+        zoom_controller_with_centres = ZoomControllerWithBeamCentres(
+            "", "zoom_controller_with_centres"
+        )
+    zoom_controller_with_centres.DELAY_BETWEEN_MOTORS_AND_IMAGE_UPDATING_S = 0.001  # type:ignore
+
+    level_names = ["1.0x", "2.0x", "3.0x", "7.5x"]
+    initialise_zoom_centres(
+        zoom_controller_with_centres, dict.fromkeys(level_names, (0, 0))
+    )
+
+    return zoom_controller_with_centres
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images"
+)
+def test_find_beam_centres_starts_by_prepping_scintillator(
+    mock_prepare_scintillator: AsyncMock,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod,
+    attenuator: BinaryFilterAttenuator,
+    zoom_controller_with_centres: ZoomControllerWithBeamCentres,
+    sample_shutter: ZebraShutter,
+    run_engine: RunEngine,
+):
+    zoom_controller_with_centres.beam_centres = {}  # type:ignore
+    run_engine(
+        find_beam_centres(
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+            max_pixel=max_pixel,
+            centre_ellipse=centre_ellipse,
+            attenuator=attenuator,
+            zoom_controller=zoom_controller_with_centres,
+            shutter=sample_shutter,
+        )
+    )
+    mock_prepare_scintillator.assert_called_once()
+    centre_ellipse.trigger.assert_not_called()  # type:ignore
+
+
+def mock_centre_ellipse_with_given_centres(
+    centre_ellipse: CentreEllipseMethod, given_centres: list[tuple[int, int]]
+):
+    def centre_ellipse_trigger_side_effect(*args):
+        next_centre = given_centres.pop(0)
+        set_mock_value(centre_ellipse.center_x_val, next_centre[0])
+        set_mock_value(centre_ellipse.center_y_val, next_centre[1])
+        return completed_status()
+
+    centre_ellipse.trigger.side_effect = centre_ellipse_trigger_side_effect  # type:ignore
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images"
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+async def test_find_beam_centres_iterates_and_sets_centres(
+    mock_optimise: AsyncMock,
+    mock_prepare_scintillator: AsyncMock,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod,
+    attenuator: BinaryFilterAttenuator,
+    zoom_controller_with_centres: ZoomControllerWithBeamCentres,
+    sample_shutter: ZebraShutter,
+    run_engine: RunEngine,
+):
+    level_names = ["1.0x", "2.0x", "3.0x", "7.5x"]
+    new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
+    expected_centres = new_centres.copy()
+
+    mock_centre_ellipse_with_given_centres(centre_ellipse, new_centres)
+
+    run_engine(
+        find_beam_centres(
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+            max_pixel=max_pixel,
+            centre_ellipse=centre_ellipse,
+            attenuator=attenuator,
+            zoom_controller=zoom_controller_with_centres,
+            shutter=sample_shutter,
+        )
+    )
+
+    assert get_mock_put(zoom_controller_with_centres.level).call_count == 4
+    assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
+        call(level, wait=True) for level in level_names
+    ]
+
+    for i, centre in zoom_controller_with_centres.beam_centres.items():
+        level_name = await centre.level_name.get_value()
+        if level_name:
+            assert level_name == level_names[i]
+            assert (await centre.x_centre.get_value()) == expected_centres[i][0]
+            assert (await centre.y_centre.get_value()) == expected_centres[i][1]
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images"
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_sets_those_centres(
+    mock_optimise: AsyncMock,
+    mock_prepare_scintillator: AsyncMock,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod,
+    attenuator: BinaryFilterAttenuator,
+    zoom_controller_with_centres: ZoomControllerWithBeamCentres,
+    sample_shutter: ZebraShutter,
+    run_engine: RunEngine,
+):
+    new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
+
+    mock_centre_ellipse_with_given_centres(centre_ellipse, new_centres)
+
+    run_engine(
+        find_beam_centres(
+            zoom_levels_to_centre=["1.0x", "7.5x"],
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+            max_pixel=max_pixel,
+            centre_ellipse=centre_ellipse,
+            attenuator=attenuator,
+            zoom_controller=zoom_controller_with_centres,
+            shutter=sample_shutter,
+        )
+    )
+
+    assert get_mock_put(zoom_controller_with_centres.level).call_count == 2
+    assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
+        call(level, wait=True) for level in ["1.0x", "7.5x"]
+    ]
+
+    centres = list(zoom_controller_with_centres.beam_centres.values())
+
+    assert (await centres[0].level_name.get_value()) == "1.0x"
+    assert (await centres[0].x_centre.get_value()) == 100
+    assert (await centres[0].y_centre.get_value()) == 100
+
+    for centre in [centres[1], centres[2]]:
+        assert (await centre.x_centre.get_value()) == 0
+        assert (await centre.y_centre.get_value()) == 0
+
+    assert (await centres[3].level_name.get_value()) == "7.5x"
+    assert (await centres[3].x_centre.get_value()) == 200
+    assert (await centres[3].y_centre.get_value()) == 200
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images"
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+async def test_find_beam_centres_optimises_on_default_levels_only(
+    mock_optimise: MagicMock,
+    mock_prepare_scintillator: AsyncMock,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod,
+    attenuator: BinaryFilterAttenuator,
+    zoom_controller_with_centres: ZoomControllerWithBeamCentres,
+    sample_shutter: ZebraShutter,
+    run_engine: RunEngine,
+):
+    levels_where_optimised = []
+
+    def append_current_zoom(*args, **kwargs):
+        current_zoom = yield from bps.rd(zoom_controller_with_centres.level)
+        levels_where_optimised.append(current_zoom)
+        yield from bps.null()
+
+    mock_optimise.side_effect = append_current_zoom
+
+    run_engine(
+        find_beam_centres(
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+            max_pixel=max_pixel,
+            centre_ellipse=centre_ellipse,
+            attenuator=attenuator,
+            zoom_controller=zoom_controller_with_centres,
+            shutter=sample_shutter,
+        )
+    )
+
+    assert mock_optimise.call_count == 2
+    assert levels_where_optimised == ["1.0x", "7.5x"]
+
+
+@pytest.mark.asyncio
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images"
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+async def test_find_beam_centres_respects_custom_optimise_list(
+    mock_optimise: MagicMock,
+    mock_prepare_scintillator: AsyncMock,
+    robot: BartRobot,
+    beamstop_phase1: Beamstop,
+    backlight: Backlight,
+    scintillator: Scintillator,
+    xbpm_feedback: XBPMFeedback,
+    max_pixel: MaxPixel,
+    centre_ellipse: CentreEllipseMethod,
+    attenuator: BinaryFilterAttenuator,
+    zoom_controller_with_centres: ZoomControllerWithBeamCentres,
+    sample_shutter: ZebraShutter,
+    run_engine: RunEngine,
+):
+    levels_where_optimised = []
+
+    def append_current_zoom(*args, **kwargs):
+        current_zoom = yield from bps.rd(zoom_controller_with_centres.level)
+        levels_where_optimised.append(current_zoom)
+        yield from bps.null()
+
+    mock_optimise.side_effect = append_current_zoom
+
+    run_engine(
+        find_beam_centres(
+            zoom_levels_to_optimise_transmission=["2.0x", "3.0x"],
+            robot=robot,
+            beamstop=beamstop_phase1,
+            backlight=backlight,
+            scintillator=scintillator,
+            xbpm_feedback=xbpm_feedback,
+            max_pixel=max_pixel,
+            centre_ellipse=centre_ellipse,
+            attenuator=attenuator,
+            zoom_controller=zoom_controller_with_centres,
+            shutter=sample_shutter,
+        )
+    )
+
+    assert mock_optimise.call_count == 2
+    assert levels_where_optimised == ["2.0x", "3.0x"]
