@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass
 
 from mx_bluesky.definitions import ROOT_DIR
 
+NUMTRACKER_VISIT = "from numtracker"
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30

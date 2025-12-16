@@ -54,11 +54,11 @@ class JsonMetadataWriter(CallbackBase):
             data = doc.get("data")
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
-            self.energy_in_kev = data.get("dcm-energy_in_kev")
+            self.energy_in_kev = data.get("dcm-energy_in_keV")
             self.detector_distance_mm = data.get("detector_motion-z")
 
             LOGGER.info(
-                f"Metadata writer received parameters, transmission: {self.transmission}, wavelength: {self.wavelength_in_a}"
+                f"Metadata writer received parameters, energy_in_kev: {self.energy_in_kev}, wavelength: {self.wavelength_in_a}, det_distance_mm: {self.detector_distance_mm}"
             )
 
     def stop(self, doc: dict):  # type: ignore

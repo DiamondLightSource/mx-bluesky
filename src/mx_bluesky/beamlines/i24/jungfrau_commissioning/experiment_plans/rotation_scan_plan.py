@@ -1,9 +1,9 @@
-from copy import deepcopy
 from functools import partial
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
+from bluesky.utils import MsgGenerator
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.aperture import AperturePositions
 from dodal.devices.i24.beamstop import BeamstopPositions
@@ -15,6 +15,7 @@ from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
 )
+from pydantic import BaseModel, field_validator
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
@@ -29,9 +30,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 from mx_bluesky.beamlines.i24.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.beamlines.i24.parameters.rotation import (
-    MultiRotationScanByTransmissions,
-)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
@@ -43,7 +41,9 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
+from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.constants import (
+    NUMTRACKER_VISIT,
     PlanGroupCheckpointConstants,
 )
 from mx_bluesky.common.parameters.rotation import (
@@ -59,7 +59,51 @@ JF_DET_STAGE_Y_POSITION_MM = 730
 DEFAULT_DETECTOR_DISTANCE_MM = 200
 
 
+class ExternalRotationScanParams(BaseModel):
+    transmission_fractions: list[float]
+    exposure_time_s: float
+    omega_start_deg: float = 0
+    rotation_increment_per_image_deg: float = 0.1
+    filename: str = "rotations"
+    detector_distance_mm: float = DEFAULT_DETECTOR_DISTANCE_MM
+    sample_id: int
+
+    @field_validator("transmission_fractions")
+    @classmethod
+    def validate_transmission_fractions(cls, values):
+        for v in values:
+            if not 0 <= v <= 1:
+                raise ValueError(
+                    f"All transmission fractions must be between 0 and 1; got {v}"
+                )
+        return values
+
+
+def _get_internal_rotation_params(
+    entry_params: ExternalRotationScanParams, transmission: float
+) -> SingleRotationScan:
+    return SingleRotationScan(
+        sample_id=entry_params.sample_id,
+        visit=NUMTRACKER_VISIT,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527 #todo write logic and test to do correct thing here
+        parameter_model_version=PARAMETER_VERSION,
+        file_name=entry_params.filename,
+        transmission_frac=transmission,
+        exposure_time_s=entry_params.exposure_time_s,
+        storage_directory="/tmp",  # Not used in this plan, see https://github.com/DiamondLightSource/mx-bluesky/issues/1527
+    )
+
+
 class HutchClosedError(Exception): ...
+
+
+def rotation_scan_plan(
+    composite: RotationScanComposite, params: ExternalRotationScanParams
+) -> MsgGenerator:
+    """BlueAPI entry point for i24 JF rotation scans"""
+
+    for transmission in params.transmission_fractions:
+        rotation_params = _get_internal_rotation_params(params, transmission)
+        yield from single_rotation_plan(composite, rotation_params)
 
 
 def set_up_beamline_for_rotation(
@@ -98,23 +142,6 @@ def set_up_beamline_for_rotation(
         composite.attenuator,
         transmission_frac,
     )
-
-
-def multi_rotation_plan_varying_transmission(
-    composite: RotationScanComposite,
-    params: MultiRotationScanByTransmissions,
-):
-    @bpp.set_run_key_decorator(PlanNameConstants.MULTI_ROTATION_SCAN)
-    @run_decorator()
-    def _plan_in_run_decorator():
-        for transmission in params.transmission_fractions:
-            param_copy = deepcopy(params).model_dump()
-            del param_copy["transmission_fractions"]
-            param_copy["transmission_frac"] = transmission
-            single_rotation_params = SingleRotationScan(**param_copy)
-            yield from single_rotation_plan(composite, single_rotation_params)
-
-    yield from _plan_in_run_decorator()
 
 
 def single_rotation_plan(
@@ -157,6 +184,7 @@ def single_rotation_plan(
                 "subplan_name": PlanNameConstants.ROTATION_MAIN,
                 "scan_points": [params.scan_points],
                 "rotation_scan_params": params.model_dump_json(),
+                "detector_file_template": params.file_name,  # todo write test for this
             }
         )
         def _rotation_scan_plan(

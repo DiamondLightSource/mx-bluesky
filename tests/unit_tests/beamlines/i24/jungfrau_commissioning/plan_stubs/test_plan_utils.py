@@ -44,3 +44,7 @@ async def test_fly_jungfrau(
 
     run_engine(_open_run_and_fly())
     await asyncio.sleep(0)
+
+
+# todo fix this
+def test_fly_jungfrau_with_read_plan(): ...

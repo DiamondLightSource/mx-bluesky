@@ -13,10 +13,11 @@ from ophyd_async.core import completed_status, set_mock_value
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
     JF_DET_STAGE_Y_POSITION_MM,
+    ExternalRotationScanParams,
     HutchClosedError,
     RotationScanComposite,
     _cleanup_plan,
-    multi_rotation_plan_varying_transmission,
+    rotation_scan_plan,
     set_up_beamline_for_rotation,
     single_rotation_plan,
 )
@@ -24,9 +25,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
     JF_COMPLETE_GROUP,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
-from mx_bluesky.beamlines.i24.parameters.rotation import (
-    MultiRotationScanByTransmissions,
-)
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     calculate_motion_profile,
 )
@@ -43,8 +41,9 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
         tmp_path,
     )
     del params["transmission_frac"]
-    params["transmission_fractions"] = [0.2, 0.4, 0.6]
-    return MultiRotationScanByTransmissions(**params)
+    params["transmission_fractions"] = transmissions
+    params["num_images"] = 1
+    return ExternalRotationScanParams(**params)
 
 
 @patch(
@@ -62,7 +61,7 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
 )
-async def test_single_rotation_plan_in_re(
+async def test_rotation_scan_plan_in_re(
     mock_fly: MagicMock,
     mock_setup_beamline: MagicMock,
     mock_calc_motion_profile: MagicMock,
@@ -91,14 +90,14 @@ async def test_single_rotation_plan_in_re(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
+    new=MagicMock(),
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau",
+    new=MagicMock(),
 )
 def test_single_rotation_plan_in_simulator(
-    _mock_fly: MagicMock,
-    _mock_set_up_beamline_for_rotation: MagicMock,
     sim_run_engine: RunEngineSimulator,
     rotation_composite: RotationScanComposite,
     tmp_path,
@@ -147,7 +146,7 @@ def test_single_rotation_plan_in_simulator(
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.single_rotation_plan"
 )
-def test_multi_rotation_plan_in_re(
+def test_rotation_plan_multiple_transmissions(
     mock_single_rotation: MagicMock,
     run_engine: RunEngine,
     tmp_path,
@@ -155,9 +154,8 @@ def test_multi_rotation_plan_in_re(
 ):
     desired_transmission_fracs = [0.2, 0.4, 0.6]
     params = get_good_multi_rotation_params(desired_transmission_fracs, tmp_path)
-    set_mock_value(rotation_composite.jungfrau._writer.frame_counter, params.num_images)
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
-    run_engine(multi_rotation_plan_varying_transmission(rotation_composite, params))
+    run_engine(rotation_scan_plan(rotation_composite, params))
     called_transmission_fracs = [
         mock_single_rotation.call_args_list[i].args[1].transmission_frac
         for i in range(mock_single_rotation.call_count)

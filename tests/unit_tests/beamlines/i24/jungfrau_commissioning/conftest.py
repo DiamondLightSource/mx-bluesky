@@ -31,7 +31,10 @@ def rotation_composite(
         xbpm_feedback = XBPMFeedback("")
         hutch_shutter = HutchShutter("")
         beamstop = Beamstop("")
-        det_stage = YZStage("")
+        det_stage = YZStage(
+            "",
+            name="detector_motion",  # Name of device in i24 dodal module
+        )
         backlight = DualBacklight("")
         dcm = DCM("", "")
 
