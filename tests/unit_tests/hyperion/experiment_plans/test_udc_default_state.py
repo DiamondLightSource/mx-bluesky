@@ -7,7 +7,12 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
-from dodal.devices.cryostream import CryoStream, CryoStreamGantry, CryoStreamSelection
+from dodal.devices.cryostream import (
+    CryoStreamGantry,
+    CryoStreamSelection,
+    OxfordCryoJet,
+    OxfordCryoStream,
+)
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
@@ -25,7 +30,7 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     UnexpectedSampleError,
     move_to_udc_default_state,
 )
-from mx_bluesky.hyperion.parameters.constants import HyperionFeatureSettings
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionFeatureSettings
 
 
 @pytest.fixture
@@ -48,11 +53,13 @@ async def default_devices(
     cryostream_gantry,
     robot,
     smargon,
+    oav,
     sim_run_engine,
     run_engine,
 ):
     async with init_devices(mock=True):
-        cryo = CryoStream("")
+        cryostream = OxfordCryoStream("")
+        cryojet = OxfordCryoJet("")
         fluo = FluorescenceDetector("")
         hutch_shutter = HutchShutter("")
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
@@ -61,13 +68,15 @@ async def default_devices(
     with patch("dodal.devices.hutch_shutter.TEST_MODE", True):
         devices = UDCDefaultDevices(
             collimation_table=collimation_table,
-            cryostream=cryo,
+            cryostream=cryostream,
+            cryojet=cryojet,
             cryostream_gantry=cryostream_gantry,
             fluorescence_det_motion=fluo,
             hutch_shutter=hutch_shutter,
             robot=robot,
             scintillator=scintillator,
             smargon=smargon,
+            oav=oav,
             **beamstop_check_devices.__dict__,
         )
         sim_run_engine.add_read_handler_for(
@@ -95,8 +104,8 @@ async def test_given_cryostream_temp_is_too_high_then_exception_raised(
     default_devices: UDCDefaultDevices,
 ):
     sim_run_engine.add_read_handler_for(
-        default_devices.cryostream.temperature_k,
-        default_devices.cryostream.MAX_TEMP_K + 10,
+        default_devices.cryostream.temp,
+        CONST.HARDWARE.MAX_CRYO_TEMP_K + 10,
     )
     with pytest.raises(CryoStreamError, match="temperature is too high"):
         sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
@@ -107,8 +116,8 @@ async def test_given_cryostream_pressure_is_too_high_then_exception_raised(
     default_devices: UDCDefaultDevices,
 ):
     sim_run_engine.add_read_handler_for(
-        default_devices.cryostream.back_pressure_bar,
-        default_devices.cryostream.MAX_PRESSURE_BAR + 10,
+        default_devices.cryostream.back_pressure,
+        CONST.HARDWARE.MAX_CRYO_PRESSURE_BAR + 10,
     )
     with pytest.raises(CryoStreamError, match="pressure is too high"):
         sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
@@ -138,8 +147,8 @@ async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
 def test_udc_default_state_runs_in_real_run_engine(
     run_engine: RunEngine, default_devices: UDCDefaultDevices
 ):
-    set_mock_value(default_devices.cryostream.temperature_k, 100)
-    set_mock_value(default_devices.cryostream.back_pressure_bar, 0.01)
+    set_mock_value(default_devices.cryostream.temp, 100)
+    set_mock_value(default_devices.cryostream.back_pressure, 0.01)
     default_devices.scintillator._aperture_scatterguard().selected_aperture.get_value = MagicMock(
         return_value=ApertureValue.PARKED
     )
@@ -251,10 +260,14 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     )
 
     msgs = assert_expected_set(
-        default_devices.cryostream.course, CryoInOut.IN, post_beamstop_group
+        default_devices.cryojet.coarse, CryoInOut.IN, post_beamstop_group
     )
     msgs = assert_expected_set(
-        default_devices.cryostream.fine, CryoInOut.IN, post_beamstop_group
+        default_devices.cryojet.fine, CryoInOut.IN, post_beamstop_group
+    )
+
+    msgs = assert_expected_set(
+        default_devices.oav.zoom_controller, "1.0x", post_beamstop_group
     )
 
     msgs = assert_message_and_return_remaining(
