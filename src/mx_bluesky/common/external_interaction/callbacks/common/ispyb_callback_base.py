@@ -23,7 +23,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.constants import NUMTRACKER_VISIT, DocDescriptorNames
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     format_doc_for_log,
@@ -86,6 +86,17 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
+
+        if self.params and self.params.visit == NUMTRACKER_VISIT:
+            try:
+                numtracker_visit = doc.get("instrument_session")
+                assert isinstance(numtracker_visit, str)
+                self.params.visit = numtracker_visit
+            except Exception as e:
+                raise ValueError(
+                    f"Error trying to retrieve instrument session from document {doc}"
+                ) from e
+
         return self.tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
