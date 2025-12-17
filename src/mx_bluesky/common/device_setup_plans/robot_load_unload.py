@@ -118,7 +118,6 @@ def robot_unload(
 
         def _unload():
             yield from bps.abs_set(robot, None, wait=True)
-            yield from wait_for_smargon_not_disabled(smargon)
 
         gonio_finished = yield from do_plan_while_lower_gonio_at_home(
             _unload(), lower_gonio

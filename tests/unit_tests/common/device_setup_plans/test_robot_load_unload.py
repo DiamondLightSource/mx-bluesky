@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from unittest.mock import ANY, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
@@ -137,10 +138,6 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         lambda msg: msg.command == "set" and msg.obj is robot and msg.args[0] is None,
     )
 
-    msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "wait_for_smargon"
-    )
-
     msgs = assert_messages_any_order(
         msgs,
         [
@@ -212,10 +209,10 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 
 
 @patch(
-    "mx_bluesky.common.device_setup_plans.robot_load_unload.wait_for_smargon_not_disabled"
+    "mx_bluesky.common.device_setup_plans.robot_load_unload.do_plan_while_lower_gonio_at_home"
 )
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
-    mock_wait_for_smargon: MagicMock,
+    mock_unload: MagicMock,
     run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
@@ -227,7 +224,12 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
     run_engine.subscribe(callback)
-    mock_wait_for_smargon.side_effect = TestError("Bad Error")
+
+    def _unload(*args, **kwargs):
+        yield from bps.abs_set(robot, None, wait=True)
+        raise TestError("Bad Error")
+
+    mock_unload.side_effect = _unload
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id
