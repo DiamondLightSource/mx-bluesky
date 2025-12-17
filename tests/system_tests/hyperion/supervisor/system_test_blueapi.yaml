@@ -4,7 +4,7 @@ env:
       module: dodal.beamlines.i03
       mock: true
     - kind: planFunctions
-      module: mx_bluesky.hyperion.blueapi_plans
+      module: system_tests.hyperion.supervisor.dummy_plans
   events:
     broadcast_status_events: false
 api:
@@ -15,6 +15,6 @@ api:
       - "*"
 stomp:
   enabled: true
-  url: tcp://localhost.diamond.ac.uk/61613
+  url: tcp://localhost:61613
 logging:
   level: DEBUG
