@@ -413,7 +413,7 @@ def eiger(done_status):
 
 @pytest.fixture
 def fastcs_eiger(done_status):
-    fascs_eiger = i03.fastcs_eiger(connect_immediately=True, mock=True)
+    fascs_eiger = i03.fastcs_eiger.build(connect_immediately=True, mock=True)
     fascs_eiger.stage = MagicMock(return_value=done_status)
     fascs_eiger.kickoff = MagicMock(return_value=done_status)
     fascs_eiger.unstage = MagicMock(return_value=done_status)

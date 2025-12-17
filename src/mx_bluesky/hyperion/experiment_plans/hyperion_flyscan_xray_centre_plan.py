@@ -67,7 +67,6 @@ def construct_hyperion_specific_features(
         xrc_composite.fastcs_eiger.drv.detector.bit_depth_image  # fastcs eiger
         if use_fastcs_eiger
         else xrc_composite.eiger.bit_depth,  # old eiger
-        xrc_composite.beamsize,
     ]
 
     setup_trigger_plan: Callable[..., MsgGenerator]

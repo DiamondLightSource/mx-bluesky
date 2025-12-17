@@ -96,7 +96,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                 LOGGER.info(f"doc = {doc}")
                 bit_depth = doc["data"].get("fastcs_eiger-drv-detector-bit_depth_image")
                 if bit_depth is None:
-                    bit_depth = doc["data"]["eiger"]
+                    bit_depth = doc["data"]["eiger_bit_depth"]
                 vds_data_type = vds_type_based_on_bit_depth(bit_depth)
                 nexus_writer.create_nexus_file(vds_data_type)
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.data_filename}")

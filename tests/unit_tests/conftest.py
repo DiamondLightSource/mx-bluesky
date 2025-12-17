@@ -343,7 +343,7 @@ async def fake_fgs_composite(
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
-        fastcs_eiger=i03.fastcs_eiger(connect_immediately=True, mock=True),
+        fastcs_eiger=i03.fastcs_eiger.build(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
