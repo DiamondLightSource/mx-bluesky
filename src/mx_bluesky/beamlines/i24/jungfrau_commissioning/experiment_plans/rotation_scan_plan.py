@@ -184,7 +184,7 @@ def single_rotation_plan(
                 "subplan_name": PlanNameConstants.ROTATION_MAIN,
                 "scan_points": [params.scan_points],
                 "rotation_scan_params": params.model_dump_json(),
-                "detector_file_template": params.file_name,  # todo write test for this
+                "detector_file_template": params.file_name,
             }
         )
         def _rotation_scan_plan(

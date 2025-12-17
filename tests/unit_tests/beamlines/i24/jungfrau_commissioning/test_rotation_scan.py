@@ -231,8 +231,9 @@ def test_cleanup_plan(
     mock_tidy_zebra: MagicMock,
     rotation_composite: RotationScanComposite,
     run_engine: RunEngine,
+    done_status,
 ):
-    rotation_composite.jungfrau.unstage = MagicMock()
+    rotation_composite.jungfrau.unstage = MagicMock(return_value=done_status)
     run_engine(
         _cleanup_plan(
             rotation_composite.zebra,
@@ -242,3 +243,6 @@ def test_cleanup_plan(
     )
     mock_tidy_zebra.assert_called_once()
     rotation_composite.jungfrau.unstage.assert_called_once()
+
+
+def test_rotation_plan_full(): ...

@@ -100,11 +100,10 @@ class FakeError(Exception): ...
 
 
 async def test_jungfrau_unstage_on_error(
-    jungfrau: CommissioningJungfrau,
-    run_engine: RunEngine,
+    jungfrau: CommissioningJungfrau, run_engine: RunEngine, done_status
 ):
     jungfrau.stage = MagicMock(side_effect=FakeError)
-    jungfrau.unstage = MagicMock()
+    jungfrau.unstage = MagicMock(return_value=done_status)
 
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)

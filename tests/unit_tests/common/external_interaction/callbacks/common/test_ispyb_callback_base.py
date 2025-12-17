@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky import plan_stubs as bps
@@ -19,6 +21,7 @@ def test_visit_extracted_from_numtracker(
     run_engine.md.update({"instrument_session": test_visit})
 
     callback = BaseISPyBCallback()
+    callback.activity_gated_stop = MagicMock()
     test_fgs_params.visit = NUMTRACKER_VISIT
     callback.params = test_fgs_params
     run_engine.subscribe(callback)
@@ -40,6 +43,7 @@ def test_exception_when_instrument_session_doesnt_exist(
     run_engine: RunEngine, test_fgs_params: SpecifiedThreeDGridScan
 ):
     callback = BaseISPyBCallback()
+    callback.activity_gated_stop = MagicMock()
     test_fgs_params.visit = NUMTRACKER_VISIT
     callback.params = test_fgs_params
     run_engine.subscribe(callback)
