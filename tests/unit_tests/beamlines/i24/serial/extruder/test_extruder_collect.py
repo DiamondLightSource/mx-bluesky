@@ -35,7 +35,7 @@ def zebra():
         return NullStatus()
 
     i24_zebra.pc.arm.set = MagicMock(side_effect=mock_side)
-    return zebra
+    return i24_zebra
 
 
 @pytest.fixture

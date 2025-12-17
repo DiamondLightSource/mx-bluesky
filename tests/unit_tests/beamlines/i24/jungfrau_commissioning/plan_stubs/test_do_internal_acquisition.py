@@ -21,7 +21,11 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 def test_full_do_internal_acquisition(
     run_engine: RunEngine, jungfrau: CommissioningJungfrau, caplog
 ):
-    @run_decorator()
+    @run_decorator(
+        md={
+            "detector_file_template": "test",
+        }
+    )
     def test_plan():
         status = yield from do_internal_acquisition(
             0.001, GainMode.DYNAMIC, 5, jungfrau=jungfrau
