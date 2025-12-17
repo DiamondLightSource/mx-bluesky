@@ -19,7 +19,6 @@ def do_external_acquisition(
     exp_time_s: float,
     gain_mode: GainMode,
     total_triggers: PositiveInt = 1,
-    output_file_path: str | None = None,
     wait: bool = False,
     jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
 ) -> MsgGenerator[WatchableAsyncStatus]:
@@ -33,8 +32,6 @@ def do_external_acquisition(
         exp_time_s: Length of detector exposure for each frame.
         total_triggers: Number of external triggers received before acquisition is marked as complete.
         jungfrau: Jungfrau device
-        output_file_name: Absolute path of the detector file output, including file name. If None, then use the PathProvider
-            set during jungfrau device instantiation
         wait: Optionally block until data collection is complete.
     """
 

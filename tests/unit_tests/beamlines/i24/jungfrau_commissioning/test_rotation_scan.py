@@ -243,6 +243,3 @@ def test_cleanup_plan(
     )
     mock_tidy_zebra.assert_called_once()
     rotation_composite.jungfrau.unstage.assert_called_once()
-
-
-def test_rotation_plan_full(): ...

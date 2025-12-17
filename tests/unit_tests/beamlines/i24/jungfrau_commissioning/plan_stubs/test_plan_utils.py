@@ -25,7 +25,9 @@ async def test_fly_jungfrau(
     mock_stop = AsyncMock()
     jungfrau.drv.acquisition_stop.trigger = mock_stop
 
-    @run_decorator()
+    filename = "test"
+
+    @run_decorator(md={"detector_file_template": filename})
     def _open_run_and_fly():
         frames = 5
         status = yield from fly_jungfrau(
@@ -40,7 +42,9 @@ async def test_fly_jungfrau(
             yield from bps.sleep(0.001)
         yield from bps.wait(JF_COMPLETE_GROUP)
         assert val == frames
-        assert (yield from bps.rd(jungfrau._writer.file_path)) == f"{tmp_path}/00000"
+        assert (
+            yield from bps.rd(jungfrau._writer.file_path)
+        ) == f"{tmp_path}/00000_{filename}"
 
     run_engine(_open_run_and_fly())
     await asyncio.sleep(0)
