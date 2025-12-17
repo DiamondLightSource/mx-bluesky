@@ -73,13 +73,13 @@ def robot_unload(
 
 def clean_up_udc(
     visit: str,
-    cleanup_group="cleanup",
+    cleanup_group: str = "cleanup",
     robot: BartRobot = inject("robot"),
     smargon: Smargon = inject("smargon"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     lower_gonio: XYZStage = inject("lower_gonio"),
     detector_motion: DetectorMotion = inject("detector_motion"),
-):
+) -> MsgGenerator:
     yield from bps.abs_set(
         detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
     )

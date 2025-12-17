@@ -35,7 +35,7 @@ class SupervisorRunner(PlanRunner):
         dev_mode: bool,
     ):
         super().__init__(bluesky_context, dev_mode)
-        self._blueapi_client = BlueapiClient.from_config(client_config)
+        self.blueapi_client = BlueapiClient.from_config(client_config)
 
     def decode_and_execute(
         self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
@@ -57,14 +57,16 @@ class SupervisorRunner(PlanRunner):
                         params={},
                         instrument_session=instrument_session,
                     )
-                    self._blueapi_client.run_task(task_request)
+                    self.blueapi_client.run_task(task_request)
+                    yield from bps.null()
                 case UDCCleanup():
                     task_request = TaskRequest(
                         name="clean_up_udc",
                         params={"visit": current_visit},
                         instrument_session=instrument_session,
                     )
-                    self._blueapi_client.run_task(task_request)
+                    self.blueapi_client.run_task(task_request)
+                    yield from bps.null()
                 case _:
                     raise AssertionError(
                         f"Unsupported instruction decoded from agamemnon {type(parameters)}"
@@ -77,6 +79,14 @@ class SupervisorRunner(PlanRunner):
     @property
     def current_status(self) -> Status:
         return Status.FAILED  # TODO
+
+    def is_connected(self) -> bool:
+        try:
+            self.blueapi_client.get_state()
+        except Exception as e:
+            LOGGER.debug(f"Failed to get worker state: {e}")
+            return False
+        return True
 
     def shutdown(self):
         pass
