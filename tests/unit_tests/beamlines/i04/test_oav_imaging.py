@@ -623,7 +623,6 @@ async def zoom_controller_with_centres() -> ZoomControllerWithBeamCentres:
         zoom_controller_with_centres = ZoomControllerWithBeamCentres(
             "", "zoom_controller_with_centres"
         )
-    zoom_controller_with_centres.DELAY_BETWEEN_MOTORS_AND_IMAGE_UPDATING_S = 0.001  # type:ignore
 
     level_names = ["1.0x", "2.0x", "3.0x", "7.5x"]
     initialise_zoom_centres(
