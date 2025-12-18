@@ -9,7 +9,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 
-I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 
 
