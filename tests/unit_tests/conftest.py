@@ -160,6 +160,7 @@ BASIC_POST_SETUP_DOC = {
     "dcm-energy_in_keV": 11.105,
     "beamsize-x_um": 50.0,
     "beamsize-y_um": 20.0,
+    "eiger_cam_roi_mode": True,
 }
 
 

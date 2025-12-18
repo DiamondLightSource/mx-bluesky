@@ -169,6 +169,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux-flux_reading"],
+            detector_mode="ROI" if doc["data"]["eiger_cam_roi_mode"] else "FULL",
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions

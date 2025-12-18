@@ -1,6 +1,7 @@
 from enum import Enum
 
 import bluesky.plan_stubs as bps
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.i24.pmac import PMAC
 
@@ -15,6 +16,11 @@ class Direction(Enum):
     DOWN = "down"
     LEFT = "left"
     RIGHT = "right"
+
+
+class FocusDirection(Enum):
+    IN = "in"
+    OUT = "out"
 
 
 def _move_direction(magnitude: float, direction: Direction, pmac):
@@ -62,3 +68,18 @@ def move_nudge_on_arrow_click(
             magnitude = 0.0060
 
     yield from _move_direction(magnitude, direction, pmac)
+
+
+def focus_on_oav_view(
+    direction: FocusDirection, size_of_move: MoveSize, pmac: PMAC = inject("pmac")
+) -> MsgGenerator:
+    match size_of_move:
+        case MoveSize.SMALL:
+            magnitude = 0.0200
+        case MoveSize.BIG:
+            magnitude = 0.1200
+
+    if direction == FocusDirection.IN:
+        magnitude = -magnitude
+
+    yield from bps.abs_set(pmac.z, magnitude, wait=True)

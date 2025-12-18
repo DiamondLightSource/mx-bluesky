@@ -53,6 +53,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "xBeam": 150.0,
     "yBeam": 160.0,
     "startTime": EXPECTED_START_TIME,
+    "sampleId": 364758,
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
@@ -192,6 +193,7 @@ class TestXrayCentreISPyBCallback:
             "resolution": 1.1830593331191241,
             "beamSizeAtSampleX": 0.05,
             "beamSizeAtSampleY": 0.02,
+            "detectorMode": "ROI",
         }
         assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
         assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
