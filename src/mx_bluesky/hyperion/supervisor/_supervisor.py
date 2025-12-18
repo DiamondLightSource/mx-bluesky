@@ -46,7 +46,6 @@ class SupervisorRunner(PlanRunner):
             yield from self.check_external_callbacks_are_alive()
         except Exception as e:
             raise PlanError(f"Exception raised during plan execution: {e}") from e
-        # TODO determine what is the instrument session for udc_default_state etc.
         instrument_session = current_visit or "NO_VISIT"
         try:
             if self._current_status == Status.ABORTING:
