@@ -197,8 +197,10 @@ def use_beamline_t01():
 
         with (
             patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
-            patch("mx_bluesky.hyperion.plan_runner.move_to_udc_default_state"),
-            patch("mx_bluesky.hyperion.plan_runner.device_composite_from_context"),
+            patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state"),
+            patch(
+                "mx_bluesky.hyperion.in_process_runner.device_composite_from_context"
+            ),
         ):
             yield tests.unit_tests.t01
 
