@@ -5,7 +5,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion.plan_runner import InProcessRunner
+from mx_bluesky.hyperion.in_process_runner import InProcessRunner
 from mx_bluesky.hyperion.plan_runner_api import (
     create_app_for_udc,
 )

@@ -28,6 +28,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     update_params_from_agamemnon,
 )
+from mx_bluesky.hyperion.in_process_runner import InProcessRunner
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
     HyperionMode,
@@ -35,7 +36,7 @@ from mx_bluesky.hyperion.parameters.cli import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.plan_runner import InProcessRunner, PlanRunner
+from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.plan_runner_api import create_server_for_udc
 from mx_bluesky.hyperion.runner import (
     GDARunner,
