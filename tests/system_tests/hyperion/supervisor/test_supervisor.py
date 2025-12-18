@@ -72,7 +72,7 @@ def client_config() -> ApplicationConfig:
 
 
 def get_event_bus_client(supervisor: SupervisorRunner) -> EventBusClient:
-    return supervisor.blueapi_client._events
+    return supervisor.blueapi_client._events  # type: ignore
 
 
 @pytest.fixture
@@ -149,6 +149,7 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
             case WorkerEvent() as worker_event:
                 if (
                     worker_event.state == WorkerState.IDLE
+                    and worker_event.task_status
                     and worker_event.task_status.task_complete
                     and worker_event.task_status.task_failed
                 ):
@@ -234,7 +235,7 @@ def test_supervisor_raises_plan_error_when_external_callbacks_watchdog_expired(
     supervisor_runner_no_ping: SupervisorRunner,
 ):
     runner = supervisor_runner_no_ping
-    runner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S = 0.5
+    runner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S = 0.5  # type: ignore
     runner.reset_callback_watchdog_timer()
     params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
     # Allow callback watchdog to expire
