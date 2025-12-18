@@ -7,6 +7,8 @@ from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.utils.exceptions import WarningError
+
 
 def publish_event(plan_name: str):
     yield from bps.open_run(md={"plan_name": plan_name})
@@ -23,3 +25,11 @@ def clean_up_udc(
     detector_motion: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
     yield from publish_event("clean_up_udc")
+    match visit:
+        case "raise_warning_error":
+            raise WarningError("Test warning error")
+        case "raise_other_error":
+            raise RuntimeError("Test unexpected error")
+        case "wait_for_abort":
+            while True:
+                yield from bps.sleep(1)
