@@ -71,6 +71,9 @@ async def test_rotation_scan_plan_in_re(
     tmp_path,
     rotation_composite: RotationScanComposite,
 ):
+    rotation_composite.jungfrau._writer.final_path = (
+        tmp_path  # Normally done during jf prepare
+    )
     # Test correct functions are called, but don't test bluesky messages
     mock_zebra_arm = MagicMock(side_effect=lambda _: completed_status())
     rotation_composite.zebra.pc.arm.set = mock_zebra_arm

@@ -43,7 +43,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
 )
 from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.constants import (
-    NUMTRACKER_VISIT,
+    USE_NUMTRACKER,
     PlanGroupCheckpointConstants,
 )
 from mx_bluesky.common.parameters.rotation import (
@@ -84,12 +84,12 @@ def _get_internal_rotation_params(
 ) -> SingleRotationScan:
     return SingleRotationScan(
         sample_id=entry_params.sample_id,
-        visit=NUMTRACKER_VISIT,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527 #todo write logic and test to do correct thing here
+        visit=USE_NUMTRACKER,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527
         parameter_model_version=PARAMETER_VERSION,
         file_name=entry_params.filename,
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
-        storage_directory="/tmp",  # Not used in this plan, see https://github.com/DiamondLightSource/mx-bluesky/issues/1527
+        storage_directory=USE_NUMTRACKER,
     )
 
 
@@ -175,7 +175,8 @@ def single_rotation_plan(
 
         # Callback which intercepts read documents and writes to json file,
         # used for saving device metadata
-        metadata_writer = JsonMetadataWriter()
+        # Need to access JF's private writer to get correct path
+        metadata_writer = JsonMetadataWriter(composite.jungfrau._writer)  # noqa: SLF001 N
 
         @bpp.subs_decorator([metadata_writer])
         @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)

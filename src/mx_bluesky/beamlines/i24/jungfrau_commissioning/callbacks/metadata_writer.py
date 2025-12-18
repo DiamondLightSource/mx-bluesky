@@ -1,7 +1,7 @@
 import json
-from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
+from dodal.devices.i24.commissioning_jungfrau import JungfrauCommissioningWriter
 
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
@@ -23,7 +23,8 @@ class JsonMetadataWriter(CallbackBase):
 
     """
 
-    def __init__(self):
+    def __init__(self, jf_writer: JungfrauCommissioningWriter):
+        self.jf_writer = jf_writer  # For path information
         self.wavelength_in_a = None
         self.energy_in_kev = None
         self.detector_distance_mm = None
@@ -67,9 +68,7 @@ class JsonMetadataWriter(CallbackBase):
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid
         ):
-            with open(
-                Path(self.parameters.storage_directory) / READING_DUMP_FILENAME, "w"
-            ) as f:
+            with open(self.jf_writer.final_path / READING_DUMP_FILENAME, "w") as f:
                 f.write(
                     json.dumps(
                         {

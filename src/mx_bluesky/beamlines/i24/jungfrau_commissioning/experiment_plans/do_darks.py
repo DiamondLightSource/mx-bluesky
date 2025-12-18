@@ -24,7 +24,7 @@ def do_pedestal_darks(
     exp_time_s: float = 0.001,
     pedestal_frames: PositiveInt = 20,
     pedestal_loops: PositiveInt = 200,
-    filename_template: str = "pedestal_darks",
+    filename: str = "pedestal_darks",
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
@@ -45,7 +45,7 @@ def do_pedestal_darks(
         exp_time_s: Length of detector exposure for each frame.
         pedestal_frames: Number of frames acquired per pedestal loop.
         pedestal_loops: Number of times to acquire a set of pedestal_frames
-        filename_template: Name of output file
+        filename: Name of output file
         jungfrau: Jungfrau device
     """
 
@@ -53,7 +53,7 @@ def do_pedestal_darks(
     @bpp.run_decorator(
         md={
             "subplan_name": PEDESTAL_DARKS_RUN,
-            "detector_file_template": filename_template,
+            "detector_file_template": filename,
         }
     )
     @bpp.stage_decorator([jungfrau])
@@ -83,7 +83,7 @@ def do_non_pedestal_darks(
     gain_mode: GainMode,
     exp_time_s: float = 0.001,
     total_triggers: PositiveInt = 1000,
-    filename_template: str = "darks",
+    filename: str = "darks",
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     """Internally take a set of images at a given gain mode.
@@ -95,14 +95,14 @@ def do_non_pedestal_darks(
         exp_time_s: Length of detector exposure for each trigger.
         total_triggers: Total triggers for the dark scan.
         jungfrau: Jungfrau device
-        filename_template: Name of output file
+        filename: Name of output file
     """
 
     @bpp.set_run_key_decorator(STANDARD_DARKS_RUN)
     @bpp.run_decorator(
         md={
             "subplan_name": STANDARD_DARKS_RUN,
-            "detector_file_template": filename_template,
+            "detector_file_template": filename,
         }
     )
     @bpp.stage_decorator([jungfrau])

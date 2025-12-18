@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
@@ -27,7 +28,9 @@ async def test_metadata_writer_produces_correct_output(
     run_engine: RunEngine, tmp_path, rotation_composite: RotationScanComposite
 ):
     params = get_good_single_rotation_params(tmp_path)
-    metadata_writer = JsonMetadataWriter()
+    mock_path = MagicMock()
+    mock_path.final_path = Path(tmp_path)
+    metadata_writer = JsonMetadataWriter(mock_path)
 
     @bpp.subs_decorator([metadata_writer])
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
@@ -64,7 +67,7 @@ async def test_metadata_writer_produces_correct_output(
     }
     run_engine(_do_read())
 
-    with open(Path(params.storage_directory) / READING_DUMP_FILENAME) as f:
+    with open(Path(tmp_path) / READING_DUMP_FILENAME) as f:
         actual_output = json.load(f)
     assert expected_output.keys() == actual_output.keys()
     for key in actual_output:
