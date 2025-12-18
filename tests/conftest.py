@@ -1421,7 +1421,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
                 "eiger_cam_roi_mode": False,
-                "eiger-detector_id": 78,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1537,7 +1537,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
                 "eiger_cam_roi_mode": True,
-                "eiger-detector_id": 78,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,

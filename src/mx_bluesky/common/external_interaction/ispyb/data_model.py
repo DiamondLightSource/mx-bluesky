@@ -40,7 +40,7 @@ class DataCollectionInfo:
     kappa_start: float | None = None
 
     visit_string: str | None = None
-    detector_id: int | None = None
+    ispyb_detector_id: int | None = None
     axis_start: float | None = None
     slitgap_vertical: float | None = None
     slitgap_horizontal: float | None = None

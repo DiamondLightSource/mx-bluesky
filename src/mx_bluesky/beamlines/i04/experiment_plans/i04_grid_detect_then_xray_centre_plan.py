@@ -291,7 +291,7 @@ def construct_i04_specific_features(
         xrc_composite.eiger.bit_depth,
         xrc_composite.beamsize,
         xrc_composite.eiger.cam.roi_mode,
-        xrc_composite.eiger.detector_id,
+        xrc_composite.eiger.ispyb_detector_id,
     ]
 
     tidy_plan = partial(
