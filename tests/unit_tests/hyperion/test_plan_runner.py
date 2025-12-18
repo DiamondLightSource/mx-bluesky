@@ -8,13 +8,14 @@ from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 
-from mx_bluesky.hyperion.plan_runner import InProcessRunner, PlanError
+from mx_bluesky.hyperion.in_process_runner import InProcessRunner
+from mx_bluesky.hyperion.plan_runner import PlanError
 
 
 @pytest.fixture(autouse=True)
 def patch_timer_poll_interval():
     with patch(
-        "mx_bluesky.hyperion.plan_runner.InProcessRunner.EXTERNAL_CALLBACK_POLL_INTERVAL_S",
+        "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_POLL_INTERVAL_S",
         0.01,
     ):
         yield
@@ -23,7 +24,7 @@ def patch_timer_poll_interval():
 @pytest.fixture()
 def patch_timer_expiry():
     with patch(
-        "mx_bluesky.hyperion.plan_runner.InProcessRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
+        "mx_bluesky.hyperion.plan_runner.PlanRunner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S",
         0.1,
     ):
         yield
