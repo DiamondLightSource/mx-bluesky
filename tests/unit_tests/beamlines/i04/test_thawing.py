@@ -589,13 +589,9 @@ def test_thawing_plan_with_murko_callback_puts_correct_metadata_into_redis(
     assert publish_call_args_list[3].args[1] == json.dumps(FORWARDING_COMPLETE_MESSAGE)
 
 
-@patch(
-    "mx_bluesky.beamlines.i04.thawing_plan._rotate_in_one_direction_and_stream_to_redis"
-)
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback._check_redis_connection")
 def test_plans_carry_on_thaw_if_redis_connection_check_fails(
     patch_callback_check_redis_connection: MagicMock,
-    patch_rotate_in_one_direction_and_stream_to_redis: MagicMock,
     smargon: Smargon,
     thawer: Thawer,
     robot: BartRobot,
@@ -626,5 +622,11 @@ def test_plans_carry_on_thaw_if_redis_connection_check_fails(
     ):
         run_engine(plan)
 
-        assert patch_rotate_in_one_direction_and_stream_to_redis.call_count == 2
-        patch_rotate_in_one_direction_and_stream_to_redis.reset_mock()
+        omega_put = get_mock_put(smargon.omega.user_setpoint)
+
+        assert omega_put.call_args_list == [
+            call(360.0, wait=True),
+            call(0.0, wait=True),
+        ]
+
+        omega_put.reset_mock()
