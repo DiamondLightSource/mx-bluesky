@@ -282,7 +282,7 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
             "axisEnd": data.axis_end,
             "chiStart": data.chi_start,
             "kappaStart": data.kappa_start,
-            "detectorId": data.detector_id,
+            "detectorId": data.ispyb_detector_id,
             "axisStart": data.axis_start,
             "slitGapVertical": data.slitgap_vertical,
             "slitGapHorizontal": data.slitgap_horizontal,
@@ -309,6 +309,8 @@ def _data_collection_info_to_json(data: DataCollectionInfo) -> dict:
             "startTime": data.start_time,
             "endTime": data.end_time,
             "runStatus": data.run_status,
+            "sampleId": data.sample_id,
+            "detectorMode": data.detector_mode,
         }
     )
 
