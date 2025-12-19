@@ -1,4 +1,3 @@
-import time
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
@@ -33,6 +32,7 @@ from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 
 class InProcessRunner(PlanRunner):
     """Runner that executes experiments from inside a running Bluesky plan"""
+
     def __init__(self, context: BlueskyContext, dev_mode: bool) -> None:
         super().__init__(context, dev_mode)
         self._current_status: Status = Status.IDLE
