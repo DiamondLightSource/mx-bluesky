@@ -28,6 +28,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     compare_params,
     update_params_from_agamemnon,
 )
+from mx_bluesky.hyperion.in_process_runner import InProcessRunner
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
     HyperionMode,
@@ -163,27 +164,33 @@ def main():
     args = parse_cli_args()
     initialise_globals(args)
     hyperion_port = HyperionConstants.HYPERION_PORT
-    context = setup_context(dev_mode=args.dev_mode)
 
-    if args.mode == HyperionMode.GDA:
-        runner = GDARunner(context=context)
-        app = create_app(runner)
-        flask_thread = threading.Thread(
-            target=lambda: app.run(
-                host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
-            ),
-            daemon=True,
-        )
-        flask_thread.start()
-        LOGGER.info(
-            f"Hyperion now listening on {hyperion_port} ({'IN DEV' if args.dev_mode else ''})"
-        )
-        runner.wait_on_queue()
-    else:
-        plan_runner = PlanRunner(context, args.dev_mode)
-        create_server_for_udc(plan_runner)
-        _register_sigterm_handler(plan_runner)
-        run_forever(plan_runner)
+    match args.mode:
+        case HyperionMode.GDA:
+            context = setup_context(dev_mode=args.dev_mode)
+            runner = GDARunner(context=context)
+            app = create_app(runner)
+            flask_thread = threading.Thread(
+                target=lambda: app.run(
+                    host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
+                ),
+                daemon=True,
+            )
+            flask_thread.start()
+            LOGGER.info(
+                f"Hyperion now listening on {hyperion_port} ({'IN DEV' if args.dev_mode else ''})"
+            )
+            runner.wait_on_queue()
+        case HyperionMode.UDC:
+            context = setup_context(dev_mode=args.dev_mode)
+            plan_runner = InProcessRunner(context, args.dev_mode)
+            create_server_for_udc(plan_runner)
+            _register_sigterm_handler(plan_runner)
+            run_forever(plan_runner)
+        case HyperionMode.SUPERVISOR:
+            raise RuntimeError(
+                "Supervisor mode not supported yet see https://github.com/DiamondLightSource/mx-bluesky/issues/1365"
+            )
 
 
 def _register_sigterm_handler(runner: PlanRunner):
