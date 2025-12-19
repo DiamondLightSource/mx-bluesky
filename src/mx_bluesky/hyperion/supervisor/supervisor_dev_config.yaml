@@ -4,7 +4,6 @@ env:
   sources:
     - kind: deviceManager
       module: dodal.beamlines.i03_supervisor
-logging:
-  graylog:
-    url: "tcp://graylog-log-target.diamond.ac.uk:12232"
-    enabled: true
+      mock: true
+  events:
+    broadcast_status_events: false

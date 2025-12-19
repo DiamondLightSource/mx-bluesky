@@ -1,5 +1,4 @@
 # Configuration for the BlueAPI client running in the hyperion supervisor
-# NOT TO BE USED IN PRODUCTION
 api:
   url: http://localhost:5005
 stomp:

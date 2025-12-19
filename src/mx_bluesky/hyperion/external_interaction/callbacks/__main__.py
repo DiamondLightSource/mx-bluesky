@@ -52,8 +52,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
     BeamDrawingCallback,
 )
-from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
-from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
+from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_dev_mode_arg
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
@@ -159,8 +159,8 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
 class HyperionCallbackRunner:
     """Runs Nexus, ISPyB and Zocalo callbacks in their own process."""
 
-    def __init__(self, dev_mode) -> None:
-        setup_logging(dev_mode)
+    def __init__(self, callback_args: CallbackArgs) -> None:
+        setup_logging(callback_args.dev_mode)
         log_info("Hyperion callback process started.")
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
@@ -187,7 +187,12 @@ class HyperionCallbackRunner:
             name="0MQ Dispatcher",
         )
 
-        self.watchdog_thread = Thread(target=run_watchdog, daemon=True, name="Watchdog")
+        self.watchdog_thread = Thread(
+            target=run_watchdog,
+            daemon=True,
+            name="Watchdog",
+            args=[callback_args.watchdog_port],
+        )
         log_info("Created 0MQ proxy and local RemoteDispatcher.")
 
     def start(self):
@@ -201,12 +206,12 @@ class HyperionCallbackRunner:
         )
 
 
-def run_watchdog():
+def run_watchdog(watchdog_port: int):
     log_info("Hyperion watchdog keepalive running")
     while True:
         try:
             with request.urlopen(
-                f"http://localhost:{HyperionConstants.HYPERION_PORT}/callbackPing",
+                f"http://localhost:{watchdog_port}/callbackPing",
                 timeout=PING_TIMEOUT_S,
             ) as response:
                 if response.status != 200:
@@ -219,9 +224,10 @@ def run_watchdog():
 
 
 def main(dev_mode=False) -> None:
-    dev_mode = dev_mode or parse_callback_dev_mode_arg()
+    callback_args = parse_callback_dev_mode_arg()
+    callback_args.dev_mode = dev_mode or callback_args.dev_mode
     print(f"In dev mode: {dev_mode}")
-    runner = HyperionCallbackRunner(dev_mode)
+    runner = HyperionCallbackRunner(callback_args)
     runner.start()
 
 
