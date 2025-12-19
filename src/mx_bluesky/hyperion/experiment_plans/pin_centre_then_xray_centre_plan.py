@@ -5,7 +5,6 @@ import json
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
@@ -73,6 +72,7 @@ def pin_centre_then_flyscan_plan(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
+    use_fastcs_eiger: bool = False,
 ):
     """Plan that performs a pin tip centre followed by a flyscan to determine the centres of interest"""
 
@@ -109,6 +109,7 @@ def pin_centre_then_flyscan_plan(
             oav_params,
             HyperionSpecifiedThreeDGridScan,
             construct_hyperion_specific_features,
+            use_fastcs_eiger,
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
@@ -120,8 +121,7 @@ def pin_tip_centre_then_xray_centre(
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    eiger: EigerDetector = composite.eiger
-
+    eiger = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
     flyscan_event_handler = XRayCentreEventHandler()
