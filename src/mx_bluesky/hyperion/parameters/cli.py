@@ -36,7 +36,7 @@ def _add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def parse_callback_dev_mode_arg() -> CallbackArgs:
+def parse_callback_args() -> CallbackArgs:
     """Returns the bool representing the 'dev_mode' argument."""
     parser = argparse.ArgumentParser()
     _add_callback_relevant_args(parser)
