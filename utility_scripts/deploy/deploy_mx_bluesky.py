@@ -46,7 +46,6 @@ class Options(NamedTuple):
     prune_deployments: bool = True
 
     # NOTE For i24 for now will need to set it to false from the command line
-    use_control_machine: bool = True
 
 
 class Deployment:
@@ -221,7 +220,7 @@ def main(beamline: str, options: Options):
                 "utility_scripts/deploy/create_venv.py",
             )
 
-            if options.use_control_machine and release_area != DEV_DEPLOY_LOCATION:
+            if release_area != DEV_DEPLOY_LOCATION:
                 _create_environment(mx_repo, path_to_create_venv, path_to_dls_dev_env)
             else:
                 setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
@@ -341,7 +340,6 @@ def _parse_options() -> tuple[str, Options]:
         quiet=args.print_release_dir,
         dev_mode=args.dev,
         prune_deployments=args.prune_deployments,
-        use_control_machine=args.no_control,
     )
 
 
