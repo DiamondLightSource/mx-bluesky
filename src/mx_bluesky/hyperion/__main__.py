@@ -2,9 +2,11 @@ import json
 import signal
 import threading
 from dataclasses import asdict
+from pathlib import Path
 from sys import argv
 from traceback import format_exception
 
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
 from flask import Flask, request
 from flask_restful import Api, Resource
@@ -43,6 +45,7 @@ from mx_bluesky.hyperion.runner import (
     StatusAndMessage,
     make_error_status_and_message,
 )
+from mx_bluesky.hyperion.supervisor import SupervisorRunner
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
@@ -153,7 +156,11 @@ def create_app(runner: GDARunner, test_config=None) -> Flask:
 def initialise_globals(args: HyperionArgs):
     """Do all early main low-level application initialisation."""
     do_default_logging_setup(
-        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=args.dev_mode
+        CONST.SUPERVISOR_LOG_FILE_NAME
+        if args.mode == HyperionMode.SUPERVISOR
+        else CONST.LOG_FILE_NAME,
+        CONST.GRAYLOG_PORT,
+        dev_mode=args.dev_mode,
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
@@ -184,13 +191,32 @@ def main():
         case HyperionMode.UDC:
             context = setup_context(dev_mode=args.dev_mode)
             plan_runner = InProcessRunner(context, args.dev_mode)
-            create_server_for_udc(plan_runner)
+            create_server_for_udc(plan_runner, HyperionConstants.HYPERION_PORT)
             _register_sigterm_handler(plan_runner)
             run_forever(plan_runner)
         case HyperionMode.SUPERVISOR:
-            raise RuntimeError(
-                "Supervisor mode not supported yet see https://github.com/DiamondLightSource/mx-bluesky/issues/1365"
-            )
+            if not args.client_config:
+                raise RuntimeError(
+                    "BlueAPI client configuration file must be specified in supervisor mode."
+                )
+            if not args.supervisor_config:
+                raise RuntimeError(
+                    "BlueAPI supervisor configuration file must be specified in supervisor mode."
+                )
+
+            client_config = _load_config_from_yaml(Path(args.client_config))
+            supervisor_config = _load_config_from_yaml(Path(args.supervisor_config))
+            context = BlueskyContext(configuration=supervisor_config)
+            plan_runner = SupervisorRunner(context, client_config, args.dev_mode)
+            create_server_for_udc(plan_runner, HyperionConstants.SUPERVISOR_PORT)
+            _register_sigterm_handler(plan_runner)
+            run_forever(plan_runner)
+
+
+def _load_config_from_yaml(config_path: Path):
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(config_path)
+    return loader.load()
 
 
 def _register_sigterm_handler(runner: PlanRunner):

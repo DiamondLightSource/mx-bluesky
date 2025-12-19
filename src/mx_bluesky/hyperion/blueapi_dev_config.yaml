@@ -9,9 +9,8 @@ env:
     broadcast_status_events: false
 api:
   url: http://localhost:5005
-  cors:
-    allow_credentials: True
-    origins: 
-      - "*"
+stomp:
+  enabled: true
+  url: tcp://localhost:61613
 logging:
   level: DEBUG
