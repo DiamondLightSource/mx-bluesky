@@ -4,23 +4,22 @@ from flask import Flask
 from flask_restful import Api, Resource
 
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 
 
 # Ignore this function for code coverage as there is no way to shut down
 # a server once it is started.
-def create_server_for_udc(runner: PlanRunner) -> Thread:  # pragma: no cover
+def create_server_for_udc(runner: PlanRunner, port: int) -> Thread:  # pragma: no cover
     """Create a minimal API for Hyperion UDC mode"""
     app = create_app_for_udc(runner)
 
     flask_thread = Thread(
         target=app.run,
-        kwargs={"host": "0.0.0.0", "port": HyperionConstants.HYPERION_PORT},
+        kwargs={"host": "0.0.0.0", "port": port},
         daemon=True,
     )
     flask_thread.start()
-    LOGGER.info(f"Hyperion now listening on {HyperionConstants.HYPERION_PORT}")
+    LOGGER.info(f"Hyperion now listening on {port}")
     return flask_thread
 
 

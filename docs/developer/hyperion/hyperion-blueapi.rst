@@ -23,7 +23,7 @@ Hyperion on BlueAPI consists of two components:
 Deployment
 ----------
 
-``hyperion-blueapi`` is automatically available in a standard Hyperion deployment.
+``hyperion-blueapi`` and ``hyperion-supervisor`` are automatically available in a standard Hyperion deployment.
 
 Launching
 ---------
@@ -33,3 +33,10 @@ Launching
 ::
 
     ./run_hyperion.sh --beamline=i03 --dev --blueapi
+
+
+``hyperion-supervisor`` can be launched using the ``run_hyperion.sh`` script, using the ``--supervisor`` option:
+
+::
+
+    ./run_hyperion.sh --beamline=i03 --dev --supervisor
