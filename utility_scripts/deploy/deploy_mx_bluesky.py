@@ -45,8 +45,6 @@ class Options(NamedTuple):
     dev_mode: bool = False
     prune_deployments: bool = True
 
-    # NOTE For i24 for now will need to set it to false from the command line
-
 
 class Deployment:
     # Set name, setup remote origin, get the latest version"""
