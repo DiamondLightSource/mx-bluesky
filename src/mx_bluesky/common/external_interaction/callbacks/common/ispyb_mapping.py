@@ -9,7 +9,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 
-I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 
 
@@ -31,7 +30,6 @@ def populate_remaining_data_collection_info(
     data_collection_info.sample_id = params.sample_id
     data_collection_info.visit_string = params.visit
     data_collection_info.parent_id = data_collection_group_id
-    data_collection_info.detector_id = I03_EIGER_DETECTOR
     data_collection_info.comments = comment
     data_collection_info.detector_distance = params.detector_params.detector_distance
     data_collection_info.exp_time = params.detector_params.exposure_time_s
