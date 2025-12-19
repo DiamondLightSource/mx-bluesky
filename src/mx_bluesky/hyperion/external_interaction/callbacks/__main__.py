@@ -52,7 +52,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
     BeamDrawingCallback,
 )
-from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_dev_mode_arg
+from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
@@ -224,7 +224,7 @@ def run_watchdog(watchdog_port: int):
 
 
 def main(dev_mode=False) -> None:
-    callback_args = parse_callback_dev_mode_arg()
+    callback_args = parse_callback_args()
     callback_args.dev_mode = dev_mode or callback_args.dev_mode
     print(f"In dev mode: {dev_mode}")
     runner = HyperionCallbackRunner(callback_args)
