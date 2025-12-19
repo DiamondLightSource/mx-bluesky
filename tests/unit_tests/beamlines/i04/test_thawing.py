@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -46,10 +46,6 @@ async def oav_full_screen() -> OAV:
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
         )
-    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
     set_mock_value(oav.zoom_controller.level, "1.0x")
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
@@ -61,11 +57,6 @@ async def oav_roi() -> OAV:
     oav_config = OAVConfig(ZOOM_LEVELS_XML)
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
-    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
-
     set_mock_value(oav.zoom_controller.level, "5.0x")
     set_mock_value(oav.grid_snapshot.x_size, 512)
     set_mock_value(oav.grid_snapshot.y_size, 384)
