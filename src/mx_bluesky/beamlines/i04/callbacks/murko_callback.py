@@ -57,7 +57,6 @@ class MurkoCallback(CallbackBase):
         )
         self.last_uuid = None
         self.previous_omegas: list[OmegaReading] = []
-        self.redis_connected = self._check_redis_connection()
 
     def _check_redis_connection(self):
         try:
@@ -70,6 +69,7 @@ class MurkoCallback(CallbackBase):
             return False
 
     def start(self, doc: RunStart) -> RunStart | None:
+        self.redis_connected = self._check_redis_connection()
         if not self.redis_connected:
             return doc
         self.murko_metadata: dict = {"sample_id": doc.get("sample_id")}
