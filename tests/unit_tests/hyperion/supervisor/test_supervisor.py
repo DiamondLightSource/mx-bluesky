@@ -9,9 +9,13 @@ from blueapi.service.model import TaskRequest
 from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import (
+    MxBlueskyParameters,
+    get_param_version,
+)
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
@@ -250,3 +254,31 @@ def test_shutdown_sends_abort_to_blueapi_client_when_running_then_aborts(
             runner.context.run_engine(mock_baton_handler_loop())
     finally:
         fut.result(1)
+
+
+def test_exception_during_callback_check_raises_plan_error(
+    runner: SupervisorRunner, load_centre_collect_params: LoadCentreCollect
+):
+    with patch.object(
+        runner,
+        "check_external_callbacks_are_alive",
+        side_effect=RuntimeError("Simulated exception"),
+    ):
+        with pytest.raises(PlanError, match="Exception raised.*: Simulated exception"):
+            runner.context.run_engine(
+                runner.decode_and_execute(TEST_VISIT, [load_centre_collect_params])
+            )
+
+
+def test_unrecognised_instruction_raises_assertion_error(runner: SupervisorRunner):
+    with pytest.raises(AssertionError, match="Unsupported instruction"):
+        runner.context.run_engine(
+            runner.decode_and_execute(
+                TEST_VISIT,
+                [
+                    MxBlueskyParameters.model_validate(
+                        {"parameter_model_version": get_param_version()}
+                    )
+                ],
+            )
+        )

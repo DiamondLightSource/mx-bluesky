@@ -1,9 +1,8 @@
 from collections.abc import Sequence
-from pathlib import Path
 
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import BlueskyStreamingError
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.service.model import TaskRequest
 from bluesky import plan_stubs as bps
@@ -15,15 +14,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
-
-
-def create_context() -> BlueskyContext:
-    config_path = Path("src/mx_bluesky/hyperion/supervisor/supervisor_config.yaml")
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(config_path)
-    app_config = loader.load()
-    context = BlueskyContext(configuration=app_config)
-    return context
 
 
 class SupervisorRunner(PlanRunner):
