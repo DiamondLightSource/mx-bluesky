@@ -34,7 +34,7 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -86,6 +86,8 @@ def external_callbacks():
             "python",
             "src/mx_bluesky/hyperion/external_interaction/callbacks/__main__.py",
             "--dev",
+            "--watchdog-port",
+            str(HyperionConstants.HYPERION_PORT),
         ],
         env=process_env,
     )
