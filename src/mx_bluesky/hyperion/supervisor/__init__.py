@@ -1,3 +1,3 @@
-from mx_bluesky.hyperion.supervisor._supervisor import SupervisorRunner, create_context
+from mx_bluesky.hyperion.supervisor._supervisor import SupervisorRunner
 
-__all__ = ["create_context", "SupervisorRunner"]
+__all__ = ["SupervisorRunner"]
