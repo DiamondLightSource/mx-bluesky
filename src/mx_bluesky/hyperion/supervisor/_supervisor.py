@@ -56,8 +56,13 @@ class SupervisorRunner(PlanRunner):
                     f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
                 )
                 match parameters:
-                    case LoadCentreCollect():  # TODO
-                        pass
+                    case LoadCentreCollect():
+                        task_request = TaskRequest(
+                            name="load_centre_collect",
+                            params={"parameters": parameters},
+                            instrument_session=instrument_session,
+                        )
+                        self._run_task_remotely(task_request)
                     case Wait():
                         yield from bps.sleep(parameters.duration_s)
                     case UDCDefaultState():
@@ -66,28 +71,14 @@ class SupervisorRunner(PlanRunner):
                             params={},
                             instrument_session=instrument_session,
                         )
-                        self.blueapi_client.run_task(task_request)
-                        yield from bps.null()
+                        self._run_task_remotely(task_request)
                     case UDCCleanup():
                         task_request = TaskRequest(
                             name="clean_up_udc",
                             params={"visit": current_visit},
                             instrument_session=instrument_session,
                         )
-                        try:
-                            self.blueapi_client.run_task(task_request)
-                        except BlueskyStreamingError as e:
-                            # We will receive a BlueskyStreamingError if the remote server
-                            # processed an abort during plan execution, but this is not
-                            # the only possible cause.
-                            if self.current_status == Status.ABORTING:
-                                LOGGER.info("Aborting local runner...")
-                                self.request_run_engine_abort()
-                            else:
-                                raise PlanError(
-                                    f"Exception raised during plan execution: {e}"
-                                ) from e
-                        yield from bps.null()
+                        self._run_task_remotely(task_request)
                     case _:
                         raise AssertionError(
                             f"Unsupported instruction decoded from agamemnon {type(parameters)}"
@@ -120,3 +111,16 @@ class SupervisorRunner(PlanRunner):
         else:
             self._current_status = Status.ABORTING
             self.blueapi_client.abort()
+
+    def _run_task_remotely(self, task_request: TaskRequest):
+        try:
+            self.blueapi_client.run_task(task_request)
+        except BlueskyStreamingError as e:
+            # We will receive a BlueskyStreamingError if the remote server
+            # processed an abort during plan execution, but this is not
+            # the only possible cause.
+            if self.current_status == Status.ABORTING:
+                LOGGER.info("Aborting local runner...")
+                self.request_run_engine_abort()
+            else:
+                raise PlanError(f"Exception raised during plan execution: {e}") from e
