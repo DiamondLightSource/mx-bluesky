@@ -20,12 +20,14 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     setup_logging,
     wait_for_threads_forever,
 )
+from mx_bluesky.hyperion.parameters.cli import CallbackArgs
+from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 
 
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.run_watchdog")
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_dev_mode_arg",
-    return_value=("DEBUG", True),
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
+    return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT),
 )
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
@@ -40,7 +42,7 @@ def test_main_function(
     setup_alerting: MagicMock,
     setup_logging: MagicMock,
     setup_callbacks: MagicMock,
-    parse_callback_dev_mode_arg: MagicMock,
+    parse_callback_args: MagicMock,
     mock_run_watchdog: MagicMock,
 ):
     proxy_started = Event()
@@ -48,7 +50,7 @@ def test_main_function(
     watchdog_started = Event()
     mock_proxy.return_value.start.side_effect = proxy_started.set
     mock_dispatcher.return_value.start.side_effect = dispatcher_started.set
-    mock_run_watchdog.side_effect = watchdog_started.set
+    mock_run_watchdog.side_effect = lambda _: watchdog_started.set() or None
 
     main()
 
@@ -71,8 +73,8 @@ def test_setup_callbacks():
 
 @pytest.mark.skip_log_setup
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_dev_mode_arg",
-    return_value=True,
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
+    return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT),
 )
 def test_setup_logging(parse_callback_cli_args):
     assert DODAL_LOGGER.parent != ISPYB_ZOCALO_CALLBACK_LOGGER
@@ -118,8 +120,20 @@ def test_launching_external_callbacks_pings_regularly(
     )
 
     with pytest.raises(RuntimeError, match="Exit this thread"):
-        run_watchdog()
+        run_watchdog(5005)
 
     mock_request.urlopen.assert_called_with(
         "http://localhost:5005/callbackPing", timeout=PING_TIMEOUT_S
     )
+
+
+@patch("sys.argv", new=["hyperion-callbacks", "--watchdog-port", "1234"])
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.HyperionCallbackRunner"
+)
+def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicMock):
+    main(dev_mode=True)
+    mock_callback_runner.assert_called_once()
+    callback_args = mock_callback_runner.mock_calls[0].args[0]
+    assert callback_args.dev_mode
+    assert callback_args.watchdog_port == 1234

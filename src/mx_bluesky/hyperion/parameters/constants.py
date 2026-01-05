@@ -64,6 +64,7 @@ class HyperionConstants:
     PLAN = PlanNameConstants()
     WAIT = PlanGroupCheckpointConstants()
     HYPERION_PORT = 5005
+    SUPERVISOR_PORT = 5006
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
     CONFIG_SERVER_URL = (
@@ -75,6 +76,7 @@ class HyperionConstants:
     GRAYLOG_STREAM_ID = "66264f5519ccca6d1c9e4e03"
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     LOG_FILE_NAME = "hyperion.log"
+    SUPERVISOR_LOG_FILE_NAME = "hyperion-supervisor.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()
 
 
