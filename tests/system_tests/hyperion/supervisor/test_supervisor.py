@@ -21,7 +21,8 @@ from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.hyperion.parameters.components import UDCCleanup
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
-from unit_tests.hyperion.external_interaction.callbacks.test_alert_on_container_change import (
+
+from ....unit_tests.hyperion.external_interaction.callbacks.test_alert_on_container_change import (
     TEST_VISIT,
 )
 
