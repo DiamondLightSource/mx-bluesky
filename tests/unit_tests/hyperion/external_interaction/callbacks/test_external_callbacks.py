@@ -125,3 +125,15 @@ def test_launching_external_callbacks_pings_regularly(
     mock_request.urlopen.assert_called_with(
         "http://localhost:5005/callbackPing", timeout=PING_TIMEOUT_S
     )
+
+
+@patch("sys.argv", new=["hyperion-callbacks", "--watchdog-port", "1234"])
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.HyperionCallbackRunner"
+)
+def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicMock):
+    main(dev_mode=True)
+    mock_callback_runner.assert_called_once()
+    callback_args = mock_callback_runner.mock_calls[0].args[0]
+    assert callback_args.dev_mode
+    assert callback_args.watchdog_port == 1234
