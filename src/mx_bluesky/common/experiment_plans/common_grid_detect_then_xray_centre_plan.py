@@ -137,7 +137,7 @@ def detect_grid_and_do_gridscan(
     oav_params: OAVParameters,
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
-    use_fastcs_eiger: bool = False,
+    use_fastcs_eiger: bool,
 ):
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
@@ -205,7 +205,9 @@ def detect_grid_and_do_gridscan(
         composite, xrc_params, use_fastcs_eiger
     )
 
-    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+    yield from common_flyscan_xray_centre(
+        composite, xrc_params, beamline_specific, use_fastcs_eiger
+    )
 
 
 class ConstructBeamlineSpecificFeatures(
