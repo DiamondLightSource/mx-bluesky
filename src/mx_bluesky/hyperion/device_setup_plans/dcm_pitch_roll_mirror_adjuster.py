@@ -1,6 +1,9 @@
 import bluesky.plan_stubs as bps
 from daq_config_server.client import ConfigServer
-from daq_config_server.models import GenericLookupTable
+from daq_config_server.models import (
+    BeamlinePitchLookupTable,
+    BeamlineRollLookupTable,
+)
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
@@ -119,7 +122,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     )
     config_server = ConfigServer(url="https://daq-config.diamond.ac.uk")
     pitch_energy_table = config_server.get_file_contents(
-        undulator_dcm.pitch_energy_table_path, GenericLookupTable
+        undulator_dcm.pitch_energy_table_path, BeamlinePitchLookupTable
     )
 
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
@@ -135,7 +138,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # DCM Roll
     roll_energy_table = config_server.get_file_contents(
-        undulator_dcm.roll_energy_table_path, GenericLookupTable
+        undulator_dcm.roll_energy_table_path, BeamlineRollLookupTable
     )
     dcm_roll_adjuster = lookup_table_adjuster(
         linear_interpolation_lut(*roll_energy_table.columns()),
