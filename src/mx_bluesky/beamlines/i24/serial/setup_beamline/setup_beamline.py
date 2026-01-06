@@ -30,7 +30,7 @@ def compute_beam_center_position_from_lut(
     config_server = ConfigServer(url="https://daq-config.diamond.ac.uk")
     lut_columns = config_server.get_file_contents(
         lut_path, DetectorXYLookupTable
-    ).columns()
+    ).columns
 
     calc_x = linear_interpolation_lut(lut_columns[0], lut_columns[1])
     beam_x_mm = calc_x(detector_distance_mm)
