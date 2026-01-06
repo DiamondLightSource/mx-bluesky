@@ -123,7 +123,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(*pitch_energy_table.columns()),
+        linear_interpolation_lut(*pitch_energy_table.columns),
         dcm.xtal_1.pitch_in_mrad,
         bragg_deg,
     )
@@ -136,7 +136,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         undulator_dcm.roll_energy_table_path, BeamlineRollLookupTable
     )
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(*roll_energy_table.columns()),
+        linear_interpolation_lut(*roll_energy_table.columns),
         dcm.xtal_1.roll_in_mrad,
         bragg_deg,
     )
