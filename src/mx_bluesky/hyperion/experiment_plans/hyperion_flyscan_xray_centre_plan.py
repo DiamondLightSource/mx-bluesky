@@ -42,7 +42,7 @@ class SmargonSpeedError(Exception):
 def construct_hyperion_specific_features(
     xrc_composite: HyperionFlyScanXRayCentreComposite,
     xrc_parameters: HyperionSpecifiedThreeDGridScan,
-    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
+    use_fastcs_eiger: bool,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ):
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.

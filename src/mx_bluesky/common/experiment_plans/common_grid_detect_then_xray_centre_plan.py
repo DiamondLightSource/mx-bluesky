@@ -9,13 +9,6 @@ from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.plans.configure_arm_trigger_and_disarm_detector import (
-    configure_and_arm_detector,
-)
-from ophyd_async.core import (
-    DetectorTrigger,
-    TriggerInfo,
-)
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -69,8 +62,8 @@ def grid_detect_then_xray_centre(
     parameters: GridCommon,
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    use_fastcs_eiger: bool,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
-    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
@@ -78,16 +71,6 @@ def grid_detect_then_xray_centre(
     """
     if use_fastcs_eiger:
         eiger = composite.fastcs_eiger
-        yield from configure_and_arm_detector(
-            eiger=composite.fastcs_eiger,
-            detector_params=parameters.detector_params,
-            trigger_info=TriggerInfo(
-                number_of_events=parameters.detector_params.num_images_per_trigger,
-                trigger=DetectorTrigger.EDGE_TRIGGER,
-                deadtime=0.0001,
-            ),
-            group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
-        )
     else:
         eiger = composite.eiger
         eiger.set_detector_parameters(parameters.detector_params)

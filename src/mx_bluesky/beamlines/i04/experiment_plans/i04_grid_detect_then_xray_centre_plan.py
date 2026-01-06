@@ -217,6 +217,7 @@ def i04_default_grid_detect_and_xray_centre(
                 parameters=grid_common_params,
                 xrc_params_type=SpecifiedThreeDGridScan,
                 construct_beamline_specific=construct_i04_specific_features,
+                use_fastcs_eiger=False,
                 oav_config=oav_config,
             )
 

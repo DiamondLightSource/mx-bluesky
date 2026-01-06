@@ -67,8 +67,8 @@ class BeamlineSpecificFGSFeatures:
 
 def generic_tidy(
     xrc_composite: FlyScanEssentialDevices,
+    use_fastcs_eiger: bool,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
     wait=True,
-    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
