@@ -54,7 +54,7 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
@@ -427,14 +427,7 @@ def aithre_gonio():
 
 @pytest.fixture
 def zebra():
-    zebra = i03.zebra.build(connect_immediately=True, mock=True)
-
-    def mock_side(demand: ArmDemand):
-        set_mock_value(zebra.pc.arm.armed, demand.value)
-        return NullStatus()
-
-    zebra.pc.arm.set = MagicMock(side_effect=mock_side)
-    return zebra
+    return i03.zebra.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
