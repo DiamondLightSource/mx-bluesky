@@ -17,7 +17,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from daq_config_server.converters.models import ConfigModel
+from daq_config_server.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils

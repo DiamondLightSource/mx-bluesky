@@ -2,7 +2,7 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from daq_config_server.client import ConfigServer
-from daq_config_server.converters.models import GenericLookupTable
+from daq_config_server.models import DetectorXYLookupTable
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.i24.aperture import Aperture, AperturePositions
 from dodal.devices.i24.beam_center import DetectorBeamCenter
@@ -29,7 +29,7 @@ def compute_beam_center_position_from_lut(
     """
     config_server = ConfigServer(url="https://daq-config.diamond.ac.uk")
     lut_columns = config_server.get_file_contents(
-        lut_path, GenericLookupTable
+        lut_path, DetectorXYLookupTable
     ).columns()
 
     calc_x = linear_interpolation_lut(lut_columns[0], lut_columns[1])
