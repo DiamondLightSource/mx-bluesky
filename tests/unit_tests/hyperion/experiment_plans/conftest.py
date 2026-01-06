@@ -374,5 +374,5 @@ def beamline_specific(
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params, False
     )
