@@ -28,7 +28,6 @@ from .....common.external_interaction.callbacks.ispyb.test_gridscan_ispyb_store_
 TEST_SAMPLE_ID = 123456
 
 EXPECTED_DATA_COLLECTION = {
-    "detectorId": 78,
     "axisStart": 0.0,
     "axisRange": 0.1,
     "axisEnd": -180,
@@ -165,6 +164,7 @@ def test_flux_read_events(
         "flux": 9.81,
         "resolution": 1.1830593331191241,
         "detectorMode": "FULL",
+        "detectorId": 78,
     }
 
 
