@@ -1,0 +1,11 @@
+# Configuration for the test harness to send stomp messages to the callbacks
+env:
+  sources:
+    - kind: deviceManager
+      module: dodal.beamlines.i03_supervisor
+      mock: true
+  events:
+    broadcast_status_events: false
+stomp:
+  enabled: true
+  url: tcp://localhost:61613

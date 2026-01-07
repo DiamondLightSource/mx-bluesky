@@ -1,5 +1,6 @@
 import argparse
 from enum import StrEnum
+from pathlib import Path
 
 from pydantic.dataclasses import dataclass
 
@@ -25,6 +26,7 @@ class HyperionArgs:
 class CallbackArgs:
     dev_mode: bool = False
     watchdog_port: int = HyperionConstants.HYPERION_PORT
+    stomp_config: Path | None = None
 
 
 def _add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
@@ -45,8 +47,18 @@ def parse_callback_args() -> CallbackArgs:
         type=int,
         help="Liveness port for callbacks to ping regularly",
     )
+    parser.add_argument(
+        "--stomp-config",
+        type=Path,
+        default=None,
+        help="Specify config yaml for the STOMP backend (default is 0MQ)",
+    )
     args = parser.parse_args()
-    return CallbackArgs(dev_mode=args.dev, watchdog_port=args.watchdog_port)
+    return CallbackArgs(
+        dev_mode=args.dev,
+        watchdog_port=args.watchdog_port,
+        stomp_config=args.stomp_config,
+    )
 
 
 def parse_cli_args() -> HyperionArgs:
