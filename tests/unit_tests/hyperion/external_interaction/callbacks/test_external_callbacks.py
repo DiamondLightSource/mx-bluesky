@@ -15,10 +15,10 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGG
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     PING_TIMEOUT_S,
     main,
+    ping_watchdog_while_alive,
     run_watchdog,
     setup_callbacks,
     setup_logging,
-    wait_for_threads_forever,
 )
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs
 from mx_bluesky.hyperion.parameters.constants import HyperionConstants
@@ -94,9 +94,10 @@ def test_wait_for_threads_forever_calls_time_sleep(mock_sleep: MagicMock):
     thread_that_stops_after_one_call = MagicMock()
     thread_that_stops_after_one_call.is_alive.side_effect = [True, False]
 
-    mock_threads = [thread_that_stops_after_one_call, MagicMock()]
+    mock_context_manager = MagicMock()
+    mock_context_manager.is_alive.side_effect = [True, False]
 
-    wait_for_threads_forever(mock_threads)
+    ping_watchdog_while_alive(thread_that_stops_after_one_call, mock_context_manager)
     assert mock_sleep.call_count == 1
 
 
@@ -137,3 +138,6 @@ def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicM
     callback_args = mock_callback_runner.mock_calls[0].args[0]
     assert callback_args.dev_mode
     assert callback_args.watchdog_port == 1234
+
+
+def test_launch_with_stomp_launches_stomp_backend(): ...
