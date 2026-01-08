@@ -37,7 +37,7 @@ class StompTestCallback(CallbackBase):
         self.fire_event_back("init")
 
     def start(self, doc: RunStart) -> RunStart | None:
-        self.fire_event_back(f"start: {doc['run_name']}")
+        self.fire_event_back(f"start: {doc['run_name']}")  # type: ignore
         return super().start(doc)
 
     def stop(self, doc: RunStop) -> RunStop | None:
@@ -49,7 +49,7 @@ class StompTestCallback(CallbackBase):
         return super().event(doc)
 
     def fire_event_back(self, msg: str):
-        self.stomp_client.send(destination=self.destination, obj=msg)
+        self.stomp_client.send(destination=self.destination, obj=msg)  # type: ignore
 
 
 if __name__ == "__main__":
