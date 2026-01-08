@@ -3,9 +3,11 @@ from __future__ import annotations
 from functools import partial
 from threading import Event
 from time import sleep
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
+from bluesky.callbacks import CallbackBase
+from bluesky_stomp.models import Broker
 from dodal.log import LOGGER as DODAL_LOGGER
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
@@ -140,4 +142,50 @@ def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicM
     assert callback_args.watchdog_port == 1234
 
 
-def test_launch_with_stomp_launches_stomp_backend(): ...
+@patch(
+    "sys.argv",
+    new=[
+        "hyperion-callbacks",
+        "--watchdog-port",
+        "1234",
+        "--stomp-config",
+        "tests/test_data/stomp_callback_test_config.yaml",
+    ],
+)
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompDispatcher")
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompClient")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks",
+    return_value=[Mock(spec=CallbackBase)],
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.LIVENESS_POLL_SECONDS",
+    0.1,
+)
+def test_launch_with_stomp_launches_stomp_backend(
+    mock_setup_callbacks: MagicMock,
+    mock_client_cls: MagicMock,
+    mock_dispatcher_cls: MagicMock,
+):
+    stomp_client = mock_client_cls.for_broker.return_value
+    dispatcher = mock_dispatcher_cls.return_value
+    stomp_client.is_connected.side_effect = [True, False]
+
+    parent = MagicMock()
+    parent.attach_mock(stomp_client, "stomp_client")
+    parent.attach_mock(dispatcher, "dispatcher")
+    main(dev_mode=True)
+
+    mock_client_cls.for_broker.assert_called_once_with(
+        broker=Broker(host="localhost", port=61613, auth=None)
+    )
+    mock_dispatcher_cls.assert_called_once_with(stomp_client)
+    parent.assert_has_calls(
+        [
+            call.dispatcher.subscribe(mock_setup_callbacks.return_value[0]),
+            call.dispatcher.__enter__(),
+            call.stomp_client.is_connected(),
+            call.stomp_client.is_connected(),
+            call.dispatcher.__exit__(None, None, None),
+        ]
+    )

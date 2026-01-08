@@ -124,16 +124,14 @@ def external_callbacks_with_stomp():
         "--watchdog-port",
         str(HyperionConstants.HYPERION_PORT),
         "--stomp-config",
-        "tests/system_tests/hyperion/supervisor/stomp_callback_test_config.yaml",
+        "tests/test_data/stomp_callback_test_config.yaml",
     )
 
 
 @pytest.fixture
 def bluesky_context_with_stomp(run_engine: RunEngine):
     loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(
-        Path("tests/system_tests/hyperion/supervisor/stomp_callback_test_config.yaml")
-    )
+    loader.use_values_from_yaml(Path("tests/test_data/stomp_callback_test_config.yaml"))
     config = loader.load()
     context = BlueskyContext(configuration=config, run_engine=run_engine)
     stomp_client = StompClient.for_broker(
