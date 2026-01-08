@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
+from dodal.beamlines import i03
+from dodal.common.udc_directory_provider import PandASubpathProvider
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
@@ -72,6 +75,7 @@ def create_parameters_for_grid_detection(
 def pin_centre_then_flyscan_plan(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
+    use_fastcs_eiger: bool,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     """Plan that performs a pin tip centre followed by a flyscan to determine the centres of interest"""
@@ -80,6 +84,12 @@ def pin_centre_then_flyscan_plan(
         oav=composite.oav,
         gonio=composite.smargon,
         pin_tip_detection=composite.pin_tip_detection,
+    )
+
+    path_provider = i03.path_provider()
+    assert isinstance(path_provider, PandASubpathProvider)
+    yield from bps.wait_for(
+        [lambda: path_provider.update(directory=Path(parameters.storage_directory))]
     )
 
     def _pin_centre_then_flyscan_plan():
@@ -109,6 +119,7 @@ def pin_centre_then_flyscan_plan(
             oav_params,
             HyperionSpecifiedThreeDGridScan,
             construct_hyperion_specific_features,
+            use_fastcs_eiger,
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
@@ -117,11 +128,11 @@ def pin_centre_then_flyscan_plan(
 def pin_tip_centre_then_xray_centre(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
+    use_fast_eiger: bool,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    eiger: EigerDetector = composite.eiger
-
+    eiger = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
     flyscan_event_handler = XRayCentreEventHandler()
@@ -133,7 +144,9 @@ def pin_tip_centre_then_xray_centre(
             eiger,
             composite.detector_motion,
             parameters.detector_params.detector_distance,
-            pin_centre_then_flyscan_plan(composite, parameters, oav_config_file),
+            pin_centre_then_flyscan_plan(
+                composite, parameters, use_fast_eiger, oav_config_file
+            ),
             group=CONST.WAIT.GRID_READY_FOR_DC,
         )
 

@@ -161,14 +161,14 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
-        fgs_composite_for_fake_zocalo, dummy_params
+        fgs_composite_for_fake_zocalo, dummy_params, False
     )
 
     @ispyb_activation_decorator(dummy_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
-            fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
+            fgs_composite_for_fake_zocalo, dummy_params, beamline_specific, False
         )
 
     run_engine(wrapped_xray_centre())

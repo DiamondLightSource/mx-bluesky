@@ -34,6 +34,7 @@ from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.utils import (
@@ -74,6 +75,7 @@ class RobotLoadThenCentreComposite:
     beamsize: BeamsizeBase
     detector_motion: DetectorMotion
     eiger: EigerDetector
+    fastcs_eiger: FastCSEiger
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
@@ -111,11 +113,13 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    use_fastcs_eiger: bool,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_flyscan_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
+        use_fastcs_eiger,
         oav_config_file,
     )
 
@@ -123,6 +127,7 @@ def _flyscan_plan_from_robot_load_params(
 def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    use_fastcs_eiger: bool,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
@@ -130,12 +135,15 @@ def _robot_load_then_flyscan_plan(
         params.robot_load_params,
     )
 
-    yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
+    yield from _flyscan_plan_from_robot_load_params(
+        composite, params, use_fastcs_eiger, oav_config_file
+    )
 
 
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
     parameters: RobotLoadThenCentre,
+    use_fastcs_eiger: bool,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
@@ -160,7 +168,9 @@ def robot_load_then_xray_centre(
 
     if doing_sample_load:
         LOGGER.info("Pin not loaded, loading and centring")
-        plan = _robot_load_then_flyscan_plan(composite, parameters, oav_config_file)
+        plan = _robot_load_then_flyscan_plan(
+            composite, parameters, use_fastcs_eiger, oav_config_file
+        )
     else:
         # Robot load normally sets the energy so we should do this explicitly if no load is
         # being done
@@ -172,7 +182,7 @@ def robot_load_then_xray_centre(
 
         if doing_chi_change:
             plan = _flyscan_plan_from_robot_load_params(
-                composite, parameters, oav_config_file
+                composite, parameters, use_fastcs_eiger, oav_config_file
             )
             LOGGER.info("Pin already loaded but chi changed so centring")
         else:
@@ -183,11 +193,12 @@ def robot_load_then_xray_centre(
         composite.dcm, parameters.detector_params
     )
 
-    eiger.set_detector_parameters(detector_params)
+    if not use_fastcs_eiger:
+        eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
-        eiger,
+        composite.fastcs_eiger if use_fastcs_eiger else eiger,
         composite.detector_motion,
         parameters.detector_distance_mm,
         plan,

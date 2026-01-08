@@ -117,7 +117,7 @@ class TestFlyscanXrayCentrePlan:
     def test_when_run_gridscan_called_then_generator_returned(
         self,
     ):
-        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
+        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock(), False)
         assert isinstance(plan, types.GeneratorType)
 
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
@@ -138,7 +138,10 @@ class TestFlyscanXrayCentrePlan:
                 run_engine(
                     ispyb_activation_wrapper(
                         common_flyscan_xray_centre(
-                            fake_fgs_composite, test_fgs_params, beamline_specific
+                            fake_fgs_composite,
+                            test_fgs_params,
+                            beamline_specific,
+                            False,
                         ),
                         test_fgs_params,
                     ),
@@ -192,9 +195,7 @@ class TestFlyscanXrayCentrePlan:
 
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
+                fake_fgs_composite, test_fgs_params, beamline_specific, False
             )
 
         run_engine(wrapped_gridscan_and_move())
@@ -257,7 +258,9 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(WarningError):
             run_engine(
-                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+                run_gridscan(
+                    fake_fgs_composite, test_fgs_params, beamline_specific, False
+                )
             )
 
     @patch(
@@ -278,7 +281,9 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(FailedStatus) as e:
             run_engine(
-                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+                run_gridscan(
+                    fake_fgs_composite, test_fgs_params, beamline_specific, False
+                )
             )
 
         mock_kickoff_and_complete.assert_not_called()
@@ -350,7 +355,7 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 ispyb_activation_wrapper(
                     common_flyscan_xray_centre(
-                        fake_fgs_composite, test_fgs_params, beamline_specific
+                        fake_fgs_composite, test_fgs_params, beamline_specific, False
                     ),
                     test_fgs_params,
                 )
@@ -389,7 +394,9 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        run_engine(run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific))
+        run_engine(
+            run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific, False)
+        )
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
@@ -441,7 +448,9 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(CompleteError):
             run_engine(
-                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+                run_gridscan(
+                    fake_fgs_composite, test_fgs_params, beamline_specific, False
+                )
             )
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
@@ -538,7 +547,7 @@ class TestFlyscanXrayCentrePlan:
             "synchrotron-synchrotron_mode",
         )
         msgs = sim_run_engine.simulate_plan(
-            run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+            run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific, False)
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
@@ -576,9 +585,7 @@ class TestFlyscanXrayCentrePlan:
         def _wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
+                fake_fgs_composite, test_fgs_params, beamline_specific, False
             )
 
         beamline_specific.get_xrc_results_from_zocalo = True
@@ -677,9 +684,7 @@ class TestFlyscanXrayCentrePlan:
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
+                fake_fgs_composite, test_fgs_params, beamline_specific, False
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
@@ -707,9 +712,7 @@ class TestFlyscanXrayCentrePlan:
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         run_engine(
             common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
+                fake_fgs_composite, test_fgs_params, beamline_specific, False
             )
         )
 

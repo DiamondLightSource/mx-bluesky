@@ -89,7 +89,7 @@ def load_centre_collect_full(
         try:
             yield from subs_wrapper(
                 robot_load_then_xray_centre(
-                    composite, parameters.robot_load_then_centre, oav_config_file
+                    composite, parameters.robot_load_then_centre, True, oav_config_file
                 ),
                 flyscan_event_handler,
             )

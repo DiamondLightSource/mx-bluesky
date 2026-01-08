@@ -36,6 +36,7 @@ from ophyd_async.core import (
     init_devices,
     set_mock_value,
 )
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
@@ -342,6 +343,7 @@ async def fake_fgs_composite(
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
+        fastcs_eiger=i03.fastcs_eiger.build(connect_immediately=True, mock=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -414,6 +416,7 @@ async def grid_detect_xrc_devices(
     beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
+    fastcs_eiger: FastCSEiger,
     smargon: Smargon,
     oav: OAV,
     ophyd_pin_tip_detection: PinTipDetection,
@@ -451,6 +454,7 @@ async def grid_detect_xrc_devices(
         dcm=dcm,
         robot=MagicMock(spec=BartRobot),
         sample_shutter=zebra_shutter,
+        fastcs_eiger=fastcs_eiger,
     )
 
 
@@ -459,6 +463,17 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
     composite.panda = MagicMock(spec=HDFPanda)
     composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    return composite
+
+
+@pytest.fixture
+async def hyperion_grid_detect_xrc_devices_with_fastcs_eiger(
+    grid_detect_xrc_devices, fastcs_eiger: FastCSEiger
+):
+    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
+    composite.panda = MagicMock(spec=HDFPanda)
+    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
+    composite.fastcs_eiger = fastcs_eiger
     return composite
 
 

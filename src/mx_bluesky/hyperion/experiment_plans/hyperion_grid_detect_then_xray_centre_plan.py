@@ -37,6 +37,7 @@ def create_devices(
 def hyperion_grid_detect_then_xray_centre(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetect,
+    use_fastcs_eiger: bool = False,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
@@ -54,6 +55,7 @@ def hyperion_grid_detect_then_xray_centre(
             parameters=parameters,
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_hyperion_specific_features,
+            use_fastcs_eiger=use_fastcs_eiger,
             oav_config=oav_config,
         )
 

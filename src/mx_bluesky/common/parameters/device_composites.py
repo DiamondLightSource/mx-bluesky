@@ -24,6 +24,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -32,6 +33,7 @@ class FlyScanEssentialDevices:
     synchrotron: Synchrotron
     zocalo: ZocaloResults
     smargon: Smargon
+    fastcs_eiger: FastCSEiger
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

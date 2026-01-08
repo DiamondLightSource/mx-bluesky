@@ -34,6 +34,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         plan = hyperion_grid_detect_then_xray_centre(
             devices,
             cast(GridScanWithEdgeDetect, hyperion_fgs_params),
+            False,
             test_config_files["oav_config_json"],
         )
         assert isinstance(plan, Generator)
@@ -87,6 +88,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
                 hyperion_grid_detect_then_xray_centre(
                     hyperion_grid_detect_xrc_devices,
                     test_full_grid_scan_params,
+                    False,
                     test_config_files["oav_config_json"],
                 )
             )
@@ -142,6 +144,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
             hyperion_grid_detect_then_xray_centre(
                 hyperion_grid_detect_xrc_devices,
                 test_full_grid_scan_params,
+                False,
                 test_config_files["oav_config_json"],
             ),
         )
@@ -221,6 +224,7 @@ class TestHyperionGridDetectThenXrayCentrePlan:
                 hyperion_grid_detect_then_xray_centre(
                     hyperion_grid_detect_xrc_devices,
                     test_full_grid_scan_params,
+                    False,
                     test_config_files["oav_config_json"],
                 )
             )

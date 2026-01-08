@@ -113,6 +113,7 @@ class TestFlyscanXrayCentrePlan:
                     hyperion_flyscan_xrc_composite,
                     hyperion_fgs_params,
                     beamline_specific,
+                    False,
                 )
             )
 
@@ -170,6 +171,7 @@ class TestFlyscanXrayCentrePlan:
                 hyperion_flyscan_xrc_composite,
                 hyperion_fgs_params,
                 beamline_specific,
+                False,
             )
         )
 
@@ -206,6 +208,7 @@ class TestFlyscanXrayCentrePlan:
                     hyperion_flyscan_xrc_composite,
                     fgs_params_use_panda,
                     beamline_specific,
+                    False,
                 )
             )
 
@@ -247,7 +250,10 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
-                fgs_composite_with_panda_pcap, fgs_params_use_panda, beamline_specific
+                fgs_composite_with_panda_pcap,
+                fgs_params_use_panda,
+                beamline_specific,
+                False,
             )
         )
 

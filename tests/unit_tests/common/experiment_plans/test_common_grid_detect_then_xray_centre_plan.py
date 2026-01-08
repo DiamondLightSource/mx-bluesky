@@ -57,7 +57,9 @@ def _fake_flyscan(*args):
 def construct_beamline_specific(
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> ConstructBeamlineSpecificFeatures:
-    return lambda xrc_composite, xrc_parameters: beamline_specific
+    return (
+        lambda xrc_composite, xrc_parameters, use_fastcs_eiger: beamline_specific
+    )  #  https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 
 
 @pytest.mark.timeout(2)
@@ -109,7 +111,7 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY, ANY, ANY)
 
 
 @patch(
@@ -163,6 +165,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
             construct_beamline_specific=construct_beamline_specific,
             oav_config=test_config_files["oav_config_json"],
             xrc_params_type=SpecifiedThreeDGridScan,
+            use_fastcs_eiger=False,
         ),
     )
 
@@ -181,6 +184,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
         oav_params=OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
         xrc_params_type=HyperionSpecifiedThreeDGridScan,
         construct_beamline_specific=construct_beamline_specific_xrc_features,
+        use_fastcs_eiger=False,
     )
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
 
@@ -209,6 +213,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
                 oav_params=oav_params,
                 xrc_params_type=HyperionSpecifiedThreeDGridScan,
                 construct_beamline_specific=construct_beamline_specific,
+                use_fastcs_eiger=False,
             ),
             test_full_grid_scan_params,
         )
@@ -270,6 +275,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
             OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_beamline_specific,
+            use_fastcs_eiger=False,
         )
     )
 
@@ -340,6 +346,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
             xrc_params_type=SpecifiedThreeDGridScan,
             construct_beamline_specific=construct_beamline_specific,
             oav_config=test_config_files["oav_config_json"],
+            use_fastcs_eiger=False,
         )
     )
 

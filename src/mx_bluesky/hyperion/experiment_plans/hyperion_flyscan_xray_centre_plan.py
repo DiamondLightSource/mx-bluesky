@@ -42,6 +42,7 @@ class SmargonSpeedError(Exception):
 def construct_hyperion_specific_features(
     xrc_composite: HyperionFlyScanXRayCentreComposite,
     xrc_parameters: HyperionSpecifiedThreeDGridScan,
+    use_fastcs_eiger: bool,  # Needed until fastcs eiger is always used, see https://github.com/DiamondLightSource/mx-bluesky/pull/1436/
 ):
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -59,10 +60,13 @@ def construct_hyperion_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.eiger.bit_depth,
         xrc_composite.beamsize,
         xrc_composite.eiger.cam.roi_mode,
         xrc_composite.eiger.ispyb_detector_id,
+        xrc_composite.eiger.bit_depth,
+        xrc_composite.fastcs_eiger.drv.detector.bit_depth_image  # fastcs eiger
+        if use_fastcs_eiger
+        else xrc_composite.eiger.bit_depth,  # old eiger
     ]
 
     setup_trigger_plan: Callable[..., MsgGenerator]

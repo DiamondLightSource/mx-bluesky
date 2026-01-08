@@ -421,6 +421,7 @@ def test_ispyb_deposition_in_gridscan(
             grid_detect_then_xray_centre_parameters,
             HyperionSpecifiedThreeDGridScan,
             construct_hyperion_specific_features,
+            False,
         )
     )
 

@@ -111,6 +111,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            False,
             test_config_files["oav_config_json"],
         )
     )
@@ -240,6 +241,7 @@ def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_ti
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            False,
             test_config_files["oav_config_json"],
         )
     )
@@ -283,6 +285,7 @@ def test_pin_centre_then_xray_centre_plan_sets_up_backlight_and_aperture(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            False,
             test_config_files["oav_config_json"],
         )
     )
@@ -336,6 +339,7 @@ def test_pin_centre_then_xray_centre_plan_goes_to_the_starting_chi_and_phi(
         pin_centre_then_flyscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            False,
             test_config_files["oav_config_json"],
         )
     )
@@ -378,7 +382,9 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 
     msgs = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
-            hyperion_grid_detect_xrc_devices, test_pin_centre_then_xray_centre_params
+            hyperion_grid_detect_xrc_devices,
+            test_pin_centre_then_xray_centre_params,
+            False,
         )
     )
 
