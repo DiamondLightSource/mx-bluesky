@@ -16,6 +16,11 @@ if [ "$current_dir" != "$two_levels_up" ]; then
   exit 1
 fi
 
+if ! git diff --quiet pyproject.toml; then
+    echo "Error: pyproject.toml has uncommitted changes. Commit or stash changes to this file before running this script again."
+    exit 1
+fi
+
 # controls_dev sets pip up to look at a local pypi server, which is incomplete
 module unload controls_dev 
 
@@ -31,7 +36,9 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install --upgrade pip
-pip install -e .[dev]
+pip install uv
+
+uv sync --editable --group dev
 
 pre-commit install
 
@@ -40,9 +47,10 @@ if [ ! -d "../dodal" ]; then
   git clone git@github.com:DiamondLightSource/dodal.git ../dodal
 fi
 
-pip install -e ../dodal[dev]
+uv add --editable --frozen ../dodal/
+git restore pyproject.toml  # Or will change pyproject.toml dodal dependency to local dodal
 
 # get dlstbx into our env
 ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.11/site-packages/dlstbx
 
-pytest
+pytest tests/unit_tests/
