@@ -39,6 +39,8 @@ dependencies = [
     "deepdiff",
     "matplotlib",
     "cachetools",
+    "bluesky-stomp >= 0.2.0",
+
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
