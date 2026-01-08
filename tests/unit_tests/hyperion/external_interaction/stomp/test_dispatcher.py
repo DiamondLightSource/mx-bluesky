@@ -23,10 +23,10 @@ def mock_client():
 def test_dispatcher_connect_and_disconnects_on_enter_and_exit(mock_client):
     dispatcher = StompDispatcher(mock_client)
     with dispatcher:
-        assert mock_client.connect.called_once()
-        assert mock_client.subscribe.called_once()
-    assert mock_client.unsubscribe.called_once_with(TEST_SUB_ID)
-    assert mock_client.disconnect.called_once()
+        mock_client.connect.assert_called_once()
+        mock_client.subscribe.assert_called_once()
+    mock_client.unsubscribe.assert_called_once_with(TEST_SUB_ID)
+    mock_client.disconnect.assert_called_once()
 
 
 def test_dispatcher_forwards_data_event(mock_client, test_event_data):
