@@ -24,23 +24,19 @@ fi
 # controls_dev sets pip up to look at a local pypi server, which is incomplete
 module unload controls_dev 
 
-module load python/3.11
-
 if [ -d "./.venv" ]
 then
 rm -rf .venv
 fi
-mkdir .venv
 
-python -m venv .venv
+module load uv
+uv venv .venv
 source .venv/bin/activate
-
-pip install --upgrade pip
-pip install uv
 
 uv sync --editable --group dev
 
 pre-commit install
+module unload uv
 
 # Ensure we use a local version of dodal
 if [ ! -d "../dodal" ]; then
