@@ -48,7 +48,7 @@ e.g.
 
 .. code-block:: bash
 
-    pip install pytest-profiling
+    uv add pytest-profiling
     pytest --profile tests/unit_tests/hyperion/external_interaction/test_write_rotation_nexus.py::test_given_detector_bit_depth_changes_then_vds_datatype_as_expected
 
 
@@ -59,7 +59,7 @@ To browse these files you need something useful. Snakeviz is a tool that can be 
 .. code-block:: bash
 
     cd prof
-    pip install snakeviz
+    uv add --frozen snakeviz
     snakeviz combined.prof
 
 An alternative tool is py-spy.
@@ -68,7 +68,7 @@ e.g.
 
 .. code-block:: bash
 
-    pip install py-spy
+    uv add --frozen py-spy
     py-spy record -o profile.svg -- pytest -s tests/unit_tests/hyperion/experiment_plans/test_robot_load_then_centre.py::test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set_on_eiger
 
 This will generator an interactive SVG flamechart that can be opened in a browser to see hot methods.
