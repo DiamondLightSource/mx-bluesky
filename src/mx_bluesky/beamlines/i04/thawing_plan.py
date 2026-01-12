@@ -88,6 +88,7 @@ def thaw_and_murko_centre(
     initial_zoom_level = yield from bps.rd(oav_fs.zoom_controller.level)
     initial_velocity = yield from bps.rd(smargon.omega.velocity)
     new_velocity = abs(rotation / time_to_thaw) * 2.0
+
     murko_callback = MurkoCallback(
         RedisConstants.REDIS_HOST,
         RedisConstants.REDIS_PASSWORD,

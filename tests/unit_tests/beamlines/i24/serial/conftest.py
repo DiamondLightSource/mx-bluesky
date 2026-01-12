@@ -18,7 +18,7 @@ from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.zebra.zebra import Zebra
 from dodal.utils import AnyDeviceFactory
-from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
+from ophyd_async.core import callback_on_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -87,17 +87,7 @@ def fake_generator(value):
 
 @pytest.fixture
 def zebra(run_engine) -> Zebra:
-    zebra = i24.zebra(connect_immediately=True, mock=True)
-
-    def mock_disarm(_, wait):
-        set_mock_value(zebra.pc.arm.armed, 0)
-
-    def mock_arm(_, wait):
-        set_mock_value(zebra.pc.arm.armed, 1)
-
-    get_mock_put(zebra.pc.arm.arm_set).side_effect = mock_arm
-    get_mock_put(zebra.pc.arm.disarm_set).side_effect = mock_disarm
-    return zebra
+    return i24.zebra(connect_immediately=True, mock=True)
 
 
 @pytest.fixture

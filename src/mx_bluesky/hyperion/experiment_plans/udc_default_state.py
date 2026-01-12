@@ -17,6 +17,7 @@ from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut as ScinInOut
 from dodal.devices.scintillator import Scintillator
@@ -49,6 +50,7 @@ class UDCDefaultDevices(BeamstopCheckDevices):
     robot: BartRobot
     scintillator: Scintillator
     smargon: Smargon
+    oav: OAV
 
 
 class UnexpectedSampleError(BeamlineCheckFailureError): ...
@@ -109,7 +111,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     )
 
     # Wait for all of the above to complete
-    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK, timeout=0.1)
+    yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK, timeout=10)
 
     feature_flags: HyperionFeatureSettings = (
         get_hyperion_config_client().get_feature_flags()
@@ -141,7 +143,11 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         devices.cryojet.fine, CryoInOut.IN, group=_GROUP_POST_BEAMSTOP_CHECK
     )
 
-    yield from bps.wait(_GROUP_POST_BEAMSTOP_CHECK)
+    yield from bps.abs_set(
+        devices.oav.zoom_controller, "1.0x", group=_GROUP_POST_BEAMSTOP_CHECK
+    )
+
+    yield from bps.wait(_GROUP_POST_BEAMSTOP_CHECK, timeout=10)
 
 
 def _verify_correct_cryostream_selected(

@@ -53,6 +53,7 @@ async def default_devices(
     cryostream_gantry,
     robot,
     smargon,
+    oav,
     sim_run_engine,
     run_engine,
 ):
@@ -75,6 +76,7 @@ async def default_devices(
             robot=robot,
             scintillator=scintillator,
             smargon=smargon,
+            oav=oav,
             **beamstop_check_devices.__dict__,
         )
         sim_run_engine.add_read_handler_for(
@@ -262,6 +264,10 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     )
     msgs = assert_expected_set(
         default_devices.cryojet.fine, CryoInOut.IN, post_beamstop_group
+    )
+
+    msgs = assert_expected_set(
+        default_devices.oav.zoom_controller, "1.0x", post_beamstop_group
     )
 
     msgs = assert_message_and_return_remaining(
