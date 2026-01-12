@@ -1,5 +1,3 @@
-import json
-
 import bluesky.plan_stubs as bps
 from daq_config_server.client import ConfigServer
 from daq_config_server.models import BeamlinePitchLookupTable, BeamlineRollLookupTable
@@ -18,6 +16,9 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_config_client,
+)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
@@ -28,11 +29,12 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    with open(mirror_voltages.voltage_lookup_table_path) as lut_file:
-        json_obj = json.load(lut_file)
-
+    config_server = get_hyperion_config_client()
+    config_dict = config_server.get_file_contents(
+        mirror_voltages.voltage_lookup_table_path, dict
+    )
     # sample mode is the only mode supported
-    sample_data = json_obj["sample"]
+    sample_data = config_dict["sample"]
     if stripe == MirrorStripe.BARE:
         stripe_key = "bare"
     elif stripe == MirrorStripe.RHODIUM:

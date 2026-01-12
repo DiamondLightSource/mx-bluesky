@@ -75,6 +75,8 @@ def standard_read_hardware_during_collection(
         dcm.energy_in_keV,
         detector.bit_depth,
         beamsize,
+        detector.cam.roi_mode,
+        detector.ispyb_detector_id,
     ]
     yield from read_hardware_plan(
         signals_to_read_during_collection, DocDescriptorNames.HARDWARE_READ_DURING

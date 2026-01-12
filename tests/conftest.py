@@ -54,7 +54,7 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
@@ -428,14 +428,7 @@ def aithre_gonio():
 
 @pytest.fixture
 def zebra():
-    zebra = i03.zebra.build(connect_immediately=True, mock=True)
-
-    def mock_side(demand: ArmDemand):
-        set_mock_value(zebra.pc.arm.armed, demand.value)
-        return NullStatus()
-
-    zebra.pc.arm.set = MagicMock(side_effect=mock_side)
-    return zebra
+    return i03.zebra.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -685,11 +678,13 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(sim_run_engine):
+def undulator_dcm(sim_run_engine, dcm, undulator):
     undulator_dcm = i03.undulator_dcm.build(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
+        dcm=dcm,
+        undulator=undulator,
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
@@ -1419,6 +1414,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "dcm-energy_in_keV": 11.105,
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
+                "eiger_cam_roi_mode": False,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1533,6 +1530,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "eiger_bit_depth": "16",
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
+                "eiger_cam_roi_mode": True,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,
