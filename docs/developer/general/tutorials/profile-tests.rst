@@ -48,7 +48,7 @@ e.g.
 
 .. code-block:: bash
 
-    uv add pytest-profiling
+    uv pip install pytest-profiling
     pytest --profile tests/unit_tests/hyperion/external_interaction/test_write_rotation_nexus.py::test_given_detector_bit_depth_changes_then_vds_datatype_as_expected
 
 
@@ -59,7 +59,7 @@ To browse these files you need something useful. Snakeviz is a tool that can be 
 .. code-block:: bash
 
     cd prof
-    uv add --frozen snakeviz
+    uv pip install snakeviz
     snakeviz combined.prof
 
 An alternative tool is py-spy.
