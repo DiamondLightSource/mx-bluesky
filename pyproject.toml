@@ -43,7 +43,7 @@ dependencies = [
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
-    "daq-config-server @ git+https://github.com/DiamondLightSource/daq-config-server.git@extend_lookup_table_model",
+    "daq-config-server >= v1.1.2",
     "blueapi >= 1.8.0",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
