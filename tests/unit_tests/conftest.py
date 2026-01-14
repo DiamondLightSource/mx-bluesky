@@ -33,6 +33,7 @@ from ophyd_async.core import (
     AsyncStatus,
     AutoIncrementingPathProvider,
     StaticFilenameProvider,
+    completed_status,
     init_devices,
     set_mock_value,
 )
@@ -327,7 +328,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -344,7 +344,7 @@ async def fake_fgs_composite(
         zocalo=zocalo,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()

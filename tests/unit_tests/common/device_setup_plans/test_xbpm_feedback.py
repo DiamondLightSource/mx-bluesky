@@ -11,7 +11,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 from ophyd.status import Status
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import completed_status, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     unpause_xbpm_feedback_and_set_transmission_to_1,
@@ -25,10 +25,9 @@ from tests.conftest import XBPMAndTransmissionWrapperComposite
 @pytest.fixture
 def composite(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
-    done_status,
 ) -> XBPMAndTransmissionWrapperComposite:
     xbpm_and_transmission_wrapper_composite.undulator.set = MagicMock(
-        return_value=done_status
+        side_effect=lambda _: completed_status()
     )
 
     return xbpm_and_transmission_wrapper_composite

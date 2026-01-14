@@ -145,7 +145,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     run_engine_with_external_callbacks: RunEngine,
     dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
-    done_status,
     fetch_comment,  # noqa
     fetch_datacollection_ids_for_group_id,
     fake_grid_snapshot_plan,

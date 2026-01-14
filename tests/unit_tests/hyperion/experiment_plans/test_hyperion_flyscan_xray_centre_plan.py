@@ -11,7 +11,6 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd.sim import NullStatus
-from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
@@ -230,14 +229,12 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_load_panda: MagicMock,
         mock_set_panda_directory: MagicMock,
-        done_status: Status,
         fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
     ):
-        sim_run_engine.add_handler("unstage", lambda _: done_status)
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
         )
