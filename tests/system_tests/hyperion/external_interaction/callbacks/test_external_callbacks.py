@@ -4,6 +4,7 @@ import os
 import re
 import signal
 import subprocess
+import sys
 import threading
 from genericpath import isfile
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -83,8 +84,9 @@ def external_callbacks():
     process_env = os.environ.copy()
     external_callbacks_process = subprocess.Popen(
         [
-            "python",
-            "src/mx_bluesky/hyperion/external_interaction/callbacks/__main__.py",
+            sys.executable,
+            "-m",
+            "mx_bluesky.hyperion.external_interaction.callbacks",
             "--dev",
             "--watchdog-port",
             str(HyperionConstants.HYPERION_PORT),
