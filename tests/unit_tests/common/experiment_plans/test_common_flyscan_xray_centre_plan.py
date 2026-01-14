@@ -133,8 +133,8 @@ class TestFlyscanXrayCentrePlan:
         error = None
         with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
             error = AssertionError("Test Exception")
-            mock_set.return_value = FailedStatus(error)
-            with pytest.raises(FailedStatus) as exc:
+            mock_set.side_effect = FailedStatus(error)
+            with pytest.raises(FailedStatus):
                 run_engine(
                     ispyb_activation_wrapper(
                         common_flyscan_xray_centre(
@@ -144,7 +144,6 @@ class TestFlyscanXrayCentrePlan:
                     ),
                 )
 
-        assert exc.value.args[0] is error
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
             "fail",

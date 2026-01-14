@@ -38,7 +38,6 @@ from ispyb.sqlalchemy import (
     GridInfo,
     Position,
 )
-from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     callback_on_mock_put,
@@ -344,8 +343,10 @@ def grid_detect_then_xray_centre_composite(
         patch.object(
             ophyd_pin_tip_detection, "trigger", side_effect=mock_pin_tip_detect
         ),
-        patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
-        patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
+        patch.object(fast_grid_scan, "kickoff", side_effect=lambda: completed_status()),
+        patch.object(
+            fast_grid_scan, "complete", side_effect=lambda: completed_status()
+        ),
     ):
         yield composite
 
@@ -371,7 +372,7 @@ def fgs_composite_for_fake_zocalo(
         ),
     )
     hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
-        return_value=NullStatus()
+        side_effect=lambda: completed_status()
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite

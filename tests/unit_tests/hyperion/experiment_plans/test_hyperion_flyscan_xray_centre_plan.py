@@ -10,8 +10,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
-from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -76,7 +75,7 @@ def fgs_composite_with_panda_pcap(
 class TestFlyscanXrayCentrePlan:
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
-        return_value=NullStatus(),
+        side_effect=lambda: completed_status(),
     )
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
