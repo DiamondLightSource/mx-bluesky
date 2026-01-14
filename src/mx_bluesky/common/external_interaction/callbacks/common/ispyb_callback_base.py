@@ -135,7 +135,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
         assert isinstance(synchrotron_mode, SynchrotronMode)
-
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
@@ -170,6 +169,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             beamsize_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux-flux_reading"],
             detector_mode="ROI" if doc["data"]["eiger_cam_roi_mode"] else "FULL",
+            ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions

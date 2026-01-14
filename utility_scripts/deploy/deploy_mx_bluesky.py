@@ -45,9 +45,6 @@ class Options(NamedTuple):
     dev_mode: bool = False
     prune_deployments: bool = True
 
-    # NOTE For i24 for now will need to set it to false from the command line
-    use_control_machine: bool = True
-
 
 class Deployment:
     # Set name, setup remote origin, get the latest version"""
@@ -109,24 +106,18 @@ def _get_permission_groups(beamline: str, dev_mode: bool = False) -> list:
     return beamline_groups
 
 
-def _create_environment_from_control_machine(
+def _create_environment(
     mx_repo: Deployment,
     path_to_create_venv: str,
     path_to_dls_dev_env: str,
-    beamline: str = "i03",
 ):
-    try:
-        user = os.environ["USER"]
-    except KeyError:
-        user = input(
-            """Couldn't find username from the environment. Enter FedID in order \
-                to SSH to control machine:"""
-        )
-    cmd = f"ssh {user}@{beamline}-control python3 {path_to_create_venv} {path_to_dls_dev_env} {mx_repo.deploy_location}"
+    cmd = (
+        f"python3 {path_to_create_venv} {path_to_dls_dev_env} {mx_repo.deploy_location}"
+    )
 
     process = None
     try:
-        # Call python script on i03-control to create the environment
+        # Call python script to create the environment
         process = subprocess.Popen(cmd, shell=True, text=True, bufsize=1)
         process.communicate()
         if process.returncode != 0:
@@ -227,11 +218,8 @@ def main(beamline: str, options: Options):
                 "utility_scripts/deploy/create_venv.py",
             )
 
-            # SSH into control machine if not in dev mode
-            if options.use_control_machine and release_area != DEV_DEPLOY_LOCATION:
-                _create_environment_from_control_machine(
-                    mx_repo, path_to_create_venv, path_to_dls_dev_env, beamline
-                )
+            if release_area != DEV_DEPLOY_LOCATION:
+                _create_environment(mx_repo, path_to_create_venv, path_to_dls_dev_env)
             else:
                 setup_venv(path_to_dls_dev_env, mx_repo.deploy_location)
 
@@ -350,7 +338,6 @@ def _parse_options() -> tuple[str, Options]:
         quiet=args.print_release_dir,
         dev_mode=args.dev,
         prune_deployments=args.prune_deployments,
-        use_control_machine=args.no_control,
     )
 
 

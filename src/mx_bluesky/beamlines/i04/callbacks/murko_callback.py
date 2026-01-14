@@ -7,6 +7,7 @@ from bluesky.callbacks import CallbackBase
 from dodal.log import LOGGER
 from event_model.documents import Event, RunStart, RunStop
 from redis import StrictRedis
+from redis.exceptions import ConnectionError
 
 FORWARDING_COMPLETE_MESSAGE = "image_forwarding_complete"
 
@@ -57,7 +58,20 @@ class MurkoCallback(CallbackBase):
         self.last_uuid = None
         self.previous_omegas: list[OmegaReading] = []
 
+    def _check_redis_connection(self):
+        try:
+            self.redis_client.ping()
+            return True
+        except ConnectionError:
+            LOGGER.warning(
+                f"Failed to connect to redis: {self.redis_client}. Murko callback will not run"
+            )
+            return False
+
     def start(self, doc: RunStart) -> RunStart | None:
+        self.redis_connected = self._check_redis_connection()
+        if not self.redis_connected:
+            return doc
         self.murko_metadata: dict = {"sample_id": doc.get("sample_id")}
         self.last_uuid = None
         self.previous_omegas = []
@@ -67,6 +81,8 @@ class MurkoCallback(CallbackBase):
         return doc
 
     def event(self, doc: Event) -> Event:
+        if not self.redis_connected:
+            return doc
         data = doc["data"]
         for prefix in ("oav", "oav_full_screen"):
             if f"{prefix}-beam_centre_j" in data:
@@ -114,6 +130,8 @@ class MurkoCallback(CallbackBase):
         self.redis_client.publish("murko", json.dumps(metadata))
 
     def stop(self, doc: RunStop) -> RunStop | None:
+        if not self.redis_connected:
+            return doc
         LOGGER.info(f"Finished streaming {self.murko_metadata['sample_id']} to murko")
         LOGGER.info(
             f"Publishing forwarding complete message: {FORWARDING_COMPLETE_MESSAGE}"

@@ -5,7 +5,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLargeError, home_and_reset_wrapper
 
@@ -117,7 +117,7 @@ def robot_unload(
         yield from bps.save()
 
         def _unload():
-            yield from bps.abs_set(robot, None, wait=True)
+            yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
             yield from wait_for_smargon_not_disabled(smargon)
 
         gonio_finished = yield from do_plan_while_lower_gonio_at_home(
