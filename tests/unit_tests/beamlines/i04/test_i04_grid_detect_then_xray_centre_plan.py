@@ -218,7 +218,12 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
 )
+@patch(
+    "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
+    autospec=True,
+)
 def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_xbpm_feedback_before_run(
+    mock_pause_feedback: MagicMock,
     mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
@@ -269,6 +274,8 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
         lambda msg: msg.command == "close_run"
         and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
     )
+
+    mock_pause_feedback.assert_not_called()
 
 
 @patch(
