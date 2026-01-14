@@ -1,5 +1,5 @@
 from functools import partial
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky import Msg
@@ -196,57 +196,6 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     assert mock_get_ready_for_oav_and_close_shutter.call_count == call_count
 
 
-@patch(
-    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.preprocessors.preprocessors.unpause_xbpm_feedback_and_set_transmission_to_1",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-    autospec=True,
-)
-@patch("bluesky.plan_stubs.sleep", autospec=True)
-def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
-    mock_sleep: MagicMock,
-    mock_grid_detection_callback: MagicMock,
-    mock_create_parameters_for_flyscan_xray_centre: MagicMock,
-    mock_grid_detection_plan: MagicMock,
-    mock_common_flyscan_xray_centre: MagicMock,
-    mock_unpause_and_set_transmission: MagicMock,
-    mock_check_and_pause: MagicMock,
-    mock_create_gridscan_callbacks: MagicMock,
-    run_engine: RunEngine,
-    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
-    transfocator: Transfocator,
-):
-    mock_common_flyscan_xray_centre.side_effect = CustomError
-
-    with pytest.raises(CustomError):  # noqa: B017
-        run_engine(i04_grid_detect_then_xrc_default_params())
-
-    # Called once on exception and once on close_run
-    mock_unpause_and_set_transmission.assert_has_calls([call(ANY, ANY)])
-
-
 @patch("bluesky.plan_stubs.sleep", autospec=True)
 @patch(
     "mx_bluesky.common.experiment_plans.inner_plans.do_fgs.check_topup_and_wait_if_necessary",
@@ -269,7 +218,7 @@ def test_i04_xray_centre_unpauses_xbpm_feedback_on_exception(
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
 )
-def test_i04_default_grid_detect_and_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
+def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_xbpm_feedback_before_run(
     mock_fix_transmission_and_exp_time: MagicMock,
     mock_change_aperture_then_move: MagicMock,
     mock_events_handler: MagicMock,
@@ -298,7 +247,13 @@ def test_i04_default_grid_detect_and_xray_centre_pauses_and_unpauses_xbpm_feedba
         i04_grid_detect_then_xrc_default_params(),
     )
 
-    # Assert order: pause -> open run -> close run -> unpause (set attenuator)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args == (1.0,),
+    )
+
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "trigger" and msg.obj.name == "xbpm_feedback",
@@ -313,13 +268,6 @@ def test_i04_default_grid_detect_and_xray_centre_pauses_and_unpauses_xbpm_feedba
         msgs,
         lambda msg: msg.command == "close_run"
         and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
-    )
-
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (1.0,),
     )
 
 
