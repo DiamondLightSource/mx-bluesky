@@ -71,6 +71,13 @@ async def test_rotation_scan_plan_in_re(
     tmp_path,
     rotation_composite: RotationScanComposite,
 ):
+    required_hardware_read_signals = [
+        rotation_composite.dcm.energy_in_keV,
+        rotation_composite.dcm.wavelength_in_a,
+        rotation_composite.det_stage.z,
+        rotation_composite.jungfrau._writer.file_path,
+    ]
+
     rotation_composite.jungfrau._writer.final_path = (
         tmp_path  # Normally done during jf prepare
     )
@@ -89,6 +96,10 @@ async def test_rotation_scan_plan_in_re(
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
     mock_fly.assert_called_once()
+    assert mock_fly.call_args_list[0][1]["read_hardware_after_prepare_plan"].args == (
+        required_hardware_read_signals,
+        PlanNameConstants.ROTATION_DEVICE_READ,
+    )
     mock_cleanup.assert_called_once()
 
 

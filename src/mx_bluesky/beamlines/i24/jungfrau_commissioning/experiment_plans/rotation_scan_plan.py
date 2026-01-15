@@ -175,8 +175,7 @@ def single_rotation_plan(
 
         # Callback which intercepts read documents and writes to json file,
         # used for saving device metadata
-        # Need to access JF's private writer to get correct path
-        metadata_writer = JsonMetadataWriter(composite.jungfrau._writer)  # noqa: SLF001 N
+        metadata_writer = JsonMetadataWriter()
 
         @bpp.subs_decorator([metadata_writer])
         @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
@@ -232,12 +231,14 @@ def single_rotation_plan(
             # see https://github.com/DiamondLightSource/mx-bluesky/issues/1501
 
             # Read hardware after preparing jungfrau so that device metadata output from callback is correct
+            # Whilst metadata is being written in bluesky we need to access the private writer here
             read_hardware_partial = partial(
                 read_hardware_plan,
                 [
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
+                    composite.jungfrau._writer.file_path,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )

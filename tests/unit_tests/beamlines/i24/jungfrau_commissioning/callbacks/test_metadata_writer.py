@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import bluesky.preprocessors as bpp
+import pytest
 from bluesky.run_engine import RunEngine
 from numpy.testing import assert_allclose
 
@@ -28,16 +28,13 @@ async def test_metadata_writer_produces_correct_output(
     run_engine: RunEngine, tmp_path, rotation_composite: RotationScanComposite
 ):
     params = get_good_single_rotation_params(tmp_path)
-    mock_path = MagicMock()
-    mock_path.final_path = Path(tmp_path)
-    metadata_writer = JsonMetadataWriter(mock_path)
+    metadata_writer = JsonMetadataWriter()
 
     @bpp.subs_decorator([metadata_writer])
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
     @bpp.run_decorator(
         md={
             "subplan_name": PlanNameConstants.ROTATION_MAIN,
-            "scan_points": [params.scan_points],
             "rotation_scan_params": params.model_dump_json(),
         }
     )
@@ -47,6 +44,58 @@ async def test_metadata_writer_produces_correct_output(
                 rotation_composite.dcm.energy_in_keV,
                 rotation_composite.dcm.wavelength_in_a,
                 rotation_composite.det_stage.z,
+                rotation_composite.jungfrau._writer.file_path,
+            ],
+            PlanNameConstants.ROTATION_DEVICE_READ,
+        )
+
+    wavelength = 1
+    energy = 1
+    det_z = 3
+
+    await rotation_composite.dcm.wavelength_in_a.set(wavelength)
+    await rotation_composite.dcm.energy_in_keV.set(energy)
+    await rotation_composite.det_stage.z.set(det_z)
+    await rotation_composite.jungfrau._writer.file_path.set(tmp_path)
+
+    expected_output = {
+        "wavelength_in_a": wavelength,
+        "energy_kev": energy,
+        "detector_distance_mm": det_z,
+        "angular_increment_deg": 0.1,
+    }
+    run_engine(_do_read())
+
+    assert metadata_writer.final_path == tmp_path
+
+    with open(Path(tmp_path) / READING_DUMP_FILENAME) as f:
+        actual_output = json.load(f)
+    assert expected_output.keys() == actual_output.keys()
+    for key in actual_output:
+        assert_allclose(actual_output[key], expected_output[key])
+
+
+async def test_assertion_error_if_no_jf_path_found(
+    run_engine: RunEngine, tmp_path, rotation_composite: RotationScanComposite
+):
+    params = get_good_single_rotation_params(tmp_path)
+    metadata_writer = JsonMetadataWriter()
+
+    @bpp.subs_decorator([metadata_writer])
+    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROTATION_MAIN,
+            "rotation_scan_params": params.model_dump_json(),
+        }
+    )
+    def _do_read():
+        yield from read_hardware_plan(
+            [
+                rotation_composite.dcm.energy_in_keV,
+                rotation_composite.dcm.wavelength_in_a,
+                rotation_composite.det_stage.z,
+                rotation_composite.jungfrau._writer.file_path,
             ],
             PlanNameConstants.ROTATION_DEVICE_READ,
         )
@@ -59,16 +108,5 @@ async def test_metadata_writer_produces_correct_output(
     await rotation_composite.dcm.energy_in_keV.set(energy)
     await rotation_composite.det_stage.z.set(det_z)
 
-    expected_output = {
-        "wavelength_in_a": wavelength,
-        "energy_kev": energy,
-        "detector_distance_mm": det_z,
-        "angular_increment_deg": 0.1,
-    }
-    run_engine(_do_read())
-
-    with open(Path(tmp_path) / READING_DUMP_FILENAME) as f:
-        actual_output = json.load(f)
-    assert expected_output.keys() == actual_output.keys()
-    for key in actual_output:
-        assert_allclose(actual_output[key], expected_output[key])
+    with pytest.raises(AssertionError, match="No detector writer path was found"):
+        run_engine(_do_read())
