@@ -23,7 +23,7 @@ Hyperion on BlueAPI consists of two components:
 Deployment
 ----------
 
-``hyperion-blueapi`` is automatically available in a standard Hyperion deployment.
+``hyperion-blueapi`` and ``hyperion-supervisor`` are automatically available in a standard Hyperion deployment.
 
 Launching
 ---------
@@ -33,3 +33,33 @@ Launching
 ::
 
     ./run_hyperion.sh --beamline=i03 --dev --blueapi
+
+
+``hyperion-supervisor`` can be launched using the ``run_hyperion.sh`` script, using the ``--supervisor`` option:
+
+::
+
+    ./run_hyperion.sh --beamline=i03 --dev --supervisor
+
+Configuration
+-------------
+
+Configuration of ``hyperion-blueapi`` and ``hyperion-supervisor`` is done via standard BlueAPI .yaml configuration files.
+Basic configuration files for i03 are supplied as follows in ``src/mx_bluesky/hyperion``.
+
+.. csv-table:: hyperion-blueapi configuration files
+    :widths: auto
+    :header: "File", "Description"
+
+    "blueapi_config.yaml", "Defines beamline device module and blueapi plans to be exported, BlueAPI REST to listen on, Stomp and graylog servers."
+
+
+.. csv-table:: hyperion-supervisor configuration files
+    :widths: auto
+    :header: "File", "Description"
+
+    "supervisor/client_config.yaml", "Tells the supervisor how to communicate with hyperion-blueapi, specifying the REST endpoint and stomp server."
+    "supervisor/supervisor_config.yaml", "Configures the internal blueapi context with a minimal beamline module containing the baton device and the graylog endpoint."
+
+When these are  deployed in kubernetes it is anticipated that these will be provided by specifying
+directly in the values.yaml which will be expanded by the base helmcharts at deployment time.
