@@ -32,6 +32,10 @@ from mx_bluesky.common.parameters.constants import (
 PARAMETER_VERSION = Version.parse("5.3.0")
 
 
+def get_param_version() -> SemanticVersion:
+    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
+
+
 class RotationAxis(StrEnum):
     OMEGA = "omega"
     PHI = "phi"
