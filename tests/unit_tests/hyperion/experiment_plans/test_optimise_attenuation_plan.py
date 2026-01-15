@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from ophyd.status import Status
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
@@ -48,24 +47,18 @@ async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
     )
 
 
-def get_good_status():
-    status = Status()
-    status.set_finished()
-    return status
-
-
 @pytest.fixture
 def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
     with (
         patch.object(
             fake_composite.xspress3mini,
             "stage",
-            MagicMock(return_value=get_good_status()),
+            MagicMock(side_effect=lambda: completed_status()),
         ),
         patch.object(
             fake_composite.sample_shutter,
             "set",
-            MagicMock(return_value=get_good_status()),
+            MagicMock(side_effect=lambda _: completed_status()),
         ),
     ):
         yield fake_composite
@@ -357,9 +350,9 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     run_engine: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
-    fake_composite.attenuator.set = MagicMock(return_value=get_good_status())
+    fake_composite.attenuator.set = MagicMock(side_effect=lambda _: completed_status())
     fake_composite.xspress3mini.acquire_time.set = MagicMock(
-        return_value=get_good_status()
+        side_effect=lambda _: completed_status()
     )
 
     run_engine(

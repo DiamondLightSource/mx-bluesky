@@ -7,7 +7,12 @@ from bluesky.utils import FailedStatus
 from dodal.devices.hutch_shutter import HutchShutter
 from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
-from ophyd_async.core import callback_on_mock_put, get_mock_put, set_mock_value
+from ophyd_async.core import (
+    callback_on_mock_put,
+    completed_status,
+    get_mock_put,
+    set_mock_value,
+)
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
@@ -288,9 +293,9 @@ def test_finish_i24(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.SSX_LOGGER"
 )
 def test_run_aborted_plan(
-    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, run_engine, done_status
+    mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, run_engine
 ):
-    pmac.abort_program.trigger = MagicMock(return_value=done_status)
+    pmac.abort_program.trigger = MagicMock(side_effect=lambda: completed_status())
     run_engine(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
 
     pmac.abort_program.trigger.assert_called_once()
@@ -339,11 +344,9 @@ async def test_tidy_up_after_collection_plan(
     mock_finish.assert_called_once()
 
 
-async def test_kick_off_and_complete_collection(
-    pmac, dummy_params_with_pp, run_engine, done_status
-):
-    pmac.run_program.kickoff = MagicMock(return_value=done_status)
-    pmac.run_program.complete = MagicMock(return_value=done_status)
+async def test_kick_off_and_complete_collection(pmac, dummy_params_with_pp, run_engine):
+    pmac.run_program.kickoff = MagicMock(side_effect=lambda: completed_status())
+    pmac.run_program.complete = MagicMock(side_effect=lambda: completed_status())
 
     async def go_high_then_low():
         set_mock_value(pmac.scanstatus, 1)

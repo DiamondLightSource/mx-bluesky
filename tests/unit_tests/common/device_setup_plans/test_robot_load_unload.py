@@ -9,7 +9,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.core import completed_status, get_mock_put, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,
@@ -38,10 +38,9 @@ def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], b
 async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard: ApertureScatterguard,
     smargon: Smargon,
-    done_status,
     run_engine: RunEngine,
 ):
-    smargon.stub_offsets.set = MagicMock(return_value=done_status)
+    smargon.stub_offsets.set = MagicMock(side_effect=lambda _: completed_status())
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
 
     set_mock_value(smargon.x.user_setpoint, 10)
