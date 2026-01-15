@@ -127,7 +127,6 @@ async def test_laser_check(
     fake_det.side_effect = [fake_generator(det_type)]
     run_engine(laser_check(laser_mode, zebra, detector_stage))
 
-    # update with corresponding dodal change:
     ttl = I24_ZEBRA_MAPPING.outputs.TTL_JUNGFRAU
 
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
