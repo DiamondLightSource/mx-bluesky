@@ -16,8 +16,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
-from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
@@ -623,8 +622,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
                 PinTipDetection.INVALID_POSITION,
             )
             trigger = load_centre_collect_composite.pin_tip_detection.trigger
-            trigger.return_value = NullStatus()  # type:ignore
-            trigger.side_effect = None  # type: ignore
+            trigger.side_effect = lambda: completed_status()  # type: ignore
 
     run_engine.subscribe(wait_for_first_oav_grid)
 
