@@ -422,7 +422,7 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 @patch(
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo"
 )
-def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_paused(
+def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_paused_and_both_reverted(
     mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
@@ -463,4 +463,16 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
         predicate=lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
         and msg.args[0] == transmission_frac,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args[0] == Pause.RUN,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == 1.0,
     )
