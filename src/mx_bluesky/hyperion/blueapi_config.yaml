@@ -10,7 +10,7 @@ api:
   url: http://localhost:5005
   cors:
     allow_credentials: True
-    origins: 
+    origins:
       - "*"
 logging:
   graylog:
