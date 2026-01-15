@@ -146,8 +146,6 @@ def set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper(
 
         return None, None
 
-    # Contingency wrapper can cause unpausing to occur on exception and again on close_run.
-    # Not needed after https://github.com/bluesky/bluesky/issues/1891
     return (yield from plan_mutator(plan, insert_plans))
 
 

@@ -237,7 +237,8 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     hyperion_fgs_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
-    mock_fix_transmission_and_exp_time.return_value = (1, 1)
+    desired_transmission = 0.4
+    mock_fix_transmission_and_exp_time.return_value = (desired_transmission, 1)
     flyscan_event_handler = MagicMock()
     flyscan_event_handler.xray_centre_results = "dummy"
     mock_events_handler.return_value = flyscan_event_handler
@@ -256,7 +257,7 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
-        and msg.args == (1.0,),
+        and msg.args == (desired_transmission,),
     )
 
     msgs = assert_message_and_return_remaining(

@@ -18,7 +18,7 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 from tests.conftest import RunEngineSimulator, XBPMAndTransmissionWrapperComposite
 
 
-def assert_open_run_sets_transmission_then_triggers_xbpm(msgs):
+def assert_open_run_sets_transmission_then_triggers_xbpm(msgs, transmission):
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
@@ -36,7 +36,7 @@ def assert_open_run_sets_transmission_then_triggers_xbpm(msgs):
     )
 
 
-def test_xbpm_preprocessor_does_nothing_on_non_specified_message(
+def test_trigger_xbpm_preprocessor_does_nothing_on_non_specified_message(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -58,7 +58,17 @@ def test_xbpm_preprocessor_does_nothing_on_non_specified_message(
     assert msgs[2].command == "close_run"
 
 
-def test_xbpm_preprocessor_runs_inserts_correct_plan_on_correct_message(
+@pytest.mark.parametrize(
+    "transmission",
+    [
+        (1.0),
+        (0.67),
+        (0.24),
+        (0.08),
+    ],
+)
+def test_trigger_xbpm_preprocessor_runs_inserts_correct_plan_on_correct_message(
+    transmission: int,
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -73,10 +83,10 @@ def test_xbpm_preprocessor_runs_inserts_correct_plan_on_correct_message(
         yield from bps.null()
 
     msgs = sim_run_engine.simulate_plan(open_run_plan())
-    assert_open_run_sets_transmission_then_triggers_xbpm(msgs)
+    assert_open_run_sets_transmission_then_triggers_xbpm(msgs, transmission)
 
 
-def test_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
+def test_trigger_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
     run_engine: RunEngine,
 ):
