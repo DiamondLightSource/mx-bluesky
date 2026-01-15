@@ -37,7 +37,7 @@ def _add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
 
 
 def parse_callback_args() -> CallbackArgs:
-    """Returns the bool representing the 'dev_mode' argument."""
+    """Parse the CLI arguments for the watchdog port and dev mode into a CallbackArgs instance."""
     parser = argparse.ArgumentParser()
     _add_callback_relevant_args(parser)
     parser.add_argument(
