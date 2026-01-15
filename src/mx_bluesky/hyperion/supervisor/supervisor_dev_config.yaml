@@ -1,0 +1,9 @@
+# Configuration for the supervisor BlueAPI context
+# to access the beamline baton device
+env:
+  sources:
+    - kind: deviceManager
+      module: dodal.beamlines.i03_supervisor
+      mock: true
+  events:
+    broadcast_status_events: false
