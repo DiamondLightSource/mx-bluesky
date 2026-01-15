@@ -1,7 +1,11 @@
 import dataclasses
 
 import pytest
-from dodal.devices.zebra.zebra import I24Axes, RotationDirection, Zebra
+from dodal.devices.zebra.zebra import (
+    I24Axes,
+    RotationDirection,
+    Zebra,
+)
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,

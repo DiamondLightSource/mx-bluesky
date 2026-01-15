@@ -1,0 +1,13 @@
+{
+    "detector_distance_mm": 200.0,
+    "exposure_time_s": 0.1,
+    "omega_start_deg": 45,
+    "file_name": "file_name",
+    "rotation_increment_deg": 0.1,
+    "sample_id": 123456,
+    "transmission_frac": 0.1,
+    "storage_directory": "from numtracker",
+    "parameter_model_version": "5.0.0",
+    "visit": "from numtracker",
+    "shutter_opening_time_s": 0.5
+}
