@@ -5,9 +5,11 @@ from this file constitutes the hyperion-blueapi interface to the hyperion superv
 process.
 """
 
+from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -33,6 +35,7 @@ __all__ = [
     "LoadCentreCollectComposite",
     "LoadCentreCollect",
     "UDCDefaultDevices",
+    "clean_up_udc",
     "load_centre_collect",
     "move_to_udc_default_state",
     "robot_unload",
@@ -66,6 +69,22 @@ def robot_unload(
     This is to be invoked as the final step upon successful completion of the UDC queue.
     """
     yield from _robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+
+
+def clean_up_udc(
+    visit: str,
+    cleanup_group: str = "cleanup",
+    robot: BartRobot = inject("robot"),
+    smargon: Smargon = inject("smargon"),
+    aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
+    lower_gonio: XYZStage = inject("lower_gonio"),
+    detector_motion: DetectorMotion = inject("detector_motion"),
+) -> MsgGenerator:
+    yield from bps.abs_set(
+        detector_motion.shutter, ShutterState.CLOSED, group=cleanup_group
+    )
+    yield from _robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    yield from bps.wait(cleanup_group)
 
 
 def move_to_udc_default_state(
