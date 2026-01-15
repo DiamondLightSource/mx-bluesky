@@ -11,7 +11,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
@@ -45,7 +45,7 @@ def hyperion_grid_detect_then_xray_centre(
     """
 
     @verify_undulator_gap_before_run_decorator(composite)
-    @transmission_and_xbpm_feedback_for_collection_decorator(
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
         composite, parameters.transmission_frac, PlanNameConstants.GRIDSCAN_OUTER
     )
     def plan_to_perform():

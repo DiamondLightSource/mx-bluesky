@@ -39,9 +39,6 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_config_client,
 )
-from mx_bluesky.beamlines.i04.preprocessors.preprocessors import (
-    i04_transmission_and_xbpm_feedback_for_collection_decorator,
-)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -79,6 +76,9 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
     SpecifiedThreeDGridScan,
+)
+from mx_bluesky.common.preprocessors.preprocessors import (
+    set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
@@ -203,7 +203,7 @@ def i04_default_grid_detect_and_xray_centre(
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
-        @i04_transmission_and_xbpm_feedback_for_collection_decorator(
+        @set_transmission_and_trigger_xbpm_feedback_before_collection_decorator(
             composite,
             grid_common_params.transmission_frac,
             PlanNameConstants.GRIDSCAN_OUTER,

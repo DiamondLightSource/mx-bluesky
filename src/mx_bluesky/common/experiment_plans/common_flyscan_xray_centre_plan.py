@@ -154,7 +154,7 @@ def common_flyscan_xray_centre(
 
     This plan will also push data to ispyb when used with the ispyb_activation_decorator.
 
-    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
+    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, pause_xbpm_feedback_during_collection_at_desired_transmission_decorator
     """
 
     def _overall_tidy():
