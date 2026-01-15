@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
