@@ -113,7 +113,7 @@ def laser_check(
     """
     SSX_LOGGER.debug(f"Laser check: {mode}")
 
-    laser_ttl = zebra.mapping.outputs.TTL_PILATUS  # Update with dodal changes
+    laser_ttl = zebra.mapping.outputs.TTL_JUNGFRAU  # Update with dodal changes
 
     if mode == "laseron":
         yield from bps.abs_set(

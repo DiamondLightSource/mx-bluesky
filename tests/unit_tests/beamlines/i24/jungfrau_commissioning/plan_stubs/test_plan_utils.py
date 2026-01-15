@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
@@ -44,6 +45,9 @@ async def test_fly_jungfrau(
     await asyncio.sleep(0)
 
 
+@pytest.mark.skip(
+    reason="To be removed in https://github.com/DiamondLightSource/mx-bluesky/pull/1234/"
+)
 async def test_override_file_path(
     jungfrau: CommissioningJungfrau, run_engine: RunEngine, tmp_path: Path
 ):

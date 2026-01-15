@@ -128,7 +128,7 @@ async def test_laser_check(
     run_engine(laser_check(laser_mode, zebra, detector_stage))
 
     # update with corresponding dodal change:
-    ttl = I24_ZEBRA_MAPPING.outputs.TTL_PILATUS
+    ttl = I24_ZEBRA_MAPPING.outputs.TTL_JUNGFRAU
 
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
     assert await zebra.output.out_pvs[ttl].get_value() == expected_out
