@@ -35,7 +35,7 @@ def patch_setup_devices():
 
 @pytest.fixture(autouse=True)
 def patch_udc_default_state():
-    with patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"):
+    with patch("mx_bluesky.hyperion.plan_runner.move_to_udc_default_state"):
         yield
 
 

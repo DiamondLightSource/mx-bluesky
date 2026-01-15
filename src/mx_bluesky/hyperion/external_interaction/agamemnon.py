@@ -12,12 +12,11 @@ import requests
 from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
-from pydantic_extra_types.semantic_version import SemanticVersion
 
 from mx_bluesky.common.parameters.components import (
-    PARAMETER_VERSION,
     MxBlueskyParameters,
     WithVisit,
+    get_param_version,
 )
 from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
@@ -88,7 +87,7 @@ def create_parameters_from_agamemnon() -> Sequence[MxBlueskyParameters]:
                     Wait.model_validate(
                         {
                             "duration_s": data,
-                            "parameter_model_version": _get_param_version(),
+                            "parameter_model_version": get_param_version(),
                         }
                     )
                 ]
@@ -228,10 +227,6 @@ def _get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any
         return {"demand_energy_ev": None}
 
 
-def _get_param_version() -> SemanticVersion:
-    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
-
-
 def _populate_parameters_from_agamemnon(
     agamemnon_params,
 ) -> Sequence[LoadCentreCollect]:
@@ -250,7 +245,7 @@ def _populate_parameters_from_agamemnon(
     return [
         LoadCentreCollect.model_validate(
             {
-                "parameter_model_version": _get_param_version(),
+                "parameter_model_version": get_param_version(),
                 "visit": visit,
                 "detector_distance_mm": detector_distance,
                 "sample_id": agamemnon_params["sample"]["id"],
