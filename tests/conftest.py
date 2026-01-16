@@ -1344,7 +1344,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": "test",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
             "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
         }
@@ -1430,7 +1429,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
             "subplan_name": PlanNameConstants.DO_FGS,
             "omega_to_scan_spec": {
                 GridscanPlane.OMEGA_XY: specs[0],
