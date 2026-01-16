@@ -84,7 +84,7 @@ async def smargon() -> Smargon:
 
 @pytest.fixture
 def thawer() -> Thawer:
-    return i04.thawer(connect_immediately=True, mock=True)
+    return i04.thawer.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -117,7 +117,7 @@ async def oav_forwarder(oav_full_screen: OAV, oav_roi: OAV) -> OAVToRedisForward
 
 @pytest.fixture
 def robot() -> BartRobot:
-    return i04.robot(connect_immediately=True, mock=True)
+    return i04.robot.build(connect_immediately=True, mock=True)
 
 
 def _do_thaw_and_confirm_cleanup(

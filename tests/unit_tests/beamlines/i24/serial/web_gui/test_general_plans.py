@@ -22,12 +22,8 @@ from ..conftest import fake_generator
 
 
 @pytest.fixture
-def enum_attenuator(run_engine) -> EnumFilterAttenuator:
-    attenuator: EnumFilterAttenuator = i24.attenuator(
-        connect_immediately=True, mock=True
-    )
-    # set_mock_value(attenuator.actual_transmission, 1.0)
-    return attenuator
+def enum_attenuator() -> EnumFilterAttenuator:
+    return i24.attenuator.build(connect_immediately=True, mock=True)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans.caput")
