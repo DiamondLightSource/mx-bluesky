@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import bluesky.plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import plan_mutator
@@ -11,6 +13,52 @@ from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.protocols.protocols import (
     XBPMPauseDevices,
 )
+
+
+def _create_insert_plans_mutator(
+    run_key_to_wrap: PlanNameConstants | None = None,
+    on_open: Callable[[Msg], MsgGenerator] | None = None,
+    on_close: Callable[[], MsgGenerator] | None = None,
+) -> Callable[[Msg], tuple[MsgGenerator | None, MsgGenerator | None]]:
+    """
+    Inserts plans to be executed when the run with the given name opens/closes.
+
+    Args:
+        run_key_to_wrap: The run name to insert before/after. If None (default) then
+            insert on the first open/close run regardless of its name.
+        on_open: The plan to perform just before the run opens
+        on_close: The plan to perform just after the run closes
+
+    """
+    _wrapped_run_name: None | str = None
+
+    def insert_plans(msg: Msg):
+        # Wrap the specified run, or, if none specified, wrap the first run encountered
+        nonlocal _wrapped_run_name
+
+        match msg.command:
+            case "open_run":
+                # If we specified a run key, did we encounter it
+                # If we didn't specify, then insert the plans and track the name of the run
+                if on_open is not None and (
+                    not (run_key_to_wrap or _wrapped_run_name)
+                    or run_key_to_wrap is msg.run
+                ):
+                    _wrapped_run_name = msg.run if msg.run else "unnamed_run"
+                    return on_open(msg), None
+            case "close_run":
+                # Check if the run tracked from above was closed
+                # An exception is raised in the RunEngine if two unnamed runs are opened
+                # at the same time, so we are safe from unpausing on the wrong run
+                if on_close is not None and (
+                    (_wrapped_run_name == "unnamed_run" and not msg.run)
+                    or (msg.run and _wrapped_run_name and _wrapped_run_name is msg.run)
+                ):
+                    return None, on_close()
+
+        return None, None
+
+    return insert_plans
 
 
 def pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper(
@@ -46,8 +94,6 @@ def pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper(
             seen. If not specified, instead wrap the first run encountered.
     """
 
-    _wrapped_run_name: None | str = None
-
     def head(msg: Msg):
         yield from check_and_pause_feedback(
             devices.xbpm_feedback,
@@ -63,36 +109,13 @@ def pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper(
             devices.xbpm_feedback, devices.attenuator
         )
 
-    def insert_plans(msg: Msg):
-        # Wrap the specified run, or, if none specified, wrap the first run encountered
-        nonlocal _wrapped_run_name
-
-        match msg.command:
-            case "open_run":
-                # If we specified a run key, did we encounter it
-                # If we didn't specify, then insert the plans and track the name of the run
-                if (
-                    not (run_key_to_wrap or _wrapped_run_name)
-                    or run_key_to_wrap is msg.run
-                ):
-                    _wrapped_run_name = msg.run if msg.run else "unnamed_run"
-                    return head(msg), None
-            case "close_run":
-                # Check if the run tracked from above was closed
-                # An exception is raised in the RunEngine if two unnamed runs are opened
-                # at the same time, so we are safe from unpausing on the wrong run
-                if (_wrapped_run_name == "unnamed_run" and not msg.run) or (
-                    msg.run and _wrapped_run_name and _wrapped_run_name is msg.run
-                ):
-                    return None, tail()
-
-        return None, None
+    mutator = _create_insert_plans_mutator(run_key_to_wrap, head, tail)
 
     # Contingency wrapper can cause unpausing to occur on exception and again on close_run.
     # Not needed after https://github.com/bluesky/bluesky/issues/1891
     return (
         yield from bpp.contingency_wrapper(
-            plan_mutator(plan, insert_plans),
+            plan_mutator(plan, mutator),
             except_plan=lambda _: unpause_xbpm_feedback_and_set_transmission_to_1(
                 devices.xbpm_feedback,
                 devices.attenuator,
@@ -115,12 +138,10 @@ def set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper(
         plan: The plan performing the data collection.
         devices (XBPMPauseDevices): Composite device including The XBPM device that is responsible for keeping
             the beam in position, and the attenuator
-            desired_transmission_fraction (float): The desired transmission for the collection
-            run_key_to_wrap: (str | None): 'Set transmission' and 'trigger XBPM device' is inserted before the 'open_run' message with
+        desired_transmission_fraction (float): The desired transmission for the collection
+        run_key_to_wrap: (str | None): 'Set transmission' and 'trigger XBPM device' is inserted before the 'open_run' message with
             the matching run key is seen. If not specified, instead wrap the first run encountered.
     """
-
-    _wrapped_run_name: None | str = None
 
     def head(msg: Msg):
         yield from bps.mv(devices.attenuator, desired_transmission_fraction)
@@ -129,24 +150,9 @@ def set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper(
         # Allow 'open_run' message to pass through
         yield msg
 
-    def insert_plans(msg: Msg):
-        # Wrap the specified run, or, if none specified, wrap the first run encountered
-        nonlocal _wrapped_run_name
+    mutator = _create_insert_plans_mutator(run_key_to_wrap, head)
 
-        match msg.command:
-            case "open_run":
-                # If we specified a run key, did we encounter it
-                # If we didn't specify, then insert the plans and track the name of the run
-                if (
-                    not (run_key_to_wrap or _wrapped_run_name)
-                    or run_key_to_wrap is msg.run
-                ):
-                    _wrapped_run_name = msg.run if msg.run else "unnamed_run"
-                    return head(msg), None
-
-        return None, None
-
-    return (yield from plan_mutator(plan, insert_plans))
+    return (yield from plan_mutator(plan, mutator))
 
 
 set_transmission_and_trigger_xbpm_feedback_before_collection_decorator = make_decorator(

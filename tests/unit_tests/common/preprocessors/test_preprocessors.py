@@ -23,7 +23,7 @@ def assert_open_run_sets_transmission_then_triggers_xbpm(msgs, transmission):
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
-        and msg.args == (1.0,),
+        and msg.args == (transmission,),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -74,7 +74,7 @@ def test_trigger_xbpm_preprocessor_runs_inserts_correct_plan_on_correct_message(
 ):
     @set_transmission_and_trigger_xbpm_feedback_before_collection_decorator(
         devices=xbpm_and_transmission_wrapper_composite,
-        desired_transmission_fraction=1,
+        desired_transmission_fraction=transmission,
         run_key_to_wrap=PlanNameConstants.GRIDSCAN_OUTER,
     )
     @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
