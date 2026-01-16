@@ -533,13 +533,10 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(sample_handling_cb)
 
-    with (
-        patch(
-            "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.wait_for_smargon_not_disabled",
-            side_effect=TimeoutError("Simulated timeout"),
-        ),
-        pytest.raises(TimeoutError, match="Simulated timeout"),
-    ):
+    load_centre_collect_composite.robot.set = MagicMock(
+        side_effect=TimeoutError("Simulated timeout")
+    )
+    with pytest.raises(TimeoutError, match="Simulated timeout"):
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
