@@ -68,9 +68,6 @@ class PlanNameConstants:
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
-    # IspyB callback activation - remove?
-    ISPYB_ACTIVATION = "ispyb_activation"
-    ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
