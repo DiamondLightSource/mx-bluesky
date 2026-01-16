@@ -374,6 +374,10 @@ def rotation_scan(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    """This is intended to be the external API for doing the rotation scan on its own
+    rather than part of a larger UDC-like collection. In the UDC case the
+    BeamDrawingCallback will already be activated."""
+
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
     @bpp.run_decorator(
         md={

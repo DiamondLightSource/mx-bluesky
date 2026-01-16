@@ -171,7 +171,7 @@ def test_xbpm_preprocessor_cant_unpause_on_wrong_run(
     def second_unnamed_run():
         yield from bps.null()
 
-    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
+    @bpp.set_run_key_decorator("test")
     @bpp.run_decorator()
     @transmission_and_xbpm_feedback_for_collection_decorator(
         devices=xbpm_and_transmission_wrapper_composite,
@@ -180,7 +180,7 @@ def test_xbpm_preprocessor_cant_unpause_on_wrong_run(
     def first_named_run():
         yield from second_named_run()
 
-    @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_INNER)
+    @bpp.set_run_key_decorator("test")
     @bpp.run_decorator()
     def second_named_run():
         yield from bps.null()
