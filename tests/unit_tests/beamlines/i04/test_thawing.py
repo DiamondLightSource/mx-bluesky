@@ -13,7 +13,6 @@ from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.thawer import OnOff, Thawer
-from ophyd.sim import NullStatus
 from ophyd_async.core import (
     completed_status,
     get_mock_put,
@@ -141,7 +140,10 @@ def test_given_thaw_succeeds_then_velocity_restored_and_thawer_turned_off(
         run_engine(thaw(10, thawer=thawer, smargon=smargon))
 
     _do_thaw_and_confirm_cleanup(
-        MagicMock(return_value=NullStatus()), smargon, thawer, do_thaw_func
+        MagicMock(side_effect=lambda _: completed_status()),
+        smargon,
+        thawer,
+        do_thaw_func,
     )
 
 
