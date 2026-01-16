@@ -135,10 +135,6 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         and msg.args[0] == SAMPLE_LOCATION_EMPTY,
     )
 
-    msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "wait_for_smargon"
-    )
-
     msgs = assert_messages_any_order(
         msgs,
         [

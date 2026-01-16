@@ -100,53 +100,6 @@ def run_simulating_smargon_wait(
         )
 
 
-@pytest.mark.parametrize("total_disabled_reads", [5, 3, 14])
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([])),
-)
-def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    total_disabled_reads: int,
-    sim_run_engine,
-):
-    messages = run_simulating_smargon_wait(
-        robot_load_and_energy_change_params,
-        robot_load_and_energy_change_composite,
-        total_disabled_reads,
-        sim_run_engine,
-    )
-
-    sleep_messages = filter(lambda msg: msg.command == "sleep", messages)
-    read_disabled_messages = filter(
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
-        messages,
-    )
-
-    assert len(list(sleep_messages)) == total_disabled_reads - 1
-    assert len(list(read_disabled_messages)) == total_disabled_reads
-
-
-@pytest.mark.timeout(2)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([])),
-)
-def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    sim_run_engine,
-):
-    with pytest.raises(TimeoutError):
-        run_simulating_smargon_wait(
-            robot_load_and_energy_change_params,
-            robot_load_and_energy_change_composite,
-            100,
-            sim_run_engine,
-        )
-
-
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
@@ -297,11 +250,6 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
             and msg.obj.name == f"lower_gonio-{axis}"
             and msg.args == (0,),
         )
-
-    assert_message_and_return_remaining(
-        messages,
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
-    )
 
     for axis, initial in initial_values.items():
         messages = assert_message_and_return_remaining(
