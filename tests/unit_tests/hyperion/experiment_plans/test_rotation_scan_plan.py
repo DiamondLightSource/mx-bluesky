@@ -25,7 +25,6 @@ from dodal.devices.thawer import OnOff
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
-from ophyd.status import Status
 from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
@@ -1452,9 +1451,6 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     oav_parameters_for_rotation: OAVParameters,
 ):
     eiger = fake_create_rotation_devices.eiger
-    eiger.stage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.do_arm.set = MagicMock(return_value=Status(done=True, success=True))
 
     _run_multi_rotation_plan(
         run_engine,
@@ -1464,10 +1460,10 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
         oav_parameters_for_rotation,
     )
     # Stage will arm the eiger synchonously
-    eiger.stage.assert_not_called()
+    eiger.stage.assert_not_called()  # type:ignore
 
-    eiger.do_arm.set.assert_called_once()
-    eiger.unstage.assert_called_once()
+    eiger.do_arm.set.assert_called_once()  # type:ignore
+    eiger.unstage.assert_called_once()  # type:ignore
 
 
 @patch(
@@ -1493,8 +1489,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     )
     eiger = fake_create_rotation_devices.eiger
     parent_mock = MagicMock()
-    parent_mock.eiger_unstage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.unstage = parent_mock.eiger_unstage
+    parent_mock.eiger_unstage = eiger.unstage
     _, ispyb_callback = create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)

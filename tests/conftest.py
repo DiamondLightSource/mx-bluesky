@@ -62,7 +62,6 @@ from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     Device,
@@ -397,16 +396,11 @@ def hyperion_fgs_params(tmp_path):
 
 
 @pytest.fixture
-def done_status():
-    return NullStatus()
-
-
-@pytest.fixture
-def eiger(done_status):
+def eiger():
     eiger = i03.eiger.build(mock=True)
-    eiger.stage = MagicMock(return_value=done_status)
-    eiger.do_arm.set = MagicMock(return_value=done_status)
-    eiger.unstage = MagicMock(return_value=done_status)
+    eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    eiger.do_arm.set = MagicMock(side_effect=lambda _: completed_status())
+    eiger.unstage = MagicMock(side_effect=lambda: completed_status())
     return eiger
 
 
@@ -513,8 +507,8 @@ def oav(test_config_files):
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
-    oav.grid_snapshot.trigger = MagicMock(return_value=NullStatus())
+    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
     yield oav
 
 
@@ -615,11 +609,10 @@ def beamstop_phase1(
 
 @pytest.fixture
 def xbpm_feedback(
-    done_status,
     baton: Baton,  # Ensure baton is cached with mock configuration
 ):
     xbpm = i03.xbpm_feedback.build(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)
+    xbpm.trigger = MagicMock(side_effect=lambda: completed_status())
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -669,9 +662,9 @@ def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
-        vc.set = MagicMock(return_value=NullStatus())
+        vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
-        vc.set = MagicMock(return_value=NullStatus())
+        vc.set = MagicMock(side_effect=lambda _: completed_status())
     yield voltages
     beamline_utils.clear_devices()
 
@@ -800,7 +793,7 @@ def fake_create_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
 ):
-    mock_omega_sets = MagicMock(return_value=NullStatus())
+    mock_omega_sets = MagicMock(side_effect=lambda _: completed_status())
 
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
@@ -840,7 +833,7 @@ def fake_create_rotation_devices(
     beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(return_value=NullStatus())
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -865,10 +858,10 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def zocalo(done_status):
+def zocalo():
     zoc = i03.zocalo.build(connect_immediately=True, mock=True)
-    zoc.stage = MagicMock(return_value=done_status)
-    zoc.unstage = MagicMock(return_value=done_status)
+    zoc.stage = MagicMock(side_effect=lambda: completed_status())
+    zoc.unstage = MagicMock(side_effect=lambda: completed_status())
     return zoc
 
 
@@ -956,7 +949,6 @@ def panda_fast_grid_scan():
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -993,7 +985,7 @@ async def hyperion_flyscan_xrc_composite(
         beamsize=beamsize,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
@@ -1181,23 +1173,19 @@ def fat_pin_edges():
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
 
 
-def find_a_pin(pin_tip_detection):
-    def set_good_position():
-        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
-        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
-        return NullStatus()
-
-    return set_good_position
-
-
 @pytest.fixture
 def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
+    @AsyncStatus.wrap
+    async def set_good_position():
+        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        set_mock_value(ophyd_pin_tip_detection.triggered_tip, numpy.array([x, y]))
+        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)
+        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+
     with patch.object(
         ophyd_pin_tip_detection,
         "trigger",
-        side_effect=find_a_pin(ophyd_pin_tip_detection),
+        side_effect=set_good_position,
     ):
         yield ophyd_pin_tip_detection
 
