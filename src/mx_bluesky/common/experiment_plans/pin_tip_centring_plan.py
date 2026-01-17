@@ -146,7 +146,7 @@ def pin_tip_centre_plan(
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
     # need to wait for the OAV image to update
-    # See #673 for improvements
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements
     yield from bps.sleep(0.3)
 
     yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup)
@@ -157,7 +157,7 @@ def pin_tip_centre_plan(
     yield from bps.mvr(gonio.omega, -90)
 
     # need to wait for the OAV image to update
-    # See #673 for improvements
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements
     yield from bps.sleep(0.3)
     tip = yield from catch_exception_and_warn(
         PinNotFoundError, wait_for_tip_to_be_found, pin_tip_detect
