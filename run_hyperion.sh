@@ -119,17 +119,15 @@ if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
         check_user
         ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
+        ZOCALO_CONFIG=/dls_sw/apps/zocalo/live/configuration.yaml 
     else
         ISPYB_CONFIG_PATH="$RELATIVE_SCRIPT_DIR/tests/test_data/ispyb-test-credentials.cfg"
         ZOCALO_CONFIG="$RELATIVE_SCRIPT_DIR/tests/test_data/zocalo-test-configuration.yaml"
-        export ZOCALO_CONFIG
     fi
+    export ZOCALO_CONFIG
     export ISPYB_CONFIG_PATH
 
     kill_active_apps
-
-    module unload controls_dev
-    module load dials
 
     cd ${RELATIVE_SCRIPT_DIR}
 
