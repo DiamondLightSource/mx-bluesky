@@ -2,7 +2,9 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
-from ophyd_async.core import get_mock_put
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from ophyd.sim import NullStatus
+from ophyd_async.core import get_mock_put, init_devices, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,
@@ -18,6 +20,22 @@ from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderPar
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
 from ..conftest import TEST_LUT, fake_generator
+
+
+@pytest.fixture
+def zebra():
+    with init_devices(mock=True):
+        i24_zebra = Zebra(
+            prefix="",
+            mapping=I24_ZEBRA_MAPPING,
+        )
+
+    def mock_side(demand: ArmDemand):
+        set_mock_value(i24_zebra.pc.arm.armed, demand.value)
+        return NullStatus()
+
+    i24_zebra.pc.arm.set = MagicMock(side_effect=mock_side)
+    return i24_zebra
 
 
 @pytest.fixture
