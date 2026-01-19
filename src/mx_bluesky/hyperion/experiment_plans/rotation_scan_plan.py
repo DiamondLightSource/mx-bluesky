@@ -55,7 +55,7 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -399,7 +399,7 @@ def rotation_scan_internal(
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
         composite,
         parameters.transmission_frac,
     )
