@@ -11,33 +11,38 @@ current_dir=$(pwd)
 # Get the directory up from the script's location
 two_levels_up=$(dirname "$script_dir")
 
-if ! git diff --quiet pyproject.toml; then
-    echo "Error: pyproject.toml has uncommitted changes. Commit or stash changes to this file before running this script again."
-    exit 1
+if [ "$current_dir" != "$two_levels_up" ]; then
+  echo "This script should be run from the top directory of the repo"
+  exit 1
 fi
 
 # controls_dev sets pip up to look at a local pypi server, which is incomplete
 module unload controls_dev 
 
+module load python/3.11
+
 if [ -d "./.venv" ]
 then
 rm -rf .venv
 fi
+mkdir .venv
 
-module load python/3.11 && module load uv
-uv sync --editable --group dev
+python -m venv .venv
 source .venv/bin/activate
+
+pip install --upgrade pip
+pip install -e .[dev]
+
 pre-commit install
-module unload python && module unload uv
 
 # Ensure we use a local version of dodal
 if [ ! -d "../dodal" ]; then
   git clone git@github.com:DiamondLightSource/dodal.git ../dodal
 fi
 
-uv pip install -e ../dodal/
+pip install -e ../dodal[dev]
 
 # get dlstbx into our env
 ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.11/site-packages/dlstbx
 
-pytest tests/unit_tests/
+pytest

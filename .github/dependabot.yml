@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
+    ignore:
+      - dependency-name: "pyright"
+        versions: [ ">=1.1.407" ]  # Until https://github.com/microsoft/pyright/issues/11060 is fixed
