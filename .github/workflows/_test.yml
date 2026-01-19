@@ -33,6 +33,10 @@ jobs:
         # Longer timeout for CI due to likelihood of cold caches,
         # cloud infra hw contention etc.
         run: uv run --locked tox -e tests -- -m "not dlstbx" --timeout=2 --cov=mx_bluesky --cov-report term --cov-report xml:cov.xml
+      
+      - name: Print dependency versions
+        if: always()
+        run: uv pip tree
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
