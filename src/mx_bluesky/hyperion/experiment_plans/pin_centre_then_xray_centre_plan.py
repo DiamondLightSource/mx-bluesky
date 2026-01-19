@@ -31,6 +31,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
+    use_gridscan_with_zocalo_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -111,6 +112,7 @@ def pin_centre_then_flyscan_plan(
             parameters.transmission_frac,
             PlanNameConstants.GRIDSCAN_OUTER,
         )
+        @use_gridscan_with_zocalo_decorator()
         def _grid_detect_plan():
             yield from detect_grid_and_do_gridscan(
                 composite,

@@ -62,6 +62,7 @@ class PlanNameConstants:
     GRID_DETECT_INNER = "grid_detect"
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
+    # Used for the zocalo preprocessor
     GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
     # IspyB callback activation
@@ -138,6 +139,7 @@ class PlanGroupCheckpointConstants:
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
+    GRIDSCAN_TIDY = "gridscan tidy"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

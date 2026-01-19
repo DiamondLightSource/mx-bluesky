@@ -79,6 +79,7 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
+    use_gridscan_with_zocalo_decorator,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
@@ -154,7 +155,6 @@ def i04_default_grid_detect_and_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
         aperture_scatterguard,
         attenuator,
@@ -203,6 +203,7 @@ def i04_default_grid_detect_and_xray_centre(
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
+        @use_gridscan_with_zocalo_decorator()
         @set_transmission_and_trigger_xbpm_feedback_before_collection_decorator(
             composite,
             grid_common_params.transmission_frac,
@@ -316,7 +317,6 @@ def construct_i04_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
     )
 
 

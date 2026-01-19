@@ -4,19 +4,28 @@ import bluesky.plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.preprocessors import plan_mutator
 from bluesky.utils import Msg, MsgGenerator, make_decorator
+from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import ZOCALO_STAGE_GROUP
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     check_and_pause_feedback,
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
-from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    fetch_xrc_results_from_zocalo,
+)
+from mx_bluesky.common.parameters.constants import (
+    PlanGroupCheckpointConstants,
+    PlanNameConstants,
+)
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.protocols.protocols import (
     XBPMPauseDevices,
 )
 
 
 def _create_insert_plans_mutator(
-    run_key_to_wrap: PlanNameConstants | None = None,
+    run_key_to_wrap: str | None = None,
     on_open: Callable[[Msg], MsgGenerator] | None = None,
     on_close: Callable[[], MsgGenerator] | None = None,
 ) -> Callable[[Msg], tuple[MsgGenerator | None, MsgGenerator | None]]:
@@ -65,7 +74,7 @@ def pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper(
     plan: MsgGenerator,
     devices: XBPMPauseDevices,
     desired_transmission_fraction: float,
-    run_key_to_wrap: PlanNameConstants | None = None,
+    run_key_to_wrap: str | None = None,
 ):
     """
     Sets the transmission for the data collection, ensuring the xbpm feedback is valid, then pauses
@@ -128,7 +137,7 @@ def set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper(
     plan: MsgGenerator,
     devices: XBPMPauseDevices,
     desired_transmission_fraction: float,
-    run_key_to_wrap: PlanNameConstants | None = None,
+    run_key_to_wrap: str | None = None,
 ):
     """
     Sets the transmission and triggers xbpm feedback immediately before
@@ -154,6 +163,36 @@ def set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper(
 
     return (yield from plan_mutator(plan, mutator))
 
+
+def use_gridscan_with_zocalo_wrapper(
+    plan: MsgGenerator, zocalo: ZocaloResults, parameters: SpecifiedThreeDGridScan
+):
+    """Integrate Zocalo into a gridscan by intercepting the GRIDSCAN_OUTER run decorator.
+
+    Stages zocalo when a GRIDSCAN_OUTER run Message is seen. When the run is closed,
+    fetch results and unstage. The RunEngine must be subscribed to XRayCentreEventHandler
+    in order for the results to be fetched. The results will be stored in
+    XRayCentreEventHandler.xray_centre_results.
+    """
+
+    run_key_to_wrap = PlanNameConstants.GRIDSCAN_MAIN
+
+    def head(msg: Msg):
+        yield from bps.stage(
+            zocalo, group=ZOCALO_STAGE_GROUP
+        )  # connect to zocalo and make sure the queue is clear
+        yield msg
+
+    def tail():
+        yield from fetch_xrc_results_from_zocalo(zocalo, parameters)
+        yield from bps.unstage(zocalo, group=PlanGroupCheckpointConstants.GRIDSCAN_TIDY)
+
+    mutator = _create_insert_plans_mutator(run_key_to_wrap, head, tail)
+
+    return (yield from plan_mutator(plan, mutator))
+
+
+use_gridscan_with_zocalo_decorator = make_decorator(use_gridscan_with_zocalo_wrapper)
 
 set_transmission_and_trigger_xbpm_feedback_before_collection_decorator = make_decorator(
     set_transmission_and_trigger_xbpm_feedback_before_collection_wrapper
