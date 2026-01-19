@@ -18,5 +18,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Update dodal
+        run: uv add --upgrade dls-dodal
+
       - name: Run tox
         run: uv run --locked tox -e ${{ inputs.tox }}
