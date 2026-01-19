@@ -65,7 +65,7 @@ async def test_fly_jungfrau_does_read_plan_after_prepare(
     read_hardware = MagicMock()
 
     filename = "test"
-    jungfrau.prepare = MagicMock(side_effect=lambda: completed_status())
+    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
 
     parent_mock = MagicMock()
     parent_mock.attach_mock(jungfrau.prepare, "jungfrau_prepare")
