@@ -479,7 +479,7 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo"
 )
-def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callasdback(
+def test_detect_grid_and_do_gridscan_stages_and_unstages_zocalo_and_gets_results(
     mock_fetch_results: MagicMock,
     mock_grid_detection_plan,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
