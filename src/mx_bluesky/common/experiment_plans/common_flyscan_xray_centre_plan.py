@@ -48,7 +48,7 @@ class BeamlineSpecificFGSFeatures:
     read_during_collection_plan: Callable[..., MsgGenerator]
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
+def generic_tidy(xrc_composite: FlyScanEssentialDevices) -> MsgGenerator:
     """Turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
     group = GENERIC_TIDY_GROUP

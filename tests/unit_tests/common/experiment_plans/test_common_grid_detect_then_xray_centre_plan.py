@@ -64,6 +64,10 @@ def construct_beamline_specific(
 
 @pytest.mark.timeout(2)
 @patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
+)
+@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
@@ -114,6 +118,10 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
 
 
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
+)
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
     autospec=True,
@@ -189,6 +197,10 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 
 @pytest.mark.timeout(2)
 @patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
+)
+@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
@@ -226,6 +238,10 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     params.model_dump_json()
 
 
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
+)
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
@@ -285,6 +301,10 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
 
 
 @pytest.fixture()
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
+)
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,

@@ -419,7 +419,9 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 @patch(
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan"
 )
-@patch("mx_bluesky.common.experiment_plans.inner_plans.fetch_xrc_results_from_zocalo")
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo"
+)
 def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_paused_and_both_reverted(
     mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,

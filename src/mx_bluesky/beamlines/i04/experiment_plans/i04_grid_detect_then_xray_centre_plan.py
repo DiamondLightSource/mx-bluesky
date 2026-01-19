@@ -154,10 +154,10 @@ def i04_default_grid_detect_and_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
         aperture_scatterguard,
         attenuator,
+        zocalo,
         backlight,
         beamstop,
         beamsize,
