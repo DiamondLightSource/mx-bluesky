@@ -27,7 +27,7 @@ class JsonMetadataWriter(CallbackBase):
         self.wavelength_in_a = None
         self.energy_in_kev = None
         self.detector_distance_mm = None
-        self.final_path = Path()
+        self.final_path: Path | None = None
         self.descriptors: dict[str, dict] = {}
         self.transmission: float | None = None
         self.parameters: SingleRotationScan | None = None
@@ -71,6 +71,7 @@ class JsonMetadataWriter(CallbackBase):
         if (
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid
+            and self.final_path
         ):
             with open(self.final_path / READING_DUMP_FILENAME, "w") as f:
                 f.write(
