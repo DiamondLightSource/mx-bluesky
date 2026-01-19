@@ -15,6 +15,7 @@ from dodal.devices.smargon import CombinedMove
 from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    GENERIC_TIDY_GROUP,
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
@@ -22,6 +23,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
+from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
@@ -464,3 +466,71 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "grid_detect_then_xray_centre"
     )
+
+
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo"
+)
+def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callasdback(
+    mock_fetch_results: MagicMock,
+    mock_grid_detection_plan,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files: dict[str, str],
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+):
+    mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_run_engine.add_callback_handler_for_multiple(
+        "save_oav_grids",
+        [
+            [
+                (
+                    "descriptor",
+                    OavGridSnapshotTestEvents.test_descriptor_document_oav_snapshot,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xy,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xz,  # type: ignore
+                ),
+            ]
+        ],
+    )
+    msgs = sim_run_engine.simulate_plan(
+        detect_grid_and_do_gridscan(
+            grid_detect_xrc_devices,
+            test_full_grid_scan_params,
+            OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+            xrc_params_type=HyperionSpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_beamline_specific,
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "stage"
+        and msg.obj.name == "zocalo"
+        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "unstage"
+        and msg.obj.name == "zocalo"
+        and msg.kwargs["group"] == GENERIC_TIDY_GROUP,
+    )
+
+    mock_fetch_results.assert_called_once()
