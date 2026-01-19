@@ -62,7 +62,9 @@ async def default_devices(
         cryojet = OxfordCryoJet("")
         fluo = FluorescenceDetector("")
         hutch_shutter = HutchShutter("")
-        scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
+        scintillator = Scintillator(
+            "", MagicMock(), MagicMock(), MagicMock(), name="scin"
+        )
         collimation_table = CollimationTable("")
 
     with patch("dodal.devices.hutch_shutter.TEST_MODE", True):
