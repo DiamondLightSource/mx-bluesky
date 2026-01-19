@@ -38,8 +38,12 @@ from ispyb.sqlalchemy import (
     GridInfo,
     Position,
 )
-from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus, callback_on_mock_put, set_mock_value
+from ophyd_async.core import (
+    AsyncStatus,
+    callback_on_mock_put,
+    completed_status,
+    set_mock_value,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
@@ -341,8 +345,10 @@ def grid_detect_then_xray_centre_composite(
         patch.object(
             ophyd_pin_tip_detection, "trigger", side_effect=mock_pin_tip_detect
         ),
-        patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
-        patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
+        patch.object(fast_grid_scan, "kickoff", side_effect=lambda: completed_status()),
+        patch.object(
+            fast_grid_scan, "complete", side_effect=lambda: completed_status()
+        ),
     ):
         yield composite
 
@@ -351,14 +357,15 @@ def grid_detect_then_xray_centre_composite(
 def fgs_composite_for_fake_zocalo(
     hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
-    done_status: NullStatus,
 ) -> HyperionFlyScanXRayCentreComposite:
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )
-    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
+    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(
+        side_effect=lambda: completed_status()
+    )  # type: ignore
     hyperion_flyscan_xrc_composite.smargon.stub_offsets.set = MagicMock(
-        return_value=done_status
+        side_effect=lambda _: completed_status()
     )  # type: ignore
     callback_on_mock_put(
         hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.run_cmd,
@@ -367,7 +374,7 @@ def fgs_composite_for_fake_zocalo(
         ),
     )
     hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
-        return_value=NullStatus()
+        side_effect=lambda: completed_status()
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite

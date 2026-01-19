@@ -35,6 +35,7 @@ from ophyd_async.core import (
     AutoMaxIncrementingPathProvider,
     PathInfo,
     PathProvider,
+    completed_status,
     init_devices,
     set_mock_value,
 )
@@ -199,8 +200,10 @@ def use_beamline_t01():
 
         with (
             patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
-            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
-            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+            patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state"),
+            patch(
+                "mx_bluesky.hyperion.in_process_runner.device_composite_from_context"
+            ),
         ):
             yield tests.unit_tests.t01
 
@@ -329,7 +332,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -346,7 +348,7 @@ async def fake_fgs_composite(
         zocalo=zocalo,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()

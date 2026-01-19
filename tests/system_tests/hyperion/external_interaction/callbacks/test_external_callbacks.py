@@ -37,7 +37,7 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -88,6 +88,8 @@ def external_callbacks():
             "python",
             "src/mx_bluesky/hyperion/external_interaction/callbacks/__main__.py",
             "--dev",
+            "--watchdog-port",
+            str(HyperionConstants.HYPERION_PORT),
         ],
         env=process_env,
     )
@@ -147,7 +149,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     run_engine_with_external_callbacks: RunEngine,
     dummy_params: HyperionSpecifiedThreeDGridScan,
     fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
-    done_status,
     fetch_comment,  # noqa
     fetch_datacollection_ids_for_group_id,
     fake_grid_snapshot_plan,
