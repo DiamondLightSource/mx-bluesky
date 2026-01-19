@@ -316,7 +316,6 @@ def construct_i04_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
     )
 
 

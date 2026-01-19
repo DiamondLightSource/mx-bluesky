@@ -299,7 +299,7 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo",
+    "mx_bluesky.common.experiment_plans.inner_plans.fetch_xrc_results_from_zocalo",
 )
 @patch(
     "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",

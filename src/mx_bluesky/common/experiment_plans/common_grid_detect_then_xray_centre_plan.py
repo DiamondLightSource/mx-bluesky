@@ -21,8 +21,13 @@ from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    GENERIC_TIDY_GROUP,
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    fetch_xrc_results_from_zocalo,
 )
 from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
@@ -183,7 +188,18 @@ def detect_grid_and_do_gridscan(
     )
     beamline_specific = construct_beamline_specific(composite, xrc_params)
 
-    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+    yield from bps.stage(composite.zocalo, group=ZOCALO_STAGE_GROUP)
+
+    @bpp.contingency_decorator(
+        final_plan=lambda: (
+            yield from bps.unstage(composite.zocalo, group=GENERIC_TIDY_GROUP)
+        )  # make sure we don't consume any other results
+    )
+    def _do_gridscan_and_get_results():
+        yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+        yield from fetch_xrc_results_from_zocalo(composite.zocalo, xrc_params)
+
+    yield from _do_gridscan_and_get_results()
 
 
 class ConstructBeamlineSpecificFeatures(
