@@ -2,7 +2,7 @@ import asyncio
 import pprint
 import sys
 from functools import partial
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -28,11 +28,13 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
+from event_model import RunStart
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
-    AutoIncrementingPathProvider,
-    StaticFilenameProvider,
+    AutoMaxIncrementingPathProvider,
+    PathInfo,
+    PathProvider,
     completed_status,
     init_devices,
     set_mock_value,
@@ -464,14 +466,41 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     return composite
 
 
+class _BasePathProvider(PathProvider):
+    """Minimal adaption of BlueAPI's PathProvider.
+
+    To use this PathProvider in a test, a run must be open
+    with 'detector_file_template' attached as metadata. This is done
+    automatically when using BlueAPI
+
+    For longer term plans to test plans with BlueAPI in CI,
+    see https://github.com/DiamondLightSource/blueapi/issues/1206"""
+
+    def __init__(self, tmp_path: Path) -> None:
+        self.path = tmp_path
+        self._docs: list[RunStart] = []
+
+    def run_start(self, name: str, start_document: RunStart) -> None:
+        if name == "start":
+            self._docs.append(start_document)
+
+    def __call__(self, device_name: str | None = None) -> PathInfo:
+        template = self._docs[-1].get("detector_file_template")
+        if not template:
+            raise ValueError("detector_file_template must be set in metadata")
+        sub_path = template.format_map(self._docs[-1] | {"device_name": device_name})
+        return PathInfo(directory_path=self.path, filename=sub_path)
+
+
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
-        name = StaticFilenameProvider("jf_out")
-        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        base_provider = _BasePathProvider(tmp_path)
+        path = AutoMaxIncrementingPathProvider(base_provider)
         detector = CommissioningJungfrau("", "", path)
     set_mock_value(detector._writer.writer_ready, 1)
+    run_engine.subscribe(base_provider.run_start, "start")
 
     return detector
 

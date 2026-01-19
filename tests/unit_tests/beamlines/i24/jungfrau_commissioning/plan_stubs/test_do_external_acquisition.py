@@ -8,6 +8,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines.i24 import CommissioningJungfrau
 from ophyd_async.core import set_mock_value
+from ophyd_async.fastcs.jungfrau import GainMode
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.do_external_acquisition import (
     do_external_acquisition,
@@ -20,9 +21,15 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 def test_full_do_external_acquisition(
     jungfrau: CommissioningJungfrau, run_engine: RunEngine, caplog
 ):
-    @run_decorator()
+    @run_decorator(
+        md={
+            "detector_file_template": "test",
+        }
+    )
     def test_plan():
-        status = yield from do_external_acquisition(0.001, 5, jungfrau=jungfrau)
+        status = yield from do_external_acquisition(
+            0.001, GainMode.DYNAMIC, 5, jungfrau=jungfrau
+        )
         assert not status.done
         val = 0
         while not status.done:
@@ -48,7 +55,7 @@ def test_do_external_acquisition_does_wait(
     jungfrau: CommissioningJungfrau,
 ):
     msgs = sim_run_engine.simulate_plan(
-        do_external_acquisition(0.01, 1, wait=True, jungfrau=jungfrau)
+        do_external_acquisition(0.01, GainMode.DYNAMIC, 1, wait=True, jungfrau=jungfrau)
     )
     assert_message_and_return_remaining(
         msgs,
