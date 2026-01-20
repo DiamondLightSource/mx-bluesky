@@ -12,11 +12,11 @@ from dodal.beamlines import i03
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
-from mx_bluesky.hyperion.parameters.components import Wait
+from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion.blueapi_plans.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
@@ -39,7 +39,6 @@ AGAMEMNON_WAIT_FOR_TEST_STEP_S = 0.2
 AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
     {
         "duration_s": AGAMEMNON_WAIT_FOR_TEST_STEP_S,
-        "parameter_model_version": PARAMETER_VERSION,
     }
 )
 
@@ -52,12 +51,21 @@ def executor() -> Generator[Executor, Any, Any]:
 
 
 @pytest.fixture
-def load_centre_collect_params(tmp_path):
+def load_centre_collect_params(tmp_path) -> LoadCentreCollect:
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
         tmp_path,
     )
     return LoadCentreCollect(**json_dict)
+
+
+@pytest.fixture
+def external_load_centre_collect_params(tmp_path) -> LoadCentreCollectParams:
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+        tmp_path,
+    )
+    return LoadCentreCollectParams(**json_dict)
 
 
 @pytest.fixture(autouse=True)
