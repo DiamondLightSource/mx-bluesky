@@ -92,7 +92,8 @@ def _prepare_beamline_for_scintillator_images(
 ) -> MsgGenerator:
     """
     Prepares the beamline for oav image by making sure the pin is not mounted and
-    the beam is on (feedback check). Finally, the scintillator is moved in.
+    the beam is on (feedback check). Finally, the scintillator is moved in and the
+    shutter opened.
     """
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
     if pin_mounted == PinMounted.PIN_MOUNTED:
@@ -108,8 +109,10 @@ def _prepare_beamline_for_scintillator_images(
 
     yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=group)
 
-    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
-    yield from bps.abs_set(shutter, ZebraShutterState.OPEN, wait=True)
+    yield from bps.abs_set(
+        shutter.control_mode, ZebraShutterControl.MANUAL, group=group
+    )
+    yield from bps.abs_set(shutter, ZebraShutterState.OPEN, group=group)
 
 
 def take_and_save_oav_image(
@@ -151,7 +154,7 @@ def optimise_transmission_with_oav(
     upper_bound: float = 100,
     lower_bound: float = 0,
     target_brightness_fraction: float = 0.75,
-    tolerance: int = 5,
+    max_transmission_change: float = 5,
     max_iterations: int = 10,
     max_pixel: MaxPixel = inject("max_pixel"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
@@ -167,7 +170,8 @@ def optimise_transmission_with_oav(
         lower_bound: Minimum transmission which will be searched. In percent.
         target_brightness_fraction: Fraction of the brightest pixel at 100%
                     transmission which should be used as the target max pixel brightness.
-        tolerance: Amount the brightness can be off by and still find a match.
+        max_transmission_change: If the next search point would require a transmission
+                    change less than this then we stop.
         max_iterations: Maximum amount of iterations.
     """
 
@@ -194,6 +198,14 @@ def optimise_transmission_with_oav(
         mid = round((upper_bound + lower_bound) / 2, 2)  # limit to 2 dp
         LOGGER.info(f"On iteration {iterations}")
 
+        current_transmission = yield from bps.rd(attenuator.actual_transmission)
+        transmission_change_percent = abs(mid - current_transmission * 100)
+        if transmission_change_percent < max_transmission_change:
+            LOGGER.info(
+                f"Next transmission change would be small ({transmission_change_percent}%) so stopping"
+            )
+            return
+
         brightest_pixel = yield from _max_pixel_at_transmission(
             max_pixel, attenuator, xbpm_feedback, mid / 100
         )
@@ -203,22 +215,18 @@ def optimise_transmission_with_oav(
             f"Testing transmission {mid}, brightest pixel found {brightest_pixel}"
         )
 
-        if (
-            target_pixel_brightness - tolerance
-            <= brightest_pixel
-            <= target_pixel_brightness + tolerance
-        ):
+        if target_pixel_brightness == brightest_pixel:
             mid = round(mid, 0)
             LOGGER.info(f"\nOptimal transmission found: {mid}")
-            return mid
+            return
 
         # condition for too low so want to try higher
-        elif brightest_pixel < target_pixel_brightness - tolerance:
+        elif brightest_pixel < target_pixel_brightness:
             LOGGER.info("Result: Too low \n")
             lower_bound = mid
 
         # condition for too high so want to try lower
-        elif brightest_pixel > target_pixel_brightness + tolerance:
+        elif brightest_pixel > target_pixel_brightness:
             LOGGER.info("Result: Too high \n")
             upper_bound = mid
         iterations += 1

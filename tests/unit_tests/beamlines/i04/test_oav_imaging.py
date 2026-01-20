@@ -19,6 +19,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterState,
 )
 from ophyd_async.core import (
+    AsyncStatus,
     completed_status,
     get_mock_put,
     init_devices,
@@ -321,7 +322,7 @@ def test_optimise_transmission_first_gets_max_pixel_at_100_percent(
 
 
 @pytest.mark.parametrize("iterations", [10, 6, 4])
-def test_given_max_pixel_never_changes_then_optimise_transmission_raises_stop_iteration(
+def test_given_transmission_change_always_high_then_raises_stop_iteration(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -329,6 +330,12 @@ def test_given_max_pixel_never_changes_then_optimise_transmission_raises_stop_it
     iterations: int,
 ):
     set_mock_value(max_pixel.max_pixel_val, 100)
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val + 0.2)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
 
     with pytest.raises(RuntimeError) as e:
         run_engine(
@@ -357,7 +364,7 @@ def given_max_values(max_pixel: MaxPixel, max_values: list):
     "lower_bound, upper_bound, expected_final_transmission",
     [[0, 100, 50], [0, 10, 5], [5, 25, 15]],
 )
-def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_returns_half_bounds(
+async def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_returns_half_bounds(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -368,7 +375,7 @@ def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_r
 ):
     given_max_values(max_pixel, [100, 75])
 
-    final_transmission = run_engine(
+    run_engine(
         optimise_transmission_with_oav(
             lower_bound=lower_bound,
             upper_bound=upper_bound,
@@ -376,8 +383,9 @@ def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_r
             attenuator=attenuator,
             xbpm_feedback=xbpm_feedback,
         )
-    ).plan_result  # type: ignore
+    )
 
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
     assert final_transmission == expected_final_transmission
 
     assert attenuator.set.call_args_list == [  # type: ignore
@@ -390,7 +398,7 @@ def test_given_max_pixel_immediately_reaches_target_then_optimise_transmission_r
     "target_fraction",
     [0.75, 0.26, 0.39],
 )
-def test_optimise_transmission_reaches_different_target_fractions(
+async def test_optimise_transmission_reaches_different_target_fractions(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -399,21 +407,22 @@ def test_optimise_transmission_reaches_different_target_fractions(
 ):
     given_max_values(max_pixel, [100, 100 * target_fraction])
 
-    final_transmission = run_engine(
+    run_engine(
         optimise_transmission_with_oav(
             target_brightness_fraction=target_fraction,
             max_pixel=max_pixel,
             attenuator=attenuator,
             xbpm_feedback=xbpm_feedback,
         )
-    ).plan_result  # type: ignore
+    )
 
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
     assert final_transmission == 50
 
     assert attenuator.set.call_args_list == [call(1), call(0.5)]  # type: ignore
 
 
-def test_max_pixel_stays_too_large_then_optimise_transmission_keeps_reducing(
+async def test_max_pixel_stays_too_large_then_optimise_transmission_keeps_reducing(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -421,15 +430,16 @@ def test_max_pixel_stays_too_large_then_optimise_transmission_keeps_reducing(
 ):
     given_max_values(max_pixel, [100, 100, 100, 100, 100, 75])
 
-    final_transmission = run_engine(
+    run_engine(
         optimise_transmission_with_oav(
             max_pixel=max_pixel,
             attenuator=attenuator,
             xbpm_feedback=xbpm_feedback,
         )
-    ).plan_result  # type: ignore
+    )
 
-    assert final_transmission == 3.0
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
+    assert final_transmission == 6.25
 
     assert attenuator.set.call_args_list == [  # type: ignore
         call(1),
@@ -437,11 +447,10 @@ def test_max_pixel_stays_too_large_then_optimise_transmission_keeps_reducing(
         call(pytest.approx(0.25)),
         call(pytest.approx(0.125)),
         call(pytest.approx(0.0625)),
-        call(pytest.approx(0.0312)),
     ]
 
 
-def test_max_pixel_stays_too_small_then_optimise_transmission_keeps_increasing(
+async def test_max_pixel_stays_too_small_then_optimise_transmission_keeps_increasing(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -449,15 +458,16 @@ def test_max_pixel_stays_too_small_then_optimise_transmission_keeps_increasing(
 ):
     given_max_values(max_pixel, [100, 20, 20, 20, 20, 75])
 
-    final_transmission = run_engine(
+    run_engine(
         optimise_transmission_with_oav(
             max_pixel=max_pixel,
             attenuator=attenuator,
             xbpm_feedback=xbpm_feedback,
         )
-    ).plan_result  # type: ignore
+    )
 
-    assert final_transmission == 97.0
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
+    assert final_transmission == 93.75
 
     assert attenuator.set.call_args_list == [  # type: ignore
         call(1),
@@ -465,7 +475,6 @@ def test_max_pixel_stays_too_small_then_optimise_transmission_keeps_increasing(
         call(pytest.approx(0.75)),
         call(pytest.approx(0.875)),
         call(pytest.approx(0.9375)),
-        call(pytest.approx(0.9688)),
     ]
 
 
@@ -500,7 +509,7 @@ def test_different_tolerances_change_when_we_accept(
     assert attenuator.set.call_args_list == expected_calls  # type: ignore
 
 
-def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
+async def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -508,15 +517,16 @@ def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
 ):
     given_max_values(max_pixel, [100, 90, 60, 85, 65, 75])
 
-    final_transmission = run_engine(
+    run_engine(
         optimise_transmission_with_oav(
             max_pixel=max_pixel,
             attenuator=attenuator,
             xbpm_feedback=xbpm_feedback,
         )
-    ).plan_result  # type: ignore
+    )
 
-    assert final_transmission == 34.0
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
+    assert final_transmission == 31.25
 
     # Note the 2 dp rounding on set values:
     assert attenuator.set.call_args_list == [  # type: ignore
@@ -525,7 +535,6 @@ def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
         call(0.25),
         call(pytest.approx(0.375)),
         call(pytest.approx(0.3125)),
-        call(pytest.approx(0.3438)),
     ]
 
 
@@ -533,7 +542,7 @@ def test_brightness_alternates_above_then_below_target_bounds_shrink_both_sides(
     "edge_value",
     [70, 80],
 )
-def test_equal_to_target_plus_or_minus_tolerance_matches_target(
+async def test_equal_to_target_plus_or_minus_tolerance_matches_target(
     attenuator: BinaryFilterAttenuator,
     xbpm_feedback: XBPMFeedback,
     max_pixel: MaxPixel,
@@ -542,14 +551,16 @@ def test_equal_to_target_plus_or_minus_tolerance_matches_target(
 ):
     given_max_values(max_pixel, [100, edge_value])
 
-    plan = optimise_transmission_with_oav(
-        max_pixel=max_pixel,
-        attenuator=attenuator,
-        xbpm_feedback=xbpm_feedback,
+    run_engine(
+        optimise_transmission_with_oav(
+            max_pixel=max_pixel,
+            attenuator=attenuator,
+            xbpm_feedback=xbpm_feedback,
+        )
     )
-    plan_result = run_engine(plan).plan_result  # type: ignore
 
-    assert plan_result == 50
+    final_transmission = (await attenuator.actual_transmission.get_value()) * 100
+    assert final_transmission == 50
     assert attenuator.set.call_args_list == [call(1), call(0.5)]  # type:ignore
 
 
