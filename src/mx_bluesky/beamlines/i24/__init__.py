@@ -25,6 +25,7 @@ from .web_gui_plans.general_plans import (
     gui_set_zoom_level,
     gui_stage_move_on_click,
 )
+from .web_gui_plans.jungfrau_plans import gui_run_jf_rotation_scan
 from .web_gui_plans.oav_plans import (
     focus_on_oav_view,
     move_block_on_arrow_click,
@@ -59,4 +60,5 @@ __all__ = [
     # Jungfrau specific
     "do_pedestal_darks",
     "do_non_pedestal_darks",
+    "gui_run_jf_rotation_scan",
 ]
