@@ -1,3 +1,7 @@
+from .jungfrau_commissioning.experiment_plans.do_darks import (
+    do_non_pedestal_darks,
+    do_pedestal_darks,
+)
 from .serial.extruder.i24ssx_extruder_collect_py3v2 import (
     enter_hutch,
     initialise_extruder,
@@ -52,4 +56,7 @@ __all__ = [
     "move_block_on_arrow_click",
     "move_nudge_on_arrow_click",
     "move_window_on_arrow_click",
+    # Jungfrau specific
+    "do_pedestal_darks",
+    "do_non_pedestal_darks",
 ]
