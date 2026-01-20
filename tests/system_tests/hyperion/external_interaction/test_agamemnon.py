@@ -11,6 +11,7 @@ from mx_bluesky.common.parameters.components import (
     PARAMETER_VERSION,
     IspybExperimentType,
 )
+from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _get_parameters_from_url,
     _get_pin_type_from_agamemnon_collect_parameters,
@@ -18,7 +19,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
     get_agamemnon_url,
 )
-from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
@@ -138,9 +138,6 @@ def test_create_parameters_from_agamemnon_decodes_wait_instruction(
             Wait.model_validate(
                 {
                     "duration_s": 10.0,
-                    "parameter_model_version": SemanticVersion.validate_from_str(
-                        str(PARAMETER_VERSION)
-                    ),
                 }
             )
         ],

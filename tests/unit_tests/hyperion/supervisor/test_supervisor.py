@@ -14,7 +14,7 @@ from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
@@ -48,16 +48,18 @@ def runner(mock_bluesky_context, blueapi_config):
 
 
 def test_decode_and_execute_load_centre_collect(
-    mock_blueapi_client: MagicMock, runner: SupervisorRunner, load_centre_collect_params
+    mock_blueapi_client: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params,
 ):
     runner.context.run_engine(
-        runner.decode_and_execute(TEST_VISIT, [load_centre_collect_params])
+        runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
     )
 
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="load_centre_collect",
-            params={"parameters": load_centre_collect_params},
+            params={"parameters": external_load_centre_collect_params},
             instrument_session=TEST_VISIT,
         )
     )

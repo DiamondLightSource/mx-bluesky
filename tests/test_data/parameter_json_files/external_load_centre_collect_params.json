@@ -1,0 +1,50 @@
+{
+  "visit": "cm31105-4",
+  "detector_distance_mm": 255,
+  "sample_id": 5461074,
+  "sample_puck": 2,
+  "sample_pin": 6,
+  "robot_load_then_centre": {
+    "storage_directory": "{tmp_data}/123457/xraycentring",
+    "file_name": "robot_load_centring_file",
+    "demand_energy_ev": 11100,
+    "transmission_frac": 1.0,
+    "exposure_time_s": 0.002,
+    "omega_start_deg": 0,
+    "chi_start_deg": 30,
+    "tip_offset_um": 25,
+    "grid_width_um": 20
+  },
+  "multi_rotation_scan": {
+    "comment": "Hyperion Rotation Scan - ",
+    "file_name": "protk",
+    "storage_directory": "{tmp_data}/123457/",
+    "demand_energy_ev": 11100,
+    "transmission_frac": 0.05,
+    "exposure_time_s": 0.004,
+    "rotation_increment_deg": 0.1,
+    "ispyb_experiment_type": "SAD",
+    "snapshot_omegas_deg": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "rotation_scans": [
+      {
+        "omega_start_deg": 10,
+        "chi_start_deg": 0,
+        "phi_start_deg": 0,
+        "rotation_direction": "Negative",
+        "scan_width_deg": 360
+      },
+      {
+        "omega_start_deg": 10,
+        "chi_start_deg": 30,
+        "phi_start_deg": 0,
+        "rotation_direction": "Negative",
+        "scan_width_deg": 360
+      }
+    ]
+  }
+}
