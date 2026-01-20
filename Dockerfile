@@ -2,6 +2,8 @@
 # or docker with user namespaces.
 FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:noble AS developer
 
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
+
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     graphviz \
@@ -9,10 +11,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libsm6 \
     libxext6 \
     && apt-get dist-clean
-
-# Set up a virtual environment and put it in PATH
-RUN python -m venv /venv
-ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
