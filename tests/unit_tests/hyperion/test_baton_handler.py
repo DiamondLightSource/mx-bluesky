@@ -33,6 +33,7 @@ from mx_bluesky.common.utils.exceptions import (
     WarningError,
 )
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
@@ -40,13 +41,12 @@ from mx_bluesky.hyperion.baton_handler import (
     run_forever,
     run_udc_when_requested,
 )
+from mx_bluesky.hyperion.blueapi_plans.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
 from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
 from mx_bluesky.hyperion.in_process_runner import InProcessRunner
-from mx_bluesky.hyperion.parameters.components import Wait
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 from mx_bluesky.hyperion.utils.context import setup_context
 
@@ -187,12 +187,12 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
 
 @pytest.fixture
 def single_collection_agamemnon_request(
-    load_centre_collect_params, mock_load_centre_collect
+    external_load_centre_collect_params, mock_load_centre_collect
 ):
     with (
         patch(
             "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
-            side_effect=[[load_centre_collect_params], []],
+            side_effect=[[external_load_centre_collect_params], []],
         ),
         patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state"),
     ):
@@ -201,13 +201,13 @@ def single_collection_agamemnon_request(
 
 @pytest.fixture
 def single_collection_agamemnon_request_then_wait_forever(
-    load_centre_collect_params, mock_load_centre_collect
+    external_load_centre_collect_params, mock_load_centre_collect
 ):
     with (
         patch(
             "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
             side_effect=[
-                [load_centre_collect_params],
+                [external_load_centre_collect_params],
                 [AGAMEMNON_WAIT_INSTRUCTION] * 1000,
             ],
         ),
@@ -326,11 +326,11 @@ async def test_when_exception_raised_in_collection_then_loop_stops_and_baton_rel
     agamemnon: MagicMock,
     mock_load_centre_collect: MagicMock,
     bluesky_context: BlueskyContext,
-    load_centre_collect_params: LoadCentreCollect,
+    external_load_centre_collect_params: LoadCentreCollectParams,
     udc_runner: PlanRunner,
 ):
     mock_load_centre_collect.side_effect = ValueError()
-    agamemnon.return_value = [load_centre_collect_params]
+    agamemnon.return_value = [external_load_centre_collect_params]
 
     with pytest.raises(PlanError) as e:
         run_udc_when_requested(bluesky_context, udc_runner)
@@ -349,7 +349,7 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
     agamemnon: MagicMock,
     mock_load_centre_collect: MagicMock,
     bluesky_context: BlueskyContext,
-    load_centre_collect_params: LoadCentreCollect,
+    external_load_centre_collect_params: LoadCentreCollectParams,
     udc_runner: PlanRunner,
 ):
     mock_load_centre_collect.side_effect = [
@@ -357,7 +357,7 @@ async def test_when_warning_exception_raised_in_collection_then_loop_continues(
         MagicMock(),
         ValueError(),
     ]
-    agamemnon.return_value = [load_centre_collect_params]
+    agamemnon.return_value = [external_load_centre_collect_params]
     with pytest.raises(PlanError) as e:
         run_udc_when_requested(bluesky_context, udc_runner)
 
@@ -432,12 +432,12 @@ async def test_when_other_user_requested_collection_finished_then_baton_released
     agamemnon: MagicMock,
     bluesky_context: BlueskyContext,
     mock_load_centre_collect: MagicMock,
-    load_centre_collect_params: LoadCentreCollect,
+    external_load_centre_collect_params: LoadCentreCollectParams,
     udc_runner: PlanRunner,
     dont_patch_clear_devices,
 ):
     plan_continuing = MagicMock()
-    agamemnon.return_value = [load_centre_collect_params]
+    agamemnon.return_value = [external_load_centre_collect_params]
 
     def fake_collection_with_baton_request_part_way_through(*args):
         baton = find_device_in_context(bluesky_context, "baton", Baton)
@@ -496,11 +496,7 @@ def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     MagicMock(
         side_effect=[
-            [
-                Wait.model_validate(
-                    {"duration_s": 12.34, "parameter_model_version": PARAMETER_VERSION}
-                )
-            ],
+            [Wait.model_validate({"duration_s": 12.34})],
             [],
         ]
     ),
@@ -555,7 +551,7 @@ async def test_shutdown_releases_the_baton(
     run_engine: RunEngine,
 ):
     mock_create_params_from_agamemnon.return_value = [
-        Wait(duration_s=10, parameter_model_version=PARAMETER_VERSION)  # type: ignore
+        Wait(duration_s=10)  # type: ignore
     ]
 
     async def wait_and_then_shutdown():
