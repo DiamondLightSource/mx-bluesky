@@ -255,7 +255,13 @@ def find_beam_centres(
     shutter: ZebraShutter = inject("sample_shutter"),
 ) -> MsgGenerator:
     """
-    zoom_levels: The levels to do centring at, by default runs at all known zoom levels.
+    Finds beam centres at the zoom levels given by zoom_levels_to_centre, first
+    optimising transmission if the zoom level is in zoom_levels_to_optimise_transmission.
+
+    zoom_levels_to_centre: The levels to do centring at, by default runs at all known
+                           zoom levels.
+    zoom_levels_to_optimise_transmission: The levels to optimise transmission at,
+                           defaults to 1x and 7.5x
     """
     if zoom_levels_to_optimise_transmission is None:
         zoom_levels_to_optimise_transmission = ["1.0x", "7.5x"]
