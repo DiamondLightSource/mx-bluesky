@@ -1,0 +1,20 @@
+env:
+  sources:
+    - kind: deviceManager
+      module: dodal.beamlines.i03
+      mock: true
+    - kind: planFunctions
+      module: system_tests.hyperion.supervisor.dummy_plans
+  events:
+    broadcast_status_events: false
+api:
+  url: http://localhost:5005
+  cors:
+    allow_credentials: True
+    origins:
+      - "*"
+stomp:
+  enabled: true
+  url: tcp://localhost:61613
+logging:
+  level: DEBUG

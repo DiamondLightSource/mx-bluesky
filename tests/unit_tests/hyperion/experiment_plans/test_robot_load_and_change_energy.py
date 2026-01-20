@@ -8,9 +8,9 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.backlight import InOut
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.thawer import OnOff
 from dodal.devices.webcam import Webcam
-from ophyd.sim import NullStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import completed_status, set_mock_value
 
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -100,53 +100,6 @@ def run_simulating_smargon_wait(
         )
 
 
-@pytest.mark.parametrize("total_disabled_reads", [5, 3, 14])
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([])),
-)
-def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    total_disabled_reads: int,
-    sim_run_engine,
-):
-    messages = run_simulating_smargon_wait(
-        robot_load_and_energy_change_params,
-        robot_load_and_energy_change_composite,
-        total_disabled_reads,
-        sim_run_engine,
-    )
-
-    sleep_messages = filter(lambda msg: msg.command == "sleep", messages)
-    read_disabled_messages = filter(
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
-        messages,
-    )
-
-    assert len(list(sleep_messages)) == total_disabled_reads - 1
-    assert len(list(read_disabled_messages)) == total_disabled_reads
-
-
-@pytest.mark.timeout(2)
-@patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
-    MagicMock(return_value=iter([])),
-)
-def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
-    robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
-    robot_load_and_energy_change_params: RobotLoadAndEnergyChange,
-    sim_run_engine,
-):
-    with pytest.raises(TimeoutError):
-        run_simulating_smargon_wait(
-            robot_load_and_energy_change_params,
-            robot_load_and_energy_change_composite,
-            100,
-            sim_run_engine,
-        )
-
-
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction"
 )
@@ -167,7 +120,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
         "test_oav_snapshot",
     )
     set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
-    webcam.trigger = MagicMock(return_value=NullStatus())
+    webcam.trigger = MagicMock(side_effect=lambda: completed_status())
     set_mock_value(robot.barcode, "BARCODE")
 
     run_engine.subscribe(RobotLoadISPyBCallback())
@@ -208,7 +161,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     mock_datetime.now.return_value.strftime.return_value = "TIME"
 
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
-    webcam.trigger = MagicMock(return_value=NullStatus())
+    webcam.trigger = MagicMock(side_effect=lambda: completed_status())
 
     run_engine(take_robot_snapshots(oav, webcam, Path(test_directory)))
 
@@ -298,11 +251,6 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
             and msg.args == (0,),
         )
 
-    assert_message_and_return_remaining(
-        messages,
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
-    )
-
     for axis, initial in initial_values.items():
         messages = assert_message_and_return_remaining(
             messages,
@@ -316,13 +264,11 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
-def test_when_plan_run_then_thawing_turned_on_for_expected_time(
+def test_when_plan_run_then_thawing_turned_on(
     robot_load_and_energy_change_composite: RobotLoadAndEnergyChangeComposite,
     robot_load_and_energy_change_params_no_energy: RobotLoadAndEnergyChange,
     sim_run_engine: RunEngineSimulator,
 ):
-    robot_load_and_energy_change_params_no_energy.thawing_time = (thaw_time := 50)
-
     sim_run_engine.add_handler(
         "read",
         lambda msg: {"dcm-energy_in_keV": {"value": 11.105}},
@@ -339,8 +285,8 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "thawer-thaw_for_time_s"
-        and msg.args[0] == thaw_time,
+        and msg.obj.name == "thawer"
+        and msg.args[0] == OnOff.ON,
     )
 
 

@@ -154,7 +154,7 @@ def common_flyscan_xray_centre(
 
     This plan will also push data to ispyb when used with the ispyb_activation_decorator.
 
-    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
+    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, common/preprocessors/preprocessors.py
     """
 
     def _overall_tidy():
@@ -279,6 +279,8 @@ def run_gridscan(
             raise SampleError(
                 "Scan invalid - gridscan not valid for detected pin position"
             ) from e
+        else:
+            raise e
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)

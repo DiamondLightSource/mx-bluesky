@@ -487,3 +487,8 @@ def test_box_size_passed_through_to_gridscan(
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
     assert detect_grid_call.args[1].box_size_um == 25
+
+
+async def test_multiple_devices(dcm, undulator, undulator_dcm):
+    await undulator.current_gap.get_value()
+    await undulator_dcm.set(100)

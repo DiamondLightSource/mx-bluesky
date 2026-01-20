@@ -13,8 +13,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from event_model.documents import Event, RunStart
 from numpy.testing import assert_equal
-from ophyd_async.core import init_devices
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import init_devices, set_mock_value
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,

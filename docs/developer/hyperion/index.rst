@@ -16,8 +16,8 @@ Documentation specific for the Hyperion module within MX-Bluesky
             reference/baton
             reference/param-hierarchy
             reference/coordinate-systems
-            deploying-hyperion
             system-tests
+            hyperion-blueapi
 
         +++
 

@@ -368,6 +368,7 @@ def fake_rotation_scan(
             rotation_devices.flux,
             rotation_devices.dcm,
             rotation_devices.eiger,
+            rotation_devices.beamsize,
         )
 
     return plan()

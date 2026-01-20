@@ -5,7 +5,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion.plan_runner import PlanRunner
+from mx_bluesky.hyperion.in_process_runner import InProcessRunner
 from mx_bluesky.hyperion.plan_runner_api import (
     create_app_for_udc,
 )
@@ -13,7 +13,7 @@ from mx_bluesky.hyperion.plan_runner_api import (
 
 @pytest.fixture()
 def mock_runner():
-    return MagicMock(spec=PlanRunner)
+    return MagicMock(spec=InProcessRunner)
 
 
 @pytest.fixture()
@@ -33,3 +33,10 @@ def test_plan_runner_api_fetch_status(app_under_test, client, mock_runner):
     assert response.status_code == 200
     assert response.content_type == "application/json"
     assert response.json["status"] == Status.BUSY.value
+
+
+def test_plan_runner_api_callback_liveness(app_under_test, client, mock_runner):
+    response = client.get("/callbackPing")
+    mock_runner.reset_callback_watchdog_timer.assert_called_once()
+    assert response.status_code == 200
+    assert response.content_type == "application/json"

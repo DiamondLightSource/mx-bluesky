@@ -1,10 +1,17 @@
 import logging
-from collections.abc import Callable, Sequence
+from abc import abstractmethod
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from threading import Thread
 from time import sleep  # noqa
+from urllib import request
+from urllib.error import URLError
 
+from blueapi.config import ApplicationConfig, ConfigLoader
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
+from bluesky_stomp.messaging import StompClient
+from bluesky_stomp.models import Broker
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
@@ -50,15 +57,21 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
     BeamDrawingCallback,
 )
-from mx_bluesky.hyperion.parameters.cli import parse_callback_dev_mode_arg
+from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import (
+    StompDispatcher,
+)
+from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
 )
 
+PING_TIMEOUT_S = 1
+
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
+HYPERION_PING_INTERVAL_S = 19
 
 
 def create_gridscan_callbacks() -> tuple[
@@ -128,21 +141,6 @@ def setup_logging(dev_mode: bool):
     log_debug("nexgen logger added to nexus logger")
 
 
-def setup_threads():
-    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
-    log_debug("Created proxy and dispatcher objects")
-
-    def start_proxy():
-        proxy.start()
-
-    def start_dispatcher(callbacks: list[Callable]):
-        [dispatcher.subscribe(cb) for cb in callbacks]
-        dispatcher.start()
-
-    return proxy, dispatcher, start_proxy, start_dispatcher
-
-
 def log_info(msg, *args, **kwargs):
     ISPYB_ZOCALO_CALLBACK_LOGGER.info(msg, *args, **kwargs)
     NEXUS_LOGGER.info(msg, *args, **kwargs)
@@ -153,49 +151,152 @@ def log_debug(msg, *args, **kwargs):
     NEXUS_LOGGER.debug(msg, *args, **kwargs)
 
 
-def wait_for_threads_forever(threads: Sequence[Thread]):
-    alive = [t.is_alive() for t in threads]
-    try:
-        log_debug("Trying to wait forever on callback and dispatcher threads")
-        while all(alive):
-            sleep(LIVENESS_POLL_SECONDS)
-            alive = [t.is_alive() for t in threads]
-    except KeyboardInterrupt:
-        log_info("Main thread received interrupt - exiting.")
-    else:
-        log_info("Proxy or dispatcher thread ended - exiting.")
-
-
 class HyperionCallbackRunner:
     """Runs Nexus, ISPyB and Zocalo callbacks in their own process."""
 
-    def __init__(self, dev_mode) -> None:
-        setup_logging(dev_mode)
+    def __init__(self, callback_args: CallbackArgs) -> None:
+        setup_logging(callback_args.dev_mode)
         log_info("Hyperion callback process started.")
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
-        self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()
-        log_info("Created 0MQ proxy and local RemoteDispatcher.")
 
-        self.proxy_thread = Thread(target=start_proxy, daemon=True)
-        self.dispatcher_thread = Thread(
-            target=start_dispatcher, args=[self.callbacks], daemon=True
+        self.watchdog_thread = Thread(
+            target=run_watchdog,
+            daemon=True,
+            name="Watchdog",
+            args=[callback_args.watchdog_port],
         )
+
+        self._dispatcher_cm: DispatcherContextMgr
+        if callback_args.stomp_config:
+            self._dispatcher_cm = StompDispatcherContextMgr(
+                callback_args, self.callbacks
+            )
+        else:
+            self._dispatcher_cm = RemoteDispatcherContextMgr(self.callbacks)
 
     def start(self):
         log_info(f"Launching threads, with callbacks: {self.callbacks}")
-        self.proxy_thread.start()
-        self.dispatcher_thread.start()
-        log_info("Proxy and dispatcher thread launched.")
-        wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
+        self.watchdog_thread.start()
+        with self._dispatcher_cm:
+            ping_watchdog_while_alive(self._dispatcher_cm, self.watchdog_thread)
+
+
+def run_watchdog(watchdog_port: int):
+    log_info("Hyperion watchdog keepalive running")
+    while True:
+        try:
+            with request.urlopen(
+                f"http://localhost:{watchdog_port}/callbackPing",
+                timeout=PING_TIMEOUT_S,
+            ) as response:
+                if response.status != 200:
+                    log_debug(
+                        f"Unable to ping Hyperion liveness endpoint, status {response.status}"
+                    )
+        except URLError as e:
+            log_debug("Unable to ping Hyperion liveness endpoint", exc_info=e)
+        sleep(HYPERION_PING_INTERVAL_S)
 
 
 def main(dev_mode=False) -> None:
-    dev_mode = dev_mode or parse_callback_dev_mode_arg()
+    callback_args = parse_callback_args()
+    callback_args.dev_mode = dev_mode or callback_args.dev_mode
     print(f"In dev mode: {dev_mode}")
-    runner = HyperionCallbackRunner(dev_mode)
+    runner = HyperionCallbackRunner(callback_args)
     runner.start()
+
+
+class DispatcherContextMgr(AbstractContextManager):
+    @abstractmethod
+    def is_alive(self) -> bool: ...
+
+
+class RemoteDispatcherContextMgr(DispatcherContextMgr):
+    def __init__(self, callbacks: list[CallbackBase]):
+        super().__init__()
+
+        self.proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+        self.proxy_thread = Thread(
+            target=self.proxy.start, daemon=True, name="0MQ Proxy"
+        )
+
+        self.dispatcher = RemoteDispatcher(
+            f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}"
+        )
+
+        def start_dispatcher(callbacks: list[Callable]):
+            for cb in callbacks:
+                self.dispatcher.subscribe(cb)
+            self.dispatcher.start()
+
+        self.dispatcher_thread = Thread(
+            target=start_dispatcher,
+            args=[callbacks],
+            daemon=True,
+            name="0MQ Dispatcher",
+        )
+        log_info("Created 0MQ proxy and local RemoteDispatcher.")
+
+    def __enter__(self):
+        log_info("Proxy and dispatcher thread launched.")
+        self.proxy_thread.start()
+        self.dispatcher_thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback, /):
+        self.dispatcher.stop()
+        # proxy has no way to stop
+
+    def is_alive(self):
+        return self.proxy_thread.is_alive() and self.dispatcher_thread.is_alive()
+
+
+class StompDispatcherContextMgr(DispatcherContextMgr):
+    def __init__(self, args: CallbackArgs, callbacks: list[CallbackBase]):
+        super().__init__()
+        loader = ConfigLoader(ApplicationConfig)
+        loader.use_values_from_yaml(args.stomp_config)
+        config = loader.load()
+        log_info(
+            f"Stomp client configured on {config.stomp.url.host}:{config.stomp.url.port}"
+        )
+        self._stomp_client = StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.url.host,
+                port=config.stomp.url.port,
+                auth=config.stomp.auth,
+            )
+        )
+        self._dispatcher = StompDispatcher(self._stomp_client)
+        for cb in callbacks:
+            self._dispatcher.subscribe(cb)
+
+    def is_alive(self) -> bool:
+        return self._stomp_client.is_connected()
+
+    def __enter__(self):
+        self._dispatcher.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback, /):
+        self._dispatcher.__exit__(exc_type, exc_value, traceback)
+
+
+def ping_watchdog_while_alive(
+    dispatcher_cm: DispatcherContextMgr, watchdog_thread: Thread
+):
+    alive = watchdog_thread.is_alive() and dispatcher_cm.is_alive()
+    try:
+        log_debug("Trying to wait forever on callback and dispatcher threads")
+        while alive:
+            sleep(LIVENESS_POLL_SECONDS)
+            alive = watchdog_thread.is_alive() and dispatcher_cm.is_alive()
+    except KeyboardInterrupt:
+        log_info("Main thread received interrupt - exiting.")
+    else:
+        log_info("Proxy or dispatcher thread ended - exiting.")
 
 
 if __name__ == "__main__":

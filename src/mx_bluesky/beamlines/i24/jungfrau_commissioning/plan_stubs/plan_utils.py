@@ -1,4 +1,4 @@
-from pathlib import PurePath
+from collections.abc import Callable
 from typing import cast
 
 import bluesky.plan_stubs as bps
@@ -6,8 +6,6 @@ from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
-    AutoIncrementingPathProvider,
-    StaticFilenameProvider,
     TriggerInfo,
     WatchableAsyncStatus,
 )
@@ -24,6 +22,8 @@ def fly_jungfrau(
     gain_mode: GainMode,
     wait: bool = False,
     log_on_percentage_prefix="Jungfrau data collection triggers received",
+    read_hardware_after_prepare_plan: Callable[..., MsgGenerator]
+    | None = None,  # Param needs refactor: https://github.com/DiamondLightSource/mx-bluesky/issues/819
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """Stage, prepare, and kickoff Jungfrau with a configured TriggerInfo. Optionally wait
     for completion.
@@ -37,13 +37,18 @@ def fly_jungfrau(
     gain_mode: Which gain mode to put the Jungfrau into before starting the acquisition.
     wait: Optionally block until data collection is complete.
     log_on_percentage_prefix: String that will be appended to the "percentage completion" logging message.
+    read_hardware_after_prepare_plan: Optionally add a plan which will be ran in between preparing the jungfrau and starting
+    acquisition. This is useful for reading devices after they have been prepared, especially since the file writing path
+    is calculated during prepare.
     """
 
     LOGGER.info(f"Setting Jungfrau to gain mode {gain_mode}")
     yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
     LOGGER.info("Preparing detector...")
     yield from bps.prepare(jungfrau, trigger_info, wait=True)
-    LOGGER.info("Detector prepared. Starting acquisition")
+    LOGGER.info("Detector prepared")
+    if read_hardware_after_prepare_plan:
+        yield from read_hardware_after_prepare_plan()
     yield from bps.kickoff(jungfrau, wait=True)
     LOGGER.info("Waiting for acquisition to complete...")
     status = yield from bps.complete(jungfrau, group=JF_COMPLETE_GROUP)
@@ -55,17 +60,3 @@ def fly_jungfrau(
     if wait:
         yield from bps.wait(JF_COMPLETE_GROUP)
     return status
-
-
-def override_file_path(jungfrau: CommissioningJungfrau, path_of_output_file: str):
-    """While we should generally use device instantiation to set the path,
-    during commissioning, it is useful to be able to explicitly set the filename
-    and path.
-
-    This function must be called before the Jungfrau is prepared.
-    """
-    _file_path = PurePath(path_of_output_file)
-    _new_filename_provider = StaticFilenameProvider(_file_path.name)
-    jungfrau._writer._path_info = AutoIncrementingPathProvider(  # noqa: SLF001
-        _new_filename_provider, _file_path.parent
-    )

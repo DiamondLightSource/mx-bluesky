@@ -6,7 +6,7 @@ from dodal.devices.i24.beam_center import DetectorBeamCenter
 from dodal.devices.i24.beamstop import Beamstop
 from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline
 

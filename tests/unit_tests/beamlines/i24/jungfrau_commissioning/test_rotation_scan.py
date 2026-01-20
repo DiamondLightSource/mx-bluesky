@@ -8,16 +8,16 @@ from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.aperture import AperturePositions
 from dodal.devices.i24.beamstop import BeamstopPositions
 from dodal.devices.i24.dual_backlight import BacklightPositions
-from ophyd_async.core import completed_status
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import completed_status, set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
     JF_DET_STAGE_Y_POSITION_MM,
-    HutchClosedException,
+    ExternalRotationScanParams,
+    HutchClosedError,
     RotationScanComposite,
     _cleanup_plan,
-    multi_rotation_plan_varying_transmission,
+    rotation_scan_plan,
     set_up_beamline_for_rotation,
     single_rotation_plan,
 )
@@ -25,9 +25,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
     JF_COMPLETE_GROUP,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
-from mx_bluesky.beamlines.i24.parameters.rotation import (
-    MultiRotationScanByTransmissions,
-)
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     calculate_motion_profile,
 )
@@ -44,18 +41,13 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
         tmp_path,
     )
     del params["transmission_frac"]
-    params["transmission_fractions"] = [0.2, 0.4, 0.6]
-    return MultiRotationScanByTransmissions(**params)
+    params["transmission_fractions"] = transmissions
+    params["num_images"] = 1
+    return ExternalRotationScanParams(**params)
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.read_devices_for_metadata"
-)
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan._cleanup_plan"
-)
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
 )
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.setup_zebra_for_rotation"
@@ -69,24 +61,32 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
 )
-async def test_single_rotation_plan_in_re(
+async def test_rotation_scan_plan_in_re(
     mock_fly: MagicMock,
     mock_setup_beamline: MagicMock,
     mock_calc_motion_profile: MagicMock,
     mock_setup_zebra: MagicMock,
-    mock_check_topup: MagicMock,
     mock_cleanup: MagicMock,
-    mock_metadata_read: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     tmp_path,
     rotation_composite: RotationScanComposite,
 ):
+    required_hardware_read_signals = [
+        rotation_composite.dcm.energy_in_keV,
+        rotation_composite.dcm.wavelength_in_a,
+        rotation_composite.det_stage.z,
+        rotation_composite.jungfrau._writer.file_path,
+    ]
+
+    rotation_composite.jungfrau._writer.final_path = (
+        tmp_path  # Normally done during jf prepare
+    )
     # Test correct functions are called, but don't test bluesky messages
     mock_zebra_arm = MagicMock(side_effect=lambda _: completed_status())
     rotation_composite.zebra.pc.arm.set = mock_zebra_arm
     params = get_good_single_rotation_params(tmp_path)
     mock_calc_motion_profile.return_value = calculate_motion_profile(params, 1, 1)
-    RE(single_rotation_plan(rotation_composite, params))
+    run_engine(single_rotation_plan(rotation_composite, params))
     mock_setup_beamline.assert_called_once_with(
         rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, 0.1
     )
@@ -95,25 +95,23 @@ async def test_single_rotation_plan_in_re(
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
-    mock_check_topup.assert_called_once()
-    mock_metadata_read.assert_called_once()
     mock_fly.assert_called_once()
+    assert mock_fly.call_args_list[0][1]["read_hardware_after_prepare_plan"].args == (
+        required_hardware_read_signals,
+        PlanNameConstants.ROTATION_DEVICE_READ,
+    )
     mock_cleanup.assert_called_once()
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
+    new=MagicMock(),
 )
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
-)
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau",
+    new=MagicMock(),
 )
 def test_single_rotation_plan_in_simulator(
-    _mock_fly: MagicMock,
-    _mock_set_up_beamline_for_rotation: MagicMock,
-    _mock_topup: MagicMock,
     sim_run_engine: RunEngineSimulator,
     rotation_composite: RotationScanComposite,
     tmp_path,
@@ -135,11 +133,6 @@ def test_single_rotation_plan_in_simulator(
         msgs,
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
-    )
-    assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == PlanNameConstants.ROTATION_META_READ,
     )
 
     # Set omega axis then wait for JF to complete
@@ -167,17 +160,16 @@ def test_single_rotation_plan_in_simulator(
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.single_rotation_plan"
 )
-def test_multi_rotation_plan_in_re(
+def test_rotation_plan_multiple_transmissions(
     mock_single_rotation: MagicMock,
-    RE: RunEngine,
+    run_engine: RunEngine,
     tmp_path,
     rotation_composite: RotationScanComposite,
 ):
     desired_transmission_fracs = [0.2, 0.4, 0.6]
     params = get_good_multi_rotation_params(desired_transmission_fracs, tmp_path)
-    set_mock_value(rotation_composite.jungfrau._writer.frame_counter, params.num_images)
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
-    RE(multi_rotation_plan_varying_transmission(rotation_composite, params))
+    run_engine(rotation_scan_plan(rotation_composite, params))
     called_transmission_fracs = [
         mock_single_rotation.call_args_list[i].args[1].transmission_frac
         for i in range(mock_single_rotation.call_count)
@@ -187,12 +179,12 @@ def test_multi_rotation_plan_in_re(
 
 async def test_set_up_beamline_for_rotation_success(
     rotation_composite: RotationScanComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     trans_frac = 0.1
     det_z = 200
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
-    RE(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
+    run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
     assert await asyncio.gather(
         rotation_composite.aperture.position.get_value(),
@@ -213,24 +205,20 @@ async def test_set_up_beamline_for_rotation_success(
 
 def test_set_up_beamline_for_rotation_error_on_closed_hutch(
     rotation_composite: RotationScanComposite,
-    RE: RunEngine,
+    run_engine: RunEngine,
 ):
     trans_frac = 0.1
     det_z = 200
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.CLOSED)
-    with pytest.raises(HutchClosedException):
-        RE(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
+    with pytest.raises(HutchClosedError):
+        run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
 
-class FakeException(Exception): ...
+class FakeError(Exception): ...
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
-    new=MagicMock(side_effect=FakeException),  # Exit test early by inserting exception
-)
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
 )
 def test_single_rotation_plan_uses_default_if_no_det_distance(
     mock_set_up_beamline: MagicMock,
@@ -238,9 +226,12 @@ def test_single_rotation_plan_uses_default_if_no_det_distance(
     rotation_composite: RotationScanComposite,
     tmp_path,
 ):
+    mock_set_up_beamline.side_effect = (
+        FakeError,
+    )  # Exit test early by inserting exception
     params = get_good_single_rotation_params(tmp_path)
     params.detector_distance_mm = None
-    with pytest.raises(FakeException):
+    with pytest.raises(FakeError):
         sim_run_engine.simulate_plan(single_rotation_plan(rotation_composite, params))
     mock_set_up_beamline.assert_called_once_with(
         rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, params.transmission_frac
@@ -251,10 +242,14 @@ def test_single_rotation_plan_uses_default_if_no_det_distance(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.tidy_up_zebra_after_rotation_scan"
 )
 def test_cleanup_plan(
-    mock_tidy_zebra: MagicMock, rotation_composite: RotationScanComposite, RE: RunEngine
+    mock_tidy_zebra: MagicMock,
+    rotation_composite: RotationScanComposite,
+    run_engine: RunEngine,
 ):
-    rotation_composite.jungfrau.unstage = MagicMock()
-    RE(
+    rotation_composite.jungfrau.unstage = MagicMock(
+        side_effect=lambda: completed_status()
+    )
+    run_engine(
         _cleanup_plan(
             rotation_composite.zebra,
             rotation_composite.jungfrau,

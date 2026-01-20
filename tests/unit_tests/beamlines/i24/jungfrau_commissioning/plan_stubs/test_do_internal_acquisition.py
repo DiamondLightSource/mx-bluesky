@@ -7,8 +7,8 @@ from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines.i24 import CommissioningJungfrau
+from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.jungfrau import GainMode
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.do_internal_acquisition import (
     do_internal_acquisition,
@@ -21,7 +21,11 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 def test_full_do_internal_acquisition(
     run_engine: RunEngine, jungfrau: CommissioningJungfrau, caplog
 ):
-    @run_decorator()
+    @run_decorator(
+        md={
+            "detector_file_template": "test",
+        }
+    )
     def test_plan():
         status = yield from do_internal_acquisition(
             0.001, GainMode.DYNAMIC, 5, jungfrau=jungfrau

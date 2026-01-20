@@ -6,9 +6,7 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from ophyd.status import Status
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
@@ -41,18 +39,12 @@ def mock_emit():
 
 @pytest.fixture
 async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
-    sample_shutter = i03.sample_shutter(connect_immediately=True, mock=True)
-    xspress3mini = i03.xspress3mini(connect_immediately=True, mock=True)
+    sample_shutter = i03.sample_shutter.build(connect_immediately=True, mock=True)
+    xspress3mini = i03.xspress3mini.build(connect_immediately=True, mock=True)
 
     return OptimizeAttenuationComposite(
         sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator
     )
-
-
-def get_good_status():
-    status = Status()
-    status.set_finished()
-    return status
 
 
 @pytest.fixture
@@ -61,12 +53,12 @@ def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
         patch.object(
             fake_composite.xspress3mini,
             "stage",
-            MagicMock(return_value=get_good_status()),
+            MagicMock(side_effect=lambda: completed_status()),
         ),
         patch.object(
             fake_composite.sample_shutter,
             "set",
-            MagicMock(return_value=get_good_status()),
+            MagicMock(side_effect=lambda _: completed_status()),
         ),
     ):
         yield fake_composite
@@ -272,12 +264,12 @@ def test_deadtime_calc_new_transmission_gets_correct_value(
     )
 
 
-def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
+def test_deadtime_calc_new_transmission_raises_error_on_low_transmission():
     with pytest.raises(AttenuationOptimisationFailedError):
         deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
 
 
-def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
+def test_total_count_calc_new_transmission_raises_error_on_low_transmission(
     run_engine: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
     set_mock_value(
@@ -358,9 +350,9 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     run_engine: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
-    fake_composite.attenuator.set = MagicMock(return_value=get_good_status())
+    fake_composite.attenuator.set = MagicMock(side_effect=lambda _: completed_status())
     fake_composite.xspress3mini.acquire_time.set = MagicMock(
-        return_value=get_good_status()
+        side_effect=lambda _: completed_status()
     )
 
     run_engine(

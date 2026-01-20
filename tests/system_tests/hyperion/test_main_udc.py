@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.baton import Baton
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.utils.context import find_device_in_context
 from mx_bluesky.hyperion.__main__ import main
@@ -35,7 +35,7 @@ def patch_setup_devices():
 
 @pytest.fixture(autouse=True)
 def patch_udc_default_state():
-    with patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"):
+    with patch("mx_bluesky.hyperion.plan_runner.move_to_udc_default_state"):
         yield
 
 

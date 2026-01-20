@@ -27,6 +27,7 @@ class JsonMetadataWriter(CallbackBase):
         self.wavelength_in_a = None
         self.energy_in_kev = None
         self.detector_distance_mm = None
+        self.final_path: Path | None = None
         self.descriptors: dict[str, dict] = {}
         self.transmission: float | None = None
         self.parameters: SingleRotationScan | None = None
@@ -34,7 +35,7 @@ class JsonMetadataWriter(CallbackBase):
         super().__init__()
 
     def start(self, doc: dict):  # type: ignore
-        if doc.get("subplan_name") == PlanNameConstants.ROTATION_META_READ:
+        if doc.get("subplan_name") == PlanNameConstants.ROTATION_MAIN:
             json_params = doc.get("rotation_scan_params")
             assert json_params is not None
             LOGGER.info(
@@ -49,16 +50,20 @@ class JsonMetadataWriter(CallbackBase):
     def event(self, doc: dict):  # type: ignore
         event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if event_descriptor.get("name") == PlanNameConstants.ROTATION_META_READ:
+        if event_descriptor.get("name") == PlanNameConstants.ROTATION_DEVICE_READ:
             assert self.parameters is not None
             data = doc.get("data")
             assert data is not None
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
-            self.energy_in_kev = data.get("dcm-energy_in_kev")
+            self.energy_in_kev = data.get("dcm-energy_in_keV")
             self.detector_distance_mm = data.get("detector_motion-z")
+            assert data.get("detector-_writer-file_path"), (
+                "No detector writer path was found"
+            )
+            self.final_path = Path(data.get("detector-_writer-file_path"))
 
             LOGGER.info(
-                f"Metadata writer received parameters, transmission: {self.transmission}, wavelength: {self.wavelength_in_a}"
+                f"Metadata writer received parameters, energy_in_kev: {self.energy_in_kev}, wavelength: {self.wavelength_in_a}, det_distance_mm: {self.detector_distance_mm}, file path: {self.final_path}"
             )
 
     def stop(self, doc: dict):  # type: ignore
@@ -66,10 +71,9 @@ class JsonMetadataWriter(CallbackBase):
         if (
             self.run_start_uid is not None
             and doc.get("run_start") == self.run_start_uid
+            and self.final_path
         ):
-            with open(
-                Path(self.parameters.storage_directory) / READING_DUMP_FILENAME, "w"
-            ) as f:
+            with open(self.final_path / READING_DUMP_FILENAME, "w") as f:
                 f.write(
                     json.dumps(
                         {

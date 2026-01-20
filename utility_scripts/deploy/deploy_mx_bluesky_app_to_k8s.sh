@@ -137,7 +137,7 @@ else
   cd $NEW_PROJECTDIR
   PROJECTDIR=$NEW_PROJECTDIR
   MX_BLUESKY_BASENAME=$(basename $MX_BLUESKY_BASE)
-  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_v}
+  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_}
 fi
 
 
@@ -156,11 +156,11 @@ ensure_version_py() {
   if [[ ! -d $PROJECTDIR/.venv ]]; then
     echo "Creating _version.py"
     echo "Virtual environment not found - creating"
-    module load python/3.11
-    python -m venv $PROJECTDIR/.venv
-    . $PROJECTDIR/.venv/bin/activate
+    module load python/3.11 && module load uv
+    uv venv $PROJECTDIR/.venv
+    source $PROJECTDIR/.venv/bin/activate
   fi
-  pip install setuptools_scm
+  uv pip install setuptools_scm
 }
 
 app_version() {
@@ -200,7 +200,7 @@ application.externalHostname=test-$APP_NAME.diamond.ac.uk "
   mkdir -p $PROJECTDIR/tmp/data
   DEPLOYMENT_DIR=$PROJECTDIR
 else
-  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_v${APP_VERSION}/mx-bluesky
+  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_${APP_VERSION}/mx-bluesky
 fi
 if [[ -n $BIND_DIR ]]; then
   DEPLOYMENT_DIR=$BIND_DIR

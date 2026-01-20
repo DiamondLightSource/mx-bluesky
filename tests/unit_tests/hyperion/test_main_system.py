@@ -11,15 +11,16 @@ from pathlib import Path
 from sys import argv
 from time import sleep
 from typing import Any
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
+from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.baton import Baton
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
@@ -46,12 +47,12 @@ from mx_bluesky.hyperion.parameters.cli import (
     HyperionMode,
     parse_cli_args,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import GDARunner
 
-from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
+from ...conftest import raw_params_from_file
 from .conftest import AGAMEMNON_WAIT_INSTRUCTION
 
 FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
@@ -524,27 +525,17 @@ def test_exception_during_parameter_decode_generates_nicely_formatted_log_messag
 
 
 @pytest.mark.parametrize("dev_mode", [True, False])
-@patch(
-    "dodal.devices.i03.undulator_dcm.get_beamline_parameters",
-    return_value={"DCM_Perp_Offset_FIXED": 111},
-)
-def test_when_context_created_then_contains_expected_number_of_plans(
-    get_beamline_parameters, dev_mode
-):
-    from dodal.beamlines import i03
-
-    mock_beamline_module_filepaths("i03", i03)
-
+def test_when_context_created_then_contains_expected_number_of_plans(dev_mode):
     with patch.dict(
         os.environ,
         {"BEAMLINE": "i03"},
     ):
         with patch(
-            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_dodal_module",
+            "mx_bluesky.hyperion.utils.context.BlueskyContext.with_device_manager",
             return_value=({}, {}),
-        ) as mock_with_dodal_module:
+        ) as mock_with_device_manager:
             context = setup_context(dev_mode=dev_mode)
-            mock_with_dodal_module.assert_called_once_with(ANY, mock=dev_mode)
+            mock_with_device_manager.assert_called_once_with(ANY, mock=dev_mode)
         plan_names = context.plans.keys()
 
         # assert "rotation_scan" in plan_names
@@ -647,6 +638,83 @@ def test_hyperion_in_gda_mode_doesnt_start_udc_loop(
     main()
 
     mock_gda_runner.assert_called_once()
+
+
+@patch(
+    "sys.argv",
+    new=["hyperion", "--mode", "supervisor", "--supervisor-config", "test_config"],
+)
+def test_hyperion_in_supervisor_mode_requires_client_config_option():
+    with pytest.raises(
+        RuntimeError,
+        match="BlueAPI client configuration file must be specified in supervisor mode.",
+    ):
+        main()
+
+
+@patch(
+    "sys.argv",
+    new=["hyperion", "--mode", "supervisor", "--client-config", "test_config"],
+)
+def test_hyperion_in_supervisor_mode_requires_supervisor_config_option():
+    with pytest.raises(
+        RuntimeError,
+        match="BlueAPI supervisor configuration file must be specified in supervisor mode.",
+    ):
+        main()
+
+
+@pytest.fixture
+def mock_supervisor_mode():
+    parent = MagicMock()
+    with patch.multiple(
+        "mx_bluesky.hyperion.__main__",
+        ConfigLoader=parent.ConfigLoader,
+        BlueskyContext=parent.BlueskyContext,
+        run_forever=parent.run_forever,
+        signal=parent.signal,
+        SupervisorRunner=parent.SupervisorRunner,
+    ):
+        yield parent
+
+
+@patch(
+    "sys.argv",
+    new=[
+        "hyperion",
+        "--mode",
+        "supervisor",
+        "--client-config",
+        "test_client_config",
+        "--supervisor-config",
+        "test_supervisor_config",
+    ],
+)
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+def test_hyperion_in_supervisor_mode_creates_rest_server_on_supervisor_port(
+    mock_supervisor_mode: MagicMock,
+    mock_create_udc_server: MagicMock,
+):
+    mock_supervisor_mode.ConfigLoader.return_value.load.side_effect = [
+        "client_config",
+        "supervisor_config",
+    ]
+    main()
+    mock_supervisor_mode.assert_has_calls(
+        [
+            call.ConfigLoader(ApplicationConfig),
+            call.ConfigLoader().use_values_from_yaml(Path("test_client_config")),
+            call.ConfigLoader().load(),
+            call.ConfigLoader(ApplicationConfig),
+            call.ConfigLoader().use_values_from_yaml(Path("test_supervisor_config")),
+            call.ConfigLoader().load(),
+            call.BlueskyContext(configuration="supervisor_config"),
+            call.SupervisorRunner(ANY, "client_config", False),
+        ]
+    )
+    mock_create_udc_server.assert_called_once_with(
+        ANY, HyperionConstants.SUPERVISOR_PORT
+    )
 
 
 @patch("mx_bluesky.hyperion.__main__.Api")

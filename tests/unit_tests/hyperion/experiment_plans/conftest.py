@@ -6,12 +6,11 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
 from event_model import Event
-from ophyd.sim import NullStatus
-from ophyd_async.core import AsyncStatus
-from ophyd_async.testing import set_mock_value
+from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -104,6 +103,8 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
 }
 
 
@@ -248,16 +249,18 @@ def robot_load_composite(
     zebra,
     panda,
     panda_fast_grid_scan,
+    beamsize: BeamsizeBase,
 ) -> RobotLoadThenCentreComposite:
     set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
-    smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
-    aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    smargon.stub_offsets.set = MagicMock(side_effect=lambda _: completed_status())
+    aperture_scatterguard.set = MagicMock(side_effect=lambda _: completed_status())
     set_mock_value(smargon.omega.max_velocity, 131)
     return RobotLoadThenCentreComposite(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
+        beamsize=beamsize,
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
@@ -318,8 +321,12 @@ def robot_load_and_energy_change_composite(
         aperture_scatterguard,
         backlight,
     )
-    composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
-    composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    composite.smargon.stub_offsets.set = MagicMock(
+        side_effect=lambda _: completed_status()
+    )
+    composite.aperture_scatterguard.set = MagicMock(
+        side_effect=lambda _: completed_status()
+    )
     set_mock_value(composite.dcm.energy_in_keV.user_readback, 11.105)
 
     return composite

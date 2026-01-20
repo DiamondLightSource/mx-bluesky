@@ -13,7 +13,6 @@ from pydantic import PositiveInt
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     fly_jungfrau,
-    override_file_path,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -25,8 +24,8 @@ def do_pedestal_darks(
     exp_time_s: float = 0.001,
     pedestal_frames: PositiveInt = 20,
     pedestal_loops: PositiveInt = 200,
+    filename: str = "pedestal_darks",
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
-    path_of_output_file: str | None = None,
 ) -> MsgGenerator:
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
     for the jungfrau, and must be performed before acquiring real data in dynamic gain mode.
@@ -46,18 +45,19 @@ def do_pedestal_darks(
         exp_time_s: Length of detector exposure for each frame.
         pedestal_frames: Number of frames acquired per pedestal loop.
         pedestal_loops: Number of times to acquire a set of pedestal_frames
+        filename: Name of output file
         jungfrau: Jungfrau device
-        path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
-            set during Jungfrau device instantiation
     """
 
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
-    @bpp.run_decorator(md={"subplan_name": PEDESTAL_DARKS_RUN})
+    @bpp.run_decorator(
+        md={
+            "subplan_name": PEDESTAL_DARKS_RUN,
+            "detector_file_template": filename,
+        }
+    )
     @bpp.stage_decorator([jungfrau])
     def _do_decorated_plan():
-        if path_of_output_file:
-            override_file_path(jungfrau, path_of_output_file)
-
         trigger_info = create_jungfrau_pedestal_triggering_info(
             exp_time_s, pedestal_frames, pedestal_loops
         )
@@ -83,8 +83,8 @@ def do_non_pedestal_darks(
     gain_mode: GainMode,
     exp_time_s: float = 0.001,
     total_triggers: PositiveInt = 1000,
+    filename: str = "darks",
     jungfrau: CommissioningJungfrau = inject("jungfrau"),
-    path_of_output_file: str | None = None,
 ) -> MsgGenerator:
     """Internally take a set of images at a given gain mode.
 
@@ -95,22 +95,21 @@ def do_non_pedestal_darks(
         exp_time_s: Length of detector exposure for each trigger.
         total_triggers: Total triggers for the dark scan.
         jungfrau: Jungfrau device
-        path_of_output_file: Absolute path of the detector file output, including file name. If None, then use the PathProvider
-            set during Jungfrau device instantiation
+        filename: Name of output file
     """
 
     @bpp.set_run_key_decorator(STANDARD_DARKS_RUN)
-    @bpp.run_decorator(md={"subplan_name": STANDARD_DARKS_RUN})
+    @bpp.run_decorator(
+        md={
+            "subplan_name": STANDARD_DARKS_RUN,
+            "detector_file_template": filename,
+        }
+    )
     @bpp.stage_decorator([jungfrau])
     def _do_decorated_plan():
-        if path_of_output_file:
-            override_file_path(jungfrau, path_of_output_file)
-
         trigger_info = create_jungfrau_internal_triggering_info(
             total_triggers, exp_time_s
         )
-
-        yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
 
         yield from fly_jungfrau(
             jungfrau,

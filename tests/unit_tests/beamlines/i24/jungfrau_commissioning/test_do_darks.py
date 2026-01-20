@@ -1,20 +1,17 @@
-import asyncio
-from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.callbacks import CallbackBase
-from bluesky.preprocessors import monitor_during_wrapper
 from bluesky.run_engine import RunEngine
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
     PedestalMode,
 )
-from ophyd_async.testing import set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks import (
     do_pedestal_darks,
@@ -24,7 +21,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks i
 class CheckMonitor(CallbackBase):
     """Store the order and values of updates to specified signals
 
-    Usage: Instantiate this callback with list of signals to track, and subscribe the RE to this
+    Usage: Instantiate this callback with list of signals to track, and subscribe the run_engine to this
     callback. Run your plan using Bluesky's monitor_during decorator or wrapper, specifing the same signals
     in the monitor.
     """
@@ -38,25 +35,31 @@ class CheckMonitor(CallbackBase):
         return doc
 
 
+def fake_complete(_, group=None):
+    yield from bps.null()
+    return completed_status()
+
+
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.log_on_percentage_complete",
+    new=MagicMock,
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.bps.complete",
+    new=MagicMock(side_effect=fake_complete),
 )
 async def test_full_do_pedestal_darks(
-    mock_override_path: MagicMock, jungfrau: CommissioningJungfrau, RE: RunEngine
+    jungfrau: CommissioningJungfrau,
+    run_engine: RunEngine,
 ):
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
-    test_path = "path"
 
-    @bpp.set_run_key_decorator()
+    @bpp.run_decorator()
     def test_plan():
-        status = yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
-        assert not status.done
-        val = 0
-        while not status.done:
-            val += 1
-            set_mock_value(jungfrau._writer.frame_counter, val)
-            # Let status update
-            yield from bps.wait_for([partial(asyncio.sleep, 0)])
+        yield from bps.monitor(jungfrau.drv.acquisition_type, name="AT")
+        yield from bps.monitor(jungfrau.drv.pedestal_mode_state, name="PM")
+        yield from bps.monitor(jungfrau.drv.gain_mode, name="GM")
+        yield from do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)
 
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
@@ -69,24 +72,17 @@ async def test_full_do_pedestal_darks(
             "detector-drv-gain_mode",
         ]
     )
-    RE.subscribe(monitor_tracker)
-    RE(
-        monitor_during_wrapper(
-            test_plan(),
-            [
-                jungfrau.drv.acquisition_type,
-                jungfrau.drv.pedestal_mode_state,
-                jungfrau.drv.gain_mode,
-                jungfrau.drv.pedestal_mode_state,
-            ],
-        )
-    )
+    run_engine.subscribe(monitor_tracker)
+    run_engine(test_plan())
+
     assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
+        AcquisitionType.STANDARD,  # Repeated as staging JF also sets to standard
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
         AcquisitionType.STANDARD,
     ]
     assert monitor_tracker.signals_and_values["detector-drv-pedestal_mode_state"] == [
+        PedestalMode.OFF,  # Repeated as staging JF also turns pedestals off
         PedestalMode.OFF,
         PedestalMode.ON,
         PedestalMode.OFF,
@@ -98,29 +94,20 @@ async def test_full_do_pedestal_darks(
         GainMode.FIX_G2,
         GainMode.DYNAMIC,
     ]
-    mock_override_path.assert_called_once_with(jungfrau, test_path)
 
 
-class FakeException(Exception): ...
+class FakeError(Exception): ...
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
-)
-@patch("bluesky.plan_stubs.unstage")
-async def test_jungfrau_unstage(
-    mock_unstage: MagicMock,
-    mock_override_path: MagicMock,
-    jungfrau: CommissioningJungfrau,
-    RE: RunEngine,
+async def test_jungfrau_unstage_on_error(
+    jungfrau: CommissioningJungfrau, run_engine: RunEngine
 ):
-    jungfrau.stage = MagicMock(side_effect=FakeException)
+    jungfrau.stage = MagicMock(side_effect=FakeError)
+    jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
 
     def test_plan():
-        yield from do_pedestal_darks(0.001, 2, 2, jungfrau)
+        yield from do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)
 
-    with pytest.raises(FakeException):
-        RE(test_plan())
-    assert (
-        mock_unstage.call_count == 2
-    )  # Once from fly_jungfrau, once from pedestal darks plan
+    with pytest.raises(FakeError):
+        run_engine(test_plan())
+    assert jungfrau.unstage.call_count == 1

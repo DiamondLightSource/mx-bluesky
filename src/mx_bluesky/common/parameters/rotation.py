@@ -109,7 +109,7 @@ class RotationExperiment(DiffractionExperiment):
 
 
 class SingleRotationScan(
-    WithScan, RotationScanPerSweep, RotationExperiment, DiffractionExperimentWithSample
+    WithScan, RotationExperiment, RotationScanPerSweep, DiffractionExperimentWithSample
 ):
     @property
     def detector_params(self):

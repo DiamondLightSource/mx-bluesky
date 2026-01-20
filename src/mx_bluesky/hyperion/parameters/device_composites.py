@@ -13,6 +13,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.i03.beamsize import Beamsize
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
@@ -52,6 +53,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
     backlight: Backlight
     xbpm_feedback: XBPMFeedback
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
+    beamsize: Beamsize
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

@@ -6,6 +6,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -17,6 +18,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
@@ -57,7 +59,7 @@ from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -74,6 +76,7 @@ class RotationScanComposite(OavSnapshotComposite):
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
+    beamsize: BeamsizeBase
     beamstop: Beamstop
     dcm: DCM
     detector_motion: DetectorMotion
@@ -88,6 +91,7 @@ class RotationScanComposite(OavSnapshotComposite):
     zebra: Zebra
     oav: OAV
     xbpm_feedback: XBPMFeedback
+    thawer: Thawer
 
 
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
@@ -144,6 +148,7 @@ def rotation_scan_plan(
             composite.aperture_scatterguard,
             params.selected_aperture,
             composite.backlight,
+            composite.thawer,
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
 
@@ -187,6 +192,7 @@ def rotation_scan_plan(
             composite.flux,
             composite.dcm,
             composite.eiger,
+            composite.beamsize,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
@@ -279,7 +285,7 @@ def rotation_scan_internal(
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
         composite,
         parameters.transmission_frac,
     )

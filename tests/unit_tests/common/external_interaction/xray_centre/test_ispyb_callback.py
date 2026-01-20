@@ -41,7 +41,6 @@ from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "comments": "MX-Bluesky: Xray centring 1 -",
-    "detectorId": 78,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "{tmp_data}/",
@@ -53,6 +52,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "xBeam": 150.0,
     "yBeam": 160.0,
     "startTime": EXPECTED_START_TIME,
+    "sampleId": 364758,
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
@@ -192,6 +192,8 @@ class TestXrayCentreISPyBCallback:
             "resolution": 1.1830593331191241,
             "beamSizeAtSampleX": 0.05,
             "beamSizeAtSampleY": 0.02,
+            "detectorMode": "ROI",
+            "detectorId": 78,
         }
         assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
         assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]
@@ -251,6 +253,7 @@ class TestXrayCentreISPyBCallback:
             "xtalSnapshotFullPath2": "test_2_y",
             "xtalSnapshotFullPath3": "test_3_y",
             "axisStart": 0,
+            "chiStart": 0,
             "omegaStart": 0,
             "axisEnd": 0,
             "axisRange": 0,
@@ -271,6 +274,7 @@ class TestXrayCentreISPyBCallback:
             "xtalSnapshotFullPath2": "test_2_z",
             "xtalSnapshotFullPath3": "test_3_z",
             "axisStart": 90,
+            "chiStart": 30,
             "omegaStart": 90,
             "axisEnd": 90,
             "axisRange": 0,
@@ -290,8 +294,8 @@ class TestXrayCentreISPyBCallback:
             "dy": 0.1264,
             "stepsX": 40,
             "stepsY": 20,
-            "pixelsPerMicronX": 1 / 1.58,
-            "pixelsPerMicronY": 1 / 1.58,
+            "micronsPerPixelX": 1.58,
+            "micronsPerPixelY": 1.58,
             "snapshotOffsetXPixel": 50,
             "snapshotOffsetYPixel": 100,
             "orientation": "horizontal",
@@ -302,8 +306,8 @@ class TestXrayCentreISPyBCallback:
             "dy": 0.1264,
             "stepsX": 40,
             "stepsY": 10,
-            "pixelsPerMicronX": 1 / 1.58,
-            "pixelsPerMicronY": 1 / 1.58,
+            "micronsPerPixelX": 1.58,
+            "micronsPerPixelY": 1.58,
             "snapshotOffsetXPixel": 50,
             "snapshotOffsetYPixel": 0,
             "orientation": "horizontal",

@@ -12,7 +12,6 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
-from dodal.testing import patch_all_motors
 from ophyd_async.core import init_devices
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
@@ -32,14 +31,12 @@ def rotation_composite(
         xbpm_feedback = XBPMFeedback("")
         hutch_shutter = HutchShutter("")
         beamstop = Beamstop("")
-        det_stage = YZStage("")
+        det_stage = YZStage(
+            "",
+            name="detector_motion",  # Name of device in i24 dodal module
+        )
         backlight = DualBacklight("")
         dcm = DCM("", "")
-
-    patch_all_motors(det_stage)
-    patch_all_motors(sample_shutter)
-    patch_all_motors(gonio)
-    patch_all_motors(dcm)
 
     composite = RotationScanComposite(
         aperture,

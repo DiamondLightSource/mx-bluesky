@@ -9,6 +9,9 @@ from pydantic.dataclasses import dataclass
 
 from mx_bluesky.definitions import ROOT_DIR
 
+# Use as visit if numtracker is being used
+USE_NUMTRACKER = "from numtracker"
+
 BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30
@@ -87,8 +90,9 @@ class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
     CRYOJET_MARGIN_MM = 0.2
-    THAWING_TIME = 40
     TIP_OFFSET_UM = 0
+    MAX_CRYO_TEMP_K = 110
+    MAX_CRYO_PRESSURE_BAR = 0.1
 
     # Value quoted in https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/,
     # causes dropped frames, so increase value for safety
@@ -168,7 +172,7 @@ class Status(Enum):
 
 
 @dataclass
-class FeatureSetting: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
+class FeatureSettings: ...  # List of features and their default values. Subclasses must also be a pydantic dataclass
 
 
 class FeatureSettingSources(

@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -18,7 +15,7 @@ from mx_bluesky.common.parameters.constants import RotationParamConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
-from mx_bluesky.common.utils.log import NEXUS_LOGGER
+from mx_bluesky.common.utils.log import NEXUS_LOGGER, format_doc_for_log
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:

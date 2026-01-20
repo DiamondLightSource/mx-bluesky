@@ -49,11 +49,8 @@ def construct_hyperion_specific_features(
     signals_to_read_pre_flyscan = [
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
-        xrc_composite.s4_slit_gaps.xgap,
-        xrc_composite.s4_slit_gaps.ygap,
-        xrc_composite.smargon.x,
-        xrc_composite.smargon.y,
-        xrc_composite.smargon.z,
+        xrc_composite.s4_slit_gaps,
+        xrc_composite.smargon,
         xrc_composite.dcm.energy_in_keV,
     ]
 
@@ -63,6 +60,9 @@ def construct_hyperion_specific_features(
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
         xrc_composite.eiger.bit_depth,
+        xrc_composite.beamsize,
+        xrc_composite.eiger.cam.roi_mode,
+        xrc_composite.eiger.ispyb_detector_id,
     ]
 
     setup_trigger_plan: Callable[..., MsgGenerator]

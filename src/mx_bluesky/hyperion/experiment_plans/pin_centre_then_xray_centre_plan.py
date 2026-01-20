@@ -28,7 +28,10 @@ from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
+from mx_bluesky.common.preprocessors.preprocessors import (
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
+)
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.xrc_result import XRayCentreEventHandler
@@ -103,13 +106,21 @@ def pin_centre_then_flyscan_plan(
         grid_detect_params = create_parameters_for_grid_detection(parameters)
         oav_params = OAVParameters("xrayCentring", oav_config_file)
 
-        yield from detect_grid_and_do_gridscan(
+        @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
             composite,
-            grid_detect_params,
-            oav_params,
-            HyperionSpecifiedThreeDGridScan,
-            construct_hyperion_specific_features,
+            parameters.transmission_frac,
+            PlanNameConstants.GRIDSCAN_OUTER,
         )
+        def _grid_detect_plan():
+            yield from detect_grid_and_do_gridscan(
+                composite,
+                grid_detect_params,
+                oav_params,
+                HyperionSpecifiedThreeDGridScan,
+                construct_hyperion_specific_features,
+            )
+
+        yield from _grid_detect_plan()
 
     yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
 

@@ -16,8 +16,23 @@ class WarningError(
     pass
 
 
+class BeamlineCheckFailureError(Exception):
+    """
+    An error which is raised during a beamline check to indicate that the check did
+    not pass.
+    """
+
+    ...
+
+
 class ISPyBDepositionNotMadeError(Exception):
     """Raised when the ISPyB or Zocalo callbacks can't access ISPyB deposition numbers."""
+
+    pass
+
+
+class BeamlineStateError(Exception):
+    """Exception raised when the beamline is in the incorrect state"""
 
     pass
 

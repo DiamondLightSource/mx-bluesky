@@ -2,7 +2,7 @@ import asyncio
 import pprint
 import sys
 from functools import partial
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -12,31 +12,36 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
+from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
+from event_model import RunStart
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
-    AutoIncrementingPathProvider,
-    StaticFilenameProvider,
+    AutoMaxIncrementingPathProvider,
+    PathInfo,
+    PathProvider,
+    completed_status,
     init_devices,
-)
-from ophyd_async.fastcs.panda import HDFPanda
-from ophyd_async.testing import (
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -154,6 +159,10 @@ BASIC_POST_SETUP_DOC = {
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
+    "beamsize-x_um": 50.0,
+    "beamsize-y_um": 20.0,
+    "eiger_cam_roi_mode": True,
+    "eiger-ispyb_detector_id": 78,
 }
 
 
@@ -191,8 +200,10 @@ def use_beamline_t01():
 
         with (
             patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
-            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
-            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+            patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state"),
+            patch(
+                "mx_bluesky.hyperion.in_process_runner.device_composite_from_context"
+            ),
         ):
             yield tests.unit_tests.t01
 
@@ -306,7 +317,9 @@ def run_generic_ispyb_handler_setup(
 
 @pytest.fixture
 async def zebra_fast_grid_scan():
-    zebra_fast_grid_scan = i03.zebra_fast_grid_scan(connect_immediately=True, mock=True)
+    zebra_fast_grid_scan = i03.zebra_fast_grid_scan.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(zebra_fast_grid_scan.device_scan_invalid, 0.0)
     set_mock_value(zebra_fast_grid_scan.x_scan_valid, 1.0)
     set_mock_value(zebra_fast_grid_scan.y_scan_valid, 1.0)
@@ -319,7 +332,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -330,13 +342,13 @@ async def fake_fgs_composite(
 ):
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger(connect_immediately=True, mock=True),
+        eiger=i03.eiger.build(mock=True),
         smargon=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
@@ -403,6 +415,7 @@ async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
     beamstop_phase1: Beamstop,
+    beamsize: BeamsizeBase,
     detector_motion: DetectorMotion,
     eiger: EigerDetector,
     smargon: Smargon,
@@ -425,6 +438,7 @@ async def grid_detect_xrc_devices(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
+        beamsize=beamsize,
         detector_motion=detector_motion,
         eiger=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
@@ -452,13 +466,102 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     return composite
 
 
+class _BasePathProvider(PathProvider):
+    """Minimal adaption of BlueAPI's PathProvider.
+
+    To use this PathProvider in a test, a run must be open
+    with 'detector_file_template' attached as metadata. This is done
+    automatically when using BlueAPI
+
+    For longer term plans to test plans with BlueAPI in CI,
+    see https://github.com/DiamondLightSource/blueapi/issues/1206"""
+
+    def __init__(self, tmp_path: Path) -> None:
+        self.path = tmp_path
+        self._docs: list[RunStart] = []
+
+    def run_start(self, name: str, start_document: RunStart) -> None:
+        if name == "start":
+            self._docs.append(start_document)
+
+    def __call__(self, device_name: str | None = None) -> PathInfo:
+        template = self._docs[-1].get("detector_file_template")
+        if not template:
+            raise ValueError("detector_file_template must be set in metadata")
+        sub_path = template.format_map(self._docs[-1] | {"device_name": device_name})
+        return PathInfo(directory_path=self.path, filename=sub_path)
+
+
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
-        name = StaticFilenameProvider("jf_out")
-        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        base_provider = _BasePathProvider(tmp_path)
+        path = AutoMaxIncrementingPathProvider(base_provider)
         detector = CommissioningJungfrau("", "", path)
     set_mock_value(detector._writer.writer_ready, 1)
+    run_engine.subscribe(base_provider.run_start, "start")
 
     return detector
+
+
+@pytest.fixture(autouse=True)
+def use_fake_properites_for_config_server():
+    properties_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        new=properties_path,
+    ):
+        yield
+
+
+@pytest.fixture
+async def beamstop_check_devices(
+    aperture_scatterguard,
+    attenuator,
+    backlight,
+    baton,
+    detector_motion,
+    ipin,
+    zebra_shutter,
+    xbpm_feedback,
+    sim_run_engine,
+    run_engine,
+):
+    async def noop(_):
+        await asyncio.sleep(0)
+
+    run_engine.register_command("sleep", noop)
+    try:
+        async with init_devices(mock=True):
+            beamstop = Beamstop("", MagicMock())
+
+        devices = BeamstopCheckDevices(
+            aperture_scatterguard=aperture_scatterguard,
+            attenuator=attenuator,
+            backlight=backlight,
+            baton=baton,
+            beamstop=beamstop,
+            detector_motion=detector_motion,
+            ipin=ipin,
+            sample_shutter=zebra_shutter,
+            xbpm_feedback=xbpm_feedback,
+        )
+        sim_run_engine.add_read_handler_for(
+            devices.sample_shutter, ZebraShutterState.CLOSE
+        )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda msg: {"readback": ShutterState.CLOSED},
+            "detector_motion-shutter",
+        )
+        sim_run_engine.add_read_handler_for(ipin.pin_readback, 0.1)
+
+        return devices
+    finally:
+        run_engine.register_command("sleep", run_engine._sleep)
+
+
+@pytest.fixture
+async def ipin():
+    yield i03.ipin.build(connect_immediately=True, mock=True)

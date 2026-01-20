@@ -5,14 +5,10 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from dodal.beamline_specific_utils.i03 import beam_size_from_aperture
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.common.external_interaction.callbacks.common.logging_callback import (
-    format_doc_for_log,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -27,8 +23,12 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
+from mx_bluesky.common.parameters.constants import USE_NUMTRACKER, DocDescriptorNames
+from mx_bluesky.common.utils.log import (
+    ISPYB_ZOCALO_CALLBACK_LOGGER,
+    format_doc_for_log,
+    set_dcgid_tag,
+)
 from mx_bluesky.common.utils.utils import convert_ev_to_angstrom
 
 D = TypeVar("D")
@@ -86,6 +86,17 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
+
+        if self.params and self.params.visit == USE_NUMTRACKER:
+            try:
+                visit = doc.get("instrument_session")
+                assert isinstance(visit, str)
+                self.params.visit = visit
+            except Exception as e:
+                raise ValueError(
+                    f"Error trying to retrieve instrument session from document {doc}"
+                ) from e
+
         return self.tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -124,7 +135,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
         assert isinstance(synchrotron_mode, SynchrotronMode)
-
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
@@ -147,17 +157,19 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         return scan_data_infos
 
-    def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
+    def _handle_ispyb_transmission_flux_read(
+        self, doc: Event
+    ) -> Sequence[ScanDataInfo]:
         assert self.params
         aperture = doc["data"]["aperture_scatterguard-selected_aperture"]
-        aperture_radius = doc["data"]["aperture_scatterguard-radius"]
-        beamsize = beam_size_from_aperture(aperture_radius)
-        beamsize_x_mm = beamsize.x_um / 1000 if beamsize.x_um else None
-        beamsize_y_mm = beamsize.y_um / 1000 if beamsize.y_um else None
+        beamsize_x_mm = doc["data"]["beamsize-x_um"] / 1000
+        beamsize_y_mm = doc["data"]["beamsize-y_um"] / 1000
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux-flux_reading"],
+            detector_mode="ROI" if doc["data"]["eiger_cam_roi_mode"] else "FULL",
+            ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
