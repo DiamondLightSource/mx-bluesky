@@ -51,7 +51,7 @@ def take_oav_image_with_scintillator_in(
                     defaults are always correct.
     """
 
-    LOGGER.info("prearing beamline")
+    LOGGER.info("Preparing beamline to take scintillator images...")
     yield from _prepare_beamline_for_scintillator_images(
         robot,
         beamstop,
@@ -61,12 +61,11 @@ def take_oav_image_with_scintillator_in(
         shutter,
         initial_wait_group,
     )
-    LOGGER.info("setting transmission")
     yield from bps.abs_set(attenuator, transmission, group=initial_wait_group)
 
     if image_name is None:
         image_name = f"{time.time_ns()}ATT{transmission * 100}"
-    LOGGER.info(f"using image name {image_name}")
+    LOGGER.info(f"Using image name {image_name}")
     LOGGER.info("Waiting for initial_wait_group...")
     yield from bps.wait(initial_wait_group)
 
