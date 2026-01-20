@@ -1260,8 +1260,13 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
+<<<<<<< HEAD
 version = "1.69.1.dev4+g405e437be"
 source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#405e437be96a0a4f4a3cb14273ba9a869d33d05d" }
+=======
+version = "1.69.1.dev5+gf65b1063e"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=1710_rename_aperture_scatterguard_radius#f65b1063e13c7e086e9e321dc64c2face25836cd" }
+>>>>>>> dbfa1a60b (Rename aperture scatterguard radius to diameter)
 dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
@@ -3379,7 +3384,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.0.0rc2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=1710_rename_aperture_scatterguard_radius" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
