@@ -16,14 +16,14 @@ from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 from bluesky_stomp.messaging import MessageContext
 
-from conftest import raw_params_from_file
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion.parameters.components import UDCCleanup
+from mx_bluesky.hyperion._plan_runner_params import UDCCleanup
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
+from ....conftest import raw_params_from_file
 from ....unit_tests.hyperion.external_interaction.callbacks.test_alert_on_container_change import (
     TEST_VISIT,
 )
@@ -86,7 +86,9 @@ def supervisor_runner(supervisor_runner_no_ping: SupervisorRunner):
 
 @pytest.fixture
 def supervisor_runner_no_ping(
-    mock_bluesky_context: BlueskyContext, client_config: ApplicationConfig
+    mock_bluesky_context: BlueskyContext,
+    client_config: ApplicationConfig,
+    mock_blueapi_server,
 ):
     runner = SupervisorRunner(mock_bluesky_context, client_config, True)
     timeout = time.monotonic() + 30
@@ -170,10 +172,15 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
 
     fut = tpe.submit(shutdown_in_background)
 
+    def execute_remotely():
+        yield from supervisor_runner.decode_and_execute("wait_for_abort", [params])
+        # Simulate supervisor going round in a loop, since async abort request may not be processed before requested execution
+        # completes
+
+        yield from bps.sleep(10)
+
     with pytest.raises(RunEngineInterrupted):
-        supervisor_runner.run_engine(
-            supervisor_runner.decode_and_execute("wait_for_abort", [params])
-        )
+        supervisor_runner.run_engine(execute_remotely())
 
     assert supervisor_runner.blueapi_client.get_state() == WorkerState.IDLE
     assert plan_aborted.wait(10)
@@ -252,7 +259,7 @@ def test_supervisor_calls_load_centre_collect(
 ):
     params = LoadCentreCollect(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/example_load_centre_collect_params.json",
+            "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
             tmp_path,
         )
     )
