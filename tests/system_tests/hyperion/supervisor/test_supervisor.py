@@ -16,9 +16,11 @@ from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 from bluesky_stomp.messaging import MessageContext
 
+from conftest import raw_params_from_file
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.hyperion.parameters.components import UDCCleanup
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
@@ -243,3 +245,18 @@ def test_supervisor_raises_plan_error_when_external_callbacks_watchdog_expired(
     sleep(1)
     with pytest.raises(PlanError, match="External callback watchdog timer expired.*"):
         runner.run_engine(runner.decode_and_execute(TEST_VISIT, [params]))
+
+
+def test_supervisor_calls_load_centre_collect(
+    supervisor_runner: SupervisorRunner, tmp_path
+):
+    params = LoadCentreCollect(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/example_load_centre_collect_params.json",
+            tmp_path,
+        )
+    )
+
+    supervisor_runner.run_engine(
+        supervisor_runner.decode_and_execute(TEST_VISIT, [params])
+    )
