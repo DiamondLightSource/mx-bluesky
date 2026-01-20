@@ -18,7 +18,6 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import aithre, i03
-from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -227,12 +226,6 @@ mock_paths = [
     ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
     ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
 
 
 @dataclass(frozen=True)
@@ -1743,12 +1736,6 @@ def mock_config_server():
         side_effect=_fake_config_server_read,
     ):
         yield
-
-
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
 
 
 @pytest.fixture(autouse=True)
