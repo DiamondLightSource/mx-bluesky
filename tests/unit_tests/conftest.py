@@ -345,7 +345,6 @@ async def fake_fgs_composite(
         eiger=i03.eiger.build(mock=True),
         smargon=smargon,
         synchrotron=synchrotron,
-        zocalo=zocalo,
     )
 
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
@@ -366,12 +365,10 @@ async def fake_fgs_composite(
 
     @AsyncStatus.wrap
     async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+        await zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
-    fake_composite.zocalo.trigger = MagicMock(
-        side_effect=partial(mock_complete, test_result)
-    )  # type: ignore
-    fake_composite.zocalo.timeout_s = 3
+    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    zocalo.timeout_s = 3
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     return fake_composite
@@ -397,7 +394,6 @@ def beamline_specific(
         fgs_motors=zebra_fast_grid_scan,
         read_pre_flyscan_plan=MagicMock(),
         read_during_collection_plan=MagicMock(),
-        get_xrc_results_from_zocalo=False,
     )
 
 

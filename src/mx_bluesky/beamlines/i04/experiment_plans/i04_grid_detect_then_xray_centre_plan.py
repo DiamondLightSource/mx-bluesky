@@ -154,10 +154,10 @@ def i04_default_grid_detect_and_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
         aperture_scatterguard,
         attenuator,
+        zocalo,
         backlight,
         beamstop,
         beamsize,
@@ -316,7 +316,6 @@ def construct_i04_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
     )
 
 

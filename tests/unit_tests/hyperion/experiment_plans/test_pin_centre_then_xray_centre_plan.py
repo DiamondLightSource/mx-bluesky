@@ -12,7 +12,7 @@ from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.xbpm_feedback import Pause
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
@@ -420,7 +420,7 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan"
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo"
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo"
 )
 def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_paused_and_both_reverted(
     mock_fetch_zocalo_results: MagicMock,

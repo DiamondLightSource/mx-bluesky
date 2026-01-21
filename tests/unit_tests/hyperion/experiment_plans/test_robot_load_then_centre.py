@@ -7,7 +7,7 @@ from bluesky.utils import Msg
 from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (

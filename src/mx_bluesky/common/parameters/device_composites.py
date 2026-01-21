@@ -30,7 +30,6 @@ from dodal.devices.zocalo import ZocaloResults
 class FlyScanEssentialDevices:
     eiger: EigerDetector
     synchrotron: Synchrotron
-    zocalo: ZocaloResults
     smargon: Smargon
 
 
@@ -50,6 +49,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
 
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
+    zocalo: ZocaloResults
     backlight: Backlight
     beamstop: Beamstop
     beamsize: BeamsizeBase
