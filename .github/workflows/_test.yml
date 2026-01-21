@@ -30,7 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Update dodal
-        run: uv add --upgrade dls-dodal
+        run: uv pip install dls-dodal
 
       - name: Do UV sync
         run: uv sync --locked --dry-run
