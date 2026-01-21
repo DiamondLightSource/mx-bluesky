@@ -30,7 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
       
       - name: Do UV sync
-        run: uv sync --locked --dry-run
+        run: uv sync --locked --dry-run && source .venv/bin/activate
 
       - name: Update dodal
         run: uv pip install dls-dodal
