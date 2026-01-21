@@ -111,6 +111,7 @@ name = "Dominic Oram"
 [tool.setuptools_scm]
 version_file = "src/mx_bluesky/_version.py"
 
+
 [tool.pyright]
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
@@ -170,6 +171,12 @@ data_file = "/tmp/mx_bluesky.coverage"
 source = ["src", "**/site-packages/"]
 
 [tool.tox]
+requires = ["tox>=4"]
+
+[tool.tox.testenv]
+package = "wheel"
+installer = "uv"
+uv_sync_flags = ["--locked"]
 skipsdist = true
 # envs to runs automatically with tox -p
 env_list = ["pre-commit", "type-checking", "tests", "docs"]
