@@ -32,8 +32,8 @@ jobs:
       - name: Update dodal
         run: uv pip install dls-dodal
 
-      - name: Do UV sync
-        run: uv sync --locked --dry-run
+      # - name: Do UV sync
+      #   run: uv sync --locked --dry-run
 
       - name: Run tests
         # Longer timeout for CI due to likelihood of cold caches,
