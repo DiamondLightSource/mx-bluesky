@@ -5,18 +5,13 @@ import numpy as np
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
-from event_model import Event
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
@@ -35,7 +30,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -71,43 +65,6 @@ FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID = XRayCentreResult(
 )
 
 
-def make_event_doc(data, descriptor="abc123") -> Event:
-    return {
-        "time": 0,
-        "timestamps": {"a": 0},
-        "seq_num": 0,
-        "uid": "not so random uid",
-        "descriptor": descriptor,
-        "data": data,
-    }
-
-
-BASIC_PRE_SETUP_DOC = {
-    "undulator-current_gap": 0,
-    "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps-xgap": 0,
-    "s4_slit_gaps-ygap": 0,
-    "smargon-x": 10.0,
-    "smargon-y": 20.0,
-    "smargon-z": 30.0,
-}
-
-BASIC_POST_SETUP_DOC = {
-    "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
-    "aperture_scatterguard-diameter": None,
-    "aperture_scatterguard-aperture-x": 15,
-    "aperture_scatterguard-aperture-y": 16,
-    "aperture_scatterguard-aperture-z": 2,
-    "aperture_scatterguard-scatterguard-x": 18,
-    "aperture_scatterguard-scatterguard-y": 19,
-    "attenuator-actual_transmission": 0,
-    "flux-flux_reading": 10,
-    "dcm-energy_in_keV": 11.105,
-    "beamsize-x_um": 50.0,
-    "beamsize-y_um": 20.0,
-}
-
-
 @pytest.fixture
 def sim_run_engine_for_rotation(sim_run_engine):
     sim_run_engine.add_handler(
@@ -132,40 +89,6 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
-
-
-def run_generic_ispyb_handler_setup(
-    ispyb_handler: GridscanISPyBCallback,
-    params: HyperionSpecifiedThreeDGridScan,
-):
-    """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
-    happens at the start of the outer plan."""
-
-    ispyb_handler.active = True
-    ispyb_handler.activity_gated_start(
-        {
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": params.model_dump_json(),
-        }  # type: ignore
-    )
-    ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": CONST.DESCRIPTORS.HARDWARE_READ_PRE}  # type: ignore
-    )
-    ispyb_handler.activity_gated_event(
-        make_event_doc(
-            BASIC_PRE_SETUP_DOC,
-            descriptor="123abc",
-        )
-    )
-    ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING}  # type: ignore
-    )
-    ispyb_handler.activity_gated_event(
-        make_event_doc(
-            BASIC_POST_SETUP_DOC,
-            descriptor="abc123",
-        )
-    )
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
