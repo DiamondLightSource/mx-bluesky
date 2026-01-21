@@ -29,11 +29,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       
-      - name: Do UV sync
-        run: uv sync --locked && source .venv/bin/activate
-
-      - name: Update dodal
-        run: uv pip install dls-dodal
+      - name: Update dodal in lockfile
+        run: uv lock --upgrade-package dls-dodal
 
       - name: Run tests
         # Longer timeout for CI due to likelihood of cold caches,
