@@ -171,12 +171,6 @@ data_file = "/tmp/mx_bluesky.coverage"
 source = ["src", "**/site-packages/"]
 
 [tool.tox]
-requires = ["tox>=4"]
-
-[tool.tox.testenv]
-package = "wheel"
-installer = "uv"
-uv_sync_flags = ["--locked"]
 
 skipsdist = true
 # envs to runs automatically with tox -p

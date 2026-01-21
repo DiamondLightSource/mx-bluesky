@@ -89,13 +89,15 @@
             "source": "devcontainer-shared-cache",
             "target": "/cache",
             "type": "volume"
+        },
+        {
+            "source": "/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/",
+            "target": "/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/",
+            "type": "bind"
         }
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
-    "mounts": [
-        "source=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,target=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,type=bind,consistency=cached"
-    ],
     // After the container is created, recreate the venv then make pre-commit first run faster
     "postCreateCommand": "uv venv --clear && uv sync && pre-commit install --install-hooks"
 }
