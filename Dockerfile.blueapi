@@ -14,8 +14,4 @@ RUN apt update -y && \
 
 RUN uv pip install --no-cache-dir --no-compile mx-bluesky
 
-# Needed so that Blueapi's setup-scratch stage has permission to modify dependencies installed 
-# in the above pip installation
-RUN mkdir -p /.cache/pip; chmod -R 777 /.venv /cache/pip
-
 USER ubuntu
