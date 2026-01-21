@@ -12,7 +12,7 @@ RUN apt update -y && \
     apt upgrade -y && \
     apt install -y libgl1 libglib2.0-0
 
-RUN /venv/bin/pip install --no-cache-dir --no-compile mx-bluesky
+RUN uv pip install --no-cache-dir --no-compile mx-bluesky
 
 # Needed so that Blueapi's setup-scratch stage has permission to modify dependencies installed 
 # in the above pip installation
