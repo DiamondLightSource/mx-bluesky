@@ -227,6 +227,7 @@ description = "Run tests with coverage"
 commands = [
     [
         "pytest",
+        "--junit-xml=systemtests_output.xml",
         "-m",
         "system_test",
         "tests/system_tests",
@@ -235,6 +236,7 @@ commands = [
         ], extend = true },
     ],
 ]
+set_env = { DODAL_TEST_MODE = "true"}
 
 
 # Runs the system tests locally
