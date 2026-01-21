@@ -40,6 +40,7 @@ dependencies = [
     "matplotlib",
     "cachetools",
     "bluesky-stomp >= 0.2.0",
+    "mysql-connector-python == 9.5.0",
 
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
