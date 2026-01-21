@@ -229,7 +229,7 @@ commands = [
         "pytest",
         "-m",
         "system_test",
-        "tests/system_test",
+        "tests/system_tests",
         "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
