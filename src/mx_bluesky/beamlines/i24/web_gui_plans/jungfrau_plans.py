@@ -10,6 +10,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
 )
 
 
+# Can remove this plan after https://github.com/DiamondLightSource/mx-daq-ui/issues/101
 @bpp.run_decorator()
 def gui_run_jf_rotation_scan(
     filename: str,
