@@ -150,12 +150,6 @@ BASIC_PRE_SETUP_DOC = {
 
 BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
-    "aperture_scatterguard-radius": None,
-    "aperture_scatterguard-aperture-x": 15,
-    "aperture_scatterguard-aperture-y": 16,
-    "aperture_scatterguard-aperture-z": 2,
-    "aperture_scatterguard-scatterguard-x": 18,
-    "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
