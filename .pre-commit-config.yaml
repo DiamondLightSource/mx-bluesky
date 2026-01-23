@@ -1,3 +1,7 @@
+ci:
+  # Tell pre-commit.ci (and other CI setups that honor this) to skip this hook
+  skip: [local install dodal]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

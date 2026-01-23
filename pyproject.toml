@@ -50,7 +50,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@1.69.0",
 ]
 
 
@@ -235,7 +235,7 @@ commands = [
         ], extend = true },
     ],
 ]
-set_env = { DODAL_TEST_MODE = "true"}
+set_env = { DODAL_TEST_MODE = "true" }
 
 
 # Runs the system tests locally
@@ -253,10 +253,10 @@ commands = [
 ]
 
 [tool.tox.env.localsystemtests.set_env]
-    DOCKER = "podman"
-    DODAL_TEST_MODE = "true"
-    ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
-    ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
+DOCKER = "podman"
+DODAL_TEST_MODE = "true"
+ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
+ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
 
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
