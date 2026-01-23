@@ -210,7 +210,7 @@ def _fetch_xrc_results_from_zocalo(
 
     LOGGER.info("Getting X-ray center Zocalo results...")
 
-    yield from bps.trigger(zocalo_results)
+    yield from bps.trigger(zocalo_results, wait=True)
     LOGGER.info("Zocalo triggered and read, interpreting results.")
     xrc_results = yield from get_full_processing_results(zocalo_results)
     LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")
