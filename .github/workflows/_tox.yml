@@ -5,6 +5,11 @@ on:
         type: string
         description: What to run under tox
         required: true
+      skip_hooks:
+        description: "Comma-separated pre-commit hook IDs to skip"
+        required: false
+        type: string
+        default: "" # important so the context always exists
 
 jobs:
   run:
@@ -18,4 +23,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Run tox
+        env:
+          SKIP: ${{ inputs.skip_hooks }}
         run: uv run --locked tox -e ${{ inputs.tox }}
