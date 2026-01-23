@@ -709,7 +709,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=3,
             scatterguard_y=4,
-            radius=100,
+            diameter=100,
         ),
         ApertureValue.MEDIUM: AperturePosition(
             aperture_x=5,
@@ -717,7 +717,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=8,
             scatterguard_y=9,
-            radius=50,
+            diameter=50,
         ),
         ApertureValue.SMALL: AperturePosition(
             aperture_x=10,
@@ -725,7 +725,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=13,
             scatterguard_y=14,
-            radius=20,
+            diameter=20,
         ),
         ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
@@ -733,7 +733,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=0,
+            diameter=0,
         ),
         ApertureValue.PARKED: AperturePosition(
             aperture_x=20,
@@ -741,7 +741,7 @@ async def aperture_scatterguard():
             aperture_z=0,
             scatterguard_x=36,
             scatterguard_y=56,
-            radius=0,
+            diameter=0,
         ),
     }
     with (
@@ -1410,7 +1410,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
@@ -1525,7 +1525,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 1,
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
