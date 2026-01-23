@@ -21,7 +21,7 @@ from daq_config_server.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
-    GDABeamlineParameters,
+    get_beamline_parameters,
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
@@ -363,8 +363,8 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    return GDABeamlineParameters.from_file(
-        "tests/test_data/test_beamline_parameters.txt"
+    return get_beamline_parameters(
+        "test_beamline", "tests/test_data/test_beamline_parameters.txt"
     )
 
 
@@ -580,7 +580,7 @@ def attenuator():
 
 @pytest.fixture
 def beamstop_phase1(
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(

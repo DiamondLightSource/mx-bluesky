@@ -1,6 +1,7 @@
 import bluesky.plan_stubs as bps
 import pydantic
 from bluesky.utils import MsgGenerator
+from dodal.beamlines.i03 import BL
 from dodal.common.beamlines.beamline_parameters import (
     get_beamline_parameters,
 )
@@ -117,7 +118,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         get_hyperion_config_client().get_feature_flags()
     )
     if feature_flags.BEAMSTOP_DIODE_CHECK:
-        beamline_parameters = get_beamline_parameters()
+        beamline_parameters = get_beamline_parameters(BL)
         config_client = get_hyperion_config_client()
         features_settings: HyperionFeatureSettings = config_client.get_feature_flags()
         detector_min_z = features_settings.DETECTOR_DISTANCE_LIMIT_MIN_MM
