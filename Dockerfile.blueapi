@@ -14,6 +14,4 @@ RUN apt update -y && \
 
 RUN uv pip install --no-cache-dir --no-compile mx-bluesky
 
-RUN chmod -R 777 /.cache/uv/
-
 USER ubuntu
